@@ -7,7 +7,8 @@
 - Packages have short prefix names, like svc (Svelte Components).
 - Packages are cohesive bundeling of similar components.
 - Components (files in packages) are prefixed with the package name.
-- A flat hierarchy is preferred
+- A flat package dependency hierarchy is preferred
+- If one component from one package is refrenced we implicity say we depend on the complet package and not just the one component (You either depend on the package or you dont depend on the package)
 - Reuse is encouraged.
 
 ## Why a Monorepo?
