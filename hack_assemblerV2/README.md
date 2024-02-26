@@ -6,5 +6,4 @@
 - Assembler
 
 ## Test Suite
-
-Can be found under https://github.com/AyanamiKaine/HackAssemblerV2Tests
+- Directly included in the project
