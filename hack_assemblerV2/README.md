@@ -1,5 +1,8 @@
 # Hack Assembler
 
+Build for the Hack-CPU defined in the NAND-To-Tetris Book.
+Transaltes Hack Assembly files into binary code the Hack-CPU can execute.
+
 ## Features
 - Tokenizer
 - Code Generation
