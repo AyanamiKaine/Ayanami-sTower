@@ -8,11 +8,7 @@
 - Use the pattern when you have several classes that contain almost identical algorithms with some minor differences.
 
 ## How To Build
-- run "bazel build //:template"
+- run "bazel build //:main"
 
 ## How To Execute
-- run "bazel run //:template"
-
-## How To run the Tests
-- run "bazel test //:template"
-
+- run "bazel run //:main"
