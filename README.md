@@ -23,3 +23,9 @@ A test for an interface and a desired outcome(behavior) (Black Box Testing) are 
 - Having a large colletion of reusable components that are shared by many applications.
 - Each new application increases software capital bit by bit.
 
+## Package Prefixes Explained
+- SV    = Svelte
+- CS    = CSharp
+- JS    = JavaScript
+- CPP   = CPP
+- PY    = Python 
