@@ -27,5 +27,5 @@ A test for an interface and a desired outcome(behavior) (Black Box Testing) are 
 - SV    = Svelte
 - CS    = CSharp
 - JS    = JavaScript
-- CPP   = CPP
+- CPP   = C++
 - PY    = Python 
