@@ -17,6 +17,9 @@ typedef std::vector<std::shared_ptr<Entity>> EntityVector;
 // "Enemies", EntityVector (Stores all entities with the enemy tag)
 typedef std::map<std::string, EntityVector> EntityMap;
 
+
+// The Entity Manager is an example of the factory pattern, as the constructor in an entity is private and the entity manager
+// is a friend it is the only object that has the ability to construct an entity.
 class EntityManager
 {
 	EntityVector	m_entities;
