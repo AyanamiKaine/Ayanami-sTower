@@ -1,0 +1,21 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":template",],
+)
+
+cc_library(
+    name = "template",
+    srcs = ["template.cc"],
+    hdrs = ["template.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
+
+cc_test(
+    name = "templateTest",
+    srcs = ["templateTest.cc"],
+    deps = [
+        ":template",
+        "@googletest//:gtest_main",
+    ],
+)
