@@ -3,7 +3,7 @@
 <script>
     export let title;
     // This component only renders when the set
-    // condition is true
+    // condition is true, the condition should be evaluated where this component is used.
     export let condition = false;
 </script>
 
