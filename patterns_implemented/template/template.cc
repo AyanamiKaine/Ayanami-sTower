@@ -1,6 +1,6 @@
-#include "template.h"// Concrete Subclasses (CSVProcessor, XMLProcessor)
+#include "template.h"
 
-
+// *** CSVProcessor Implementation *** //
 
 void CSVProcessor::readData() {
     std::cout << "Reading data from CSV file..." << std::endl;
@@ -14,6 +14,7 @@ void CSVProcessor::writeFile() {
         std::cout << "Writing processed data to CSV file..." << std::endl;
 }
 
+// *** XMLProcessor Implementation *** //
 
 void XMLProcessor::readData() {
         std::cout << "Reading data from XML file..." << std::endl;
@@ -31,6 +32,7 @@ void FileProcessor::closeFile()
 {
     std::cout << "Opening File" << std::endl;
 }
+
 void FileProcessor::openFile(const std::string& filename)
 {
     std::cout << "Closing File" << std::endl;

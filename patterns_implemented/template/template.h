@@ -10,7 +10,7 @@ public:
     // The Template Method, this represents the structure of the algorithm, 
     // where we want specifc steps of it be implemented by subclasses to specify them.
     // We do this when the overall structure of two applications of an algorithm is 
-    // same but their implemenation differs slightly
+    // same but their implemenation differs slightly, like here.
     void processFile(const std::string& filename) {
         openFile(filename); 
         readData();         
