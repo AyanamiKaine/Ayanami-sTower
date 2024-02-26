@@ -1,15 +1,15 @@
 <script>
 	import Quoteblock from "../../../../svc/svc_quoteblock.svelte"
-    export let data;
+    export let strapiJsonResponse;
 </script>
 
 
 <div class="justify-center items-center">
-    {#if data.data.data[0].attributes.Title}
-        <h1 class="text-3xl font-bold">{data.data.data[0].attributes.Title}</h1>
+    {#if strapiJsonResponse.data.data[0].attributes.Title}
+        <h1 class="text-3xl font-bold">{strapiJsonResponse.data.data[0].attributes.Title}</h1>
     {/if}
-    {#if data.data.data[0].attributes.Content}
-    {#each data.data.data[0].attributes.Content as content}
+    {#if strapiJsonResponse.data.data[0].attributes.Content}
+    {#each strapiJsonResponse.data.data[0].attributes.Content as content}
             
     
     
