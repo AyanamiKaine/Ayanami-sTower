@@ -3,6 +3,7 @@
 ## Short Summary
 - The main idea behind this monorepo is the creation of software capital
 - Applications dont refrence other applications (no inter-dependency between them)
+- Applications have longer english like names
 - Packages have short prefix names, like svc (Svelte Components)
 - Packages are cohesive bundeling of similar components.
 - Components (files in packages) are prefixed with the package name.
