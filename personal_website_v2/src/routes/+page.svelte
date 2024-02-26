@@ -1,7 +1,7 @@
 <script>
 	
-  import Quoteblock from "../lib/components/quoteblock.svelte";    
-  import Header from "../lib/components/conditonHeader.svelte";
+  import Quoteblock from "../../../svc/svc_quoteblock.svelte";
+  import Header from "../../../svc/svc_conditionHeader.svelte";
   import { onMount } from "svelte";
   import {slugify} from "../lib/util";
 
