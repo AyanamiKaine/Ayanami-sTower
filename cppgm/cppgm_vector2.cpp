@@ -12,6 +12,9 @@ Vector2 Vector2::operator-(const Vector2& rhs) const
 	return Vector2{ x - rhs.x, y - rhs.y };
 }
 
+// Sadly this is qustionable because the tolerance could be for some applications too big and for other too small, it all 
+// depends on the specifc domain this vector class is used, the tolerance should be either much bigger or possible be changed
+// by a user or completly removed
 bool Vector2::operator==(const Vector2& rhs) const
 {
 	constexpr float epsilon = 0.001f; // Small tolerance
