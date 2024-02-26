@@ -1,5 +1,5 @@
 <script>
-	import Quoteblock from "../../lib/components/quoteblock.svelte";
+	import Quoteblock from "../../../../svc/svc_quoteblock.svelte";
  </script>
  
 
