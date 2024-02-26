@@ -12,7 +12,7 @@
 
 ## Why a Monorepo?
 
-To facicilate reuse between projects. Not only for reuse between same languages but also for reuse of patterns across languages.
+To facicilate reuse and creation of cross application libraries. Not only for reuse between same languages but also for reuse of patterns across languages.
 
 ## Why are Tests for components and their implementation side by side?
 
