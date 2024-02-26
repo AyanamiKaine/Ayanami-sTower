@@ -1,7 +1,7 @@
 #pragma once
 namespace cppgm {
-class Vector2
-{
+	class Vector2
+	{
 	public:
 		float x {0};
 		float y {0};
