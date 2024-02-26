@@ -26,9 +26,9 @@ public:
 protected:
     // These methods are specifc for some file types to we let subclasses overwrite those without chaning the the overall
     // structure we process files, the interface stays the same but not the implementation.
-    virtual void readData() = 0;
-    virtual void processData() = 0;
-    virtual void writeFile() = 0;
+    virtual void readData() = 0;    //XML files must be differently parsed then CVS files
+    virtual void processData() = 0; //XML files must be differently processed then CVS files
+    virtual void writeFile() = 0;   //XML files must be differently written to disk then CVS files
 };
 
 class CSVProcessor : public FileProcessor {
