@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":command",],
+)
+
+cc_library(
+    name = "command",
+    srcs = ["command.cc"],
+    hdrs = ["command.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
