@@ -2,6 +2,10 @@
 - A collection of patterns and their explanations to understand/use them.
 - Many design patterns are grounded in OOP languages (Often to overcome their limitations of OPP itself)
 
+## Short Summary
+- Observer Design Pattern -> When you want to decouple a one-to-many relationship
+- Strategy Design Pattern -> When you want to encapsulate/decouple a family of similar algorithms (Its an example of designing against an interface and not an implementation)
+
 ## Why even use design patterns?
 - When you look online, there seems to be some trend to bash/hate design patterns, here are some examples "Me, after 7 years as a developer: What's a "design pattern"?"
 - Design Patterns provide a consistend way to express a solution to a specifc problem. Dont reinvent the wheel where it is not necessary.
