@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":strategy",],
+)
+
+cc_library(
+    name = "strategy",
+    srcs = ["strategy.cc"],
+    hdrs = ["strategy.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
