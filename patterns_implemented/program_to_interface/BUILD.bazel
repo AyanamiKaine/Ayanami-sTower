@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":pti",],
+)
+
+cc_library(
+    name = "pti",
+    srcs = ["pti.cc"],
+    hdrs = ["pti.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
