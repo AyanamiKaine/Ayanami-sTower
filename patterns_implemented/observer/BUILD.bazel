@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":observer",],
+)
+
+cc_library(
+    name = "observer",
+    srcs = ["observer.cc"],
+    hdrs = ["observer.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
