@@ -23,10 +23,12 @@ namespace cppgm {
 		bool operator == (const Vector2& rhs) const;
 		bool operator != (const Vector2& rhs) const;
 
-		Vector2& Add(const Vector2& vector2);
+		[[nodiscard]] float Length() const;
+
+        Vector2& Add(const Vector2& vector2);
 		Vector2& Scale(float scale);
 		Vector2& Rotate(float angleInDegrees);
-
+        
 		void Normalize();
 	};
 }

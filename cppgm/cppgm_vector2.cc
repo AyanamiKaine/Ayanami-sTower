@@ -1,4 +1,4 @@
-#include <cppgm_vector2.h>
+#include "cppgm_vector2.h"
 #include <cmath>
 
 namespace cppgm {
@@ -27,6 +27,7 @@ namespace cppgm {
 
 	bool Vector2::operator!=(const Vector2& rhs) const
 	{
+        return !(*this==rhs);
 	}
 
 	Vector2 Vector2::operator*(const float value) const
@@ -36,6 +37,7 @@ namespace cppgm {
 
 	Vector2 Vector2::operator/(const float value) const
 	{
+        return Vector2 {x/value, y/value};
 	}
 
 	void Vector2::operator+=(const Vector2& rhs)
@@ -58,6 +60,8 @@ namespace cppgm {
 
 	void Vector2::operator/=(const float value)
 	{
+        x /= value;
+        y /= value;
 	}
 
 	Vector2& Vector2::Rotate(float angleInDegrees) {
@@ -70,6 +74,11 @@ namespace cppgm {
 
 		return *this;
 	}
+
+    [[nodiscard]] float Vector2::Length() const
+    {
+        return sqrtf(x * x + y * y);
+    };
 
 
 	Vector2& Vector2::Scale(float scale)
