@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":facade",],
+)
+
+cc_library(
+    name = "facade",
+    srcs = ["facade.cc"],
+    hdrs = ["facade.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
