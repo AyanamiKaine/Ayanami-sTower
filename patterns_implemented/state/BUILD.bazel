@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":state",],
+)
+
+cc_library(
+    name = "state",
+    srcs = ["state.cc"],
+    hdrs = ["state.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
