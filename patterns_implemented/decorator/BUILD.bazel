@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":decorator",],
+)
+
+cc_library(
+    name = "decorator",
+    srcs = ["decorator.cc"],
+    hdrs = ["decorator.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
