@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":mvc",],
+)
+
+cc_library(
+    name = "mvc",
+    srcs = ["mvc.cc"],
+    hdrs = ["mvc.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)

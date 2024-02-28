@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":dip",],
+)
+
+cc_library(
+    name = "dip",
+    srcs = ["dip.cc"],
+    hdrs = ["dip.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)

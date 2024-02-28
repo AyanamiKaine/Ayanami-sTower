@@ -13,6 +13,10 @@
     - Waiter (Invoker): Takes the order to the kitchen
     - Chef (Receiver): Knows how to prepare the specific dish
 
+## Where Lambdas (Functional Programming) can make the command pattern easier to use
+- Here we use Lambdas to represent Concrete Commands so instead of extra creating derived class from the abstract command class we simply pass a lambda.
+- This approach is simpler, easier to use, easier to maintain, and should be preferrd over using command classes. 
+
 ## Key Components:
 
 - *Command*: An interface that declares a method for executing a request (usually a single method like execute()).
