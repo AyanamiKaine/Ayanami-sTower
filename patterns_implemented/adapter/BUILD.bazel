@@ -1,0 +1,12 @@
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [":adapter",],
+)
+
+cc_library(
+    name = "adapter",
+    srcs = ["adapter.cc"],
+    hdrs = ["adapter.h"],
+    visibility = ["//visibility:public"],  # Adjust visibility if needed
+)
