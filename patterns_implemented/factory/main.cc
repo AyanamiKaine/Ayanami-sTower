@@ -1,5 +1,4 @@
 #include "factory.h"
-#include <optional>
 #include <memory>
 
 int main() {
