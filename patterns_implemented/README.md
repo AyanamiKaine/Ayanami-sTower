@@ -22,6 +22,10 @@
 - Some say that design patterns are limited to object-oriented programming and dynamic polymorphism. 
 - Some consider design patterns outdated or even obsolete.
 
+## Design Pattern and Relation to Functional Programming
+- It might be suprising but functional programming techniques can reduce the need to use a design pattern completely transformation abstract interface, class indirection to functional techniques like using lambdas, map reduce, higher-order functions, etc.
+
 ## TODO
 - [ ] Add abstract examples
 - [ ] Add concrete examples
+- [ ] Adding Alternative Functional Approaches
