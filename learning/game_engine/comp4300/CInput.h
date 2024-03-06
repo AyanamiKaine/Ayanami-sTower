@@ -1,6 +1,8 @@
 #pragma once
 
-class CInput
+#include "Component.h"
+
+class CInput : public Component
 {
 public:
 	bool up		= false;
@@ -9,5 +11,5 @@ public:
 	bool down	= false;
 	bool shoot	= false;
 
-	CInput() = default;
+	CInput(){};
 };

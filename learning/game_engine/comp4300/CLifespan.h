@@ -1,11 +1,15 @@
 #pragma once
 
-class CLifespan
+#include "Component.h"
+
+class CLifespan : public Component
 {
 public:
 	int remaining	= { 0 };
 	int total		= { 0 };
-	CLifespan(int total)
+	
+    CLifespan(){};
+    CLifespan(int total)
 		: remaining(total), total(total) {}
 		
 };
