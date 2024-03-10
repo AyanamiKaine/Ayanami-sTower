@@ -21,7 +21,6 @@ A test for an interface and a desired outcome(behavior) (Black Box Testing) are 
 
 ## Long Term Goal
 - Having Bazel as the general build tool for everything in this repo (Now this is not true as many apps need other build tools like npm, visual studio, etc.).
-    - And/Or Using Cmake for all C++ modules, more testing is required.
 - Having a large colletion of reusable components that are shared by many applications.
 - Each new application increases software capital bit by bit.
 

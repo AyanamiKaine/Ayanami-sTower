@@ -1,5 +1,4 @@
 ## How to Use Vcpkg with CMake (and neovim/clangd)
-- SEE: "https://learn.microsoft.com/en-us/vcpkg/get_started/get-started?pivots=shell-cmd"
 - 1. Install Vcpkg
 - 2. Create a `vcpkg.json` file where you define your dependencies
 - 3. In your `CMakeLists.txt` write the needed `find_package` and linking code
@@ -9,12 +8,11 @@ stems/vcpkg.cmake"`
 
 ## How to give the language server the right header files for autocomplete
 - If you use clangds lsp you must generate a file with cmake `cmake <src_directory> - DCMAKE_EXPORT_COMPILE_COMMANDS=1` as its looks for a `compile_commands.json` file in the project directory
-    - You should set the command DCMAKE_EXPORT_COMPILE_COMMANDS=1` in your cmake file
-    - And this ONLY WORKS FOR THE MAKE AND NINJA GENERATOR, SPECIFY THEM IN THE PRESET FILE
+
 ## Using CMakePresets
 - https://learn.microsoft.com/en-us/vcpkg/users/buildsystems/cmake-integration
-- The command in this case would be `cmake --preset=default`
-- And to build `cmake --build build`
+- The command in this case would be `cmake -B build
+ -S .. --preset debug`
 
 ### Command Explained
 - `cmake`: The main CMake executable.

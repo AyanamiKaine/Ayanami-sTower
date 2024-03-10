@@ -5,9 +5,9 @@
 class CCollision : public Component
 {
 public:
-	float Radius {1};
+	float radius {1};
 
     CCollision(){};
 	CCollision(float radius):
-	Radius(radius) {}
+	radius(radius) {}
 };

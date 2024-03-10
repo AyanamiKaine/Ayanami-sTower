@@ -10,10 +10,10 @@ namespace stella_knowledge_manager
     public class ItemToLearnUnitTests
     {
         [Fact]
-        public void EaseFactorIncreaseWhenGoodRatingIsChoosen()
+        public void EaseFactorIncrease()
         {
-            FileToLearn item = new(new Guid { }, "Hello World", "", "", 2.5, 2);
-            item.NextReviewDate = SpacedRepetitionScheduler.CalculateNextReviewDate(item, RecallEvaluation.GOOD);
+            FileToLearn item = new("0", "Hello World", "", "", 2.5, 2);
+            item.NextReviewDate = SpacedRepetitionScheduler.CalculateNextReviewDate(item, "g");
 
             Assert.True(item.NextReviewDate > DateTime.Now);
         }
