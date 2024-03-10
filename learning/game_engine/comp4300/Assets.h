@@ -4,7 +4,7 @@
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Texture.hpp>
-#include <SFML/Audio/Sound.hpp>
+#include <SFML/Audio.hpp>
 #include <map>
 #include <string>
 
@@ -13,20 +13,24 @@
 */
 
 class Assets {
-public:
+private:
     std::map<std::string, sf::Texture> m_textures;
     std::map<std::string, Animation> m_animations;
-    std::map<std::string, sf::Sound> m_sounds;
+    //Sounds are stored as a soundBuffer that must be loaded by a sf::sound class (sound.setBuffer(buffer)) and then it can be played with sound.play()
+    std::map<std::string, sf::SoundBuffer> m_sounds;
     std::map<std::string, sf::Font> m_fonts;
 
-private:
-    void AddTexture(std::string name, std::string path);
-    void AddAnimation(std::string name, Animation);
-    void AddSound(std::string name, std::string path);
-    void AddFont(std::string name, std::string path);
+public:
+    void AddTexture(const std::string& name, const std::string& path);
+    void AddAnimation(const std::string& name, Animation animation);
+    void AddSound(const std::string& name, const std::string& path);
+    void AddFont(const std::string& name, const std::string& path);
 
-    sf::Texture& GetTexture(std::string name);
-    Animation& GetAnimation(std::string name); 
-    sf::Sound& GetSound(std::string name);
-    sf::Font& GetFont(std::string name);
+    const sf::Texture& GetTexture(const std::string& name) const;
+    const Animation& GetAnimation(const std::string& name) const; 
+    const sf::Sound& GetSound(const std::string& name) const;
+    const sf::Font& GetFont(const std::string& name) const;
+
+    //Load from file will do its best to try to load all valid assets from a path recursivly
+    void LoadFromFile(const std::string& path);
 };

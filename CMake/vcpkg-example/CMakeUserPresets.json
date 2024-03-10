@@ -2,8 +2,11 @@
     "version": 3,
     "configurePresets": [
         {
-            "name": "debug",
-            "toolchainFile": "~/vcpkg/scripts/buildsystems/vcpkg.cmake"
+            "name": "default",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            }
         }
     ]
 }

@@ -6,9 +6,11 @@
 #include <string>
 #include <vector>
 
-class Scene_Menu : Scene {
+class Scene_Menu : public Scene {
 public:
     void Update() override;
+
+    Scene_Menu(GameEngine* gameEngine); // New constructor
 
 private:
     std::vector<std::string> m_menuStrings;
