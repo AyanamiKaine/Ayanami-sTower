@@ -1,3 +1,5 @@
+#pragma once
+
 class Vector2D {
 public:
     float x {0.0f};

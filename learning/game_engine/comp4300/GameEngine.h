@@ -3,31 +3,35 @@
 
 #include "GameEngine.FWD.h"
 #include "Scene.h"
-
+#include "Assets.h"
 
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Window.hpp>
+#include <map>
 #include <memory>
 #include <string>
 // Stores top level game data (Assets, sf::Window, Scenes)
 // Performs top level functionality (changing Scenes, handling input)
 class GameEngine {
 public:
-    void Updated();
+    void Update();
     void Quit();
     void Run();
-    void ChangeScene(Scene scene);
-    sf::Window& GetWindow();
+    void ChangeScene(const std::string& sceneName ,std::shared_ptr<Scene> scene);
+    sf::RenderWindow& GetWindow();
     void sUserInput();
 
-private:
-    std::string m_CurrentScene {""};
-    
-    sf::RenderWindow m_window;
-    //Assets m_assets; 
-    bool IsRunning {false};
+    const Assets& GetAssets() const;
 
-    void Init();
+    GameEngine(const std::string& path);
+protected:
+    std::string m_CurrentScene {""};
+    std::map<std::string, std::shared_ptr<Scene>> m_scenes;
+    sf::RenderWindow m_window;
+    Assets m_assets; 
+    bool IsRunning {true};
+
+    void Init(const std::string& path);
     std::shared_ptr<Scene> CurrentScene();
             
 };
