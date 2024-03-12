@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 namespace stella_knowledge_manager
 {
     /// <summary>
-    /// A simple pretty print interface for an object to implement, so it looks nicely displayed in the terminal.
+    /// A simple pretty print interface for an object to implement, so an object returns a string that nicely represents it self.
     /// </summary>
     public interface IPrettyPrint
     {
-        public void PrettyPrint();
+        public string PrettyPrint();
     }
 }
