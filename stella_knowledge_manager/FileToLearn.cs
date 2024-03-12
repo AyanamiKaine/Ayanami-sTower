@@ -19,17 +19,19 @@ namespace stella_knowledge_manager
         public double Priority { get; set; } = priority;
         public int NumberOfTimeSeen { get; set; } = 0;
 
-        public void PrettyPrint()
+        public string PrettyPrint()
         {
-            Console.WriteLine("File Details:");
-            Console.WriteLine($"  ID:                   {Id}");
-            Console.WriteLine($"  Name:                 {Name}");
-            Console.WriteLine($"  Path:                 {PathToFile}");
-            Console.WriteLine($"  Description:          {Description}");
-            Console.WriteLine($"  Ease Factor:          {EaseFactor}");
-            Console.WriteLine($"  Priority:             {Priority}");
-            Console.WriteLine($"  Next Review:          {NextReviewDate.ToLocalTime()}"); // Localized time
-            Console.WriteLine($"  Number of Times Seen: {NumberOfTimeSeen}");
+            return $"""
+                File Details:
+                    ID:                     {Id}
+                    Name:                   {Name}
+                    Path:                   {PathToFile}
+                    Description             {Description}
+                    Ease Factor:            {EaseFactor}
+                    Prority:                {Priority}
+                    Next Review:            {NextReviewDate.ToLocalTime()}
+                    Number of Times Seen:   {NumberOfTimeSeen}
+                """;
         }
     }
 }
