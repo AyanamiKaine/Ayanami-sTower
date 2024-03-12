@@ -12,6 +12,7 @@ namespace stella_knowledge_manager
     public interface ISRS
     {
         public abstract double EaseFactor { get; set; }
-        public DateTime NextReviewDate { get; set; } 
+        public DateTime NextReviewDate { get; set; }
+        public int NumberOfTimeSeen { get; set; } 
     }
 }

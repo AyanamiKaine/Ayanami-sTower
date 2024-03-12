@@ -45,35 +45,5 @@ namespace stella_knowledge_manager
         {
             Console.WriteLine($"Total Number of items: {skm.PriorityList.Count}");
         }
-
-        /// <summary>
-        /// This should not be a main function of the class as its a application function
-        /// Here we want to implement the ability to take a quiz
-        /// </summary>
-        /// <exception cref="NotImplementedException"></exception>
-        public static void TakeQuiz()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// This should not be a main function of the class as its a application function
-        /// Here we want to implement the ability to take a quiz
-        /// </summary>
-        /// <exception cref="NotImplementedException"></exception>
-        public static void TakeFlashCards()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// This should not be a main function of the class as its a application function
-        /// Here we want to implement the ability to take a quiz
-        /// </summary>
-        /// <exception cref="NotImplementedException"></exception>
-        public static void TakeCloze()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -8,16 +8,16 @@ using Newtonsoft.Json; // Add this using directive at the top
 
 namespace stella_knowledge_manager
 {
-    public class FileToLearn(Guid id, string name, string pathToFile, string description, double easeFactor, double priority) : IPrettyPrint , ISRS
+    public class FileToLearn(Guid id, string name, string pathToFile, string description, double easeFactor, double priority) : IPrettyPrint , ISRSItem
     {
-        public Guid Id = id; 
-        public string Name = name;
-        public string PathToFile = pathToFile;
-        public string Description = description;
+        public Guid Id { get; set; } = id; 
+        public string Name { get; set; } = name;
+        public string PathToFile { get; set; } = pathToFile;
+        public string Description { get; set; } = description;
         public double EaseFactor { get; set; } = easeFactor; // Default ease
         public DateTime NextReviewDate { get; set; } = DateTime.Now;
-        public double Priority = priority;
-        public int NumberOfTimeSeen = 0;
+        public double Priority { get; set; } = priority;
+        public int NumberOfTimeSeen { get; set; } = 0;
 
         public void PrettyPrint()
         {

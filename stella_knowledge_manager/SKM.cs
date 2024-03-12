@@ -50,7 +50,7 @@ namespace stella_knowledge_manager
         /// <summary>
         /// This should not be a main function of the class as its only a utility function
         /// </summary>
-        public FileToLearn GetItemById(Guid id)
+        public ISRSItem GetItemById(Guid id)
         { 
             return PriorityList.SingleOrDefault((item) => item.Id == id);
         }
@@ -58,12 +58,12 @@ namespace stella_knowledge_manager
         /// <summary>
         /// This should not be a main function of the class as its only a utility function
         /// </summary>
-        public FileToLearn GetItemByName(string name)
+        public ISRSItem GetItemByName(string name)
         {
             return PriorityList.SingleOrDefault((item) => item.Name == name);
         }
 
-        public void AddItem(string name, string description ,string filePath, float priority)
+        public void AddItem(string name, string description ,string filePath, float priority = 0)
         {
             FileToLearn item = new(Guid.NewGuid(), name, filePath, description, 2.5, priority);
 
@@ -75,6 +75,9 @@ namespace stella_knowledge_manager
             {
                 PriorityList.Add(item);
                 PriorityList.Sort((item1, item2) => item1.Priority.CompareTo(item2.Priority));
+                // We reverse the list because we want the item with the highest proority at the front
+                // If we dont reverse it the least prority item with be at the front.
+                PriorityList.Reverse();
             }
         }
 
@@ -123,6 +126,16 @@ namespace stella_knowledge_manager
                     PriorityList = JsonConvert.DeserializeObject<List<FileToLearn>>(jsonData);
                 }
         }
+        /// <summary>
+        /// Resets all Due Dates of all items to now
+        /// </summary>
+        public void ResetAllDueData()
+        {
+            foreach (var item in PriorityList)
+            {
+                item.NextReviewDate = DateTime.Now;
+            }
+        }
 
         public void CreateBackup(string filePath = "Stella Knowledge Manager/backups", string fileName = "backup_save_data.json")
         {
@@ -153,7 +166,7 @@ namespace stella_knowledge_manager
                 writer.Write(jsonData);
             }
 
-            var backupFiles = Directory.GetFiles(myAppDataFolder, "backup_savedata_*.json");
+            var backupFiles = Directory.GetFiles(myAppDataFolder, "backup_save_data_*.json");
             if (backupFiles.Length > maxBackupsToKeep)
             {
                 var filesToDelete = backupFiles.OrderBy(f => f).Take(backupFiles.Length - maxBackupsToKeep);
