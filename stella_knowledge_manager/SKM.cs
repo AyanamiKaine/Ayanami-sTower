@@ -12,56 +12,14 @@ namespace stella_knowledge_manager
 {
     public class SKM : IDataManager
     {
-        public SKM() 
-        {
-        }
-
         public List<FileToLearn> PriorityList { get; private set; } = [];
 
         // I think we must add a way to add plugins.
 
         /// <summary>
-        /// NOT IMPLEMENTED
-        /// If we defined a default app for a file extension then we use that one, 
-        /// instead the default one defined when using the explorer 
-        /// NOT IMPLEMENTED
-        /// </summary>
-        private Dictionary<string, string> _defaultApplicationsForFiles = new()
-        {
-            { ".txt",   "notepad.exe"   },
-            { ".md",    "obsidian.exe"  },
-            { ".mp4",   "vlc.exe"       },
-            { ".jpg",   "mspaint.exe"   },
-            { ".pdf",   "AcroRd32.exe"  }
-        };
-
-        /// <summary>
         /// Holds the number of items learned for engourage the user and to let them see how much they already did
         /// </summary>
         private int _totalNumberOfLearnedItem = 0;
-
-        /// <summary>
-        /// Saves the conent of SKM to the appdata roaming folder in a specified folder where the default is simply Stella Knowledge Manager
-        /// </summary>
-        /// <param name="folderName"></param>
-
-        public void RestoreFromBackup() { }
-
-        /// <summary>
-        /// This should not be a main function of the class as its only a utility function
-        /// </summary>
-        public ISRSItem GetItemById(Guid id)
-        { 
-            return PriorityList.SingleOrDefault((item) => item.Id == id);
-        }
-
-        /// <summary>
-        /// This should not be a main function of the class as its only a utility function
-        /// </summary>
-        public ISRSItem GetItemByName(string name)
-        {
-            return PriorityList.SingleOrDefault((item) => item.Name == name);
-        }
 
         public void AddItem(string name, string description ,string filePath, float priority = 0)
         {
@@ -88,7 +46,7 @@ namespace stella_knowledge_manager
 
         public void RemoveItem(Guid id)
         {
-            var test = PriorityList.RemoveAll(item => item.Id.Equals(id));
+            PriorityList.RemoveAll(item => item.Id.Equals(id));
         }
 
         public void SaveData(string filePath = "Stella Knowledge Manager", string fileName = "main_save_data.json")
@@ -109,7 +67,6 @@ namespace stella_knowledge_manager
 
         public void LoadData(string filePath = "Stella Knowledge Manager", string fileName = "main_save_data.json")
         {
-                CreateBackup();
 
                 string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
                 string myAppDataFolder = Path.Combine(appDataFolder, filePath);
@@ -125,6 +82,8 @@ namespace stella_knowledge_manager
                     string jsonData = reader.ReadToEnd();
                     PriorityList = JsonConvert.DeserializeObject<List<FileToLearn>>(jsonData);
                 }
+
+                CreateBackup();
         }
         /// <summary>
         /// Resets all Due Dates of all items to now
@@ -137,8 +96,10 @@ namespace stella_knowledge_manager
             }
         }
 
-        public void CreateBackup(string filePath = "Stella Knowledge Manager/backups", string fileName = "backup_save_data.json")
+        public void CreateBackup(string filePath = "Stella Knowledge Manager/backups", string fileName = "backup_save_data")
         {
+            CreateBackupEveryWeekday();
+
             int maxBackupsToKeep = 30; // Example: Keep a maximum of 30 backups 
 
             string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -147,7 +108,7 @@ namespace stella_knowledge_manager
 
             // Key changes start here
             string baseFileName = Path.Combine(myAppDataFolder, fileName);
-            string backupFileName = baseFileName + ".json";
+            string backupFileName = baseFileName ;
             string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss"); // For finer control
 
             int backupIndex = 1;
@@ -176,7 +137,51 @@ namespace stella_knowledge_manager
                 }
             }
         }
+        private void CreateBackupEveryWeekday(string filePath = "Stella Knowledge Manager/backups/week", string fileName = "backup_save_data")
+        {
+            int maxBackupsToKeep = 7; // Keep backups for 7 days 
 
+            string appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string myAppDataFolder = Path.Combine(appDataFolder, filePath);
+            Directory.CreateDirectory(myAppDataFolder);
+
+            // Key changes for daily backups with retention
+            string baseFileName = Path.Combine(myAppDataFolder, fileName);
+            string timestamp = DateTime.Now.ToString("yyyyMMdd"); // Daily timestamp
+            string backupFileName = $"{baseFileName}_{timestamp}.json";
+
+            // Only increment index if a file with today's timestamp exists
+            int backupIndex = 1;
+            while (File.Exists(backupFileName))
+            {
+                backupFileName = $"{baseFileName}_{timestamp}_{backupIndex}.json";
+                backupIndex++;
+            }
+
+            // Update the save location
+            string saveFilePath = backupFileName;
+
+            string jsonData = JsonConvert.SerializeObject(PriorityList, Formatting.Indented);
+            using (StreamWriter writer = new StreamWriter(saveFilePath))
+            {
+                writer.Write(jsonData);
+            }
+
+            // Cleanup of old backups
+            var backupFiles = Directory.GetFiles(myAppDataFolder, "backup_save_data_*.json");
+            if (backupFiles.Length > maxBackupsToKeep)
+            {
+                var filesToDelete = backupFiles
+                                      .GroupBy(f => Path.GetFileNameWithoutExtension(f).Split('_')[1]) // Group by date
+                                      .Where(g => g.Count() > 1) // Keep only latest per day
+                                      .SelectMany(g => g.OrderBy(f => f).Skip(1)); // Select older ones 
+
+                foreach (var file in filesToDelete)
+                {
+                    File.Delete(file);
+                }
+            }
+        }
         public void LoadFromBackup(string filePath, string fileName)
         {
             throw new NotImplementedException();

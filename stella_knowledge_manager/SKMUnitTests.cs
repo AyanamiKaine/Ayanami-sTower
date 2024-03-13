@@ -48,7 +48,7 @@ namespace stella_knowledge_manager
             skm.SaveData("TESTING");
 
 
-            Assert.Equal("NAME", skm.GetItemByName("NAME").Name);
+            Assert.Equal("NAME", SKMUtil.GetItemByName(skm,"NAME").Name);
 
             // Clean Up
             Directory.Delete(myAppDataFolder, true);
@@ -69,7 +69,7 @@ namespace stella_knowledge_manager
             skm = new SKM();
             skm.LoadData("TESTING");
 
-            Assert.Equal("NAME", skm.GetItemByName("NAME").Name);
+            Assert.Equal("NAME", SKMUtil.GetItemByName(skm, "NAME").Name);
 
             // Clean Up
             Directory.Delete(myAppDataFolder, true);

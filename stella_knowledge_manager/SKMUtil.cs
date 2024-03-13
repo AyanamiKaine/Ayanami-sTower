@@ -8,42 +8,14 @@ namespace stella_knowledge_manager
 {
     public static class SKMUtil
     {
-        /// <summary>
-        /// This should not be a main function of the class as its only a utility function
-        /// </summary>
-        public static void ShowAllItems(SKM skm)
+        public static ISRSItem GetItemById(SKM skm, Guid id)
         {
-            // Use LINQ for conciseness
-            var sortedItems = skm.PriorityList
-                                .OrderByDescending(item => item.Priority) // Sort by priority
-                                .ToList();
-
-            foreach (var item in sortedItems)
-            {
-                item.PrettyPrint();
-                //Console.WriteLine($"ID: {item.Id}. File Name: {item.PathToFile}, Priority: {item.Priority}, Due Data: {item.LastReviewDate}");  // Improved formatting
-            }
-            PrintStats(skm);
+            return skm.PriorityList.SingleOrDefault((item) => item.Id == id);
         }
 
-        public static List<FileToLearn> SearchAndSort(SKM skm, string searchString)
+        public static ISRSItem GetItemByName(SKM skm, string name)
         {
-            return skm.PriorityList
-                .Select(item => new {
-                    Data = item,
-                    Similarity = StringSimilarityCalculator.CalculateJaroWinklerDistance(item.Name, searchString)
-                }) // Calculate similarity (use Jaro-Winkler as desired)
-                .OrderBy(item => item.Similarity) // Sort by ascending similarity
-                .Select(item => item.Data)
-                .ToList();
-        }
-
-        /// <summary>
-        /// This should not be a main function of the class as its a application function
-        /// </summary>
-        public static void PrintStats(SKM skm)
-        {
-            Console.WriteLine($"Total Number of items: {skm.PriorityList.Count}");
+            return skm.PriorityList.SingleOrDefault((item) => item.Name == name);
         }
     }
 }

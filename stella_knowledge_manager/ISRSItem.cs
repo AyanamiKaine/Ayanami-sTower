@@ -11,7 +11,7 @@ namespace stella_knowledge_manager
     /// An Spaced Repetition Item is an item that defined various fields related to SRS and other needed 
     /// functionality like priority, Id, Name, NumberOfTimeSeen, Description, PathToFile.
     /// </summary>
-    public interface ISRSItem : ISRS , IPrettyPrint
+    public interface ISRSItem : AT.SRS.ISRS, IPrettyPrint
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
