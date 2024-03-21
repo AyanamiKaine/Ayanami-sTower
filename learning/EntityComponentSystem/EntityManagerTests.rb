@@ -33,7 +33,6 @@ class EntityManagerTest < Test::Unit::TestCase
 
     entityA = entity_manager.add_entity("enemy")
     entityB = entity_manager.add_entity("player")
-
     entity_manager.update
 
     assert_equal(entityB.id, entity_manager.get_entities("player")[0].id)
@@ -43,11 +42,8 @@ class EntityManagerTest < Test::Unit::TestCase
     entity_manager = EntityManager.new
 
     entityA = entity_manager.add_entity("enemy")
-
     entity_manager.update
-
     entityA.alive = false
-
     entity_manager.update
 
     assert_equal(0, entity_manager.get_all_entities.size)
