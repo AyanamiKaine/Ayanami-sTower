@@ -1,0 +1,281 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Pattern Matching
+
+## Match Operator ^
+
+Are you ready for a curveball? In Elixir, the `=` operator is actually a match operator, comparable to the equals sign in algebra. Writing it turns the whole expression into an equation and makes Elixir match the values on the left hand with the values on the right hand. If the match succeeds, it returns the value of the equation. Otherwise, it throws an error. Let’s take a look:
+
+```elixir
+x = 1
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+1
+```
+
+Now let’s try some simple matching:
+
+```elixir
+1 = x
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+1
+```
+
+```elixir
+2 = x
+```
+
+Let’s try that with some of the collections we know:
+
+```elixir
+list = [1, 2, 3]
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[1, 2, 3]
+```
+
+```elixir
+[1, 2, 3] = list
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[1, 2, 3]
+```
+
+```elixir
+[] = list
+```
+
+```elixir
+[1 | tail] = list
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[1, 2, 3]
+```
+
+```elixir
+tail
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+[2, 3]
+```
+
+```elixir
+[2 | _] = list
+```
+
+```elixir
+{:ok, value} = {:ok, "Successful!"}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:ok, "Successful!"}
+```
+
+```elixir
+value
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"Successful!"
+```
+
+```elixir
+{:ok, value} = {:error}
+```
+
+## Pin Operator
+
+The match operator performs assignment when the left side of the match includes a variable. In some cases this variable rebinding behavior is undesirable. For these situations we have the pin operator: `^`.
+
+When we pin a variable we match on the existing value rather than rebinding to a new one. Let’s take a look at how this works:
+
+```elixir
+x = 1
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+1
+```
+
+```elixir
+^x = 2
+```
+
+```elixir
+{x, ^x} = {2, 1}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{2, 1}
+```
+
+```elixir
+x
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+2
+```
+
+Elixir 1.2 introduced support for pins in map keys and function clauses:
+
+```elixir
+key = "hello"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"hello"
+```
+
+```elixir
+%{^key => value} = %{"hello" => "world"}
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+%{"hello" => "world"}
+```
+
+```elixir
+value
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"world"
+```
+
+```elixir
+%{^key => value} = %{:hello => "world"}
+```
+
+
+
+## Function Clauses:
+
+Pattern matching provides an excellent mechanism to guard against incorrect inputs in Elixir. You can define multiple function clauses with specific patterns to handle different input scenarios. When a function is called, Elixir will try to match the input with the patterns in each clause.
+
+```elixir
+defmodule FunctionClauseExample do
+  def handle_message({:new_user, name}) do
+    IO.puts("Welcome new user, #{name}!")
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, FunctionClauseExample, <<70, 79, 82, 49, 0, 0, 7, ...>>, {:handle_message, 1}}
+```
+
+```elixir
+correct_input = {:new_user, "Tim"}
+FunctionClauseExample.handle_message(correct_input)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Welcome new user, Tim!
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+```elixir
+wrong_input = {:old_user, "Tom"}
+FunctionClauseExample.handle_message(wrong_input)
+```
+
+We can implement multiple functions with different argument numbers or differnt clauses
+
+```elixir
+defmodule MultipleFunctionClauseExample do
+  def handle_message({:new_user, name}) do
+    IO.puts("Welcome new user, #{name}!")
+  end
+
+  def handle_message({:old_user, name}) do
+    IO.puts("Welcome old user, #{name}!")
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, MultipleFunctionClauseExample, <<70, 79, 82, 49, 0, 0, 8, ...>>, {:handle_message, 1}}
+```
+
+```elixir
+{:new_user, "Tim"}
+|> MultipleFunctionClauseExample.handle_message()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Welcome new user, Tim!
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+```elixir
+{:old_user, "Tom"}
+|> MultipleFunctionClauseExample.handle_message()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+Welcome old user, Tom!
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+

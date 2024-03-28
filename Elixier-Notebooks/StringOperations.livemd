@@ -1,0 +1,30 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# String Operations
+
+## Section
+
+### String Concatenation
+
+```elixir
+name = "Shean"
+"Hello " <> name
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"Hello Shean"
+```
+
+### String Interpolation
+
+```elixir
+"Hello #{name}"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"Hello Shean"
+```

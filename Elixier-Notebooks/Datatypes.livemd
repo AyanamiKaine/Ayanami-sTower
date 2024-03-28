@@ -1,0 +1,62 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Pipelining
+
+## Section
+
+You can **pipe** data in functions like you would with the unix pipe operator, this should be preferd instead of doing nested function calls.
+
+```
+foo(bar(zor(data)))
+```
+
+The pipeline operator promotes clarity.
+
+```elixir
+hello_world = "Hello, World !"
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"Hello, World !"
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+hello_world
+# Convert to uppercase
+|> String.upcase()
+|> String.split()
+# Trim leading/trailing whitespace from each word
+|> Enum.map(&String.trim/1)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+["HELLO,", "WORLD", "!"]
+```
+
+Here we "pipe" the data "Hello, World" in IO.puts() the value from |> will be the first argument value in the function
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+hello_world
+# Convert to uppercase
+|> String.upcase()
+# Split the string into a list of words
+|> String.split()
+# Trim leading/trailing whitespace from each word
+|> Enum.map(&String.trim/1)
+# Join the list back into a string with spaces
+|> Enum.join(" ")
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+"HELLO, WORLD !"
+```

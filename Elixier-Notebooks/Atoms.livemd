@@ -1,0 +1,82 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Elixir Atoms
+
+## Section
+
+An atom is a constant whose name is its value. If you’re familiar with Ruby, these are synonymous with Symbols:
+
+```elixir
+:foo
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:foo
+```
+
+```elixir
+:foo == :bar
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+false
+```
+
+The booleans `true` and `false` are also the atoms `:true` and `:false`, respectively.
+
+```elixir
+is_atom(true)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+is_boolean(true)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+```elixir
+true === true
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
+
+Names of modules in Elixir are also atoms. `MyApp.MyModule` is a valid atom, even if no such module has been declared yet.
+
+```elixir
+defmodule MyApp.MyModule do
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, MyApp.MyModule, <<70, 79, 82, 49, 0, 0, 4, ...>>, nil}
+```
+
+```elixir
+is_atom(MyApp.MyModule)
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+true
+```
