@@ -1,0 +1,74 @@
+# Error Handling
+
+## How Errors shoudl be handled in elixir
+
+In Elixir, it is common for functions to return values that represent either success or error. This is in contrast to many other languages that rely on a try/catch or raise/rescue paradigm
+
+<!-- livebook:{"break_markdown":true} -->
+
+* errors should be returned as {:error, error} tuple
+* errors should raise via pattern matching
+* errors should be reported and formatted at top level via bubble up
+
+## Avoid Strings in Errors
+
+Coming from other languages and frameworks that want you to encode error descriptions as strings (presumably for the end user), it is tempting to also use a string for the second element of the error tuple.
+
+```elixir
+case find_widget() do
+ # Or is it “Failed to find widget?”
+ # Or is it “Not found”?
+ {:error, "Did not find widget"} = error ->
+   handle_error(error)
+   …
+end
+```
+
+Although humans have no problem reading strings, programs can have trouble making sense the information in the string. We shouldn’t assume that a human will always be the only entity that needs to read the error value. Strings are unstructured and aren’t great to pattern match on.
+
+<!-- livebook:{"break_markdown":true} -->
+
+Instead of a string, consider using an atom instead. For example:
+
+```elixir
+case find_widget() do
+  {:error, :not_found} = error ->
+    handle_error(error)
+    …
+end
+```
+
+With an atom or other structured data type, there is little room for doubt.
+
+If a human user needs to read the error value, it can be easily — and often automatically — converted to a string.
+
+## Common Pattern
+
+A common pattern in this case is to have a `get/x` and a `get!/x` function (where x is the arity).
+
+The unbanged version does return a tuple which first element is either `:ok` or `:error` while the second element is the result of the computation or the reason of failure (atom or string) depending on the first tuple.
+
+The banged version on the other hand does either return the result of the computation or `raise`s an exeption.
+
+<!-- livebook:{"break_markdown":true} -->
+
+The banged version is very often a simple wrapper around the unbanged one as in the following example:
+
+```elixir
+@spec foo(any) :: {:ok, Foo.t()} | {:error, String.t()}
+def foo(bar), do: bar |> do_the_magic
+
+@spec foo!(any) :: Foo.t() | no_return
+def foo!(bar) do
+  case foo(bar) do
+    {:ok, result} -> result
+    {:error, _} -> raise FooError
+  end
+end
+```
+
+In the context of well designed supervision trees you probably do not even need to catch something `raise`d, as well as you probably do not need to handle `{:error, _}` cases. Just try to match-assign the `{:ok, _}` and let the process die when it failed.
+
+In the case you really have to handle the errors because of reasons that matter, do **not** `raise`, but use signaling tuples as in the unbanged functions, thrown exceptions do add some overhead and do add a significant runtime-cost.
+
+Exceptions are to see exactly as this! An exception, a thing that might happen, but you do not consider it under normal circumstances. Use them only if you really want to fail, do not try to recover from them!
