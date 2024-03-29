@@ -1,0 +1,18 @@
+<div class="justify-center items-center">
+  <h1 class="text-2xl font-bold">Ayanami's Tower</h1>
+
+  <.quoteblock quote={"Our salvation lies not in knowing, but in creating!"} author={"Friedrich Nietzsche"} />
+
+  <p class="text-lg my-4">Welcome to my Tower where I share my thoughts and teachings on programming, philosophy, art, and more.</p>
+
+<%= for post <- @posts do %>
+  <div id="{post.id}" style="margin-bottom: 3rem;">
+    <div class="text-lg font-bold">
+      <.link href={~p"/blog/#{post.id}"}><%= post.title %></.link>
+    </div>
+  </div>
+<% end %>
+
+  <p class="mt-2 text-sm text-gray-600">You might be supprised how much you can achive with just data structures and algorithms in a world where a new hot framework is just on the horizon.</p>
+
+</div>
