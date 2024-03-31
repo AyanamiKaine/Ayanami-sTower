@@ -14,6 +14,8 @@
 //
 //     import "some-package"
 //
+import { createLiveMotion } from 'live_motion';
+const { hook: motionHook, handleMotionUpdates } = createLiveMotion();
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
 import "phoenix_html"
@@ -22,11 +24,25 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
+
+const hooks = {
+  // your other hooks
+  // ...
+  ...motionHook,
+};
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
-  params: {_csrf_token: csrfToken}
-})
+  params: {_csrf_token: csrfToken},
+  hooks,
+  dom: {
+    onBeforeElUpdated(from, to) {
+      // add this line
+      handleMotionUpdates(from, to);
+    },
+  },
+});
 
 // Show progress bar on live navigation and form submits
 topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
@@ -41,4 +57,3 @@ liveSocket.connect()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
-

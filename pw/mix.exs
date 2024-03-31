@@ -33,7 +33,7 @@ defmodule Pw.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.7.11"},
-      {:phoenix_html, "~> 4.0"},
+      {:phoenix_html, "~> 3.1"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 0.20.2"},
       {:floki, ">= 0.30.0", only: :test},
@@ -57,7 +57,9 @@ defmodule Pw.MixProject do
       {:bandit, "~> 1.2"},
       {:nimble_publisher, "~> 0.1.1"},
       {:makeup_elixir, ">= 0.0.0"},
-      {:makeup_erlang, ">= 0.0.0"}
+      {:makeup_erlang, ">= 0.0.0"},
+      {:live_motion, "~> 0.3"}
+
     ]
   end
 
