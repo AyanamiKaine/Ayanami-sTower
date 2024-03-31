@@ -20,6 +20,7 @@ defmodule PwWeb.Router do
     get "/", HomeController, :home
     get "/about", AboutController, :about
     get "/contact", ContactController, :contact
+    get "/book_recommendations", BookRecommendsController, :book_recommends
 
     get "/blog", BlogController, :index
     get "/blog/:id", BlogController, :show
