@@ -10,9 +10,12 @@
   animate={[opacity: 1]}
   exit={[opacity: 0]}
 >
-    <span>Hello World</span>
+    <span></span>
 </LiveMotion.motion>
 
+    <div class="text-lg font-bold">
+      <.link href={~p"/book_recommendations"}>Book Recommendations</.link>
+    </div>
 
 <%= for post <- @posts do %>
   <div id="{post.id}" style="margin-bottom: 3rem;">
@@ -21,7 +24,4 @@
     </div>
   </div>
 <% end %>
-
-  <p class="mt-2 text-sm text-gray-600">You might be supprised how much you can achive with just data structures and algorithms in a world where a new hot framework is just on the horizon.</p>
-
 </div>
