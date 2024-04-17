@@ -1,0 +1,103 @@
+# Reactive System based on Matching State
+
+## The Idea
+
+Our system is simply based on the following idea, things happen based on state. We have systems that get *(partial)* state of the game world as input and pattern match the state to responses.
+
+<!-- livebook:{"break_markdown":true} -->
+
+This state can be queryed every frame, every 10 seconds, every 10 minutes, 10000 times a millisecond. Things simply react on this state. Those reactions can add change state and can in turn create new responses.
+
+<!-- livebook:{"break_markdown":true} -->
+
+We could represent the entire living reactive world as one big function that takes the entire state and returns a modified state. And dispatch new responses on the new state.
+
+<!-- livebook:{"break_markdown":true} -->
+
+Structuring the world as one monolithic object. Is unpleasent, because its wrong.
+
+1. This is not how any world is structured.
+2. This does not scale.
+
+We must create hierarchical structure.
+
+Not every entity in the world that is reactive needs to know the entire state. Only the one it cares about.
+
+```elixir
+# I want to create the example based on crusader kings, how we can model a reactive system.
+
+state = %{
+  characterName: "Paul",
+  playerDeaths: 0,
+  faction: :BrotherhoodOfShadows,
+  characterTitle: :baron,
+  martialStat: 10,
+  diplomancy: 10,
+  age: 37,
+  numChildren: 0,
+  religion: :Culmanu,
+  culture: :Rakatun,
+  trait: :ChessPlayer
+}
+```
+
+```elixir
+defmodule Game do
+  def react(state) do
+    case state do
+      %{culture: :Rakatun, martialStat: 5} ->
+        IO.puts("Shai-Hulud Xibit oculis caeruleis!")
+
+      %{culture: :Rakatun, martialStat: 10} ->
+        IO.puts("Vitae for you my baron...")
+
+      %{faction: :BrotherhoodOfShadows, title: :baron} ->
+        IO.puts("My baron I never knew you were part of the Brotherhood!")
+    end
+  end
+end
+```
+
+```elixir
+Game.react(state)
+```
+
+## How can we use this to implement a event system for a game like crusader kings?
+
+In Crusader Kings 2/3 certain event can happen based on different rules, like:
+
+* Events can happen after a certain time in response to other events.
+* Events can happen when certain trigger flags are turned on.
+  * This usually means adding a flag to a character. Something only be seen by opening the debug console.
+
+```elixir
+defmodule System.CharacterEvents do
+end
+```
+
+```elixir
+defmodule System.CharacterEvent.PlayingChessWithDeath do
+  def response(state) do
+    case state do
+      %{chessRound: 0, characterName: name, characterTitle: title, trait: :ChessPlayer} ->
+        IO.puts("Ahh my #{title} fantastic, now lets begin!")
+        response(%{chessRound: 1})
+
+      %{characterName: name, characterTitle: title, diplomacy: 0} ->
+        IO.puts("So #{name} a #{title} time has come for you for an everylasting sleep... SLASH!")
+
+      %{characterName: name, characterTitle: _title, trait: :ChessPlayer} ->
+        IO.puts("So #{name} I heard so much of your skills in ... chess do you wish to play?")
+        # Query new state and add that to the state we want to respone to...
+        response(state |> Map.put(:chessRound, 0))
+
+      %{chessRound: 1} ->
+        IO.puts("Arrgh what a fantastic move! I couldnt have done it better!")
+    end
+  end
+end
+```
+
+```elixir
+System.CharacterEvent.PlayingChessWithDeath.response(state)
+```

@@ -1,0 +1,231 @@
+# Dialog Based on Pattern Matching Rules
+
+## Why Pattern Matching is overpowerd in dialog branches
+
+Based on the talk "AI-driven Dynamic Dialog through Fuzzy Pattern Matching" by Elan Ruskin.
+
+<!-- livebook:{"break_markdown":true} -->
+
+We will use all example and more from the talk to show how powerful the pattern matching actually is in elixir. You get the entire dialog system FOR FREE. In the case of Elan Ruskin and valve they had to implement a scripting language. Because C++ does not include first class support for pattern matching.
+
+```elixir
+query = %{
+  who: :nick,
+  concept: :onHit,
+  curMap: :circus,
+  health: 0.66,
+  nearAllies: 2,
+  hitBy: :zombieclown
+}
+
+case query do
+  %{who: :nick, concept: :onHit, hitBy: :zombieclown, curMap: :circus} ->
+    "I hate circus clowns!"
+
+  %{who: :nick, concept: :onHit, nearAllies: nearAllies, health: health}
+  when nearAllies > 1 and health < 0.7 ->
+    "ow help!"
+
+  %{who: :nick, concept: :onHit, hitBy: :zombieclown} ->
+    "Stupid clown!"
+
+  %{who: :nick, concept: :onHit, curMap: :circus} ->
+    "This circus sucks!"
+
+  %{who: :nick, concept: :onHit} ->
+    "ouch!"
+end
+```
+
+We are having two "problems"
+
+1. If a pattern does not completly match, i.e only 3 out of 4 it does not get matched. This is bad when its the pattern with the most matched values.
+2. What if multiple patterns are matched with the same number of values in the pattern? We would always match the first pattern. Adding randomness to matches with the same value would be quite good.
+
+## Introducing fuzzy matching
+
+Fuzzy matching is a more lose form of matching patterns. Right now we can match patterns only if allter values in the pattern are matched. And what should happen when two or more patterns match with different values? We should select a random pattern from it as all are equally specific.
+
+```elixir
+defmodule FuzzyPatternMatching do
+  def match_score(data, pattern, weights \\ %{}) do
+    Enum.reduce(pattern, 0, fn {key, expected_value}, score ->
+      if Map.get(data, key) == expected_value do
+        # Use a weight if provided, otherwise 1
+        score + Map.get(weights, key, 1)
+      else
+        score
+      end
+    end)
+  end
+
+  def best_match(data, patterns) do
+    scored_patterns =
+      patterns
+      |> Enum.map(fn pattern ->
+        {pattern, match_score(data, pattern)}
+      end)
+
+    max_score = Enum.max_by(scored_patterns, &elem(&1, 1)) |> elem(1)
+
+    matching_patterns = Enum.filter(scored_patterns, fn {_, score} -> score == max_score end)
+
+    # Randomly selected pattern
+    Enum.random(matching_patterns) |> elem(0)
+  end
+end
+```
+
+```elixir
+data = %{who: :nick, concept: :onHit, health: 0.66, nearAllies: 2, hitBy: :zombieclown}
+
+patterns = [
+  %{who: :nick, concept: :onHit},
+  %{who: :jane, concept: :takeCover},
+  %{who: :nick, concept: :onHit, hitBy: :zombieclown, curMap: :circus},
+  %{who: :nick, concept: :onHit, nearAllies: 2, curMap: :circus}
+]
+
+query = FuzzyPatternMatching.best_match(data, patterns)
+
+case query do
+  %{who: :nick, concept: :onHit, hitBy: :zombieclown, curMap: :circus} ->
+    "I hate circus clowns!"
+
+  %{who: :nick, concept: :onHit, nearAllies: nearAllies, health: health}
+  when nearAllies > 1 and health < 0.7 ->
+    "ow help!"
+
+  %{who: :nick, concept: :onHit, nearAllies: 2, curMap: :circus} ->
+    "pls guys help me!"
+
+  %{who: :nick, concept: :onHit, hitBy: :zombieclown} ->
+    "Stupid clown!"
+
+  %{who: :nick, concept: :onHit, curMap: :circus} ->
+    "This circus sucks!"
+
+  %{who: :nick, concept: :onHit} ->
+    "ouch!"
+
+  _ ->
+    "arhhg"
+end
+```
+
+## Default Case
+
+```elixir
+query = %{who: :lisa}
+
+case query do
+  %{who: :nick, concept: :onHit, hitBy: :zombieclown, curMap: :circus} ->
+    "I hate circus clowns!"
+
+  %{who: :nick, concept: :onHit, nearAllies: nearAllies, health: health}
+  when nearAllies > 1 and health < 0.7 ->
+    "ow help!"
+
+  %{who: :nick, concept: :onHit, hitBy: :zombieclown} ->
+    "Stupid clown!"
+
+  %{who: :nick, concept: :onHit, curMap: :circus} ->
+    "This circus sucks!"
+
+  %{who: :nick, concept: :onHit} ->
+    "ouch!"
+
+  _ ->
+    "arhhg"
+end
+```
+
+## Creating Dynamic Branching Dialog
+
+For now we only had simple respones. Now we want to add real dialog. Real dialog means back and furth conversion.
+
+```elixir
+defmodule NickOneLiner do
+  def responses(query) do
+    case query do
+      %{who: :nick, concept: :onHit, hitBy: :zombieclown, curMap: :circus} ->
+        "I hate circus clowns!" |> IO.puts()
+
+      %{who: :nick, concept: :onHit, nearAllies: nearAllies, health: health}
+      when nearAllies > 1 and health < 0.7 ->
+        "ow help!" |> IO.puts()
+        Producer.C3M2SafeRoom2d.responses(%{concept: :allyHit, allyHit: "Nick"})
+
+      %{who: :nick, concept: :onHit, hitBy: :zombieclown} ->
+        "Stupid clown!" |> IO.puts()
+
+      %{who: :nick, concept: :onHit, curMap: :circus} ->
+        "This circus sucks!" |> IO.puts()
+
+      %{who: :nick, concept: :onHit} ->
+        "ouch!" |> IO.puts()
+
+      _ ->
+        "arhhg" |> IO.puts()
+    end
+  end
+end
+```
+
+```elixir
+query = %{who: :lisa}
+NickOneLiner.responses(query)
+```
+
+```elixir
+defmodule Producer.C3M2SafeRoom2d do
+  def responses(query) do
+    case query do
+      %{concept: :allyHit, allyHit: ally} ->
+        "Come to me #{ally}!" |> IO.puts()
+    end
+  end
+end
+```
+
+```elixir
+query = %{who: :nick, concept: :onHit, nearAllies: 2, health: 0.5}
+NickOneLiner.responses(query)
+```
+
+If we want respones we simply dispatch a new query. To the thinks we want to get respones from.
+
+<!-- livebook:{"break_markdown":true} -->
+
+There is something really important to undestand. **You are not limited to strings or text in responses**. A response can be anything that should be reacting. A script that should fire after X. A function that should run. A state that should change. Etc. Be Creative!
+
+## Improving Design with Predicates
+
+Right now our rule list does not nicely represent predicates, we must define them outside the rule list itself with guard clauses. **(The big question is if we even should do that, explicitly defining the predicates via guard clauses is quite nice as we say those are predicates on state and state in the query itself)**
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+%{who: :nick, concept: :onHit, nearAllies: nearAllies, health: health}
+  when nearAllies > 1 and health < 0.7
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+Wouldnt it be better when we could write something like:
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+%{
+  who: :nick, 
+  concept: :onHit, 
+  PREDICATE nearAllies > 1, 
+  PREDICATE health < 0.7, 
+  PREDICATE numZombies < 3
+}
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+Maybe this is not better than the normal way of doing it in elixir with function clauses
