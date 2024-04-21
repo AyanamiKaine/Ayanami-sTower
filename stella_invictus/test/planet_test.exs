@@ -1,4 +1,4 @@
-defmodule PlanetTest do
+defmodule CelestialBodyTest do
   use ExUnit.Case
-  doctest Stella.Planet
+  doctest Stella.Data.CelestialBody
 end
