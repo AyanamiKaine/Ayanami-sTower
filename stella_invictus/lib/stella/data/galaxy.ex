@@ -1,5 +1,5 @@
-defmodule Stella.Galaxy do
-  alias Stella.StarSystem
+defmodule Stella.Data.Galaxy do
+  alias Stella.Data.StarSystem
   use Ecto.Schema
 
   schema "galaxies" do

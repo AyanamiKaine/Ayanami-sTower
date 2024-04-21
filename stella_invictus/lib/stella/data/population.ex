@@ -1,5 +1,5 @@
-defmodule Stella.Population do
-  alias Stella.CelestialBody
+defmodule Stella.Data.Population do
+  alias Stella.Data.CelestialBody
   use Ecto.Schema
 
   schema "populations" do

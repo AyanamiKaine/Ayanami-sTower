@@ -1,8 +1,8 @@
-defmodule Stella.CelestialBody do
-  alias Stella.Factory
-  alias Stella.Population
-  alias Stella.Resource
-  alias Stella.StarSystem
+defmodule Stella.Data.CelestialBody do
+  alias Stella.Data.Factory
+  alias Stella.Data.Population
+  alias Stella.Data.Resource
+  alias Stella.Data.StarSystem
   use Ecto.Schema
 
   schema "celestial_bodys" do

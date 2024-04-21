@@ -1,4 +1,4 @@
-defmodule Stella.PopulationType do
+defmodule Stella.Data.PopulationType do
   use Ecto.Schema
 
   schema "population_types" do

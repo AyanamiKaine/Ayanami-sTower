@@ -1,4 +1,4 @@
-defmodule Stella.House do
+defmodule Stella.Data.House do
   use Ecto.Schema
 
   schema "houses" do

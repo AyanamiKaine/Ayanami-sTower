@@ -1,5 +1,5 @@
-defmodule Stella.Factory do
-  alias Stella.CelestialBody
+defmodule Stella.Data.Factory do
+  alias Stella.Data.CelestialBody
   use Ecto.Schema
 
   schema "factories" do

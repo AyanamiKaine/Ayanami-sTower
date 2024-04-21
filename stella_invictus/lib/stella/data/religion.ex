@@ -1,4 +1,4 @@
-defmodule Stella.Religion do
+defmodule Stella.Data.Religion do
   use Ecto.Schema
 
   schema "religions" do

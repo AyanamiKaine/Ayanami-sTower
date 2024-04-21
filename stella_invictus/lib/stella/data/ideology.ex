@@ -1,4 +1,4 @@
-defmodule Stella.Ideology do
+defmodule Stella.Data.Ideology do
   use Ecto.Schema
 
   schema "ideologies" do

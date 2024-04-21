@@ -1,4 +1,4 @@
-defmodule Stella.Culture do
+defmodule Stella.Data.Culture do
   use Ecto.Schema
 
   schema "cultures" do

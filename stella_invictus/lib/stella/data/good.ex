@@ -1,4 +1,4 @@
-defmodule Stella.Good do
+defmodule Stella.Data.Good do
   use Ecto.Schema
 
   schema "goods" do

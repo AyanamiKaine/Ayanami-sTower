@@ -1,12 +1,12 @@
-defmodule Stella.Character do
-  alias Stella.Trait
+defmodule Stella.Data.Character do
+  alias Stella.Data.Trait
   use Ecto.Schema
 
   schema "characters" do
-    field :name,      :string
-    many_to_many :traits, Trait, join_through: "character_traits"
-    field :is_female, :boolean
-    field :prestige,  :float
-    field :wealth,    :float
+    field         :name,          :string,  default: "NO_NAME"
+    many_to_many  :traits, Trait, join_through: "character_traits"
+    field         :is_female,     :boolean, default: nil
+    field         :prestige,      :float,   default: 0.0
+    field         :wealth,        :float,   default: 0.0
   end
 end

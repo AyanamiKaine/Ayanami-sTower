@@ -1,4 +1,4 @@
-defmodule Stella.Specie do
+defmodule Stella.Data.Specie do
   use Ecto.Schema
 
   schema "specien" do
