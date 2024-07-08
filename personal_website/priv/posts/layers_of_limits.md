@@ -4,5 +4,3 @@
   category: "computer-science"
 }
 ---
-
-Hello World

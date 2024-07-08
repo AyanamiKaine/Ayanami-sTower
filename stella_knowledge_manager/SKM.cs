@@ -21,14 +21,14 @@ namespace stella_knowledge_manager
         /// </summary>
         private int _totalNumberOfLearnedItem = 0;
 
-        public void AddItem(string name, string description ,string filePath, float priority = 0)
+        public string AddItem(string name, string description ,string filePath, float priority = 0)
         {
             FileToLearn item = new(Guid.NewGuid(), name, filePath, description, 2.5, priority);
 
             if (!File.Exists(filePath)) // Update
             {
-                Console.WriteLine("File does not exist pls choose a file that exists");
-            } 
+                return $"{{status: \"error\", error: \"No File with the file - path {item.PathToFile} found \"}}";
+            }
             else
             {
                 PriorityList.Add(item);
@@ -36,6 +36,7 @@ namespace stella_knowledge_manager
                 // We reverse the list because we want the item with the highest proority at the front
                 // If we dont reverse it the least prority item with be at the front.
                 PriorityList.Reverse();
+                return "{status: \"ok\"}";
             }
         }
 

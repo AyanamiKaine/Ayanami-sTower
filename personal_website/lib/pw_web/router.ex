@@ -22,6 +22,10 @@ defmodule PwWeb.Router do
     get "/contact", ContactController, :contact
     get "/book_recommendations", BookRecommendsController, :book_recommends
 
+    get "/become_programmer", BecomeProgrammerController, :become_programmer
+    get "/create_programming_language", CreateProgrammingLanguageController, :CreateProgrammingLanguage
+    get "/understand_systems", UnderstandSystemsController, :understand_systems
+
     get "/blog", BlogController, :index
     get "/blog/:id", BlogController, :show
   end

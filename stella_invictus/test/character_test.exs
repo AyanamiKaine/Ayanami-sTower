@@ -29,4 +29,11 @@ defmodule CharacterTest do
 
       assert true == character.is_female
   end
+
+  test "Increase the character age by one" do
+    character = %Stella.Data.Character{}
+    |> Stella.Logic.Character.age_character_by_one()
+
+    assert 1 == character.age
+  end
 end

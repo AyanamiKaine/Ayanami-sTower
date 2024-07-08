@@ -1,0 +1,23 @@
+{
+	"type": "module",
+	"name": "nature_of_order",
+	"version": "0.0.1",
+	"description": "Here we experiment with the idea of centers, that are built recursivly from other centers.",
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc",
+		"test": "npm run build && mocha",
+		"start": "npm run build && node build/main.js"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"mocha": "^10.4.0",
+		"typescript": "^5.4.5"
+	},
+	"dependencies": {
+		"match-toy": "^3.0.3",
+		"ts-pattern": "^5.1.1"
+	}
+}

@@ -19,14 +19,22 @@
 
                 if (recallEvaluation == RecallEvaluation.GOOD)
                 {
-                    if (item.NumberOfTimeSeen <= 3)
+                    if (item.NumberOfTimeSeen <= 2)
                     {
                         return DateTime.Now.AddMinutes(5);
                     }
 
+                    if (item.NumberOfTimeSeen == 3) 
+                    {
+                        item.EaseFactor = 2.5;
+                    } else
+                    {
+                        item.EaseFactor *= 1.5; // Adjust ease
+                    }
+
                     // Good recall
                     interval = (int)Math.Round(interval * item.EaseFactor, 0);
-                    item.EaseFactor += 0.1; // Adjust ease
+
                 }
                 else if (recallEvaluation == RecallEvaluation.BAD)
                 {
