@@ -52,22 +52,22 @@ if (platform.system() == "Windows"):
     build_folder_destination = "./build"
 
     msbuild_command = (
-        r'msbuild "./Stella Knowledge Manager/Stella Knowledge Manager.sln" '
+        r'msbuild "./stella_learning_build.sln" '
         r'/p:Configuration=Release /t:Rebuild '
-        r'/p:OutputPath="~/Stella Notes Build/build'
+        r'/p:OutputPath=' + f"{parent_dir.absolute()}/sl_build_script/build"
     )
 
 if (platform.system() == "Linux"):
     flutter_command = ["~/flutter/bin/flutter", "build", "linux"]
 
     build_folder_path = Path("./build")
-    sstella_notes_build_path = parent_dir / "sl_flutter_ui" / "build" / "linux" / "x64" / "release" / "bundle"
+    stella_notes_build_path = parent_dir / "sl_flutter_ui" / "build" / "linux" / "x64" / "release" / "bundle"
     build_folder_destination = "./build"
 
     msbuild_command = (
-        r'dotnet build "./Stella Knowledge Manager/Stella Knowledge Manager.sln" '
+        r'dotnet build "./stella_learning_build.sln" '
         r'/p:Configuration=Release  /t:Rebuild '
-        r'/p:OutputPath="/home/ayanami/Stella Notes Build/build"'
+        r'/p:OutputPath=' + f"{parent_dir.absolute()}/sl_build_script/build"
     )
 
 # Create the build folder if it doesn't exist
