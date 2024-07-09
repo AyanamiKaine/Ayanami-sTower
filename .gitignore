@@ -7,6 +7,11 @@ bazel-*
 *.so
 *.a
 
+# Misc
+## Ignore build folder
+/build/
+
+
 # JavaScript/Svelte
 **/dist/
 .DS_Store
