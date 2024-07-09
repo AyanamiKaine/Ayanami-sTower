@@ -1000,3 +1000,5 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
+sl_build_script/build.zip
+sl_build_script/build
