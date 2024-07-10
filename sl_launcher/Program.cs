@@ -56,8 +56,9 @@ namespace Launcher
                         _childProcesses.Add(process);
                         Console.WriteLine($"Started: {exeName}");
 
-                        // Ensure stella_notes.exe is handled specially
-                        if (exeName == "stella_notes.exe")
+                        // Ensure stella_notes is handled specially
+                        // We want to close every other process if we close the flutter_ui 
+                        if (exeName == "stella_notes.exe" || exeName == "stella_notes")
                         {
                             process.EnableRaisingEvents = true;
                             process.Exited += OnStellaNotesExited;
@@ -73,17 +74,16 @@ namespace Launcher
             // Keep the main program running until all child processes finish
             while (_childProcesses.Any(p => !p.HasExited))
             {
-                // Optionally do other work here...
             }
 
             Console.WriteLine("All child processes have exited.");
         }
         private static void OnStellaNotesExited(object? sender, EventArgs e)
         {
-            Console.WriteLine("stella_notes.exe has exited. Terminating other processes...");
+            Console.WriteLine("stella_notes has exited. Terminating other processes...");
             foreach (var process in _childProcesses)
             {
-                if (!process.HasExited && process.ProcessName != "stella_notes.exe")
+                if (!process.HasExited && process.ProcessName != "stella_notes.exe" || process.ProcessName != "stella_notes") 
                 {
                     try
                     {
