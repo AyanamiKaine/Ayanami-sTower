@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spaced Repetition Database"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminal UI Component", "..\sl_terminal_ui\Terminal UI Component.csproj", "{B4D33B52-38AD-4A27-B88B-65433AD484CD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sl_quiz_database", "..\sl_quiz_database\sl_quiz_database.csproj", "{270FE1EB-9C1A-4BBE-AD5A-2D2D0F6D1E8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{B4D33B52-38AD-4A27-B88B-65433AD484CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4D33B52-38AD-4A27-B88B-65433AD484CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4D33B52-38AD-4A27-B88B-65433AD484CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{270FE1EB-9C1A-4BBE-AD5A-2D2D0F6D1E8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{270FE1EB-9C1A-4BBE-AD5A-2D2D0F6D1E8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{270FE1EB-9C1A-4BBE-AD5A-2D2D0F6D1E8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{270FE1EB-9C1A-4BBE-AD5A-2D2D0F6D1E8F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
