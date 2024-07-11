@@ -15,10 +15,16 @@ namespace sl_quiz_database
             QuestionText = questionText;
         }
 
+
+        public Question(Guid id, string questionText)
+        {
+            Id           = id;
+            QuestionText = questionText;
+        }
+
         public Question(string guidId, string questionText)
         {
-            Guid parsedId = new();
-            if (Guid.TryParse(guidId, out parsedId))
+            if (Guid.TryParse(guidId, out Guid parsedId))
             {
                 Id = parsedId;
             }
