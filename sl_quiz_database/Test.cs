@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
 namespace sl_quiz_database
 {
 
@@ -29,6 +32,16 @@ namespace sl_quiz_database
                 Console.WriteLine("Adding Answer Option Failed [X]");
             }
 
+            if (QuestionToJson() == false)
+            {
+                Console.WriteLine("Serializing questions to json failed [X]");
+            }
+
+            if (JsonToQuestion() == false)
+            {
+                Console.WriteLine("Deserializing json to question failed [X]");
+            }
+
         }
 
         private static bool QuestionCreation() 
@@ -46,6 +59,52 @@ namespace sl_quiz_database
 
 
             Console.WriteLine("Question was successfully created [✓]\n");
+            return true;
+        }
+
+
+
+        private static bool JsonToQuestion()
+        {
+            string json = 
+            """
+            {"Id":"50187b77-4ce3-4c5f-be47-0be8be2745f6","QuestionText":"What is the name of my cat?","AnswerOptions":["Luna"], "CorrectAnswer":"Luna"}
+            """;
+            
+            Question actualQuestion = JsonSerializer.Deserialize<Question>(json);
+
+            Question expectedQuestion = new("50187b77-4ce3-4c5f-be47-0be8be2745f6","What is the name of my cat?");
+            expectedQuestion.AddAnswerOption("Luna", true);
+
+            if(actualQuestion.CorrectAnswer != expectedQuestion.CorrectAnswer)
+            {
+                Console.WriteLine($"Actual Corret Answer was: {actualQuestion.CorrectAnswer}, Expect was {expectedQuestion.CorrectAnswer}");
+                return false;
+            }
+            Console.WriteLine("Json was succesfully converted to question as expected [✓]\n");
+            return true;
+        }
+
+        private static bool QuestionToJson()
+        {
+            Question question = new("50187b77-4ce3-4c5f-be47-0be8be2745f6", "What is the name of my cat?");
+            question.AddAnswerOption("Luna", true);
+
+            string actual_json = JsonSerializer.Serialize(question);
+
+            string expected_json = 
+            """
+            {"Id":"50187b77-4ce3-4c5f-be47-0be8be2745f6","QuestionText":"What is the name of my cat?","AnswerOptions":["Luna"],"CorrectAnswer":"Luna"}
+            """;
+
+
+            if (actual_json != expected_json)
+            {
+                Console.WriteLine($"Expected {expected_json}, Actual: {actual_json}");
+                return false;
+            }
+
+            Console.WriteLine("Question was succesfully converted to json as expected [✓]\n");
             return true;
         }
 
@@ -82,6 +141,12 @@ namespace sl_quiz_database
                 {
                     return false;
                 }
+
+            if (question.CorrectAnswer != "Paris")
+            {
+                Console.WriteLine($"Correct answer expected: Paris, actual: {question.CorrectAnswer}");
+                return false;
+            }
 
             Console.WriteLine("Answers were successfully added to a question [✓]\n");
             return true;

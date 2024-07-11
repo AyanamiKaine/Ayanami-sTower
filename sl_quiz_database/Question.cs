@@ -5,7 +5,11 @@ namespace sl_quiz_database
         public Guid Id { get; set; } = Guid.NewGuid(); 
         public string QuestionText { get; set; } = "";
         public List<string> AnswerOptions { get; set; } = [];
-        public string CorrectAnswer = "";
+        public string CorrectAnswer { get; set; } = "";
+                
+        public Question()
+        {
+        }
         public Question(string questionText)
         {
             Console.WriteLine($"Create Question with the text of {questionText}");
@@ -40,15 +44,7 @@ namespace sl_quiz_database
 
         public bool IsCorrectAnswer(string anwser)
         {
-            if (anwser == CorrectAnswer) 
-            {
-                return true;
-            }
-
-            else 
-            {
-                return false;
-            }
+            return anwser == CorrectAnswer;
         }
     }
 }
