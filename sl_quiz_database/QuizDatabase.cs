@@ -16,9 +16,8 @@ namespace sl_quiz_database
         {
             if (Questions.Count == 0)
             {
-                return null; // Or throw an exception
+                return [];
             }
-            // For simplicity, always return the first question
             return Questions; 
         }
 
@@ -42,8 +41,9 @@ namespace sl_quiz_database
 
             if (questionToUpdate != null)
             {
-                // Update the properties of the existing question
-                questionToUpdate = updatedQuestion;
+                questionToUpdate.QuestionText       = updatedQuestion.QuestionText;
+                questionToUpdate.AnswerOptions      = updatedQuestion.AnswerOptions;
+                questionToUpdate.CorrectAnswer      = updatedQuestion.CorrectAnswer;
             }
             else
             {
@@ -53,11 +53,20 @@ namespace sl_quiz_database
 
         public void ImportListOfQuestionsFromJson(string json)
         {
-
             //Implement some more error handling
+            List<Question> ImportedQuestions = JsonSerializer.Deserialize<List<Question>>(json);
 
-            Questions = JsonSerializer.Deserialize<List<Question>>(json);
-
+            if (ImportedQuestions != null)
+            {
+                Questions = ImportedQuestions;
+            
+            } else 
+            {
+                Console.WriteLine("Imported Questions where null, will be set to [] instead");
+                // We never want the database to be null, will only complicate things down the line
+                Questions = [];
+            }
+        
         }
 
         public string RetrieveQuestionsAsJson()
