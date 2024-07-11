@@ -6,12 +6,13 @@ using System.Collections.Generic;
 using static NetMQ.NetMQSelector;
 
 
-#if DEBUG // Code enclosed in this block will only run in Debug mode
+#if DEBUG // If we are not in debug mode than instead we run our tests.
     Console.WriteLine("Running in Debug mode");
     Console.WriteLine("Running Tests");
-    Test test = new();
-Test.Run();
-#else // Code enclosed in this block will only run in Release mode
+    
+    QuestionTests test = new();
+    QuestionTests.Run();
+#else 
     Server server = new();
     server.Run();
 #endif 

@@ -17,7 +17,7 @@ namespace sl_quiz_database
     But i aknowledge that this way of writing tests will not scale in the 
     long run but helps developing/guiding the design of the implemantation.
     */
-    class Test
+    class QuestionTests
     {
         public static void Run()
         {
@@ -60,8 +60,6 @@ namespace sl_quiz_database
             Console.WriteLine("Question was successfully created [✓]\n");
             return true;
         }
-
-
 
         private static bool JsonToQuestion()
         {
