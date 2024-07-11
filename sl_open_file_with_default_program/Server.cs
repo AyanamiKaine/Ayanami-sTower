@@ -40,6 +40,13 @@ namespace OpenFileWithDefaultProgramComponent
                     {
                         Process.Start("explorer.exe", filePath);
                     }
+
+                    /*TODO
+                    We want to implement the following custom logic for markdown files that are found in an obsidian vault:
+                        - It should open the markdown file with obsidian in the right vault.
+                    
+                    
+                    */
                 }
             }
         }
