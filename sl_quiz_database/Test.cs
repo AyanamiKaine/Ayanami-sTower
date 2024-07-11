@@ -47,7 +47,6 @@ namespace sl_quiz_database
         private static bool QuestionCreation() 
         {
             Console.WriteLine("Running Test QuestionCreation");
-            
 
             string questionText = "What is the capital of paris?";
             Question question = new(questionText);
@@ -66,6 +65,8 @@ namespace sl_quiz_database
 
         private static bool JsonToQuestion()
         {
+            Console.WriteLine("Running Test JsonToQuestion");
+
             string json = 
             """
             {"Id":"50187b77-4ce3-4c5f-be47-0be8be2745f6","QuestionText":"What is the name of my cat?","AnswerOptions":["Luna"], "CorrectAnswer":"Luna"}
@@ -87,6 +88,8 @@ namespace sl_quiz_database
 
         private static bool QuestionToJson()
         {
+            Console.WriteLine("Running Test QuestionToJson");
+
             Question question = new("50187b77-4ce3-4c5f-be47-0be8be2745f6", "What is the name of my cat?");
             question.AddAnswerOption("Luna", true);
 
@@ -111,7 +114,6 @@ namespace sl_quiz_database
         private static bool AddingAnswerOption()
         {
             Console.WriteLine("Running Test AddingAnswerOption");
-
 
             string questionText = "What is the capital of paris?";
             Question question = new(questionText);
