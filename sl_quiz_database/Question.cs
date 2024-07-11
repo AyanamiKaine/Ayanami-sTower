@@ -12,7 +12,6 @@ namespace sl_quiz_database
         }
         public Question(string questionText)
         {
-            Console.WriteLine($"Create Question with the text of {questionText}");
             QuestionText = questionText;
         }
 
@@ -38,7 +37,6 @@ namespace sl_quiz_database
                 CorrectAnswer = answerOption;
             }
 
-            Console.WriteLine($"Adding anwser option: {answerOption} to the question of {QuestionText}");
             AnswerOptions.Add(answerOption);
         }
 
