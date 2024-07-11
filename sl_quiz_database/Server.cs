@@ -12,8 +12,6 @@ namespace sl_quiz_database
     public class Server
     {
 
-        public List<Question> Questions = [];
-
         public ResponseSocket QuizDatabase = new("@tcp://localhost:60020");
 
         public void Run()
