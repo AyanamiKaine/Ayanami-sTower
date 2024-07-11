@@ -6,10 +6,11 @@ namespace sl_quiz_database
     {
         public List<Question> Questions = [];
 
-        public void CreateQuestion(string questionText)
+        public Question CreateQuestion(string questionText)
         {
             Question question = new(questionText);
             Questions.Add(question);
+            return question;
         }
 
         public List<Question>? RetrieveQuestions()
@@ -72,6 +73,11 @@ namespace sl_quiz_database
         public string RetrieveQuestionsAsJson()
         {
             return JsonSerializer.Serialize<List<Question>>(Questions);
+        }
+
+        public int Count()
+        {
+            return Questions.Count;
         }
     }
 }
