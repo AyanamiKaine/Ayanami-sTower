@@ -1,6 +1,5 @@
 namespace sl_quiz_database
 {
-
     public enum Command
     {
         Create,
@@ -9,7 +8,7 @@ namespace sl_quiz_database
         Retrieve,
     }
 
-    public class Request
+    public class Request()
     {
         public Command Command = Command.Retrieve;
         public Question? question = null;    

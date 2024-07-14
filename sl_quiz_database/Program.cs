@@ -6,12 +6,32 @@ using System.Collections.Generic;
 using static NetMQ.NetMQSelector;
 
 
-#if DEBUG // Code enclosed in this block will only run in Debug mode
+// Instead of doing this we could add the ability to parse the argument 'test'
+// to run our unit tests
+#if DEBUG // If we are not in debug mode than instead we run our tests.
     Console.WriteLine("Running in Debug mode");
     Console.WriteLine("Running Tests");
-    Test test = new();
-Test.Run();
-#else // Code enclosed in this block will only run in Release mode
+    
+    QuestionTests test = new();
+    QuestionTests.Run();
+
+    QuizDatabaseTests quizDatabaseTests = new();
+    quizDatabaseTests.Run();
+#else 
     Server server = new();
     server.Run();
 #endif 
+
+
+// Note about TDD and the delivered product.
+/*
+I think that the program delivered to a user should be able to run the tests of the
+program. 
+
+Why?
+
+Because the expected behavior and the tested behavior are highly linked together.
+Of course only because tests run all ok does not mean that there are no bugs.
+It only shows that the things we test work. (And this does not mean that the test
+does not have a bug!)
+*/

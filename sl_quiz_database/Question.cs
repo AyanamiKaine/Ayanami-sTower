@@ -2,13 +2,32 @@ namespace sl_quiz_database
 {
     public class Question
     {
-        public Guid Id { get; set; } = new Guid(); 
+        public Guid Id { get; set; } = Guid.NewGuid(); 
         public string QuestionText { get; set; } = "";
         public List<string> AnswerOptions { get; set; } = [];
-        public string CorrectAnswer = "";
+        public string CorrectAnswer { get; set; } = "";
+                
+        public Question()
+        {
+        }
         public Question(string questionText)
         {
-            Console.WriteLine($"Create Question with the text of {questionText}");
+            QuestionText = questionText;
+        }
+
+
+        public Question(Guid id, string questionText)
+        {
+            Id           = id;
+            QuestionText = questionText;
+        }
+
+        public Question(string guidId, string questionText)
+        {
+            if (Guid.TryParse(guidId, out Guid parsedId))
+            {
+                Id = parsedId;
+            }
             QuestionText = questionText;
         }
 
@@ -24,21 +43,12 @@ namespace sl_quiz_database
                 CorrectAnswer = answerOption;
             }
 
-            Console.WriteLine($"Adding anwser option: {answerOption} to the question of {QuestionText}");
             AnswerOptions.Add(answerOption);
         }
 
         public bool IsCorrectAnswer(string anwser)
         {
-            if (anwser == CorrectAnswer) 
-            {
-                return true;
-            }
-
-            else 
-            {
-                return false;
-            }
+            return anwser == CorrectAnswer;
         }
     }
 }
