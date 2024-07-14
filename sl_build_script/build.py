@@ -44,6 +44,7 @@ current_dir = Path.cwd()
 parent_dir = current_dir.parent 
 
 
+
 if (platform.system() == "Windows"):
     flutter_command = ["flutter", "build", "windows"]
 
@@ -108,6 +109,19 @@ if platform.system() == "Linux":
     if dotnet_path:
         os.environ["PATH"] += f":{os.path.dirname(dotnet_path)}"  # Add .NET Core path
 
+# dotnet restore
+try:
+    result = subprocess.run(
+        "dotnet restore",
+        shell=True,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    logging.info("Dotnet Project succesfully restored!")
+except subprocess.CalledProcessError as e:
+    logging.error("Dotnet Project could not be restored!")
+    logging.error(e.stderr)
 
 # Run MSBuild
 try:
