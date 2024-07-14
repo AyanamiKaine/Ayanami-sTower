@@ -21,3 +21,17 @@ using static NetMQ.NetMQSelector;
     Server server = new();
     server.Run();
 #endif 
+
+
+// Note about TDD and the delivered product.
+/*
+I think that the program delivered to a user should be able to run the tests of the
+program. 
+
+Why?
+
+Because the expected behavior and the tested behavior are highly linked together.
+Of course only because tests run all ok does not mean that there are no bugs.
+It only shows that the things we test work. (And this does not mean that the test
+does not have a bug!)
+*/
