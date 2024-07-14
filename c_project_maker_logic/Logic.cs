@@ -365,7 +365,7 @@ namespace CProjectMakerLogic
             cmake_target_link_libraries += ")";
 
             cmake_file_content += cmake_target_link_libraries;
-            string cmake_file_path = Path.Combine($"{project_path}/{project_name}", "CMakelists.txt");
+            string cmake_file_path = Path.Combine($"{project_path}/{project_name}", "CMakeLists.txt");
             // Create or overwrite the file
             File.Create(cmake_file_path).Close();
             File.WriteAllText(cmake_file_path, cmake_file_content);
