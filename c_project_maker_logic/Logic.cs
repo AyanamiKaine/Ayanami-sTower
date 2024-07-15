@@ -327,7 +327,37 @@ namespace CProjectMakerLogic
             {
                 CopyLuaJITHeadersIntoProject(project_path, project_name);
                 cmake_file_content += "message(STATUS \"Finding LuaJIT (luajit or lua51)...\")\n\r";
-                cmake_file_content += "find_library(luajit NAMES lua51)\r\n";
+                
+                // On Unix and Windows the created LuaJit library will have a different name, 
+                // On Windows = lua51.dll
+                // On Linux   = libluajit
+                cmake_file_content += """
+                if(UNIX AND NOT APPLE)
+                    # Explicitly specify the search path for libluajit.so
+                    find_library(luajit 
+                                NAMES luajit # Look for "libluajit.so" (no need for lua51)
+                                PATHS ./libs/luajit/src # Only search in this directory
+                                NO_DEFAULT_PATH)      # Don't look in standard system locations
+
+                    if(luajit)
+                        message(STATUS "Found LuaJIT (Linux): ${luajit}")
+                    else()
+                        message(FATAL_ERROR "LuaJIT library not found in /libs/luajit/src")
+                    endif()
+                else()
+                    message(STATUS "Not on Linux, try windows LuaJIT search")
+                    
+                    find_library(luajit NAMES lua51)
+                    if(luajit)
+                        message(STATUS "Found LuaJIT: ${luajit}")
+                    else()
+                        message(FATAL_ERROR "LuaJIT library not found")
+                    endif()
+                    
+                endif()
+                
+                """;
+                    
                 cmake_target_link_libraries += "${luajit} ";
                 cmake_file_content += "if(luajit)\r\n    message(STATUS \"Found LuaJIT: ${luajit}\")\r\nelse()\r\n    message(FATAL_ERROR \"LuaJIT library not found\")\r\nendif()\r\n";
                 cmake_file_content += """
