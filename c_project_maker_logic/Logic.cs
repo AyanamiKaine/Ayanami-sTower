@@ -12,6 +12,7 @@ using System.IO.Compression;
 using System.Net;
 using ICSharpCode.SharpZipLib.Tar;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace CProjectMakerLogic
 {
@@ -218,6 +219,31 @@ namespace CProjectMakerLogic
 
             Console.WriteLine("LuaJIT headers copied successfully!");
 
+            if (!File.Exists($"{project_path}/{project_name}/libs/luajit/src/libluajit.so"))
+            {
+                Console.WriteLine("Building LuaJIT...");
+                BuildLuaJit($"{project_path}/{project_name}/libs/luajit/src", $"{project_path}/{project_name}/build");
+            }
+        }
+
+        static public void BuildLuaJit(string luaJITSourceFolder, string destinationFolder)
+        {
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = "make",        // The command you want to run (make)
+                WorkingDirectory = luaJITSourceFolder, // Optional: set the working directory (where the Makefile is)
+                RedirectStandardOutput = true, // Capture the output
+                UseShellExecute = false, // Necessary for redirection
+            };
+
+            Process process = new() { StartInfo = startInfo };
+            process.Start();
+
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(); // Wait for the process to finish
+
+            Console.WriteLine(output); // Print the output
+            File.Copy($"{luaJITSourceFolder}/libluajit.so", destinationFolder);
         }
 
         static public void CreateCMakeListsFile(string project_name,string project_path ,string c_version, bool auto_add_file, bool add_vcpkg, bool add_czmq, bool add_json_c, bool add_sokol, bool add_nuklear, bool add_flecs, bool add_luajit)
@@ -338,7 +364,7 @@ namespace CProjectMakerLogic
                     # Explicitly specify the search path for libluajit.so
                     find_library(luajit 
                                 NAMES luajit # Look for "libluajit.so" (no need for lua51)
-                                PATHS ./libs/luajit/src # Only search in this directory
+                                PATHS ${CMAKE_CURRENT_BINARY_DIR} # Only search in this directory
                                 NO_DEFAULT_PATH)      # Don't look in standard system locations
 
                     if(luajit)
