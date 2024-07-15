@@ -25,6 +25,7 @@ namespace CProjectMakerLogic
             Directory.CreateDirectory($"{request.ProjectPath}/{request.ProjectName}/libs");
             Directory.CreateDirectory($"{request.ProjectPath}/{request.ProjectName}/include");
 
+            InstallPackagesWithVCPKG(request);
 
             if(request.AddLuaJIT)
             {
@@ -257,6 +258,81 @@ namespace CProjectMakerLogic
             catch (Exception e)
             {
                 Console.WriteLine($"Error moving file: {e.Message}");
+            }
+        }
+
+        static public void InstallPackagesWithVCPKG(Request request)
+        {
+            string variableName = "VCPKG_ROOT"; 
+            string vcpkgRoot = Environment.GetEnvironmentVariable(variableName);
+
+            if (vcpkgRoot != null)
+            {
+                Console.WriteLine($"The value of '{variableName}' is: {vcpkgRoot}");
+                Console.WriteLine("Installing the packages with VCPKG");
+                
+
+                if (request.AddCzmq == true)
+                {
+                    Console.WriteLine("Trying to install czmq with VCPKG");
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = Path.Combine(vcpkgRoot, "vcpkg"), // Path to vcpkg executable
+                        Arguments = "install czmq",                 // Arguments for vcpkg
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                    };
+
+                    Process process = new() { StartInfo = startInfo };
+                    process.Start();
+
+                    string output = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit(); // Wait for the process to finish
+
+                    Console.WriteLine(output); // Print the output
+                }
+
+                if (request.AddCJson == true)
+                {
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = "vcpkg install cjson",        // The command you want to run (make)
+                        RedirectStandardOutput = true, // Capture the output
+                        UseShellExecute = false, // Necessary for redirection
+                    };
+
+                    Process process = new() { StartInfo = startInfo };
+                    process.Start();
+
+                    string output = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit(); // Wait for the process to finish
+
+                    Console.WriteLine(output); // Print the output
+                }
+
+                if (request.AddFlecs == true)
+                {
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = "vcpkg install flecs",        // The command you want to run (make)
+                        RedirectStandardOutput = true, // Capture the output
+                        UseShellExecute = false, // Necessary for redirection
+                    };
+
+                    Process process = new() { StartInfo = startInfo };
+                    process.Start();
+
+                    string output = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit(); // Wait for the process to finish
+
+                    Console.WriteLine(output); // Print the output
+                }
+            }
+            else
+            {
+                Console.WriteLine($"The environment variable '{variableName}' does not exist.");
+                Console.WriteLine($"It must exist so VCPKG works correctly in CMAKE");
+                Console.WriteLine("Or it means that you didnt install VCPKG");
             }
         }
 
