@@ -228,22 +228,36 @@ namespace CProjectMakerLogic
 
         static public void BuildLuaJit(string luaJITSourceFolder, string destinationFolder)
         {
-            ProcessStartInfo startInfo = new()
+            try
             {
-                FileName = "make",        // The command you want to run (make)
-                WorkingDirectory = luaJITSourceFolder, // Optional: set the working directory (where the Makefile is)
-                RedirectStandardOutput = true, // Capture the output
-                UseShellExecute = false, // Necessary for redirection
-            };
+                ProcessStartInfo startInfo = new()
+                {
+                    FileName = "make",        // The command you want to run (make)
+                    WorkingDirectory = luaJITSourceFolder, // Optional: set the working directory (where the Makefile is)
+                    RedirectStandardOutput = true, // Capture the output
+                    UseShellExecute = false, // Necessary for redirection
+                };
 
-            Process process = new() { StartInfo = startInfo };
-            process.Start();
+                Process process = new() { StartInfo = startInfo };
+                process.Start();
 
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(); // Wait for the process to finish
+                string output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit(); // Wait for the process to finish
 
-            Console.WriteLine(output); // Print the output
-            File.Copy($"{luaJITSourceFolder}/libluajit.so", destinationFolder);
+                Console.WriteLine(output); // Print the output
+
+                if (!Directory.Exists(destinationFolder))
+                {
+                    Console.WriteLine("build folder does not exist, creating build folder...");
+                    Directory.CreateDirectory(destinationFolder);
+                }
+
+                File.Move($"{luaJITSourceFolder}/libluajit.so", $"{destinationFolder}/libluajit.so");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error moving file: {e.Message}");
+            }
         }
 
         static public void CreateCMakeListsFile(string project_name,string project_path ,string c_version, bool auto_add_file, bool add_vcpkg, bool add_czmq, bool add_json_c, bool add_sokol, bool add_nuklear, bool add_flecs, bool add_luajit)
