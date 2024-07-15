@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System.IO.Compression;
 using System.Net;
 using ICSharpCode.SharpZipLib.Tar;
+using System.Runtime.InteropServices;
 
 namespace CProjectMakerLogic
 {
@@ -30,14 +31,32 @@ namespace CProjectMakerLogic
                 Directory.CreateDirectory(folderPath);
                 
                 File.Create(folderPath + "/main.lua").Close();
-                File.WriteAllText(folderPath + "/main.lua",
-                    """
-                    -- Include the fennel compiler and run the fennel main file
-                    -- If you dont want to use fennel simply remove the line
-                    require("fennel").install().dofile("fennel\\main.fnl")
-                    
-                    print("Hello world from main.lua!");
-                    """);
+
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    File.WriteAllText(folderPath + "/main.lua",
+                        """
+                        -- Include the fennel compiler and run the fennel main file
+                        -- If you dont want to use fennel simply remove the line
+                        require("lua\\fennel").install().dofile("fennel\\main.fnl")
+                        
+                        print("Hello world from main.lua!");
+                        """);
+                }
+
+                // This is needed because of the different filepath delimiters on unix('/') and windows('//')('\')
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    File.WriteAllText(folderPath + "/main.lua",
+                        """
+                        -- Include the fennel compiler and run the fennel main file
+                        -- If you dont want to use fennel simply remove the line
+                        require("lua/fennel").install().dofile("fennel/main.fnl")
+                        
+                        print("Hello world from main.lua!");
+                        """);
+                }
 
                 File.Create(folderPath + "/mymodule.lua").Close();
                 string fileContent = """
