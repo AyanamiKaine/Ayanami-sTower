@@ -331,6 +331,8 @@ namespace CProjectMakerLogic
                 // On Unix and Windows the created LuaJit library will have a different name, 
                 // On Windows = lua51.dll
                 // On Linux   = libluajit
+                // TODO: Implement a command to automatically build the library on Linux, on Windows we should distribute it with
+                // the source
                 cmake_file_content += """
                 if(UNIX AND NOT APPLE)
                     # Explicitly specify the search path for libluajit.so
