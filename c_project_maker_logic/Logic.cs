@@ -91,30 +91,27 @@ namespace CProjectMakerLogic
 
                 Repository.Clone(sokol_repository_url, sokol_local_path);
 
-                // Adding sokol header to the project
-                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); // Project's include folder
+                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); 
 
-                // 3. Create Destination Directory (if it doesn't exist)
                 Directory.CreateDirectory(destIncludeDir);
 
-                // 4. Copy Header Files (with error handling and filtering)
                 try
                 {
                     foreach (string file in Directory.GetFiles(sokol_local_path, "*.h"))
                     {
                         string destFilePath = Path.Combine(destIncludeDir, Path.GetFileName(file));
-                        File.Copy(file, destFilePath, true); // Overwrite if exists
+                        File.Copy(file, destFilePath, true); 
                     }
                     foreach (string file in Directory.GetFiles(sokol_local_path + "/util", "*.h"))
                     {
                         string destFilePath = Path.Combine(destIncludeDir, Path.GetFileName(file));
-                        File.Copy(file, destFilePath, true); // Overwrite if exists
+                        File.Copy(file, destFilePath, true); 
                     }
                 }
                 catch (IOException ex)
                 {
                     Console.WriteLine("Error copying header files: " + ex.Message);
-                    return; // Exit if copying fails
+                    return; 
                 }
 
                 Console.WriteLine("Sokol headers copied successfully!");
@@ -127,24 +124,21 @@ namespace CProjectMakerLogic
 
                 Repository.Clone(nuklear_repository_url, nuklear_local_path);
 
-                // Adding sokol header to the project
-                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); // Project's include folder
-                // 3. Create Destination Directory (if it doesn't exist)
+                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); 
                 Directory.CreateDirectory(destIncludeDir);
 
-                // 4. Copy Header Files (with error handling and filtering)
                 try
                 {
                     foreach (string file in Directory.GetFiles(nuklear_local_path, "*.h"))
                     {
                         string destFilePath = Path.Combine(destIncludeDir, Path.GetFileName(file));
-                        File.Copy(file, destFilePath, true); // Overwrite if exists
+                        File.Copy(file, destFilePath, true); 
                     }
                 }
                 catch (IOException ex)
                 {
                     Console.WriteLine("Error copying header files: " + ex.Message);
-                    return; // Exit if copying fails
+                    return; 
                 }
 
                 Console.WriteLine("nuklear headers copied successfully!");
@@ -156,12 +150,9 @@ namespace CProjectMakerLogic
 
                 Repository.Clone(arena_allocator_repository_url, arena_allocator_local_path);
 
-                // Adding sokol header to the project
-                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); // Project's include folder
-                // 3. Create Destination Directory (if it doesn't exist)
+                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); 
                 Directory.CreateDirectory(destIncludeDir);
 
-                // 4. Copy Header Files (with error handling and filtering)
                 try
                 {
                     foreach (string file in Directory.GetFiles(arena_allocator_local_path + "/include", "*.h"))
@@ -173,7 +164,7 @@ namespace CProjectMakerLogic
                 catch (IOException ex)
                 {
                     Console.WriteLine("Error copying header files: " + ex.Message);
-                    return; // Exit if copying fails
+                    return; 
                 }
 
                 Console.WriteLine("arena_allocators headers copied successfully!");
@@ -184,8 +175,7 @@ namespace CProjectMakerLogic
 
         static public void CopyLuaJITHeadersIntoProject(string project_path, string project_name)
         {
-            // 1. Clone Repository (with error handling)
-            string repoPath = $"{project_path}/{project_name}/libs/luajit";  // Will store the actual cloned repo path
+            string repoPath = $"{project_path}/{project_name}/libs/luajit";  
             try
             {
                 Repository.Clone("https://github.com/LuaJIT/LuaJIT.git", $"{project_path}/{project_name}/libs/luajit");
@@ -193,29 +183,26 @@ namespace CProjectMakerLogic
             catch (LibGit2SharpException ex)
             {
                 Console.WriteLine("Error cloning repository: " + ex.Message);
-                return; // Exit if cloning fails
+                return; 
             }
 
-            // 2. Define Source and Destination Paths (with Path.Combine for robustness)
             string srcHeaderDir = Path.Combine(repoPath, "src");
-            string destIncludeDir = Path.Combine($"{project_path}/{project_name}", "include"); // Project's include folder
+            string destIncludeDir = Path.Combine($"{project_path}/{project_name}", "include"); 
 
-            // 3. Create Destination Directory (if it doesn't exist)
             Directory.CreateDirectory(destIncludeDir);
 
-            // 4. Copy Header Files (with error handling and filtering)
             try
             {
                 foreach (string file in Directory.GetFiles(srcHeaderDir, "*.h"))
                 {
                     string destFilePath = Path.Combine(destIncludeDir, Path.GetFileName(file));
-                    File.Copy(file, destFilePath, true); // Overwrite if exists
+                    File.Copy(file, destFilePath, true);
                 }
             }
             catch (IOException ex)
             {
                 Console.WriteLine("Error copying header files: " + ex.Message);
-                return; // Exit if copying fails
+                return;
             }
 
             Console.WriteLine("LuaJIT headers copied successfully!");
@@ -233,19 +220,18 @@ namespace CProjectMakerLogic
             {
                 ProcessStartInfo startInfo = new()
                 {
-                    FileName = "make",        // The command you want to run (make)
-                    WorkingDirectory = luaJITSourceFolder, // Optional: set the working directory (where the Makefile is)
-                    RedirectStandardOutput = true, // Capture the output
-                    UseShellExecute = false, // Necessary for redirection
+                    FileName = "make",       
+                    WorkingDirectory = luaJITSourceFolder, // Set the working directory (where the Makefile is), here gets the make command executed
+                    RedirectStandardOutput = true, 
+                    UseShellExecute = false, 
                 };
 
                 Process process = new() { StartInfo = startInfo };
                 process.Start();
 
                 string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit(); // Wait for the process to finish
-
-                Console.WriteLine(output); // Print the output
+                process.WaitForExit(); 
+                Console.WriteLine(output); 
 
                 if (!Directory.Exists(destinationFolder))
                 {
@@ -277,8 +263,8 @@ namespace CProjectMakerLogic
                     Console.WriteLine("Trying to install czmq with VCPKG");
                     ProcessStartInfo startInfo = new()
                     {
-                        FileName = Path.Combine(vcpkgRoot, "vcpkg"), // Path to vcpkg executable
-                        Arguments = "install czmq",                 // Arguments for vcpkg
+                        FileName = Path.Combine(vcpkgRoot, "vcpkg"), 
+                        Arguments = "install czmq",                 
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                     };
@@ -287,45 +273,51 @@ namespace CProjectMakerLogic
                     process.Start();
 
                     string output = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit(); // Wait for the process to finish
+                    process.WaitForExit();
 
-                    Console.WriteLine(output); // Print the output
+                    Console.WriteLine(output);
                 }
 
                 if (request.AddCJson == true)
                 {
+
+                    Console.WriteLine("Trying to install cjson with VCPKG");
+
+
                     ProcessStartInfo startInfo = new()
                     {
-                        FileName = "vcpkg install cjson",        // The command you want to run (make)
-                        RedirectStandardOutput = true, // Capture the output
-                        UseShellExecute = false, // Necessary for redirection
+                        FileName = "vcpkg install cjson",        
+                        RedirectStandardOutput = true, 
+                        UseShellExecute = false, 
                     };
 
                     Process process = new() { StartInfo = startInfo };
                     process.Start();
 
                     string output = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit(); // Wait for the process to finish
+                    process.WaitForExit();
 
-                    Console.WriteLine(output); // Print the output
+                    Console.WriteLine(output); 
                 }
 
                 if (request.AddFlecs == true)
                 {
+                    Console.WriteLine("Trying to install flecs with VCPKG");
+
                     ProcessStartInfo startInfo = new()
                     {
-                        FileName = "vcpkg install flecs",        // The command you want to run (make)
-                        RedirectStandardOutput = true, // Capture the output
-                        UseShellExecute = false, // Necessary for redirection
+                        FileName = "vcpkg install flecs",
+                        RedirectStandardOutput = true, 
+                        UseShellExecute = false, 
                     };
 
                     Process process = new() { StartInfo = startInfo };
                     process.Start();
 
                     string output = process.StandardOutput.ReadToEnd();
-                    process.WaitForExit(); // Wait for the process to finish
+                    process.WaitForExit();
 
-                    Console.WriteLine(output); // Print the output
+                    Console.WriteLine(output);
                 }
             }
             else
@@ -533,7 +525,6 @@ namespace CProjectMakerLogic
 
             cmake_file_content += cmake_target_link_libraries;
             string cmake_file_path = Path.Combine($"{project_path}/{project_name}", "CMakeLists.txt");
-            // Create or overwrite the file
             File.Create(cmake_file_path).Close();
             File.WriteAllText(cmake_file_path, cmake_file_content);
         }
@@ -546,11 +537,9 @@ namespace CProjectMakerLogic
 
             string luaFolderPath = $"{request.ProjectPath}/{request.ProjectName}/src/lua";
 
-            // Create fennel main file
             File.Create(folderPath + "/main.fnl").Close();
             File.WriteAllText(folderPath + "/main.fnl", "(print \"Hello world from fennel!\")");
 
-            // Create fennel module example
             File.Create(folderPath + "/my-module.fnl").Close();
             File.WriteAllText(folderPath + "/my-module.fnl",
                 """
@@ -577,9 +566,9 @@ namespace CProjectMakerLogic
 
             ExtractTarGz(archivePath, luaFolderPath);
 
-            File.Delete(archivePath); // Remove the downloaded archive
+            File.Delete(archivePath); 
             File.Copy(luaFolderPath + "/fennel-1.4.2" + "/fennel.lua", luaFolderPath + "/fennel.lua");
-            Directory.Delete(luaFolderPath + "/fennel-1.4.2", recursive: true); // Remove the extracted directory
+            Directory.Delete(luaFolderPath + "/fennel-1.4.2", recursive: true); 
         }
 
         public static void ExtractTarGz(string gzArchiveName, string destFolder)
@@ -599,7 +588,7 @@ namespace CProjectMakerLogic
 
             if (type == "Sokol+Nuklear")
             {
-                string filePath = "./sokol_nuklear.txt"; // Replace with your actual file path
+                string filePath = "./sokol_nuklear.txt"; 
                 string fileContents = File.ReadAllText(filePath);
                 main_c_content += fileContents; 
             }
@@ -661,7 +650,7 @@ namespace CProjectMakerLogic
 
 
             string main_file_path = Path.Combine($"{project_path}/{project_name}/src/", "main.c");
-            // Create or overwrite the file
+
             File.Create(main_file_path).Close();
             File.WriteAllText(main_file_path, main_c_content);
 
