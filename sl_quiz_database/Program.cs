@@ -34,4 +34,6 @@ Because the expected behavior and the tested behavior are highly linked together
 Of course only because tests run all ok does not mean that there are no bugs.
 It only shows that the things we test work. (And this does not mean that the test
 does not have a bug!)
+
+I think there is a great value in being able to have tests that can be run by the user. 
 */
