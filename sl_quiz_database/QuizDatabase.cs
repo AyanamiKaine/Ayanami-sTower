@@ -13,26 +13,9 @@ namespace sl_quiz_database
             return question;
         }
 
-        public List<Question>? RetrieveQuestions()
+        public List<Question> RetrieveQuestions()
         {
-            if (Questions.Count == 0)
-            {
-                return [];
-            }
             return Questions; 
-        }
-
-        public void DeleteQuestion(Question questionToDelete)
-        {
-            Question questionToRemove = Questions.FirstOrDefault(q => q.Id == questionToDelete.Id);
-            if (questionToRemove != null)
-            {
-                Questions.Remove(questionToRemove);
-            }
-            else
-            {
-                Console.WriteLine($"Question not found with the id of: {questionToDelete.Id}");
-            }
         }
 
         public void UpdateQuestion(Question updatedQuestion)
@@ -49,6 +32,19 @@ namespace sl_quiz_database
             else
             {
                 Console.WriteLine($"Question not found with the id of: {updatedQuestion.Id}, couldnt updated question");
+            }
+        }
+
+        public void DeleteQuestion(Question questionToDelete)
+        {
+            Question questionToRemove = Questions.FirstOrDefault(q => q.Id == questionToDelete.Id);
+            if (questionToRemove != null)
+            {
+                Questions.Remove(questionToRemove);
+            }
+            else
+            {
+                Console.WriteLine($"Question not found with the id of: {questionToDelete.Id}");
             }
         }
 
