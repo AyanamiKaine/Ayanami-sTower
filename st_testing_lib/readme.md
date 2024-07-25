@@ -1,6 +1,51 @@
-## Stella Testing
+# Stella Testing
 
-## Why Another Testing-Library/Framework?
+## Dependencies
+
+- net8.0
+
+## Installing
+
+## How To Use
+
+### 1. Import the namespace
+
+```csharp
+using Stella.Testing;
+```
+
+### 2. Create a class
+
+- The name can be whatever you want.
+
+```csharp
+public class UnitTest
+{
+    ...
+}
+```
+
+### 3. Create functions with the `[ST_TEST]` annotation
+
+You can turn any function into a test with `[ST_Test]` but it must return an `TestingResult` object.
+
+Stella Testing provides some assert helper function that each return a `TestingResult` object
+
+
+
+```csharp
+...
+    [ST_TEST]
+    private static TestingResult TestAssertStringEqual()
+    {
+        string a = "Hello";
+        return AssertEqual("Hello", a, "String a and b are NOT equal");
+    }
+...
+
+```
+
+# Why Another Testing-Library/Framework?
 
 Simple, I wanted to write my tests right next to the implementation, now I can write the test methods besides the implemenation method or create a test_class.cs and write them there. With the ability to simply call `StellaTesting.RunTests()`. I personally use this (C# REPL)[https://github.com/waf/CSharpRepl] and having the ability to run all tests in the REPL is quite powerful.
 
