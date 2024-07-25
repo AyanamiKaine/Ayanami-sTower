@@ -29,6 +29,21 @@ public class UnitTest
 
 You can turn any function into a test with `[ST_Test]` but it must return an `TestingResult` object.
 
+```csharp
+public class TestingResult(string errorMessage, bool passed)
+{
+    public string ErrorMessage = errorMessage;
+    public bool Passed = passed;
+
+    //Automatically formats a pretty string of the test result ready to be printed to the console!
+    public string PrettyToString()
+    {
+        string status = Passed ? "Passed [✓]" : "Failed [X]";
+        return $"{status} : {ErrorMessage}";
+    }
+}
+```
+
 Stella Testing provides some assert helper function that each return a `TestingResult` object
 
 ```csharp
