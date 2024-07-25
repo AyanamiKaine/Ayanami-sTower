@@ -109,7 +109,7 @@ namespace Stella.Testing
         private static TestingResult TestAssertStringEqual()
         {
             string a = "Hello";
-            return StellaTesting.AssertEqual("Hello", a, "String a and b are NOT equal");
+            return AssertEqual("Hello", a, "String a and b are NOT equal");
         }
 
         public static TestingResult AssertTrue(bool condition, string message = "")
