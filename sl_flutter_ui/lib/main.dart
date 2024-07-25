@@ -45,6 +45,7 @@ import 'package:intl/intl.dart'; // Import the intl package
 import 'dart:developer'; // Import for the log function
 import 'package:dartzmq/dartzmq.dart';
 import 'file_to_learn.dart';
+import 'stella_quizes.dart';
 //import 'stella_quizes.dart';
 
 void main() {
@@ -706,17 +707,25 @@ class _MyHomePageState extends State<MyHomePage> {
                           ],
                         )))),
           ),
-          /*
           PaneItem(
             icon: const Icon(FluentIcons.guid),
             title: const Text('Quizzes'),
-            body: QuizCard( // QuizCard widget inside PaneItem
-              question: 'What is the capital of France?',
-              answers: ['Berlin', 'Paris', 'Rome', "Moskau"],
-              correctAnswerIndex: 1, // Index of 'Paris'
+            body: QuizPanel(
+              quizes: [
+                Quiz(
+                    id: 'q1',
+                    question: 'What is the capital of France?',
+                    answers: ['Berlin', 'Paris', 'Madrid'],
+                    correctAnswerIndex: 1),
+                Quiz(
+                    id: 'q2',
+                    question: 'What is the capital of Germany?',
+                    answers: ['Berlin', 'Paris', 'Madrid'],
+                    correctAnswerIndex: 0),
+                // ... more quizzes
+              ],
             ),
           ),
-          */
           PaneItem(
               icon: const Icon(FluentIcons.people),
               title: const Text("Frequently Asked Questions"),
