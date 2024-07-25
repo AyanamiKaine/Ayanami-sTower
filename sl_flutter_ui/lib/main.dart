@@ -5,7 +5,6 @@ import 'dart:math' show max;
 import 'package:stella_notes/faq.dart';
 import 'package:stella_notes/guide.dart';
 import 'package:uuid/uuid.dart';
-import 'package:window_size/window_size.dart';
 
 import 'package:fluent_ui/fluent_ui.dart'
     show
@@ -52,7 +51,7 @@ void main() {
   // Defining the window title if, we are one windows, linux, or mac-os
 
   if (Platform.isMacOS && Platform.isWindows && Platform.isLinux) {
-    setWindowTitle("Stella Learning");
+    //setWindowTitle("Stella Learning");
   }
 
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,6 +112,37 @@ class _MyHomePageState extends State<MyHomePage> {
   List<FileToLearn> filesToLearn = [];
   List<FileToLearn> _filteredNotes = [];
   List<FileToLearn> _filesToReview = [];
+
+  // List of Stella Quizes to me learned
+  List<Quiz> quizes = [
+    Quiz(
+        id: "id",
+        question: "What is the city of Germany?",
+        answers: ["Berlin", "Lissabon"],
+        correctAnswerIndex: 0,
+        priority: 0,
+        easeFactor: 0,
+        nextReviewDate: DateTime.now(),
+        numberOfTimeSeen: 0),
+    Quiz(
+        id: "id",
+        question: "What is the city of France?",
+        answers: ["Paris", "London"],
+        correctAnswerIndex: 0,
+        priority: 0,
+        easeFactor: 0,
+        nextReviewDate: DateTime.now(),
+        numberOfTimeSeen: 0),
+    Quiz(
+        id: "id",
+        question: "What is the city of England?",
+        answers: ["Paris", "London", "Moskau", "Köln", "Düsseldorf"],
+        correctAnswerIndex: 1,
+        priority: 0,
+        easeFactor: 0,
+        nextReviewDate: DateTime.now(),
+        numberOfTimeSeen: 0),
+  ];
 
   final _noteSearchBoxController = TextEditingController();
   bool _showEditView = false;
@@ -708,23 +738,33 @@ class _MyHomePageState extends State<MyHomePage> {
                         )))),
           ),
           PaneItem(
+            icon: const Icon(FluentIcons.view_list),
+            title: const Text('Quiz List'),
+            body: ListView.builder(
+              itemCount: quizes.length,
+              itemBuilder: (context, index) {
+                final quiz = quizes[index];
+                return ListTile(
+                  title: Text(quiz.question),
+                  onPressed: () {
+                    // You could navigate to a detailed view of the quiz here
+                  },
+                );
+              },
+            ),
+          ),
+          PaneItem(
             icon: const Icon(FluentIcons.guid),
             title: const Text('Quizzes'),
-            body: QuizPanel(
-              quizes: [
-                Quiz(
-                    id: 'q1',
-                    question: 'What is the capital of France?',
-                    answers: ['Berlin', 'Paris', 'Madrid'],
-                    correctAnswerIndex: 1),
-                Quiz(
-                    id: 'q2',
-                    question: 'What is the capital of Germany?',
-                    answers: ['Berlin', 'Paris', 'Madrid'],
-                    correctAnswerIndex: 0),
-                // ... more quizzes
-              ],
-            ),
+            body: ScaffoldPage(
+                content: Align(
+                    alignment: Alignment.center,
+                    child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [QuizPanel(quizes: quizes)])))),
           ),
           PaneItem(
               icon: const Icon(FluentIcons.people),
