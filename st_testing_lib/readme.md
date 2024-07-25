@@ -31,15 +31,6 @@ You can turn any function into a test with `[ST_Test]` but it must return an `Te
 
 Stella Testing provides some assert helper function that each return a `TestingResult` object
 
-### 4. Run Tests
-
-You can either run all tests that you defined in you main application or you can all tests found in your project as well as any dependencies that might defined tests too.
-
-```csharp
-StellaTesting.RunTests();
-StellaTesting.RunAllTestsFoundInAllAssemblies();
-```
-
 ```csharp
 ...
     [ST_TEST]
@@ -50,6 +41,15 @@ StellaTesting.RunAllTestsFoundInAllAssemblies();
     }
 ...
 
+```
+
+### 4. Run Tests
+
+You can either run all tests that you defined in you main application or you can all tests found in your project as well as any dependencies that might defined tests too.
+
+```csharp
+StellaTesting.RunTests();
+StellaTesting.RunAllTestsFoundInAllAssemblies();
 ```
 
 # Why Another Testing-Library/Framework?
