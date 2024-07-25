@@ -112,6 +112,12 @@ namespace Stella.Testing
             return AssertEqual("Hello", a, "String a and b are NOT equal");
         }
 
+        [ST_TEST]
+        private static TestingResult TestAssertAdditionTrue()
+        {
+            return AssertTrue((2 + 2) == 4, "2 + 2 is not 4");
+        }
+
         public static TestingResult AssertTrue(bool condition, string message = "")
         {
             if (!condition)
