@@ -67,7 +67,7 @@ namespace Stella.Testing
         {
             Console.WriteLine("Running tests...");
 
-            // Get the main assembly where the RunTests method is called from (your test project's assembly)
+            // Get the main assembly where the RunTests method is called from (the main project's assembly)
             Assembly mainAssembly = Assembly.GetEntryAssembly();
 
             if (mainAssembly == null)
@@ -81,7 +81,7 @@ namespace Stella.Testing
                 .Where(m => m.GetCustomAttribute(typeof(ST_TESTAttribute)) != null)
                 .ToArray();
 
-            foreach (MethodInfo method in methods)
+            Parallel.ForEach(methods, method =>
             {
                 // Check if method has the ST_TEST attribute
                 if (method.GetCustomAttribute(typeof(ST_TESTAttribute)) != null)
@@ -92,7 +92,7 @@ namespace Stella.Testing
 
                     Console.ResetColor(); // Reset color after each test
                 }
-            }
+            });
         }
 
         public static TestingResult AssertEqual<T>(T expected, T actual, string message = "")
