@@ -6,6 +6,10 @@
 
 ## Installing
 
+```bash
+dotnet add package st_testing_lib
+```
+
 ## How To Use
 
 ### 1. Import the namespace
