@@ -1,13 +1,16 @@
-# Stella Testing
+# Stella Testing: A Lightweight, Reflection-Based C# Testing Library
 
-## Dependencies
+## Features
 
-- net8.0
+- **Simplicity:** Write tests as regular methods with the `[ST_TEST]` attribute.
+- **Flexibility:** Execute tests from your main application or discover and run tests across all loaded assemblies.
+- **Extensibility:** Easily integrate with C# REPLs or add testing capabilities to your executables.
+- **Clear Output:** Color-coded results for easy identification of passed and failed tests.
 
 ## Installing
 
 ```bash
-dotnet add package st_testing_lib
+dotnet add package StellaTesting
 ```
 
 ## How To Use
@@ -52,12 +55,12 @@ Stella Testing provides some assert helper function that each return a `TestingR
 
 ```csharp
 ...
-    [ST_TEST]
-    private static TestingResult TestAssertStringEqual()
-    {
-        string a = "Hello";
-        return AssertEqual("Hello", a, "String a and b are NOT equal");
-    }
+[ST_TEST]
+private static TestingResult TestMyMethod()
+{
+    // Your test logic here
+    return AssertEqual(expectedValue, actualValue, "MyMethod failed");
+}
 ...
 
 ```
@@ -80,19 +83,25 @@ Simple, I wanted to write my tests right next to the implementation, now I can w
 - Simple function call to run tests.
 - Ability to run all tests found in all assemblies (of course only those whose uses this library)
 
-And its trival to add the possiblity to run tests in the delivered executable
+And its trival to add the possiblity to run tests in your executable
 
 ```csharp
 static void Main(string[] args)
 {
-    if (args.Length > 0 && args[0] == "--tests")
+    if (args.Length > 0 && args[0] == "--run-tests")
     {
         StellaTesting.RunTests();
+        return;  // Exit after running tests
     }
-    else
-    {
-        // Normal application logic (not testing)
-        Console.WriteLine("Running normal application mode.");
-    }
+
+    // ... your normal application logic
 }
 ```
+
+# Contributing
+
+Contributions are welcome! Please feel free to open issues or submit pull requests.
+
+# License
+
+MIT
