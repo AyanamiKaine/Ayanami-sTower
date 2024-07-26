@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>   
 
 
-    <PackageId>StellaTesting</PackageId>             <Version>1.0.0</Version>                       <Authors>Ayanami</Authors>        
+    <PackageId>StellaTesting</PackageId>             <Version>1.0.1</Version>                       <Authors>Ayanami</Authors>        
     <PackageDescription>A lightweight C# testing library for writing tests alongside code.</PackageDescription>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/st_testing_lib</PackageProjectUrl>
