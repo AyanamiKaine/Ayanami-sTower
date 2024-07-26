@@ -109,6 +109,16 @@ namespace Stella.Testing
             return new TestingResult($"Assertion was as Expected: {expected}, Actual: {actual}", true);
         }
 
+        public static TestingResult AssertEqual<T>(T expected, T actual)
+        {
+            if (!expected.Equals(actual))
+            {
+                return new TestingResult($"Assertion Failed: Expected: {expected}, Actual: {actual}.", false);
+            }
+
+            return new TestingResult($"Assertion was as Expected: {expected}, Actual: {actual}", true);
+        }
+
         [ST_TEST]
         private static TestingResult TestAssertStringEqual()
         {
@@ -132,11 +142,31 @@ namespace Stella.Testing
             return new TestingResult($"Assertion was as Expected true, got true.", true);
         }
 
+        public static TestingResult AssertTrue(bool condition)
+        {
+            if (!condition)
+            {
+                return new TestingResult($"Assertion Failed: Expected true, got false.", false);
+            }
+
+            return new TestingResult($"Assertion was as Expected true, got true.", true);
+        }
+
         public static TestingResult AssertFalse(bool condition, string message = "")
         {
             if (condition)
             {
                 return new TestingResult($"Assertion Failed: Expected false, got true. {message}", false);
+            }
+
+            return new TestingResult($"Assertion was as Expected false, got false", true);
+        }
+
+        public static TestingResult AssertFalse(bool condition)
+        {
+            if (condition)
+            {
+                return new TestingResult($"Assertion Failed: Expected false, got true.", false);
             }
 
             return new TestingResult($"Assertion was as Expected false, got false", true);
