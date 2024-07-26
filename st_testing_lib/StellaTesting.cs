@@ -81,21 +81,22 @@ namespace Stella.Testing
                 .Where(m => m.GetCustomAttribute(typeof(ST_TESTAttribute)) != null)
                 .ToArray();
 
-            Parallel.ForEach(methods, method =>
+            foreach (MethodInfo method in methods)
             {
                 // Check if method has the ST_TEST attribute
                 if (method.GetCustomAttribute(typeof(ST_TESTAttribute)) != null)
                 {
                     TestingResult testingResult = (TestingResult)method.Invoke(null, null);
-
-                    ThreadLocal<ConsoleColor> originalColor = new ThreadLocal<ConsoleColor>(() => Console.ForegroundColor);
-
                     Console.ForegroundColor = testingResult.Passed ? ConsoleColor.Green : ConsoleColor.Red;
                     Console.WriteLine($"{method.Name} Result: {testingResult.PrettyToString()}");
 
-                    Console.ForegroundColor = originalColor.Value; // Restore original color
+                    Console.ResetColor(); // Reset color after each test
                 }
-            });
+            };
+
+            // When all tests ran we reset the console color to 
+            // ensure we are back to the default color 
+            Console.ResetColor();
         }
 
         public static TestingResult AssertEqual<T>(T expected, T actual, string message = "")
