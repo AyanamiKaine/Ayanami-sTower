@@ -1,9 +1,26 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>enable</Nullable>   
+
+
+    <PackageId>StellaTesting</PackageId>             <Version>1.0.0</Version>                       <Authors>Ayanami</Authors>        
+    <PackageDescription>A lightweight C# testing library for writing tests alongside code.</PackageDescription>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/st_testing_lib</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/st_testing_lib</RepositoryUrl>
+    <RepositoryType>git</RepositoryType> 
+    <PackageTags>testing unit-testing csharp reflection</PackageTags>
+    <Copyright>MIT</Copyright>
+    <PackageReleaseNotes>Initial release.</PackageReleaseNotes> 
+      <PackageReadmeFile>README.md</PackageReadmeFile>
+
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\"/>   
+  </ItemGroup>
 
 </Project>
