@@ -2,6 +2,7 @@
 import 'dart:developer'; // Import for the log function
 
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:intl/intl.dart';
 
 class Quiz {
   String id;
@@ -103,7 +104,7 @@ class _QuizPanelState extends State<QuizPanel> {
       // Handle empty quiz list
       return const Center(
         child: Text(
-          "No questions available",
+          "No Questions Available",
           style: TextStyle(fontSize: 20),
         ),
       );
@@ -111,7 +112,7 @@ class _QuizPanelState extends State<QuizPanel> {
       // Handle finished quiz
       return const Center(
         child: Text(
-          "No more questions",
+          "No More Quizes for Today!",
           style: TextStyle(fontSize: 20),
         ),
       );
@@ -125,6 +126,116 @@ class _QuizPanelState extends State<QuizPanel> {
         onCorrectAnswer: nextQuiz,
       );
     }
+  }
+}
+
+class QuizDetailWidget extends StatelessWidget {
+  final Quiz quiz;
+  final Function() onEditQuizButton; // Callback to edit the quiz
+  final Function() onDeleteQuizButton; // Callback to delete the quiz
+
+  const QuizDetailWidget({
+    super.key,
+    required this.quiz,
+    required this.onEditQuizButton,
+    required this.onDeleteQuizButton,
+  });
+
+  void showDeleteConfirmationDialog(BuildContext context) async {
+    await showDialog<String>(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: const Text('Delete Quiz?'),
+        content: const Text('Are you sure you want to delete this quiz?'),
+        actions: [
+          Button(
+            child: const Text('Delete'),
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              onDeleteQuizButton(); // Call the delete callback
+            },
+          ),
+          FilledButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaffoldPage(
+      header: PageHeader(
+        title: Text(quiz.question),
+      ),
+      content: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          // Wrap in SingleChildScrollView for longer content
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Answers:',
+                style: FluentTheme.of(context).typography.subtitle,
+              ),
+              // List of answers
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: quiz.answers.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  String answer = entry.value;
+                  bool isCorrect = index == quiz.correctAnswerIndex;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Text('${index + 1}. $answer'),
+                        if (isCorrect) ...[
+                          const SizedBox(width: 8), // Add some spacing
+                          const Icon(FluentIcons.check_mark,
+                              color: Colors.black),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              // Additional Details
+              Text('Priority: ${quiz.priority}',
+                  style: FluentTheme.of(context).typography.subtitle),
+              Text('Ease Factor: ${quiz.easeFactor.toStringAsFixed(2)}',
+                  style: FluentTheme.of(context).typography.subtitle),
+              Text(
+                  'Next Review: ${DateFormat('dd/MM/yyyy').format(quiz.nextReviewDate)}',
+                  style: FluentTheme.of(context).typography.subtitle),
+              Text('Times Seen: ${quiz.numberOfTimeSeen}',
+                  style: FluentTheme.of(context).typography.subtitle),
+              const SizedBox(height: 16),
+              // Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Button(
+                    child: const Text('Edit'),
+                    onPressed: onEditQuizButton,
+                  ),
+                  const SizedBox(width: 10),
+                  FilledButton(
+                    child: const Text('Delete'),
+                    onPressed: () => showDeleteConfirmationDialog(context),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -158,17 +269,21 @@ class _QuizCardState extends State<QuizCard> {
               bool isSelected = index == selectedAnswerIndex;
 
               return Button(
-                onPressed: () {
-                  setState(() {
-                    selectedAnswerIndex = index;
-                    showCorrectAnswer = !isCorrect; // Show if incorrect
+                onPressed:
+                    selectedAnswerIndex == null // Disable if already selected
+                        ? () {
+                            setState(() {
+                              selectedAnswerIndex = index;
+                              showCorrectAnswer = !isCorrect;
+                              showNextButton =
+                                  true; // Show next button after selection
 
-                    if (isCorrect) {
-                      widget.onCorrectAnswer();
-                      log("Quiz Answer was correct");
-                    }
-                  });
-                },
+                              if (isCorrect) {
+                                widget.onCorrectAnswer();
+                              }
+                            });
+                          }
+                        : null,
                 child: Text(answer),
                 style: ButtonStyle(
                   backgroundColor: ButtonState.all(
@@ -184,33 +299,21 @@ class _QuizCardState extends State<QuizCard> {
           ),
           const SizedBox(height: 12),
           if (selectedAnswerIndex != null)
+            const SizedBox(height: 12), // Add spacing above the button
+          if (showNextButton) // Only show if an answer is selected
             Center(
-                child: InfoBar(
-              title: showCorrectAnswer
-                  ? const Text('The correct answer is highlighted')
-                  : (selectedAnswerIndex == widget.correctAnswerIndex
-                      ? const Text('Correct!')
-                      : const Text('Incorrect')),
-              severity: showCorrectAnswer
-                  ? InfoBarSeverity.warning
-                  : (selectedAnswerIndex == widget.correctAnswerIndex
-                      ? InfoBarSeverity.success
-                      : InfoBarSeverity.error),
-            )),
-          const SizedBox(height: 12), // Add spacing above the button
-          Center(
-            child: FilledButton(
-              child: const Text('Next Question'),
-              onPressed: () {
-                setState(() {
-                  selectedAnswerIndex = null;
-                  showCorrectAnswer = false;
-                  showNextButton = false;
-                  widget.onCorrectAnswer(); // Move to next question
-                });
-              },
-            ),
-          ),
+              child: FilledButton(
+                child: const Text('Next Question'),
+                onPressed: () {
+                  setState(() {
+                    selectedAnswerIndex = null;
+                    showCorrectAnswer = false;
+                    showNextButton = false;
+                    widget.onCorrectAnswer();
+                  });
+                },
+              ),
+            )
         ],
       ),
     );

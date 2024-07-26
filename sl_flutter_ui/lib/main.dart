@@ -113,35 +113,58 @@ class _MyHomePageState extends State<MyHomePage> {
   List<FileToLearn> _filteredNotes = [];
   List<FileToLearn> _filesToReview = [];
 
-  // List of Stella Quizes to me learned
   List<Quiz> quizes = [
     Quiz(
-        id: "id",
-        question: "What is the city of Germany?",
-        answers: ["Berlin", "Lissabon"],
-        correctAnswerIndex: 0,
-        priority: 0,
-        easeFactor: 0,
-        nextReviewDate: DateTime.now(),
-        numberOfTimeSeen: 0),
+      id: "quiz1", // Give each quiz a unique ID
+      question: "What is the capital of Germany?",
+      answers: ["Berlin", "Munich", "Hamburg", "Frankfurt"],
+      correctAnswerIndex: 0,
+      priority: 2, // You can assign priorities as needed
+      easeFactor: 2.5, // Initial ease factor (adjust as needed)
+      nextReviewDate: DateTime.now(),
+      numberOfTimeSeen: 0,
+    ),
     Quiz(
-        id: "id",
-        question: "What is the city of France?",
-        answers: ["Paris", "London"],
-        correctAnswerIndex: 0,
-        priority: 0,
-        easeFactor: 0,
-        nextReviewDate: DateTime.now(),
-        numberOfTimeSeen: 0),
+      id: "quiz2",
+      question: "Which of these planets is NOT a gas giant?",
+      answers: ["Jupiter", "Saturn", "Uranus", "Mars"],
+      correctAnswerIndex: 3,
+      priority: 1,
+      easeFactor: 2.5,
+      nextReviewDate: DateTime.now(),
+      numberOfTimeSeen: 0,
+    ),
     Quiz(
-        id: "id",
-        question: "What is the city of England?",
-        answers: ["Paris", "London", "Moskau", "Köln", "Düsseldorf"],
-        correctAnswerIndex: 1,
-        priority: 0,
-        easeFactor: 0,
-        nextReviewDate: DateTime.now(),
-        numberOfTimeSeen: 0),
+      id: "quiz3",
+      question: "Who painted the Mona Lisa?",
+      answers: [
+        "Leonardo da Vinci",
+        "Michelangelo",
+        "Raphael",
+        "Vincent van Gogh"
+      ],
+      correctAnswerIndex: 0,
+      priority: 3,
+      easeFactor: 2.5,
+      nextReviewDate: DateTime.now(),
+      numberOfTimeSeen: 0,
+    ),
+    Quiz(
+      id: "quiz4",
+      question: "What is the largest ocean on Earth?",
+      answers: [
+        "Atlantic Ocean",
+        "Indian Ocean",
+        "Arctic Ocean",
+        "Pacific Ocean"
+      ],
+      correctAnswerIndex: 3,
+      priority: 1,
+      easeFactor: 2.5,
+      nextReviewDate: DateTime.now(),
+      numberOfTimeSeen: 0,
+    ),
+    // Add more quizzes here...
   ];
 
   final _noteSearchBoxController = TextEditingController();
@@ -150,6 +173,7 @@ class _MyHomePageState extends State<MyHomePage> {
   FileToLearn?
       nextReviewFile; // Initialize as null, holds the next file to review
   FileToLearn? _selectedFile; // Store the selected FileToLearn object
+  Quiz? _selectedQuiz; // Store the selected quiz object
 
   void _showFileToLearnDetails(FileToLearn file) {
     setState(() {
@@ -436,6 +460,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _goBackToList() async {
     setState(() {
       _selectedFile = null;
+      _selectedQuiz = null;
       _showEditView = false;
     });
   }
@@ -519,8 +544,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                     _openFileWithDefaultProgram(
                                         _selectedFile?.pathToFile)
                                   },
-                                  onClickDeleteButton: () =>
-                                      {_deleteFileToLearn(_selectedFile!)},
+                                  onClickDeleteButton: () => {
+                                    _deleteFileToLearn(_selectedFile!),
+                                    _goBackToList(),
+                                  },
                                 ),
                         ),
                       ],
@@ -740,18 +767,47 @@ class _MyHomePageState extends State<MyHomePage> {
           PaneItem(
             icon: const Icon(FluentIcons.view_list),
             title: const Text('Quiz List'),
-            body: ListView.builder(
-              itemCount: quizes.length,
-              itemBuilder: (context, index) {
-                final quiz = quizes[index];
-                return ListTile(
-                  title: Text(quiz.question),
-                  onPressed: () {
-                    // You could navigate to a detailed view of the quiz here
-                  },
-                );
-              },
-            ),
+            body: _selectedQuiz != null
+                ? Column(children: [
+                    CommandBar(
+                      primaryItems: [
+                        CommandBarButton(
+                          icon: const Icon(FluentIcons.back),
+                          label: const Text('Back'),
+                          onPressed: _goBackToList,
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                        // Make detail widget take up remaining space
+                        child: QuizDetailWidget(
+                      quiz: _selectedQuiz!,
+                      onEditQuizButton: () {
+                        // Handle quiz editing here
+                      },
+                      onDeleteQuizButton: () {
+                        // Handle quiz deletion here
+                        quizes.remove(_selectedQuiz);
+                        _goBackToList();
+                      },
+                      //onGoBack: _goBackToList, // Add onGoBack callback
+                    ))
+                  ])
+                : ListView.builder(
+                    itemCount: quizes.length,
+                    itemBuilder: (context, index) {
+                      final quiz = quizes[index];
+                      return ListTile(
+                        title: Text(quiz.question),
+                        onPressed: () {
+                          setState(() {
+                            _selectedQuiz =
+                                quiz; // Update selectedQuiz when clicked
+                          });
+                        },
+                      );
+                    },
+                  ),
           ),
           PaneItem(
             icon: const Icon(FluentIcons.guid),
