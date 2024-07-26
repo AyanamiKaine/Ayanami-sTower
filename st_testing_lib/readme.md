@@ -21,18 +21,7 @@ dotnet add package StellaTesting
 using Stella.Testing;
 ```
 
-### 2. Create a class
-
-- The name can be whatever you want.
-
-```csharp
-public class UnitTest
-{
-    ...
-}
-```
-
-### 3. Create functions with the `[ST_TEST]` annotation
+### 2. Create functions with the `[ST_TEST]` annotation
 
 You can turn any function into a test with `[ST_Test]` but it must return an `TestingResult` object.
 
@@ -65,7 +54,13 @@ private static TestingResult TestMyMethod()
 
 ```
 
-### 4. Run Tests
+Stella Testing provides convenient assertion functions:
+
+- `AssertEqual<T>(expected, actual, message)`
+- `AssertTrue(condition, message)`
+- `AssertFalse(condition, message)`
+
+### 3. Run Tests
 
 You can either run all tests that you defined in you main application or you can all tests found in your project as well as any dependencies that might defined tests too.
 
