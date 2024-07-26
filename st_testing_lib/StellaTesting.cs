@@ -87,10 +87,13 @@ namespace Stella.Testing
                 if (method.GetCustomAttribute(typeof(ST_TESTAttribute)) != null)
                 {
                     TestingResult testingResult = (TestingResult)method.Invoke(null, null);
+
+                    ThreadLocal<ConsoleColor> originalColor = new ThreadLocal<ConsoleColor>(() => Console.ForegroundColor);
+
                     Console.ForegroundColor = testingResult.Passed ? ConsoleColor.Green : ConsoleColor.Red;
                     Console.WriteLine($"{method.Name} Result: {testingResult.PrettyToString()}");
 
-                    Console.ResetColor(); // Reset color after each test
+                    Console.ForegroundColor = originalColor.Value; // Restore original color
                 }
             });
         }
