@@ -1,0 +1,19 @@
+cmake_minimum_required(VERSION  3.10)
+
+set(VCPKG_ROOT $ENV{VCPKG_ROOT}) # Get VCPKG_ROOT from environment 
+set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+
+project(stella_messaging)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+file(GLOB_RECURSE SOURCES "src/*.c" "src/*.h")
+
+# Adding Third-Party Packages that get fetched via VCPKG
+find_package(nng CONFIG REQUIRED)
+
+add_library(stella_messaging SHARED ${SOURCES})
+include_directories(src)
+
+target_link_libraries(stella_messaging PRIVATE nng::nng)
