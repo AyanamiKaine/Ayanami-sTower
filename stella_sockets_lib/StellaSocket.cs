@@ -5,7 +5,7 @@ namespace StellaSockets;
 
 public class StellaSocket : IDisposable
 {
-    private nng_socket _socketHandle;
+    private readonly nng_socket _socketHandle;
     public SocketType Type { get; set; }
 
     public StellaSocket(SocketType type)
@@ -60,6 +60,7 @@ public class StellaSocket : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
         StellaMessagingInterop.socket_close(_socketHandle);
     }
 }
