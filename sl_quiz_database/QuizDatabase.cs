@@ -15,7 +15,7 @@ namespace sl_quiz_database
 
         public List<Question> RetrieveQuestions()
         {
-            return Questions; 
+            return Questions;
         }
 
         public void UpdateQuestion(Question updatedQuestion)
@@ -25,9 +25,9 @@ namespace sl_quiz_database
 
             if (questionToUpdate != null)
             {
-                questionToUpdate.QuestionText       = updatedQuestion.QuestionText;
-                questionToUpdate.AnswerOptions      = updatedQuestion.AnswerOptions;
-                questionToUpdate.CorrectAnswer      = updatedQuestion.CorrectAnswer;
+                questionToUpdate.QuestionText = updatedQuestion.QuestionText;
+                questionToUpdate.AnswerOptions = updatedQuestion.AnswerOptions;
+                questionToUpdate.CorrectAnswer = updatedQuestion.CorrectAnswer;
             }
             else
             {
@@ -56,19 +56,22 @@ namespace sl_quiz_database
             if (ImportedQuestions != null)
             {
                 Questions = ImportedQuestions;
-            
-            } else 
+
+            }
+            else
             {
                 Console.WriteLine("Imported Questions where null, will be set to [] instead");
                 // We never want the database to be null, will only complicate things down the line
                 Questions = [];
             }
-        
+
         }
 
         public string RetrieveQuestionsAsJson()
         {
-            return JsonSerializer.Serialize<List<Question>>(Questions);
+            var options = new JsonSerializerOptions { WriteIndented = true };
+
+            return JsonSerializer.Serialize<List<Question>>(Questions, options);
         }
 
         public int Count()

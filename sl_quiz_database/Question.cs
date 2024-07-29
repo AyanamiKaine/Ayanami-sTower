@@ -2,11 +2,13 @@ namespace sl_quiz_database
 {
     public class Question
     {
-        public Guid Id { get; set; } = Guid.NewGuid(); 
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string QuestionText { get; set; } = "";
         public List<string> AnswerOptions { get; set; } = [];
         public string CorrectAnswer { get; set; } = "";
-                
+        public int Priority { get; set; } = 0;
+        public DateTime NextReviewDate { get; set; } = DateTime.Now;
+        public int NumberOfTimeSeen { get; set; } = 0;
         public Question()
         {
         }
@@ -18,7 +20,7 @@ namespace sl_quiz_database
 
         public Question(Guid id, string questionText)
         {
-            Id           = id;
+            Id = id;
             QuestionText = questionText;
         }
 
@@ -37,8 +39,8 @@ namespace sl_quiz_database
             {
                 throw new ArgumentException("Answer option cannot be null, empty, or whitespace.", nameof(answerOption));
             }
-        
-            if (isCorrectAnswer == true) 
+
+            if (isCorrectAnswer == true)
             {
                 CorrectAnswer = answerOption;
             }
