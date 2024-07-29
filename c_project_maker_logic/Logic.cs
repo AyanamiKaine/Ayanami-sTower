@@ -27,11 +27,11 @@ namespace CProjectMakerLogic
 
             InstallPackagesWithVCPKG(request);
 
-            if(request.AddLuaJIT)
+            if (request.AddLuaJIT)
             {
                 string folderPath = $"{request.ProjectPath}/{request.ProjectName}/src/lua";
                 Directory.CreateDirectory(folderPath);
-                
+
                 File.Create(folderPath + "/main.lua").Close();
 
 
@@ -78,7 +78,7 @@ namespace CProjectMakerLogic
             }
 
             CloningThirdPartyGitProjects(request);
-            CreateCMakeListsFile(request.ProjectName, request.ProjectPath, request.CVersion, request.AutoAddFiles, request.AddVCPKG, request.AddCzmq, request.AddCJson, request.AddSokol, request.AddNuklear, request.AddFlecs, request.AddLuaJIT);
+            CreateCMakeListsFile(request.ProjectName, request.ProjectPath, request.CVersion, request.AutoAddFiles, request.AddVCPKG, request.AddCzmq, request.AddCJson, request.AddSokol, request.AddNuklear, request.AddFlecs, request.AddLuaJIT, request.AddNNG);
             CreateMain(request.MainTemplate, request.ProjectName, request.ProjectPath);
         }
 
@@ -91,7 +91,7 @@ namespace CProjectMakerLogic
 
                 Repository.Clone(sokol_repository_url, sokol_local_path);
 
-                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); 
+                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include");
 
                 Directory.CreateDirectory(destIncludeDir);
 
@@ -100,18 +100,18 @@ namespace CProjectMakerLogic
                     foreach (string file in Directory.GetFiles(sokol_local_path, "*.h"))
                     {
                         string destFilePath = Path.Combine(destIncludeDir, Path.GetFileName(file));
-                        File.Copy(file, destFilePath, true); 
+                        File.Copy(file, destFilePath, true);
                     }
                     foreach (string file in Directory.GetFiles(sokol_local_path + "/util", "*.h"))
                     {
                         string destFilePath = Path.Combine(destIncludeDir, Path.GetFileName(file));
-                        File.Copy(file, destFilePath, true); 
+                        File.Copy(file, destFilePath, true);
                     }
                 }
                 catch (IOException ex)
                 {
                     Console.WriteLine("Error copying header files: " + ex.Message);
-                    return; 
+                    return;
                 }
 
                 Console.WriteLine("Sokol headers copied successfully!");
@@ -124,7 +124,7 @@ namespace CProjectMakerLogic
 
                 Repository.Clone(nuklear_repository_url, nuklear_local_path);
 
-                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); 
+                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include");
                 Directory.CreateDirectory(destIncludeDir);
 
                 try
@@ -132,13 +132,13 @@ namespace CProjectMakerLogic
                     foreach (string file in Directory.GetFiles(nuklear_local_path, "*.h"))
                     {
                         string destFilePath = Path.Combine(destIncludeDir, Path.GetFileName(file));
-                        File.Copy(file, destFilePath, true); 
+                        File.Copy(file, destFilePath, true);
                     }
                 }
                 catch (IOException ex)
                 {
                     Console.WriteLine("Error copying header files: " + ex.Message);
-                    return; 
+                    return;
                 }
 
                 Console.WriteLine("nuklear headers copied successfully!");
@@ -150,7 +150,7 @@ namespace CProjectMakerLogic
 
                 Repository.Clone(arena_allocator_repository_url, arena_allocator_local_path);
 
-                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include"); 
+                string destIncludeDir = Path.Combine($"{request.ProjectPath}/{request.ProjectName}", "include");
                 Directory.CreateDirectory(destIncludeDir);
 
                 try
@@ -164,18 +164,18 @@ namespace CProjectMakerLogic
                 catch (IOException ex)
                 {
                     Console.WriteLine("Error copying header files: " + ex.Message);
-                    return; 
+                    return;
                 }
 
                 Console.WriteLine("arena_allocators headers copied successfully!");
             }
         }
 
-    
+
 
         static public void CopyLuaJITHeadersIntoProject(string project_path, string project_name)
         {
-            string repoPath = $"{project_path}/{project_name}/libs/luajit";  
+            string repoPath = $"{project_path}/{project_name}/libs/luajit";
             try
             {
                 Repository.Clone("https://github.com/LuaJIT/LuaJIT.git", $"{project_path}/{project_name}/libs/luajit");
@@ -183,11 +183,11 @@ namespace CProjectMakerLogic
             catch (LibGit2SharpException ex)
             {
                 Console.WriteLine("Error cloning repository: " + ex.Message);
-                return; 
+                return;
             }
 
             string srcHeaderDir = Path.Combine(repoPath, "src");
-            string destIncludeDir = Path.Combine($"{project_path}/{project_name}", "include"); 
+            string destIncludeDir = Path.Combine($"{project_path}/{project_name}", "include");
 
             Directory.CreateDirectory(destIncludeDir);
 
@@ -220,18 +220,18 @@ namespace CProjectMakerLogic
             {
                 ProcessStartInfo startInfo = new()
                 {
-                    FileName = "make",       
+                    FileName = "make",
                     WorkingDirectory = luaJITSourceFolder, // Set the working directory (where the Makefile is), here gets the make command executed
-                    RedirectStandardOutput = true, 
-                    UseShellExecute = false, 
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
                 };
 
                 Process process = new() { StartInfo = startInfo };
                 process.Start();
 
                 string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit(); 
-                Console.WriteLine(output); 
+                process.WaitForExit();
+                Console.WriteLine(output);
 
                 if (!Directory.Exists(destinationFolder))
                 {
@@ -249,22 +249,22 @@ namespace CProjectMakerLogic
 
         static public void InstallPackagesWithVCPKG(Request request)
         {
-            string variableName = "VCPKG_ROOT"; 
+            string variableName = "VCPKG_ROOT";
             string vcpkgRoot = Environment.GetEnvironmentVariable(variableName);
 
             if (vcpkgRoot != null)
             {
                 Console.WriteLine($"The value of '{variableName}' is: {vcpkgRoot}");
                 Console.WriteLine("Installing the packages with VCPKG");
-                
+
 
                 if (request.AddCzmq == true)
                 {
                     Console.WriteLine("Trying to install czmq with VCPKG");
                     ProcessStartInfo startInfo = new()
                     {
-                        FileName = Path.Combine(vcpkgRoot, "vcpkg"), 
-                        Arguments = "install czmq",                 
+                        FileName = Path.Combine(vcpkgRoot, "vcpkg"),
+                        Arguments = "install czmq",
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
                     };
@@ -286,9 +286,9 @@ namespace CProjectMakerLogic
 
                     ProcessStartInfo startInfo = new()
                     {
-                        FileName = "vcpkg install cjson",        
-                        RedirectStandardOutput = true, 
-                        UseShellExecute = false, 
+                        FileName = "vcpkg install cjson",
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
                     };
 
                     Process process = new() { StartInfo = startInfo };
@@ -297,7 +297,7 @@ namespace CProjectMakerLogic
                     string output = process.StandardOutput.ReadToEnd();
                     process.WaitForExit();
 
-                    Console.WriteLine(output); 
+                    Console.WriteLine(output);
                 }
 
                 if (request.AddFlecs == true)
@@ -307,8 +307,8 @@ namespace CProjectMakerLogic
                     ProcessStartInfo startInfo = new()
                     {
                         FileName = "vcpkg install flecs",
-                        RedirectStandardOutput = true, 
-                        UseShellExecute = false, 
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
                     };
 
                     Process process = new() { StartInfo = startInfo };
@@ -328,7 +328,7 @@ namespace CProjectMakerLogic
             }
         }
 
-        static public void CreateCMakeListsFile(string project_name,string project_path ,string c_version, bool auto_add_file, bool add_vcpkg, bool add_czmq, bool add_json_c, bool add_sokol, bool add_nuklear, bool add_flecs, bool add_luajit)
+        static public void CreateCMakeListsFile(string project_name, string project_path, string c_version, bool auto_add_file, bool add_vcpkg, bool add_czmq, bool add_json_c, bool add_sokol, bool add_nuklear, bool add_flecs, bool add_luajit, bool add_nng)
         {
             string cmake_file_content = "";
             string cmake_target_link_libraries = $"target_link_libraries({project_name} PRIVATE ";
@@ -385,6 +385,17 @@ namespace CProjectMakerLogic
                 cmake_target_link_libraries += "czmq czmq-static ";
             }
 
+            if (add_nng)
+            {
+                cmake_file_content += """
+
+                find_package(nng CONFIG REQUIRED)
+                
+                """;
+
+                cmake_target_link_libraries += "nng::nng ";
+            }
+
             /*
             if (add_arena_allocator)
             {
@@ -435,7 +446,7 @@ namespace CProjectMakerLogic
             {
                 CopyLuaJITHeadersIntoProject(project_path, project_name);
                 cmake_file_content += "message(STATUS \"Finding LuaJIT (luajit or lua51)...\")\n\r";
-                
+
                 // On Unix and Windows the created LuaJit library will have a different name, 
                 // On Windows = lua51.dll
                 // On Linux   = libluajit
@@ -467,7 +478,7 @@ namespace CProjectMakerLogic
                 endif()
                 
                 """;
-                    
+
                 cmake_target_link_libraries += "${luajit} ";
                 cmake_file_content += "if(luajit)\r\n    message(STATUS \"Found LuaJIT: ${luajit}\")\r\nelse()\r\n    message(FATAL_ERROR \"LuaJIT library not found\")\r\nendif()\r\n";
                 cmake_file_content += """
@@ -566,9 +577,9 @@ namespace CProjectMakerLogic
 
             ExtractTarGz(archivePath, luaFolderPath);
 
-            File.Delete(archivePath); 
+            File.Delete(archivePath);
             File.Copy(luaFolderPath + "/fennel-1.4.2" + "/fennel.lua", luaFolderPath + "/fennel.lua");
-            Directory.Delete(luaFolderPath + "/fennel-1.4.2", recursive: true); 
+            Directory.Delete(luaFolderPath + "/fennel-1.4.2", recursive: true);
         }
 
         public static void ExtractTarGz(string gzArchiveName, string destFolder)
@@ -588,11 +599,11 @@ namespace CProjectMakerLogic
 
             if (type == "Sokol+Nuklear")
             {
-                string filePath = "./sokol_nuklear.txt"; 
+                string filePath = "./sokol_nuklear.txt";
                 string fileContents = File.ReadAllText(filePath);
-                main_c_content += fileContents; 
+                main_c_content += fileContents;
             }
-            
+
             if (type == "empty")
             {
             }

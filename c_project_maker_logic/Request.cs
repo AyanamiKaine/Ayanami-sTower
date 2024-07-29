@@ -25,6 +25,7 @@ namespace CProjectMakerLogic
         public bool AddCString { get; set; } = false;
         public bool AddFlecs { get; set; } = false;
         public bool AddLuaJIT { get; set; } = false;
+        public bool AddNNG { get; set; } = false;
         public string PrettyPrint()
         {
             return $@"
@@ -41,7 +42,8 @@ Request Details:
 - Add Sokol: {AddSokol}
 - Add Nuklear: {AddNuklear}
 - Add Arena Allocator: {AddArenaAllocator}
-- Add CString: {AddCString}";
+- Add CString: {AddCString}
+- Add NNG: {AddNNG}";
         }
     }
 }
