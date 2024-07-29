@@ -3,6 +3,7 @@ bazel-*
 **/.bazelignore
 
 # C++
+[Bb]uild/
 *.o
 *.so
 *.a
