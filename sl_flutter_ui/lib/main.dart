@@ -113,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<FileToLearn> _filteredNotes = [];
   List<FileToLearn> _filesToReview = [];
 
-  List<Quiz> quizes = [
+  List<Quiz> _quizes = [
     Quiz(
       id: "quiz1", // Give each quiz a unique ID
       question: "What is the capital of Germany?",
@@ -166,6 +166,9 @@ class _MyHomePageState extends State<MyHomePage> {
     ),
     // Add more quizzes here...
   ];
+
+  List<Quiz> _filteredQuizes = [];
+  List<Quiz> _quizesToReview = [];
 
   final _noteSearchBoxController = TextEditingController();
   bool _showEditView = false;
@@ -423,7 +426,9 @@ class _MyHomePageState extends State<MyHomePage> {
     _retrieveAllItems();
 
     _filteredNotes = filesToLearn; // Initialize _filteredNotes
+    _filteredQuizes = _quizes;
     _sortNotesByPriority(); // Sort initially
+    _sortQuizesByPriority();
 
     _filesToReview = filesToLearn
         .where((file) => file.nextReviewDate.isBefore(DateTime.now()))
@@ -454,6 +459,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _sortNotesByPriority() async {
     _filteredNotes.sort((a, b) => b.priority.compareTo(a.priority));
+  }
+
+  void _sortQuizesByPriority() async {
+    _filteredQuizes.sort((a, b) => b.priority.compareTo(a.priority));
+  }
+
+  void _gatherQuizesToReview() async {
+    _quizesToReview = _quizes
+        .where((file) => file.nextReviewDate.isBefore(DateTime.now()))
+        .toList(); // Convert to list
   }
 
   // Function to go back to the list view
@@ -765,6 +780,18 @@ class _MyHomePageState extends State<MyHomePage> {
                         )))),
           ),
           PaneItem(
+              icon: const Icon(FluentIcons.add),
+              title: const Text("Create Quiz"),
+              body: QuizCreateWidget(
+                onCreate: (newQuiz) {
+                  setState(() {
+                    log("QUIZ WAS CREATED");
+                    _quizes.add(newQuiz);
+                    log(_quizes.length.toString());
+                  });
+                },
+              )),
+          PaneItem(
             icon: const Icon(FluentIcons.view_list),
             title: const Text('Quiz List'),
             body: _selectedQuiz != null
@@ -787,16 +814,16 @@ class _MyHomePageState extends State<MyHomePage> {
                       },
                       onDeleteQuizButton: () {
                         // Handle quiz deletion here
-                        quizes.remove(_selectedQuiz);
+                        _quizes.remove(_selectedQuiz);
                         _goBackToList();
                       },
                       //onGoBack: _goBackToList, // Add onGoBack callback
                     ))
                   ])
                 : ListView.builder(
-                    itemCount: quizes.length,
+                    itemCount: _quizes.length,
                     itemBuilder: (context, index) {
-                      final quiz = quizes[index];
+                      final quiz = _quizes[index];
                       return ListTile(
                         title: Text(quiz.question),
                         onPressed: () {
@@ -820,7 +847,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
-                            children: [QuizPanel(quizes: quizes)])))),
+                            children: [QuizPanel(quizes: _filteredQuizes)])))),
           ),
           PaneItem(
               icon: const Icon(FluentIcons.people),

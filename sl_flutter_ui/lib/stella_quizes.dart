@@ -129,6 +129,151 @@ class _QuizPanelState extends State<QuizPanel> {
   }
 }
 
+class QuizCreateWidget extends StatefulWidget {
+  final Function(Quiz) onCreate; // Callback function to pass the created quiz
+
+  const QuizCreateWidget({Key? key, required this.onCreate}) : super(key: key);
+
+  @override
+  _QuizCreateWidgetState createState() => _QuizCreateWidgetState();
+}
+
+class _QuizCreateWidgetState extends State<QuizCreateWidget> {
+  final _formKey = GlobalKey<FormState>();
+
+  String _question = '';
+  List<String> _answers = ['', '', '']; // Start with 3 answer fields
+  int _correctAnswerIndex = 0;
+  // (You might want to add fields for easeFactor, priority, etc. later)
+  void _createQuiz() {
+    if (_formKey.currentState!.validate()) {
+      // Manually validate the question field
+      if (_question.isEmpty) {
+        // ... (show error dialog)
+        return;
+      }
+
+      // Validate answer fields
+      for (final answer in _answers) {
+        if (answer.isEmpty) {
+          // ... (show error dialog)
+          return;
+        }
+      }
+
+      // Create the Quiz object
+      final newQuiz = Quiz(
+        id: 'generate_unique_id', // You'll need a way to generate unique IDs
+        question: _question,
+        answers: _answers,
+        correctAnswerIndex: _correctAnswerIndex,
+        priority: 1, // Set default values for other fields
+        easeFactor: 2.5,
+        nextReviewDate: DateTime.now(),
+        numberOfTimeSeen: 0,
+      );
+
+      // Call the callback function with the created quiz
+      widget.onCreate(newQuiz);
+
+      // Optionally, navigate back or clear the form
+      // Navigator.pop(context); // Navigate back
+      // _formKey.currentState!.reset(); // Clear the form
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaffoldPage(
+      header: const PageHeader(title: Text("Create Quiz")),
+      content: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Question
+              TextBox(
+                placeholder: 'Enter the question',
+                onChanged: (value) => _question = value,
+              ),
+              const SizedBox(height: 16),
+              // Answers
+              Text('Answers',
+                  style: FluentTheme.of(context).typography.subtitle),
+              ..._answers.asMap().entries.map((entry) {
+                final index = entry.key;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextBox(
+                          placeholder: 'Answer ${index + 1}',
+                          onChanged: (value) => _answers[index] = value ?? '',
+                        ),
+                      ),
+                      // Add/remove answer buttons
+                      IconButton(
+                        icon: const Icon(FluentIcons.add),
+                        onPressed: () => setState(() => _answers.add('')),
+                      ),
+                      if (index >
+                          1) // Don't allow removing if less than 2 answers
+                        IconButton(
+                          icon: const Icon(FluentIcons.delete),
+                          onPressed: () =>
+                              setState(() => _answers.removeAt(index)),
+                        ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              const SizedBox(height: 16),
+
+              // Correct Answer Selection (Using RadioButtons for Fluent UI)
+              Text('Correct Answer',
+                  style: FluentTheme.of(context).typography.subtitle),
+              Wrap(
+                spacing: 8.0,
+                children: _answers.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  return RadioButton(
+                    checked: _correctAnswerIndex == index,
+                    onChanged: (value) =>
+                        setState(() => _correctAnswerIndex = index),
+                    content: Text('Answer ${index + 1}'),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              // Add more fields here for easeFactor, priority, etc.
+
+              // Create Button
+              FilledButton(
+                child: const Text('Create Quiz'),
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    _createQuiz();
+                    // Here you'd create the Quiz object and potentially pass it back
+                    // e.g., widget.onCreate?.call(Quiz(...));
+                    // For now, let's just print it
+                    print('Created Quiz:');
+                    print('  Question: $_question');
+                    print('  Answers: $_answers');
+                    print('  Correct Answer Index: $_correctAnswerIndex');
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class QuizDetailWidget extends StatelessWidget {
   final Quiz quiz;
   final Function() onEditQuizButton; // Callback to edit the quiz
