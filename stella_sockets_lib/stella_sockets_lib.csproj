@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageId>StellaSockets</PackageId>             
-    <Version>1.0.0</Version>                       
+    <Version>0.1.0</Version>                       
     <Authors>Ayanami</Authors>        
     <PackageDescription>A lightweight C# wrapper around a lightweight nng c wrapper that provides some higher abstractions</PackageDescription>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -28,4 +28,16 @@
       <PackageReference Include="StellaTesting" Version="1.0.2" />
     </ItemGroup>
 
+    <ItemGroup>
+        <Content Include=".\lib\NNG\nng.dll">
+            <PackagePath>lib\net8.0\</PackagePath>
+        </Content>
+        <Content Include=".\lib\Stella Messaging\stella_messaging.dll">
+            <PackagePath>lib\net8.0\</PackagePath>
+        </Content>
+    </ItemGroup>
+    
+    <ItemGroup>
+        <None Include=".\lib\NNG\LICENSE.txt" Pack="true" PackagePath="\"/>   
+    </ItemGroup>
 </Project>
