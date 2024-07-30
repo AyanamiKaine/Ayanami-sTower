@@ -13,15 +13,15 @@ public class StellaSocket : IDisposable
         _socketHandle = type switch
         {
             SocketType.Pair => StellaMessagingInterop.create_pair_socket(),
-            SocketType.Bus => StellaMessagingInterop.create_bus_socket(),
-            SocketType.Pub => StellaMessagingInterop.create_pub_socket(),
+            //SocketType.Bus => StellaMessagingInterop.create_bus_socket(),
+            //SocketType.Pub => StellaMessagingInterop.create_pub_socket(),
             SocketType.Pull => StellaMessagingInterop.create_pull_socket(),
             SocketType.Push => StellaMessagingInterop.create_push_socket(),
             SocketType.Request => StellaMessagingInterop.create_request_socket(),
-            SocketType.Respondent => StellaMessagingInterop.create_respondent_socket(),
+            //SocketType.Respondent => StellaMessagingInterop.create_respondent_socket(),
             SocketType.Response => StellaMessagingInterop.create_reponse_socket(),
-            SocketType.Sub => StellaMessagingInterop.create_sub_socket(),
-            SocketType.Surveyor => StellaMessagingInterop.create_surveyor_socket(),
+            //SocketType.Sub => StellaMessagingInterop.create_sub_socket(),
+            //SocketType.Surveyor => StellaMessagingInterop.create_surveyor_socket(),
             _ => throw new ArgumentException("Invalid socket type."),
         };
     }

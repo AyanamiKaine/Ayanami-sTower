@@ -7,7 +7,7 @@ namespace StellaSockets
     /// Ideal For: Building decentralized systems, peer-to-peer networks, 
     /// or any scenario where you need a flexible communication model.
     /// </summary>
-    public class StellaBusSocket : StellaSocket
+    internal class StellaBusSocket : StellaSocket
     {
         /// <summary>
         /// Purpose: Creates a many-to-many communication channel 
@@ -18,7 +18,7 @@ namespace StellaSockets
         /// 
         /// NOT IMPLEMENTED!
         /// </summary>
-        public StellaBusSocket() : base(SocketType.Bus)
+        internal StellaBusSocket() : base(SocketType.Bus)
         {
             throw new NotImplementedException();
         }
