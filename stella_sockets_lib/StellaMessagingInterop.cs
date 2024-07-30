@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 // NNG socket handle type
-using nng_socket = System.UIntPtr;
+using nng_socket = nuint;
 
 partial class StellaMessagingInterop
 {
