@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageId>StellaSockets</PackageId>             
-    <Version>0.1.1</Version>                       
+    <Version>0.1.2</Version>                       
     <Authors>Ayanami</Authors>        
     <PackageDescription>A lightweight C# wrapper around a lightweight nng c wrapper that provides some higher abstractions</PackageDescription>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -15,7 +15,7 @@
     <RepositoryType>git</RepositoryType> 
     <PackageTags>message passing</PackageTags>
     <Copyright>MIT</Copyright>
-    <PackageReleaseNotes>Updating Readme to show what sockets actual work, improving class documentation</PackageReleaseNotes>
+    <PackageReleaseNotes>Improving Documentation</PackageReleaseNotes>
       <PackageReadmeFile>README.md</PackageReadmeFile>
 
   </PropertyGroup>
