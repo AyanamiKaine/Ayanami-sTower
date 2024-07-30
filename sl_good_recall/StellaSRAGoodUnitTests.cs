@@ -64,13 +64,7 @@ namespace SlGoodRecall
 
             string jsonString = """
             {
-                "Id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-                "Name": "Learning_Csharp.pdf",
-                "PathToFile": "C:\\Documents\\Study\\Learning_Csharp.pdf",
-                "Description": "A comprehensive guide to C# programming.",
                 "EaseFactor": 2.5,
-                "NextReviewDate": "2024-08-01T10:30:00", 
-                "Priority": 1.8,
                 "NumberOfTimeSeen": 5
             }
             """;
