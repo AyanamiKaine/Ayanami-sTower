@@ -25,6 +25,10 @@ namespace StellaSockets
         /// peer pullers, chosen in a round-robin fashion from the 
         /// set of connected peers available for receiving.
         /// 
+        /// This means that clients can connect to multiple Servers, 
+        /// and pick the one that is available, 
+        /// in this case each server should be the same.
+        /// 
         /// This property makes this pattern useful in load-balancing 
         /// scenarios.
         /// </summary>
