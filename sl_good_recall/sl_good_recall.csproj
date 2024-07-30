@@ -7,4 +7,10 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="StellaSockets" Version="0.1.2" />
+    <PackageReference Include="StellaTesting" Version="1.0.2" />
+  </ItemGroup>
+
 </Project>
