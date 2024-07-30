@@ -54,5 +54,29 @@ namespace StellaSockets
 
             return StellaTesting.AssertTrue(messageA == "Hello World from Client A" && messageB == "Hello World from Client B", "Expected Messages were incorret!");
         }
+
+        /*
+                [ST_TEST]
+                public static StellaTesting.TestingResult BusSocketMessageTest()
+                {
+                    /*
+                    using var ServerA = new StellaBusSocket();
+                    ServerA.Bind("ipc:///hello_world_bus_unit_test");
+
+                    using var ClientA = new StellaBusSocket();
+                    ClientA.Connect("ipc:///hello_world_bus_unit_test");
+                    ClientA.Send("Hello World");
+
+                    using var ClientB = new StellaBusSocket();
+                    ClientB.Connect("ipc:///hello_world_bus_unit_test");
+                    ClientB.Send("Hello World");
+
+                    string expectedMessage = "Hello World";
+                    string actualMessage = ServerA.Receive();
+
+                    return StellaTesting.AssertEqual(expectedMessage, "actualMessage");
+                    
+        }
+    */
     }
 }
