@@ -44,11 +44,19 @@ public class StellaSocket : IDisposable
         StellaMessagingInterop.socket_bind(_socketHandle, address);
     }
 
+    /// <summary>
+    /// Send a string message
+    /// </summary>
+    /// <param name="message"></param>
     public void Send(string message)
     {
         StellaMessagingInterop.socket_send_string_message(_socketHandle, message);
     }
 
+    /// <summary>
+    /// Receive a string message
+    /// </summary>
+    /// <returns></returns>
     public string Receive()
     {
         string message = StellaMessagingInterop.socket_receive_string_message(_socketHandle);
