@@ -60,7 +60,7 @@ namespace SlAgainRecall
             double currentEaseFactor = double.Parse(jsonDictionary["EaseFactor"].ToString());
             int currentNumberOfTimeSeen = int.Parse(jsonDictionary["NumberOfTimeSeen"].ToString());
 
-            DateTime newDueDate = CalculateNextReviewDate(currentNumberOfTimeSeen, currentEaseFactor);
+            DateTime newDueDate = CalculateNextReviewDate();
 
             Dictionary<string, DateTime> responseDictionary = [];
             responseDictionary.Add("ok", newDueDate);
@@ -109,9 +109,12 @@ namespace SlAgainRecall
                 jsonDictionary.ContainsKey("ok");
         }
 
-        private static DateTime CalculateNextReviewDate(int numberOfTimeSeen, double easeFactor)
+        /// <summary>
+        /// If the result of the recall is again we simply want to recall it (5)minutes later
+        /// </summary>
+        /// <returns></returns>
+        private static DateTime CalculateNextReviewDate()
         {
-
             return DateTime.Now.AddMinutes(5);
         }
     }
