@@ -182,6 +182,31 @@ STELLA_API void socket_send_string_message(nng_socket sock, char *message)
     }
 }
 
+STELLA_API int socket_send_string_message_no_block(nng_socket sock, char *message)
+{
+    int rv;
+    nng_msg *msg;   // Message to send and receive
+    size_t dataSize = strlen(message) + 1; // +1 for null terminator
+    
+    // Create a request message
+    if ((rv = nng_msg_alloc(&msg, dataSize)) != 0) {
+        fprintf(stderr, "Failed to allocate message: %s\n", rv);
+        nng_close(sock);
+    }
+    
+    // Copy your data into the message body
+    memcpy(nng_msg_body(msg), message, dataSize);
+
+    rv = nng_sendmsg(sock, msg, NNG_FLAG_NONBLOCK);
+    
+    // This will return NNG_EAGAIN (8) when the message couldnt not be send 
+    // (most likely the server was not up and running) 
+    // For now we expect the client to implement a queue behavior i.e when NNG_EAGAIN gets
+    // returned we should put the message into a queue to be send again later.
+    // Otherwise the message simply gets dropped.
+    return rv;
+}
+
 STELLA_API char *socket_receive_string_message(nng_socket sock)
 {
     int rv;

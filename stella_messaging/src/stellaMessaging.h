@@ -49,6 +49,8 @@ STELLA_API void socket_bind(nng_socket sock, const char *address);
 STELLA_API void socket_close(nng_socket);
 
 STELLA_API void socket_send_string_message(nng_socket sock, char *message);
+STELLA_API void socket_send_string_message_no_block(nng_socket sock, char *message);
+
 STELLA_API char* socket_receive_string_message(nng_socket sock);
 STELLA_API void free_received_message(char *message);
 
