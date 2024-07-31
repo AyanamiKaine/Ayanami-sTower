@@ -54,6 +54,24 @@ public class StellaSocket : IDisposable
     }
 
     /// <summary>
+    /// Send a string message and returns immedially, if the message couldnt not be send it will discard the message.
+    /// It returns a zero if the message was send and returns NNG_EAGAIN (8) if the message was not send, its your responsibility to handle this case
+    /// </summary>
+    /// <param name="message"></param>
+    public ReturnValue SendNonBlock(string message)
+    {
+        int rv = StellaMessagingInterop.socket_send_string_message_non_block(_socketHandle, message);
+        if (rv == 0)
+        {
+            return ReturnValue.Success;
+        }
+        else
+        {
+            return ReturnValue.CouldNotSend;
+        }
+    }
+
+    /// <summary>
     /// Receive a string message
     /// </summary>
     /// <returns></returns>
@@ -71,6 +89,12 @@ public class StellaSocket : IDisposable
         GC.SuppressFinalize(this);
         StellaMessagingInterop.socket_close(_socketHandle);
     }
+}
+
+public enum ReturnValue
+{
+    Success = 0,
+    CouldNotSend = 8
 }
 
 public enum SocketType

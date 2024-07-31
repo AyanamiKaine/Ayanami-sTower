@@ -63,6 +63,11 @@ partial class StellaMessagingInterop
 
     [LibraryImport("stella_messaging")]
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    public static partial int socket_send_string_message_non_block(nng_socket sock,
+                                                        [MarshalAs(UnmanagedType.LPStr)] string message);
+
+    [LibraryImport("stella_messaging")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
     [return: MarshalAs(UnmanagedType.LPStr)]
     public static partial string socket_receive_string_message(nng_socket sock);
 
