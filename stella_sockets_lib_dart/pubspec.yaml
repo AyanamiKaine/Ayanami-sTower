@@ -1,0 +1,20 @@
+name: stella_sockets_lib
+description: StellaSocket is a Dart library that simplifies the use of NNG (Nanomsg Next Gen)
+version: 0.1.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.4.4
+
+# Add regular dependencies here.
+dependencies:
+  ffi: ^2.1.2
+  # path: ^1.8.0
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.24.0
+
+assets:
+  - assets/native/windows/nng.dll
+  - assets/native/windows/stella_messaging.dll
