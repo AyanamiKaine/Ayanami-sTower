@@ -36,6 +36,35 @@ namespace StellaSockets
             return StellaTesting.AssertEqual(expectedMessage, actualMessage);
         }
 
+        [ST_TEST]
+        public static StellaTesting.TestingResult PullPushSocketNonBlockingShouldSendMessage()
+        {
+            ReturnValue rv;
+            string expectedMessage;
+            string actualMessage;
+            try
+            {
+                using var Server = new StellaPullSocket("ipc:///pull_push_non_blocking_unit_test2");
+                using var ClientA = new StellaPushSocket("ipc:///pull_push_non_blocking_unit_test2");
+                rv = ClientA.SendNonBlock("Hello World from Client A");
+                if (rv == ReturnValue.CouldNotSend)
+                {
+                    //ClientA.Send("Hello World from Client A");
+                }
+
+                expectedMessage = "Hello World from Client A";
+                actualMessage = Server.Receive();
+
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
+            }
+
+
+            return StellaTesting.AssertEqual(expectedMessage, actualMessage);
+        }
 
         [ST_TEST]
         public static StellaTesting.TestingResult PullPushSocketMessageTest()
@@ -54,6 +83,28 @@ namespace StellaSockets
 
             return StellaTesting.AssertTrue(messageA == "Hello World from Client A" && messageB == "Hello World from Client B", "Expected Messages were incorret!");
         }
+
+
+
+        [ST_TEST]
+        public static StellaTesting.TestingResult PullPushSocketNonBlockingShouldDiscardMessage()
+        {
+            ReturnValue rv;
+            try
+            {
+
+                using var ClientA = new StellaPushSocket("ipc:///pull_push_non_blocking_unit_test1");
+                rv = ClientA.SendNonBlock("Hello World from Client A");
+            }
+            catch (System.Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
+            }
+
+            return StellaTesting.AssertEqual(ReturnValue.CouldNotSend, rv);
+        }
+
 
         /*
                 [ST_TEST]

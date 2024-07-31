@@ -60,7 +60,7 @@ public class StellaSocket : IDisposable
     /// <param name="message"></param>
     public ReturnValue SendNonBlock(string message)
     {
-        int rv = StellaMessagingInterop.socket_send_string_message_non_block(_socketHandle, message);
+        int rv = StellaMessagingInterop.socket_send_string_message_no_block(_socketHandle, message);
         if (rv == 0)
         {
             return ReturnValue.Success;
