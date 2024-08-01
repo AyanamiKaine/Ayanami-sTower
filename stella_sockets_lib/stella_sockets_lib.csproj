@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PackageId>StellaSockets</PackageId>             
-    <Version>0.1.3</Version>                       
+    <Version>0.1.5</Version>                       
     <Authors>Ayanami</Authors>        
     <PackageDescription>A lightweight C# wrapper around a lightweight nng c wrapper that provides some higher abstractions</PackageDescription>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -15,7 +15,7 @@
     <RepositoryType>git</RepositoryType> 
     <PackageTags>message passing</PackageTags>
     <Copyright>MIT</Copyright>
-    <PackageReleaseNotes>Implementing non blocking SendMessage</PackageReleaseNotes>
+    <PackageReleaseNotes>Bugfixing</PackageReleaseNotes>
       <PackageReadmeFile>README.md</PackageReadmeFile>
 
   </PropertyGroup>
@@ -35,9 +35,15 @@
         <Content Include=".\lib\Stella Messaging\stella_messaging.dll">
             <PackagePath>lib\net8.0\</PackagePath>
         </Content>
+                <Content Include=".\lib\Stella Messaging\stella_messaging.lib">
+            <PackagePath>lib\net8.0\</PackagePath>
+        </Content>
+                <Content Include=".\lib\Stella Messaging\stella_messaging.pdb">
+            <PackagePath>lib\net8.0\</PackagePath>
+        </Content>
     </ItemGroup>
     
     <ItemGroup>
-        <None Include=".\lib\NNG\LICENSE.txt" Pack="true" PackagePath="\"/>   
+        <None Include=".\lib\NNG\LICENSE.txt" Pack="true" PackagePath="\"/> 
     </ItemGroup>
 </Project>
