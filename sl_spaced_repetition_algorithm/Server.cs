@@ -29,7 +29,7 @@ namespace SpaceRepetitionAlgorithm
 
 
                     DateTime new_due_date = SpacedRepetitionScheduler.CalculateNextReviewDate(request.FileToLearn, request.RecallEvaluation);
-                    LogMessage($"New calculated due date: {new_due_date.ToString()}, for, {request.FileToLearn.Name}");
+                    LogMessage($"New calculated due date: {new_due_date}, for, {request.FileToLearn.Name}");
 
                     string json_response = JsonSerializer.Serialize(new_due_date);
 
