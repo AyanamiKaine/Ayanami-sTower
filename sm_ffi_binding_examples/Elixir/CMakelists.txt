@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.10)
+
+set(VCPKG_ROOT $ENV{VCPKG_ROOT}) 
+set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+
+project(stella_messaging)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+
+file(GLOB_RECURSE SOURCES "src/*.c" "src/*.h")
+find_package(nng REQUIRED)
+
+add_library(stella_messaging SHARED ${SOURCES})
+
+# Ensure macro is defined for building
+target_compile_definitions(stella_messaging PRIVATE BUILDING_STELLA_MESSAGING) 
+target_compile_options(stella_messaging PRIVATE -fvisibility=default) # Optional for Linux/macOS
+set_target_properties(stella_messaging PROPERTIES LINKER_LANGUAGE C)
+
+# Needed for erl_nif.h
+include_directories(${Erlang_INCLUDE_DIRS})
+
+
+include_directories(src)
+
+target_link_libraries(stella_messaging PRIVATE nng::nng) 
