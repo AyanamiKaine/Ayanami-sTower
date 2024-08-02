@@ -141,7 +141,6 @@ STELLA_API void socket_connect(nng_socket sock, const char *address)
     int rv;
     if ((nng_dial(sock, address, NULL, NNG_FLAG_NONBLOCK)) != 0) {
         fprintf(stderr, "Failed to connect: %s\n", nng_strerror(rv));
-        nng_close(sock);
     }
 }
 
@@ -151,7 +150,6 @@ STELLA_API void socket_bind(nng_socket sock, const char *address)
     // Listen for connections
     if ((rv = nng_listen(sock, address, NULL, 0)) != 0) {
         fprintf(stderr, "Failed to listen: %s\n", nng_strerror(rv));
-        nng_close(sock);
     }
 }
 
@@ -168,17 +166,15 @@ STELLA_API void socket_send_string_message(nng_socket sock, char *message)
     
     // Create a request message
     if ((rv = nng_msg_alloc(&msg, dataSize)) != 0) {
-        fprintf(stderr, "Failed to allocate message: %s\n", rv);
-        nng_close(sock);
+        fprintf(stderr, "Failed to allocate message: %s\n",  nng_strerror(rv));
     }
     
     // Copy your data into the message body
     memcpy(nng_msg_body(msg), message, dataSize);
 
     if ((rv = nng_sendmsg(sock, msg, NNG_FLAG_ALLOC)) != 0) {
-        fprintf(stderr, "Failed to send: %s\n", rv);
+        fprintf(stderr, "Failed to send: %s\n",  nng_strerror(rv));
         nng_msg_free(msg);
-        nng_close(sock);
     }
 }
 
@@ -190,21 +186,24 @@ STELLA_API int socket_send_string_message_no_block(nng_socket sock, char *messag
     
     // Create a request message
     if ((rv = nng_msg_alloc(&msg, dataSize)) != 0) {
-        fprintf(stderr, "Failed to allocate message: %s\n", rv);
-        nng_close(sock);
+        fprintf(stderr, "Failed to allocate message: %s\n", nng_strerror(rv));
     }
     
-    // Copy your data into the message body
+    // Copy data
     memcpy(nng_msg_body(msg), message, dataSize);
 
-    rv = nng_sendmsg(sock, msg, NNG_FLAG_NONBLOCK);
-    
+    // Send (non-blocking)
+    if ((rv = nng_sendmsg(sock, msg, NNG_FLAG_NONBLOCK))!= 0) {
+        fprintf(stderr, "Failed to send message: %s\n", nng_strerror(rv));
+        nng_msg_free(msg); // Always free the message on error
+        return rv;
+    }
     // This will return NNG_EAGAIN (8) when the message couldnt not be send 
     // (most likely the server was not up and running) 
     // For now we expect the client to implement a queue behavior i.e when NNG_EAGAIN gets
     // returned we should put the message into a queue to be send again later.
     // Otherwise the message simply gets dropped.
-    return rv;
+    return 0;
 }
 
 STELLA_API char *socket_receive_string_message(nng_socket sock)
@@ -216,8 +215,7 @@ STELLA_API char *socket_receive_string_message(nng_socket sock)
     // Receive the reply
     if ((rv = nng_recvmsg(sock, &msg, 0)) != 0) {
         fprintf(stderr, "Failed to receive: %s\n", nng_strerror(rv));
-        nng_close(sock);
-        return NULL; // Indicate failure by returning NULL
+        return ""; // Indicate failure by returning NULL
     }
 
     // Calculate length and allocate memory for the copy
@@ -226,8 +224,7 @@ STELLA_API char *socket_receive_string_message(nng_socket sock)
     if (!messageCopy) {
         fprintf(stderr, "Failed to allocate memory for message copy\n");
         nng_msg_free(msg);
-        nng_close(sock);
-        return NULL; // Indicate failure
+        return "";; // Indicate failure
     }
     
     // Copy the message body and add null terminator
