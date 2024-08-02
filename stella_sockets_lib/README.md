@@ -4,7 +4,7 @@ StellaSocket is a C# library that simplifies the use of NNG (Nanomsg Next Gen), 
 
 ## Features
 
-- Socket Creation: Easily create sockets of various types: Pair, Pull, Push, Request, Response
+- Socket Creation: Easily create sockets of various types: Pair, Pull, Push, Request, Response, Publish, Subscribe
 - Connection and Binding: Connect to remote addresses as a client or bind to local addresses as a server.
 - Send and Receive: Send and receive string messages effortlessly.
 - Memory Management: Automatic freeing of received messages to avoid memory leaks.
