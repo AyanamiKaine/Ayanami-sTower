@@ -52,6 +52,11 @@ STELLA_API void socket_send_string_message(nng_socket sock, char *message);
 STELLA_API int socket_send_string_message_no_block(nng_socket sock, char *message);
 
 STELLA_API char* socket_receive_string_message(nng_socket sock);
+STELLA_API char* socket_receive_topic_message(nng_socket sock);
 STELLA_API void free_received_message(char *message);
+
+STELLA_API void subscribed_to_topic(nng_socket sock, char *topic);
+STELLA_API void unsubscribed_to_topic(nng_socket sock, char *topic);
+STELLA_API void socket_send_topic_message(nng_socket sock, char *topic, char *message);
 
 #endif

@@ -1,5 +1,5 @@
 #include "stellaMessaging.h"
-
+#include <stdlib.h>
 // Ensure the macro is defined for building (add this if not already in CMakeLists.txt)
 #ifndef BUILDING_STELLA_MESSAGING
 #define BUILDING_STELLA_MESSAGING
@@ -77,7 +77,7 @@ STELLA_API nng_socket create_pub_socket()
 
     // Create the request socket
     if ((rv = nng_pub0_open(&sock)) != 0) {
-        printf(stderr, "Failed to create socket: %s\n", nng_strerror(rv));
+        //printf(stderr, "Failed to create socket: %s\n", nng_strerror(rv));
     }
 
     return sock;
@@ -176,6 +176,7 @@ STELLA_API void socket_send_string_message(nng_socket sock, char *message)
         fprintf(stderr, "Failed to send: %s\n",  nng_strerror(rv));
         nng_msg_free(msg);
     }
+    nng_msg_free(msg); // Free the message regardless of success or failure
 }
 
 STELLA_API int socket_send_string_message_no_block(nng_socket sock, char *message)
@@ -198,6 +199,8 @@ STELLA_API int socket_send_string_message_no_block(nng_socket sock, char *messag
         nng_msg_free(msg); // Always free the message on error
         return rv;
     }
+
+    nng_msg_free(msg); // Free the message regardless of success or failure
     // This will return NNG_EAGAIN (8) when the message couldnt not be send 
     // (most likely the server was not up and running) 
     // For now we expect the client to implement a queue behavior i.e when NNG_EAGAIN gets
@@ -205,6 +208,27 @@ STELLA_API int socket_send_string_message_no_block(nng_socket sock, char *messag
     // Otherwise the message simply gets dropped.
     return 0;
 }
+
+STELLA_API void socket_send_topic_message(nng_socket sock, char *topic, char *message)
+{
+    int rv;
+    nng_msg *topic_msg;   // Message to send and receive
+
+    // Create a request message
+    if ((rv = nng_msg_alloc(&topic_msg, 0)) != 0) {
+        fprintf(stderr, "Failed to allocate message: %s\n",  nng_strerror(rv));
+        return;
+    }
+    
+    nng_msg_append(topic_msg, topic, strlen(topic) + 1);
+    nng_msg_append(topic_msg, message, strlen(message) + 1); // +1 for null terminator
+
+    if ((rv = nng_sendmsg(sock, topic_msg, 0)) != 0) {
+        fprintf(stderr, "Failed to send: %s\n",  nng_strerror(rv));
+        nng_msg_free(topic_msg); // Free the message regardless of success or failure
+    }
+}
+
 
 STELLA_API char *socket_receive_string_message(nng_socket sock)
 {
@@ -238,3 +262,53 @@ STELLA_API char *socket_receive_string_message(nng_socket sock)
 STELLA_API void free_received_message(char* message) {
     nng_free(message, strlen(message) + 1); // Free the allocated message
 }
+
+STELLA_API char* socket_receive_topic_message(nng_socket sock) {
+    nng_msg *msg;
+    int rv;
+    char *messageCopy = NULL; 
+
+    if ((rv = nng_recvmsg(sock, &msg, 0)) != 0) {
+        fprintf(stderr, "Error receiving message: %s\n", nng_strerror(rv));
+        return NULL;
+    }
+
+    const char *topic_of_msg = (const char *) nng_msg_body(msg);
+
+     // Move to the actual message content
+    size_t topic_len = strlen(topic_of_msg) + 1; // +1 for null terminator
+    nng_msg_trim(msg, topic_len);
+    
+    // Calculate length and allocate memory for the copy
+    size_t dataSize = nng_msg_len(msg) + 1; // +1 for the null terminator
+    messageCopy = nng_alloc(dataSize);
+    if (!messageCopy) {
+        fprintf(stderr, "Failed to allocate memory for message copy\n");
+        nng_msg_free(msg);
+    }
+
+    char *message = (char *)nng_msg_body(msg);
+    // Copy the message body and add null terminator
+    memcpy(messageCopy, nng_msg_body(msg), nng_msg_len(msg));
+    messageCopy[nng_msg_len(msg)] = '\0'; // Ensure null-termination
+
+    nng_msg_free(msg); // Free the original message after copying
+    return messageCopy; // Return the copy
+    return message;
+}
+
+STELLA_API void subscribed_to_topic(nng_socket sock, char *topic) {
+    int rv = nng_setopt(sock, NNG_OPT_SUB_SUBSCRIBE, topic, strlen(topic) + 1); // +1 for null terminator
+    if (rv != 0) {
+        fprintf(stderr, "Failed to subscribe to topic: %s\n", nng_strerror(rv));
+    }
+}
+
+STELLA_API void unsubscribed_to_topic(nng_socket sock, char *topic) {
+    int rv = nng_setopt(sock, NNG_OPT_SUB_UNSUBSCRIBE, topic, strlen(topic) + 1); // +1 for null terminator
+    if (rv != 0) {
+        fprintf(stderr, "Failed to unsubscribe from topic: %s\n", nng_strerror(rv));
+    }
+}
+
+
