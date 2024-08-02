@@ -5,7 +5,7 @@ namespace StellaSockets;
 
 public class StellaSocket : IDisposable
 {
-    private readonly nng_socket _socketHandle;
+    protected readonly nng_socket _socketHandle;
     public SocketType Type { get; set; }
 
     public StellaSocket(SocketType type)
@@ -14,13 +14,13 @@ public class StellaSocket : IDisposable
         {
             SocketType.Pair => StellaMessagingInterop.create_pair_socket(),
             //SocketType.Bus => StellaMessagingInterop.create_bus_socket(),
-            //SocketType.Pub => StellaMessagingInterop.create_pub_socket(),
+            SocketType.Pub => StellaMessagingInterop.create_pub_socket(),
             SocketType.Pull => StellaMessagingInterop.create_pull_socket(),
             SocketType.Push => StellaMessagingInterop.create_push_socket(),
             SocketType.Request => StellaMessagingInterop.create_request_socket(),
             //SocketType.Respondent => StellaMessagingInterop.create_respondent_socket(),
             SocketType.Response => StellaMessagingInterop.create_reponse_socket(),
-            //SocketType.Sub => StellaMessagingInterop.create_sub_socket(),
+            SocketType.Sub => StellaMessagingInterop.create_sub_socket(),
             //SocketType.Surveyor => StellaMessagingInterop.create_surveyor_socket(),
             _ => throw new ArgumentException("Invalid socket type."),
         };
@@ -51,6 +51,11 @@ public class StellaSocket : IDisposable
     public void Send(string message)
     {
         StellaMessagingInterop.socket_send_string_message(_socketHandle, message);
+    }
+
+    public void Send(string message, string topic)
+    {
+        StellaMessagingInterop.socket_send_topic_message(_socketHandle, topic, message);
     }
 
     /// <summary>

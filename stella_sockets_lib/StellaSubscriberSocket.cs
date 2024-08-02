@@ -5,13 +5,22 @@ namespace StellaSockets
 
     /// <summary>
     /// The subscribing applications only see the data to which they have subscribed.
-    /// THIS IS NOT YET IMPLEMENTED
     /// </summary>
-    internal class StellaSubscriberSocket : StellaSocket
+    public class StellaSubscriberSocket : StellaSocket
     {
-        internal StellaSubscriberSocket() : base(SocketType.Pub)
+        public StellaSubscriberSocket(string address) : base(SocketType.Sub)
         {
-            throw new NotImplementedException();
+            Connect(address);
+        }
+
+        public void Subscribe(string topic)
+        {
+            StellaMessagingInterop.subscribed_to_topic(_socketHandle, topic);
+
+        }
+        public void Unsubscribe(string topic)
+        {
+            StellaMessagingInterop.unsubscribed_to_topic(_socketHandle, topic);
         }
     }
 }

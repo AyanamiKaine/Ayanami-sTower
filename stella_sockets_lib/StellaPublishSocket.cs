@@ -4,11 +4,11 @@ namespace StellaSockets
     /// This socket may be used to send messages, but is unable to receive them. 
     /// THIS IS NOT YET IMPLEMENTED
     /// </summary>
-    internal class StellaPublishSocket : StellaSocket
+    public class StellaPublishSocket : StellaSocket
     {
-        internal StellaPublishSocket() : base(SocketType.Pub)
+        public StellaPublishSocket(string address) : base(SocketType.Pub)
         {
-            throw new NotImplementedException();
+            Bind(address);
         }
     }
 }

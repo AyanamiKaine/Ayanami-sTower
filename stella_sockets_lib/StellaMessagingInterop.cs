@@ -68,8 +68,25 @@ partial class StellaMessagingInterop
 
     [LibraryImport("stella_messaging")]
     [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    public static partial void socket_send_topic_message(nng_socket sock, [MarshalAs(UnmanagedType.LPStr)] string topic, [MarshalAs(UnmanagedType.LPStr)] string message);
+
+    [LibraryImport("stella_messaging")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    public static partial void subscribed_to_topic(nng_socket sock, [MarshalAs(UnmanagedType.LPStr)] string topic);
+
+    [LibraryImport("stella_messaging")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    public static partial void unsubscribed_to_topic(nng_socket sock, [MarshalAs(UnmanagedType.LPStr)] string topic);
+
+    [LibraryImport("stella_messaging")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
     [return: MarshalAs(UnmanagedType.LPStr)]
     public static partial string socket_receive_string_message(nng_socket sock);
+
+    [LibraryImport("stella_messaging")]
+    [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvCdecl) })]
+    [return: MarshalAs(UnmanagedType.LPStr)]
+    public static partial string socket_receive_topic_message(nng_socket sock);
 
     [LibraryImport("stella_messaging")]
     [UnmanagedCallConv(CallConvs = [typeof(System.Runtime.CompilerServices.CallConvCdecl)])]
