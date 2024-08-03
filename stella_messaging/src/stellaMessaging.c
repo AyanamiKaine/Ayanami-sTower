@@ -268,9 +268,9 @@ STELLA_API char* socket_receive_topic_message(nng_socket sock) {
     int rv;
     char *messageCopy = NULL; 
 
-    if ((rv = nng_recvmsg(sock, &msg, 0)) != 0) {
-        fprintf(stderr, "Error receiving message: %s\n", nng_strerror(rv));
-        return NULL;
+    if ((rv = nng_recvmsg(sock, &msg, NNG_FLAG_NONBLOCK)) != 0) {
+        //fprintf(stderr, "Error receiving message: %s\n", nng_strerror(rv));
+        return "";
     }
 
     const char *topic_of_msg = (const char *) nng_msg_body(msg);
@@ -283,7 +283,7 @@ STELLA_API char* socket_receive_topic_message(nng_socket sock) {
     size_t dataSize = nng_msg_len(msg) + 1; // +1 for the null terminator
     messageCopy = nng_alloc(dataSize);
     if (!messageCopy) {
-        fprintf(stderr, "Failed to allocate memory for message copy\n");
+        //fprintf(stderr, "Failed to allocate memory for message copy\n");
         nng_msg_free(msg);
     }
 
@@ -294,7 +294,6 @@ STELLA_API char* socket_receive_topic_message(nng_socket sock) {
 
     nng_msg_free(msg); // Free the original message after copying
     return messageCopy; // Return the copy
-    return message;
 }
 
 STELLA_API void subscribed_to_topic(nng_socket sock, char *topic) {
