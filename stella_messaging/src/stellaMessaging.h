@@ -51,12 +51,42 @@ STELLA_API void socket_close(nng_socket);
 STELLA_API void socket_send_string_message(nng_socket sock, char *message);
 STELLA_API int socket_send_string_message_no_block(nng_socket sock, char *message);
 
+STELLA_API void trim_topic_from_message(nng_msg *msg);
+
 STELLA_API char* socket_receive_string_message(nng_socket sock);
 STELLA_API char* socket_receive_topic_message(nng_socket sock);
+STELLA_API char* get_string_from_msg(nng_msg *msg);
 STELLA_API void free_received_message(char *message);
 
 STELLA_API void subscribed_to_topic(nng_socket sock, char *topic);
+STELLA_API void subscribe_to_topic_for_context(nng_ctx ctx, char *topic);
+
 STELLA_API void unsubscribed_to_topic(nng_socket sock, char *topic);
 STELLA_API void socket_send_topic_message(nng_socket sock, char *topic, char *message);
 
+
+/*
+Various different functions related to async work
+*/
+typedef struct work work;
+
+STELLA_API work* alloc_work(nng_socket sock, void CALL_BACK(void *));
+// Higher level abstraction for an async response server, when we receive an request the callback function
+// can use 	struct work *work = arg; assuming you defined the callback as void call_back(void *arg) 
+// You then can use the work struct to work with the data the server got
+// work {
+//    enum { INIT, RECV, WAIT, SEND } state;
+//    nng_aio *aio;
+//    nng_msg *msg;
+//    nng_ctx ctx;
+// }
+STELLA_API void async_rep_server(const char *url, void CALL_BACK(void *));
+STELLA_API struct work *async_sub_server(char *url, void CALL_BACK(void *));
+
+STELLA_API void async_receive(work *work);
+STELLA_API void sleep_async_request(nng_duration time, work *work);
+STELLA_API void send_async(work *work);
+STELLA_API void set_async_message(work *work);
+STELLA_API void check_async_result(work *work);
+STELLA_API nng_msg *get_message_from_async(work *work);
 #endif
