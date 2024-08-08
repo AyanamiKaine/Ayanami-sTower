@@ -41,17 +41,16 @@ function StellaMessages.get_string_from_message(message)
 end
 
 function StellaMessages.trim_topic_from_message(message, topic)
-    NNG_BINDINGS.nng_msg_trim(message[0], #topic+1)
+    NNG_BINDINGS.nng_msg_trim(message[0], #topic + 1)
 end
 
 function StellaSockets.subscribe_to_topic(socket, topic)
-    NNG_BINDINGS.nng_socket_set_string(socket, "sub:subscribe", topic); 
+    NNG_BINDINGS.nng_socket_set_string(socket, "sub:subscribe", topic);
 end
 
 function StellaSockets.unsubscribe_to_topic(socket, topic)
-    NNG_BINDINGS.nng_socket_set_string(socket, "sub:unsubscribe", topic); 
+    NNG_BINDINGS.nng_socket_set_string(socket, "sub:unsubscribe", topic);
 end
-
 
 function StellaSockets.Push.new(url, sleep_time_ms)
     local self = {}
@@ -72,7 +71,6 @@ function StellaSockets.Push.new(url, sleep_time_ms)
         end
     end
 
-
     function self:send_blocking(message)
         local push_message = StellaMessages.create_message_from_string(message)
         local rv = NNG_BINDINGS.nng_sendmsg(push_socket, push_message[0], StellaSockets["NNG_FLAG_BLOCK"])
@@ -92,7 +90,7 @@ function StellaSockets.Pull.new(url, sleep_time_ms)
     function self:receive()
         local pull_message = StellaMessages.create_empty_msg()
         local rv = NNG_BINDINGS.nng_recvmsg(pull_socket, pull_message, StellaSockets["NNG_FLAG_NONBLOCK"])
-        
+
         if rv ~= 0 then
             NNG_BINDINGS.nng_msg_free(pull_message[0])
             NNG_BINDINGS.nng_msleep(current_sleep_time);
@@ -109,18 +107,23 @@ function StellaSockets.Pull.new(url, sleep_time_ms)
         local message = StellaMessages.get_string_from_message(pull_message)
         NNG_BINDINGS.nng_msg_free(pull_message[0])
         return message
-
     end
 
     return self
 end
 
+--[[
+
+url: Address for the server/client
+sleep_time_ms: how long should the server/client sleep in between retrying operations, if a non
+blocking operations has to be done again it will sleep for sleep_time_ms before trying again
+]]
 function StellaSockets.Response.new(url, sleep_time_ms)
     local self = {}
     local current_sleep_time = sleep_time_ms or 0
     local rep_socket = ffi.new("nng_socket")
     NNG_BINDINGS.nng_rep0_open(rep_socket);
-    
+
     local listen_rv = NNG_BINDINGS.nng_listen(rep_socket, url, ffi.null, 0)
     if listen_rv ~= 0 then
         io.stderr:write("Response Receive Returned Code: " .. ffi.string(NNG_BINDINGS.nng_strerror(listen_rv)) .. "\n")
@@ -157,7 +160,7 @@ function StellaSockets.Response.new(url, sleep_time_ms)
         NNG_BINDINGS.nng_msg_free(rep_message[0])
         return message
     end
-    
+
     -- DOES NOT BLOCK
     function self:send_blocking(message)
         local req_message = StellaMessages.create_message_from_string(message)
@@ -179,7 +182,7 @@ end
 function StellaSockets.Request.new(url, sleep_time_ms)
     local self = {}
     local current_sleep_time = sleep_time_ms or 0
-    
+
     local req_socket = ffi.new("nng_socket")
     NNG_BINDINGS.nng_req0_open(req_socket);
 
@@ -202,7 +205,7 @@ function StellaSockets.Request.new(url, sleep_time_ms)
             return nil
         end
     end
-    
+
     -- DOES NOT BLOCK
     function self:receive()
         local rep_message = StellaMessages.create_empty_msg()
@@ -219,7 +222,7 @@ function StellaSockets.Request.new(url, sleep_time_ms)
         return message
     end
 
-        -- DOES BLOCK
+    -- DOES BLOCK
     function self:send_blocking(message)
         local req_message = StellaMessages.create_message_from_string(message)
         NNG_BINDINGS.nng_sendmsg(req_socket, req_message[0], StellaSockets["NNG_FLAG_BLOCK"])
@@ -233,6 +236,7 @@ function StellaSockets.Request.new(url, sleep_time_ms)
         NNG_BINDINGS.nng_msg_free(rep_message[0])
         return message
     end
+
     return self
 end
 
@@ -258,7 +262,7 @@ function StellaSockets.Publisher.new(url, sleep_time_ms)
 
     function self:send_blocking(message, topic)
         local pub_message = StellaMessages.create_message_from_string(topic)
-        local rv = NNG_BINDINGS.nng_msg_append(pub_message[0], message, #message + 1);
+        NNG_BINDINGS.nng_msg_append(pub_message[0], message, #message + 1);
         NNG_BINDINGS.nng_sendmsg(pub_socket[0], pub_message[0], StellaSockets["NNG_FLAG_BLOCK"])
     end
 
@@ -270,11 +274,9 @@ function StellaSockets.Subscriber.new(url, sleep_time_ms)
     local self = {}
     local current_sleep_time = sleep_time_ms or 0
     local sub_socket = ffi.new("nng_socket")
-    local sub_server = NNG_BINDINGS.nng_sub0_open(sub_socket);
-    local NNG_FLAG_NONBLOCK = 2
+    NNG_BINDINGS.nng_sub0_open(sub_socket);
 
     NNG_BINDINGS.nng_dial(sub_socket, url, ffi.null, 0)
-
 
     function self:receive()
         local sub_message = StellaMessages.create_empty_msg()
@@ -293,7 +295,6 @@ function StellaSockets.Subscriber.new(url, sleep_time_ms)
         return message
     end
 
-
     -- DOES NOT BLOCK
     function self:receive_blocking()
         local sub_message = StellaMessages.create_empty_msg()
@@ -306,11 +307,21 @@ function StellaSockets.Subscriber.new(url, sleep_time_ms)
     end
 
     function self:subscribe(topic)
+        subscribed_topics[topic] = true
         StellaSockets.subscribe_to_topic(sub_socket, topic)
     end
-    
+
     function self:unsubscribe(topic)
+        subscribed_topics[topic] = false
         StellaSockets.unsubscribe_to_topic(sub_socket, topic)
+    end
+
+    function self:SubscribedTopics()
+        return subscribed_topics
+    end
+
+    function self:is_subscribed_to_topic(topic)
+        return subscribed_topics[topic]
     end
 
     return self
