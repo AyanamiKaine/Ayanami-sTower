@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3 uid="uid://cnyfo0o4kblh4"]
+
+[ext_resource type="PackedScene" uid="uid://cw2wj3di81yuf" path="res://star_system.tscn" id="1_ksx3i"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="SplitContainer" type="SplitContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = -4
+
+[node name="Panel" type="Panel" parent="SplitContainer"]
+layout_mode = 2
+
+[node name="SplitContainer2" type="SplitContainer" parent="SplitContainer"]
+layout_mode = 2
+theme_override_constants/separation = -4
+vertical = true
+
+[node name="Panel2" type="Panel" parent="SplitContainer/SplitContainer2"]
+layout_mode = 2
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="SplitContainer/SplitContainer2"]
+layout_mode = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="SplitContainer/SplitContainer2/SubViewportContainer"]
+size = Vector2i(1144, 640)
+
+[node name="StarSystem" parent="SplitContainer/SplitContainer2/SubViewportContainer/SubViewport" instance=ExtResource("1_ksx3i")]

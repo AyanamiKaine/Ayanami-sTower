@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://cwvihbn4se8tj"]
+
+[ext_resource type="Script" path="res://EcsWorld.cs" id="1_1e3lb"]
+
+[node name="ECSWorld" type="Node"]
+script = ExtResource("1_1e3lb")
+StartYear = 748

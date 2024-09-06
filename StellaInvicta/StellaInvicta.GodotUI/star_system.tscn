@@ -1,0 +1,73 @@
+[gd_scene load_steps=12 format=3 uid="uid://cw2wj3di81yuf"]
+
+[ext_resource type="PackedScene" uid="uid://cwvihbn4se8tj" path="res://ecs_world.tscn" id="1_0fivg"]
+[ext_resource type="Script" path="res://PlayerView.cs" id="2_b3lrj"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_iecn0"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_a88u8"]
+sky_material = SubResource("ProceduralSkyMaterial_iecn0")
+
+[sub_resource type="Environment" id="Environment_hvpwv"]
+background_mode = 1
+background_color = Color(0.285518, 0.317197, 0.424893, 1)
+sky = SubResource("Sky_a88u8")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rcslt"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_vqskj"]
+material = SubResource("StandardMaterial3D_rcslt")
+radius = 3.0
+height = 6.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wu1fj"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_xvr73"]
+material = SubResource("StandardMaterial3D_wu1fj")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_75i6n"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_j3uhe"]
+material = SubResource("StandardMaterial3D_75i6n")
+
+[node name="StarSystem" type="Node3D"]
+
+[node name="ECSWorld" parent="." instance=ExtResource("1_0fivg")]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_hvpwv")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866023, -0.298718, 0.400963, 0, 0.80192, 0.597431, -0.500003, 0.517389, -0.694482, 11.2517, 16.7431, -19.4884)
+light_color = Color(0.756878, 0.504968, 0.518334, 1)
+shadow_enabled = true
+script = ExtResource("2_b3lrj")
+TargetNodePath = NodePath("../Star")
+_orbitSpeed = 0.01
+
+[node name="Star" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_vqskj")
+
+[node name="PlanetA" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.60871, -6.8873, -14.05)
+mesh = SubResource("SphereMesh_xvr73")
+script = ExtResource("2_b3lrj")
+TargetNodePath = NodePath("../Star")
+_orbitAngle = 120.0
+_orbitSpeed = 0.03
+_orbitRadius = 8.0
+
+[node name="PlanetB" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.704554, -6.10117, 5.0036)
+mesh = SubResource("SphereMesh_j3uhe")
+script = ExtResource("2_b3lrj")
+TargetNodePath = NodePath("../Star")
+_orbitSpeed = 0.025
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 7.80761, 9.80761)
+fov = 90.0
