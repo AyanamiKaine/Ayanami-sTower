@@ -158,6 +158,17 @@ STELLA_API void socket_close(nng_socket sock)
     nng_close(sock);
 }
 
+STELLA_API nng_msg* create_msg_with_string(char *string_message)
+{
+    int rv;
+    nng_msg* msg;
+    if ((rv = nng_msg_alloc(&msg, 0)) != 0) {
+		//fatal("nng_msg_alloc", rv);
+    }
+    nng_msg_append(msg, string_message, strlen(string_message) + 1);
+    return msg;
+}
+
 STELLA_API void socket_send_string_message(nng_socket sock, char *message)
 {
     int rv;
@@ -341,6 +352,7 @@ struct work {
     nng_aio *aio;
     nng_msg *msg;
     nng_ctx ctx;
+    nng_socket  sock;
 };
 
 
@@ -372,6 +384,21 @@ STELLA_API struct work* alloc_work(nng_socket sock, void CALL_BACK(void*))
 	}
     w->state = INIT;
 	return (w);
+}
+
+STELLA_API struct work* create_async_work(nng_socket sock, void CALL_BACK(void*))
+{
+	struct work *work;
+
+    if ((work = nng_alloc(sizeof(*work))) == NULL) {
+		fatal("nng_alloc", NNG_ENOMEM);
+	}
+
+    nng_aio_alloc(&work->aio, CALL_BACK,work);
+    work->state = INIT;
+
+    work->sock = sock;
+    return work;
 }
 
 /* The server runs forever. 
@@ -413,6 +440,23 @@ STELLA_API struct work* async_sub_server(char* url, void CALL_BACK(void*))
     return work;
 }
 
+STELLA_API void async_request_client(char* url, nng_socket sock, void CALL_BACK(void*))
+{
+
+	struct work *w;
+
+    if ((w = nng_alloc(sizeof(*w))) == NULL) {
+		fatal("nng_alloc", NNG_ENOMEM);
+	}
+
+    nng_aio_alloc(&w->aio, CALL_BACK, w);
+    w->state = INIT;
+
+    w->sock = sock;
+    socket_connect(w->sock, url);
+    CALL_BACK(w);
+}
+
 
 STELLA_API void sleep_async_request(nng_duration time, work* work)
 {
@@ -428,6 +472,16 @@ STELLA_API void async_receive(work *work)
 STELLA_API void send_async(work *work)
 {
     nng_ctx_send(work->ctx, work->aio);
+}
+
+STELLA_API void send_async_aio(work *work)
+{
+    nng_send_aio(work->sock, work->aio);
+}
+
+STELLA_API void receive_async_aio(work *work)
+{
+    nng_recv_aio(work->sock,work->aio);
 }
 
 STELLA_API void set_async_message(work *work)

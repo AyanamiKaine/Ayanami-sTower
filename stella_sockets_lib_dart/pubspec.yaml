@@ -18,3 +18,12 @@ dev_dependencies:
 assets:
   - assets/native/windows/nng.dll
   - assets/native/windows/stella_messaging.dll
+
+# This package supports all platforms listed below.
+platforms:
+  windows:
+
+topics:
+  - network
+  - messaging
+  - message-passing

@@ -51,6 +51,8 @@ STELLA_API void socket_close(nng_socket);
 STELLA_API void socket_send_string_message(nng_socket sock, char *message);
 STELLA_API int socket_send_string_message_no_block(nng_socket sock, char *message);
 
+STELLA_API nng_msg* create_msg_with_string(char *string_message);
+
 STELLA_API void trim_topic_from_message(nng_msg *msg);
 
 STELLA_API char* socket_receive_string_message(nng_socket sock);
@@ -86,7 +88,12 @@ STELLA_API struct work *async_sub_server(char *url, void CALL_BACK(void *));
 STELLA_API void async_receive(work *work);
 STELLA_API void sleep_async_request(nng_duration time, work *work);
 STELLA_API void send_async(work *work);
+STELLA_API void send_async_aio(work *work);
+STELLA_API void receive_async_aio(work *work);
+
 STELLA_API void set_async_message(work *work);
 STELLA_API void check_async_result(work *work);
 STELLA_API nng_msg *get_message_from_async(work *work);
+STELLA_API struct work *create_async_work(nng_socket sock, void CALL_BACK(void *));
+
 #endif

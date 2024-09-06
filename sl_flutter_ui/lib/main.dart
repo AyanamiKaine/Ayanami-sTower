@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:math' show max;
+import 'dart:typed_data';
 import 'package:stella_notes/faq.dart';
+import 'package:stella_notes/files_to_learn_database.dart';
 import 'package:stella_notes/guide.dart';
 import 'package:uuid/uuid.dart';
-
+import 'package:dartnng/dartnng.dart';
 import 'package:fluent_ui/fluent_ui.dart'
     show
         Button,
@@ -42,10 +45,11 @@ import 'package:flutter/material.dart'
 import 'package:intl/intl.dart'; // Import the intl package
 
 import 'dart:developer'; // Import for the log function
-import 'package:dartzmq/dartzmq.dart';
 import 'file_to_learn.dart';
 import 'stella_quizes.dart';
 //import 'stella_quizes.dart';
+import 'package:ffi/ffi.dart';
+import "package:msgpack_dart/msgpack_dart.dart" as msgpack;
 
 void main() {
   // Defining the window title if, we are one windows, linux, or mac-os
@@ -90,12 +94,12 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final ZContext _context = ZContext();
-  late final ZSocket _loggerSocket;
-  late final ZSocket _openFileWithDefaultProgramSocket;
-  late final ZSyncSocket _spacedRepetitionDatabaseSocket;
-  late final ZSyncSocket _spaceRepetitionAlgorithmSocket;
-
+  // final ZContext _context = ZContext();
+  // late final ZSocket _loggerSocket;
+  // late final ZSocket _openFileWithDefaultProgramSocket;
+  // late final ZSyncSocket _spacedRepetitionDatabaseSocket;
+  // late final ZSyncSocket _spaceRepetitionAlgorithmSocket;
+  FilesToLearnDatabase db = FilesToLearnDatabase();
   int _selectedIndex = 0; // To keep track of the selected item
   final _viewKey = GlobalKey<NavigationViewState>();
   bool? connectedToBackend = false;
@@ -184,27 +188,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  String convertZMessageToString(ZMessage message) {
-    List<int> allBytes = [];
-
-    // Iterate through frames
-    for (var frame in message) {
-      allBytes.addAll(frame.payload);
-    }
-
-    // Check if the bytes are valid UTF-8
-    try {
-      utf8.decode(allBytes, allowMalformed: false);
-    } catch (e) {
-      // Handle invalid UTF-8 data
-      log("Error: Invalid UTF-8 data");
-      return "";
-    }
-
-    // Convert to string (assuming UTF-8 encoding)
-    return String.fromCharCodes(allBytes);
-  }
-
   void _gatherFilesToReview() async {
     _filesToReview = filesToLearn
         .where((file) => file.nextReviewDate.isBefore(DateTime.now()))
@@ -221,8 +204,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
     log("Trying to delete the following file $jsonString");
 
-    _spacedRepetitionDatabaseSocket.sendString(jsonString);
-    _spacedRepetitionDatabaseSocket.recv();
+    //_spacedRepetitionDatabaseSocket.sendString(jsonString);
+    //_spacedRepetitionDatabaseSocket.recv();
 
     setState(() {
       filesToLearn.removeWhere((file) => file.id == fileToLearn.id);
@@ -234,6 +217,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _setFileWithHighestPriority();
   }
 
+/*
   void _retrieveAllItems() async {
     _spacedRepetitionDatabaseSocket
         .sendString('{ "Command": "RETRIVE_ALL_ITEMS"}');
@@ -243,7 +227,7 @@ class _MyHomePageState extends State<MyHomePage> {
     filesToLearn =
         parseFilesToLearn(String.fromCharCodes(response.first.payload));
   }
-
+*/
   void editItem(FileToLearn fileToLearn) async {
     fileToLearn.pathToFile = fileToLearn.pathToFile.replaceAll('"', '');
 
@@ -263,8 +247,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
     log("Trying to update the following file $jsonString");
 
-    _spacedRepetitionDatabaseSocket.sendString(jsonString);
-    _spacedRepetitionDatabaseSocket.recv();
+    //_spacedRepetitionDatabaseSocket.sendString(jsonString);
+    //_spacedRepetitionDatabaseSocket.recv();
   }
 
   void _createNewItem(FileToLearn fileToLearn) async {
@@ -277,13 +261,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
     log("Trying to create the following file $jsonString");
 
-    _spacedRepetitionDatabaseSocket.sendString(jsonString);
-    _spacedRepetitionDatabaseSocket.recv();
+    // _spacedRepetitionDatabaseSocket.sendString(jsonString);
+    //_spacedRepetitionDatabaseSocket.recv();
   }
 
   void _openFileWithDefaultProgram(String? pathToFile) async {
     if (pathToFile != null) {
-      _openFileWithDefaultProgramSocket.sendString(pathToFile);
+      //_openFileWithDefaultProgramSocket.sendString(pathToFile);
     } else {
       log("FilePath Was Empty");
     }
@@ -297,12 +281,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
     log("Trying to update the following file $jsonString");
 
-    _spacedRepetitionDatabaseSocket.sendString(jsonString);
-    _spacedRepetitionDatabaseSocket.recv();
+    //_spacedRepetitionDatabaseSocket.sendString(jsonString);
+    //_spacedRepetitionDatabaseSocket.recv();
   }
 
   void _logToFile(String message) async {
-    _loggerSocket.sendString("{ \"Message\": \"$message\" }");
+    //_loggerSocket.sendString("{ \"Message\": \"$message\" }");
   }
 
   void _handleReview(FileToLearn file, String reviewResult) async {
@@ -316,9 +300,9 @@ class _MyHomePageState extends State<MyHomePage> {
           "RecallEvaluation": "Good",
           "FileToLearn": file.toJson(),
         });
-        _spaceRepetitionAlgorithmSocket.sendString(jsonRequest);
-        jsonReponse =
-            convertZMessageToString(_spaceRepetitionAlgorithmSocket.recv());
+        //_spaceRepetitionAlgorithmSocket.sendString(jsonRequest);
+        //jsonReponse =
+        //    convertZMessageToString(_spaceRepetitionAlgorithmSocket.recv());
 
         if (file.numberOfTimeSeen > 5) {
           file.easeFactor *= 1.5;
@@ -331,9 +315,9 @@ class _MyHomePageState extends State<MyHomePage> {
           "RecallEvaluation": "Bad",
           "FileToLearn": file.toJson(),
         });
-        _spaceRepetitionAlgorithmSocket.sendString(jsonRequest);
-        jsonReponse =
-            convertZMessageToString(_spaceRepetitionAlgorithmSocket.recv());
+        //_spaceRepetitionAlgorithmSocket.sendString(jsonRequest);
+        //jsonReponse =
+        //    convertZMessageToString(_spaceRepetitionAlgorithmSocket.recv());
         file.numberOfTimeSeen += 1;
         file.easeFactor -= 0.4;
         file.easeFactor = max(1.3, file.easeFactor);
@@ -402,6 +386,7 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
 
     try {
+      /*
       _loggerSocket = _context.createSocket(SocketType.dealer);
       _loggerSocket.connect("tcp://localhost:60010");
 
@@ -416,14 +401,14 @@ class _MyHomePageState extends State<MyHomePage> {
       _spaceRepetitionAlgorithmSocket =
           _context.createdSynSocket(SocketType.req);
       _spaceRepetitionAlgorithmSocket.connect("tcp://localhost:60005");
-
+      */
       connectedToBackend = true;
     } catch (e) {
       connectedToBackend = false;
     }
 
     _logToFile("Flutter GUI Client Started!");
-    _retrieveAllItems();
+    //_retrieveAllItems();
 
     _filteredNotes = filesToLearn; // Initialize _filteredNotes
     _filteredQuizes = _quizes;
@@ -442,8 +427,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void dispose() {
-    _loggerSocket.close();
-    _context.stop();
+    // _loggerSocket.close();
+    // _context.stop();
     super.dispose();
   }
 
@@ -749,12 +734,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                         .now(), // Set initial review date
                                     numberOfTimeSeen: 0,
                                   );
-                                  _createNewItem(newFileToLearn);
                                   _nameController.text = "";
                                   _descriptionController.text = "";
                                   _filePathController.text = "";
                                   filesToLearn.add(newFileToLearn);
                                   _sortNotesByPriority();
+                                  db.create(newFileToLearn);
                                 }
 
                                 Builder(

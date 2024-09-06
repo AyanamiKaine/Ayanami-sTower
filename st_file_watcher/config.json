@@ -1,0 +1,7 @@
+{
+	"eventServerPid": "test",
+	"eventServerProtocol": "ipc:///",
+	"commandServerPid": "Screenshots",
+	"commandServerProtocol": "ipc:///",
+	"initalFolderToWatch": "C:/Users/ayanami/NNG_LUA_TEST/build/lua"
+}
