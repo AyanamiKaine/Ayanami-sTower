@@ -95,6 +95,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Godot 4+ specific ignores
+.godot/
+/android/
 
 # Build results
 [Dd]ebug/
