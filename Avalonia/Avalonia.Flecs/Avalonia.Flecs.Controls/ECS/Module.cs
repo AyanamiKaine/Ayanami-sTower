@@ -56,10 +56,63 @@ namespace Avalonia.Flecs.Controls.ECS
             // same hierarchy as the .NET namespaces (e.g. Avalonia.Flecs.Core.ECS.Module)
             world.Module<Module>();
 
+            world.Component<ContentControl>("ContentControl")
+                .OnSet((Entity e, ref ContentControl contentControl) =>
+                {
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<StackPanel>())
+                    {
+                        parent.Get<StackPanel>().Children.Add(contentControl);
+                    }
+                    else if (parent.Has<DockPanel>())
+                    {
+                        parent.Get<DockPanel>().Children.Add(contentControl);
+                    }
+                    else if (parent.Has<Grid>())
+                    {
+                        parent.Get<Grid>().Children.Add(contentControl);
+                    }
+                    else if (parent.Has<WrapPanel>())
+                    {
+                        parent.Get<WrapPanel>().Children.Add(contentControl);
+                    }
+                    else if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(contentControl);
+                    }
+                    else if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = contentControl;
+                    }
+                }).OnRemove((Entity e, ref ContentControl contentControl) =>
+                {
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Remove(contentControl);
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
+                    }
+                });
+
             world.Component<AutoCompleteBox>("AutoCompleteBox")
                 .OnSet((Entity e, ref AutoCompleteBox autoCompleteBox) =>
                 {
                     var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
                     if (parent.Has<StackPanel>())
                     {
                         parent.Get<StackPanel>().Children.Add(autoCompleteBox);
@@ -88,6 +141,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 .OnRemove((Entity e, ref AutoCompleteBox autoCompleteBox) =>
                 {
                     var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
                     if (parent.Has<Panel>())
                     {
                         parent.Get<Panel>().Children.Remove(autoCompleteBox);
@@ -97,6 +154,8 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Window>("Window")
                 .OnSet((Entity e, ref Window window) =>
                 {
+                    e.Set<ContentControl>(window);
+
                     window.Activated += (object sender, EventArgs args) =>
                     {
                         e.Emit(new Activated(sender, args));
@@ -263,6 +322,10 @@ namespace Avalonia.Flecs.Controls.ECS
                             .OnSet((Entity e, ref TextBlock textBlock) =>
                             {
                                 var parent = e.Parent();
+                                if (parent == 0)
+                                {
+                                    return;
+                                }
                                 if (parent.Has<StackPanel>())
                                 {
                                     parent.Get<StackPanel>().Children.Add(textBlock);
@@ -279,9 +342,9 @@ namespace Avalonia.Flecs.Controls.ECS
                                 {
                                     parent.Get<WrapPanel>().Children.Add(textBlock);
                                 }
-                                else if (parent.Has<Window>())
+                                else if (parent.Has<ContentControl>())
                                 {
-                                    parent.Get<Window>().Content = textBlock;
+                                    parent.Get<ContentControl>().Content = textBlock;
                                 }
 
                                 // Adding event handlers
@@ -419,13 +482,397 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         parent.Get<Panel>().Children.Remove(textBlock);
                     }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
+                    }
                 }); ;
 
+            world.Component<Separator>("Separator")
+                .OnSet((Entity e, ref Separator separator) =>
+                {
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<StackPanel>())
+                    {
+                        parent.Get<StackPanel>().Children.Add(separator);
+                    }
+                    else if (parent.Has<DockPanel>())
+                    {
+                        parent.Get<DockPanel>().Children.Add(separator);
+                    }
+                    else if (parent.Has<Grid>())
+                    {
+                        parent.Get<Grid>().Children.Add(separator);
+                    }
+                    else if (parent.Has<WrapPanel>())
+                    {
+                        parent.Get<WrapPanel>().Children.Add(separator);
+                    }
+                    else if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(separator);
+                    }
+                    else if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = separator;
+                    }
+                }).OnRemove((Entity e, ref Separator separator) =>
+                {
+                    var parent = e.Parent();
+                    if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Remove(separator);
+                    }
+                });
+
+            world.Component<Menu>("Menu")
+                .OnSet((Entity e, ref Menu menu) =>
+                {
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = menu;
+                    }
+
+                    if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(menu);
+                    }
+
+                    DockPanel.SetDock(menu, Dock.Top);
+
+                    menu.AttachedToLogicalTree += (object sender, LogicalTreeAttachmentEventArgs args) =>
+                                {
+                                    e.Emit(new AttachedToLogicalTree(sender, args));
+                                };
+
+                    menu.AttachedToVisualTree += (object sender, VisualTreeAttachmentEventArgs args) =>
+                    {
+                        e.Emit(new AttachedToVisualTree(sender, args));
+                    };
+
+                    menu.DataContextChanged += (object sender, EventArgs args) =>
+                    {
+                        e.Emit(new DataContextChanged(sender, args));
+                    };
+
+                    menu.DetachedFromLogicalTree += (object sender, LogicalTreeAttachmentEventArgs args) =>
+                    {
+                        e.Emit(new DetachedFromLogicalTree(sender, args));
+                    };
+
+                    menu.DetachedFromVisualTree += (object sender, VisualTreeAttachmentEventArgs args) =>
+                    {
+                        e.Emit(new DetachedFromVisualTree(sender, args));
+                    };
+
+                    menu.DoubleTapped += (object sender, TappedEventArgs args) =>
+                    {
+                        e.Emit(new DoubleTapped(sender, args));
+                    };
+
+                    menu.EffectiveViewportChanged += (object sender, EffectiveViewportChangedEventArgs args) =>
+                    {
+                        e.Emit(new EffectiveViewportChanged(sender, args));
+                    };
+
+                    menu.GotFocus += (object sender, GotFocusEventArgs args) =>
+                    {
+                        e.Emit(new GotFocus(sender, args));
+                    };
+
+                    menu.Initialized += (object sender, EventArgs args) =>
+                    {
+                        e.Emit(new Initialized(sender, args));
+                    };
+
+                    menu.KeyDown += (object sender, KeyEventArgs args) =>
+                    {
+                        e.Emit(new KeyDown(sender, args));
+                    };
+
+                    menu.KeyUp += (object sender, KeyEventArgs args) =>
+                    {
+                        e.Emit(new KeyUp(sender, args));
+                    };
+
+                    menu.LayoutUpdated += (object sender, EventArgs args) =>
+                    {
+                        e.Emit(new LayoutUpdated(sender, args));
+                    };
+
+                    menu.LostFocus += (object sender, RoutedEventArgs args) =>
+                    {
+                        e.Emit(new LostFocus(sender, args));
+                    };
+
+                    menu.PointerCaptureLost += (object sender, PointerCaptureLostEventArgs args) =>
+                    {
+                        e.Emit(new PointerCaptureLost(sender, args));
+                    };
+
+                    menu.PointerEntered += (object sender, PointerEventArgs args) =>
+                    {
+                        e.Emit(new PointerEnter(sender, args));
+                    };
+
+                    menu.PointerExited += (object sender, PointerEventArgs args) =>
+                    {
+                        e.Emit(new PointerLeave(sender, args));
+                    };
+
+                    menu.PointerMoved += (object sender, PointerEventArgs args) =>
+                    {
+                        e.Emit(new PointerMoved(sender, args));
+                    };
+
+                    menu.PointerPressed += (object sender, PointerPressedEventArgs args) =>
+                    {
+                        e.Emit(new PointerPressed(sender, args));
+                    };
+
+                    menu.PointerReleased += (object sender, PointerReleasedEventArgs args) =>
+                    {
+                        e.Emit(new PointerReleased(sender, args));
+                    };
+
+                    menu.PointerWheelChanged += (object sender, PointerWheelEventArgs args) =>
+                    {
+                        e.Emit(new PointerWheelChanged(sender, args));
+                    };
+
+                    menu.PropertyChanged += (object sender, AvaloniaPropertyChangedEventArgs args) =>
+                    {
+                        e.Emit(new PropertyChanged(sender, args));
+                    };
+
+                    menu.ResourcesChanged += (object sender, ResourcesChangedEventArgs args) =>
+                    {
+                        e.Emit(new ResourcesChanged(sender, args));
+                    };
+
+                    menu.Tapped += (object sender, TappedEventArgs args) =>
+                    {
+                        e.Emit(new Tapped(sender, args));
+                    };
+
+                    menu.TextInput += (object sender, TextInputEventArgs args) =>
+                    {
+                        e.Emit(new TextInput(sender, args));
+                    };
+
+                    menu.TextInputMethodClientRequested += (object sender, TextInputMethodClientRequestedEventArgs args) =>
+                    {
+                        e.Emit(new TextInputMethodClientRequested(sender, args));
+                    };
+
+
+                }).OnRemove((Entity e, ref Menu menu) =>
+                {
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
+                    }
+
+                    if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Remove(menu);
+                    }
+                });
+
+            world.Component<MenuItem>("MenuItem")
+                .OnSet((Entity e, ref MenuItem menuItem) =>
+                {
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<Menu>())
+                    {
+                        parent.Get<Menu>().Items.Add(menuItem);
+                    }
+                    else if (parent.Has<MenuItem>())
+                    {
+                        parent.Get<MenuItem>().Items.Add(menuItem);
+                    }
+
+
+
+                }).OnRemove((Entity e, ref MenuItem menuItem) =>
+                {
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<Menu>())
+                    {
+                        parent.Get<Menu>().Items.Remove(menuItem);
+                    }
+                    else if (parent.Has<MenuItem>())
+                    {
+                        parent.Get<MenuItem>().Items.Remove(menuItem);
+                    }
+
+                    menuItem.Click += (object sender, RoutedEventArgs args) =>
+                                        {
+                                            e.Emit(new Click(sender, args));
+                                        };
+
+                    menuItem.AttachedToLogicalTree += (object sender, LogicalTreeAttachmentEventArgs args) =>
+                    {
+                        e.Emit(new AttachedToLogicalTree(sender, args));
+                    };
+
+                    menuItem.AttachedToVisualTree += (object sender, VisualTreeAttachmentEventArgs args) =>
+                    {
+                        e.Emit(new AttachedToVisualTree(sender, args));
+                    };
+
+                    menuItem.DataContextChanged += (object sender, EventArgs args) =>
+                    {
+                        e.Emit(new DataContextChanged(sender, args));
+                    };
+
+                    menuItem.DetachedFromLogicalTree += (object sender, LogicalTreeAttachmentEventArgs args) =>
+                    {
+                        e.Emit(new DetachedFromLogicalTree(sender, args));
+                    };
+
+                    menuItem.DetachedFromVisualTree += (object sender, VisualTreeAttachmentEventArgs args) =>
+                    {
+                        e.Emit(new DetachedFromVisualTree(sender, args));
+                    };
+
+                    menuItem.DoubleTapped += (object sender, TappedEventArgs args) =>
+                    {
+                        e.Emit(new DoubleTapped(sender, args));
+                    };
+
+                    menuItem.EffectiveViewportChanged += (object sender, EffectiveViewportChangedEventArgs args) =>
+                    {
+                        e.Emit(new EffectiveViewportChanged(sender, args));
+                    };
+
+                    menuItem.GotFocus += (object sender, GotFocusEventArgs args) =>
+                    {
+                        e.Emit(new GotFocus(sender, args));
+                    };
+
+                    menuItem.Initialized += (object sender, EventArgs args) =>
+                    {
+                        e.Emit(new Initialized(sender, args));
+                    };
+
+                    menuItem.KeyDown += (object sender, KeyEventArgs args) =>
+                    {
+                        e.Emit(new KeyDown(sender, args));
+                    };
+
+                    menuItem.KeyUp += (object sender, KeyEventArgs args) =>
+                    {
+                        e.Emit(new KeyUp(sender, args));
+                    };
+
+                    menuItem.LayoutUpdated += (object sender, EventArgs args) =>
+                    {
+                        e.Emit(new LayoutUpdated(sender, args));
+                    };
+
+                    menuItem.LostFocus += (object sender, RoutedEventArgs args) =>
+                    {
+                        e.Emit(new LostFocus(sender, args));
+                    };
+
+                    menuItem.PointerCaptureLost += (object sender, PointerCaptureLostEventArgs args) =>
+                    {
+                        e.Emit(new PointerCaptureLost(sender, args));
+                    };
+
+                    menuItem.PointerEntered += (object sender, PointerEventArgs args) =>
+                    {
+                        e.Emit(new PointerEnter(sender, args));
+                    };
+
+                    menuItem.PointerExited += (object sender, PointerEventArgs args) =>
+                    {
+                        e.Emit(new PointerLeave(sender, args));
+                    };
+
+                    menuItem.PointerMoved += (object sender, PointerEventArgs args) =>
+                    {
+                        e.Emit(new PointerMoved(sender, args));
+                    };
+
+                    menuItem.PointerPressed += (object sender, PointerPressedEventArgs args) =>
+                    {
+                        e.Emit(new PointerPressed(sender, args));
+                    };
+
+                    menuItem.PointerReleased += (object sender, PointerReleasedEventArgs args) =>
+                    {
+                        e.Emit(new PointerReleased(sender, args));
+                    };
+
+                    menuItem.PointerWheelChanged += (object sender, PointerWheelEventArgs args) =>
+                    {
+                        e.Emit(new PointerWheelChanged(sender, args));
+                    };
+
+                    menuItem.PropertyChanged += (object sender, AvaloniaPropertyChangedEventArgs args) =>
+                    {
+                        e.Emit(new PropertyChanged(sender, args));
+                    };
+
+                    menuItem.ResourcesChanged += (object sender, ResourcesChangedEventArgs args) =>
+                    {
+                        e.Emit(new ResourcesChanged(sender, args));
+                    };
+
+                    menuItem.Tapped += (object sender, TappedEventArgs args) =>
+                    {
+                        e.Emit(new Tapped(sender, args));
+                    };
+
+                    menuItem.TemplateApplied += (object sender, TemplateAppliedEventArgs args) =>
+                    {
+                        e.Emit(new TemplateApplied(sender, args));
+                    };
+
+                    menuItem.TextInput += (object sender, TextInputEventArgs args) =>
+                    {
+                        e.Emit(new TextInput(sender, args));
+                    };
+
+                    menuItem.TextInputMethodClientRequested += (object sender, TextInputMethodClientRequestedEventArgs args) =>
+                    {
+                        e.Emit(new TextInputMethodClientRequested(sender, args));
+                    };
+
+                });
 
             world.Component<Button>("Button")
                 .OnSet((Entity e, ref Button button) =>
                 {
                     var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
                     if (parent.Has<StackPanel>())
                     {
                         parent.Get<StackPanel>().Children.Add(button);
@@ -441,6 +888,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     else if (parent.Has<WrapPanel>())
                     {
                         parent.Get<WrapPanel>().Children.Add(button);
+                    }
+                    else if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = button;
                     }
                     // Adding event handlers
                     // https://reference.avaloniaui.net/api/Avalonia.Controls/Button/#Events
@@ -581,9 +1032,13 @@ namespace Avalonia.Flecs.Controls.ECS
                 }).OnRemove((Entity e, ref Button button) =>
                 {
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = null;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
                     }
 
                     if (parent.Has<Panel>())
@@ -603,16 +1058,28 @@ namespace Avalonia.Flecs.Controls.ECS
                     e.Set<Panel>(dockPanel);
 
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = dockPanel;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = dockPanel;
+                    }
+                    else if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(dockPanel);
                     }
                 }).OnRemove((Entity e, ref DockPanel dockPanel) =>
                 {
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = null;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
                     }
 
                     if (parent.Has<Panel>())
@@ -627,16 +1094,28 @@ namespace Avalonia.Flecs.Controls.ECS
                     e.Set<Panel>(canvas);
 
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = canvas;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = canvas;
+                    }
+                    else if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(canvas);
                     }
                 }).OnRemove((Entity e, ref Canvas canvas) =>
                 {
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = null;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
                     }
 
                     if (parent.Has<Panel>())
@@ -651,16 +1130,28 @@ namespace Avalonia.Flecs.Controls.ECS
                     e.Set<Panel>(stackPanel);
 
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = stackPanel;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = stackPanel;
+                    }
+                    else if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(stackPanel);
                     }
                 }).OnRemove((Entity e, ref StackPanel stackPanel) =>
                 {
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = null;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
                     }
 
                     if (parent.Has<Panel>())
@@ -675,16 +1166,28 @@ namespace Avalonia.Flecs.Controls.ECS
                     e.Set<Panel>(grid);
 
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = grid;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = grid;
+                    }
+                    else if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(grid);
                     }
                 }).OnRemove((Entity e, ref Grid grid) =>
                 {
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = null;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
                     }
 
                     if (parent.Has<Panel>())
@@ -699,16 +1202,28 @@ namespace Avalonia.Flecs.Controls.ECS
                     e.Set<Panel>(wrapPanel);
 
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = wrapPanel;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = wrapPanel;
+                    }
+                    else if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(wrapPanel);
                     }
                 }).OnRemove((Entity e, ref WrapPanel wrapPanel) =>
                 {
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = null;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
                     }
 
                     if (parent.Has<Panel>())
@@ -723,18 +1238,30 @@ namespace Avalonia.Flecs.Controls.ECS
                     e.Set<Panel>(relativePanel);
 
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = relativePanel;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = relativePanel;
+                    }
+                    else if (parent.Has<Panel>())
+                    {
+                        parent.Get<Panel>().Children.Add(relativePanel);
                     }
 
                 })
                 .OnRemove((Entity e, ref RelativePanel relativePanel) =>
                 {
                     var parent = e.Parent();
-                    if (parent.Has<Window>())
+                    if (parent == 0)
                     {
-                        parent.Get<Window>().Content = null;
+                        return;
+                    }
+                    if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = null;
                     }
 
                     if (parent.Has<Panel>())

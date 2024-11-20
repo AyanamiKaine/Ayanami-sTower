@@ -1,20 +1,22 @@
-
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
-namespace Avalonia.Flecs.Example;
+namespace Avalonia.Flecs.FluentUI.Example;
 
 public partial class App : Application
 {
     World _world = World.Create();
 
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
         _world.Import<Avalonia.Flecs.Controls.ECS.Module>();
+        _world.Import<Avalonia.Flecs.FluentUI.Controls.ECS.Module>();
 
         var window = _world.Entity("MainWindow")
             .Set(
@@ -25,44 +27,37 @@ public partial class App : Application
                     Width = 400
                 });
 
-        var dockPanel = _world.Entity("MainWindowDockPanel")
+        var dockPanel = _world.Entity("DockPanel")
             .ChildOf(window)
-            .Set(new DockPanel() { });
+            .Set(new DockPanel());
 
-        var menu = _world.Entity("MainMenu")
+        var navigationView = _world.Entity("NavigationView")
             .ChildOf(dockPanel)
-            .Set(new Menu() { });
-
-        _world.Entity("FileMenuItem")
-            .ChildOf(menu)
-            .Set(new MenuItem()
+            .Set(new NavigationView()
             {
-                Header = "_File"
+                PaneTitle = "Avalonia + Flecs + FluentUI",
+                IsBackButtonVisible = true,
+                IsBackEnabled = true,
             });
 
-        _world.Entity("EditMenuItem")
-                    .ChildOf(menu)
-                    .Set(new MenuItem()
-                    {
-                        Header = "_Edit"
-                    });
+        var navigationViewItem = _world.Entity("NavigationViewItem")
+            .ChildOf(navigationView)
+            .Set(new NavigationViewItem()
+            {
+                Content = "Home"
+            });
+        
 
-        _world.Entity("SelectionMenuItem")
-              .ChildOf(menu)
-              .Set(new MenuItem()
-              {
-                  Header = "_Selection"
-              });
-
-        var textBlock = _world.Entity("HelloWorldTextBlock")
+        var frame = _world.Entity("Frame")
             .ChildOf(dockPanel)
-            .Set(
-                new TextBlock()
-                {
-                    Text = "Avalonia + Flecs = ♥"
-                });
+            .Set(new Frame());
 
-
+        var textBlock = _world.Entity("TextBlock")
+            .ChildOf(dockPanel)
+            .Set(new TextBlock()
+            {
+                Text = "Hello, World!"
+            });
     }
 
     public override void OnFrameworkInitializationCompleted()
