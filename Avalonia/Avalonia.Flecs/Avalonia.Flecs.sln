@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.Controls", "Avalonia.Flecs.Controls\Avalonia.Flecs.Controls.csproj", "{A25F7462-6E86-4555-A802-DEF5E7C71FD0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.Core", "Avalonia.Flecs.Core\Avalonia.Flecs.Core.csproj", "{D8834C05-E711-4E73-8000-56064D662DAF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.FluentUI.Controls", "Avalonia.Flecs.FluentUI.Controls\Avalonia.Flecs.FluentUI.Controls.csproj", "{B4F95377-5461-4C0C-A666-5AA235725C6F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.FluentUI.Core", "Avalonia.Flecs.FluentUI.Core\Avalonia.Flecs.FluentUI.Core.csproj", "{3A3352CE-98FE-4162-BE38-2F28C8F87929}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A25F7462-6E86-4555-A802-DEF5E7C71FD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A25F7462-6E86-4555-A802-DEF5E7C71FD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A25F7462-6E86-4555-A802-DEF5E7C71FD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A25F7462-6E86-4555-A802-DEF5E7C71FD0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8834C05-E711-4E73-8000-56064D662DAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8834C05-E711-4E73-8000-56064D662DAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8834C05-E711-4E73-8000-56064D662DAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8834C05-E711-4E73-8000-56064D662DAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4F95377-5461-4C0C-A666-5AA235725C6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4F95377-5461-4C0C-A666-5AA235725C6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4F95377-5461-4C0C-A666-5AA235725C6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4F95377-5461-4C0C-A666-5AA235725C6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A3352CE-98FE-4162-BE38-2F28C8F87929}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A3352CE-98FE-4162-BE38-2F28C8F87929}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A3352CE-98FE-4162-BE38-2F28C8F87929}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A3352CE-98FE-4162-BE38-2F28C8F87929}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
