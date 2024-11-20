@@ -10,31 +10,39 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SplitContainer" type="SplitContainer" parent="."]
+[node name="BoxContainer" type="BoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = -4
-
-[node name="Panel" type="Panel" parent="SplitContainer"]
-layout_mode = 2
-
-[node name="SplitContainer2" type="SplitContainer" parent="SplitContainer"]
-layout_mode = 2
-theme_override_constants/separation = -4
 vertical = true
 
-[node name="Panel2" type="Panel" parent="SplitContainer/SplitContainer2"]
+[node name="BoxContainer" type="BoxContainer" parent="BoxContainer"]
 layout_mode = 2
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="SplitContainer/SplitContainer2"]
+[node name="Button" type="Button" parent="BoxContainer/BoxContainer"]
 layout_mode = 2
+text = "OPEN CHARACTER MENU"
+
+[node name="Button2" type="Button" parent="BoxContainer/BoxContainer"]
+layout_mode = 2
+text = "OPEN DEBUG LOG"
+
+[node name="Button3" type="Button" parent="BoxContainer/BoxContainer"]
+layout_mode = 2
+text = "OPEN SETTINGS"
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="BoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="SplitContainer/SplitContainer2/SubViewportContainer"]
-size = Vector2i(1144, 640)
+[node name="SubViewport" type="SubViewport" parent="BoxContainer/SubViewportContainer"]
+handle_input_locally = false
+size = Vector2i(1152, 613)
+render_target_update_mode = 4
 
-[node name="StarSystem" parent="SplitContainer/SplitContainer2/SubViewportContainer/SubViewport" instance=ExtResource("1_ksx3i")]
+[node name="StarSystem" parent="BoxContainer/SubViewportContainer/SubViewport" instance=ExtResource("1_ksx3i")]

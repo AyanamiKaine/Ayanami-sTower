@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://cw2wj3di81yuf"]
+[gd_scene load_steps=13 format=3 uid="uid://cw2wj3di81yuf"]
 
 [ext_resource type="PackedScene" uid="uid://cwvihbn4se8tj" path="res://ecs_world.tscn" id="1_0fivg"]
 [ext_resource type="Script" path="res://PlayerView.cs" id="2_b3lrj"]
@@ -28,6 +28,8 @@ height = 6.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_xvr73"]
 material = SubResource("StandardMaterial3D_wu1fj")
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_dia3u"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_75i6n"]
 
@@ -60,6 +62,12 @@ TargetNodePath = NodePath("../Star")
 _orbitAngle = 120.0
 _orbitSpeed = 0.03
 _orbitRadius = 8.0
+
+[node name="Area3D" type="Area3D" parent="PlanetA"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlanetA/Area3D"]
+shape = SubResource("SphereShape3D_dia3u")
+disabled = true
 
 [node name="PlanetB" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.704554, -6.10117, 5.0036)

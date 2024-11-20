@@ -18,6 +18,7 @@ defmodule AyanamisTowerWebsiteWeb.Router do
     pipe_through :browser
 
     get "/", HomeController, :home
+    get "/ArtOfCoding", ArtOfCodingController, :index
   end
 
   # Other scopes may use custom stacks.
