@@ -8,6 +8,8 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
     public struct Module : IFlecsModule
     {
 
+        public record struct OnSelectionChanged(object Sender, NavigationViewSelectionChangedEventArgs Args);
+
         public void InitModule(World world)
         {
             // Register module with world. The module entity will be created with the
@@ -17,6 +19,8 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             world.Component<NavigationView>("NavigationView")
                 .OnSet((Entity e, ref NavigationView navigationView) =>
                 {
+                    e.Set<ContentControl>((navigationView));
+
                     var parent = e.Parent();
                     if (parent == 0)
                     {
@@ -30,6 +34,13 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                     {
                         parent.Get<Panel>().Children.Add(navigationView);
                     }
+
+                    navigationView.SelectionChanged += (object sender, NavigationViewSelectionChangedEventArgs args) =>
+                    {
+                        e.Set(new OnSelectionChanged(sender, args));
+                        e.Emit<OnSelectionChanged>();
+                    };
+
                 }).OnRemove((Entity e, ref NavigationView navigationView) =>
                 {
                     var parent = e.Parent();

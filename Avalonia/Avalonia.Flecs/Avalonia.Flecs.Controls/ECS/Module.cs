@@ -158,17 +158,20 @@ namespace Avalonia.Flecs.Controls.ECS
 
                     window.Activated += (object sender, EventArgs args) =>
                     {
-                        e.Emit(new Activated(sender, args));
+                        e.Set(new Activated(sender, args));
+                        e.Emit<Activated>();
                     };
 
                     window.AttachedToLogicalTree += (object sender, LogicalTreeAttachmentEventArgs args) =>
                     {
-                        e.Emit(new AttachedToLogicalTree(sender, args));
+                        e.Set(new AttachedToLogicalTree(sender, args));
+                        e.Emit<AttachedToLogicalTree>();
                     };
 
                     window.AttachedToVisualTree += (object sender, VisualTreeAttachmentEventArgs args) =>
                     {
-                        e.Emit(new AttachedToVisualTree(sender, args));
+                        e.Set(new AttachedToVisualTree(sender, args));
+                        e.Emit<AttachedToVisualTree>();
                     };
 
                     window.Closed += (object sender, EventArgs args) =>
