@@ -314,10 +314,14 @@ namespace Avalonia.Flecs.Controls.ECS
                         e.Emit<PropertyChanged>();
                     };
 
-                    window.ResourcesChanged += (object sender, ResourcesChangedEventArgs args) =>
+                    window.ResourcesChanged += (object? sender, ResourcesChangedEventArgs args) =>
                     {
-                        e.Set(new ResourcesChanged(sender, args));
-                        e.Emit<ResourcesChanged>();
+                        // Can the sender even be null, is this possible?
+                        if (sender != null)
+                        {
+                            e.Set(new ResourcesChanged(sender, args));
+                            e.Emit<ResourcesChanged>();
+                        }
                     };
 
                     window.Tapped += (object sender, TappedEventArgs args) =>
@@ -489,7 +493,7 @@ namespace Avalonia.Flecs.Controls.ECS
                                     e.Emit<PropertyChanged>();
                                 };
 
-                                textBlock.ResourcesChanged += (object sender, ResourcesChangedEventArgs args) =>
+                                textBlock.ResourcesChanged += (object? sender, ResourcesChangedEventArgs args) =>
                                 {
                                     e.Set(new ResourcesChanged(sender, args));
                                     e.Emit<ResourcesChanged>();
