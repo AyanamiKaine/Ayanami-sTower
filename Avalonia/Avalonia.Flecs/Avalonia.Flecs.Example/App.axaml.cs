@@ -1,4 +1,5 @@
 
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -62,7 +63,22 @@ public partial class App : Application
                     Text = "Avalonia + Flecs = ♥"
                 });
 
+        var button = _world.Entity("Button")
+            .ChildOf(dockPanel)
+            .Set(
+                new Button()
+                {
+                    Content = "CLICK ME"
+                }
+            );
 
+        button.Observe<Controls.ECS.Module.Click>((Entity e) =>
+        {
+            var clickEventData = e.Get<Controls.ECS.Module.Click>();
+            var b = clickEventData.Sender as Button;
+            b.Content = "CHANGED CONTENT";
+            Console.WriteLine("THE BUTTON WAS CLICK WHOAH!");
+        });
     }
 
     public override void OnFrameworkInitializationCompleted()
