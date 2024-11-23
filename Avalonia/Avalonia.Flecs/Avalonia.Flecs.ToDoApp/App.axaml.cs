@@ -101,10 +101,10 @@ public partial class App : Application
                 itemsController.Get<ItemsControl>().Items.Add(textBox.Get<TextBox>().Text);
                 textBox.Get<TextBox>().Text = "";
 
-                var t = _world.Lookup(".MainWindow.Grid.TODO-ListTitle");
-                if (t != 0)
+                var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
+                if (titleEntityFound)
                 {
-                    t.Get<TextBlock>().Text = $"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})";
+                    title.Get<TextBlock>().Text = $"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})";
                 }
             }
         });
