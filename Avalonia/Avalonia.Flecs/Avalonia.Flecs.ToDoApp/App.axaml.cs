@@ -12,6 +12,19 @@ namespace Avalonia.Flecs.ToDoApp;
 
 public partial class App : Application
 {
+
+
+    public class TodoItem(string text)
+    {
+        public string Text { get; set; } = text;
+        public bool IsDone { get; set; } = false;
+
+        public override string ToString()
+        {
+            return Text + (IsDone ? " (Done)" : "(Not Done)");
+        }
+    }
+
     World _world = World.Create();
 
     public override void Initialize()
@@ -88,7 +101,7 @@ public partial class App : Application
         {
             if (e.Get<KeyDown>().Args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
             {
-                itemsController.Get<ItemsControl>().Items.Add(textBox.Get<TextBox>().Text);
+                itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text));
                 textBox.Get<TextBox>().Text = "";
             }
         });
@@ -98,7 +111,7 @@ public partial class App : Application
             Console.WriteLine(title.Path());
             if (textBox.Get<TextBox>().Text != "")
             {
-                itemsController.Get<ItemsControl>().Items.Add(textBox.Get<TextBox>().Text);
+                itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text));
                 textBox.Get<TextBox>().Text = "";
 
                 var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);

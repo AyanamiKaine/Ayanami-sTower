@@ -361,6 +361,7 @@ namespace Avalonia.Flecs.Controls.ECS
 
             RegisterPanelComponents(world);
 
+
             world.Component<TextBlock>("TextBlock")
                             .OnSet((Entity e, ref TextBlock textBlock) =>
                             {
