@@ -5,7 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Flecs.NET.Core;
-
+using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Example;
 
 public partial class App : Application
@@ -72,9 +72,9 @@ public partial class App : Application
                 }
             );
 
-        button.Observe<Controls.ECS.Module.Click>((Entity e) =>
+        button.Observe<Click>((Entity e) =>
         {
-            var clickEventData = e.Get<Controls.ECS.Module.Click>();
+            var clickEventData = e.Get<Click>();
             var b = clickEventData.Sender as Button;
             b.Content = "CHANGED CONTENT";
             Console.WriteLine("THE BUTTON WAS CLICK WHOAH!");

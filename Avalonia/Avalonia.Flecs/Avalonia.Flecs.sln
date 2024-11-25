@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.FluentUI.Exa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.ToDoApp", "Avalonia.Flecs.ToDoApp\Avalonia.Flecs.ToDoApp.csproj", "{301133D3-3405-4373-AF09-DCBAE5FC7AE0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.StellaLearning", "Avalonia.Flecs.StellaLearning\Avalonia.Flecs.StellaLearning.csproj", "{2A702A0E-8490-4F40-BEAB-92E97A0E0A91}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{301133D3-3405-4373-AF09-DCBAE5FC7AE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{301133D3-3405-4373-AF09-DCBAE5FC7AE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{301133D3-3405-4373-AF09-DCBAE5FC7AE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A702A0E-8490-4F40-BEAB-92E97A0E0A91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A702A0E-8490-4F40-BEAB-92E97A0E0A91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A702A0E-8490-4F40-BEAB-92E97A0E0A91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A702A0E-8490-4F40-BEAB-92E97A0E0A91}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
