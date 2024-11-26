@@ -40,7 +40,7 @@ public static class SpacedRepetitionPage
                 Margin = new Thickness(10, 0)
             });
 
-        Grid.SetColumn(totalItems.Get<TextBlock>(), 1);
+        Grid.SetColumn(totalItems.Get<Control>(), 1);
 
         var sortItemsButton = world.Entity("SortItemsButton")
             .ChildOf(spacedRepetitionPage)
@@ -49,7 +49,7 @@ public static class SpacedRepetitionPage
 
             });
 
-        Grid.SetColumn(sortItemsButton.Get<ComboBox>(), 2);
+        Grid.SetColumn(sortItemsButton.Get<Control>(), 2);
 
         sortItemsButton.Get<ComboBox>().Items.Add("Sort By Date");
         sortItemsButton.Get<ComboBox>().Items.Add("Sort By Priority");
@@ -62,7 +62,7 @@ public static class SpacedRepetitionPage
             .ChildOf(srcsrollViewer)
             .Set<ItemsControl>(new ItemsControl());
 
-        Grid.SetRow(srcsrollViewer.Get<ScrollViewer>(), 1);
+        Grid.SetRow(srcsrollViewer.Get<Control>(), 1);
 
 
 

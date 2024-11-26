@@ -192,7 +192,10 @@ public partial class App : Application
             desktop.MainWindow = _world.Lookup("MainWindow").Get<Window>();
 
         }
-        this.AttachDevTools();
         base.OnFrameworkInitializationCompleted();
+#if DEBUG
+        this.AttachDevTools();
+#endif
+
     }
 }

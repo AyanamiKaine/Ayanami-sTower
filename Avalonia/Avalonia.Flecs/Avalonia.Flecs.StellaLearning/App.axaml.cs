@@ -80,17 +80,17 @@ public partial class App : Application
 
         var settingPage = SettingsPage.Create(_world, navigationView);
 
-        Grid.SetRow(settingPage.Get<TextBlock>(), 2);
-        Grid.SetColumnSpan(settingPage.Get<TextBlock>(), 3);
+        Grid.SetRow(settingPage.Get<Control>(), 2);
+        Grid.SetColumnSpan(settingPage.Get<Control>(), 3);
 
         var homePage = HomePage.Create(_world, "HomePage");
-        Grid.SetRow(homePage.Get<TextBlock>(), 2);
-        Grid.SetColumnSpan(homePage.Get<TextBlock>(), 3);
+        Grid.SetRow(homePage.Get<Control>(), 2);
+        Grid.SetColumnSpan(homePage.Get<Control>(), 3);
 
         var literaturePage = LiteraturePage.Create(_world);
 
-        Grid.SetRow(literaturePage.Get<TextBlock>(), 2);
-        Grid.SetColumnSpan(literaturePage.Get<TextBlock>(), 3);
+        Grid.SetRow(literaturePage.Get<Control>(), 2);
+        Grid.SetColumnSpan(literaturePage.Get<Control>(), 3);
 
 
         var spacedRepetitionPage = SpacedRepetitionPage.Create(_world);
@@ -179,7 +179,9 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+        #if DEBUG
         this.AttachDevTools();
+        #endif
 
     }
 }

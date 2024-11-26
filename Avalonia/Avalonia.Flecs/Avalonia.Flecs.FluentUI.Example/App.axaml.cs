@@ -109,5 +109,6 @@ public partial class App : Application
 #if DEBUG
         this.AttachDevTools();
 #endif
+
     }
 }

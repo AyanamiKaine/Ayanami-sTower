@@ -1,6 +1,7 @@
 using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Controls.ECS
 {
     public class ECSTemplatedControl : IFlecsModule
@@ -13,6 +14,12 @@ namespace Avalonia.Flecs.Controls.ECS
                 {
                     e.Set<Control>(templatedControl);
 
+                    templatedControl.TemplateApplied += (object sender, TemplateAppliedEventArgs args) =>
+                    {
+                        e.Set(new TemplateApplied(sender, args));
+                        e.Emit<AttachedToVisualTree>();
+                    };
+                    
                     var parent = e.Parent();
                     if (parent == 0)
                     {

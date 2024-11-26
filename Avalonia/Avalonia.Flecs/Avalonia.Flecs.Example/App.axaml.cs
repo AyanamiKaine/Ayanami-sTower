@@ -89,5 +89,9 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+#if DEBUG
+        this.AttachDevTools();
+#endif
+
     }
 }
