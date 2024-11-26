@@ -1,0 +1,2 @@
+# Before we can create a project template for Avalonia.Flecs
+To be able to use this project template we first need to publish two nuget packages for the Avalonia.Flecs.ECS and Avalonia.Flecs.FluentUI module so they can be refrenced by the template project
