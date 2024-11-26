@@ -1,3 +1,4 @@
+using Flecs.NET.Core;
 using System;
 using Avalonia;
 using Avalonia.Controls;
@@ -5,9 +6,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Flecs.FluentUI.Controls.ECS;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
-using Flecs.NET.Core;
-using FlecsCore = Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
+using static Avalonia.Flecs.FluentUI.Controls.ECS.Module;
+using Avalonia.Flecs.Controls.ECS.Events;
+using Avalonia.Flecs.StellaLearning.Pages;
 namespace Avalonia.Flecs.StellaLearning;
 
 public interface IUIComponent
@@ -22,6 +24,11 @@ public interface IUIComponent
     Entity Create(World world, params object[] props);
 }
 
+/// <summary>
+/// Entity tag showing that the 
+/// entity is a page.
+/// </summary>
+public struct Page { }
 
 
 public partial class App : Application
@@ -71,82 +78,23 @@ public partial class App : Application
                 RowDefinitions = new RowDefinitions("Auto")
             });
 
-        var settingPage = Pages.SettingsPage.Create(_world);
+        var settingPage = SettingsPage.Create(_world, navigationView);
 
         Grid.SetRow(settingPage.Get<TextBlock>(), 2);
         Grid.SetColumnSpan(settingPage.Get<TextBlock>(), 3);
 
-        var homePage = Pages.HomePage.Create(_world);
+        var homePage = HomePage.Create(_world, "HomePage");
         Grid.SetRow(homePage.Get<TextBlock>(), 2);
         Grid.SetColumnSpan(homePage.Get<TextBlock>(), 3);
 
-        var literaturePage = _world.Entity("LiteraturePage")
-            .ChildOf(navigationView)
-            .Set(new TextBlock()
-            {
-                Text = "Literature",
-                Margin = new Thickness(10)
-            });
+        var literaturePage = LiteraturePage.Create(_world);
 
         Grid.SetRow(literaturePage.Get<TextBlock>(), 2);
         Grid.SetColumnSpan(literaturePage.Get<TextBlock>(), 3);
 
 
-        var spacedRepetitionPage = _world.Entity("SpacedRepetitionPage")
-            .Set(new Grid()
-            {
-                Margin = new Thickness(10),
-                /*
-                
-                *: This represents a "star" column. It means this column will take up as much available space as possible after any fixed-size or Auto columns have been accounted for. Think of it as flexible or "greedy". In this case, the first column will grab most of the grid's width.
-                
-                Auto: This means the column's width will adjust automatically to fit the content within it. If you place a button in this column, the column will be just wide enough to accommodate the button's size.
-
-                */
-                ColumnDefinitions = new ColumnDefinitions("*, Auto, Auto"),
-                RowDefinitions = new RowDefinitions("Auto, *, Auto"),
-
-            }).ChildOf(navigationView);
-
-        var listSearchSpacedRepetition = _world.Entity("ListSearchSpacedRepetition")
-            .ChildOf(spacedRepetitionPage)
-            .Set(new TextBox()
-            {
-                Watermark = "Search Entries",
-            });
-
-        var totalItems = _world.Entity("TotalItems")
-            .ChildOf(spacedRepetitionPage)
-            .Set(new TextBlock()
-            {
-                Text = "Total Items: 0",
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(10, 0)
-            });
-
-        Grid.SetColumn(totalItems.Get<TextBlock>(), 1);
-
-        var sortItemsButton = _world.Entity("SortItemsButton")
-            .ChildOf(spacedRepetitionPage)
-            .Set(new ComboBox()
-            {
-
-            });
-
-        Grid.SetColumn(sortItemsButton.Get<ComboBox>(), 2);
-
-        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Date");
-        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Priority");
-
-        var srcsrollViewer = _world.Entity("SpaceRepetitionScrollViewer")
-            .ChildOf(spacedRepetitionPage)
-            .Set<ScrollViewer>(new ScrollViewer());
-
-        var srItems = _world.Entity("SpaceRepetitionList")
-            .ChildOf(srcsrollViewer)
-            .Set<ItemsControl>(new ItemsControl());
-
-        Grid.SetRow(srcsrollViewer.Get<ScrollViewer>(), 1);
+        var spacedRepetitionPage = SpacedRepetitionPage.Create(_world);
+        //spacedRepetitionPage.ChildOf(navigationView);
 
         _world.Entity("HomeNavigationViewItem")
             .ChildOf(navigationView)
@@ -175,36 +123,47 @@ public partial class App : Application
 
 
 
-        navigationView.Observe<Module.OnSelectionChanged>((Entity e) =>
+        navigationView.Observe<FluentUI.Controls.ECS.Events.OnSelectionChanged>((Entity e) =>
         {
 
-            navigationView.Children((Entity children) =>
+            //When we select a new page to display we remove 
+            //all currently attached childrens that are pages
+            //so the ControlToParentAdder observer runs.
+            navigationView.Children((Entity child) =>
             {
-
-                //children.Remove<Ecs.ChildOf, Ecs.WildCard>();
+                if (child.Has<Page>())
+                {
+                    child.Remove(Ecs.ChildOf, Ecs.Wildcard);
+                    //Console.WriteLine(child.Name());
+                }
             });
 
-            var OnSelectionChanged = e.Get<Module.OnSelectionChanged>();
+
+            var OnSelectionChanged = e.Get<FluentUI.Controls.ECS.Events.OnSelectionChanged>();
 
             var selectedItem = OnSelectionChanged.Args.SelectedItem as NavigationViewItem;
             if (selectedItem?.Content.ToString() == "Home")
             {
+                //navigationView.Get<NavigationView>().Content = homePage.Get<TextBlock>();
                 homePage.ChildOf(navigationView);
             }
             else if (selectedItem?.Content.ToString() == "Literature")
             {
-                Console.WriteLine("Selection Changed To Literature");
-                navigationView.Get<NavigationView>().Content = literaturePage.Get<TextBlock>();
+                //Console.WriteLine("Selection Changed To Literature");
+                //navigationView.Get<NavigationView>().Content = literaturePage.Get<TextBlock>();
+                literaturePage.ChildOf(navigationView);
 
             }
             else if (selectedItem?.Content.ToString() == "Spaced Repetition")
             {
-                navigationView.Get<NavigationView>().Content = spacedRepetitionPage.Get<Panel>();
+                //navigationView.Get<NavigationView>().Content = spacedRepetitionPage.Get<Panel>();
+                spacedRepetitionPage.ChildOf(navigationView);
             }
             else if (selectedItem?.Content.ToString() == "Settings")
             {
-                Console.WriteLine("Selection Changed To Settings");
-                navigationView.Get<NavigationView>().Content = settingPage.Get<TextBlock>();
+                //Console.WriteLine("Selection Changed To Settings");
+                //navigationView.Get<NavigationView>().Content = settingPage.Get<TextBlock>();
+                settingPage.ChildOf(navigationView);
             }
         });
 

@@ -70,7 +70,7 @@ namespace Avalonia.Flecs.Controls.ECS
                             parent.Get<ContentControl>().Content = control;
                         }
                     }
-                    Console.WriteLine($"Added child: {child.Name()} to parent: {child.Parent().Name()}");
+                    //Console.WriteLine($"Added child: {child.Name()} to parent: {child.Parent().Name()}");
                 });
         }
         public static void RegisterEventDataComponents(World world)

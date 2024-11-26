@@ -7,9 +7,6 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
     // Modules need to implement the IFlecsModule interface
     public struct Module : IFlecsModule
     {
-
-        public record struct OnSelectionChanged(object Sender, NavigationViewSelectionChangedEventArgs Args);
-
         public void InitModule(World world)
         {
             // Register module with world. The module entity will be created with the

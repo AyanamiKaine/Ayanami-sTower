@@ -65,9 +65,9 @@ public partial class App : Application
 
         // We should probably put the event classes into an event class
         // so we can write Events.OnSelectionChanged instead of Module.OnSelectionChanged
-        navigationView.Observe<Module.OnSelectionChanged>((Entity e) =>
+        navigationView.Observe<FluentUI.Controls.ECS.Events.OnSelectionChanged>((Entity e) =>
         {
-            var OnSelectionChanged = e.Get<Module.OnSelectionChanged>();
+            var OnSelectionChanged = e.Get<FluentUI.Controls.ECS.Events.OnSelectionChanged>();
 
             var selectedItem = OnSelectionChanged.Args.SelectedItem as NavigationViewItem;
             if (selectedItem?.Content.ToString() == "Home")

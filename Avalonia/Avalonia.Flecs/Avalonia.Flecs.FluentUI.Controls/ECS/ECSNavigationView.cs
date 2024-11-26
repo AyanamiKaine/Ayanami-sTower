@@ -16,9 +16,10 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
 
                                navigationView.SelectionChanged += (object sender, NavigationViewSelectionChangedEventArgs args) =>
                                {
-                                   e.Set(new OnSelectionChanged(sender, args));
-                                   e.Emit<OnSelectionChanged>();
+                                   e.Set(new Events.OnSelectionChanged(sender, args));
+                                   e.Emit<Events.OnSelectionChanged>();
                                };
+
 
                            }).OnRemove((Entity e, ref NavigationView navigationView) =>
                            {
