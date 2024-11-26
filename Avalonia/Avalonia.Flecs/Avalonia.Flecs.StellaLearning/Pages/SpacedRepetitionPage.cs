@@ -51,8 +51,19 @@ public static class SpacedRepetitionPage
 
         Grid.SetColumn(sortItemsButton.Get<Control>(), 2);
 
-        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Date");
-        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Priority");
+
+        /*
+        I believe that entites should know the exact control type but
+        all other entities should only care for the base classes like
+        Control, Panel, ItemsControl, TemplatedControl, Etc. They should
+        always take the lowest common denominator.
+
+        No need to depend on things that we dont care for 
+        */
+
+
+        sortItemsButton.Get<ItemsControl>().Items.Add("Sort By Date");
+        sortItemsButton.Get<ItemsControl>().Items.Add("Sort By Priority");
 
         var srcsrollViewer = world.Entity("SpaceRepetitionScrollViewer")
             .ChildOf(spacedRepetitionPage)
@@ -63,8 +74,6 @@ public static class SpacedRepetitionPage
             .Set<ItemsControl>(new ItemsControl());
 
         Grid.SetRow(srcsrollViewer.Get<Control>(), 1);
-
-
 
         return spacedRepetitionPage;
     }

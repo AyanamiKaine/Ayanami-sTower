@@ -12,17 +12,6 @@ using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Flecs.StellaLearning.Pages;
 namespace Avalonia.Flecs.StellaLearning;
 
-public interface IUIComponent
-{
-    /// <summary>
-    /// Creates an Entity UI Component that represents a UI Component.
-    /// Similar to an react component, it is a function that returns an Entity.
-    /// </summary>
-    /// <param name="world">Flecs ECS World</param>
-    /// <param name="props">Used to pass down data, similar to props in react</param>
-    /// <returns></returns>
-    Entity Create(World world, params object[] props);
-}
 
 /// <summary>
 /// Entity tag showing that the 
@@ -119,10 +108,6 @@ public partial class App : Application
 
         Grid.SetColumn(navigationView.Get<NavigationView>(), 0);
 
-
-
-
-
         navigationView.Observe<FluentUI.Controls.ECS.Events.OnSelectionChanged>((Entity e) =>
         {
 
@@ -179,9 +164,9 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
-        #if DEBUG
+#if DEBUG
         this.AttachDevTools();
-        #endif
+#endif
 
     }
 }
