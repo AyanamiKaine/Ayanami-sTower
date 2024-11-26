@@ -6,9 +6,23 @@ using Avalonia.Flecs.FluentUI.Controls.ECS;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Flecs.NET.Core;
+using FlecsCore = Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
-
 namespace Avalonia.Flecs.StellaLearning;
+
+public interface IUIComponent
+{
+    /// <summary>
+    /// Creates an Entity UI Component that represents a UI Component.
+    /// Similar to an react component, it is a function that returns an Entity.
+    /// </summary>
+    /// <param name="world">Flecs ECS World</param>
+    /// <param name="props">Used to pass down data, similar to props in react</param>
+    /// <returns></returns>
+    Entity Create(World world, params object[] props);
+}
+
+
 
 public partial class App : Application
 {
@@ -20,6 +34,7 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
         _world.Import<Avalonia.Flecs.Controls.ECS.Module>();
         _world.Import<Avalonia.Flecs.FluentUI.Controls.ECS.Module>();
+        _world.Observer();
 
         var window = _world.Entity("MainWindow")
             .Set(
@@ -56,25 +71,12 @@ public partial class App : Application
                 RowDefinitions = new RowDefinitions("Auto")
             });
 
-        var settingPage = _world.Entity("SettingPage")
-            .ChildOf(navigationView)
-            .Set(new TextBlock()
-            {
-                Text = "Settings",
-                Margin = new Thickness(10)
-            });
+        var settingPage = Pages.SettingsPage.Create(_world);
 
         Grid.SetRow(settingPage.Get<TextBlock>(), 2);
         Grid.SetColumnSpan(settingPage.Get<TextBlock>(), 3);
 
-        var homePage = _world.Entity("HomePage")
-            .ChildOf(navigationView)
-            .Set(new TextBlock()
-            {
-                Text = "Home",
-                Margin = new Thickness(10)
-            });
-
+        var homePage = Pages.HomePage.Create(_world);
         Grid.SetRow(homePage.Get<TextBlock>(), 2);
         Grid.SetColumnSpan(homePage.Get<TextBlock>(), 3);
 
@@ -91,7 +93,6 @@ public partial class App : Application
 
 
         var spacedRepetitionPage = _world.Entity("SpacedRepetitionPage")
-            .ChildOf(navigationView)
             .Set(new Grid()
             {
                 Margin = new Thickness(10),
@@ -105,7 +106,7 @@ public partial class App : Application
                 ColumnDefinitions = new ColumnDefinitions("*, Auto, Auto"),
                 RowDefinitions = new RowDefinitions("Auto, *, Auto"),
 
-            });
+            }).ChildOf(navigationView);
 
         var listSearchSpacedRepetition = _world.Entity("ListSearchSpacedRepetition")
             .ChildOf(spacedRepetitionPage)
@@ -147,11 +148,6 @@ public partial class App : Application
 
         Grid.SetRow(srcsrollViewer.Get<ScrollViewer>(), 1);
 
-        srItems.Get<ItemsControl>().Items.Add("Item 1");
-        srItems.Get<ItemsControl>().Items.Add("Item 2");
-        srItems.Get<ItemsControl>().Items.Add("Item 3");
-        srItems.Get<ItemsControl>().Items.Add("Item 4");
-
         _world.Entity("HomeNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem()
@@ -181,12 +177,19 @@ public partial class App : Application
 
         navigationView.Observe<Module.OnSelectionChanged>((Entity e) =>
         {
+
+            navigationView.Children((Entity children) =>
+            {
+
+                //children.Remove<Ecs.ChildOf, Ecs.WildCard>();
+            });
+
             var OnSelectionChanged = e.Get<Module.OnSelectionChanged>();
 
             var selectedItem = OnSelectionChanged.Args.SelectedItem as NavigationViewItem;
             if (selectedItem?.Content.ToString() == "Home")
             {
-                navigationView.Get<NavigationView>().Content = homePage.Get<TextBlock>();
+                homePage.ChildOf(navigationView);
             }
             else if (selectedItem?.Content.ToString() == "Literature")
             {

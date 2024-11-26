@@ -17,6 +17,8 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<ItemsControl>("ItemsControl")
                 .OnSet((Entity e, ref ItemsControl itemsControl) =>
                 {
+                    e.Set<Control>(itemsControl);
+
                     var parent = e.Parent();
                     if (parent == 0)
                     {
@@ -24,6 +26,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     if (parent.Has<Panel>())
                     {
+                        if (parent.Get<Panel>().Children.Contains(itemsControl))
+                        {
+                            return;
+                        }
                         parent.Get<Panel>().Children.Add(itemsControl);
                     }
                     else if (parent.Has<ContentControl>())

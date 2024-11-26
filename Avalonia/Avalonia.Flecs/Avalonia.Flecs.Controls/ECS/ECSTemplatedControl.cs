@@ -11,6 +11,8 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<TemplatedControl>("TemplatedControl")
                 .OnSet((Entity e, ref TemplatedControl templatedControl) =>
                 {
+                    e.Set<Control>(templatedControl);
+
                     var parent = e.Parent();
                     if (parent == 0)
                     {
@@ -18,6 +20,12 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     if (parent.Has<Panel>())
                     {
+                        //We dont want to add the control twice
+                        if (parent.Get<Panel>().Children.Contains(templatedControl))
+                        {
+                            return;
+                        }
+
                         parent.Get<Panel>().Children.Add(templatedControl);
                     }
                     else if (parent.Has<ContentControl>())

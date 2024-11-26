@@ -177,6 +177,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     else if (parent.Has<Panel>())
                     {
+                        if (parent.Get<Panel>().Children.Contains(contentControl))
+                        {
+                            return;
+                        }
                         parent.Get<Panel>().Children.Add(contentControl);
                     }
                     else if (parent.Has<ContentControl>())

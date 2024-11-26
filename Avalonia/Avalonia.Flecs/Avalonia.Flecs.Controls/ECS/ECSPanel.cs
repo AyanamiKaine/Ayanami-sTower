@@ -10,19 +10,27 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Panel>("Panel")
                 .OnSet((Entity e, ref Panel panel) =>
                 {
-                        var parent = e.Parent();
-                        if (parent == 0)
+                    e.Set<Control>(panel);
+
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<Panel>())
+                    {
+                        //We dont want to add the control twice,
+                        //This otherwise throws an exception
+                        if (parent.Get<Panel>().Children.Contains(panel))
                         {
                             return;
                         }
-                        if (parent.Has<Panel>())
-                        {
-                            parent.Get<Panel>().Children.Add(panel);
-                        }
-                        else if (parent.Has<ContentControl>())
-                        {
-                            parent.Get<ContentControl>().Content = panel;
-                        }
+                        parent.Get<Panel>().Children.Add(panel);
+                    }
+                    else if (parent.Has<ContentControl>())
+                    {
+                        parent.Get<ContentControl>().Content = panel;
+                    }
 
                 }).OnRemove((Entity e, ref Panel panel) =>
                 {

@@ -1,11 +1,5 @@
 using Flecs.NET.Core;
 using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.LogicalTree;
-using Avalonia.Input;
-using Avalonia.Layout;
-using Avalonia.Controls.Primitives;
-using Avalonia.Input.TextInput;
 using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Controls.ECS
 {
@@ -45,6 +39,39 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSTextBox>();
             world.Import<ECSComboBox>();
             world.Import<ECSWindow>();
+
+
+            //This Observer handles the functionality adding entity as children of other
+            //and correctly adding the control element to the parent event if the parent
+            //child relation was created later than the component control where attached.
+            world.Observer("ControlToParentAdder")
+                .Event(Ecs.OnAdd)
+                .Event(Ecs.OnSet)
+                .With(Ecs.ChildOf, Ecs.Wildcard)
+                .Each((Entity child) =>
+                {
+                    var parent = child.Parent();
+
+                    if (child.Has<Control>())
+                    {
+                        var control = child.Get<Control>();
+                        if (parent.Has<Panel>())
+                        {
+                            //We dont want to add the control twice,
+                            //This otherwise throws an exception
+                            if (parent.Get<Panel>().Children.Contains(control))
+                            {
+                                return;
+                            }
+                            parent.Get<Panel>().Children.Add(control);
+                        }
+                        else if (parent.Has<ContentControl>())
+                        {
+                            parent.Get<ContentControl>().Content = control;
+                        }
+                    }
+                    Console.WriteLine($"Added child: {child.Name()} to parent: {child.Parent().Name()}");
+                });
         }
         public static void RegisterEventDataComponents(World world)
         {

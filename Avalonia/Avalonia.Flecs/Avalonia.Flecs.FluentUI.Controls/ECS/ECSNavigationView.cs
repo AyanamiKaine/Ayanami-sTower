@@ -12,7 +12,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             world.Component<NavigationView>("NavigationView")
                            .OnSet((Entity e, ref NavigationView navigationView) =>
                            {
-                               e.Set<ContentControl>((navigationView));
+                               e.Set<ContentControl>(navigationView);
 
                                navigationView.SelectionChanged += (object sender, NavigationViewSelectionChangedEventArgs args) =>
                                {
