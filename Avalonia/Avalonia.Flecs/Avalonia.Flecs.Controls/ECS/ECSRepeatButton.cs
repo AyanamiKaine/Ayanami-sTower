@@ -15,7 +15,7 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             world.Module<ECSRepeatButton>();
 
-            world.Component<RepeatButton>("Button")
+            world.Component<RepeatButton>("RepeatButton")
                 .OnSet((Entity e, ref RepeatButton repeatButton) =>
                 {
 
