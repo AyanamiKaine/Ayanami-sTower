@@ -40,6 +40,7 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Module<Module>();
             RegisterEventDataComponents(world);
             world.Import<ECSButton>();
+            world.Import<ECSRepeatButton>();
             world.Import<ECSBorder>();
             world.Import<ECSAutoCompleteBox>();
             world.Import<ECSCanvas>();
