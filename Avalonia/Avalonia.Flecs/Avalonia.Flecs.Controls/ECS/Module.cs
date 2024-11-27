@@ -1,6 +1,7 @@
 using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS.Events;
+using Avalonia.Input;
 namespace Avalonia.Flecs.Controls.ECS
 {
     // Modules need to implement the IFlecsModule interface
@@ -39,6 +40,17 @@ namespace Avalonia.Flecs.Controls.ECS
             // same hierarchy as the .NET namespaces (e.g. Avalonia.Flecs.Core.ECS.Module)
             world.Module<Module>();
             RegisterEventDataComponents(world);
+
+            world.Import<ECSInputElement>();
+            world.Import<ECSInteractive>();
+            world.Import<ECSLayoutable>();
+
+            world.Import<ECSPopupFlyoutBase>();
+            world.Import<ECSFlyoutBase>();
+            world.Import<ECSMenuFlyout>();
+            world.Import<ECSMenuItem>();
+            world.Import<ECSMenu>();
+
             world.Import<ECSToggleButton>();
             world.Import<ECSButton>();
             world.Import<ECSRepeatButton>();
