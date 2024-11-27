@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS.Events;
+using Avalonia.Input;
 using Avalonia.Layout;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
@@ -82,9 +83,23 @@ public class SpacedRepetitionPage
             .ChildOf(scrollViewer)
             .Set(new ListBox()
             {
-                ItemsSource = dummyItems, 
+                SelectionMode = SelectionMode.Multiple,
+                ItemsSource = dummyItems,
             });
 
+        //Use MenuFlyout to create a context menu
+        //contextMenu is used for legacy WPF apps
+        var contextFlyout = new MenuFlyout();
+        contextFlyout.Items.Add(new MenuItem() { Header = "Open" });
+        contextFlyout.Items.Add(new MenuItem() { Header = "Edit" });
+        contextFlyout.Items.Add(new MenuItem() { Header = "Delete" });
+        srItems.Get<ListBox>().ContextFlyout = contextFlyout;
+
+        ((MenuItem)contextFlyout.Items[0]).Click += (sender, e) =>
+        {
+            Console.WriteLine("Open Clicked");
+
+        };
 
         for (int i = 0; i < 100; i++)
         {
