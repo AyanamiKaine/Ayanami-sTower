@@ -40,6 +40,7 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Module<Module>();
             RegisterEventDataComponents(world);
             world.Import<ECSButton>();
+            world.Import<ECSBorder>();
             world.Import<ECSAutoCompleteBox>();
             world.Import<ECSCanvas>();
             world.Import<ECSContentControl>();
@@ -60,6 +61,8 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSTextBox>();
             world.Import<ECSComboBox>();
             world.Import<ECSWindow>();
+            world.Import<ECSSelectingItemsControl>();
+            world.Import<ECSListBox>();
 
 
             AddUIComponentTags(world);
