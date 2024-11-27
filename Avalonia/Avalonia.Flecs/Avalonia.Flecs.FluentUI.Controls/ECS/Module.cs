@@ -15,7 +15,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             world.Import<ECSNavigationView>();
             world.Import<ECSNavigationViewItem>();
             world.Import<ECSNavigationViewItemHeader>();
-
+            
             world.Import<ECSFrame>();
         }
     }

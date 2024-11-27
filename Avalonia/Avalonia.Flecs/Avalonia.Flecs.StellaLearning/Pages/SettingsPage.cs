@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Flecs.NET.Core;
+using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -12,7 +13,6 @@ public static class SettingsPage
             .Set(new TextBlock()
             {
                 Text = "Settings",
-                Margin = new Thickness(10)
             });
     }
 
@@ -30,7 +30,6 @@ public static class SettingsPage
             .Set(new TextBlock()
             {
                 Text = "Settings",
-                Margin = new Thickness(10)
             });
     }
 }

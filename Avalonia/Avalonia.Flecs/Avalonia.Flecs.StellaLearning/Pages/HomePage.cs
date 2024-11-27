@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Flecs.NET.Core;
+using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -56,7 +57,6 @@ public class HomePage : IEntityUIComponent
             .Set(new TextBlock()
             {
                 Text = "Home",
-                Margin = new Thickness(10)
             });
     }
     public static Entity Create(World world, params object[] props)
@@ -71,7 +71,6 @@ public class HomePage : IEntityUIComponent
             .Set(new TextBlock()
             {
                 Text = "Home",
-                Margin = new Thickness(10)
             });
     }
 

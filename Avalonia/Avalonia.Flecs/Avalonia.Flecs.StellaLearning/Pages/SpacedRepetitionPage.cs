@@ -1,38 +1,46 @@
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Flecs.NET.Core;
+using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
-public static class SpacedRepetitionPage
+public class SpacedRepetitionPage
 {
     public static Entity Create(World world)
     {
         var spacedRepetitionPage = world.Entity("SpacedRepetitionPage")
             .Add<Page>()
-            .Set(new Grid()
+            .Set(new StackPanel()
             {
-                Margin = new Thickness(10),
-                /*
-                
-                *: This represents a "star" column. It means this column will take up as much available space as possible after any fixed-size or Auto columns have been accounted for. Think of it as flexible or "greedy". In this case, the first column will grab most of the grid's width.
-                
-                Auto: This means the column's width will adjust automatically to fit the content within it. If you place a button in this column, the column will be just wide enough to accommodate the button's size.
-
-                */
-                ColumnDefinitions = new ColumnDefinitions("*, Auto, Auto"),
-                RowDefinitions = new RowDefinitions("Auto, *, Auto"),
-
+                Orientation = Orientation.Vertical,
             });
+
+        var grid = world.Entity()
+            .ChildOf(spacedRepetitionPage)
+                    .Set(new Grid()
+                    {
+                        /*
+
+                        *: This represents a "star" column. It means this column will take up as much available space as possible after any fixed-size or Auto columns have been accounted for. Think of it as flexible or "greedy". In this case, the first column will grab most of the grid's width.
+
+                        Auto: This means the column's width will adjust automatically to fit the content within it. If you place a button in this column, the column will be just wide enough to accommodate the button's size.
+
+                        */
+                        ColumnDefinitions = new ColumnDefinitions("*, Auto, Auto"),
+                        RowDefinitions = new RowDefinitions("Auto, *, Auto"),
+
+                    });
+
         var listSearchSpacedRepetition = world.Entity("ListSearchSpacedRepetition")
-                    .ChildOf(spacedRepetitionPage)
+                    .ChildOf(grid)
                     .Set(new TextBox()
                     {
                         Watermark = "Search Entries",
                     });
 
         var totalItems = world.Entity("TotalItems")
-            .ChildOf(spacedRepetitionPage)
+            .ChildOf(grid)
             .Set(new TextBlock()
             {
                 Text = "Total Items: 0",
@@ -43,7 +51,7 @@ public static class SpacedRepetitionPage
         Grid.SetColumn(totalItems.Get<Control>(), 1);
 
         var sortItemsButton = world.Entity("SortItemsButton")
-            .ChildOf(spacedRepetitionPage)
+            .ChildOf(grid)
             .Set(new ComboBox()
             {
 
@@ -72,6 +80,11 @@ public static class SpacedRepetitionPage
         var srItems = world.Entity("SpaceRepetitionList")
             .ChildOf(srcsrollViewer)
             .Set<ItemsControl>(new ItemsControl());
+
+        srItems.Get<ItemsControl>().Items.Add("Item 1");
+        srItems.Get<ItemsControl>().Items.Add("Item 2");
+        srItems.Get<ItemsControl>().Items.Add("Item 3");
+        srItems.Get<ItemsControl>().Items.Add("Item 4");
 
         Grid.SetRow(srcsrollViewer.Get<Control>(), 1);
 
