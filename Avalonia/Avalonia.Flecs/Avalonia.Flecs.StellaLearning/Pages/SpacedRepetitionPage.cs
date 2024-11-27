@@ -1,4 +1,8 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Layout;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
@@ -11,13 +15,6 @@ public class SpacedRepetitionPage
     {
         var spacedRepetitionPage = world.Entity("SpacedRepetitionPage")
             .Add<Page>()
-            .Set(new StackPanel()
-            {
-                Orientation = Orientation.Vertical,
-            });
-
-        var grid = world.Entity()
-            .ChildOf(spacedRepetitionPage)
                     .Set(new Grid()
                     {
                         /*
@@ -33,14 +30,14 @@ public class SpacedRepetitionPage
                     });
 
         var listSearchSpacedRepetition = world.Entity("ListSearchSpacedRepetition")
-                    .ChildOf(grid)
+                    .ChildOf(spacedRepetitionPage)
                     .Set(new TextBox()
                     {
                         Watermark = "Search Entries",
                     });
 
         var totalItems = world.Entity("TotalItems")
-            .ChildOf(grid)
+            .ChildOf(spacedRepetitionPage)
             .Set(new TextBlock()
             {
                 Text = "Total Items: 0",
@@ -51,14 +48,15 @@ public class SpacedRepetitionPage
         Grid.SetColumn(totalItems.Get<Control>(), 1);
 
         var sortItemsButton = world.Entity("SortItemsButton")
-            .ChildOf(grid)
-            .Set(new ComboBox()
-            {
+            .ChildOf(spacedRepetitionPage)
+            .Set(new ComboBox() { });
 
-            });
+
+        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Date");
+        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Priority");
+        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Name");
 
         Grid.SetColumn(sortItemsButton.Get<Control>(), 2);
-
 
         /*
         I believe that entites should know the exact control type but
@@ -68,25 +66,64 @@ public class SpacedRepetitionPage
 
         No need to depend on things that we dont care for 
         */
+        ObservableCollection<string> dummyItems =
+    [
 
+    ];
 
-        sortItemsButton.Get<ItemsControl>().Items.Add("Sort By Date");
-        sortItemsButton.Get<ItemsControl>().Items.Add("Sort By Priority");
-
-        var srcsrollViewer = world.Entity("SpaceRepetitionScrollViewer")
+        var scrollViewer = world.Entity("ScrollViewer")
             .ChildOf(spacedRepetitionPage)
-            .Set<ScrollViewer>(new ScrollViewer());
+        .Set(new ScrollViewer()
+        {
+
+        });
 
         var srItems = world.Entity("SpaceRepetitionList")
-            .ChildOf(srcsrollViewer)
-            .Set<ItemsControl>(new ItemsControl());
+            .ChildOf(scrollViewer)
+            .Set(new ListBox()
+            {
+                ItemsSource = dummyItems, 
+            });
 
-        srItems.Get<ItemsControl>().Items.Add("Item 1");
-        srItems.Get<ItemsControl>().Items.Add("Item 2");
-        srItems.Get<ItemsControl>().Items.Add("Item 3");
-        srItems.Get<ItemsControl>().Items.Add("Item 4");
 
-        Grid.SetRow(srcsrollViewer.Get<Control>(), 1);
+        for (int i = 0; i < 100; i++)
+        {
+            dummyItems.Add($"Item {i}");
+        }
+
+        Grid.SetRow(scrollViewer.Get<Control>(), 1);
+        //Sets the SCrollViewer to span 3 columns.
+        Grid.SetColumnSpan(scrollViewer.Get<Control>(), 3);
+
+
+        sortItemsButton.Observe<SelectionChanged>((Entity e) =>
+        {
+            var args = e.Get<SelectionChanged>().Args;
+            if (args.AddedItems.Count == 0)
+            {
+                return;
+            }
+            var selectedItem = args.AddedItems[0].ToString();
+            if (selectedItem == "Sort By Date")
+            {
+
+            }
+            else if (selectedItem == "Sort By Priority")
+            {
+                dummyItems = [.. dummyItems.OrderByDescending(s => s)];
+                srItems.Get<ItemsControl>().ItemsSource = dummyItems;
+            }
+            else if (selectedItem == "Sort By Name")
+            {
+                //(ascending order)
+                Random rng = new();
+                dummyItems = [.. dummyItems.OrderBy(s => rng.Next())];
+                srItems.Get<ItemsControl>().ItemsSource = dummyItems;
+
+            }
+
+        });
+
 
         return spacedRepetitionPage;
     }
