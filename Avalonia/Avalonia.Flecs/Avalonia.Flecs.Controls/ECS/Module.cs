@@ -19,6 +19,19 @@ namespace Avalonia.Flecs.Controls.ECS
         /// If you add a new page to a parent othe page of the parent is removed.
         /// </summary>
         public struct Page { }
+        /// <summary>
+        /// Inidactes that the entity is a page that is being removed.
+        /// </summary>
+        public struct OldPage { }
+        /// <summary>
+        /// Inidactes that the entity is a page that is being added.
+        /// </summary>
+        public struct NewPage { }
+        /// <summary>
+        /// Entity tag showing that the entity is the current page.
+        /// </summary>
+        public record struct CurrentPage { }
+
 
         public void InitModule(World world)
         {
@@ -50,13 +63,17 @@ namespace Avalonia.Flecs.Controls.ECS
 
 
             AddUIComponentTags(world);
-            AddPageObserver(world);
             AddControlToParentAdderObserver(world);
+            //AddPageObserver(world);
+
         }
 
         public static void AddUIComponentTags(World world)
         {
             world.Component<Page>("Page");
+            world.Component<CurrentPage>("CurrentPage")
+                .Entity.Add(Ecs.Exclusive)
+                .Add(Ecs.Relationship);
         }
 
         public static void AddControlToParentAdderObserver(World world)
@@ -110,6 +127,10 @@ namespace Avalonia.Flecs.Controls.ECS
             /*
             We use this system to ensure that a parent has only one child that is a page.
             This is useful when we want to change the page displayed in a control.
+
+            SADLY FOR NOW ITS BUGGED:
+            We cannot count on the order of the entities in the list. Sometimes the first page added
+            is not the first child ecounterd with the page tag !
             */
             world.Observer("EnsureEntityHasOnlyOnePageChild")
                 .Event(Ecs.OnAdd)
@@ -140,7 +161,10 @@ namespace Avalonia.Flecs.Controls.ECS
                             }
                             if (pages.Count > 1)
                             {
-                                pages[0].Remove(Ecs.ChildOf, Ecs.Wildcard);
+                                // This does not work because we cannot count on the order
+                                // of the entities in the list. Sometimes the first page added 
+                                // is not the first child ecounterd with the page tag !
+                                //pages[0].Remove(Ecs.ChildOf, Ecs.Wildcard);
                             }
                         });
                     }
