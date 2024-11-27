@@ -11,6 +11,14 @@ namespace Avalonia.Flecs.Controls.ECS
         public struct InnerRightContent { };
         public struct InnerLeftContent { };
         public struct KeyBindings { };
+        /// <summary>
+        /// Entity tag showing that the 
+        /// entity is a page. A page represents
+        /// a root component in the UI hierarchy.
+        /// Only one page entity can be a child of a parent.
+        /// If you add a new page to a parent othe page of the parent is removed.
+        /// </summary>
+        public struct Page { }
 
         public void InitModule(World world)
         {
@@ -41,6 +49,18 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSWindow>();
 
 
+            AddUIComponentTags(world);
+            AddPageObserver(world);
+            AddControlToParentAdderObserver(world);
+        }
+
+        public static void AddUIComponentTags(World world)
+        {
+            world.Component<Page>("Page");
+        }
+
+        public static void AddControlToParentAdderObserver(World world)
+        {
             //This Observer handles the functionality adding entity as children of other
             //and correctly adding the control element to the parent event if the parent
             //child relation was created later than the component control where attached.
@@ -73,6 +93,60 @@ namespace Avalonia.Flecs.Controls.ECS
                     //Console.WriteLine($"Added child: {child.Name()} to parent: {child.Parent().Name()}");
                 });
         }
+
+
+        /*
+        Design NOTE:
+
+        Maybe we want to refactor this. Here we have the idea of a page. A hierarchy of entities that represent something more 
+        similar to a react component. The thing is that in react we have a single root component that is the page. 
+
+        So a page is more of a root component. So maybe calling it differently would be better.
+
+        We have a conceptual overlap and a mental model mismatch. 
+        */
+        public static void AddPageObserver(World world)
+        {
+            /*
+            We use this system to ensure that a parent has only one child that is a page.
+            This is useful when we want to change the page displayed in a control.
+            */
+            world.Observer("EnsureEntityHasOnlyOnePageChild")
+                .Event(Ecs.OnAdd)
+                .Event(Ecs.OnSet)
+                .With(Ecs.ChildOf, Ecs.Wildcard)
+                .Each((Entity child) =>
+                {
+                    var parent = child.Parent();
+                    //When we select a new page to display we remove 
+                    //all currently attached childrens that are pages
+                    //So we can only have one page displayed at a time.
+                    //so the ControlToParentAdder observer runs.
+
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+
+                    if (child.Has<Page>())
+                    {
+
+                        List<Entity> pages = [];
+                        parent.Children((Entity child) =>
+                        {
+                            if (child.Has<Page>())
+                            {
+                                pages.Add(child);
+                            }
+                            if (pages.Count > 1)
+                            {
+                                pages[0].Remove(Ecs.ChildOf, Ecs.Wildcard);
+                            }
+                        });
+                    }
+                });
+        }
+
         public static void RegisterEventDataComponents(World world)
         {
             world.Component<Click>("Click");
