@@ -10,15 +10,8 @@ using FluentAvalonia.UI.Controls;
 using static Avalonia.Flecs.FluentUI.Controls.ECS.Module;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Flecs.StellaLearning.Pages;
+using Avalonia.Markup.Xaml.MarkupExtensions;
 namespace Avalonia.Flecs.StellaLearning;
-
-
-/// <summary>
-/// Entity tag showing that the 
-/// entity is a page.
-/// </summary>
-public struct Page { }
-
 
 public partial class App : Application
 {
@@ -108,21 +101,38 @@ public partial class App : Application
 
         Grid.SetColumn(navigationView.Get<NavigationView>(), 0);
 
-        navigationView.Observe<FluentUI.Controls.ECS.Events.OnSelectionChanged>((Entity e) =>
+        navigationView.Observe<FluentUI.Controls.ECS.Events.OnDisplayModeChanged>((Entity e) =>
         {
 
-            //When we select a new page to display we remove 
-            //all currently attached childrens that are pages
-            //so the ControlToParentAdder observer runs.
-            navigationView.Children((Entity child) =>
-            {
-                if (child.Has<Page>())
-                {
-                    child.Remove(Ecs.ChildOf, Ecs.Wildcard);
-                    //Console.WriteLine(child.Name());
-                }
-            });
+            var OnDisplayModeChanged = e.Get<FluentUI.Controls.ECS.Events.OnDisplayModeChanged>();
 
+            if (OnDisplayModeChanged.Args.DisplayMode == NavigationViewDisplayMode.Minimal)
+            {
+                Console.WriteLine("Minimal");
+                e.Children((Entity child) =>
+                {
+                    if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
+                    {
+                        child.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                    }
+                });
+            }
+            else if (OnDisplayModeChanged.Args.DisplayMode == NavigationViewDisplayMode.Compact)
+            {
+                Console.WriteLine("Compact");
+                e.Children((Entity child) =>
+                {
+                    if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
+                    {
+                        child.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+                    }
+                });
+            }
+
+        });
+
+        navigationView.Observe<FluentUI.Controls.ECS.Events.OnSelectionChanged>((Entity e) =>
+        {
 
             var OnSelectionChanged = e.Get<FluentUI.Controls.ECS.Events.OnSelectionChanged>();
 
@@ -131,29 +141,41 @@ public partial class App : Application
             {
                 //navigationView.Get<NavigationView>().Content = homePage.Get<TextBlock>();
                 homePage.ChildOf(navigationView);
+                if (e.Get<NavigationView>().DisplayMode == NavigationViewDisplayMode.Minimal)
+                    homePage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                else
+                    homePage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
             else if (selectedItem?.Content.ToString() == "Literature")
             {
                 //Console.WriteLine("Selection Changed To Literature");
                 //navigationView.Get<NavigationView>().Content = literaturePage.Get<TextBlock>();
                 literaturePage.ChildOf(navigationView);
-
+                if (e.Get<NavigationView>().DisplayMode == NavigationViewDisplayMode.Minimal)
+                    literaturePage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                else
+                    literaturePage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
             else if (selectedItem?.Content.ToString() == "Spaced Repetition")
             {
                 //navigationView.Get<NavigationView>().Content = spacedRepetitionPage.Get<Panel>();
                 spacedRepetitionPage.ChildOf(navigationView);
+                if (e.Get<NavigationView>().DisplayMode == NavigationViewDisplayMode.Minimal)
+                    spacedRepetitionPage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                else
+                    spacedRepetitionPage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
             else if (selectedItem?.Content.ToString() == "Settings")
             {
                 //Console.WriteLine("Selection Changed To Settings");
                 //navigationView.Get<NavigationView>().Content = settingPage.Get<TextBlock>();
                 settingPage.ChildOf(navigationView);
+                if (e.Get<NavigationView>().DisplayMode == NavigationViewDisplayMode.Minimal)
+                    settingPage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                else
+                    settingPage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
         });
-
-
-
     }
 
     public override void OnFrameworkInitializationCompleted()
