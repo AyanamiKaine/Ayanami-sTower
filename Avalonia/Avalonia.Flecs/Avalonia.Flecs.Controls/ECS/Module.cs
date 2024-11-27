@@ -39,9 +39,15 @@ namespace Avalonia.Flecs.Controls.ECS
             // same hierarchy as the .NET namespaces (e.g. Avalonia.Flecs.Core.ECS.Module)
             world.Module<Module>();
             RegisterEventDataComponents(world);
+            world.Import<ECSToggleButton>();
             world.Import<ECSButton>();
             world.Import<ECSRepeatButton>();
+            world.Import<ECSRadioButton>();
+            world.Import<ECSSplitButton>();
+            world.Import<ECSToggleSplitButton>();
             world.Import<ECSBorder>();
+            world.Import<ECSExpander>();
+            world.Import<ECSHeaderedContentControl>();
             world.Import<ECSAutoCompleteBox>();
             world.Import<ECSCanvas>();
             world.Import<ECSContentControl>();
