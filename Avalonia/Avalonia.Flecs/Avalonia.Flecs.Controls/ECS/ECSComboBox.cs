@@ -12,6 +12,12 @@ namespace Avalonia.Flecs.Controls.ECS
                             {
                                 e.Set<ItemsControl>(comboBox);
 
+                                comboBox.SelectionChanged += (object sender, SelectionChangedEventArgs args) =>
+                                {
+                                    e.Set(new Events.SelectionChanged(sender, args));
+                                    e.Emit<Events.SelectionChanged>();
+                                };
+
                             }).OnRemove((Entity e, ref ComboBox comboBox) =>
                             {
                                 var parent = e.Parent();
