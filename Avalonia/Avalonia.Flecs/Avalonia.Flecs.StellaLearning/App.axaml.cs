@@ -108,31 +108,42 @@ public partial class App : Application
 
             if (OnDisplayModeChanged.Args.DisplayMode == NavigationViewDisplayMode.Minimal)
             {
-                Console.WriteLine("Minimal");
                 e.Children((Entity child) =>
                 {
                     if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
                     {
                         child.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
                     }
+                    Console.WriteLine(child.Name());
                 });
             }
             else if (OnDisplayModeChanged.Args.DisplayMode == NavigationViewDisplayMode.Compact)
             {
-                Console.WriteLine("Compact");
                 e.Children((Entity child) =>
                 {
                     if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
                     {
                         child.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
                     }
+                    Console.WriteLine(child.Name());
+
                 });
+
             }
 
         });
 
         navigationView.Observe<FluentUI.Controls.ECS.Events.OnSelectionChanged>((Entity e) =>
         {
+
+            //We first remove any other page 
+            navigationView.Children((Entity child) =>
+            {
+                if (child.Has<Controls.ECS.Module.Page>())
+                {
+                    child.Remove(Ecs.ChildOf, Ecs.Wildcard);
+                }
+            });
 
             var OnSelectionChanged = e.Get<FluentUI.Controls.ECS.Events.OnSelectionChanged>();
 
