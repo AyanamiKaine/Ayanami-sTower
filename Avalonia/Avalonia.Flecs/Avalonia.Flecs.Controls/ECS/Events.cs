@@ -16,6 +16,9 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     /// <param name="Sender">The object that triggered the event</param>
     /// <param name="args">The event arguments from Avalonia</param>
     public record struct Click(object Sender, RoutedEventArgs Args);
+    public record struct Checked(object Sender, RoutedEventArgs Args);
+    public record struct Unchecked(object Sender, RoutedEventArgs Args);
+    public record struct Indeterminate(object Sender, RoutedEventArgs Args);
     public record struct SelectionChanged(object Sender, SelectionChangedEventArgs Args);
     public record struct Activated(object Sender, EventArgs Args);
     public record struct AttachedToLogicalTree(object Sender, LogicalTreeAttachmentEventArgs Args);
