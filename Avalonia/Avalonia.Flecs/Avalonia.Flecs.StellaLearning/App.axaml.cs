@@ -133,10 +133,12 @@ public partial class App : Application
 
         });
 
+
         navigationView.Observe<FluentUI.Controls.ECS.Events.OnSelectionChanged>((Entity e) =>
         {
 
-            //We first remove any other page 
+            // We first remove any other page ensuring 
+            // that only the selected page is displayed
             navigationView.Children((Entity child) =>
             {
                 if (child.Has<Controls.ECS.Module.Page>())
@@ -152,6 +154,9 @@ public partial class App : Application
             {
                 //navigationView.Get<NavigationView>().Content = homePage.Get<TextBlock>();
                 homePage.ChildOf(navigationView);
+
+                //Maybe we could implement an event for the navigation view entity that says
+                //something like new page added and than changes the margin of the page
                 if (e.Get<NavigationView>().DisplayMode == NavigationViewDisplayMode.Minimal)
                     homePage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
                 else
