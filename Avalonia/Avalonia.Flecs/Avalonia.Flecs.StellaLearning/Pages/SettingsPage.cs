@@ -1,7 +1,12 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls.ECS.Events;
+using Avalonia.Platform.Storage;
 using Avalonia.Styling;
+using Avalonia.Threading;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
@@ -30,22 +35,21 @@ public static class SettingsPage
         var settingsPage = world.Entity("SettingsPage")
             .Add<Page>()
             .ChildOf(childOfEntity)
-            .Set(new ToggleSwitch()
-            {
-                Content = "Dark Mode",
-                IsChecked = true,
-            });
+            .Set(new StackPanel());
 
-        settingsPage.Get<ToggleSwitch>().IsCheckedChanged += (sender, e) =>
-        {
-            var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
-            SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
-        };
-
+        ThemeToggleSwitch(world, settingsPage);
+        ObsidianPath(world, settingsPage);
         return settingsPage;
     }
 
-    private static Entity CreateThemeToggleSwitch(World world, Entity childOfEntity)
+    /// <summary>
+    /// Creates a new toggle switch entity that has the ability
+    /// to switch between dark and light mode.
+    /// </summary>
+    /// <param name="world"></param>
+    /// <param name="childOfEntity"></param>
+    /// <returns></returns>
+    private static Entity ThemeToggleSwitch(World world, Entity childOfEntity)
     {
         var themeToggleSwitch = world.Entity("ThemeToggleSwitch")
             .Add<ToggleSwitch>()
@@ -58,6 +62,7 @@ public static class SettingsPage
 
         themeToggleSwitch.Observe<IsCheckedChanged>((Entity e) =>
         {
+
             var sender = e.Get<IsCheckedChanged>().Sender;
 
             var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
@@ -65,6 +70,63 @@ public static class SettingsPage
         });
 
         return themeToggleSwitch;
+    }
+
+    private static Entity ObsidianPath(World world, Entity childOfEntity)
+    {
+        var obsidianPath = world.Entity("ObsidianPath")
+            .Add<Page>()
+            .ChildOf(childOfEntity)
+            .Set(new TextBox()
+            {
+                //IsEnabled = false,
+                Watermark = "Path to Obsidian",
+                InnerRightContent = new Button()
+                {
+                    Content = "Browse",
+                },
+            });
+
+        Button button = (Button)obsidianPath.Get<TextBox>().InnerRightContent;
+        button.Click += async (sender, args) =>
+        {
+            obsidianPath.Get<TextBox>().Text = await ObsidianFilePickerAsync(world);
+        };
+        return obsidianPath;
+    }
+
+
+    /* Unmerged change from project 'Avalonia.Flecs.StellaLearning (net9.0)'
+    Before:
+        private static string ObsidianFilePicker(World world)
+    After:
+        private static string ObsidianFilePickerAsync(World world)
+    */
+    private static async Task<string> ObsidianFilePickerAsync(World world)
+    {
+        // Create and configure the file picker options
+        var options = new FilePickerOpenOptions
+        {
+            Title = "Select the obsidian executable",
+            AllowMultiple = false, // Set to true if you want to allow multiple file selections
+        };
+
+
+        // Create an OpenFileDialog instance
+        IReadOnlyList<IStorageFile>? result = await world.Lookup("MainWindow").Get<Window>().StorageProvider.OpenFilePickerAsync(options);
+
+        if (result != null && result.Count > 0)
+        {
+            // Get the selected file
+            IStorageFile file = result[0];
+
+            // Get the file path
+            string filePath = file.Path.AbsolutePath;
+
+            // Do something with the file path, e.g., display it in a TextBox
+            return filePath;
+        }
+        return "";
     }
 
     private static void SetTheme(Application app, string theme)
