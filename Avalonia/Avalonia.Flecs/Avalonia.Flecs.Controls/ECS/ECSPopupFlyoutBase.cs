@@ -7,6 +7,7 @@ using Avalonia.Layout;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input.TextInput;
 using Avalonia.Flecs.Controls.ECS.Events;
+using System.ComponentModel;
 namespace Avalonia.Flecs.Controls.ECS
 {
     public class ECSPopupFlyoutBase : IFlecsModule
@@ -18,6 +19,18 @@ namespace Avalonia.Flecs.Controls.ECS
                 .OnSet((Entity e, ref PopupFlyoutBase popupFlyoutBase) =>
                 {
                     e.Set<FlyoutBase>(popupFlyoutBase);
+
+                    popupFlyoutBase.Closing += (object sender, CancelEventArgs args) =>
+                    {
+                        e.Set(new Closing(sender, args));
+                        e.Emit<Closing>();
+                    };
+
+                    popupFlyoutBase.Opened += (object sender, EventArgs args) =>
+                    {
+                        e.Set(new Opened(sender, args));
+                        e.Emit<Opened>();
+                    };
                 })
                 .OnRemove((Entity e, ref PopupFlyoutBase popupFlyoutBase) =>
                 {
