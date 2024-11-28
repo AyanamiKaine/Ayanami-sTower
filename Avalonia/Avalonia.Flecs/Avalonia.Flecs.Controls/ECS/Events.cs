@@ -20,6 +20,7 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     public record struct Checked(object Sender, RoutedEventArgs Args);
     public record struct Unchecked(object Sender, RoutedEventArgs Args);
     public record struct Indeterminate(object Sender, RoutedEventArgs Args);
+    public record struct IsCheckedChanged(object Sender, RoutedEventArgs Args);
     public record struct SelectionChanged(object Sender, SelectionChangedEventArgs Args);
     public record struct Activated(object Sender, EventArgs Args);
     public record struct AttachedToLogicalTree(object Sender, LogicalTreeAttachmentEventArgs Args);
