@@ -114,7 +114,6 @@ public partial class App : Application
                     {
                         child.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
                     }
-                    Console.WriteLine(child.Name());
                 });
             }
             else if (OnDisplayModeChanged.Args.DisplayMode == NavigationViewDisplayMode.Compact)
@@ -125,8 +124,6 @@ public partial class App : Application
                     {
                         child.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
                     }
-                    Console.WriteLine(child.Name());
-
                 });
 
             }
