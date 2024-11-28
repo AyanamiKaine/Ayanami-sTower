@@ -2,6 +2,7 @@ using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Input;
+using Avalonia.Controls.Primitives;
 namespace Avalonia.Flecs.Controls.ECS
 {
     // Modules need to implement the IFlecsModule interface
@@ -86,6 +87,7 @@ namespace Avalonia.Flecs.Controls.ECS
 
             AddUIComponentTags(world);
             AddControlToParentAdderObserver(world);
+            AddFlyoutToControlObserver(world);
             //AddPageObserver(world);
 
         }
@@ -96,6 +98,31 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<CurrentPage>("CurrentPage")
                 .Entity.Add(Ecs.Exclusive)
                 .Add(Ecs.Relationship);
+        }
+
+        /// <summary>
+        /// This observer adds the flyout to the control
+        /// when a child has the flyout component and 
+        /// is attached to a parent control.
+        /// </summary>
+        /// <param name="world"></param>
+        public static void AddFlyoutToControlObserver(World world)
+        {
+            world.Observer("FlyoutToControl")
+                .Event(Ecs.OnAdd)
+                .Event(Ecs.OnSet)
+                .With(Ecs.ChildOf, Ecs.Wildcard)
+                .Each((Entity child) =>
+                {
+                    if (child.Has<FlyoutBase>())
+                    {
+                        var parent = child.Parent();
+                        if (parent.Has<Control>())
+                        {
+                            parent.Get<Control>().ContextFlyout = child.Get<FlyoutBase>();
+                        }
+                    }
+                });
         }
 
         public static void AddControlToParentAdderObserver(World world)
