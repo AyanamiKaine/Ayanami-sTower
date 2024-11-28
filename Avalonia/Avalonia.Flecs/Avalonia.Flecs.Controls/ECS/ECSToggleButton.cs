@@ -41,6 +41,12 @@ namespace Avalonia.Flecs.Controls.ECS
                         e.Set(new Indeterminate(sender, args));
                         e.Emit<Indeterminate>();
                     };
+
+                    toggleButton.IsCheckedChanged += (object sender, RoutedEventArgs args) =>
+                    {
+                        e.Set(new IsCheckedChanged(sender, args));
+                        e.Emit<IsCheckedChanged>();
+                    };
                 })
                 .OnRemove((Entity e, ref ToggleButton toggleButton) =>
                 {
