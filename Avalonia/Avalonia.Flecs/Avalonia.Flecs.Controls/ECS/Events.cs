@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input.TextInput;
+using System.ComponentModel;
 namespace Avalonia.Flecs.Controls.ECS.Events
 {
     /////EVENTS
@@ -24,7 +25,7 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     public record struct AttachedToLogicalTree(object Sender, LogicalTreeAttachmentEventArgs Args);
     public record struct AttachedToVisualTree(object Sender, VisualTreeAttachmentEventArgs Args);
     public record struct Closed(object Sender, EventArgs Args);
-    public record struct Closing(object Sender, EventArgs Args);
+    public record struct Closing(object Sender, CancelEventArgs Args);
     public record struct DataContextChanged(object Sender, EventArgs E);
     public record struct Deactivated(object Sender, EventArgs Args);
     public record struct DetachedFromLogicalTree(object Sender, LogicalTreeAttachmentEventArgs Args);
