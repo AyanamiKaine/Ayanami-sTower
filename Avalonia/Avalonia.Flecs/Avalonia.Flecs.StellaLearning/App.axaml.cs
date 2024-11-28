@@ -69,6 +69,8 @@ public partial class App : Application
         Grid.SetRow(homePage.Get<Control>(), 2);
         Grid.SetColumnSpan(homePage.Get<Control>(), 3);
 
+
+
         var literaturePage = LiteraturePage.Create(_world);
 
         Grid.SetRow(literaturePage.Get<Control>(), 2);
