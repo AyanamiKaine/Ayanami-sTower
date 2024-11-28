@@ -160,6 +160,18 @@ namespace Avalonia.Flecs.Controls.ECS
                                     e.Emit<TextInput>();
                                 };
 
+                                textBox.TextChanging += (object sender, TextChangingEventArgs args) =>
+                                {
+                                    e.Set(new TextChanging(sender, args));
+                                    e.Emit<TextChanging>();
+                                };
+
+                                textBox.TextChanged += (object sender, TextChangedEventArgs args) =>
+                                {
+                                    e.Set(new TextChanged(sender, args));
+                                    e.Emit<TextChanged>();
+                                };
+
                                 textBox.TextInputMethodClientRequested += (object sender, TextInputMethodClientRequestedEventArgs args) =>
                                 {
                                     e.Set(new TextInputMethodClientRequested(sender, args));

@@ -17,7 +17,7 @@ namespace Avalonia.Flecs.Controls.ECS
                                         .OnSet((Entity e, ref TextBlock textBlock) =>
                                         {
                                             e.Set<Control>(textBlock);
-   
+
                                         })
                             .OnRemove((Entity e, ref TextBlock textBlock) =>
                             {

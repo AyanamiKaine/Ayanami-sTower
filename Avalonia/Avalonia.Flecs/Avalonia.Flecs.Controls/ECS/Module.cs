@@ -255,6 +255,8 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Tapped>("Tapped");
             world.Component<TemplateApplied>("TemplateApplied");
             world.Component<TextInput>("TextInput");
+            world.Component<TextChanging>("TextChanging");
+            world.Component<TextChanged>("TextChanged");
             world.Component<TextInputMethodClientRequested>("TextInputMethodClientRequested");
         }
     }

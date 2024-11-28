@@ -53,5 +53,7 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     public record struct Tapped(object Sender, TappedEventArgs Args);
     public record struct TemplateApplied(object Sender, TemplateAppliedEventArgs Args);
     public record struct TextInput(object Sender, TextInputEventArgs Args);
+    public record struct TextChanging(object Sender, TextChangingEventArgs Args);
+    public record struct TextChanged(object Sender, TextChangedEventArgs Args);
     public record struct TextInputMethodClientRequested(object Sender, TextInputMethodClientRequestedEventArgs Args);
 }
