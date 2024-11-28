@@ -89,13 +89,21 @@ public class SpacedRepetitionPage
 
         //Use MenuFlyout to create a context menu
         //contextMenu is used for legacy WPF apps
-        var contextFlyout = new MenuFlyout();
-        contextFlyout.Items.Add(new MenuItem() { Header = "Open" });
-        contextFlyout.Items.Add(new MenuItem() { Header = "Edit" });
-        contextFlyout.Items.Add(new MenuItem() { Header = "Delete" });
-        srItems.Get<ListBox>().ContextFlyout = contextFlyout;
+        var contextFlyout = world.Entity("ContextFlyout")
+            .ChildOf(spacedRepetitionPage)
+            .Set(new MenuFlyout()
+            {
 
-        ((MenuItem)contextFlyout.Items[0]).Click += (sender, e) =>
+            });
+
+        var flyout = contextFlyout.Get<MenuFlyout>();
+
+        flyout.Items.Add(new MenuItem() { Header = "Open" });
+        flyout.Items.Add(new MenuItem() { Header = "Edit" });
+        flyout.Items.Add(new MenuItem() { Header = "Delete" });
+
+
+        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[0]).Click += (sender, e) =>
         {
             Console.WriteLine("Open Clicked");
 
