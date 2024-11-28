@@ -91,10 +91,7 @@ public class SpacedRepetitionPage
         //contextMenu is used for legacy WPF apps
         var contextFlyout = world.Entity("ContextFlyout")
             .ChildOf(spacedRepetitionPage)
-            .Set(new MenuFlyout()
-            {
-
-            });
+            .Set(new MenuFlyout());
 
         var flyout = contextFlyout.Get<MenuFlyout>();
 
@@ -106,7 +103,16 @@ public class SpacedRepetitionPage
         ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[0]).Click += (sender, e) =>
         {
             Console.WriteLine("Open Clicked");
+        };
 
+        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[1]).Click += (sender, e) =>
+        {
+            Console.WriteLine("Edit Clicked");
+        };
+
+        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[2]).Click += (sender, e) =>
+        {
+            Console.WriteLine("Delete Clicked");
         };
 
         for (int i = 0; i < 100; i++)
