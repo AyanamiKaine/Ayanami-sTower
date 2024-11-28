@@ -20,14 +20,18 @@ public class SpacedRepetitionPage
                     {
                         /*
 
-                        *: This represents a "star" column. It means this column will take up as much available space as possible after any fixed-size or Auto columns have been accounted for. Think of it as flexible or "greedy". In this case, the first column will grab most of the grid's width.
+                        *: This represents a "star" column. 
+                        It means this column will take up as much available space as 
+                        possible after any fixed-size or Auto columns have been accounted for. 
+                        Think of it as flexible or "greedy". 
+                        In this case, the first column will grab most of the grid's width.
 
-                        Auto: This means the column's width will adjust automatically to fit the content within it. If you place a button in this column, the column will be just wide enough to accommodate the button's size.
-
+                        Auto: This means the column's width will adjust automatically to 
+                        fit the content within it. If you place a button in this column, 
+                        the column will be just wide enough to accommodate the button's size.
                         */
                         ColumnDefinitions = new ColumnDefinitions("*, Auto, Auto"),
                         RowDefinitions = new RowDefinitions("Auto, *, Auto"),
-
                     });
 
         var listSearchSpacedRepetition = world.Entity("ListSearchSpacedRepetition")
@@ -37,6 +41,8 @@ public class SpacedRepetitionPage
                         Watermark = "Search Entries",
                     });
 
+
+
         var totalItems = world.Entity("TotalItems")
             .ChildOf(spacedRepetitionPage)
             .Set(new TextBlock()
@@ -45,6 +51,8 @@ public class SpacedRepetitionPage
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(10, 0)
             });
+
+
 
         Grid.SetColumn(totalItems.Get<Control>(), 1);
 
@@ -67,17 +75,11 @@ public class SpacedRepetitionPage
 
         No need to depend on things that we dont care for 
         */
-        ObservableCollection<string> dummyItems =
-    [
-
-    ];
+        ObservableCollection<string> dummyItems = [];
 
         var scrollViewer = world.Entity("ScrollViewer")
             .ChildOf(spacedRepetitionPage)
-        .Set(new ScrollViewer()
-        {
-
-        });
+            .Set(new ScrollViewer());
 
         var srItems = world.Entity("SpaceRepetitionList")
             .ChildOf(scrollViewer)
@@ -86,6 +88,14 @@ public class SpacedRepetitionPage
                 SelectionMode = SelectionMode.Multiple,
                 ItemsSource = dummyItems,
             });
+
+        listSearchSpacedRepetition.Observe<TextChanged>(() =>
+        {
+            string searchText = listSearchSpacedRepetition.Get<TextBox>().Text.ToLower();
+            var filteredItems = dummyItems.Where(item => item.ToLower().Contains(searchText));
+            srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
+            Console.WriteLine("Text Changed");
+        });
 
         //Use MenuFlyout to create a context menu
         //contextMenu is used for legacy WPF apps
@@ -115,10 +125,17 @@ public class SpacedRepetitionPage
             Console.WriteLine("Delete Clicked");
         };
 
-        for (int i = 0; i < 100; i++)
-        {
-            dummyItems.Add($"Item {i}");
-        }
+
+        dummyItems.Add("algorithm");
+        dummyItems.Add("binary");
+        dummyItems.Add("complexity");
+        dummyItems.Add("data structure");
+        dummyItems.Add("efficiency");
+        dummyItems.Add("Fibonacci");
+        dummyItems.Add("graph");
+        dummyItems.Add("hash table");
+        dummyItems.Add("iteration");
+        dummyItems.Add("JavaScript");
 
         Grid.SetRow(scrollViewer.Get<Control>(), 1);
         //Sets the SCrollViewer to span 3 columns.
@@ -148,9 +165,7 @@ public class SpacedRepetitionPage
                 Random rng = new();
                 dummyItems = [.. dummyItems.OrderBy(s => rng.Next())];
                 srItems.Get<ItemsControl>().ItemsSource = dummyItems;
-
             }
-
         });
 
 
