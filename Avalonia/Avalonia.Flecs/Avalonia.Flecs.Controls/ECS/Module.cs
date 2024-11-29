@@ -97,7 +97,7 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             world.Component<Page>("Page");
             world.Component<CurrentPage>("CurrentPage")
-                .Entity.Add(Ecs.Exclusive)
+                .Add(Ecs.Exclusive)
                 .Add(Ecs.Relationship);
         }
 
