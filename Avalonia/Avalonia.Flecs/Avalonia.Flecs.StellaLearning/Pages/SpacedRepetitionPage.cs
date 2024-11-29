@@ -98,10 +98,8 @@ public class SpacedRepetitionPage
 
         var openMenuItem = world.Entity("OpenMenuItem")
             .ChildOf(contextFlyout)
-            .Set(new MenuItem()
-            {
-                Header = "Open"
-            })
+            .Set(new MenuItem())
+            .SetHeader("Open")
             .Observe<Click>((Entity e) =>
             {
                 Console.WriteLine("Open Clicked");
@@ -109,10 +107,8 @@ public class SpacedRepetitionPage
 
         var editMenuItem = world.Entity("EditMenuItem")
             .ChildOf(contextFlyout)
-            .Set(new MenuItem()
-            {
-                Header = "Edit"
-            })
+            .Set(new MenuItem())
+            .SetHeader("Edit")
             .Observe<Click>((Entity e) =>
             {
                 Console.WriteLine("Edit Clicked");
@@ -121,10 +117,8 @@ public class SpacedRepetitionPage
 
         var deleteMenuItem = world.Entity("DeleteMenuItem")
             .ChildOf(contextFlyout)
-            .Set(new MenuItem()
-            {
-                Header = "Delete"
-            })
+            .Set(new MenuItem())
+            .SetHeader("Delete")
             .Observe<Click>((Entity e) =>
             {
                 Console.WriteLine("Delete Clicked");
