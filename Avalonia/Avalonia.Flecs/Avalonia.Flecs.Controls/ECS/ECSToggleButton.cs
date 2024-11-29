@@ -24,25 +24,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     // This is good so queries can be more generic and not have to check for every possible control type.
                     e.Set<Button>(toggleButton);
 
-                    toggleButton.Checked += (object sender, RoutedEventArgs args) =>
-                    {
-                        e.Set(new Checked(sender, args));
-                        e.Emit<Checked>();
-                    };
-
-                    toggleButton.Unchecked += (object sender, RoutedEventArgs args) =>
-                    {
-                        e.Set(new Unchecked(sender, args));
-                        e.Emit<Unchecked>();
-                    };
-
-                    toggleButton.Indeterminate += (object sender, RoutedEventArgs args) =>
-                    {
-                        e.Set(new Indeterminate(sender, args));
-                        e.Emit<Indeterminate>();
-                    };
-
-                    toggleButton.IsCheckedChanged += (object sender, RoutedEventArgs args) =>
+                    toggleButton.IsCheckedChanged += (object? sender, RoutedEventArgs args) =>
                     {
                         e.Set(new IsCheckedChanged(sender, args));
                         e.Emit<IsCheckedChanged>();
