@@ -51,22 +51,19 @@ public class SpacedRepetitionPage
                 Text = "Total Items: 0",
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(10, 0)
-            });
+            })
+            .SetColumn(1);
 
-
-
-        Grid.SetColumn(totalItems.Get<Control>(), 1);
 
         var sortItemsButton = world.Entity("SortItemsButton")
             .ChildOf(spacedRepetitionPage)
-            .Set(new ComboBox() { });
+            .Set(new ComboBox() { })
+            .SetColumn(2);
 
 
         sortItemsButton.Get<ComboBox>().Items.Add("Sort By Date");
         sortItemsButton.Get<ComboBox>().Items.Add("Sort By Priority");
         sortItemsButton.Get<ComboBox>().Items.Add("Sort By Name");
-
-        Grid.SetColumn(sortItemsButton.Get<Control>(), 2);
 
         /*
         I believe that entites should know the exact control type but
