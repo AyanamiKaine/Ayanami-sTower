@@ -28,38 +28,77 @@ namespace Avalonia.Flecs.Controls.ECS
     public static class ECSControlExtensions
     {
 
+        public static Entity SetOpacity(this Entity entity, double value)
+        {
+            if (entity.Has<Control>())
+            {
+                entity.Get<Control>().Opacity = value;
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+
+        }
+
+        public static double GetOpacity(this Entity entity)
+        {
+            if (entity.Has<Control>())
+                return entity.Get<Control>().Opacity;
+
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+        }
+
         public static Entity SetVerticalAlignment(this Entity entity, VerticalAlignment value)
         {
-            entity.Get<Control>().VerticalAlignment = value;
-            return entity;
+            if (entity.Has<Control>())
+            {
+                entity.Get<Control>().VerticalAlignment = value;
+                return entity;
+            }
+
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
         public static VerticalAlignment GetVerticalAlignment(this Entity entity)
         {
-            return entity.Get<Control>().VerticalAlignment;
+            if (entity.Has<Control>())
+                return entity.Get<Control>().VerticalAlignment;
+
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
         public static Entity SetHorizontalAlignment(this Entity entity, HorizontalAlignment value)
         {
-            entity.Get<Control>().HorizontalAlignment = value;
-            return entity;
+            if (entity.Has<Control>())
+            {
+                entity.Get<Control>().HorizontalAlignment = value;
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
         public static HorizontalAlignment GetHorizontalAlignment(this Entity entity)
         {
-            return entity.Get<Control>().HorizontalAlignment;
+            if (entity.Has<Control>())
+                return entity.Get<Control>().HorizontalAlignment;
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
 
         public static Entity SetMargin(this Entity entity, Thickness value)
         {
-            entity.Get<Control>().Margin = value;
-            return entity;
+            if (entity.Has<Control>())
+            {
+                entity.Get<Control>().Margin = value;
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
-        public static Thickness GetPadding(this Entity entity, Thickness value)
+        public static Thickness GetMargin(this Entity entity, Thickness value)
         {
-            return entity.Get<Control>().Margin;
+            if (entity.Has<Control>())
+                return entity.Get<Control>().Margin;
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
         /// <summary>
@@ -72,26 +111,42 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             //I wonder if we should add a check here for entity.Has<Control>() 
             //and throw an exception if it doesn't
-            Grid.SetRow(entity.Get<Control>(), value);
-            return entity;
+            if (entity.Has<Control>())
+            {
+                Grid.SetRow(entity.Get<Control>(), value);
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
         public static Entity SetColumnSpan(this Entity entity, int value)
         {
-            Grid.SetColumnSpan(entity.Get<Control>(), value);
-            return entity;
+            if (entity.Has<Control>())
+            {
+                Grid.SetColumnSpan(entity.Get<Control>(), value);
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
         public static Entity SetColumn(this Entity entity, int value)
         {
-            Grid.SetColumn(entity.Get<Control>(), value);
-            return entity;
+            if (entity.Has<Control>())
+            {
+                Grid.SetColumn(entity.Get<Control>(), value);
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
 
         public static Entity SetRowSpan(this Entity entity, int value)
         {
-            Grid.SetRowSpan(entity.Get<Control>(), value);
-            return entity;
+            if (entity.Has<Control>())
+            {
+                Grid.SetRowSpan(entity.Get<Control>(), value);
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
         }
     }
 }
