@@ -19,13 +19,13 @@ namespace Avalonia.Flecs.Controls.ECS
                 {
                     e.Set<AvaloniaObject>(flyoutBase);
 
-                    flyoutBase.Closed += (object sender, EventArgs args) =>
+                    flyoutBase.Closed += (object? sender, EventArgs args) =>
                     {
                         e.Set(new Closed(sender, args));
                         e.Emit<Closed>();
                     };
 
-                    flyoutBase.Opened += (object sender, EventArgs args) =>
+                    flyoutBase.Opened += (object? sender, EventArgs args) =>
                     {
                         e.Set(new Opened(sender, args));
                         e.Emit<Opened>();
