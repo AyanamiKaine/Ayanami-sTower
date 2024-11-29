@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls;
@@ -60,10 +61,8 @@ public class SpacedRepetitionPage
             .Set(new ComboBox() { })
             .SetColumn(2);
 
-
-        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Date");
-        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Priority");
-        sortItemsButton.Get<ComboBox>().Items.Add("Sort By Name");
+        List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
+        sortItemsButton.SetItemsSource(sortItems);
 
         /*
         I believe that entites should know the exact control type but
@@ -93,7 +92,8 @@ public class SpacedRepetitionPage
         {
             string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
             var filteredItems = dummyItems.Where(item => item.ToLower().Contains(searchText));
-            srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
+            //srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
+            srItems.SetItemsSource(new ObservableCollection<string>(filteredItems));
             Console.WriteLine("Text Changed");
         });
 
@@ -156,15 +156,17 @@ public class SpacedRepetitionPage
             }
             else if (selectedItem == "Sort By Priority")
             {
-                dummyItems = [.. dummyItems.OrderByDescending(s => s)];
-                srItems.Get<ItemsControl>().ItemsSource = dummyItems;
+                var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
+                t = [.. t!.OrderByDescending(s => s)];
+                srItems.Get<ItemsControl>().ItemsSource = t;
             }
             else if (selectedItem == "Sort By Name")
             {
                 //(ascending order)
                 Random rng = new();
-                dummyItems = [.. dummyItems.OrderBy(s => rng.Next())];
-                srItems.Get<ItemsControl>().ItemsSource = dummyItems;
+                var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
+                t = [.. t!.OrderBy(s => rng.Next())];
+                srItems.Get<ItemsControl>().ItemsSource = t;
             }
         });
 
