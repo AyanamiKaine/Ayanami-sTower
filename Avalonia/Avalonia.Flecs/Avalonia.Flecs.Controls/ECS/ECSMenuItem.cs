@@ -18,6 +18,8 @@ namespace Avalonia.Flecs.Controls.ECS
                             .OnSet((Entity e, ref MenuItem menuItem) =>
                             {
 
+                                e.Set<HeaderedSelectingItemsControl>(menuItem);
+
                                 menuItem.Click += (object? sender, RoutedEventArgs args) =>
                                                                 {
                                                                     e.Set(new Click(sender, args));
