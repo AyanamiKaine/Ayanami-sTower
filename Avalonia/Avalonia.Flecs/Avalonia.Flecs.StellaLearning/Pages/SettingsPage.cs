@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
@@ -52,54 +53,48 @@ public static class SettingsPage
     private static Entity ThemeToggleSwitch(World world, Entity childOfEntity)
     {
         var themeToggleSwitch = world.Entity("ThemeToggleSwitch")
-            .Add<ToggleSwitch>()
             .ChildOf(childOfEntity)
-            .Set(new ToggleSwitch()
+            .Set(new ToggleSwitch())
+            .SetContent("Dark Mode")
+            .Observe<IsCheckedChanged>((Entity e) =>
             {
-                Content = "Dark Mode",
-                IsChecked = true,
+
+                var sender = e.Get<IsCheckedChanged>().Sender;
+
+                var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
+                if (Application.Current is not null)
+                    SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
             });
-
-        themeToggleSwitch.Observe<IsCheckedChanged>((Entity e) =>
-        {
-
-            var sender = e.Get<IsCheckedChanged>().Sender;
-
-            var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
-            if (Application.Current is not null)
-                SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
-        });
 
         return themeToggleSwitch;
     }
 
     private static Entity ObsidianPath(World world, Entity childOfEntity)
     {
-
+        
         var browseForObsidianButton = world.Entity("BrowseForObsidianButton")
             .Add<Button>()
-            .Set(new Button()
-            {
-                Content = "Browse",
-            });
+            .Set(new Button());
+
+        var browseForObsidianButtonContent = world.Entity("TextBlock")
+            .Add<TextBlock>()
+            .ChildOf(browseForObsidianButton)
+            .Set(new TextBlock())
+            .SetText("Browse");
 
         var obsidianPath = world.Entity("ObsidianPath")
-            .Add<Page>()
             .ChildOf(childOfEntity)
-            .Set(new TextBox()
+            .Set(new TextBox())
+            .SetWatermark("Path to Obsidian")
+            .SetInnerRightContent(browseForObsidianButton.Get<Button>());
+
+        browseForObsidianButton
+            .ChildOf(obsidianPath)
+            .Observe<Click>(async (Entity e) =>
             {
-                //IsEnabled = false,
-                Watermark = "Path to Obsidian",
-                InnerRightContent = browseForObsidianButton.Get<Button>(),
+                obsidianPath.SetText(await ObsidianFilePickerAsync(world));
             });
 
-        browseForObsidianButton.ChildOf(obsidianPath);
-
-        browseForObsidianButton.Observe<Click>(async (Entity e) =>
-        {
-            obsidianPath.Get<TextBox>().Text = await ObsidianFilePickerAsync(world);
-        });
-        
         return obsidianPath;
     }
 
@@ -118,7 +113,6 @@ public static class SettingsPage
             Title = "Select the obsidian executable",
             AllowMultiple = false, // Set to true if you want to allow multiple file selections
         };
-
 
         // Create an OpenFileDialog instance
         IReadOnlyList<IStorageFile>? result = await world.Lookup("MainWindow").Get<Window>().StorageProvider.OpenFilePickerAsync(options);
