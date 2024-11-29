@@ -66,7 +66,8 @@ public static class SettingsPage
             var sender = e.Get<IsCheckedChanged>().Sender;
 
             var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
-            SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
+            if (Application.Current is not null)
+                SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
         });
 
         return themeToggleSwitch;
@@ -74,6 +75,14 @@ public static class SettingsPage
 
     private static Entity ObsidianPath(World world, Entity childOfEntity)
     {
+
+        var browseForObsidianButton = world.Entity("BrowseForObsidianButton")
+            .Add<Button>()
+            .Set(new Button()
+            {
+                Content = "Browse",
+            });
+
         var obsidianPath = world.Entity("ObsidianPath")
             .Add<Page>()
             .ChildOf(childOfEntity)
@@ -81,17 +90,16 @@ public static class SettingsPage
             {
                 //IsEnabled = false,
                 Watermark = "Path to Obsidian",
-                InnerRightContent = new Button()
-                {
-                    Content = "Browse",
-                },
+                InnerRightContent = browseForObsidianButton.Get<Button>(),
             });
 
-        Button button = (Button)obsidianPath.Get<TextBox>().InnerRightContent;
-        button.Click += async (sender, args) =>
+        browseForObsidianButton.ChildOf(obsidianPath);
+
+        browseForObsidianButton.Observe<Click>(async (Entity e) =>
         {
             obsidianPath.Get<TextBox>().Text = await ObsidianFilePickerAsync(world);
-        };
+        });
+        
         return obsidianPath;
     }
 
