@@ -6,6 +6,8 @@ namespace Avalonia.Flecs.Controls.ECS
 {
 
 
+
+
     /*
     Design Note:
     This is mostly done so we can more easily manipulate controls in entities
@@ -21,12 +23,51 @@ namespace Avalonia.Flecs.Controls.ECS
     It can make the code harder to understand.
     */
 
+    /*
+    (IMPORTANT!) RAGARDING PROPERTY ACCESS:
+    We should probably always implement a fallback case where we try using reflection to get/set the property. So users that added properties to the control can still use the API without having to modify the ECSControlExtensions class.
+    */
+
     /// <summary>
     /// Here we define various methods to easily manipulate controls
     /// in entities without first getting the control component.
     /// </summary>
     public static class ECSControlExtensions
     {
+
+        public static Entity SetMaxWidth(this Entity entity, double value)
+        {
+            if (entity.Has<Control>())
+            {
+                entity.Get<Control>().MaxWidth = value;
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+        }
+
+        public static double GetMaxWidth(this Entity entity)
+        {
+            if (entity.Has<Control>())
+                return entity.Get<Control>().MaxWidth;
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+        }
+
+        public static Entity SetMaxHeight(this Entity entity, double value)
+        {
+            if (entity.Has<Control>())
+            {
+                entity.Get<Control>().MaxHeight = value;
+                return entity;
+            }
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+        }
+
+        public static double GetMaxHeight(this Entity entity)
+        {
+            if (entity.Has<Control>())
+                return entity.Get<Control>().MaxHeight;
+            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+        }
 
         public static Entity SetOpacity(this Entity entity, double value)
         {
