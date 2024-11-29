@@ -17,30 +17,12 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<MenuItem>("MenuItem")
                             .OnSet((Entity e, ref MenuItem menuItem) =>
                             {
-                                var parent = e.Parent();
-                                if (parent == 0)
-                                {
-                                    return;
-                                }
-                                if (parent.Has<Menu>())
-                                {
-                                    parent.Get<Menu>().Items.Add(menuItem);
-                                }
-                                else if (parent.Has<MenuItem>())
-                                {
-                                    parent.Get<MenuItem>().Items.Add(menuItem);
-                                }
-
-
-
-                            }).OnRemove((Entity e, ref MenuItem menuItem) =>
-                            {
 
                                 menuItem.Click += (object? sender, RoutedEventArgs args) =>
-                                {
-                                    e.Set(new Click(sender, args));
-                                    e.Emit<Click>();
-                                };
+                                                                {
+                                                                    e.Set(new Click(sender, args));
+                                                                    e.Emit<Click>();
+                                                                };
 
                                 menuItem.AttachedToLogicalTree += (object? sender, LogicalTreeAttachmentEventArgs args) =>
                                 {
@@ -198,6 +180,26 @@ namespace Avalonia.Flecs.Controls.ECS
                                     e.Emit<TextInputMethodClientRequested>();
                                 };
 
+                                var parent = e.Parent();
+                                if (parent == 0)
+                                {
+                                    return;
+                                }
+                                if (parent.Has<Menu>())
+                                {
+                                    parent.Get<Menu>().Items.Add(menuItem);
+                                }
+                                else if (parent.Has<MenuItem>())
+                                {
+                                    parent.Get<MenuItem>().Items.Add(menuItem);
+                                }
+                                else if (parent.Has<MenuFlyout>())
+                                {
+                                    parent.Get<MenuFlyout>().Items.Add(menuItem);
+                                }
+
+                            }).OnRemove((Entity e, ref MenuItem menuItem) =>
+                            {
                                 var parent = e.Parent();
                                 if (parent == 0)
                                 {
