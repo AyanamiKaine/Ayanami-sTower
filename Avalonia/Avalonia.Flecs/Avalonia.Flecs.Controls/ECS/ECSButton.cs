@@ -26,13 +26,13 @@ namespace Avalonia.Flecs.Controls.ECS
 
                     // Adding event handlers
                     // https://reference.avaloniaui.net/api/Avalonia.Controls/Button/#Events
-                    button.Click += (object sender, RoutedEventArgs args) =>
+                    button.Click += (object? sender, RoutedEventArgs args) =>
                     {
                         e.Set(new Click(sender, args));
                         e.Emit<Click>();
                     };
 
-                    button.TemplateApplied += (object sender, TemplateAppliedEventArgs args) =>
+                    button.TemplateApplied += (object? sender, TemplateAppliedEventArgs args) =>
                     {
                         e.Set(new TemplateApplied(sender, args));
                         e.Emit<TemplateApplied>();
