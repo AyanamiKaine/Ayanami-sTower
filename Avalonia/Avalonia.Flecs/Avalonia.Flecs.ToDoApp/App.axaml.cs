@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
@@ -160,18 +161,18 @@ public partial class App : Application
         {
             if (e.Get<KeyDown>().Args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
             {
-                itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text));
-                textBox.Get<TextBox>().Text = "";
+                itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
+                textBox.SetText("");
             }
         });
 
         addButton.Observe<Click>((Entity e) =>
         {
             Console.WriteLine(title.Path());
-            if (textBox.Get<TextBox>().Text != "")
+            if (textBox.GetText() != "")
             {
-                itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text));
-                textBox.Get<TextBox>().Text = "";
+                itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.GetText()));
+                textBox.SetText("");
 
                 var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
                 if (titleEntityFound)
