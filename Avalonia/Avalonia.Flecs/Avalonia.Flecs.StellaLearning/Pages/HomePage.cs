@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Flecs.Controls.ECS;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
@@ -68,10 +69,8 @@ public class HomePage : IEntityUIComponent
         return world.Entity()
             .Add<Page>()
             .ChildOf(childOfEntity)
-            .Set(new TextBlock()
-            {
-                Text = "Home",
-            });
+            .Set(new TextBlock())
+            .SetText("Home");
     }
 
     public static Entity Create(World world, Entity childOfEntity, params object[] props)
