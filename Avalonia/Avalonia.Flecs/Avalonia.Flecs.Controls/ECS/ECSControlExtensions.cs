@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Layout;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
@@ -24,8 +25,43 @@ namespace Avalonia.Flecs.Controls.ECS
     /// Here we define various methods to easily manipulate controls
     /// in entities without first getting the control component.
     /// </summary>
-    public static class EntityExtensions
+    public static class ECSControlExtensions
     {
+
+        public static Entity SetVerticalAlignment(this Entity entity, VerticalAlignment value)
+        {
+            entity.Get<Control>().VerticalAlignment = value;
+            return entity;
+        }
+
+        public static VerticalAlignment GetVerticalAlignment(this Entity entity)
+        {
+            return entity.Get<Control>().VerticalAlignment;
+        }
+
+        public static Entity SetHorizontalAlignment(this Entity entity, HorizontalAlignment value)
+        {
+            entity.Get<Control>().HorizontalAlignment = value;
+            return entity;
+        }
+
+        public static HorizontalAlignment GetHorizontalAlignment(this Entity entity)
+        {
+            return entity.Get<Control>().HorizontalAlignment;
+        }
+
+
+        public static Entity SetMargin(this Entity entity, Thickness value)
+        {
+            entity.Get<Control>().Margin = value;
+            return entity;
+        }
+
+        public static Thickness GetPadding(this Entity entity, Thickness value)
+        {
+            return entity.Get<Control>().Margin;
+        }
+
         /// <summary>
         /// Helper for setting Row property on a Control.
         /// </summary>
