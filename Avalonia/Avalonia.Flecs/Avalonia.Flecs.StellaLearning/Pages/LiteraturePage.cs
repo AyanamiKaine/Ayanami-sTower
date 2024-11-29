@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Flecs.Controls.ECS;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
@@ -15,9 +16,7 @@ public static class LiteraturePage
         //name or let the user provide one in the create function
         return world.Entity("LiteraturePage")
             .Add<Page>()
-            .Set(new TextBlock()
-            {
-                Text = "Literature",
-            }); ;
+            .Set(new TextBlock())
+            .SetText("Literature");
     }
 }
