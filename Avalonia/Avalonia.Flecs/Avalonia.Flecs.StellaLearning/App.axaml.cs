@@ -11,6 +11,8 @@ using static Avalonia.Flecs.FluentUI.Controls.ECS.Module;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Flecs.StellaLearning.Pages;
 using Avalonia.Markup.Xaml.MarkupExtensions;
+using Avalonia.Flecs.Controls.ECS;
+using Avalonia.Flecs.Controls;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -37,11 +39,11 @@ public partial class App : Application
 
 
         var navigationView = _world.Entity("NavigationView")
-                    .ChildOf(window)
+
                     .Set(new NavigationView()
                     {
                         PaneTitle = "Stella Learning",
-                    });
+                    }).ChildOf(window);
 
 
         var scrollViewer = _world.Entity("ScrollViewer")
@@ -60,22 +62,20 @@ public partial class App : Application
                 RowDefinitions = new RowDefinitions("Auto")
             });
 
-        var settingPage = SettingsPage.Create(_world, navigationView);
+        var settingPage = SettingsPage.Create(_world, navigationView)
+            .SetRow(2)
+            .SetColumnSpan(3);
 
-        Grid.SetRow(settingPage.Get<Control>(), 2);
-        Grid.SetColumnSpan(settingPage.Get<Control>(), 3);
-
-        var homePage = HomePage.Create(_world, "HomePage");
-        Grid.SetRow(homePage.Get<Control>(), 2);
-        Grid.SetColumnSpan(homePage.Get<Control>(), 3);
+        var homePage = HomePage.Create(_world, "HomePage")
+            .SetRow(2)
+            .SetColumnSpan(3);
 
 
 
         var literaturePage = LiteraturePage.Create(_world);
 
-        Grid.SetRow(literaturePage.Get<Control>(), 2);
-        Grid.SetColumnSpan(literaturePage.Get<Control>(), 3);
-
+        literaturePage.SetRow(2);
+        literaturePage.SetColumnSpan(3);
 
         var spacedRepetitionPage = SpacedRepetitionPage.Create(_world);
         //spacedRepetitionPage.ChildOf(navigationView);
@@ -101,7 +101,7 @@ public partial class App : Application
                 Content = "Spaced Repetition"
             });
 
-        Grid.SetColumn(navigationView.Get<NavigationView>(), 0);
+        navigationView.SetColumn(0);
 
         navigationView.Observe<FluentUI.Controls.ECS.Events.OnDisplayModeChanged>((Entity e) =>
         {
