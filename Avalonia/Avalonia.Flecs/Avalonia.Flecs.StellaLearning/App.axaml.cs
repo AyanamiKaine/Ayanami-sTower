@@ -39,11 +39,12 @@ public partial class App : Application
 
 
         var navigationView = _world.Entity("NavigationView")
-
                     .Set(new NavigationView()
                     {
                         PaneTitle = "Stella Learning",
-                    }).ChildOf(window);
+                    })
+                    .ChildOf(window)
+                    .SetColumn(0);
 
 
         var scrollViewer = _world.Entity("ScrollViewer")
@@ -72,10 +73,9 @@ public partial class App : Application
 
 
 
-        var literaturePage = LiteraturePage.Create(_world);
-
-        literaturePage.SetRow(2);
-        literaturePage.SetColumnSpan(3);
+        var literaturePage = LiteraturePage.Create(_world)
+            .SetRow(2)
+            .SetColumnSpan(3);
 
         var spacedRepetitionPage = SpacedRepetitionPage.Create(_world);
         //spacedRepetitionPage.ChildOf(navigationView);
@@ -101,7 +101,7 @@ public partial class App : Application
                 Content = "Spaced Repetition"
             });
 
-        navigationView.SetColumn(0);
+
 
         navigationView.Observe<FluentUI.Controls.ECS.Events.OnDisplayModeChanged>((Entity e) =>
         {
@@ -149,7 +149,7 @@ public partial class App : Application
             var OnSelectionChanged = e.Get<FluentUI.Controls.ECS.Events.OnSelectionChanged>();
 
             var selectedItem = OnSelectionChanged.Args.SelectedItem as NavigationViewItem;
-            if (selectedItem?.Content.ToString() == "Home")
+            if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Home")
             {
                 //navigationView.Get<NavigationView>().Content = homePage.Get<TextBlock>();
                 homePage.ChildOf(navigationView);
@@ -161,7 +161,7 @@ public partial class App : Application
                 else
                     homePage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
-            else if (selectedItem?.Content.ToString() == "Literature")
+            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Literature")
             {
                 //Console.WriteLine("Selection Changed To Literature");
                 //navigationView.Get<NavigationView>().Content = literaturePage.Get<TextBlock>();
@@ -171,7 +171,7 @@ public partial class App : Application
                 else
                     literaturePage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
-            else if (selectedItem?.Content.ToString() == "Spaced Repetition")
+            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Spaced Repetition")
             {
                 //navigationView.Get<NavigationView>().Content = spacedRepetitionPage.Get<Panel>();
                 spacedRepetitionPage.ChildOf(navigationView);
@@ -180,7 +180,7 @@ public partial class App : Application
                 else
                     spacedRepetitionPage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
-            else if (selectedItem?.Content.ToString() == "Settings")
+            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
             {
                 //Console.WriteLine("Selection Changed To Settings");
                 //navigationView.Get<NavigationView>().Content = settingPage.Get<TextBlock>();
