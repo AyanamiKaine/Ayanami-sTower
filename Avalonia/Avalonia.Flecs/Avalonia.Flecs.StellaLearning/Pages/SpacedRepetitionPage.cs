@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Input;
 using Avalonia.Layout;
@@ -79,7 +80,9 @@ public class SpacedRepetitionPage
 
         var scrollViewer = world.Entity("ScrollViewer")
             .ChildOf(spacedRepetitionPage)
-            .Set(new ScrollViewer());
+            .Set(new ScrollViewer())
+            .SetRow(1)
+            .SetColumnSpan(3);
 
         var srItems = world.Entity("SpaceRepetitionList")
             .ChildOf(scrollViewer)
@@ -91,7 +94,7 @@ public class SpacedRepetitionPage
 
         listSearchSpacedRepetition.Observe<TextChanged>(() =>
         {
-            string searchText = listSearchSpacedRepetition.Get<TextBox>().Text.ToLower();
+            string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
             var filteredItems = dummyItems.Where(item => item.ToLower().Contains(searchText));
             srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
             Console.WriteLine("Text Changed");
@@ -110,17 +113,17 @@ public class SpacedRepetitionPage
         flyout.Items.Add(new MenuItem() { Header = "Delete" });
 
 
-        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[0]).Click += (sender, e) =>
+        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[0]!).Click += (sender, e) =>
         {
             Console.WriteLine("Open Clicked");
         };
 
-        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[1]).Click += (sender, e) =>
+        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[1]!).Click += (sender, e) =>
         {
             Console.WriteLine("Edit Clicked");
         };
 
-        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[2]).Click += (sender, e) =>
+        ((MenuItem)contextFlyout.Get<MenuFlyout>().Items[2]!).Click += (sender, e) =>
         {
             Console.WriteLine("Delete Clicked");
         };
@@ -137,9 +140,9 @@ public class SpacedRepetitionPage
         dummyItems.Add("iteration");
         dummyItems.Add("JavaScript");
 
-        Grid.SetRow(scrollViewer.Get<Control>(), 1);
-        //Sets the SCrollViewer to span 3 columns.
-        Grid.SetColumnSpan(scrollViewer.Get<Control>(), 3);
+        scrollViewer
+            .SetRow(1)
+            .SetColumnSpan(3);
 
 
         sortItemsButton.Observe<SelectionChanged>((Entity e) =>
@@ -149,7 +152,7 @@ public class SpacedRepetitionPage
             {
                 return;
             }
-            var selectedItem = args.AddedItems[0].ToString();
+            var selectedItem = args.AddedItems[0]!.ToString();
             if (selectedItem == "Sort By Date")
             {
 
