@@ -19,13 +19,21 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <returns></returns>
         public static Entity SetContent(this Entity entity, object? control)
         {
-            entity.Get<ContentControl>().Content = control;
-            return entity;
+            if (entity.Has<ContentControl>())
+            {
+                entity.Get<ContentControl>().Content = control;
+                return entity;
+            }
+            throw new Exception("Entity does not have a ContentControl component. Try adding a control element that is an ContentControl component to the entity.");
         }
 
         public static object? GetContent(this Entity entity)
         {
-            return entity.Get<ContentControl>().Content;
+            if (entity.Has<ContentControl>())
+            {
+                return entity.Get<ContentControl>().Content;
+            }
+            throw new Exception("Entity does not have a ContentControl component. Try adding a control element that is an ContentControl component to the entity.");
         }
     }
 }
