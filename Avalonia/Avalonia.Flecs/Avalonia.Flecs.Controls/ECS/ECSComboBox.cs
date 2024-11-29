@@ -12,7 +12,7 @@ namespace Avalonia.Flecs.Controls.ECS
                             {
                                 e.Set<ItemsControl>(comboBox);
 
-                                comboBox.SelectionChanged += (object sender, SelectionChangedEventArgs args) =>
+                                comboBox.SelectionChanged += (object? sender, SelectionChangedEventArgs args) =>
                                 {
                                     e.Set(new Events.SelectionChanged(sender, args));
                                     e.Emit<Events.SelectionChanged>();
