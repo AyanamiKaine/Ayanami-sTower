@@ -19,7 +19,7 @@ namespace Avalonia.Flecs.Controls.ECS
                 {
                     e.Set<ItemsControl>(selectingItemsControl);
 
-                    selectingItemsControl.SelectionChanged += (object sender, SelectionChangedEventArgs args) =>
+                    selectingItemsControl.SelectionChanged += (object? sender, SelectionChangedEventArgs args) =>
                     {
                         e.Set(new SelectionChanged(sender, args));
                         e.Emit<SelectionChanged>();
