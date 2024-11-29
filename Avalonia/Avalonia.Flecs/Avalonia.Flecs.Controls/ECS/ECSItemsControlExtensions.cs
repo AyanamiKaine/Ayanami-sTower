@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Markup.Xaml.Templates;
 using Flecs.NET.Core;
 
@@ -13,7 +14,8 @@ namespace Avalonia.Flecs.Controls.ECS
     {
 
         /// <summary>
-        /// Gets or sets a collection used to generate the content of the <see cref="ItemsControl"/>.
+        /// Sets a collection used to generate the content of the <see cref="ItemsControl"/>.
+        /// If An entity has an ItemsControl component or the component itself has an itemscontrol property, this property can be used to set the collection
         /// </summary>
         /// <remarks>
         /// A common scenario is to use an <see cref="ItemsControl"/> such as a 
@@ -30,7 +32,10 @@ namespace Avalonia.Flecs.Controls.ECS
         /// </remarks>
         public static Entity SetItemsSource(this Entity entity, System.Collections.IEnumerable? collection)
         {
-            entity.Get<ItemsControl>().ItemsSource = collection;
+            if (entity.Has<ItemsControl>())
+                entity.Get<ItemsControl>().ItemsSource = collection;
+            else if (entity.Has<MenuFlyout>())
+                entity.Get<MenuFlyout>().ItemsSource = collection;
             return entity;
         }
 
@@ -47,7 +52,10 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <returns></returns>
         public static Entity SetItemTemplate(this Entity entity, DataTemplate? template)
         {
-            entity.Get<ItemsControl>().ItemTemplate = template;
+            if (entity.Has<ItemsControl>())
+                entity.Get<ItemsControl>().ItemTemplate = template;
+            else if (entity.Has<MenuFlyout>())
+                entity.Get<MenuFlyout>().ItemTemplate = template;
             return entity;
         }
     }
