@@ -18,12 +18,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<ToggleSwitch>("ToggleSwitch")
                 .OnSet((Entity e, ref ToggleSwitch toggleSwitch) =>
                 {
-
                     // We set the contentControl component so systems and queries in general can more easily
                     // access the generic .content property of the button.
                     // This is good so queries can be more generic and not have to check for every possible control type.
                     e.Set<ToggleButton>(toggleSwitch);
-
                 })
                 .OnRemove((Entity e, ref ToggleSwitch toggleSwitch) =>
                 {
