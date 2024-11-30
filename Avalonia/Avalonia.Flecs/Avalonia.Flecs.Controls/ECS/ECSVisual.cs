@@ -11,13 +11,7 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSVisual>();
-            world.Component<Visual>("Visual")
-                .OnSet((Entity e, ref Visual visual) =>
-                {
-
-                }).OnRemove((Entity e, ref Visual visual) =>
-                {
-                });
+            world.Component<Visual>("Visual");
         }
     }
 }
