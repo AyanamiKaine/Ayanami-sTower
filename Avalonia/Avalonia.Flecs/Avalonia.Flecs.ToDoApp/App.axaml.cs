@@ -54,14 +54,12 @@ public partial class App : Application
         var addButton = _world.Entity("AddItemButton");
 
 
-        window.Set(
-                new Window()
-                {
-                    Title = "Avlonia.Flecs Example",
-                    Height = 300,
-                    Width = 500,
-                    Padding = new Thickness(4),
-                }); ;
+        window
+            .Set(new Window())
+            .SetWindowTitle("Avalonia.Flecs.ToDoApp")
+            .SetHeight(300)
+            .SetWidth(500)
+            .SetPadding(new Thickness(4));
 
         grid
             .ChildOf(window)
