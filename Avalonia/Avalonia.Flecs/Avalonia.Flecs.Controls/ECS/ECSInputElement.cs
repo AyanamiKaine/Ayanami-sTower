@@ -7,6 +7,7 @@ using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Layout;
 using Avalonia.Interactivity;
 using Avalonia.Input.TextInput;
+using Avalonia.Controls.Embedding.Offscreen;
 namespace Avalonia.Flecs.Controls.ECS
 {
     public class ECSInputElement : IFlecsModule
@@ -17,6 +18,11 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<InputElement>("InputElement")
                 .OnSet((Entity e, ref InputElement inputElement) =>
                 {
+                    e.Set<Interactive>(inputElement);
+                    //We set the Layoutable and Visual components to the same instance of the InputElement instead of seperate ECS modules because
+                    //otherwise it would result into an stack overflow!
+                    e.Set<Layoutable>(inputElement);
+                    e.Set<Visual>(inputElement);
 
                     inputElement.AttachedToLogicalTree += (object? sender, LogicalTreeAttachmentEventArgs args) =>
                                         {
@@ -171,6 +177,7 @@ namespace Avalonia.Flecs.Controls.ECS
 
                 }).OnRemove((Entity e, ref InputElement inputElement) =>
                 {
+                    e.Remove<Interactive>();
                 });
         }
     }
