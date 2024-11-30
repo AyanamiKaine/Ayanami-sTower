@@ -19,19 +19,35 @@ namespace Avalonia.Flecs.Controls.ECS
     public static class ECSTextBoxExtensions
     {
 
+        /// <summary>
+        /// Helper function to set the text of a TextBox control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="text"></param>
+        /// <returns></returns>
         public static Entity SetWatermark(this Entity entity, string text)
         {
             if (entity.Has<TextBox>())
+            {
                 entity.Get<TextBox>().Watermark = text;
-            return entity;
+                return entity;
+            }
+            throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetWatermark));
+
         }
 
+        /// <summary>
+        /// Helper function to get the text of a TextBox control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public static string GetWatermark(this Entity entity)
         {
             if (entity.Has<TextBox>())
                 return entity.Get<TextBox>().Watermark!;
 
-            throw new Exception("Entity does not have a TextBox with a Watermark property");
+            throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetWatermark));
         }
     }
 }
