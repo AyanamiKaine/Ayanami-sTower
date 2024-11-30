@@ -22,8 +22,11 @@ namespace Avalonia.Flecs.Controls.ECS
         public static Entity SetInnerLeftContent(this Entity entity, object content)
         {
             if (entity.Has<TextBox>())
+            {
                 entity.Get<TextBox>().InnerLeftContent = content;
-            return entity;
+                return entity;
+            }
+            throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetInnerLeftContent));
         }
 
         public static object GetInnerLeftContent(this Entity entity)
@@ -31,14 +34,17 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<TextBox>())
                 return entity.Get<TextBox>().InnerLeftContent!;
 
-            throw new Exception("Entity does not have a control with a content property");
+            throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(GetInnerLeftContent));
         }
 
         public static Entity SetInnerRightContent(this Entity entity, object content)
         {
             if (entity.Has<TextBox>())
+            {
                 entity.Get<TextBox>().InnerRightContent = content;
-            return entity;
+                return entity;
+            }
+            throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetInnerRightContent));
         }
 
         public static object GetInnerRightContent(this Entity entity)
@@ -46,7 +52,7 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<TextBox>())
                 return entity.Get<TextBox>().InnerRightContent!;
 
-            throw new Exception("Entity does not have a control with a content property");
+            throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(GetInnerRightContent));
         }
 
         public static Entity SetText(this Entity entity, string text)
