@@ -20,6 +20,10 @@ namespace Avalonia.Flecs.Controls.ECS
 
                                 e.Set<HeaderedSelectingItemsControl>(menuItem);
 
+                                /*
+                                For an unknown reason, the entity does not get an HeaderedSelectingItemsControl component attached so other components that would be attached like Control by HeaderedSelectingItemsControl.OnSet() would not be attached. To remmedy this, we attach the Control component here. TEMPORARY FIX!
+                                */
+                                e.Set<Control>(menuItem);
                                 menuItem.Click += (object? sender, RoutedEventArgs args) =>
                                                                 {
                                                                     e.Set(new Click(sender, args));
