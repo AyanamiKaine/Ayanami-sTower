@@ -11,13 +11,7 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSLayoutable>();
-            world.Component<Layoutable>("Layoutable")
-                .OnSet((Entity e, ref Layoutable layoutable) =>
-                {
-
-                }).OnRemove((Entity e, ref Layoutable layoutable) =>
-                {
-                });
+            world.Component<Layoutable>("Layoutable");
         }
     }
 }
