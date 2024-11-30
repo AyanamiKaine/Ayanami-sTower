@@ -45,7 +45,7 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSInputElement>();
             world.Import<ECSInteractive>();
             world.Import<ECSLayoutable>();
-
+            world.Import<ECSVisual>();
             world.Import<ECSPopupFlyoutBase>();
             world.Import<ECSFlyoutBase>();
             world.Import<ECSMenuFlyout>();
