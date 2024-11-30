@@ -10,12 +10,12 @@ namespace Avalonia.Flecs.Controls.ECS
     {
 
         /// <summary>
-        /// Set the header of the HeaderedSelectingItemsControl component.
+        /// Set the header property of components that have it.
         /// </summary>
         /// <param name="entity"></param>
         /// <param name="content"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetHeader(this Entity entity, object? content)
         {
             if (entity.Has<HeaderedSelectingItemsControl>())
@@ -23,7 +23,8 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<HeaderedSelectingItemsControl>().Header = content;
                 return entity;
             }
-            throw new Exception("Entity does not have a HeaderedSelectingItemsControl component. Try adding a control element that is an HeaderedSelectingItemsControl component to the entity.");
+            throw new ComponentNotFoundException(entity, typeof(HeaderedSelectingItemsControl), nameof(SetHeader));
+
         }
 
         /// <summary>
@@ -31,14 +32,15 @@ namespace Avalonia.Flecs.Controls.ECS
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static object? GetHeader(this Entity entity)
         {
             if (entity.Has<HeaderedSelectingItemsControl>())
             {
                 return entity.Get<HeaderedSelectingItemsControl>().Header;
             }
-            throw new Exception("Entity does not have a HeaderedSelectingItemsControl component. Try adding a control element that is an HeaderedSelectingItemsControl component to the entity.");
+            throw new ComponentNotFoundException(entity, typeof(HeaderedSelectingItemsControl), nameof(GetHeader));
+
         }
     }
 }
