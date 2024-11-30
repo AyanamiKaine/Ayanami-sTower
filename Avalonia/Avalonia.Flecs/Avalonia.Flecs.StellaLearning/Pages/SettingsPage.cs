@@ -73,11 +73,9 @@ public static class SettingsPage
     {
         
         var browseForObsidianButton = world.Entity("BrowseForObsidianButton")
-            .Add<Button>()
             .Set(new Button());
 
         var browseForObsidianButtonContent = world.Entity("TextBlock")
-            .Add<TextBlock>()
             .ChildOf(browseForObsidianButton)
             .Set(new TextBlock())
             .SetText("Browse");
