@@ -13,7 +13,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="entity"></param>
         /// <param name="rowDefinitions"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetRowDefinitions(this Entity entity, RowDefinitions rowDefinitions)
         {
             if (entity.Has<Grid>())
@@ -21,21 +21,23 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Grid>().RowDefinitions = rowDefinitions;
                 return entity;
             }
-            throw new Exception("Entity does not have a Grid component. Try adding a control element that is an Grid control to the entity.");
+            throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetRowDefinitions));
+
         }
         /// <summary>
         /// Helper function to get the row definitions of a Grid control component of an entity.
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static RowDefinitions GetRowDefinitions(this Entity entity)
         {
             if (entity.Has<Grid>())
             {
                 return entity.Get<Grid>().RowDefinitions;
             }
-            throw new Exception("Entity does not have a Grid component. Try adding a control element that is an Grid control to the entity.");
+            throw new ComponentNotFoundException(entity, typeof(Grid), nameof(GetRowDefinitions));
+
         }
 
         /// <summary>
@@ -44,7 +46,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="entity"></param>
         /// <param name="columnDefinitions"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetColumnDefinitions(this Entity entity, ColumnDefinitions columnDefinitions)
         {
             if (entity.Has<Grid>())
@@ -52,7 +54,8 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Grid>().ColumnDefinitions = columnDefinitions;
                 return entity;
             }
-            throw new Exception("Entity does not have a Grid component. Try adding a control element that is an Grid control to the entity.");
+            throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetColumnDefinitions));
+
         }
 
         /// <summary>
@@ -60,7 +63,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static ColumnDefinitions GetColumnDefinitions(this Entity entity)
         {
             if (entity.Has<Grid>())
