@@ -28,13 +28,10 @@ public partial class App : Application
         _world.Observer();
 
         var window = _world.Entity("MainWindow")
-            .Set(
-                new Window()
-                {
-                    Title = "Stella Learning",
-                    Height = 400,
-                    Width = 400
-                });
+            .Set(new Window())
+            .SetWindowTitle("Stella Learning")
+            .SetHeight(400)
+            .SetWidth(400);
 
 
 
@@ -70,8 +67,6 @@ public partial class App : Application
         var homePage = HomePage.Create(_world, "HomePage")
             .SetRow(2)
             .SetColumnSpan(3);
-
-
 
         var literaturePage = LiteraturePage.Create(_world)
             .SetRow(2)
