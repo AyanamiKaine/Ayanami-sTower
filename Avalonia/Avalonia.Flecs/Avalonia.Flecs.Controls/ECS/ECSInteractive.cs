@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 namespace Avalonia.Flecs.Controls.ECS
 {
     public class ECSInteractive : IFlecsModule
@@ -13,9 +14,11 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Interactive>("Interactive")
                 .OnSet((Entity e, ref Interactive interactive) =>
                 {
+                    //e.Set<Layoutable>(interactive);
 
                 }).OnRemove((Entity e, ref Interactive interactive) =>
                 {
+                    //e.Remove<Layoutable>();
                 });
         }
     }
