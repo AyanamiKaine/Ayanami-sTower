@@ -17,6 +17,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="entity"></param>
         /// <param name="control"></param>
         /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetContent(this Entity entity, object? control)
         {
             if (entity.Has<ContentControl>())
@@ -24,21 +25,21 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<ContentControl>().Content = control;
                 return entity;
             }
-            throw new Exception("Entity does not have a ContentControl component. Try adding a control element that is an ContentControl component to the entity.");
+            throw new ComponentNotFoundException(entity, typeof(ContentControl), nameof(SetContent));
         }
         /// <summary>
         /// Helper function to get the content of a ContentControl component of an entity.
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static object? GetContent(this Entity entity)
         {
             if (entity.Has<ContentControl>())
             {
                 return entity.Get<ContentControl>().Content;
             }
-            throw new Exception("Entity does not have a ContentControl component. Try adding a control element that is an ContentControl component to the entity.");
+            throw new ComponentNotFoundException(entity, typeof(ContentControl), nameof(SetContent));
         }
     }
 }
