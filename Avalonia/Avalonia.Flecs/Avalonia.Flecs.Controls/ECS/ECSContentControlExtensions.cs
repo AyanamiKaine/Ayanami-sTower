@@ -26,7 +26,12 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             throw new Exception("Entity does not have a ContentControl component. Try adding a control element that is an ContentControl component to the entity.");
         }
-
+        /// <summary>
+        /// Helper function to get the content of a ContentControl component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public static object? GetContent(this Entity entity)
         {
             if (entity.Has<ContentControl>())
