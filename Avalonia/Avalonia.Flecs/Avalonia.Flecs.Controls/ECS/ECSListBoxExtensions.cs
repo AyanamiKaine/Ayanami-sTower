@@ -20,8 +20,12 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <returns></returns>
         public static Entity SetSelectionMode(this Entity entity, SelectionMode mode)
         {
-            entity.Get<ListBox>().SelectionMode = mode;
-            return entity;
+            if (entity.Has<ListBox>())
+            {
+                entity.Get<ListBox>().SelectionMode = mode;
+                return entity;
+            }
+            throw new ComponentNotFoundException(entity, typeof(ListBox), nameof(SetSelectionMode));
         }
 
         /// <summary>
@@ -32,7 +36,10 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <returns></returns>
         public static SelectionMode GetSelectionMode(this Entity entity, SelectionMode mode)
         {
-            return entity.Get<ListBox>().SelectionMode;
+            if (entity.Has<ListBox>())
+                return entity.Get<ListBox>().SelectionMode;
+
+            throw new ComponentNotFoundException(entity, typeof(ListBox), nameof(GetSelectionMode));
         }
     }
 }
