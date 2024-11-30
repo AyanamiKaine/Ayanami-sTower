@@ -46,12 +46,15 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSInteractive>();
             world.Import<ECSLayoutable>();
             world.Import<ECSVisual>();
+            world.Import<ECSContentControl>();
+            world.Import<ECSItemsControl>();
+            world.Import<ECSControl>();
             world.Import<ECSPopupFlyoutBase>();
             world.Import<ECSFlyoutBase>();
             world.Import<ECSMenuFlyout>();
             world.Import<ECSMenuItem>();
             world.Import<ECSMenu>();
-
+            world.Import<ECSSelectingItemsControl>();
             world.Import<ECSToggleButton>();
             world.Import<ECSButton>();
             world.Import<ECSRepeatButton>();
@@ -64,9 +67,6 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSHeaderedContentControl>();
             world.Import<ECSAutoCompleteBox>();
             world.Import<ECSCanvas>();
-            world.Import<ECSContentControl>();
-            world.Import<ECSItemsControl>();
-            world.Import<ECSControl>();
             world.Import<ECSDockPanel>();
             world.Import<ECSGrid>();
             world.Import<ECSItemsControl>();
