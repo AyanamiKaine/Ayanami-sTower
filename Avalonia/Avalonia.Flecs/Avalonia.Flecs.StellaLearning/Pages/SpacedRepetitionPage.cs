@@ -2,11 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Styling;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
@@ -33,13 +36,10 @@ public class SpacedRepetitionPage
             .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
             .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
 
-
-
         var listSearchSpacedRepetition = world.Entity("ListSearchSpacedRepetition")
             .ChildOf(spacedRepetitionPage)
             .Set(new TextBox())
             .SetWatermark("Search Entries");
-
 
         var totalItems = world.Entity("TotalItems")
             .ChildOf(spacedRepetitionPage)
@@ -115,13 +115,45 @@ public class SpacedRepetitionPage
             }); ;
 
 
+        // Create a color animation
+        var animation = new Animation.Animation
+        {
+            Duration = TimeSpan.FromSeconds(1), // Animation duration
+            FillMode = FillMode.Forward, // Keep the final state after animation
+            Children =
+            {
+                new KeyFrame
+                {
+                    Cue = new Cue(0d), // Start of the animation
+                    Setters =
+                    {
+                        new Setter(Button.BackgroundProperty, Brushes.Blue)
+                    }
+                },
+                new KeyFrame
+                {
+                    Cue = new Cue(1d), // End of the animation
+                    Setters =
+                    {
+                        new Setter(Button.BackgroundProperty, Brushes.Red)
+                    }
+                }
+            }
+        };
+
         var deleteMenuItem = world.Entity("DeleteMenuItem")
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Delete")
-            .Observe<Click>((Entity e) =>
+            .AddAnimation("MyAnimation", animation)
+            .Observe<Click>(async (Entity e) =>
             {
                 Console.WriteLine("Delete Clicked");
+                // Get the animation from the button's resources
+                var anim = (Animation.Animation)e.Get<MenuItem>().Resources["MyAnimation"];
+
+                // Run the animation
+                await anim!.RunAsync(e.Get<MenuItem>());
             });
 
 
