@@ -40,6 +40,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="entity"></param>
         /// <param name="value"></param>
         /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetRow(this Entity entity, int value)
         {
             //I wonder if we should add a check here for entity.Has<Control>() 
@@ -49,9 +50,18 @@ namespace Avalonia.Flecs.Controls.ECS
                 Grid.SetRow(entity.Get<Control>(), value);
                 return entity;
             }
-            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetRow));
+
         }
 
+        /// <summary>
+        /// Helper function to set the ColumnSpan property 
+        /// on a Control component that is attach to an entitiy.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetColumnSpan(this Entity entity, int value)
         {
             if (entity.Has<Control>())
@@ -59,9 +69,17 @@ namespace Avalonia.Flecs.Controls.ECS
                 Grid.SetColumnSpan(entity.Get<Control>(), value);
                 return entity;
             }
-            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetColumnSpan));
+
         }
 
+        /// <summary>
+        /// Helper function to set the Column property of a control component attached to an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetColumn(this Entity entity, int value)
         {
             if (entity.Has<Control>())
@@ -69,9 +87,17 @@ namespace Avalonia.Flecs.Controls.ECS
                 Grid.SetColumn(entity.Get<Control>(), value);
                 return entity;
             }
-            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetColumn));
+
         }
 
+        /// <summary>
+        /// Helper function to set the RowSpan property of a control component attached to an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetRowSpan(this Entity entity, int value)
         {
             if (entity.Has<Control>())
@@ -79,7 +105,8 @@ namespace Avalonia.Flecs.Controls.ECS
                 Grid.SetRowSpan(entity.Get<Control>(), value);
                 return entity;
             }
-            throw new Exception("Entity does not have a Control component attached, try first setting a control element to the entity");
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetRowSpan));
+
         }
     }
 }
