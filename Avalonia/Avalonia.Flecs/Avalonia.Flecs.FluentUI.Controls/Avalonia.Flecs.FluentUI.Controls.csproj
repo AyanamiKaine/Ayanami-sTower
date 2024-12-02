@@ -16,4 +16,7 @@
         <PackageReference Include="Flecs.NET.Release" Version="4.0.3" />
         <PackageReference Include="FluentAvaloniaUI" Version="2.1.0" />
     </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Avalonia.Flecs.Controls\Avalonia.Flecs.Controls.csproj" />
+  </ItemGroup>
 </Project>
