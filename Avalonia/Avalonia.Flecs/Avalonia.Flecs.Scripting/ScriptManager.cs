@@ -1,10 +1,6 @@
-﻿using System.Diagnostics;
-using System.Reflection;
-using Avalonia.Flecs.Controls.ECS.Events;
+﻿using System.Reflection;
 using Flecs.NET.Core;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Scripting;
 
 namespace Avalonia.Flecs.Scripting;
