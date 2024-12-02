@@ -105,13 +105,9 @@ public class SpacedRepetitionPage
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Open")
-            .Observe<Click>((Entity e) =>
+            .Observe<Click>(async (Entity e) =>
             {
-                Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await ScriptExample.RunScriptAsync(world);
-                });
-
+                await ScriptExample.RunScriptAsync(world);
             });
 
         var editMenuItem = world.Entity("EditMenuItem")
