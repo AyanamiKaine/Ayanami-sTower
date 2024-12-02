@@ -13,6 +13,7 @@ using Avalonia.Flecs.StellaLearning.Pages;
 using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls;
+using Avalonia.Flecs.Scripting;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -27,12 +28,14 @@ public partial class App : Application
         _world.Import<Avalonia.Flecs.FluentUI.Controls.ECS.Module>();
         _world.Observer();
 
+        _world.Set<ScriptManager>(new(_world));
+        _world.Get<ScriptManager>().CompileScriptsFromFolder("Scripts/");
+
         var window = _world.Entity("MainWindow")
             .Set(new Window())
             .SetWindowTitle("Stella Learning")
             .SetHeight(400)
             .SetWidth(400);
-
 
 
         var navigationView = _world.Entity("NavigationView")

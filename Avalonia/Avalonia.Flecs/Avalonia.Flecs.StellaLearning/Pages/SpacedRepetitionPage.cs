@@ -11,6 +11,9 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Flecs.NET.Core;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
+
 using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
@@ -39,6 +42,7 @@ public class SpacedRepetitionPage
         var listSearchSpacedRepetition = world.Entity("ListSearchSpacedRepetition")
             .ChildOf(spacedRepetitionPage)
             .Set(new TextBox())
+            .SetColumn(0)
             .SetWatermark("Search Entries");
 
         var totalItems = world.Entity("TotalItems")
@@ -53,7 +57,8 @@ public class SpacedRepetitionPage
         List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
         var sortItemsButton = world.Entity("SortItemsButton")
             .ChildOf(spacedRepetitionPage)
-            .Set(new ComboBox() { })
+            .Set(new ComboBox())
+            .SetPlaceholderText("Sort Items")
             .SetColumn(2)
             .SetItemsSource(sortItems);
 
@@ -102,7 +107,11 @@ public class SpacedRepetitionPage
             .SetHeader("Open")
             .Observe<Click>((Entity e) =>
             {
-                Console.WriteLine("Open Clicked");
+                Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await ScriptExample.RunScriptAsync(world);
+                });
+
             });
 
         var editMenuItem = world.Entity("EditMenuItem")
@@ -115,45 +124,13 @@ public class SpacedRepetitionPage
             }); ;
 
 
-        // Create a color animation
-        var animation = new Animation.Animation
-        {
-            Duration = TimeSpan.FromSeconds(1), // Animation duration
-            FillMode = FillMode.Forward, // Keep the final state after animation
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0d), // Start of the animation
-                    Setters =
-                    {
-                        new Setter(Button.BackgroundProperty, Brushes.Blue)
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1d), // End of the animation
-                    Setters =
-                    {
-                        new Setter(Button.BackgroundProperty, Brushes.Red)
-                    }
-                }
-            }
-        };
-
         var deleteMenuItem = world.Entity("DeleteMenuItem")
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Delete")
-            .AddAnimation("MyAnimation", animation)
-            .Observe<Click>(async (Entity e) =>
+            .Observe<Click>((Entity e) =>
             {
                 Console.WriteLine("Delete Clicked");
-                // Get the animation from the button's resources
-                var anim = (Animation.Animation)e.Get<MenuItem>().Resources["MyAnimation"];
-
-                // Run the animation
-                await anim!.RunAsync(e.Get<MenuItem>());
             });
 
 
@@ -189,7 +166,7 @@ public class SpacedRepetitionPage
             {
                 var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
                 t = [.. t!.OrderByDescending(s => s)];
-                srItems.Get<ItemsControl>().ItemsSource = t;
+                srItems.SetItemsSource(t);
             }
             else if (selectedItem == "Sort By Name")
             {
@@ -197,7 +174,7 @@ public class SpacedRepetitionPage
                 Random rng = new();
                 var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
                 t = [.. t!.OrderBy(s => rng.Next())];
-                srItems.Get<ItemsControl>().ItemsSource = t;
+                srItems.SetItemsSource(t);
             }
         });
 

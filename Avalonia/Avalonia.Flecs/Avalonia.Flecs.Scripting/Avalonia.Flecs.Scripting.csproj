@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Avalonia.Flecs.Controls\Avalonia.Flecs.Controls.csproj" />
+    <ProjectReference Include="..\Avalonia.Flecs.FluentUI.Controls\Avalonia.Flecs.FluentUI.Controls.csproj" />
+  </ItemGroup>
+</Project>

@@ -58,10 +58,18 @@ namespace Avalonia.Flecs.Controls.ECS
         public static Entity SetText(this Entity entity, string text)
         {
             if (entity.Has<TextBox>())
+            {
                 entity.Get<TextBox>().Text = text;
+                return entity;
+            }
             else if (entity.Has<TextBlock>())
+            {
                 entity.Get<TextBlock>().Text = text;
-            return entity;
+                return entity;
+            }
+
+            throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetText));
+
         }
 
         public static string GetText(this Entity entity)

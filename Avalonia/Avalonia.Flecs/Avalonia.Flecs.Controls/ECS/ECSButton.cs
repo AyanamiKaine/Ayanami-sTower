@@ -23,9 +23,14 @@ namespace Avalonia.Flecs.Controls.ECS
                     // access the generic .content property of the button.
                     // This is good so queries can be more generic and not have to check for every possible control type.
                     e.Set<ContentControl>(button);
-
-                    // Adding event handlers
-                    // https://reference.avaloniaui.net/api/Avalonia.Controls/Button/#Events
+                    
+                    /// IMPORTANT
+                    /// ALL OBERSERVES RUN IN A NON-UI THREAD THIS IS THE DEFAULT BEHAVIOR IN AVALONIA
+                    /// ANY CODE EXECUTED IN AN OBSERVE THAT MODIFIES THE UI MUST BE DISPATCHED TO THE UI THREAD
+                    /// THIS CAN BE DONE BY USING THE 
+                    /// Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { /* UI CODE HERE */ });
+                    /// THIS ALSO MATTER FOR ALL FUNCTIONS 
+                    /// THAT WANT TO USE THE ECS WORLD FOUND IN MAIN THE APPLICATION
                     button.Click += (object? sender, RoutedEventArgs args) =>
                     {
                         e.Set(new Click(sender, args));

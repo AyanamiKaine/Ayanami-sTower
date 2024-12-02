@@ -20,6 +20,7 @@ namespace Avalonia.Flecs.Controls
                Name: {(entity.Name() != "" ? entity.Name() : "<no name>")}
                Path: {entity.Path()}
                Parent: {(entity.Parent() != 0 ? entity.Parent().ToString() : "<no parent>")}
+               Components: {entity.Type().Str() + "\n"}
 
             Try adding '{componentType}' as a component to this entity.")
         {
