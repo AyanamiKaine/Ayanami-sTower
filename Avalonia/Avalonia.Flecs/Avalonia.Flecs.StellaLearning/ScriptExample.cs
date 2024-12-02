@@ -24,7 +24,8 @@ public static class ScriptExample
 
         For example saying entity.Set(new Component()) will set the component only AFTER
         the script has returned. This is because sharing the ECS world over different threads
-        does not work. Or as far as I know it does not work.
+        does not work. Or as far as I know it does not work. 
+        The ECS World must exist in the same thread as the code that uses it.
         */
         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
         {
