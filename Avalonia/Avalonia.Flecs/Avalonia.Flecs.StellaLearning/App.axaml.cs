@@ -39,10 +39,8 @@ public partial class App : Application
 
 
         var navigationView = _world.Entity("NavigationView")
-                    .Set(new NavigationView()
-                    {
-                        PaneTitle = "Stella Learning",
-                    })
+                    .Set(new NavigationView())
+                    .SetPaneTitle("Stella Learning")
                     .ChildOf(window)
                     .SetColumn(0);
 
@@ -57,11 +55,9 @@ public partial class App : Application
 
         var grid = _world.Entity("MainContentDisplay")
             .ChildOf(stackPanel)
-            .Set(new Grid()
-            {
-                ColumnDefinitions = new ColumnDefinitions("2,*,*"),
-                RowDefinitions = new RowDefinitions("Auto")
-            });
+            .Set(new Grid())
+            .SetColumnDefinitions(new ColumnDefinitions("2,*,*"))
+            .SetRowDefinitions(new RowDefinitions("Auto"));
 
         var settingPage = SettingsPage.Create(_world, navigationView)
             .SetRow(2)
