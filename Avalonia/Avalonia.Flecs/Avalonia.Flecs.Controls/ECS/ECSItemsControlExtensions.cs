@@ -42,6 +42,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<MenuFlyout>().ItemsSource = collection;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("ItemsSource", collection);
+            }
             throw new ComponentNotFoundException(entity, typeof(ItemsControl), nameof(SetItemsSource));
 
         }
@@ -52,6 +56,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.Get<ItemsControl>().ItemsSource;
             else if (entity.Has<MenuFlyout>())
                 return entity.Get<MenuFlyout>().ItemsSource;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<System.Collections.IEnumerable>("ItemsSource");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(ItemsControl), nameof(GetItemsSource));
         }
@@ -73,6 +81,10 @@ namespace Avalonia.Flecs.Controls.ECS
             {
                 entity.Get<MenuFlyout>().ItemTemplate = template;
                 return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("ItemTemplate", template);
             }
 
             throw new ComponentNotFoundException("Component ItemsControl or Component MenuFlyout NOT FOUND", typeof(ItemsControl), entity);
