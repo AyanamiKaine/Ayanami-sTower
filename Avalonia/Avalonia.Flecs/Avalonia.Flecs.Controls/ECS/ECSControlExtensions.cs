@@ -50,6 +50,7 @@ namespace Avalonia.Flecs.Controls.ECS
                 Grid.SetRow(entity.Get<Control>(), value);
                 return entity;
             }
+
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetRow));
 
         }
