@@ -7,7 +7,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningLevel>5</WarningLevel>
+    <AnalysisLevel>preview</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>

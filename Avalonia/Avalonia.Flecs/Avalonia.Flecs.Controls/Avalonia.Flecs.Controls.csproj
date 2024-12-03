@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningLevel>5</WarningLevel>
+    <AnalysisLevel>preview</AnalysisLevel>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.2" />
