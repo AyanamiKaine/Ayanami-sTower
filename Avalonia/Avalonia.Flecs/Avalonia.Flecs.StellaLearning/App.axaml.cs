@@ -1,16 +1,10 @@
 using Flecs.NET.Core;
-using System;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Flecs.FluentUI.Controls.ECS;
-using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using FluentAvalonia.UI.Controls;
-using static Avalonia.Flecs.FluentUI.Controls.ECS.Module;
-using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Flecs.StellaLearning.Pages;
-using Avalonia.Markup.Xaml.MarkupExtensions;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Scripting;
@@ -29,7 +23,7 @@ public partial class App : Application
         _world.Observer();
 
         _world.Set<ScriptManager>(new(_world));
-        _world.Get<ScriptManager>().CompileScriptsFromFolder("Scripts/");
+        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
 
         var window = _world.Entity("MainWindow")
             .Set(new Window())
@@ -37,12 +31,11 @@ public partial class App : Application
             .SetHeight(400)
             .SetWidth(400);
 
-
         var navigationView = _world.Entity("NavigationView")
-                    .Set(new NavigationView())
-                    .SetPaneTitle("Stella Learning")
-                    .ChildOf(window)
-                    .SetColumn(0);
+            .Set(new NavigationView())
+            .SetPaneTitle("Stella Learning")
+            .ChildOf(window)
+            .SetColumn(0);
 
 
         var scrollViewer = _world.Entity("ScrollViewer")
@@ -76,25 +69,18 @@ public partial class App : Application
 
         _world.Entity("HomeNavigationViewItem")
             .ChildOf(navigationView)
-            .Set(new NavigationViewItem()
-            {
-                Content = "Home"
-            });
+            .Set(new NavigationViewItem())
+            .SetProperty("Content", "Home");
 
         _world.Entity("LiteratureNavigationViewItem")
             .ChildOf(navigationView)
-            .Set(new NavigationViewItem()
-            {
-                Content = "Literature"
-            });
+            .Set(new NavigationViewItem())
+            .SetProperty("Content", "Literature");
 
         _world.Entity("SpacedRepetitionNavigationViewItem")
             .ChildOf(navigationView)
-            .Set(new NavigationViewItem()
-            {
-                Content = "Spaced Repetition"
-            });
-
+            .Set(new NavigationViewItem())
+            .SetProperty("Content", "Spaced Repetition");
 
 
         navigationView.Observe<FluentUI.Controls.ECS.Events.OnDisplayModeChanged>((Entity e) =>
