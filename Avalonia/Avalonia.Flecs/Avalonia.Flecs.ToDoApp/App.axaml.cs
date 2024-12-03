@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
+using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Input;
@@ -108,7 +109,6 @@ public partial class App : Application
             var button = new Button()
             {
                 Content = "Delete",
-
             };
 
             button.Click += (sender, e) =>
@@ -117,11 +117,10 @@ public partial class App : Application
                 var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
                 if (titleEntityFound)
                 {
-                    title.Get<TextBlock>().Text = $"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})";
+                    title.SetText($"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})");
                 }
             };
-
-            Grid.SetColumn(button, 1);
+            button.SetColumn(1);
             grid.Children.Add(checkBox);
             grid.Children.Add(button);
 
@@ -139,10 +138,8 @@ public partial class App : Application
         Grid.SetRow(scrollViewer.Get<ScrollViewer>(), 1);
 
         addButton
-            .Set(new Button()
-            {
-                Content = "Add",
-            });
+            .Set(new Button())
+            .SetContent("Add");
 
 
 
@@ -150,10 +147,10 @@ public partial class App : Application
             .ChildOf(grid)
             .Set(new TextBox()
             {
-                Text = "",
-                Watermark = "Add a new Item",
                 InnerRightContent = addButton.Get<Button>(),
-            });
+            })
+            .SetText("")
+            .SetWatermark("Add a new Item");
 
         textBox.Observe<KeyDown>((Entity e) =>
         {
