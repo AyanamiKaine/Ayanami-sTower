@@ -12,27 +12,28 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             world.Component<NavigationView>("NavigationView")
                            .OnSet((Entity e, ref NavigationView navigationView) =>
                            {
+                               e.Set<object>(navigationView);
                                e.Set<ContentControl>(navigationView);
 
-                               navigationView.BackRequested += (object sender, NavigationViewBackRequestedEventArgs args) =>
+                               navigationView.BackRequested += (object? sender, NavigationViewBackRequestedEventArgs args) =>
                                {
                                    e.Set(new Events.OnBackRequested(sender, args));
                                    e.Emit<Events.OnBackRequested>();
                                };
 
-                               navigationView.ItemCollapsed += (object sender, NavigationViewItemCollapsedEventArgs args) =>
+                               navigationView.ItemCollapsed += (object? sender, NavigationViewItemCollapsedEventArgs args) =>
                                {
                                    e.Set(new Events.OnItemCollapsed(sender, args));
                                    e.Emit<Events.OnItemCollapsed>();
                                };
 
-                               navigationView.ItemExpanding += (object sender, NavigationViewItemExpandingEventArgs args) =>
+                               navigationView.ItemExpanding += (object? sender, NavigationViewItemExpandingEventArgs args) =>
                                {
                                    e.Set(new Events.OnItemExpanding(sender, args));
                                    e.Emit<Events.OnItemExpanding>();
                                };
 
-                               navigationView.ItemInvoked += (object sender, NavigationViewItemInvokedEventArgs args) =>
+                               navigationView.ItemInvoked += (object? sender, NavigationViewItemInvokedEventArgs args) =>
                                {
                                    e.Set(new Events.OnItemInvoked(sender, args));
                                    e.Emit<Events.OnItemInvoked>();
@@ -44,13 +45,13 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                                    e.Emit<Events.OnPaneClosing>();
                                };
 
-                               navigationView.DisplayModeChanged += (object sender, NavigationViewDisplayModeChangedEventArgs args) =>
+                               navigationView.DisplayModeChanged += (object? sender, NavigationViewDisplayModeChangedEventArgs args) =>
                                {
                                    e.Set(new Events.OnDisplayModeChanged(sender, args));
                                    e.Emit<Events.OnDisplayModeChanged>();
                                };
 
-                               navigationView.SelectionChanged += (object sender, NavigationViewSelectionChangedEventArgs args) =>
+                               navigationView.SelectionChanged += (object? sender, NavigationViewSelectionChangedEventArgs args) =>
                                {
                                    e.Set(new Events.OnSelectionChanged(sender, args));
                                    e.Emit<Events.OnSelectionChanged>();
