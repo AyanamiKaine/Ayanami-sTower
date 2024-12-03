@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Layoutable>().MaxWidth = value;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("MaxWidth", value);
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMaxWidth));
         }
@@ -36,6 +40,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<Layoutable>())
                 return entity.Get<Layoutable>().MaxWidth;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<double>("MaxWidth");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetMaxWidth));
         }
@@ -54,6 +62,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Layoutable>().MaxHeight = value;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("MaxHeight", value);
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMaxHeight));
         }
@@ -68,6 +80,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<Layoutable>())
                 return entity.Get<Layoutable>().MaxHeight;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<double>("MaxHeight");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetMaxHeight));
         }
@@ -89,6 +105,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Layoutable>().VerticalAlignment = value;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("VerticalAlignment", value);
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetVerticalAlignment));
         }
@@ -103,6 +123,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<Layoutable>())
                 return entity.Get<Layoutable>().VerticalAlignment;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<VerticalAlignment>("VerticalAlignment");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetVerticalAlignment));
         }
@@ -121,6 +145,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Control>().HorizontalAlignment = value;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("HorizontalAlignment", value);
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetHorizontalAlignment));
         }
@@ -135,6 +163,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<Layoutable>())
                 return entity.Get<Layoutable>().HorizontalAlignment;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<HorizontalAlignment>("HorizontalAlignment");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetHorizontalAlignment));
         }
@@ -154,7 +186,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Layoutable>().Margin = value;
                 return entity;
             }
-
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Margin", value);
+            }
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
         }
 
@@ -169,6 +204,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<Layoutable>())
                 return entity.Get<Layoutable>().Margin;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<Thickness>("Margin");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetMargin));
         }
@@ -187,6 +226,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Layoutable>().Height = value;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Height", value);
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetHeight));
         }
@@ -201,6 +244,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<Layoutable>())
                 return entity.Get<Layoutable>().Height;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<double>("Height");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetHeight));
         }
@@ -219,6 +266,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Layoutable>().Width = value;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Width", value);
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetWidth));
 
@@ -234,6 +285,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<Layoutable>())
                 return entity.Get<Layoutable>().Width;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<double>("Width");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetWidth));
         }
