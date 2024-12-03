@@ -6,6 +6,8 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningLevel>5</WarningLevel>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,15 +31,15 @@
 
 
     <ItemGroup>
-        <Compile Remove="Scripts\**\*.csx" />  
+        <Compile Remove="scripts\**\*.csx" />  
     </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Scripts\" />
+    <Folder Include="scripts\" />
   </ItemGroup>
       <Target Name="CopyScripts" AfterTargets="Build">
     <ItemGroup>
-        <Scripts Include="Scripts\*.*" /> 
+        <Scripts Include="scripts\*.*" /> 
     </ItemGroup>
     <Copy SourceFiles="@(Scripts)" DestinationFolder="$(TargetDir)scripts\" />
     </Target>
