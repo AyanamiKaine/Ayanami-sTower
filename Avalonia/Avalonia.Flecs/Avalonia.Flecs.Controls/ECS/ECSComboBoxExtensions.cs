@@ -14,6 +14,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<ComboBox>().PlaceholderText = placeholderText;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("PlaceholderText", placeholderText);
+            }
             throw new ComponentNotFoundException(entity, typeof(ComboBox), nameof(SetPlaceholderText));
         }
 
@@ -21,7 +25,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<ComboBox>())
                 return entity.Get<ComboBox>().PlaceholderText;
-
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<string>("PlaceholderText");
+            }
             throw new ComponentNotFoundException(entity, typeof(ComboBox), nameof(GetPlaceholderText));
         }
 
