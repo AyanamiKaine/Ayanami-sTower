@@ -6,3 +6,6 @@ The main reason i devloped this library is to provide a higher abstraction level
 
 ## Entity Extensions
 I defined various methods for entities that work with the underlying avalonia control element. For example if you attached a TextBlock control element to an entity you can write `entity.SetText("Hello")`. I did it so you dont have to write: `entity.Get<TextBlock>.Text = "Hello"`. This is also important when working with control types where you dont know the explicit type but know that it should have a Text property.
+
+## Is AOT Supported?
+No, this is because of the use of reflection for ease of use when trying to get property fields of avalonia classes where we dont know the concrete type that implements the property but know it should have a property (This relates to the various entity extensions). The same is done for method calling.
