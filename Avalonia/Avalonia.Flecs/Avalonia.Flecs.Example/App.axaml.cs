@@ -75,7 +75,13 @@ public partial class App : Application
         button.Observe<Click>((Entity e) =>
         {
             var clickEventData = e.Get<Click>();
+            
             var b = clickEventData.Sender as Button;
+            if (b is null)
+            {
+                return;
+            }
+
             b.Content = "CHANGED CONTENT";
             Console.WriteLine("THE BUTTON WAS CLICK WHOAH!");
         });
