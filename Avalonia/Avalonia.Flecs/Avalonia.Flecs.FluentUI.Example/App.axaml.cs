@@ -70,6 +70,17 @@ public partial class App : Application
             var OnSelectionChanged = e.Get<FluentUI.Controls.ECS.Events.OnSelectionChanged>();
 
             var selectedItem = OnSelectionChanged.Args.SelectedItem as NavigationViewItem;
+
+            if (selectedItem is null)
+            {
+                return;
+            }
+
+            if (selectedItem.Content is null)
+            {
+                return;
+            }
+
             if (selectedItem?.Content.ToString() == "Home")
             {
                 Console.WriteLine("Selection Changed To Home");
