@@ -23,6 +23,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<HeaderedSelectingItemsControl>().Header = content;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Header", content);
+            }
             throw new ComponentNotFoundException(entity, typeof(HeaderedSelectingItemsControl), nameof(SetHeader));
 
         }
@@ -38,6 +42,10 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<HeaderedSelectingItemsControl>())
             {
                 return entity.Get<HeaderedSelectingItemsControl>().Header;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<object>("Header");
             }
             throw new ComponentNotFoundException(entity, typeof(HeaderedSelectingItemsControl), nameof(GetHeader));
 
