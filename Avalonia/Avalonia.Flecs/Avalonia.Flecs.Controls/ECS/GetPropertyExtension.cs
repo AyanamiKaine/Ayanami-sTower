@@ -56,7 +56,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <returns></returns>
         /// <exception cref="MissingFieldException"></exception>
         /// <exception cref="ComponentNotFoundException"></exception>
-        public static Entity SetProperty(this Entity entity, string propertyName, object value)
+        public static Entity SetProperty(this Entity entity, string propertyName, object? value)
         {
             if (entity.Has<object>())
             {
