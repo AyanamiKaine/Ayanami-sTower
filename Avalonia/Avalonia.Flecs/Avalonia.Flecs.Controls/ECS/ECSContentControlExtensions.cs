@@ -25,6 +25,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<ContentControl>().Content = control;
                 return entity;
             }
+            if (entity.Has<object>())
+            {
+                return entity.SetProperty("Content", control);
+            }
             throw new ComponentNotFoundException(entity, typeof(ContentControl), nameof(SetContent));
         }
         /// <summary>
@@ -38,6 +42,10 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<ContentControl>())
             {
                 return entity.Get<ContentControl>().Content;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<object>("Content");
             }
             throw new ComponentNotFoundException(entity, typeof(ContentControl), nameof(SetContent));
         }
