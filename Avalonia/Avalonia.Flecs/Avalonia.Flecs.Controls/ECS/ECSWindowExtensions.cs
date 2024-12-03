@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Window>().Title = title;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Title", title);
+            }
             throw new ComponentNotFoundException(entity, typeof(Window), nameof(SetWindowTitle));
         }
 
