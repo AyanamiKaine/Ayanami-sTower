@@ -53,7 +53,6 @@ public class SpacedRepetitionPage
             .SetText("Total Items: 0")
             .SetColumn(1);
 
-
         List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
         var sortItemsButton = world.Entity("SortItemsButton")
             .ChildOf(spacedRepetitionPage)
@@ -119,7 +118,6 @@ public class SpacedRepetitionPage
                 Console.WriteLine("Edit Clicked");
             }); ;
 
-
         var deleteMenuItem = world.Entity("DeleteMenuItem")
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
@@ -128,7 +126,6 @@ public class SpacedRepetitionPage
             {
                 Console.WriteLine("Delete Clicked");
             });
-
 
         dummyItems.Add("algorithm");
         dummyItems.Add("binary");
@@ -173,7 +170,6 @@ public class SpacedRepetitionPage
                 srItems.SetItemsSource(t);
             }
         });
-
 
         return spacedRepetitionPage;
     }
