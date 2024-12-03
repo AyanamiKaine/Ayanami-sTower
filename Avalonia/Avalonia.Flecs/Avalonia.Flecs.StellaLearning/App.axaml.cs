@@ -18,8 +18,8 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
-        _world.Import<Avalonia.Flecs.Controls.ECS.Module>();
-        _world.Import<Avalonia.Flecs.FluentUI.Controls.ECS.Module>();
+        _world.Import<Controls.ECS.Module>();
+        _world.Import<FluentUI.Controls.ECS.Module>();
         _world.Observer();
 
         _world.Set<ScriptManager>(new(_world));
