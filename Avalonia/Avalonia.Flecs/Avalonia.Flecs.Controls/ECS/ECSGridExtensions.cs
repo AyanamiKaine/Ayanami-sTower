@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Grid>().RowDefinitions = rowDefinitions;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("RowDefinitions", rowDefinitions);
+            }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetRowDefinitions));
 
         }
@@ -35,6 +39,10 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<Grid>())
             {
                 return entity.Get<Grid>().RowDefinitions;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<RowDefinitions>("RowDefinitions");
             }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(GetRowDefinitions));
 
@@ -54,6 +62,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Grid>().ColumnDefinitions = columnDefinitions;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("ColumnDefinitions", columnDefinitions);
+            }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetColumnDefinitions));
 
         }
@@ -69,6 +81,10 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<Grid>())
             {
                 return entity.Get<Grid>().ColumnDefinitions;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<ColumnDefinitions>("ColumnDefinitions");
             }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(GetColumnDefinitions));
         }
