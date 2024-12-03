@@ -10,6 +10,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Panel>("Panel")
                 .OnSet((Entity e, ref Panel panel) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(panel);
+                    }
                     e.Set<Control>(panel);
 
                     var parent = e.Parent();

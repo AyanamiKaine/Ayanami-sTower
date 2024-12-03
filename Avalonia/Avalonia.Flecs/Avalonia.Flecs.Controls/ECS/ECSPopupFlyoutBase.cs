@@ -18,6 +18,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<PopupFlyoutBase>("MenuFlyout")
                 .OnSet((Entity e, ref PopupFlyoutBase popupFlyoutBase) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(popupFlyoutBase);
+                    }
                     e.Set<FlyoutBase>(popupFlyoutBase);
 
                     popupFlyoutBase.Closing += (object? sender, CancelEventArgs args) =>

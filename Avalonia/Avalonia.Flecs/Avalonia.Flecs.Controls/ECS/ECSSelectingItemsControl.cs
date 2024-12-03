@@ -17,6 +17,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<SelectingItemsControl>("SelectingItemsControl")
                 .OnSet((Entity e, ref SelectingItemsControl selectingItemsControl) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(selectingItemsControl);
+                    }
                     e.Set<ItemsControl>(selectingItemsControl);
 
                     selectingItemsControl.SelectionChanged += (object? sender, SelectionChangedEventArgs args) =>

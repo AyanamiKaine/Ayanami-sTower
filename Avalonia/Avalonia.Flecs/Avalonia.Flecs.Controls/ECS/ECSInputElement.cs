@@ -18,6 +18,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<InputElement>("InputElement")
                 .OnSet((Entity e, ref InputElement inputElement) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(inputElement);
+                    }
                     e.Set<Interactive>(inputElement);
                     //We set the Layoutable and Visual components to the same instance of the InputElement instead of seperate ECS modules because
                     //otherwise it would result into an stack overflow!

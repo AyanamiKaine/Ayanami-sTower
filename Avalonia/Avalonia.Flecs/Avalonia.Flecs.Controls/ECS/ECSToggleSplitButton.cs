@@ -18,6 +18,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<ToggleSplitButton>("ToggleSplitButton")
                 .OnSet((Entity e, ref ToggleSplitButton toggleSplitButton) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(toggleSplitButton);
+                    }
                     e.Set<SplitButton>(toggleSplitButton);
 
                 })

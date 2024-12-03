@@ -9,11 +9,15 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             world.Module<ECSHeaderedSelectingItemsControl>();
             world.Component<HeaderedSelectingItemsControl>("HeaderedSelectingItemsControl")
-                .OnSet((Entity e, ref HeaderedSelectingItemsControl headeredContentControl) =>
+                .OnSet((Entity e, ref HeaderedSelectingItemsControl headeredSelectingItemsControl) =>
                 {
-                    e.Set<SelectingItemsControl>(headeredContentControl);
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(headeredSelectingItemsControl);
+                    }
+                    e.Set<SelectingItemsControl>(headeredSelectingItemsControl);
 
-                }).OnRemove((Entity e, ref HeaderedSelectingItemsControl headeredContentControl) =>
+                }).OnRemove((Entity e, ref HeaderedSelectingItemsControl headeredSelectingItemsControl) =>
                 {
                     e.Remove<SelectingItemsControl>();
                 });

@@ -14,6 +14,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Interactive>("Interactive")
                 .OnSet((Entity e, ref Interactive interactive) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(interactive);
+                    }
                     //e.Set<Layoutable>(interactive);
 
                 }).OnRemove((Entity e, ref Interactive interactive) =>

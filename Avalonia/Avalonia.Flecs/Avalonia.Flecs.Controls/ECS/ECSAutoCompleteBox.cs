@@ -11,6 +11,12 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<AutoCompleteBox>("AutoCompleteBox")
                 .OnSet((Entity e, ref AutoCompleteBox autoCompleteBox) =>
                 {
+
+                    if(!e.Has<object>())
+                    {
+                        e.Set<object>(autoCompleteBox);
+                    }
+
                     e.Set<TemplatedControl>(autoCompleteBox);
                 })
                 .OnRemove((Entity e, ref AutoCompleteBox autoCompleteBox) =>

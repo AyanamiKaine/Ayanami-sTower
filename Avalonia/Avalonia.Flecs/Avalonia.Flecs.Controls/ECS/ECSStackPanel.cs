@@ -10,6 +10,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<StackPanel>("StackPanel")
                 .OnSet((Entity e, ref StackPanel stackPanel) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(stackPanel);
+                    }
                     e.Set<Panel>(stackPanel);
 
                 }).OnRemove((Entity e, ref StackPanel stackPanel) =>

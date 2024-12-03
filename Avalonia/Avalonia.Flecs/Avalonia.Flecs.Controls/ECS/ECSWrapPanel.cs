@@ -11,6 +11,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 .OnSet((Entity e, ref WrapPanel wrapPanel) =>
                 {
 
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(wrapPanel);
+                    }
                     e.Set<Panel>(wrapPanel);
 
                 }).OnRemove((Entity e, ref WrapPanel wrapPanel) =>

@@ -17,6 +17,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<TextBox>("TextBox")
                             .OnSet((Entity e, ref TextBox textBox) =>
                             {
+                                if (!e.Has<object>())
+                                {
+                                    e.Set<object>(textBox);
+                                }
                                 e.Set<TemplatedControl>(textBox);
 
                                 // Adding event handlers

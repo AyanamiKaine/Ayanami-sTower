@@ -16,6 +16,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Menu>("Menu")
                             .OnSet((Entity e, ref Menu menu) =>
                             {
+                                if (!e.Has<object>())
+                                {
+                                    e.Set<object>(menu);
+                                }
                                 menu.AttachedToLogicalTree += (object? sender, LogicalTreeAttachmentEventArgs args) =>
                                 {
                                     e.Set(new AttachedToLogicalTree(sender, args));

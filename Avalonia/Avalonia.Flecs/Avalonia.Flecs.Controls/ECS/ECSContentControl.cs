@@ -17,6 +17,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<ContentControl>("ContentControl")
                 .OnSet((Entity e, ref ContentControl contentControl) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(contentControl);
+                    }
                     e.Set<TemplatedControl>(contentControl);
                 }).OnRemove((Entity e, ref ContentControl contentControl) =>
                 {

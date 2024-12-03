@@ -19,6 +19,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 .OnSet((Entity e, ref SplitButton splitButton) =>
                 {
 
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(splitButton);
+                    }
                     e.Set<ContentControl>(splitButton);
 
                     splitButton.Click += (object? sender, RoutedEventArgs args) =>

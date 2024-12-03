@@ -10,6 +10,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<RelativePanel>("RelativePanel")
                 .OnSet((Entity e, ref RelativePanel relativePanel) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(relativePanel);
+                    }
                     e.Set<Panel>(relativePanel);
 
                 }).OnRemove((Entity e, ref RelativePanel relativePanel) =>

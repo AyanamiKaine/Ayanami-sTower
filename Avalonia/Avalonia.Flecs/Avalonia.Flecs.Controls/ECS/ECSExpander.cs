@@ -11,6 +11,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Expander>("Expander")
                 .OnSet((Entity e, ref Expander expander) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(expander);
+                    }
                     e.Set<HeaderedContentControl>(expander);
 
                 }).OnRemove((Entity e, ref Expander expander) =>

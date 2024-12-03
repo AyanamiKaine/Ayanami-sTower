@@ -17,6 +17,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<FlyoutBase>("FlyoutBase")
                 .OnSet((Entity e, ref FlyoutBase flyoutBase) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(flyoutBase);
+                    }
                     e.Set<AvaloniaObject>(flyoutBase);
 
                     flyoutBase.Closed += (object? sender, EventArgs args) =>

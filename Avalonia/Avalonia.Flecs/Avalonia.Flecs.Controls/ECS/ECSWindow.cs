@@ -17,6 +17,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Window>("Window")
                            .OnSet((Entity e, ref Window window) =>
                            {
+                                 if (!e.Has<object>())
+                                 {
+                                      e.Set<object>(window);
+                                 }
                                e.Set<ContentControl>(window);
 
                                /// IMPORTANT

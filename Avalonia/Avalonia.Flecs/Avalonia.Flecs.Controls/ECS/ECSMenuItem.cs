@@ -18,6 +18,10 @@ namespace Avalonia.Flecs.Controls.ECS
                             .OnSet((Entity e, ref MenuItem menuItem) =>
                             {
 
+                                if (!e.Has<object>())
+                                {
+                                    e.Set<object>(menuItem);
+                                }
                                 e.Set<HeaderedSelectingItemsControl>(menuItem);
 
                                 /*

@@ -10,6 +10,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<ComboBox>("ComboBox")
                             .OnSet((Entity e, ref ComboBox comboBox) =>
                             {
+                                if (!e.Has<object>())
+                                {
+                                    e.Set<object>(comboBox);
+                                }
                                 e.Set<ItemsControl>(comboBox);
 
                                 comboBox.SelectionChanged += (object? sender, SelectionChangedEventArgs args) =>

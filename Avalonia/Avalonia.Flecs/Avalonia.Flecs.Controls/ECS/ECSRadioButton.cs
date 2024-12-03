@@ -18,6 +18,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<RadioButton>("RadioButton")
                 .OnSet((Entity e, ref RadioButton radioButton) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(radioButton);
+                    }
 
                     // We set the contentControl component so systems and queries in general can more easily
                     // access the generic .content property of the button.

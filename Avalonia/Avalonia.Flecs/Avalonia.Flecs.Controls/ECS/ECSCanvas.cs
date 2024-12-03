@@ -10,6 +10,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Canvas>("Canvas")
                 .OnSet((Entity e, ref Canvas canvas) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(canvas);
+                    }
                     e.Set<Panel>(canvas);
 
                 }).OnRemove((Entity e, ref Canvas canvas) =>

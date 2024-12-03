@@ -12,6 +12,10 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<TemplatedControl>("TemplatedControl")
                 .OnSet((Entity e, ref TemplatedControl templatedControl) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(templatedControl);
+                    }
                     e.Set<Control>(templatedControl);
 
                     templatedControl.TemplateApplied += (object? sender, TemplateAppliedEventArgs args) =>

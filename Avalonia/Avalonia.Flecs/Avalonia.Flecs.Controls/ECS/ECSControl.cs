@@ -16,6 +16,11 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Control>("Control")
                 .OnSet((Entity e, ref Control control) =>
                 {
+                    if (!e.Has<object>())
+                    {
+                        e.Set<object>(control);
+                    }
+
                     e.Set<InputElement>(control);
 
                     var parent = e.Parent();
