@@ -15,6 +15,11 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<Control>().Resources.Add(animationName, animation);
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                entity.GetProperty<object>("Resources").GetType().GetMethod("Add").Invoke(entity.GetProperty<object>("Resources"), [animationName, animation]);
+                return entity;
+            }
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(AddAnimation));
         }
 
@@ -23,6 +28,10 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<Control>())
             {
                 return entity.Get<Control>().Resources[animationName] as Animation.Animation;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<object>("Resources").GetType().GetMethod("get_Item").Invoke(entity.GetProperty<object>("Resources"), [animationName]) as Animation.Animation;
             }
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(GetAnimation));
         }
