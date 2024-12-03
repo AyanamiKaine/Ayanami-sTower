@@ -40,7 +40,7 @@ namespace Avalonia.Flecs.Controls.ECS
                         throw new Exception($"Property {propertyName} not found from entity {entity.Id} in the object component", e);
                     }
                 }
-                throw new NullReferenceException($"property {propertyName} is null");
+                throw new MissingFieldException($"property {propertyName} not found");
             }
 
             throw new ComponentNotFoundException(entity, typeof(Window), nameof(GetProperty));
@@ -54,7 +54,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="propertyName"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="MissingFieldException"></exception>
         /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetProperty(this Entity entity, string propertyName, object value)
         {
@@ -77,7 +77,7 @@ namespace Avalonia.Flecs.Controls.ECS
                         throw new Exception($"Property {propertyName} not found from entity {entity.Id} in the object component", e);
                     }
                 }
-                throw new NullReferenceException($"property {propertyName} is null");
+                throw new MissingFieldException($"property {propertyName} not found");
             }
             throw new ComponentNotFoundException(entity, typeof(object), nameof(SetProperty));
         }
