@@ -32,6 +32,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<TextBox>().Watermark = text;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Watermark", text);
+            }
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetWatermark));
 
         }
