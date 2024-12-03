@@ -65,7 +65,7 @@ public class ScriptManager
     {
         ScriptWatcher = new FileSystemWatcher
         {
-            Path = "Scripts",
+            Path = "scripts",
             NotifyFilter = NotifyFilters.LastWrite,
             Filter = "*.csx",
             EnableRaisingEvents = true
@@ -98,7 +98,7 @@ public class ScriptManager
     {
         ScriptWatcher = new FileSystemWatcher
         {
-            Path = "Scripts",
+            Path = "scripts",
             NotifyFilter = NotifyFilters.LastWrite,
             Filter = "*.cs",
             EnableRaisingEvents = true
@@ -163,14 +163,50 @@ public class ScriptManager
         script.Compile();
         _compiledScripts[name] = script;
     }
-
     /// <summary>
     /// Compiles all scripts in a given folder and adds them to the list of compiled scripts.
     /// </summary>
     /// <param name="folderPath"></param>
     /// <returns></returns>
     /// <exception cref="DirectoryNotFoundException"></exception>
-    public async Task CompileScriptsFromFolder(string folderPath)
+    public void CompileScriptsFromFolder(string folderPath)
+    {
+        if (!Directory.Exists(folderPath))
+        {
+            throw new DirectoryNotFoundException($"Folder not found: {folderPath}");
+        }
+
+        // Get all .cs files in the folder
+        var scriptFiles = Directory.GetFiles(folderPath, "*.csx");
+
+        foreach (var file in scriptFiles)
+        {
+            try
+            {
+                // Read the code from the file
+                var code = File.ReadAllTextAsync(file).Result;
+
+                // Extract script name from filename
+                var scriptName = Path.GetFileNameWithoutExtension(file);
+
+                // Compile and add the script
+                AddScript(scriptName, code);
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions like IOException, compilation errors, etc.
+                Console.WriteLine($"Error compiling script {file}: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Compiles all scripts asynchrounsly in a given folder and adds them to the list of compiled scripts.
+    /// </summary>
+    /// <param name="folderPath"></param>
+    /// <returns></returns>
+    /// <exception cref="DirectoryNotFoundException"></exception>
+    public async Task CompileScriptsFromFolderAsync(string folderPath)
     {
         if (!Directory.Exists(folderPath))
         {
