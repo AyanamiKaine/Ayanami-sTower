@@ -42,6 +42,8 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Module<Module>();
             RegisterEventDataComponents(world);
 
+            world.Import<ECSObject>();
+
             world.Import<ECSInputElement>();
             world.Import<ECSInteractive>();
             world.Import<ECSLayoutable>();
