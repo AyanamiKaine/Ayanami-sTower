@@ -63,13 +63,27 @@ public class ScriptManager
 
     public ScriptManager(World world, bool recompileScriptsOnFileChange = true)
     {
+
+        // Get absolute path for scripts folder next to executable
+        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+            ?? throw new InvalidOperationException("Could not determine executable path");
+        string scriptsPath = Path.Combine(exePath, "scripts");
+
+        // Create scripts directory if it doesn't exist
+        Directory.CreateDirectory(scriptsPath);
+
         ScriptWatcher = new FileSystemWatcher
         {
-            Path = "scripts",
+            Path = scriptsPath,
             NotifyFilter = NotifyFilters.LastWrite,
             Filter = "*.csx",
             EnableRaisingEvents = true
         };
+
+        ScriptWatcher.Error += (s, e) =>
+                {
+                    Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
+                };
 
         RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
 
@@ -96,12 +110,25 @@ public class ScriptManager
 
     public ScriptManager(World world, ScriptOptions options, bool recompileScriptsOnFileChange = true)
     {
+        // Get absolute path for scripts folder next to executable
+        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+            ?? throw new InvalidOperationException("Could not determine executable path");
+        string scriptsPath = Path.Combine(exePath, "scripts");
+
+        // Create scripts directory if it doesn't exist
+        Directory.CreateDirectory(scriptsPath);
+
         ScriptWatcher = new FileSystemWatcher
         {
-            Path = "scripts",
+            Path = scriptsPath,
             NotifyFilter = NotifyFilters.LastWrite,
-            Filter = "*.cs",
+            Filter = "*.csx",
             EnableRaisingEvents = true
+        };
+
+        ScriptWatcher.Error += (s, e) =>
+        {
+            Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
         };
 
         RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
