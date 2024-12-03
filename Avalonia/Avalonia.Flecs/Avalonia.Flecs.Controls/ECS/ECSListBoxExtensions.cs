@@ -25,6 +25,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<ListBox>().SelectionMode = mode;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("SelectionMode", mode);
+            }
             throw new ComponentNotFoundException(entity, typeof(ListBox), nameof(SetSelectionMode));
         }
 
@@ -38,6 +42,10 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<ListBox>())
                 return entity.Get<ListBox>().SelectionMode;
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<SelectionMode>("SelectionMode");
+            }
 
             throw new ComponentNotFoundException(entity, typeof(ListBox), nameof(GetSelectionMode));
         }
