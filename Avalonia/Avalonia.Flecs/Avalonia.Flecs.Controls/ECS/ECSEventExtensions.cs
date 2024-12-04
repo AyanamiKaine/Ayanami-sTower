@@ -67,5 +67,53 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        public static Entity OnSelectionChanged(this Entity entity, Action<object?, SelectionChangedEventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("SelectionChanged");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<SelectionChangedEventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a SelectionChanged event");
+            }
+
+            return entity;
+        }
+
+        public static Entity OnClosed(this Entity entity, Action<object?, EventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("Closed");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<EventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Closed event");
+            }
+
+            return entity;
+        }
+
+        public static Entity OnOpened(this Entity entity, Action<object?, EventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("Opened");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<EventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Opened event");
+            }
+
+            return entity;
+        }
+
     }
 }
