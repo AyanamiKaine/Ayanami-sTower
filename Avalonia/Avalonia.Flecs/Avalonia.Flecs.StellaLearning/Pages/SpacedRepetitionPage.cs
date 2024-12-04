@@ -84,13 +84,12 @@ public class SpacedRepetitionPage
             .SetItemsSource(dummyItems)
             .SetSelectionMode(SelectionMode.Multiple);
 
-        listSearchSpacedRepetition.Observe<TextChanged>(() =>
+        listSearchSpacedRepetition.OnTextChanged((sender, args) =>
         {
             string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
             var filteredItems = dummyItems.Where(item => item.ToLower().Contains(searchText));
             //srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
             srItems.SetItemsSource(new ObservableCollection<string>(filteredItems));
-            Console.WriteLine("Text Changed");
         });
 
         //Use MenuFlyout to create a context menu

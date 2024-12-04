@@ -5,6 +5,7 @@ using System;
 
 World ecsWorld = world;
 Entity window = ecsWorld.Lookup("MainWindow");
-window.SetWindowTitle("Stella Learning");
-window.SetHeight(500);
+
+window.SetWindowTitle("Stella Learning")
+      .SetHeight(500);
 
