@@ -23,18 +23,6 @@ namespace Avalonia.Flecs.Controls.ECS
                         e.Set<object>(popupFlyoutBase);
                     }
                     e.Set<FlyoutBase>(popupFlyoutBase);
-
-                    popupFlyoutBase.Closing += (object? sender, CancelEventArgs args) =>
-                    {
-                        e.Set(new Closing(sender, args));
-                        e.Emit<Closing>();
-                    };
-
-                    popupFlyoutBase.Opened += (object? sender, EventArgs args) =>
-                    {
-                        e.Set(new Opened(sender, args));
-                        e.Emit<Opened>();
-                    };
                 })
                 .OnRemove((Entity e, ref PopupFlyoutBase popupFlyoutBase) =>
                 {

@@ -25,12 +25,6 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     e.Set<ContentControl>(splitButton);
 
-                    splitButton.Click += (object? sender, RoutedEventArgs args) =>
-                    {
-                        e.Set(new Click(sender, args));
-                        e.Emit<Click>();
-                    };
-
                 })
                 .OnRemove((Entity e, ref SplitButton splitButton) =>
                 {

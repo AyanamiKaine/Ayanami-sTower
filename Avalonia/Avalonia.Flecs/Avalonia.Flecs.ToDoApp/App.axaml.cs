@@ -64,23 +64,17 @@ public partial class App : Application
 
         grid
             .ChildOf(window)
-            .Set(new Grid()
-            {
-                RowDefinitions = new RowDefinitions("Auto, *, Auto"),
-            });
+            .Set(new Grid())
+            .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
 
         title
             .ChildOf(grid)
-            .Set(new TextBlock()
-            {
-                Text = "My ToDo-List",
-            });
+            .Set(new TextBlock())
+            .SetText("My ToDo-List");
 
         scrollViewer
             .ChildOf(grid)
-            .Set(new ScrollViewer()
-            {
-            });
+            .Set(new ScrollViewer());
 
 
 
@@ -145,24 +139,22 @@ public partial class App : Application
 
         textBox
             .ChildOf(grid)
-            .Set(new TextBox()
-            {
-                InnerRightContent = addButton.Get<Button>(),
-            })
+            .Set(new TextBox())
+            .SetInnerRightContent(addButton.Get<Button>())
             .SetText("")
-            .SetWatermark("Add a new Item");
-
-        textBox.Observe<KeyDown>((Entity e) =>
-        {
-            if (e.Get<KeyDown>().Args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
+            .SetWatermark("Add a new Item")
+            .OnKeyDown((sender, args) =>
             {
-                itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
-                textBox.SetText("");
-            }
-        });
+                if (args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
+                {
+                    itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
+                    textBox.SetText("");
+                }
+            });
 
-        addButton.Observe<Click>((Entity e) =>
+        addButton.OnClick((sender, args) =>
         {
+
             Console.WriteLine(title.Path());
             if (textBox.GetText() != "")
             {
@@ -178,7 +170,7 @@ public partial class App : Application
         });
 
 
-        Grid.SetRow(textBox.Get<TextBox>(), 2);
+        textBox.SetRow(2);
     }
 
     public override void OnFrameworkInitializationCompleted()

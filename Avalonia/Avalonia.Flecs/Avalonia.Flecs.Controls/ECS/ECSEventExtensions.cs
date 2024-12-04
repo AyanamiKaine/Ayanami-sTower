@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
@@ -519,5 +520,117 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        public static Entity OnClosing(this Entity entity, Action<object?, CancelEventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("Closing");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<CancelEventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Closing event");
+            }
+
+            return entity;
+        }
+
+        public static Entity OnTextChanging(this Entity entity, Action<object?, TextChangingEventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("TextChanging");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<TextChangingEventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a TextChanging event");
+            }
+
+            return entity;
+        }
+
+        public static Entity OnTextChanged(this Entity entity, Action<object?, TextChangedEventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("TextChanged");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<TextChangedEventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a TextChanged event");
+            }
+
+            return entity;
+        }
+
+        public static Entity OnIsCheckedChanged(this Entity entity, Action<object?, RoutedEventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("IsCheckedChanged");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<RoutedEventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a IsCheckedChanged event");
+            }
+
+            return entity;
+        }
+
+        public static Entity OnActivated(this Entity entity, Action<object?, EventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("Activated");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<EventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Activated event");
+            }
+
+            return entity;
+        }
+        
+        public static Entity OnDeactivated(this Entity entity, Action<object?, EventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("Deactivated");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<EventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Deactivated event");
+            }
+
+            return entity;
+        }
+        public static Entity OnPositionChanged(this Entity entity, Action<object?, EventArgs> handler)
+        {
+            var obj = entity.Get<object>();
+            var eventInfo = obj.GetType().GetEvent("PositionChanged");
+            if (eventInfo != null)
+            {
+                eventInfo.AddEventHandler(obj, new EventHandler<EventArgs>(handler));
+            }
+            else
+            {
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a PositionChanged event");
+            }
+
+            return entity;
+        }
+
+        
     }
 }

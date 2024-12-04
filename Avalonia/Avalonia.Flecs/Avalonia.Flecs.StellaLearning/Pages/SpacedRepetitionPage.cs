@@ -104,7 +104,7 @@ public class SpacedRepetitionPage
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Open")
-            .Observe<Click>(async (Entity e) =>
+            .OnClick(async (sender, args) =>
             {
                 await ScriptExample.RunScriptAsync(world);
             });
@@ -113,7 +113,7 @@ public class SpacedRepetitionPage
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Edit")
-            .Observe<Click>((Entity e) =>
+            .OnClick((sender, args) =>
             {
                 Console.WriteLine("Edit Clicked");
             }); ;
@@ -122,7 +122,7 @@ public class SpacedRepetitionPage
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Delete")
-            .Observe<Click>((Entity e) =>
+            .OnClick((sender, args) =>
             {
                 Console.WriteLine("Delete Clicked");
             });
@@ -143,9 +143,8 @@ public class SpacedRepetitionPage
             .SetColumnSpan(3);
 
 
-        sortItemsButton.Observe<SelectionChanged>((Entity e) =>
+        sortItemsButton.OnSelectionChanged((sender, args) =>
         {
-            var args = e.Get<SelectionChanged>().Args;
             if (args.AddedItems.Count == 0)
             {
                 return;

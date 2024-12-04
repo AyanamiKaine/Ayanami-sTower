@@ -22,12 +22,6 @@ namespace Avalonia.Flecs.Controls.ECS
                         e.Set<object>(selectingItemsControl);
                     }
                     e.Set<ItemsControl>(selectingItemsControl);
-
-                    selectingItemsControl.SelectionChanged += (object? sender, SelectionChangedEventArgs args) =>
-                    {
-                        e.Set(new SelectionChanged(sender, args));
-                        e.Emit<SelectionChanged>();
-                    };
                 })
                 .OnRemove((Entity e, ref SelectingItemsControl selectingItemsControl) =>
                 {

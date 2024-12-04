@@ -18,12 +18,6 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     e.Set<Control>(templatedControl);
 
-                    templatedControl.TemplateApplied += (object? sender, TemplateAppliedEventArgs args) =>
-                    {
-                        e.Set(new TemplateApplied(sender, args));
-                        e.Emit<AttachedToVisualTree>();
-                    };
-
                 })
                 .OnRemove((Entity e, ref TemplatedControl templatedControl) =>
                 {

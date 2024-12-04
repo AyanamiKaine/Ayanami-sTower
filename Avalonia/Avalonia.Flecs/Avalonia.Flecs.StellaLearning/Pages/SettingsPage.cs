@@ -56,11 +56,8 @@ public static class SettingsPage
             .ChildOf(childOfEntity)
             .Set(new ToggleSwitch())
             .SetContent("Dark Mode")
-            .Observe<IsCheckedChanged>((Entity e) =>
+            .OnIsCheckedChanged((sender, args) =>
             {
-
-                var sender = e.Get<IsCheckedChanged>().Sender;
-
                 var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
                 if (Application.Current is not null)
                     SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
@@ -71,7 +68,7 @@ public static class SettingsPage
 
     private static Entity ObsidianPath(World world, Entity childOfEntity)
     {
-        
+
         var browseForObsidianButton = world.Entity("BrowseForObsidianButton")
             .Set(new Button());
 
@@ -88,7 +85,7 @@ public static class SettingsPage
 
         browseForObsidianButton
             .ChildOf(obsidianPath)
-            .Observe<Click>(async (Entity e) =>
+            .OnClick(async (e, args) =>
             {
                 obsidianPath.SetText(await ObsidianFilePickerAsync(world));
             });
