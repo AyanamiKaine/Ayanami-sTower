@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Avalonia.Flecs.PureScriptingExample": {
+      "commandName": "Project",
+      "nativeDebugging": true,
+      "hotReloadEnabled": false
+    }
+  }
+}
