@@ -7,6 +7,7 @@ using FluentAvalonia.UI.Controls;
 using Avalonia.Flecs.FluentUI.Controls.ECS;
 using static Avalonia.Flecs.Controls.ECS.Module;
 using System;
+using Avalonia.Flecs.Controls.ECS;
 
 namespace Avalonia.Flecs.FluentUI.Example;
 
@@ -23,55 +24,41 @@ public partial class App : Application
 
         var window = _world.Entity("MainWindow")
             .Set(
-                new Window()
-                {
-                    Title = "Avlonia.Flecs Example",
-                    Height = 400,
-                    Width = 400
-                });
+                new Window())
+                .SetWindowTitle("Avalonia.Flecs Example")
+                .SetHeight(400)
+                .SetWidth(400);
 
 
         var navigationView = _world.Entity("NavigationView")
             .ChildOf(window)
-            .Set(new NavigationView()
-            {
-                PaneTitle = "Avalonia + Flecs + FluentUI",
-            });
+            .Set(new NavigationView())
+            .SetPaneTitle("Avalonia + Flecs = ❤️");
 
         var homePage = _world.Entity("HomePage")
             .ChildOf(navigationView)
-            .Set(new TextBlock()
-            {
-                Text = "This is Home!"
-            });
+            .Set(new TextBlock())
+            .SetText("Home");
 
 
         var settingPage = _world.Entity("SettingPage")
             .ChildOf(navigationView)
-            .Set(new TextBlock()
-            {
-                Text = "Settings"
-            });
+            .Set(new TextBlock())
+            .SetText("Settings");
 
         var navigationViewItem = _world.Entity("NavigationViewItem")
             .ChildOf(navigationView)
-            .Set(new NavigationViewItem()
-            {
-                Content = "Home"
-            });
+            .Set(new NavigationViewItem())
+            .SetContent("Home");
 
 
-        Grid.SetColumn(navigationView.Get<NavigationView>(), 0);
+        navigationView.SetColumn(0);
 
         // We should probably put the event classes into an event class
         // so we can write Events.OnSelectionChanged instead of Module.OnSelectionChanged
-        navigationView.Observe<FluentUI.Controls.ECS.Events.OnSelectionChanged>((Entity e) =>
+        navigationView.OnNavViewSelectionChanged((sender, args) =>
         {
-            var OnSelectionChanged = e.Get<FluentUI.Controls.ECS.Events.OnSelectionChanged>();
-
-            var selectedItem = OnSelectionChanged.Args.SelectedItem as NavigationViewItem;
-
-            if (selectedItem is null)
+            if (args.SelectedItem is not NavigationViewItem selectedItem)
             {
                 return;
             }
