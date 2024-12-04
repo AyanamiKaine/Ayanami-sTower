@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.ProjectTempl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.Scripting", "Avalonia.Flecs.Scripting\Avalonia.Flecs.Scripting.csproj", "{4E642F93-09A0-4DD2-9CB1-F71A9AA840CD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.PureScriptingExample", "Avalonia.Flecs.PureScriptingExample\Avalonia.Flecs.PureScriptingExample.csproj", "{D7E9687E-F45D-439B-926C-8796A4E5B8D4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,10 @@ Global
 		{4E642F93-09A0-4DD2-9CB1-F71A9AA840CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4E642F93-09A0-4DD2-9CB1-F71A9AA840CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4E642F93-09A0-4DD2-9CB1-F71A9AA840CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7E9687E-F45D-439B-926C-8796A4E5B8D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7E9687E-F45D-439B-926C-8796A4E5B8D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7E9687E-F45D-439B-926C-8796A4E5B8D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7E9687E-F45D-439B-926C-8796A4E5B8D4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
