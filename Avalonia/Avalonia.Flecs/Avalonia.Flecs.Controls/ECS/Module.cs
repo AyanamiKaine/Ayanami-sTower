@@ -156,6 +156,10 @@ namespace Avalonia.Flecs.Controls.ECS
                         }
                         else if (parent.Has<ContentControl>())
                         {
+                            if (parent.Get<ContentControl>().Content == control)
+                            {
+                                return;
+                            }
                             parent.Get<ContentControl>().Content = control;
                         }
                     }

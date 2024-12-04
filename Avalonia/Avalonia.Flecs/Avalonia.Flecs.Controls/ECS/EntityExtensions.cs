@@ -9,6 +9,17 @@ namespace Avalonia.Flecs.Controls.ECS
     public static class EntityExtensions
     {
 
+        public static Entity CreateOrLookup(this World world, string name)
+        {
+            var entity = world.Lookup("." + name);
+            if (entity != 0)
+            {
+                return entity;
+            }
+
+            return world.Entity(name);
+
+        }
 
         /// <summary>
         /// Returns a string where each component is comma separated each with a newline.

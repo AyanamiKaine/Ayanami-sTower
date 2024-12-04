@@ -6,9 +6,10 @@ using Microsoft.CodeAnalysis.Scripting;
 namespace Avalonia.Flecs.Scripting;
 
 
-public class GlobalData(World _world)
+public class GlobalData(World _world, NamedEntities _entities)
 {
     public World world = _world;
+    public NamedEntities entities = _entities;
 }
 
 public class CompiledScripts
@@ -58,10 +59,18 @@ public class ScriptNotFoundException(string scriptName) : Exception($"Script wit
 {
 }
 
+/*
+We need to add hooks so users can provide functions that execute before and after 
+we recompile scripts that changed. Something like OnRecompliationStarted and OnRecompilationFinished.
+
+Why?
+Because lets assume we have a hotreloading scripting system, what we would like to do 
+is automatically rerun certain scripts if they have changed.
+*/
+
 public class ScriptManager
 {
-
-    public ScriptManager(World world, bool recompileScriptsOnFileChange = true)
+    public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
 
         // Get absolute path for scripts folder next to executable
@@ -87,7 +96,7 @@ public class ScriptManager
 
         RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
 
-        Data = new GlobalData(world);
+        Data = new GlobalData(world, entities);
         _compiledScripts = new();
 
         //Adding meta data seems to do nothing?
@@ -108,7 +117,7 @@ public class ScriptManager
             .AddImports("Avalonia.Controls");
     }
 
-    public ScriptManager(World world, ScriptOptions options, bool recompileScriptsOnFileChange = true)
+    public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true)
     {
         // Get absolute path for scripts folder next to executable
         string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
@@ -134,7 +143,7 @@ public class ScriptManager
         RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
 
 
-        Data = new GlobalData(world);
+        Data = new GlobalData(world, entities);
         _compiledScripts = new();
         Options = options;
     }

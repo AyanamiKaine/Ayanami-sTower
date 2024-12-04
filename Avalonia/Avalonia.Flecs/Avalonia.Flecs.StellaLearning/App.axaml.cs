@@ -10,12 +10,14 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Scripting;
 using Avalonia.Rendering;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
+using System.Collections.Generic;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
 {
 
     private World _world = World.Create();
+    private NamedEntities? _entities;
 
     public override void Initialize()
     {
@@ -23,8 +25,8 @@ public partial class App : Application
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
         _world.Observer();
-
-        _world.Set<ScriptManager>(new(_world));
+        _entities = new NamedEntities(_world);
+        _world.Set<ScriptManager>(new(_world, _entities));
         _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
 
         var window = _world.Entity("MainWindow")
