@@ -118,10 +118,19 @@ public class ScriptManager
         Options = options;
     }
 
+    private Dictionary<string, DateTime> _lastWriteTime = [];
+    /// <summary>
+    /// The debounce interval for file changes determines how far apart changes
+    /// to the file can be before we recompile. We are doing this because
+    /// simply editing the file changes several things, like content, last write
+    /// time etc. This would result in multiple recompilation that are not needed.
+    /// </summary>
+    private TimeSpan _debounceInterval = TimeSpan.FromMilliseconds(500);
+
     /// <summary>
     /// File watcher for the scripts folder.
     /// </summary>  
-    FileSystemWatcher ScriptWatcher { get; set; }
+    private FileSystemWatcher ScriptWatcher { get; set; }
 
     private bool _recompileScriptsOnFileChange;
 
@@ -294,6 +303,15 @@ public class ScriptManager
     /// <param name="e"></param>
     private void OnScriptChange(object sender, FileSystemEventArgs e)
     {
+
+        var now = DateTime.Now;
+        if (_lastWriteTime.TryGetValue(e.FullPath, out var last))
+        {
+            if (now - last < _debounceInterval)
+                return;
+        }
+        _lastWriteTime[e.FullPath] = now;
+
         Console.WriteLine($"Script {e.Name} changed. Recompiling...");
 
         if (e.Name is null)
@@ -368,9 +386,18 @@ public class ScriptManager
         ScriptWatcher = new FileSystemWatcher
         {
             Path = scriptsPath,
-            NotifyFilter = NotifyFilters.LastWrite,
+            NotifyFilter = NotifyFilters.LastWrite
+                        | NotifyFilters.FileName
+                        | NotifyFilters.DirectoryName,
             Filter = "*.csx",
             EnableRaisingEvents = true
+        };
+
+        // Add debouncing
+
+        ScriptWatcher.Changed += (s, e) =>
+        {
+
         };
 
         ScriptWatcher.Error += (s, e) =>
