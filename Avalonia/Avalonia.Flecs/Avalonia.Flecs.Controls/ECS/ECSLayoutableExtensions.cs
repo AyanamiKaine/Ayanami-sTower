@@ -193,6 +193,59 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
         }
 
+        public static Entity SetMargin(this Entity entity, double value)
+        {
+            if (entity.Has<Layoutable>())
+            {
+                entity.Get<Layoutable>().Margin = new Thickness(value);
+                ;
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Margin", new Thickness(value));
+            }
+            throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
+        }
+
+        public static Entity SetMargin(this Entity entity, double horizontalMargin, double verticalMargin)
+        {
+            if (entity.Has<Layoutable>())
+            {
+                entity.Get<Layoutable>().Margin = new Thickness(horizontalMargin, verticalMargin);
+                ;
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Margin", new Thickness(horizontalMargin, verticalMargin));
+            }
+            throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
+        }
+
+        public static Entity SetMargin(this Entity entity, double leftMargin, double topMargin, double rightMargin, double bottomMargin)
+        {
+            if (entity.Has<Layoutable>())
+            {
+                entity.Get<Layoutable>().Margin = new Thickness(
+                                                    left: leftMargin,
+                                                    top: topMargin,
+                                                    right: rightMargin,
+                                                    bottom: bottomMargin);
+                ;
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Margin", new Thickness(
+                                                    left: leftMargin,
+                                                    top: topMargin,
+                                                    right: rightMargin,
+                                                    bottom: bottomMargin));
+            }
+            throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
+        }
+
         /// <summary>
         /// Get the margin of the Layoutable component.
         /// </summary>
@@ -200,7 +253,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="value"></param>
         /// <returns></returns>
         /// <exception cref="ComponentNotFoundException"></exception>
-        public static Thickness GetMargin(this Entity entity, Thickness value)
+        public static Thickness GetMargin(this Entity entity)
         {
             if (entity.Has<Layoutable>())
                 return entity.Get<Layoutable>().Margin;
