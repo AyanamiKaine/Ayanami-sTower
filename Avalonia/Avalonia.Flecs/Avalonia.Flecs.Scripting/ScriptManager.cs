@@ -86,28 +86,7 @@ public class ScriptManager
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
 
-        // Get absolute path for scripts folder next to executable
-        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-            ?? throw new InvalidOperationException("Could not determine executable path");
-        string scriptsPath = Path.Combine(exePath, "scripts");
-
-        // Create scripts directory if it doesn't exist
-        Directory.CreateDirectory(scriptsPath);
-
-        ScriptWatcher = new FileSystemWatcher
-        {
-            Path = scriptsPath,
-            NotifyFilter = NotifyFilters.LastWrite,
-            Filter = "*.csx",
-            EnableRaisingEvents = true
-        };
-
-        ScriptWatcher.Error += (s, e) =>
-                {
-                    Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
-                };
-
-        RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
+        ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
 
         Data = new GlobalData(world, entities);
         _compiledScripts = new();
@@ -132,29 +111,7 @@ public class ScriptManager
 
     public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true)
     {
-        // Get absolute path for scripts folder next to executable
-        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-            ?? throw new InvalidOperationException("Could not determine executable path");
-        string scriptsPath = Path.Combine(exePath, "scripts");
-
-        // Create scripts directory if it doesn't exist
-        Directory.CreateDirectory(scriptsPath);
-
-        ScriptWatcher = new FileSystemWatcher
-        {
-            Path = scriptsPath,
-            NotifyFilter = NotifyFilters.LastWrite,
-            Filter = "*.csx",
-            EnableRaisingEvents = true
-        };
-
-        ScriptWatcher.Error += (s, e) =>
-        {
-            Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
-        };
-
-        RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
-
+        ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
 
         Data = new GlobalData(world, entities);
         _compiledScripts = new();
@@ -169,7 +126,8 @@ public class ScriptManager
     private bool _recompileScriptsOnFileChange;
 
     /// <summary>
-    /// If set true the scripts will be recompiled when the file changes.
+    /// If set true when you edit or rename a .csx script file in the script folder
+    /// it will automatically recompile.
     /// </summary>
     public bool RecompileScriptsOnFileChange
     {
@@ -180,11 +138,13 @@ public class ScriptManager
             // Call your function here
             if (_recompileScriptsOnFileChange == true)
             {
+                ScriptWatcher.Created += OnScriptAdded;
                 ScriptWatcher.Changed += OnScriptChange;
                 ScriptWatcher.Renamed += OnScriptRenamed;
             }
             else
             {
+                ScriptWatcher.Created -= OnScriptAdded;
                 ScriptWatcher.Changed -= OnScriptChange;
                 ScriptWatcher.Renamed -= OnScriptRenamed;
             }
@@ -254,7 +214,7 @@ public class ScriptManager
     }
 
     /// <summary>
-    /// Compiles all scripts asynchrounsly in a given folder and adds them to the list of compiled scripts.
+    /// Compiles all scripts async in a given folder and adds them to the list of compiled scripts.
     /// </summary>
     /// <param name="folderPath"></param>
     /// <returns></returns>
@@ -311,16 +271,27 @@ public class ScriptManager
         }
     }
 
+    /// <summary>
+    /// Activates recompilation of scripts when they change.
+    /// </summary>
     public void ActivateRecompileOnFileChange()
     {
         RecompileScriptsOnFileChange = true;
     }
 
+    /// <summary>
+    /// Deactivates recompilation of scripts when they change.
+    /// </summary>
     public void DeactivateRecompileOnFileChange()
     {
         RecompileScriptsOnFileChange = false;
     }
 
+    /// <summary>
+    /// If a script is changed, recompile it.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void OnScriptChange(object sender, FileSystemEventArgs e)
     {
         Console.WriteLine($"Script {e.Name} changed. Recompiling...");
@@ -359,5 +330,55 @@ public class ScriptManager
         var name = Path.GetFileNameWithoutExtension(e.Name);
         var code = File.ReadAllText(e.FullPath);
         AddScript(name, code);
+    }
+
+    /// <summary>
+    /// If a script is added, compile it.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void OnScriptAdded(object sender, FileSystemEventArgs e)
+    {
+        Console.WriteLine($"Script {e.Name} added. Compiling...");
+
+        if (e.Name is null)
+            return;
+
+        var name = Path.GetFileNameWithoutExtension(e.Name);
+        var code = File.ReadAllText(e.FullPath);
+        AddScript(name, code);
+    }
+
+    /// <summary>
+    /// Setup for the FileWatcher that watches for changes in the scripts folder.
+    /// </summary>
+    /// <param name="recompileScriptsOnFileChange"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    private FileSystemWatcher InitializeScriptWatcher(bool recompileScriptsOnFileChange = true)
+    {
+        // Get absolute path for scripts folder next to executable
+        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+            ?? throw new InvalidOperationException("Could not determine executable path");
+        string scriptsPath = Path.Combine(exePath, "scripts");
+
+        // Create scripts directory if it doesn't exist
+        Directory.CreateDirectory(scriptsPath);
+
+        ScriptWatcher = new FileSystemWatcher
+        {
+            Path = scriptsPath,
+            NotifyFilter = NotifyFilters.LastWrite,
+            Filter = "*.csx",
+            EnableRaisingEvents = true
+        };
+
+        ScriptWatcher.Error += (s, e) =>
+                {
+                    Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
+                };
+
+        RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
+        return ScriptWatcher;
     }
 }
