@@ -28,6 +28,29 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetRowDefinitions));
 
         }
+
+        /// <summary>
+        /// Given a string creates a row definition and sets it for the entity
+        /// if it has a Grid Component Attached
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="rowDefinitions"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity SetRowDefinitions(this Entity entity, string rowDefinitions)
+        {
+            if (entity.Has<Grid>())
+            {
+                entity.Get<Grid>().RowDefinitions = new RowDefinitions(rowDefinitions);
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("RowDefinitions", new RowDefinitions(rowDefinitions));
+            }
+            throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetRowDefinitions));
+        }
+
         /// <summary>
         /// Helper function to get the row definitions of a Grid control component of an entity.
         /// </summary>
@@ -65,6 +88,29 @@ namespace Avalonia.Flecs.Controls.ECS
             else if (entity.Has<object>())
             {
                 return entity.SetProperty("ColumnDefinitions", columnDefinitions);
+            }
+            throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetColumnDefinitions));
+
+        }
+
+        /// <summary>
+        /// Given a string creates a column definition and sets it for the
+        /// entity if it has a grid component.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="columnDefinitions"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity SetColumnDefinitions(this Entity entity, string columnDefinitions)
+        {
+            if (entity.Has<Grid>())
+            {
+                entity.Get<Grid>().ColumnDefinitions = new ColumnDefinitions(columnDefinitions);
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("ColumnDefinitions", new ColumnDefinitions(columnDefinitions));
             }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetColumnDefinitions));
 
