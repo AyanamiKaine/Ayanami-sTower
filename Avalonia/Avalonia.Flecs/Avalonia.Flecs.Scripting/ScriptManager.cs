@@ -301,7 +301,7 @@ public class ScriptManager
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void OnScriptChange(object sender, FileSystemEventArgs e)
+    private async void OnScriptChange(object sender, FileSystemEventArgs e)
     {
 
         var now = DateTime.Now;
@@ -322,10 +322,13 @@ public class ScriptManager
         /*
         This ensures that the file can still be read even if it is being written(Locked) to by another process.
         */
-        Task.Delay(250); // Wait for 200 milliseconds
+        await Task.Delay(250); // Wait for 200 milliseconds
 
         int retryCount = 0;
-        const int maxRetries = 20;
+        // Even though the max retries is quite high, it still can happen that 
+        // it is blocked, maybe make the retries infinit?, but we really dont want that this 
+        // blocks
+        const int maxRetries = 50;
         string code = "";
 
         /*
@@ -338,17 +341,34 @@ public class ScriptManager
 
         while (string.IsNullOrEmpty(code) && retryCount < maxRetries)
         {
-            using FileStream fileStream = new(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            code = new StreamReader(fileStream).ReadToEnd();
+            try
+            {
+                using FileStream fileStream = new(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using StreamReader reader = new(fileStream);
+                code = await reader.ReadToEndAsync();
 
-            if (string.IsNullOrEmpty(code))
+                if (string.IsNullOrEmpty(code))
+                {
+                    retryCount++;
+                    await Task.Delay(100);
+                }
+            }
+            catch (IOException)
             {
                 retryCount++;
-                Task.Delay(100); // Wait a bit longer before retrying
+                await Task.Delay(100);
             }
         }
         Console.WriteLine($"Retry count: {retryCount}, because of the file was locked.");
-        AddScript(name, code);
+
+        if (!string.IsNullOrEmpty(code))
+        {
+            AddScript(name, code);
+        }
+        else
+        {
+            Console.WriteLine($"Failed to read script {name} after {maxRetries} retries");
+        }
     }
 
     /// <summary>
