@@ -8,12 +8,14 @@ namespace Avalonia.Flecs.Controls.ECS
 
     public static class ECSWindowExtensions
     {
+
         /// <summary>
         /// Helper function to set the title of a window component on an entity.
         /// </summary>
         /// <param name="entity"></param>
         /// <param name="title"></param>
         /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetWindowTitle(this Entity entity, string title)
         {
             if (entity.Has<Window>())
@@ -34,7 +36,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity ShowWindow(this Entity entity)
         {
             if (entity.Has<Window>())

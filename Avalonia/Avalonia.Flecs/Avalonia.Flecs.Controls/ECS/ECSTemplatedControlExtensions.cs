@@ -30,6 +30,48 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(TemplatedControl), nameof(SetPadding));
         }
 
+        public static Entity SetPadding(this Entity entity, double padding)
+        {
+            if (entity.Has<TemplatedControl>())
+            {
+                entity.Get<TemplatedControl>().Padding = new Thickness(padding);
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Padding", new Thickness(padding));
+            }
+            throw new ComponentNotFoundException(entity, typeof(TemplatedControl), nameof(SetPadding));
+        }
+
+        public static Entity SetPadding(this Entity entity, double horizontalPadding, double verticalPadding)
+        {
+            if (entity.Has<TemplatedControl>())
+            {
+                entity.Get<TemplatedControl>().Padding = new Thickness(horizontal: horizontalPadding, vertical: verticalPadding);
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Padding", new Thickness(horizontal: horizontalPadding, vertical: verticalPadding));
+            }
+            throw new ComponentNotFoundException(entity, typeof(TemplatedControl), nameof(SetPadding));
+        }
+
+        public static Entity SetPadding(this Entity entity, double leftPadding, double topPadding, double rightPadding, double bottomPadding)
+        {
+            if (entity.Has<TemplatedControl>())
+            {
+                entity.Get<TemplatedControl>().Padding = new Thickness(left: leftPadding, top: topPadding, right: rightPadding, bottom: bottomPadding);
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("Padding", new Thickness(left: leftPadding, top: topPadding, right: rightPadding, bottom: bottomPadding));
+            }
+            throw new ComponentNotFoundException(entity, typeof(TemplatedControl), nameof(SetPadding));
+        }
+
         /// <summary>
         /// Helper function to get the padding of a TemplatedControl control component of an entity.
         /// </summary>
@@ -41,7 +83,7 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<TemplatedControl>())
                 return entity.Get<TemplatedControl>().Padding;
             else if (entity.Has<object>())
-            {   
+            {
                 return entity.GetProperty<Thickness>("Padding");
             }
             throw new ComponentNotFoundException(entity, typeof(TemplatedControl), nameof(GetPadding));

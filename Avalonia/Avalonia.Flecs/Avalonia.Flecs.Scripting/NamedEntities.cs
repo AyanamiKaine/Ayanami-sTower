@@ -3,6 +3,13 @@ using Flecs.NET.Core;
 namespace Avalonia.Flecs.Scripting;
 
 
+/// <summary>
+/// A container for named entities. We simply give an entity
+/// a specific name we can easily get it. It ensures that if 
+/// the entity is not found it will be created otherwise if the 
+/// entity already exists in the world we simply return it.
+/// </summary>
+/// <param name="world"></param>
 public class NamedEntities(World world)
 {
     private Dictionary<string, Entity> _entities = new();

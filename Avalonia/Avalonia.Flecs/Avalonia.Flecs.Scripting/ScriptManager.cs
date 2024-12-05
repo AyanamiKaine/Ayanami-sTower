@@ -6,9 +6,25 @@ using Microsoft.CodeAnalysis.Scripting;
 namespace Avalonia.Flecs.Scripting;
 
 
+/// <summary>
+/// Global data that is accessible in the scripts.
+/// We can use this to interact with the ECS.
+/// </summary>
+/// <param name="_world"></param>
+/// <param name="_entities"></param>
 public class GlobalData(World _world, NamedEntities _entities)
 {
+    /// <summary>
+    /// The app ecs world instance.
+    /// </summary>
     public World world = _world;
+    /// <summary>
+    /// We provide a NameEntities container where we give entities unique names
+    /// by them we can refrence them better by name. Flecs provides a way to lookup
+    /// entities via a path (the path is define by the given name to the entity and its parents).
+    /// But because we will change the parent of the entity we will have to change the path.
+    /// The simple solution is to store the entity id in a dictionary with the name as the key.
+    /// </summary>
     public NamedEntities entities = _entities;
 }
 
@@ -73,33 +89,38 @@ One major problem I have is. While we can quite easily destroy all entities and 
 easy to implement but practically i have no clue how it would fit into the ECS pattern and the Flecs library.
 */
 
+/// <summary>
+/// Event arguments for script compilation.
+/// </summary>
+/// <param name="scriptName"></param>
+public class ScriptCompilationEventArgs(string scriptName) : EventArgs
+{
+    public string ScriptName { get; } = scriptName;
+}
+
+/// <summary>
+/// Event handler for when a script compilation starts.
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
+public delegate void ScriptCompilationStart(object sender, ScriptCompilationEventArgs e);
+public delegate void ScriptCompilationFinished(object sender, ScriptCompilationEventArgs e);
+
 public class ScriptManager
 {
+    /// <summary>
+    /// Event that is triggered when a script compilation starts.
+    /// </summary>
+    public event ScriptCompilationStart? OnScriptCompilationStart;
+    /// <summary>
+    /// Event that is triggered when a script compilation finishes.
+    /// </summary>
+    public event ScriptCompilationFinished? OnScriptCompilationFinished;
+
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
 
-        // Get absolute path for scripts folder next to executable
-        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-            ?? throw new InvalidOperationException("Could not determine executable path");
-        string scriptsPath = Path.Combine(exePath, "scripts");
-
-        // Create scripts directory if it doesn't exist
-        Directory.CreateDirectory(scriptsPath);
-
-        ScriptWatcher = new FileSystemWatcher
-        {
-            Path = scriptsPath,
-            NotifyFilter = NotifyFilters.LastWrite,
-            Filter = "*.csx",
-            EnableRaisingEvents = true
-        };
-
-        ScriptWatcher.Error += (s, e) =>
-                {
-                    Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
-                };
-
-        RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
+        ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
 
         Data = new GlobalData(world, entities);
         _compiledScripts = new();
@@ -124,29 +145,7 @@ public class ScriptManager
 
     public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true)
     {
-        // Get absolute path for scripts folder next to executable
-        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-            ?? throw new InvalidOperationException("Could not determine executable path");
-        string scriptsPath = Path.Combine(exePath, "scripts");
-
-        // Create scripts directory if it doesn't exist
-        Directory.CreateDirectory(scriptsPath);
-
-        ScriptWatcher = new FileSystemWatcher
-        {
-            Path = scriptsPath,
-            NotifyFilter = NotifyFilters.LastWrite,
-            Filter = "*.csx",
-            EnableRaisingEvents = true
-        };
-
-        ScriptWatcher.Error += (s, e) =>
-        {
-            Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
-        };
-
-        RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
-
+        ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
 
         Data = new GlobalData(world, entities);
         _compiledScripts = new();
@@ -154,14 +153,30 @@ public class ScriptManager
     }
 
     /// <summary>
-    /// File watcher for the scripts folder.
+    /// Dictionary that stores the last write time of a script.
+    /// We are doing this because we want to debounce the file changes.
+    /// I.e limit the amounts of time we call the recompilation function.
+    /// </summary>
+    private Dictionary<string, DateTime> _lastWriteTime = [];
+    /// <summary>
+    /// The debounce interval for file changes determines how far apart changes
+    /// to the file can be before we recompile. We are doing this because
+    /// simply editing the file changes several things, like content, last write
+    /// time etc. This would result in multiple recompilation that are not needed.
+    /// </summary>
+    private TimeSpan _debounceInterval = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>
+    /// File watcher for a defined scripts folder.
+    /// Default folder watched should be "./scripts".
     /// </summary>  
-    FileSystemWatcher ScriptWatcher { get; set; }
+    private FileSystemWatcher ScriptWatcher { get; set; }
 
     private bool _recompileScriptsOnFileChange;
 
     /// <summary>
-    /// If set true the scripts will be recompiled when the file changes.
+    /// If set true when you edit or rename a .csx script file in the script folder
+    /// it will automatically recompile.
     /// </summary>
     public bool RecompileScriptsOnFileChange
     {
@@ -172,11 +187,13 @@ public class ScriptManager
             // Call your function here
             if (_recompileScriptsOnFileChange == true)
             {
+                ScriptWatcher.Created += OnScriptAdded;
                 ScriptWatcher.Changed += OnScriptChange;
                 ScriptWatcher.Renamed += OnScriptRenamed;
             }
             else
             {
+                ScriptWatcher.Created -= OnScriptAdded;
                 ScriptWatcher.Changed -= OnScriptChange;
                 ScriptWatcher.Renamed -= OnScriptRenamed;
             }
@@ -185,6 +202,9 @@ public class ScriptManager
 
     public ScriptOptions Options { get; set; }
 
+    /// <summary>
+    /// The global data is accessible in the scripts and can be used to interact with the ECS.
+    /// </summary>
     public GlobalData Data { get; set; }
 
     /// <summary>
@@ -200,9 +220,13 @@ public class ScriptManager
     /// <param name="code"></param>
     public void AddScript(string name, string code)
     {
+        OnScriptCompilationStart?.Invoke(this, new ScriptCompilationEventArgs(name));
+
         var script = CSharpScript.Create(code, Options, globalsType: typeof(GlobalData));
         script.Compile();
         _compiledScripts[name] = script;
+
+        OnScriptCompilationFinished?.Invoke(this, new ScriptCompilationEventArgs(name));
     }
     /// <summary>
     /// Compiles all scripts in a given folder and adds them to the list of compiled scripts.
@@ -242,7 +266,7 @@ public class ScriptManager
     }
 
     /// <summary>
-    /// Compiles all scripts asynchrounsly in a given folder and adds them to the list of compiled scripts.
+    /// Compiles all scripts async in a given folder and adds them to the list of compiled scripts.
     /// </summary>
     /// <param name="folderPath"></param>
     /// <returns></returns>
@@ -299,35 +323,95 @@ public class ScriptManager
         }
     }
 
+    /// <summary>
+    /// Activates recompilation of scripts when they change.
+    /// </summary>
     public void ActivateRecompileOnFileChange()
     {
         RecompileScriptsOnFileChange = true;
     }
 
+    /// <summary>
+    /// Deactivates recompilation of scripts when they change.
+    /// </summary>
     public void DeactivateRecompileOnFileChange()
     {
         RecompileScriptsOnFileChange = false;
     }
 
-    private void OnScriptChange(object sender, FileSystemEventArgs e)
+    /// <summary>
+    /// If a script is changed, recompile it.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private async void OnScriptChange(object sender, FileSystemEventArgs e)
     {
+
+        var now = DateTime.Now;
+        if (_lastWriteTime.TryGetValue(e.FullPath, out var last))
+        {
+            if (now - last < _debounceInterval)
+                return;
+        }
+        _lastWriteTime[e.FullPath] = now;
+
         Console.WriteLine($"Script {e.Name} changed. Recompiling...");
 
         if (e.Name is null)
             return;
 
         var name = Path.GetFileNameWithoutExtension(e.Name);
-        var code = "";
 
         /*
         This ensures that the file can still be read even if it is being written(Locked) to by another process.
         */
-        using (FileStream fileStream = new(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        {
-            code = new StreamReader(fileStream).ReadToEnd();
-        }
+        await Task.Delay(250); // Wait for 200 milliseconds
 
-        AddScript(name, code);
+        int retryCount = 0;
+        // Even though the max retries is quite high, it still can happen that 
+        // it is blocked, maybe make the retries infinit?, but we really dont want that this 
+        // blocks
+        const int maxRetries = 50;
+        string code = "";
+
+        /*
+        The editor used to edit the script might still be writing to the file.
+        What happens is that if the file is locked StreamReader returns an empty string
+        This is not what we want, so we retry a few times before giving up.
+
+        I should really make it async. Also we should add more error handling.
+        */
+
+        while (string.IsNullOrEmpty(code) && retryCount < maxRetries)
+        {
+            try
+            {
+                using FileStream fileStream = new(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using StreamReader reader = new(fileStream);
+                code = await reader.ReadToEndAsync();
+
+                if (string.IsNullOrEmpty(code))
+                {
+                    retryCount++;
+                    await Task.Delay(100);
+                }
+            }
+            catch (IOException)
+            {
+                retryCount++;
+                await Task.Delay(100);
+            }
+        }
+        Console.WriteLine($"Retry count: {retryCount}, because of the file was locked.");
+
+        if (!string.IsNullOrEmpty(code))
+        {
+            AddScript(name, code);
+        }
+        else
+        {
+            Console.WriteLine($"Failed to read script {name} after {maxRetries} retries");
+        }
     }
 
     /// <summary>
@@ -349,4 +433,55 @@ public class ScriptManager
         AddScript(name, code);
     }
 
+    /// <summary>
+    /// If a script is added, compile it.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void OnScriptAdded(object sender, FileSystemEventArgs e)
+    {
+        Console.WriteLine($"Script {e.Name} added. Compiling...");
+
+        if (e.Name is null)
+            return;
+
+        var name = Path.GetFileNameWithoutExtension(e.Name);
+        var code = File.ReadAllText(e.FullPath);
+        AddScript(name, code);
+    }
+
+    /// <summary>
+    /// Setup for the FileWatcher that watches for changes in the scripts folder.
+    /// </summary>
+    /// <param name="recompileScriptsOnFileChange"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    private FileSystemWatcher InitializeScriptWatcher(bool recompileScriptsOnFileChange = true)
+    {
+        // Get absolute path for scripts folder next to executable
+        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+            ?? throw new InvalidOperationException("Could not determine executable path");
+        string scriptsPath = Path.Combine(exePath, "scripts");
+
+        // Create scripts directory if it doesn't exist
+        Directory.CreateDirectory(scriptsPath);
+
+        ScriptWatcher = new FileSystemWatcher
+        {
+            Path = scriptsPath,
+            NotifyFilter = NotifyFilters.LastWrite
+                        | NotifyFilters.FileName
+                        | NotifyFilters.DirectoryName,
+            Filter = "*.csx",
+            EnableRaisingEvents = true
+        };
+
+        ScriptWatcher.Error += (s, e) =>
+                {
+                    Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
+                };
+
+        RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
+        return ScriptWatcher;
+    }
 }
