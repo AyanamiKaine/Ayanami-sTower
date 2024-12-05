@@ -27,8 +27,28 @@ public partial class App : Application
 
         _entities = new NamedEntities(_world);
         _world.Set<ScriptManager>(new(_world, _entities));
-        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
         var scriptManager = _world.Get<ScriptManager>();
+
+        scriptManager.OnScriptCompilationStart += (sender, args) =>
+        {
+            Console.WriteLine($"Start Compilation of: {args.ScriptName}");
+        };
+
+        scriptManager.OnScriptCompilationFinished += (sender, args) =>
+        {
+            Console.WriteLine($"Finishes Compilation of: {args.ScriptName}");
+            if (args.ScriptName == "main")
+            {
+                Console.WriteLine("Running Main script");
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    _entities.Clear();
+                    await scriptManager.RunScriptAsync("main");
+                });
+            }
+        };
+        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
+
 
         var window = _world.Entity("MainWindow")
             .Set(new Window())
