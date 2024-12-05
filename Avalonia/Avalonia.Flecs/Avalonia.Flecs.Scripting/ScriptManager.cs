@@ -6,9 +6,25 @@ using Microsoft.CodeAnalysis.Scripting;
 namespace Avalonia.Flecs.Scripting;
 
 
+/// <summary>
+/// Global data that is accessible in the scripts.
+/// We can use this to interact with the ECS.
+/// </summary>
+/// <param name="_world"></param>
+/// <param name="_entities"></param>
 public class GlobalData(World _world, NamedEntities _entities)
 {
+    /// <summary>
+    /// The app ecs world instance.
+    /// </summary>
     public World world = _world;
+    /// <summary>
+    /// We provide a NameEntities container where we give entities unique names
+    /// by them we can refrence them better by name. Flecs provides a way to lookup
+    /// entities via a path (the path is define by the given name to the entity and its parents).
+    /// But because we will change the parent of the entity we will have to change the path.
+    /// The simple solution is to store the entity id in a dictionary with the name as the key.
+    /// </summary>
     public NamedEntities entities = _entities;
 }
 
@@ -68,20 +84,33 @@ Because lets assume we have a hotreloading scripting system, what we would like 
 is automatically rerun certain scripts if they have changed.
 */
 
-
+/// <summary>
+/// Event arguments for script compilation.
+/// </summary>
+/// <param name="scriptName"></param>
 public class ScriptCompilationEventArgs(string scriptName) : EventArgs
 {
     public string ScriptName { get; } = scriptName;
 }
 
+/// <summary>
+/// Event handler for when a script compilation starts.
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
 public delegate void ScriptCompilationStart(object sender, ScriptCompilationEventArgs e);
 public delegate void ScriptCompilationFinished(object sender, ScriptCompilationEventArgs e);
 
 public class ScriptManager
 {
+    /// <summary>
+    /// Event that is triggered when a script compilation starts.
+    /// </summary>
     public event ScriptCompilationStart? OnScriptCompilationStart;
+    /// <summary>
+    /// Event that is triggered when a script compilation finishes.
+    /// </summary>
     public event ScriptCompilationFinished? OnScriptCompilationFinished;
-
 
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
@@ -118,6 +147,11 @@ public class ScriptManager
         Options = options;
     }
 
+    /// <summary>
+    /// Dictionary that stores the last write time of a script.
+    /// We are doing this because we want to debounce the file changes.
+    /// I.e limit the amounts of time we call the recompilation function.
+    /// </summary>
     private Dictionary<string, DateTime> _lastWriteTime = [];
     /// <summary>
     /// The debounce interval for file changes determines how far apart changes
@@ -128,7 +162,8 @@ public class ScriptManager
     private TimeSpan _debounceInterval = TimeSpan.FromMilliseconds(500);
 
     /// <summary>
-    /// File watcher for the scripts folder.
+    /// File watcher for a defined scripts folder.
+    /// Default folder watched should be "./scripts".
     /// </summary>  
     private FileSystemWatcher ScriptWatcher { get; set; }
 
@@ -162,6 +197,9 @@ public class ScriptManager
 
     public ScriptOptions Options { get; set; }
 
+    /// <summary>
+    /// The global data is accessible in the scripts and can be used to interact with the ECS.
+    /// </summary>
     public GlobalData Data { get; set; }
 
     /// <summary>
