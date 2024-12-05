@@ -318,16 +318,27 @@ public class ScriptManager
             return;
 
         var name = Path.GetFileNameWithoutExtension(e.Name);
-        var code = "";
 
         /*
         This ensures that the file can still be read even if it is being written(Locked) to by another process.
         */
-        using (FileStream fileStream = new(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        {
-            code = new StreamReader(fileStream).ReadToEnd();
-        }
+        Task.Delay(200); // Wait for 200 milliseconds
 
+        int retryCount = 0;
+        const int maxRetries = 10;
+        string code = "";
+
+        while (string.IsNullOrEmpty(code) && retryCount < maxRetries)
+        {
+            using FileStream fileStream = new(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            code = new StreamReader(fileStream).ReadToEnd();
+
+            if (string.IsNullOrEmpty(code))
+            {
+                retryCount++;
+                Task.Delay(100); // Wait a bit longer before retrying
+            }
+        }
         AddScript(name, code);
     }
 
@@ -394,11 +405,6 @@ public class ScriptManager
         };
 
         // Add debouncing
-
-        ScriptWatcher.Changed += (s, e) =>
-        {
-
-        };
 
         ScriptWatcher.Error += (s, e) =>
                 {
