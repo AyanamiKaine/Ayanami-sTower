@@ -43,11 +43,4 @@
     </ItemGroup>
     <Copy SourceFiles="@(Scripts)" DestinationFolder="$(TargetDir)scripts\" />
     </Target>
-
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-        <ItemGroup>
-            <MyDlls Include="$(OutDir)*.dll" /> 
-        </ItemGroup>
-        <Copy SourceFiles="@(MyDlls)" DestinationFolder="$(TargetDir)scripts\libraries\" />
-    </Target>
 </Project>
