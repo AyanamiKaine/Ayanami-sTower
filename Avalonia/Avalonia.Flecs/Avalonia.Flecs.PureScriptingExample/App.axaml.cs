@@ -41,7 +41,8 @@ public partial class App : Application
                 {
                     Dispatcher.UIThread.InvokeAsync(async () =>
                     {
-                        Console.WriteLine("Re-running Main script");
+                        Console.WriteLine("Deleting all named entities");
+                        Console.WriteLine("Re-running Main script, This reloads the logic of the application");
                         _entities.Clear();
                         await scriptManager.RunScriptAsync("main");
                     });

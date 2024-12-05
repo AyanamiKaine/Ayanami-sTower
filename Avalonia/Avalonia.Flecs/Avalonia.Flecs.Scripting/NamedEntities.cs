@@ -5,26 +5,27 @@ namespace Avalonia.Flecs.Scripting;
 
 public class NamedEntities(World world)
 {
-    private Dictionary<string, Entity> _entities = [];
+    private Dictionary<string, Entity> _entities = new();
     private World _world = world;
+
     public Entity this[string name]
     {
         get
         {
-            if (_entities.ContainsKey(name))
+            if (_entities.TryGetValue(name, out var entity))
             {
-                return _entities[name];
+                return entity;
             }
             else
             {
-                var entity = _world.Entity(name);
+                entity = _world.Entity(name);
                 _entities.Add(name, entity);
                 return entity;
             }
         }
         set
         {
-            if (_entities.ContainsKey(name))
+            if (_entities.TryGetValue(name, out _))
             {
                 _entities[name] = value;
             }
@@ -38,10 +39,7 @@ public class NamedEntities(World world)
 
     public void Remove(string name)
     {
-        if (_entities.ContainsKey(name))
-        {
-            _entities.Remove(name);
-        }
+        _entities.Remove(name);
     }
 
     public void Clear()

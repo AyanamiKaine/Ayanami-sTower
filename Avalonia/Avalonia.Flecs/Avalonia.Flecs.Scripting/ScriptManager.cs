@@ -68,6 +68,11 @@ Because lets assume we have a hotreloading scripting system, what we would like 
 is automatically rerun certain scripts if they have changed.
 */
 
+/*
+One major problem I have is. While we can quite easily destroy all entities and rerun the script that creates them, i would like to also be able to only change entities that need to change. Conceptually this might be
+easy to implement but practically i have no clue how it would fit into the ECS pattern and the Flecs library.
+*/
+
 public class ScriptManager
 {
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
