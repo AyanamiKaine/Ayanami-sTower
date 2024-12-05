@@ -68,8 +68,21 @@ Because lets assume we have a hotreloading scripting system, what we would like 
 is automatically rerun certain scripts if they have changed.
 */
 
+
+public class ScriptCompilationEventArgs(string scriptName) : EventArgs
+{
+    public string ScriptName { get; } = scriptName;
+}
+
+public delegate void ScriptCompilationStart(object sender, ScriptCompilationEventArgs e);
+public delegate void ScriptCompilationFinished(object sender, ScriptCompilationEventArgs e);
+
 public class ScriptManager
 {
+    public event ScriptCompilationStart? OnScriptCompilationStart;
+    public event ScriptCompilationFinished? OnScriptCompilationFinished;
+
+
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
 
@@ -195,9 +208,13 @@ public class ScriptManager
     /// <param name="code"></param>
     public void AddScript(string name, string code)
     {
+        OnScriptCompilationStart?.Invoke(this, new ScriptCompilationEventArgs(name));
+
         var script = CSharpScript.Create(code, Options, globalsType: typeof(GlobalData));
         script.Compile();
         _compiledScripts[name] = script;
+
+        OnScriptCompilationFinished?.Invoke(this, new ScriptCompilationEventArgs(name));
     }
     /// <summary>
     /// Compiles all scripts in a given folder and adds them to the list of compiled scripts.
@@ -343,5 +360,4 @@ public class ScriptManager
         var code = File.ReadAllText(e.FullPath);
         AddScript(name, code);
     }
-
 }
