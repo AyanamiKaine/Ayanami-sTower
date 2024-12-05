@@ -4,13 +4,26 @@ using Avalonia.Controls;
 using System;
 
 
+/*
+You can even define new "methods" for entities IN SCRIPTS WHOA!
+More and more it morphs into a programming style of change code
+see changes, get feedback, make new changes. Something I only felt
+using Lisp (Clojure or Common Lisp) in Emacs. 
+*/
+static Entity Test(this Entity entity)
+{
+    Console.WriteLine(entity);
+    return entity;
+}
+
 var window = world.Lookup("MainWindow");
 
 
 var grid = entities["Grid"]
     .Set(new Grid())
     .ChildOf(window)
-    .SetColumnDefinitions("*,*");
+    .SetColumnDefinitions("*,*")
+    .Test();
 
 entities["Button2"]
     .Set(new Button())
