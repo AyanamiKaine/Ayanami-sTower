@@ -471,8 +471,6 @@ public class ScriptManager
             EnableRaisingEvents = true
         };
 
-        // Add debouncing
-
         ScriptWatcher.Error += (s, e) =>
                 {
                     Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
