@@ -322,11 +322,19 @@ public class ScriptManager
         /*
         This ensures that the file can still be read even if it is being written(Locked) to by another process.
         */
-        Task.Delay(200); // Wait for 200 milliseconds
+        Task.Delay(250); // Wait for 200 milliseconds
 
         int retryCount = 0;
-        const int maxRetries = 10;
+        const int maxRetries = 20;
         string code = "";
+
+        /*
+        The editor used to edit the script might still be writing to the file.
+        What happens is that if the file is locked StreamReader returns an empty string
+        This is not what we want, so we retry a few times before giving up.
+
+        I should really make it async. Also we should add more error handling.
+        */
 
         while (string.IsNullOrEmpty(code) && retryCount < maxRetries)
         {
@@ -339,6 +347,7 @@ public class ScriptManager
                 Task.Delay(100); // Wait a bit longer before retrying
             }
         }
+        Console.WriteLine($"Retry count: {retryCount}, because of the file was locked.");
         AddScript(name, code);
     }
 
