@@ -13,8 +13,6 @@ using Flecs.NET.Core;
 namespace Avalonia.Flecs.PureScriptingExample;
 
 
-
-
 public partial class App : Application
 {
     private World _world = World.Create();
