@@ -1,5 +1,8 @@
 using Flecs.NET.Core;
 
+namespace Avalonia.Flecs.Controls;
+
+
 /// <summary>
 /// Should be thrown when we want to use a field/property of an avalonia 
 /// and expect it to be there.
