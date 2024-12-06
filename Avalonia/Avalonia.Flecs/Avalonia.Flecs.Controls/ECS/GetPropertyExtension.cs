@@ -42,10 +42,10 @@ namespace Avalonia.Flecs.Controls.ECS
                         throw new Exception($"Property {propertyName} not found from entity {entity.Id} in the object component", e);
                     }
                 }
-                throw new MissingFieldException($"property {propertyName} not found");
+                throw new PropertyNotFoundException(entity, entity.Get<object>().GetType(), propertyName, nameof(GetProperty));
             }
 
-            throw new ComponentNotFoundException(entity, typeof(Window), nameof(GetProperty));
+            throw new ComponentNotFoundException(entity, entity.Get<object>().GetType(), nameof(GetProperty));
         }
 
         /// <summary>
@@ -79,9 +79,9 @@ namespace Avalonia.Flecs.Controls.ECS
                         throw new Exception($"Property {propertyName} not found from entity {entity.Id} in the object component", e);
                     }
                 }
-                throw new MissingFieldException($"property {propertyName} not found");
+                throw new PropertyNotFoundException(entity, entity.Get<object>().GetType(), propertyName, nameof(GetProperty));
             }
-            throw new ComponentNotFoundException(entity, typeof(object), nameof(SetProperty));
+            throw new ComponentNotFoundException(entity, entity.Get<object>().GetType(), nameof(SetProperty));
         }
     }
 }
