@@ -197,7 +197,8 @@ public class ScriptManager
                 Assembly.Load("Avalonia.Base")
             // Load your API assembly
             )
-            .AddImports("Avalonia.Controls");
+            .AddImports("Avalonia.Controls")
+            .AddImports("Avalonia.Flecs.Controls.ECS");
     }
 
     /// <summary>
@@ -263,6 +264,8 @@ public class ScriptManager
             }
         }
     }
+
+    private CancellationTokenSource _replCancellationTokenSource = new();
 
     /// <summary>
     /// The script options that are used for compiling the scripts.
@@ -550,5 +553,107 @@ public class ScriptManager
 
         RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
         return ScriptWatcher;
+    }
+
+
+
+    /*
+
+    */
+
+    /// <summary>
+    /// Starts Interactive REPL with the GlobalData defined.
+    /// The repl has access to _world, and _entities.
+    /// as well as all refrences defined in the Options.
+    /// </summary>
+    /// <returns></returns>
+    public async Task StartReplAsync()
+    {
+        Console.WriteLine("Starting REPL...");
+
+        while (!_replCancellationTokenSource.IsCancellationRequested)
+        {
+            Console.Write("> ");
+            string? code = await ReadLineAsync(); // Implement async input
+
+            if (code == null || code.Trim() == "exit")
+            {
+                break;
+            }
+
+            try
+            {
+                await EvaluateAsync(code, _replCancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
+
+        Console.WriteLine("REPL exited.");
+    }
+
+
+    private async Task<string?> ReadLineAsync()
+    {
+        // Implement asynchronous input retrieval here.
+        // This could involve reading from a UI element, a message queue, etc.
+        // For simplicity, we'll use Task.Run(() => Console.ReadLine());
+        // BEWARE: This pattern of using Task.Run() to call synchronous methods is not recommended but
+        // Console does not provide any async methods and this is the closed workaround.
+
+        return await Task.Run(() => Console.ReadLine());
+    }
+    private ScriptState<object>? _replState = null;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="code"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task EvaluateAsync(string code, CancellationToken cancellationToken)
+    {
+        Script<object> script = CSharpScript.Create(code, Options, globalsType: typeof(GlobalData));
+        if (_replState == null)
+        {
+            // First execution, create a new script
+            script = CSharpScript.Create(code, Options, globalsType: typeof(GlobalData));
+        }
+        else
+        {
+            // Continue from the previous state
+            _replState = await _replState.ContinueWithAsync(code, Options, cancellationToken);
+            return;
+        }
+
+        var compilation = script.Compile();
+        // Check for compilation errors
+        if (compilation.Any())
+        {
+            foreach (var error in compilation)
+            {
+                Console.WriteLine($"Compilation error: {error.ToString()}");
+            }
+            return;
+        }
+
+        try
+        {
+            _replState = await script.RunAsync(Data, cancellationToken);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error running script: {e.Message}");
+        }
+    }
+
+    /// <summary>
+    /// STOP REPL
+    /// </summary>
+    public void StopRepl()
+    {
+        _replCancellationTokenSource.Cancel();
     }
 }
