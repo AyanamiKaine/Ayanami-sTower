@@ -8,8 +8,15 @@ using Avalonia.LogicalTree;
 using Avalonia.Layout;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the Control component
+    /// </summary>
     public class ECSControl : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the Control component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSControl>();

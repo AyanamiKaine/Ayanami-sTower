@@ -9,8 +9,15 @@ using Avalonia.Input.TextInput;
 using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the FlyoutBase component
+    /// </summary>
     public class ECSFlyoutBase : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the FlyoutBase component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSFlyoutBase>();

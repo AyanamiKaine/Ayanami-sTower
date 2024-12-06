@@ -5,7 +5,9 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
+    /// <summary>
+    /// This extension methods all relate to TemplatedControl components
+    /// </summary>
     public static class ECSTemplatedControlExtensions
     {
 
@@ -30,6 +32,13 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(TemplatedControl), nameof(SetPadding));
         }
 
+        /// <summary>
+        /// Helper function to set the padding of a TemplatedControl control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="padding"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetPadding(this Entity entity, double padding)
         {
             if (entity.Has<TemplatedControl>())
@@ -44,6 +53,14 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(TemplatedControl), nameof(SetPadding));
         }
 
+        /// <summary>
+        /// Helper function to set the padding of a TemplatedControl control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="horizontalPadding"></param>
+        /// <param name="verticalPadding"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetPadding(this Entity entity, double horizontalPadding, double verticalPadding)
         {
             if (entity.Has<TemplatedControl>())
@@ -58,6 +75,16 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(TemplatedControl), nameof(SetPadding));
         }
 
+        /// <summary>
+        /// Helper function to set the padding of a TemplatedControl control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="leftPadding"></param>
+        /// <param name="topPadding"></param>
+        /// <param name="rightPadding"></param>
+        /// <param name="bottomPadding"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetPadding(this Entity entity, double leftPadding, double topPadding, double rightPadding, double bottomPadding)
         {
             if (entity.Has<TemplatedControl>())

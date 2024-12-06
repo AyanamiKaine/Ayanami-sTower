@@ -6,8 +6,15 @@ using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Layout;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the ScrollViewer component
+    /// </summary>
     public class ECSScrollViewer : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the ScrollViewer component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSScrollViewer>();

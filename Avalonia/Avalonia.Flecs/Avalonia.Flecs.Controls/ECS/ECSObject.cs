@@ -10,8 +10,15 @@ using Avalonia.Flecs.Controls.ECS.Events;
 using System.ComponentModel;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the Object component
+    /// </summary>
     public class ECSObject : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the Object component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
 

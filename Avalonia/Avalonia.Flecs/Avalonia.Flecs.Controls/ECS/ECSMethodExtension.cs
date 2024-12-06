@@ -16,9 +16,6 @@ namespace Avalonia.Flecs.Controls.ECS
 
         /// <summary>
         /// Tries running a method on a control component of an entity.
-        /// 
-        /// If you set a window component on an entity and say:
-        /// entity.RunMethod("Show"); is equivalent to entity.Get<Window>().Show();
         /// </summary>
         /// <param name="entity"></param>
         /// <param name="methodName"></param>
@@ -54,6 +51,13 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(object), nameof(RunMethod));
         }
 
+        /// <summary>
+        /// Gets a method from a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="methodName"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static MethodInfo GetMethod(this Entity entity, string methodName)
         {
             if (entity.Has<object>())
@@ -67,6 +71,15 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(object), nameof(GetMethod));
         }
 
+        /// <summary>
+        /// Gets a method from a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="methodName"></param>
+        /// <param name="parameterTypes"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMethodException"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static MethodInfo GetMethod(this Entity entity, string methodName, params Type[] parameterTypes)
         {
             if (entity.Has<object>())

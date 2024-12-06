@@ -9,8 +9,15 @@ using Avalonia.Input.TextInput;
 using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the RadioButton component
+    /// </summary>
     public class ECSRadioButton : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the RadioButton component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSRadioButton>();

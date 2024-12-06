@@ -6,9 +6,18 @@ using Flecs.NET.Core;
 namespace Avalonia.Flecs.Controls.ECS
 {
 
+    /// <summary>
+    /// This extension methods all relate to Animation components
+    /// </summary>
     public static class EntityExtensions
     {
 
+        /// <summary>
+        /// Adds an animation to a control component of an entity.
+        /// </summary>
+        /// <param name="world"></param>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public static Entity CreateOrLookup(this World world, string name)
         {
             var entity = world.Lookup("." + name);

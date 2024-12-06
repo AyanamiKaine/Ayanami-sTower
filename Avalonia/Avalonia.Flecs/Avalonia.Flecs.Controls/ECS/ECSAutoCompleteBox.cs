@@ -3,8 +3,16 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the AutoCompleteBox component
+    /// </summary>
     public class ECSAutoCompleteBox : IFlecsModule
     {
+
+        /// <summary>
+        /// Initializes the AutoCompleteBox component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSAutoCompleteBox>();
@@ -12,7 +20,7 @@ namespace Avalonia.Flecs.Controls.ECS
                 .OnSet((Entity e, ref AutoCompleteBox autoCompleteBox) =>
                 {
 
-                    if(!e.Has<object>())
+                    if (!e.Has<object>())
                     {
                         e.Set<object>(autoCompleteBox);
                     }

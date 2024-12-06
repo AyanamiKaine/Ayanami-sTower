@@ -5,6 +5,9 @@ using Flecs.NET.Core;
 namespace Avalonia.Flecs.Controls.ECS
 {
 
+    /// <summary>
+    /// This ECS Module is used to register the ContentControl component
+    /// </summary>
     public static class ECSContentControlExtensions
     {
         /// <summary>
@@ -13,7 +16,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <remarks>
         /// Usually you should not use this to add content to a ContentControl component.
         /// instead you should add the entity as a child of the ContentControl entity.
-        /// </remaks>
+        /// </remarks>
         /// <param name="entity"></param>
         /// <param name="control"></param>
         /// <returns></returns>

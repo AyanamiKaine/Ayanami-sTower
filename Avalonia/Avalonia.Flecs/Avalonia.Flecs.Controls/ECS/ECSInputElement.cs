@@ -10,8 +10,15 @@ using Avalonia.Input.TextInput;
 using Avalonia.Controls.Embedding.Offscreen;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the InputElement component
+    /// </summary>
     public class ECSInputElement : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the InputElement component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSInputElement>();
@@ -28,13 +35,13 @@ namespace Avalonia.Flecs.Controls.ECS
                     e.Set<Layoutable>(inputElement);
                     e.Set<Visual>(inputElement);
 
-                    /// IMPORTANT
-                    /// ALL OBERSERVES RUN IN A NON-UI THREAD THIS IS THE DEFAULT BEHAVIOR IN AVALONIA
-                    /// ANY CODE EXECUTED IN AN OBSERVE THAT MODIFIES THE UI MUST BE DISPATCHED TO THE UI THREAD
-                    /// THIS CAN BE DONE BY USING THE 
-                    /// Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { /* UI CODE HERE */ });
-                    /// THIS ALSO MATTER FOR ALL FUNCTIONS 
-                    /// THAT WANT TO USE THE ECS WORLD FOUND IN MAIN THE APPLICATION
+                    // IMPORTANT
+                    // ALL OBERSERVES RUN IN A NON-UI THREAD THIS IS THE DEFAULT BEHAVIOR IN AVALONIA
+                    // ANY CODE EXECUTED IN AN OBSERVE THAT MODIFIES THE UI MUST BE DISPATCHED TO THE UI THREAD
+                    // THIS CAN BE DONE BY USING THE 
+                    // Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { /* UI CODE HERE */ });
+                    // THIS ALSO MATTER FOR ALL FUNCTIONS 
+                    // THAT WANT TO USE THE ECS WORLD FOUND IN MAIN THE APPLICATION
 
 
 

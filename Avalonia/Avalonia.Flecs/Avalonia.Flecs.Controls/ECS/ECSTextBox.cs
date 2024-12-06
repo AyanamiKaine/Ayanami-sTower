@@ -9,8 +9,15 @@ using Avalonia.Layout;
 using Avalonia.Controls.Primitives;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the TextBox component
+    /// </summary>
     public class ECSTextBox : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the TextBox component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSTextBox>();

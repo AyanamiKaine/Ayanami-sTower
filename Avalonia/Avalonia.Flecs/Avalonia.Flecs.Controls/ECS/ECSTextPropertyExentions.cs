@@ -19,6 +19,13 @@ namespace Avalonia.Flecs.Controls.ECS
     public static class ECSTextPropertyExentions
     {
 
+        /// <summary>
+        /// Sets the inner left content of a TextBox control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetInnerLeftContent(this Entity entity, object content)
         {
             if (entity.Has<TextBox>())
@@ -29,6 +36,12 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetInnerLeftContent));
         }
 
+        /// <summary>
+        /// Gets the inner left content of a TextBox control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static object GetInnerLeftContent(this Entity entity)
         {
             if (entity.Has<TextBox>())
@@ -37,6 +50,13 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(GetInnerLeftContent));
         }
 
+        /// <summary>
+        /// Sets the inner right content of a TextBox control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetInnerRightContent(this Entity entity, object content)
         {
             if (entity.Has<TextBox>())
@@ -47,6 +67,12 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetInnerRightContent));
         }
 
+        /// <summary>
+        /// Gets the inner right content of a TextBox control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static object GetInnerRightContent(this Entity entity)
         {
             if (entity.Has<TextBox>())
@@ -55,6 +81,13 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(GetInnerRightContent));
         }
 
+        /// <summary>
+        /// Sets the text of a TextBox or TextBlock control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetText(this Entity entity, string text)
         {
             if (entity.Has<TextBox>())
@@ -76,6 +109,12 @@ namespace Avalonia.Flecs.Controls.ECS
 
         }
 
+        /// <summary>
+        /// Gets the text of a TextBox or TextBlock control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public static string GetText(this Entity entity)
         {
             if (entity.Has<TextBox>())

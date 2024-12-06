@@ -9,8 +9,15 @@ using Avalonia.Input.TextInput;
 using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the ToggleSplitButton component
+    /// </summary>
     public class ECSToggleSplitButton : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the ToggleSplitButton component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSToggleSplitButton>();

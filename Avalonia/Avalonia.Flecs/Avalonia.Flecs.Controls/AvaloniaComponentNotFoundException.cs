@@ -13,6 +13,12 @@ namespace Avalonia.Flecs.Controls
     /// </summary>
     public class ComponentNotFoundException : Exception
     {
+        /// <summary>
+        /// Constructor for ComponentNotFoundException
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="componentType"></param>
+        /// <param name="methodName"></param>
         public ComponentNotFoundException(Entity entity, Type componentType, string methodName)
                     : base(@$"Method '{methodName}' expected component '{componentType}' on entity:
 
@@ -27,13 +33,25 @@ namespace Avalonia.Flecs.Controls
             ComponentType = componentType;
             Entity = entity;
         }
+        /// <summary>
+        /// Constructor for ComponentNotFoundException
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="componentType"></param>
+        /// <param name="entity"></param>
         public ComponentNotFoundException(string message, Type componentType, Entity entity) : base(message)
         {
             ComponentType = componentType;
             Entity = entity;
         }
 
+        /// <summary>
+        /// The exepected component type that was not found.
+        /// </summary>
         public object ComponentType { get; set; }
+        /// <summary>
+        /// The entity that the component was not found on.
+        /// </summary>
         public Entity Entity { get; set; }
     }
 }

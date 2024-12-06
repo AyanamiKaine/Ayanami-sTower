@@ -9,8 +9,15 @@ using Avalonia.Input.TextInput;
 using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the ToggleButton component
+    /// </summary>
     public class ECSToggleButton : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the ToggleButton component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSToggleButton>();

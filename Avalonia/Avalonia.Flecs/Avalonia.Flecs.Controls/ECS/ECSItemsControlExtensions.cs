@@ -12,24 +12,13 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public static class ECSItemsControlExtensions
     {
-
         /// <summary>
-        /// Sets a collection used to generate the content of the <see cref="ItemsControl"/>.
-        /// If An entity has an ItemsControl component or the component itself has an itemscontrol property, this property can be used to set the collection
+        /// Sets the items source of an ItemsControl component of an entity.
         /// </summary>
-        /// <remarks>
-        /// A common scenario is to use an <see cref="ItemsControl"/> such as a 
-        /// <see cref="ListBox"/> to display a data collection, or to bind an
-        /// <see cref="ItemsControl"/> to a collection object. To bind an <see cref="ItemsControl"/>
-        /// to a collection object, use the <see cref="ItemsSource"/> property.
-        /// 
-        /// When the <see cref="ItemsSource"/> property is set, the <see cref="Items"/> collection
-        /// is made read-only and fixed-size.
-        ///
-        /// When <see cref="ItemsSource"/> is in use, setting the property to null removes the
-        /// collection and restores usage to <see cref="Items"/>, which will be an empty 
-        /// <see cref="ItemCollection"/>.
-        /// </remarks>
+        /// <param name="entity"></param>
+        /// <param name="collection"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetItemsSource(this Entity entity, System.Collections.IEnumerable? collection)
         {
             if (entity.Has<ItemsControl>())
@@ -50,6 +39,12 @@ namespace Avalonia.Flecs.Controls.ECS
 
         }
 
+        /// <summary>
+        /// Gets the items source of an ItemsControl component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static System.Collections.IEnumerable? GetItemsSource(this Entity entity)
         {
             if (entity.Has<ItemsControl>())

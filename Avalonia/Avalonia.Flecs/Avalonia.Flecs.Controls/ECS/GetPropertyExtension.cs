@@ -5,7 +5,9 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
+    /// <summary>
+    /// This extension methods all relate to Window components
+    /// </summary>
     public static class GetPropertyExtension
     {
         /// <summary>

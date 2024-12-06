@@ -9,8 +9,15 @@ using Avalonia.Input.TextInput;
 using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the SelectingItemsControl component
+    /// </summary>
     public class ECSSelectingItemsControl : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the SelectingItemsControl component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSSelectingItemsControl>();

@@ -9,8 +9,15 @@ using Avalonia.Input.TextInput;
 using Avalonia.Controls.Primitives;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the Window component
+    /// </summary>
     public class ECSWindow : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the Window component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSWindow>();

@@ -6,7 +6,9 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>preview</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.2" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.2" />

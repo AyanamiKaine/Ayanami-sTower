@@ -6,8 +6,20 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This extension methods all relate to Animation components
+    /// </summary>
     public static class ECSAnimationExtensions
     {
+        /// <summary>
+        /// Adds an animation to a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="animationName"></param>
+        /// <param name="animation"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMethodException"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity AddAnimation(this Entity entity, string animationName, Animation.Animation animation)
         {
             if (entity.Has<Control>())
@@ -25,6 +37,13 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(AddAnimation));
         }
 
+        /// <summary>
+        /// Gets an animation from a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="animationName"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Animation.Animation? GetAnimation(this Entity entity, string animationName)
         {
             if (entity.Has<Control>())

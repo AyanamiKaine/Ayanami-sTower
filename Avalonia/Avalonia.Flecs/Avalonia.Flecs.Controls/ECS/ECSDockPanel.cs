@@ -2,8 +2,15 @@ using Flecs.NET.Core;
 using Avalonia.Controls;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the DockPanel component
+    /// </summary>
     public class ECSDockPanel : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the DockPanel component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSDockPanel>();

@@ -9,8 +9,15 @@ using Avalonia.LogicalTree;
 using Avalonia.Layout;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the MenuItem component
+    /// </summary>
     public class ECSMenuItem : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the MenuItem component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSMenuItem>();

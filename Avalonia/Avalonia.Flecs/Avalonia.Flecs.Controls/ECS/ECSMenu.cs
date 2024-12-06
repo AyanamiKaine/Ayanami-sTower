@@ -8,8 +8,15 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the Menu component
+    /// </summary>
     public class ECSMenu : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the Menu component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSMenu>();

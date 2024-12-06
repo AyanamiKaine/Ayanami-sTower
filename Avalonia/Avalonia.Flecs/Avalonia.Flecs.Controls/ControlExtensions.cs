@@ -2,6 +2,9 @@ using Avalonia.Controls;
 
 namespace Avalonia.Flecs.Controls
 {
+    /// <summary>
+    /// Extension methods for Control components.
+    /// </summary>
     public static class ControlExtensions
     {
         /// <summary>

@@ -8,8 +8,15 @@ using Avalonia.Interactivity;
 using Avalonia.Input.TextInput;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the TextBlock component
+    /// </summary>
     public class ECSTextBlock : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the TextBlock component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSTextBlock>();

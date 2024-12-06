@@ -23,6 +23,14 @@ namespace Avalonia.Flecs.Controls.ECS
 
     public static class ECSEventExtensions
     {
+        /// <summary>
+        /// Adds an event handler to a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="eventName"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity RemoveEventHandler(this Entity entity, string eventName, Action<object, RoutedEventArgs> handler)
         {
             var control = entity.Get<Control>();
@@ -39,7 +47,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
-
+        /// <summary>
+        /// Adds an event handler to a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnClick(this Entity entity, Action<object?, RoutedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -56,6 +70,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnTemplateApplied(this Entity entity, Action<object?, TemplateAppliedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -72,6 +93,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnSelectionChanged(this Entity entity, Action<object?, SelectionChangedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -88,6 +116,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnClosed(this Entity entity, Action<object?, EventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -104,6 +139,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnOpened(this Entity entity, Action<object?, EventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -120,6 +162,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnAttachedToLogicalTree(this Entity entity, Action<object?, LogicalTreeAttachmentEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -136,6 +185,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnAttachedToVisualTree(this Entity entity, Action<object?, VisualTreeAttachmentEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -152,6 +208,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnDataContextChanged(this Entity entity, Action<object?, EventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -168,6 +231,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnDetachedFromLogicalTree(this Entity entity, Action<object?, LogicalTreeAttachmentEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -184,6 +254,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnDetachedFromVisualTree(this Entity entity, Action<object?, VisualTreeAttachmentEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -200,6 +277,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnDoubleTapped(this Entity entity, Action<object?, RoutedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -216,6 +300,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnEffectiveViewportChanged(this Entity entity, Action<object?, EffectiveViewportChangedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -232,6 +323,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnGotFocus(this Entity entity, Action<object?, GotFocusEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -248,6 +346,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnInitialized(this Entity entity, Action<object?, EventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -264,6 +369,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnKeyDown(this Entity entity, Action<object?, KeyEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -280,6 +392,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnKeyUp(this Entity entity, Action<object?, KeyEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -296,6 +415,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnLayoutUpdated(this Entity entity, Action<object?, EventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -312,6 +438,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnLostFocus(this Entity entity, Action<object?, RoutedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -328,6 +461,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPointerCaptureLost(this Entity entity, Action<object?, PointerCaptureLostEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -344,6 +484,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPointerEntered(this Entity entity, Action<object?, PointerEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -360,6 +507,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPointerExited(this Entity entity, Action<object?, PointerEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -376,6 +530,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPointerMoved(this Entity entity, Action<object?, PointerEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -392,6 +553,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPointerPressed(this Entity entity, Action<object?, PointerPressedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -408,6 +576,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPointerReleased(this Entity entity, Action<object?, PointerReleasedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -424,6 +599,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPointerWheelChanged(this Entity entity, Action<object?, PointerWheelEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -440,6 +622,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPropertyChanged(this Entity entity, Action<object?, AvaloniaPropertyChangedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -456,6 +645,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnResourceChanged(this Entity entity, Action<object?, ResourcesChangedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -472,6 +668,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event Tapped of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnTapped(this Entity entity, Action<object?, TappedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -488,6 +691,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event TextInput of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnTextInput(this Entity entity, Action<object?, TextInputEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -504,6 +714,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event TextInputMethodClientRequested of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnTextInputMethodClientRequested(this Entity entity, Action<object?, TextInputMethodClientRequestedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -520,6 +737,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event OnClosing of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnClosing(this Entity entity, Action<object?, CancelEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -536,6 +760,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event TextChanging of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnTextChanging(this Entity entity, Action<object?, TextChangingEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -552,6 +783,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event TextChanged of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnTextChanged(this Entity entity, Action<object?, TextChangedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -568,6 +806,13 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event IsCheckedChanged of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnIsCheckedChanged(this Entity entity, Action<object?, RoutedEventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -584,6 +829,14 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
+
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event Activated of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnActivated(this Entity entity, Action<object?, EventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -599,7 +852,14 @@ namespace Avalonia.Flecs.Controls.ECS
 
             return entity;
         }
-        
+
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event Deactivated of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnDeactivated(this Entity entity, Action<object?, EventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -615,6 +875,14 @@ namespace Avalonia.Flecs.Controls.ECS
 
             return entity;
         }
+
+        /// <summary>
+        /// Adds an event handler to an avalonia control component that has the event PositionChanged of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        /// <exception cref="MissingMemberException"></exception>
         public static Entity OnPositionChanged(this Entity entity, Action<object?, EventArgs> handler)
         {
             var obj = entity.Get<object>();
@@ -631,6 +899,6 @@ namespace Avalonia.Flecs.Controls.ECS
             return entity;
         }
 
-        
+
     }
 }

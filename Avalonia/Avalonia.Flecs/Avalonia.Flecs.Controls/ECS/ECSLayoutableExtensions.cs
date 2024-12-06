@@ -5,6 +5,9 @@ using Flecs.NET.Core;
 namespace Avalonia.Flecs.Controls.ECS
 {
 
+    /// <summary>
+    /// This extension class is used to work with Layoutable properties of a component  attached to the Entity class.
+    /// </summary>
     public static class ECSLayoutableExtensions
     {
 
@@ -193,6 +196,13 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
         }
 
+        /// <summary>
+        /// Set the margin of the Layoutable component.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetMargin(this Entity entity, double value)
         {
             if (entity.Has<Layoutable>())
@@ -208,6 +218,14 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
         }
 
+        /// <summary>
+        /// Set the margin of the Layoutable component.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="horizontalMargin"></param>
+        /// <param name="verticalMargin"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetMargin(this Entity entity, double horizontalMargin, double verticalMargin)
         {
             if (entity.Has<Layoutable>())
@@ -223,6 +241,16 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
         }
 
+        /// <summary>
+        /// Set the margin of the Layoutable component.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="leftMargin"></param>
+        /// <param name="topMargin"></param>
+        /// <param name="rightMargin"></param>
+        /// <param name="bottomMargin"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
         public static Entity SetMargin(this Entity entity, double leftMargin, double topMargin, double rightMargin, double bottomMargin)
         {
             if (entity.Has<Layoutable>())
@@ -245,12 +273,10 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetMargin));
         }
-
         /// <summary>
         /// Get the margin of the Layoutable component.
         /// </summary>
         /// <param name="entity"></param>
-        /// <param name="value"></param>
         /// <returns></returns>
         /// <exception cref="ComponentNotFoundException"></exception>
         public static Thickness GetMargin(this Entity entity)

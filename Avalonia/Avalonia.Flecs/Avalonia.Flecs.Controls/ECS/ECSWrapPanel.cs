@@ -2,8 +2,15 @@ using Flecs.NET.Core;
 using Avalonia.Controls;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the WrapPanel component
+    /// </summary>
     public class ECSWrapPanel : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the WrapPanel component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSWrapPanel>();

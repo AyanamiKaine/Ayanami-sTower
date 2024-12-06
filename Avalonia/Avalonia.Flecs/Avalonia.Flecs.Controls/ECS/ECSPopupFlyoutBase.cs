@@ -10,8 +10,15 @@ using Avalonia.Flecs.Controls.ECS.Events;
 using System.ComponentModel;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the PopupFlyoutBase component
+    /// </summary>
     public class ECSPopupFlyoutBase : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the PopupFlyoutBase component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSPopupFlyoutBase>();

@@ -6,12 +6,24 @@ using Avalonia.Controls.Primitives;
 namespace Avalonia.Flecs.Controls.ECS
 {
     // Modules need to implement the IFlecsModule interface
+    /// <summary>
+    /// This ECS Module is used to register the Control component
+    /// </summary>
     public struct Module : IFlecsModule
     {
 
         ////RELATIONSHIPS
+        /// <summary>
+        /// Entity tag showing that the entity is a content control.
+        /// </summary>
         public struct InnerRightContent { };
+        /// <summary>
+        /// Entity tag showing that the entity is a content control.
+        /// </summary>
         public struct InnerLeftContent { };
+        /// <summary>
+        /// Entity tag showing that the entity is a content control.
+        /// </summary>
         public struct KeyBindings { };
         /// <summary>
         /// Entity tag showing that the 
@@ -35,6 +47,10 @@ namespace Avalonia.Flecs.Controls.ECS
         public record struct CurrentPage { }
 
 
+        /// <summary>
+        /// Initializes the module
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             // Register module with world. The module entity will be created with the
@@ -95,6 +111,10 @@ namespace Avalonia.Flecs.Controls.ECS
 
         }
 
+        /// <summary>
+        /// Adds the UI component tags to the world
+        /// </summary>
+        /// <param name="world"></param>
         public static void AddUIComponentTags(World world)
         {
             world.Component<Page>("Page");
@@ -128,6 +148,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 });
         }
 
+        /// <summary>
+        /// Adds the control to parent adder observer.
+        /// </summary>
+        /// <param name="world"></param>
         public static void AddControlToParentAdderObserver(World world)
         {
             //This Observer handles the functionality adding entity as children of other
@@ -178,6 +202,10 @@ namespace Avalonia.Flecs.Controls.ECS
 
         We have a conceptual overlap and a mental model mismatch. 
         */
+        /// <summary>
+        /// Adds the page observer.
+        /// </summary>
+        /// <param name="world"></param>
         public static void AddPageObserver(World world)
         {
             /*
@@ -226,7 +254,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                 });
         }
-
+        /// <summary>
+        /// Registers the event data components.
+        /// </summary>
+        /// <param name="world"></param>
         public static void RegisterEventDataComponents(World world)
         {
             world.Component<Click>("Click");

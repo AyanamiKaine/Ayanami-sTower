@@ -4,8 +4,15 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls.ECS.Events;
 namespace Avalonia.Flecs.Controls.ECS
 {
+    /// <summary>
+    /// This ECS Module is used to register the TemplatedControl component
+    /// </summary>
     public class ECSTemplatedControl : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the TemplatedControl component
+        /// </summary>
+        /// <param name="world"></param>
         public void InitModule(World world)
         {
             world.Module<ECSTemplatedControl>();
