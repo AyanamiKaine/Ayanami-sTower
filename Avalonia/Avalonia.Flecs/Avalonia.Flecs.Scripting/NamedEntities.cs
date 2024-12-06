@@ -51,11 +51,12 @@ public class NamedEntities(World world)
     }
 
     /// <summary>
-    /// Removes an entity from the container.
+    /// Removes an entity from the container and destroys it.
     /// </summary>
     /// <param name="name"></param>
     public void Remove(string name)
     {
+        _entities[name].Destruct();
         _entities.Remove(name);
     }
 
