@@ -42,6 +42,7 @@ public partial class App : Application
                 {
                     _entities.Clear();
                     await scriptManager.RunScriptAsync("main");
+                    await scriptManager.StartReplAsync();
                 });
             }
         };
