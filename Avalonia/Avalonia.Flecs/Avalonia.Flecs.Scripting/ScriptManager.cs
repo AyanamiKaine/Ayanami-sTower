@@ -10,14 +10,14 @@ namespace Avalonia.Flecs.Scripting;
 /// Global data that is accessible in the scripts.
 /// We can use this to interact with the ECS.
 /// </summary>
-/// <param name="_world"></param>
-/// <param name="_entities"></param>
-public class GlobalData(World _world, NamedEntities _entities)
+/// <param name="world"></param>
+/// <param name="entities"></param>
+public class GlobalData(World world, NamedEntities entities)
 {
     /// <summary>
     /// The app ecs world instance.
     /// </summary>
-    public World world = _world;
+    public World _world = world;
     /// <summary>
     /// We provide a NameEntities container where we give entities unique names
     /// by them we can refrence them better by name. Flecs provides a way to lookup
@@ -25,7 +25,7 @@ public class GlobalData(World _world, NamedEntities _entities)
     /// But because we will change the parent of the entity we will have to change the path.
     /// The simple solution is to store the entity id in a dictionary with the name as the key.
     /// </summary>
-    public NamedEntities entities = _entities;
+    public NamedEntities _entities = entities;
 }
 
 /// <summary>
@@ -386,7 +386,7 @@ public class ScriptManager
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error running script {scriptName}: {e.Message}");
+            Console.WriteLine($"Error running script '{scriptName}': {e.Message}");
         }
     }
 
