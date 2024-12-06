@@ -15,6 +15,12 @@ public class NamedEntities(World world)
     private Dictionary<string, Entity> _entities = new();
     private World _world = world;
 
+    /// <summary>
+    /// Gets or sets an entity by name. If an entity
+    /// is not found it will be created.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
     public Entity this[string name]
     {
         get
@@ -44,11 +50,18 @@ public class NamedEntities(World world)
         }
     }
 
+    /// <summary>
+    /// Removes an entity from the container.
+    /// </summary>
+    /// <param name="name"></param>
     public void Remove(string name)
     {
         _entities.Remove(name);
     }
 
+    /// <summary>
+    /// Clears all entities in the container.
+    /// </summary>
     public void Clear()
     {
         foreach (var entity in _entities)

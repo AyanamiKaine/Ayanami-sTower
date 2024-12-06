@@ -28,41 +28,76 @@ public class GlobalData(World _world, NamedEntities _entities)
     public NamedEntities entities = _entities;
 }
 
+/// <summary>
+/// Class that stores compiled scripts.
+/// </summary>
 public class CompiledScripts
 {
     private readonly Dictionary<string, Script> _compiledScripts = [];
 
+    /// <summary>
+    /// Adds a script to the list of compiled scripts.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="script"></param>
     public void Add(string name, Script script)
     {
         _compiledScripts.Add(name, script);
     }
 
+    /// <summary>
+    /// Gets a script from the list of compiled scripts.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
     public Script Get(string name)
     {
         return _compiledScripts[name];
     }
 
+    /// <summary>
+    /// Removes a script from the list of compiled scripts.
+    /// </summary>
+    /// <param name="name"></param>
     public void Remove(string name)
     {
         _compiledScripts.Remove(name);
     }
 
+    /// <summary>
+    /// Checks if a script with the given name exists in the list of compiled scripts.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
     public bool Contains(string name)
     {
         return _compiledScripts.ContainsKey(name);
     }
 
+    /// <summary>
+    /// Clears the list of compiled scripts.
+    /// </summary>
     public void Clear()
     {
         _compiledScripts.Clear();
     }
 
+    /// <summary>
+    /// Runs a script from the list of compiled scripts.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="data"></param>
     public void Run(string name, GlobalData data)
     {
         var script = _compiledScripts[name];
         script.RunAsync(data);
     }
 
+    /// <summary>
+    /// Indexer for the list of compiled scripts.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
     public Script this[string name]
     {
         get { return _compiledScripts[name]; }
@@ -71,6 +106,10 @@ public class CompiledScripts
 }
 
 // Define a custom exception class for script not found
+/// <summary>
+/// Exception thrown when a script is not found.
+/// </summary>
+/// <param name="scriptName"></param>
 public class ScriptNotFoundException(string scriptName) : Exception($"Script with name {scriptName} not found.")
 {
 }
@@ -95,6 +134,9 @@ easy to implement but practically i have no clue how it would fit into the ECS p
 /// <param name="scriptName"></param>
 public class ScriptCompilationEventArgs(string scriptName) : EventArgs
 {
+    /// <summary>
+    /// The name of the script that is being compiled.
+    /// </summary>
     public string ScriptName { get; } = scriptName;
 }
 
@@ -104,8 +146,16 @@ public class ScriptCompilationEventArgs(string scriptName) : EventArgs
 /// <param name="sender"></param>
 /// <param name="e"></param>
 public delegate void ScriptCompilationStart(object sender, ScriptCompilationEventArgs e);
+/// <summary>
+/// Event handler for when a script compilation finishes.
+/// </summary>
+/// <param name="sender"></param>
+/// <param name="e"></param>
 public delegate void ScriptCompilationFinished(object sender, ScriptCompilationEventArgs e);
 
+/// <summary>
+/// Class that manages scripts and their compilation.
+/// </summary>
 public class ScriptManager
 {
     /// <summary>
@@ -117,6 +167,12 @@ public class ScriptManager
     /// </summary>
     public event ScriptCompilationFinished? OnScriptCompilationFinished;
 
+    /// <summary>
+    /// Constructor for the script manager.
+    /// </summary>
+    /// <param name="world"></param>
+    /// <param name="entities"></param>
+    /// <param name="recompileScriptsOnFileChange"></param>
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
 
@@ -135,6 +191,7 @@ public class ScriptManager
                 Assembly.Load("Flecs.NET.Bindings"),
                 Assembly.Load("Avalonia.Flecs.Controls"),
                 Assembly.Load("Avalonia.Controls"),
+                Assembly.Load("Avalonia.Flecs.Scripting"),
                 Assembly.Load("Avalonia"),
                 Assembly.Load("Avalonia.Desktop"),
                 Assembly.Load("Avalonia.Base")
@@ -143,6 +200,13 @@ public class ScriptManager
             .AddImports("Avalonia.Controls");
     }
 
+    /// <summary>
+    /// Constructor for the script manager.
+    /// </summary>
+    /// <param name="world"></param>
+    /// <param name="entities"></param>
+    /// <param name="options"></param>
+    /// <param name="recompileScriptsOnFileChange"></param>
     public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true)
     {
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
@@ -200,6 +264,9 @@ public class ScriptManager
         }
     }
 
+    /// <summary>
+    /// The script options that are used for compiling the scripts.
+    /// </summary>
     public ScriptOptions Options { get; set; }
 
     /// <summary>
