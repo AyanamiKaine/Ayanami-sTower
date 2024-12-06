@@ -198,7 +198,9 @@ public class ScriptManager
             // Load your API assembly
             )
             .AddImports("Avalonia.Controls")
-            .AddImports("Avalonia.Flecs.Controls.ECS");
+            .AddImports("Avalonia.Flecs.Controls.ECS")
+            .AddImports("Avalonia.Flecs.Scripting")
+            .AddImports("Flecs.NET.Core");
     }
 
     /// <summary>
@@ -605,6 +607,10 @@ public class ScriptManager
 
         return await Task.Run(() => Console.ReadLine());
     }
+    /// <summary>
+    /// Represents the current state of the repl, its used
+    /// to continue the repl from the previous state.
+    /// </summary>
     private ScriptState<object>? _replState = null;
 
     /// <summary>
