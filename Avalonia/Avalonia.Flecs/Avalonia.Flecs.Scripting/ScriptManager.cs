@@ -109,9 +109,26 @@ public class CompiledScripts
 /// <summary>
 /// Exception thrown when a script is not found.
 /// </summary>
-/// <param name="scriptName"></param>
-public class ScriptNotFoundException(string scriptName) : Exception($"Script with name {scriptName} not found.")
+public class ScriptNotFoundException : Exception
 {
+    /// <summary>
+    /// Constructor for ScriptNotFoundException
+    /// </summary>
+    public ScriptNotFoundException() : base()
+    {
+    }
+    /// <summary>
+    /// Constructor for ScriptNotFoundException
+    /// </summary>
+    public ScriptNotFoundException(string scriptName) : base($"Script with name {scriptName} not found.")
+    {
+    }
+    /// <summary>
+    /// Constructor for ScriptNotFoundException
+    /// </summary>
+    public ScriptNotFoundException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
 }
 
 /*
@@ -610,7 +627,7 @@ public class ScriptManager
     private ScriptState<object>? _replState = null;
 
     /// <summary>
-    /// 
+    /// Evaluates the given code in the REPL.
     /// </summary>
     /// <param name="code"></param>
     /// <param name="cancellationToken"></param>
