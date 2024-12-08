@@ -559,10 +559,6 @@ public class ScriptManager
 
 
 
-    /*
-
-    */
-
     /// <summary>
     /// Starts Interactive REPL with the GlobalData defined.
     /// The repl has access to _world, and _entities.
@@ -597,7 +593,7 @@ public class ScriptManager
     }
 
 
-    private async Task<string?> ReadLineAsync()
+    private static async Task<string?> ReadLineAsync()
     {
         // Implement asynchronous input retrieval here.
         // This could involve reading from a UI element, a message queue, etc.
