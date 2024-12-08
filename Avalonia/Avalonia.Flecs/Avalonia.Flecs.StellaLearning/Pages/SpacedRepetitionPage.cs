@@ -18,7 +18,7 @@ using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
-public class SpacedRepetitionPage
+static public class SpacedRepetitionPage
 {
     public static Entity Create(World world)
     {
