@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -132,7 +133,8 @@ public static class SettingsPage
         var currentThemeVariant = app.ActualThemeVariant;
 
         // Determine the new theme variant based on the input string
-        var newThemeVariant = theme.ToLower() == "dark" ? ThemeVariant.Dark : ThemeVariant.Light;
+       
+        var newThemeVariant = string.Equals(theme, "dark", StringComparison.OrdinalIgnoreCase) ? ThemeVariant.Dark : ThemeVariant.Light;
 
         // Only update the theme if it has changed
         if (currentThemeVariant != newThemeVariant)
