@@ -13,14 +13,17 @@ namespace Avalonia.Flecs.Controls.ECS
 {
 
 
-    /// IMPORTANT
-    /// ALL OBERSERVES RUN IN A NON-UI THREAD THIS IS THE DEFAULT BEHAVIOR IN AVALONIA
-    /// ANY CODE EXECUTED IN AN OBSERVE THAT MODIFIES THE UI MUST BE DISPATCHED TO THE UI THREAD
-    /// THIS CAN BE DONE BY USING THE 
-    /// Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { /* UI CODE HERE */ });
-    /// THIS ALSO MATTER FOR ALL FUNCTIONS 
-    /// THAT WANT TO USE THE ECS WORLD FOUND IN MAIN THE APPLICATION
+    // IMPORTANT
+    // ALL OBERSERVES RUN IN A NON-UI THREAD THIS IS THE DEFAULT BEHAVIOR IN AVALONIA
+    // ANY CODE EXECUTED IN AN OBSERVE THAT MODIFIES THE UI MUST BE DISPATCHED TO THE UI THREAD
+    // THIS CAN BE DONE BY USING THE 
+    // Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { /* UI CODE HERE */ });
+    // THIS ALSO MATTER FOR ALL FUNCTIONS 
+    // THAT WANT TO USE THE ECS WORLD FOUND IN MAIN THE APPLICATION
 
+    /// <summary>
+    /// Implements various extension methods for adding event handlers to entities.
+    /// </summary>
     public static class ECSEventExtensions
     {
         /// <summary>
