@@ -13,6 +13,31 @@ namespace Avalonia.Flecs.Controls
     /// </summary>
     public class ComponentNotFoundException : Exception
     {
+
+        /// <summary>
+        /// Constructor for ComponentNotFoundException
+        /// </summary>
+        public ComponentNotFoundException() : base()
+        {
+        }
+
+        /// <summary>
+        /// Constructor for ComponentNotFoundException
+        /// </summary>
+        /// <param name="message"></param>
+        public ComponentNotFoundException(string message) : base(message)
+        {
+        }
+
+        /// <summary>
+        /// Constructor for ComponentNotFoundException
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="innerException"></param>
+        public ComponentNotFoundException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
         /// <summary>
         /// Constructor for ComponentNotFoundException
         /// </summary>
@@ -30,8 +55,6 @@ namespace Avalonia.Flecs.Controls
 
             Try adding '{componentType}' as a component to this entity.")
         {
-            ComponentType = componentType;
-            Entity = entity;
         }
         /// <summary>
         /// Constructor for ComponentNotFoundException
@@ -41,17 +64,6 @@ namespace Avalonia.Flecs.Controls
         /// <param name="entity"></param>
         public ComponentNotFoundException(string message, Type componentType, Entity entity) : base(message)
         {
-            ComponentType = componentType;
-            Entity = entity;
         }
-
-        /// <summary>
-        /// The exepected component type that was not found.
-        /// </summary>
-        public object ComponentType { get; set; }
-        /// <summary>
-        /// The entity that the component was not found on.
-        /// </summary>
-        public Entity Entity { get; set; }
     }
 }
