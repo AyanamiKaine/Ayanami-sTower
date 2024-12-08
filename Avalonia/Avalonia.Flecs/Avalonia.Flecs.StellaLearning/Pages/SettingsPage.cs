@@ -1,14 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls.ECS;
-using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
-using Avalonia.Threading;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
 

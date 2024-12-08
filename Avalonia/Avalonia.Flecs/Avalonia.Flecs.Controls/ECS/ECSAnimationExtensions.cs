@@ -1,7 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Markup.Xaml.Templates;
-using Avalonia.Animation;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Flecs.Controls.ECS;

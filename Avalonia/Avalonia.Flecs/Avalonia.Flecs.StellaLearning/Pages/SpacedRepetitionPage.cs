@@ -2,17 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
-using Avalonia.Flecs.Controls.ECS.Events;
-using Avalonia.Input;
 using Avalonia.Layout;
-using Avalonia.Media;
-using Avalonia.Styling;
 using Flecs.NET.Core;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Scripting;
 
 using static Avalonia.Flecs.Controls.ECS.Module;
 

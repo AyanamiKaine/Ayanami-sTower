@@ -1,13 +1,7 @@
 using Flecs.NET.Core;
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
-using Avalonia.LogicalTree;
-using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Layout;
 using Avalonia.Interactivity;
-using Avalonia.Input.TextInput;
-using Avalonia.Controls.Embedding.Offscreen;
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>

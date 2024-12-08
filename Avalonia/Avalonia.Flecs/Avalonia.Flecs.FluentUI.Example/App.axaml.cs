@@ -1,11 +1,9 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Flecs.FluentUI.Controls.ECS;
-using static Avalonia.Flecs.Controls.ECS.Module;
 using System;
 using Avalonia.Flecs.Controls.ECS;
 

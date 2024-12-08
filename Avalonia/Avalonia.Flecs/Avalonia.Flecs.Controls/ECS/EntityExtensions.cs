@@ -1,8 +1,4 @@
-using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
-using Avalonia.Markup.Xaml.Templates;
 using Flecs.NET.Core;
-
 namespace Avalonia.Flecs.Controls.ECS
 {
 
@@ -11,7 +7,6 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public static class EntityExtensions
     {
-
         /// <summary>
         /// Adds an animation to a control component of an entity.
         /// </summary>

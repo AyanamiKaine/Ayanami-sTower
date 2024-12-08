@@ -1,7 +1,6 @@
 using Flecs.NET.Core;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
-using static Avalonia.Flecs.FluentUI.Controls.ECS.Module;
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
     public class ECSNavigationView : IFlecsModule

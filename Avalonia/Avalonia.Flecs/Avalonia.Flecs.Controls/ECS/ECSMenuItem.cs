@@ -1,12 +1,6 @@
 using Flecs.NET.Core;
 using Avalonia.Controls;
-using Avalonia.Input;
-using Avalonia.Flecs.Controls.ECS.Events;
-using Avalonia.Input.TextInput;
 using Avalonia.Controls.Primitives;
-using Avalonia.Interactivity;
-using Avalonia.LogicalTree;
-using Avalonia.Layout;
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>

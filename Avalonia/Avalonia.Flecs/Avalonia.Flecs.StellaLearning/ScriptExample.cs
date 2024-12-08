@@ -1,8 +1,5 @@
-using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Scripting;
 using Flecs.NET.Core;
 using System.Threading.Tasks;
-using System.Reflection;
 using Avalonia.Flecs.Scripting;
 public static class ScriptExample
 {

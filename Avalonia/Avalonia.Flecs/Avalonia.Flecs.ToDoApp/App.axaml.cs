@@ -5,7 +5,6 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
-using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Flecs.NET.Core;

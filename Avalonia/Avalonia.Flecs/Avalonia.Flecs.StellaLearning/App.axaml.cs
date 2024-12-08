@@ -8,9 +8,7 @@ using Avalonia.Flecs.StellaLearning.Pages;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Scripting;
-using Avalonia.Rendering;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
-using System.Collections.Generic;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application

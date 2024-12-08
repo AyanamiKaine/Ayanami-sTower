@@ -6,7 +6,6 @@ using Avalonia.Input.TextInput;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.LogicalTree;
-using Avalonia.Markup.Xaml.Templates;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
