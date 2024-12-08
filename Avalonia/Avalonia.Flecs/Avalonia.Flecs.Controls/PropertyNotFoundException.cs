@@ -12,6 +12,30 @@ public class PropertyNotFoundException : Exception
     /// <summary>
     /// Constructor for PropertyNotFoundException
     /// </summary>
+    public PropertyNotFoundException() : base()
+    {
+    }
+
+    /// <summary>
+    /// Constructor for PropertyNotFoundException
+    /// </summary>
+    /// <param name="message"></param>
+    public PropertyNotFoundException(string message) : base(message)
+    {
+    }
+
+    /// <summary>
+    /// Constructor for PropertyNotFoundException
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="innerException"></param>
+    public PropertyNotFoundException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
+
+    /// <summary>
+    /// Constructor for PropertyNotFoundException
+    /// </summary>
     /// <param name="entity"></param>
     /// <param name="componentType"></param>
     /// <param name="expectedProperty"></param>
@@ -28,18 +52,6 @@ public class PropertyNotFoundException : Exception
             Try adding a avalonia object that has the property:'{expectedProperty}' as a component to this entity.")
 
     {
-        ExpectedProperty = expectedProperty;
-        Entity = entity;
     }
-
-    /// <summary>
-    /// The exepected property that was not found.
-    /// </summary>
-    public string ExpectedProperty { get; set; }
-
-    /// <summary>
-    /// The entity that the property was not found on.
-    /// </summary>
-    public Entity Entity { get; set; }
 }
 
