@@ -11,7 +11,7 @@ namespace Avalonia.Flecs.Controls.ECS
     */
 
     /// <summary>
-    /// To easily manipulate text properties in entities without first getting the control component with a text property.
+    /// To easily manipulate TextBox properties in entities without first getting the control component with a text property.
     /// </summary>
     public static class ECSTextPropertyExentions
     {
@@ -29,6 +29,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<TextBox>().InnerLeftContent = content;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("InnerLeftContent", content);
+            }
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetInnerLeftContent));
         }
 
@@ -42,7 +46,8 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<TextBox>())
                 return entity.Get<TextBox>().InnerLeftContent!;
-
+            else if (entity.Has<object>())
+                return entity.GetProperty<object>("InnerLeftContent");
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(GetInnerLeftContent));
         }
 
@@ -60,6 +65,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<TextBox>().InnerRightContent = content;
                 return entity;
             }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("InnerRightContent", content);
+            }
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetInnerRightContent));
         }
 
@@ -73,6 +82,8 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<TextBox>())
                 return entity.Get<TextBox>().InnerRightContent!;
+            else if (entity.Has<object>())
+                return entity.GetProperty<object>("InnerRightContent");
 
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(GetInnerRightContent));
         }
@@ -116,7 +127,8 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.Get<TextBox>().Text!;
             else if (entity.Has<TextBlock>())
                 return entity.Get<TextBlock>().Text!;
-
+            else if (entity.Has<object>())
+                return entity.GetProperty<string>("Text");
             throw new Exception("Entity does not have a control with a text property");
         }
     }
