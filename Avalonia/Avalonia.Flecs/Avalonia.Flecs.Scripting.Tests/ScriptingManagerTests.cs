@@ -1,4 +1,5 @@
 ﻿
+using Avalonia.Controls;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Scripting.Tests;
@@ -16,6 +17,19 @@ public class ScriptingManagerTests
         scriptManager.AddScript("TestScript", "using System;");
 
         Assert.True(scriptManager.CompiledScripts.Contains("TestScript"));
+    }
+
+    [Fact]
+    public async Task NamedEntitiesAreAvailableInScripts()
+    {
+        World world = World.Create();
+        NamedEntities entities = new(world);
+        var entity = entities["TestEntity"];
+
+        ScriptManager scriptManager = new(world: world, entities: entities, recompileScriptsOnFileChange: false);
+        scriptManager.AddScript("TestScript", "_entities[\"TestEntity\"].Set(new Button());");
+        await scriptManager.RunScriptAsync("TestScript");
+        Assert.True(entity.Has<Button>());
     }
 
     [Fact]
