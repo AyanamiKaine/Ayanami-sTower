@@ -244,7 +244,7 @@ public class ScriptManager
     /// <summary>
     /// File watcher for a defined scripts folder.
     /// Default folder watched should be "./scripts".
-    /// </summary>  
+    /// </summary>
     private FileSystemWatcher ScriptWatcher
     {
         get; set;
