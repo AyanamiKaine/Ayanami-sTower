@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
@@ -50,6 +51,23 @@ namespace Avalonia.Flecs.Controls.ECS
         }
 
         /// <summary>
+        /// Helper function to get the Row number of a control component attached to an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static int GetRow(this Entity entity)
+        {
+            if (entity.Has<Control>())
+            {
+                return Grid.GetRow(entity.Get<Control>());
+            }
+
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(GetRow));
+        }
+
+
+        /// <summary>
         /// Helper function to set the ColumnSpan property
         /// on a Control component that is attach to an entitiy.
         /// </summary>
@@ -65,6 +83,21 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity;
             }
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetColumnSpan));
+        }
+
+        /// <summary>
+        /// Helper function to get the ColumnSpan number of a control component attached to an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static int GetColumnSpan(this Entity entity)
+        {
+            if (entity.Has<Control>())
+            {
+                return Grid.GetColumnSpan(entity.Get<Control>());
+            }
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(GetColumnSpan));
         }
 
         /// <summary>
@@ -85,6 +118,21 @@ namespace Avalonia.Flecs.Controls.ECS
         }
 
         /// <summary>
+        /// Helper function to get the Column number of a control component attached to an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static int GetColumn(this Entity entity)
+        {
+            if (entity.Has<Control>())
+            {
+                return Grid.GetColumn(entity.Get<Control>());
+            }
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(GetColumn));
+        }
+
+        /// <summary>
         /// Helper function to set the RowSpan property of a control component attached to an entity.
         /// </summary>
         /// <param name="entity"></param>
@@ -99,6 +147,21 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity;
             }
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetRowSpan));
+        }
+
+        /// <summary>
+        /// Helper function to get the RowSpan number of a control component attached to an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static int GetRowSpan(this Entity entity)
+        {
+            if (entity.Has<Control>())
+            {
+                return Grid.GetRowSpan(entity.Get<Control>());
+            }
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(GetRowSpan));
         }
     }
 }
