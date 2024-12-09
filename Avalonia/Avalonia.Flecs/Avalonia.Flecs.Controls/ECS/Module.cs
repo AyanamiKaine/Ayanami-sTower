@@ -89,6 +89,7 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSBorder>();
             world.Import<ECSExpander>();
             world.Import<ECSHeaderedContentControl>();
+            world.Import<ECSHeaderedSelectingItemsControl>();
             world.Import<ECSAutoCompleteBox>();
             world.Import<ECSCanvas>();
             world.Import<ECSDockPanel>();
