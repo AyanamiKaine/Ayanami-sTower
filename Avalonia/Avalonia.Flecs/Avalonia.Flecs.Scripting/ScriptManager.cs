@@ -195,9 +195,10 @@ public class ScriptManager
 
     /// <summary>
     /// Makes the refrenced world and named entities avalaiable as globals to all scripts.
+    /// as _world and _entities respectively.
     /// </summary>
-    /// <param name="world"></param>
-    /// <param name="entities"></param>
+    /// <param name="world">can be refrenced in a script using _world</param>
+    /// <param name="entities">can be refrenced in a script using _entities</param>
     /// <param name="recompileScriptsOnFileChange"></param>
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
@@ -231,8 +232,8 @@ public class ScriptManager
     /// <summary>
     /// Constructor for the script manager.
     /// </summary>
-    /// <param name="world"></param>
-    /// <param name="entities"></param>
+    /// <param name="world">can be refrenced in a script using _world</param>
+    /// <param name="entities">can be refrenced in a script using _entities</param>
     /// <param name="options"></param>
     /// <param name="recompileScriptsOnFileChange"></param>
     public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true)
@@ -334,7 +335,7 @@ public class ScriptManager
         var script = CSharpScript.Create(code, Options, globalsType: typeof(GlobalData));
         script.Compile();
 
-        if(CompiledScripts.Contains(name))
+        if (CompiledScripts.Contains(name))
             OnCompiledScriptChanged?.Invoke(this, new ScriptEventArgs(name));
 
         CompiledScripts[name] = script;
