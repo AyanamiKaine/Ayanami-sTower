@@ -108,7 +108,7 @@ public partial class App : Application
                     title.SetText($"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})");
                 }
             };
-            button.SetColumn(1);
+            Grid.SetColumn(button, 1);
             grid.Children.Add(checkBox);
             grid.Children.Add(button);
 
