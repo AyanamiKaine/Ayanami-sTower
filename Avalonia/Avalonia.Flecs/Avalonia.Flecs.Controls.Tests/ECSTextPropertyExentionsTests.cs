@@ -90,4 +90,32 @@ public class ECSTextPropertyExentionsTests
 
         Assert.True(entity.GetInnerLeftContent() is Button);
     }
+
+    [Fact]
+    public void SetInnerRightContent()
+    {
+        var world = World.Create();
+        world.Import<Avalonia.Flecs.Controls.ECS.Module>();
+
+        var entity = world.Entity("TestEntity")
+            .Set(new TextBox())
+            .SetInnerRightContent(new Button());
+
+        Assert.True(entity.Get<TextBox>().InnerRightContent is Button);
+    }
+
+    [Fact]
+    public void GetInnerRightContent()
+    {
+        var world = World.Create();
+        world.Import<Avalonia.Flecs.Controls.ECS.Module>();
+
+        var entity = world.Entity("TestEntity")
+            .Set(new TextBox()
+            {
+                InnerRightContent = new Button()
+            });
+
+        Assert.True(entity.GetInnerRightContent() is Button);
+    }
 }
