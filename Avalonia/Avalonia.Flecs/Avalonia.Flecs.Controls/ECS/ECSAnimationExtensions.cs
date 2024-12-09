@@ -26,7 +26,7 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             else if (entity.Has<object>())
             {
-                var method = entity.GetProperty<object>("Resources").GetType().GetMethod("Add") ?? throw new MissingMethodException($"Method Add not found in Resources object");
+                var method = entity.GetProperty<object>("Resources").GetType().GetMethod("Add") ?? throw new MissingMethodException("Method Add not found in Resources object");
                 method.Invoke(entity.GetProperty<object>("Resources"), [animationName, animation]);
 
                 return entity;

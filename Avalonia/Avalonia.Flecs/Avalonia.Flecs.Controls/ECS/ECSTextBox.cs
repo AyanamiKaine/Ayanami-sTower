@@ -27,11 +27,8 @@ namespace Avalonia.Flecs.Controls.ECS
                                 // Adding event handlers
                                 // https://reference.avaloniaui.net/api/Avalonia.Controls.TextBox/#Events
 
-                                
-                            }).OnRemove((Entity e, ref TextBox textBox) =>
-                            {
-                                e.Remove<TemplatedControl>();
-                            });
+
+                            }).OnRemove((Entity e, ref TextBox textBox) => e.Remove<TemplatedControl>());
         }
     }
 }

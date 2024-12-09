@@ -10,7 +10,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     // IMPORTANT
     // ALL OBERSERVES RUN IN A NON-UI THREAD THIS IS THE DEFAULT BEHAVIOR IN AVALONIA
     // ANY CODE EXECUTED IN AN OBSERVE THAT MODIFIES THE UI MUST BE DISPATCHED TO THE UI THREAD
@@ -898,6 +897,5 @@ namespace Avalonia.Flecs.Controls.ECS
 
             return entity;
         }
-
     }
 }

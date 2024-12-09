@@ -25,10 +25,7 @@ namespace Avalonia.Flecs.Controls.ECS
 
                     e.Set<Control>(decorator);
                 })
-                .OnRemove((Entity e, ref Decorator decorator) =>
-                {
-                    e.Remove<Control>();
-                });
+                .OnRemove((Entity e, ref Decorator _) => e.Remove<Control>());
         }
     }
 }

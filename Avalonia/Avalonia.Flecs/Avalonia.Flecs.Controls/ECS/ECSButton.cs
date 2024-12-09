@@ -28,10 +28,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     // This is good so queries can be more generic and not have to check for every possible control type.
                     e.Set<ContentControl>(button);
                 })
-                .OnRemove((Entity e, ref Button button) =>
-                {
-                    e.Remove<ContentControl>();
-                });
+                .OnRemove((Entity e, ref Button _) => e.Remove<ContentControl>());
         }
     }
 }

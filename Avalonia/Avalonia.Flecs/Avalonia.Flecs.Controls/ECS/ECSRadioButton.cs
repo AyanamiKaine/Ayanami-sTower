@@ -29,10 +29,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     // This is good so queries can be more generic and not have to check for every possible control type.
                     e.Set<ToggleButton>(radioButton);
                 })
-                .OnRemove((Entity e, ref RadioButton radioButton) =>
-                {
-                    e.Remove<ToggleButton>();
-                });
+                .OnRemove((Entity e, ref RadioButton radioButton) => e.Remove<ToggleButton>());
         }
     }
 }

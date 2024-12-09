@@ -105,7 +105,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static Thickness GetPadding(this Entity entity)
         {
             if (entity.Has<TemplatedControl>())
+            {
                 return entity.Get<TemplatedControl>().Padding;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<Thickness>("Padding");

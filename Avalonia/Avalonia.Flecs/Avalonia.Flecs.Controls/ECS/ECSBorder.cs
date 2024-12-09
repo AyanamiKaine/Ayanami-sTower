@@ -18,17 +18,14 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Border>("Border")
                 .OnSet((Entity e, ref Border border) =>
                 {
-                    if(!e.Has<object>())
+                    if (!e.Has<object>())
                     {
                         e.Set<object>(border);
                     }
 
                     e.Set<Decorator>(border);
                 })
-                .OnRemove((Entity e, ref Border border) =>
-                {
-                    e.Remove<Decorator>();
-                });
+                .OnRemove((Entity e, ref Border _) => e.Remove<Decorator>());
         }
     }
 }

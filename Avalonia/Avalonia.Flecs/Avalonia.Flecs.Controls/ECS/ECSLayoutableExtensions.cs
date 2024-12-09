@@ -40,7 +40,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static double GetMaxWidth(this Entity entity)
         {
             if (entity.Has<Layoutable>())
+            {
                 return entity.Get<Layoutable>().MaxWidth;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<double>("MaxWidth");
@@ -80,7 +82,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static double GetMaxHeight(this Entity entity)
         {
             if (entity.Has<Layoutable>())
+            {
                 return entity.Get<Layoutable>().MaxHeight;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<double>("MaxHeight");
@@ -120,7 +124,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static VerticalAlignment GetVerticalAlignment(this Entity entity)
         {
             if (entity.Has<Layoutable>())
+            {
                 return entity.Get<Layoutable>().VerticalAlignment;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<VerticalAlignment>("VerticalAlignment");
@@ -160,7 +166,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static HorizontalAlignment GetHorizontalAlignment(this Entity entity)
         {
             if (entity.Has<Layoutable>())
+            {
                 return entity.Get<Layoutable>().HorizontalAlignment;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<HorizontalAlignment>("HorizontalAlignment");
@@ -202,7 +210,6 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<Layoutable>())
             {
                 entity.Get<Layoutable>().Margin = new Thickness(value);
-                ;
                 return entity;
             }
             else if (entity.Has<object>())
@@ -225,7 +232,7 @@ namespace Avalonia.Flecs.Controls.ECS
             if (entity.Has<Layoutable>())
             {
                 entity.Get<Layoutable>().Margin = new Thickness(horizontalMargin, verticalMargin);
-                ;
+
                 return entity;
             }
             else if (entity.Has<object>())
@@ -254,7 +261,7 @@ namespace Avalonia.Flecs.Controls.ECS
                                                     top: topMargin,
                                                     right: rightMargin,
                                                     bottom: bottomMargin);
-                ;
+
                 return entity;
             }
             else if (entity.Has<object>())
@@ -276,7 +283,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static Thickness GetMargin(this Entity entity)
         {
             if (entity.Has<Layoutable>())
+            {
                 return entity.Get<Layoutable>().Margin;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<Thickness>("Margin");
@@ -316,7 +325,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static double GetHeight(this Entity entity)
         {
             if (entity.Has<Layoutable>())
+            {
                 return entity.Get<Layoutable>().Height;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<double>("Height");
@@ -356,7 +367,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static double GetWidth(this Entity entity)
         {
             if (entity.Has<Layoutable>())
+            {
                 return entity.Get<Layoutable>().Width;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<double>("Width");

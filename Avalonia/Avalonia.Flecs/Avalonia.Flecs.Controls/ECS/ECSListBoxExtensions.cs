@@ -38,7 +38,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static SelectionMode GetSelectionMode(this Entity entity, SelectionMode mode)
         {
             if (entity.Has<ListBox>())
+            {
                 return entity.Get<ListBox>().SelectionMode;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<SelectionMode>("SelectionMode");

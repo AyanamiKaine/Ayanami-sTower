@@ -24,10 +24,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     e.Set<ContentControl>(splitButton);
                 })
-                .OnRemove((Entity e, ref SplitButton splitButton) =>
-                {
-                    e.Remove<ContentControl>();
-                });
+                .OnRemove((Entity e, ref SplitButton splitButton) => e.Remove<ContentControl>());
         }
     }
 }

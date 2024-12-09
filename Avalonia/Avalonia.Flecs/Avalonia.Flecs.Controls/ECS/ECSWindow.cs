@@ -23,10 +23,7 @@ namespace Avalonia.Flecs.Controls.ECS
                                }
                                e.Set<ContentControl>(window);
                            })
-                           .OnRemove((Entity e, ref Window window) =>
-                           {
-                               window.Close();
-                           });
+                           .OnRemove((Entity e, ref Window window) => window.Close());
         }
     }
 }

@@ -22,10 +22,7 @@ namespace Avalonia.Flecs.Controls.ECS
                         e.Set<object>(stackPanel);
                     }
                     e.Set<Panel>(stackPanel);
-                }).OnRemove((Entity e, ref StackPanel stackPanel) =>
-                {
-                    e.Remove<Panel>();
-                });
+                }).OnRemove((Entity e, ref StackPanel stackPanel) => e.Remove<Panel>());
         }
     }
 }

@@ -3,9 +3,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
-
-
     /*
     Design Note:
     This is mostly done so we can more easily manipulate controls in entities
@@ -53,7 +50,7 @@ namespace Avalonia.Flecs.Controls.ECS
         }
 
         /// <summary>
-        /// Helper function to set the ColumnSpan property 
+        /// Helper function to set the ColumnSpan property
         /// on a Control component that is attach to an entitiy.
         /// </summary>
         /// <param name="entity"></param>

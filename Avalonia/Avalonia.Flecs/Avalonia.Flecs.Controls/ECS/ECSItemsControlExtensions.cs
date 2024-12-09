@@ -45,9 +45,13 @@ namespace Avalonia.Flecs.Controls.ECS
         public static System.Collections.IEnumerable? GetItemsSource(this Entity entity)
         {
             if (entity.Has<ItemsControl>())
+            {
                 return entity.Get<ItemsControl>().ItemsSource;
+            }
             else if (entity.Has<MenuFlyout>())
+            {
                 return entity.Get<MenuFlyout>().ItemsSource;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<System.Collections.IEnumerable>("ItemsSource");

@@ -31,7 +31,7 @@ namespace Avalonia.Flecs.Controls.ECS
                         var value = propertyInfo.GetValue(obj);
                         if (value != null)
                         {
-                            return (T)Convert.ChangeType(value, typeof(T));
+                            return (T) Convert.ChangeType(value, typeof(T));
                         }
                     }
                     catch (Exception e)

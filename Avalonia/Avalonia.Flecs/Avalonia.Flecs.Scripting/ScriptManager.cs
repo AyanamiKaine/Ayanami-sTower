@@ -99,8 +99,14 @@ public class CompiledScripts
     /// <returns></returns>
     public Script this[string name]
     {
-        get { return _compiledScripts[name]; }
-        set { _compiledScripts[name] = value; }
+        get
+        {
+            return _compiledScripts[name];
+        }
+        set
+        {
+            _compiledScripts[name] = value;
+        }
     }
 }
 
@@ -252,7 +258,10 @@ public class ScriptManager
     /// File watcher for a defined scripts folder.
     /// Default folder watched should be "./scripts".
     /// </summary>  
-    private FileSystemWatcher ScriptWatcher { get; set; }
+    private FileSystemWatcher ScriptWatcher
+    {
+        get; set;
+    }
 
     private bool _recompileScriptsOnFileChange;
 
@@ -262,7 +271,10 @@ public class ScriptManager
     /// </summary>
     public bool RecompileScriptsOnFileChange
     {
-        get { return _recompileScriptsOnFileChange; }
+        get
+        {
+            return _recompileScriptsOnFileChange;
+        }
         set
         {
             _recompileScriptsOnFileChange = value;
@@ -287,12 +299,18 @@ public class ScriptManager
     /// <summary>
     /// The script options that are used for compiling the scripts.
     /// </summary>
-    public ScriptOptions Options { get; set; }
+    public ScriptOptions Options
+    {
+        get; set;
+    }
 
     /// <summary>
     /// The global data is accessible in the scripts and can be used to interact with the ECS.
     /// </summary>
-    public GlobalData Data { get; set; }
+    public GlobalData Data
+    {
+        get; set;
+    }
 
     /// <summary>
     /// List of all compiled scripts.
@@ -562,10 +580,7 @@ public class ScriptManager
             EnableRaisingEvents = true
         };
 
-        ScriptWatcher.Error += (s, e) =>
-                {
-                    Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
-                };
+        ScriptWatcher.Error += (s, e) => Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
 
         RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
         return ScriptWatcher;

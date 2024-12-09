@@ -108,7 +108,7 @@ public partial class App : Application
             }
         });
 
-        navigationView.Observe<OnSelectionChanged>((Entity e) =>
+        navigationView.Observe<OnSelectionChanged>((Entity _) =>
         {
             // We first remove any other page ensuring 
             // that only the selected page is displayed
@@ -123,10 +123,8 @@ public partial class App : Application
 
         navigationView.OnNavViewSelectionChanged(async (sender, args) =>
         {
-            await Threading.Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                navigationView.Emit<OnSelectionChanged>();
-            });
+            await Threading.Dispatcher.UIThread.InvokeAsync(() => navigationView.Emit<OnSelectionChanged>());
+
             if (sender is not NavigationView e)
                 return;
 

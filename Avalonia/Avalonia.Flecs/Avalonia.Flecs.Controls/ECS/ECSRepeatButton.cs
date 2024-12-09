@@ -27,10 +27,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     // This is good so queries can be more generic and not have to check for every possible control type.
                     e.Set<Button>(repeatButton);
                 })
-                .OnRemove((Entity e, ref RepeatButton repeatButton) =>
-                {
-                    e.Remove<Button>();
-                });
+                .OnRemove((Entity e, ref RepeatButton repeatButton) => e.Remove<Button>());
         }
     }
 }

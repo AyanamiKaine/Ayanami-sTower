@@ -25,10 +25,7 @@ namespace Avalonia.Flecs.Controls.ECS
                                 // Adding event handlers
                                 // https://reference.avaloniaui.net/api/Avalonia.Controls.ScrollViewer/#Events
 
-                            }).OnRemove((Entity e, ref ScrollViewer scrollViewer) =>
-                            {
-                                e.Remove<ContentControl>();
-                            });
+                            }).OnRemove((Entity e, ref ScrollViewer scrollViewer) => e.Remove<ContentControl>());
         }
     }
 }

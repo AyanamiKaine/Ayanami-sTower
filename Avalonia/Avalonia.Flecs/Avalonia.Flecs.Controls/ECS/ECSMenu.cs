@@ -21,7 +21,7 @@ namespace Avalonia.Flecs.Controls.ECS
                                 {
                                     e.Set<object>(menu);
                                 }
-                                
+
                                 var parent = e.Parent();
                                 if (parent == 0)
                                 {

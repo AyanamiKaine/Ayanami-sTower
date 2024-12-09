@@ -24,10 +24,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     e.Set<SelectingItemsControl>(listBox);
                 })
-                .OnRemove((Entity e, ref ListBox listBox) =>
-                {
-                    e.Remove<SelectingItemsControl>();
-                });
+                .OnRemove((Entity e, ref ListBox listBox) => e.Remove<SelectingItemsControl>());
         }
     }
 }

@@ -24,10 +24,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     e.Set<PopupFlyoutBase>(menuFlyout);
                 })
-                .OnRemove((Entity e, ref MenuFlyout menuFlyout) =>
-                {
-                    e.Remove<PopupFlyoutBase>();
-                });
+                .OnRemove((Entity e, ref MenuFlyout menuFlyout) => e.Remove<PopupFlyoutBase>());
         }
     }
 }

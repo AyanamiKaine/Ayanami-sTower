@@ -25,10 +25,7 @@ namespace Avalonia.Flecs.Controls.ECS
 
                     e.Set<TemplatedControl>(autoCompleteBox);
                 })
-                .OnRemove((Entity e, ref AutoCompleteBox autoCompleteBox) =>
-                {
-                    e.Remove<TemplatedControl>();
-                });
+                .OnRemove((Entity e, ref AutoCompleteBox _) => e.Remove<TemplatedControl>());
         }
     }
 }

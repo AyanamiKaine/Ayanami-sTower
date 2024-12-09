@@ -38,7 +38,9 @@ namespace Avalonia.Flecs.Controls.ECS
         public static string? GetPlaceholderText(this Entity entity)
         {
             if (entity.Has<ComboBox>())
+            {
                 return entity.Get<ComboBox>().PlaceholderText;
+            }
             else if (entity.Has<object>())
             {
                 return entity.GetProperty<string>("PlaceholderText");

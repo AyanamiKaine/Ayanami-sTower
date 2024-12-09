@@ -30,19 +30,27 @@ namespace Avalonia.Flecs.Controls.ECS
         /// Only one page entity can be a child of a parent.
         /// If you add a new page to a parent othe page of the parent is removed.
         /// </summary>
-        public struct Page { }
+        public struct Page
+        {
+        }
         /// <summary>
         /// Inidactes that the entity is a page that is being removed.
         /// </summary>
-        public struct OldPage { }
+        public struct OldPage
+        {
+        }
         /// <summary>
         /// Inidactes that the entity is a page that is being added.
         /// </summary>
-        public struct NewPage { }
+        public struct NewPage
+        {
+        }
         /// <summary>
         /// Entity tag showing that the entity is the current page.
         /// </summary>
-        public record struct CurrentPage { }
+        public record struct CurrentPage
+        {
+        }
 
         /// <summary>
         /// Initializes the module

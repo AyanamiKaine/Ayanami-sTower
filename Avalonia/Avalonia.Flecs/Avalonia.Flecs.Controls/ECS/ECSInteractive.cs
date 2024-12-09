@@ -21,11 +21,6 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(interactive);
                     }
-                    //e.Set<Layoutable>(interactive);
-
-                }).OnRemove((Entity e, ref Interactive interactive) =>
-                {
-                    //e.Remove<Layoutable>();
                 });
         }
     }

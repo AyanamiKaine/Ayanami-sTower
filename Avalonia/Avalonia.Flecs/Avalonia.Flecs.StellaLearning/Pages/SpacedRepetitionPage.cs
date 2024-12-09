@@ -94,28 +94,20 @@ static public class SpacedRepetitionPage
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Open")
-            .OnClick(async (sender, args) =>
-            {
-                await ScriptExample.RunScriptAsync(world);
-            });
+            .OnClick(async (sender, args) => await ScriptExample.RunScriptAsync(world));
 
         var editMenuItem = world.Entity("EditMenuItem")
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Edit")
-            .OnClick((sender, args) =>
-            {
-                Console.WriteLine("Edit Clicked");
-            }); ;
+            .OnClick((sender, args) => Console.WriteLine("Edit Clicked"));
+        ;
 
         var deleteMenuItem = world.Entity("DeleteMenuItem")
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Delete")
-            .OnClick((sender, args) =>
-            {
-                Console.WriteLine("Delete Clicked");
-            });
+            .OnClick((sender, args) => Console.WriteLine("Delete Clicked"));
 
         dummyItems.Add("algorithm");
         dummyItems.Add("binary");

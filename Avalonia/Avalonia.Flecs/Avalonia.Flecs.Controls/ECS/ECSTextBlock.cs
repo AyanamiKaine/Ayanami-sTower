@@ -23,10 +23,8 @@ namespace Avalonia.Flecs.Controls.ECS
                                             }
                                             e.Set<Control>(textBlock);
                                         })
-                            .OnRemove((Entity e, ref TextBlock textBlock) =>
-                            {
-                                e.Remove<Control>();
-                            }); ;
+                            .OnRemove((Entity e, ref TextBlock textBlock) => e.Remove<Control>());
+            ;
         }
     }
 }
