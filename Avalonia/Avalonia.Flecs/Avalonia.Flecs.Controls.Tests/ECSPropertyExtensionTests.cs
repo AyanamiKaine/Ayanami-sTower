@@ -53,7 +53,7 @@ public class ECSPropertyExtensionTests
             .Set(new Button()
             {
                 Content = "Hello World"
-            });    
+            });  
         Assert.Equal("Hello World", entity.GetProperty<string>("Content"));
     }
 
