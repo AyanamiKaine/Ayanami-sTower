@@ -154,7 +154,7 @@ easy to implement but practically i have no clue how it would fit into the ECS p
 /// Event arguments for script compilation.
 /// </summary>
 /// <param name="scriptName"></param>
-public class ScriptCompilationEventArgs(string scriptName) : EventArgs
+public class ScriptEventArgs(string scriptName) : EventArgs
 {
     /// <summary>
     /// The name of the script that is being compiled.
@@ -170,14 +170,31 @@ public class ScriptManager
     /// <summary>
     /// Event that is triggered when a script compilation starts.
     /// </summary>
-    public event EventHandler<ScriptCompilationEventArgs>? OnScriptCompilationStart;
+    public event EventHandler<ScriptEventArgs>? OnScriptCompilationStart;
     /// <summary>
     /// Event that is triggered when a script compilation finishes.
     /// </summary>
-    public event EventHandler<ScriptCompilationEventArgs>? OnScriptCompilationFinished;
+    public event EventHandler<ScriptEventArgs>? OnScriptCompilationFinished;
 
     /// <summary>
-    /// Constructor for the script manager.
+    /// Event that is triggered when a script is added to the compiled scripts.
+    /// </summary>
+    public event EventHandler<ScriptEventArgs>? OnCompiledScriptAdded;
+
+    /// <summary>
+    /// Event that is triggered when a script is removed from the compiled scripts.
+    /// </summary>
+    public event EventHandler<ScriptEventArgs>? OnCompiledScriptRemoved;
+
+    /// <summary>
+    /// Event that is triggered when a script is changed in the compiled scripts.
+    /// So the contents of the script is changed most likely because it was recompiled
+    /// but its name is still the same.
+    /// </summary>
+    public event EventHandler<ScriptEventArgs>? OnCompiledScriptChanged;
+
+    /// <summary>
+    /// Makes the refrenced world and named entities avalaiable as globals to all scripts.
     /// </summary>
     /// <param name="world"></param>
     /// <param name="entities"></param>
@@ -187,7 +204,7 @@ public class ScriptManager
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
 
         Data = new GlobalData(world, entities);
-        _compiledScripts = new();
+        CompiledScripts = new();
 
         //Adding meta data seems to do nothing?
         //What does meta data even do?
@@ -223,7 +240,7 @@ public class ScriptManager
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
 
         Data = new GlobalData(world, entities);
-        _compiledScripts = new();
+        CompiledScripts = new();
         Options = options;
     }
 
@@ -268,13 +285,13 @@ public class ScriptManager
             // Call your function here
             if (_recompileScriptsOnFileChange == true)
             {
-                ScriptWatcher.Created += OnScriptAdded;
+                ScriptWatcher.Created += OnScriptFileAdded;
                 ScriptWatcher.Changed += OnScriptChange;
                 ScriptWatcher.Renamed += OnScriptRenamed;
             }
             else
             {
-                ScriptWatcher.Created -= OnScriptAdded;
+                ScriptWatcher.Created -= OnScriptFileAdded;
                 ScriptWatcher.Changed -= OnScriptChange;
                 ScriptWatcher.Renamed -= OnScriptRenamed;
             }
@@ -300,9 +317,9 @@ public class ScriptManager
     }
 
     /// <summary>
-    /// List of all compiled scripts.
+    /// The compiled scripts that are stored in the script manager.
     /// </summary>
-    private readonly CompiledScripts _compiledScripts;
+    public CompiledScripts CompiledScripts { get; }
 
     /// <summary>
     /// Given a name and code string, compiles the code and adds it to the list of compiled scripts.
@@ -312,13 +329,30 @@ public class ScriptManager
     /// <param name="code"></param>
     public void AddScript(string name, string code)
     {
-        OnScriptCompilationStart?.Invoke(this, new ScriptCompilationEventArgs(name));
+        OnScriptCompilationStart?.Invoke(this, new ScriptEventArgs(name));
 
         var script = CSharpScript.Create(code, Options, globalsType: typeof(GlobalData));
         script.Compile();
-        _compiledScripts[name] = script;
 
-        OnScriptCompilationFinished?.Invoke(this, new ScriptCompilationEventArgs(name));
+        if(CompiledScripts.Contains(name))
+            OnCompiledScriptChanged?.Invoke(this, new ScriptEventArgs(name));
+
+        CompiledScripts[name] = script;
+        OnCompiledScriptAdded?.Invoke(this, new ScriptEventArgs(name));
+        OnScriptCompilationFinished?.Invoke(this, new ScriptEventArgs(name));
+    }
+
+    /// <summary>
+    /// Removes a script from the list of compiled scripts.
+    /// </summary>
+    /// <param name="scriptName"></param>
+    public void RemoveScript(string scriptName)
+    {
+        if (CompiledScripts.Contains(scriptName))
+        {
+            CompiledScripts.Remove(scriptName);
+            OnCompiledScriptRemoved?.Invoke(this, new ScriptEventArgs(scriptName));
+        }
     }
     /// <summary>
     /// Compiles all scripts in a given folder and adds them to the list of compiled scripts.
@@ -402,7 +436,7 @@ public class ScriptManager
     /// <exception cref="ScriptNotFoundException"></exception>
     public async Task RunScriptAsync(string scriptName)
     {
-        var script = _compiledScripts[scriptName]
+        var script = CompiledScripts[scriptName]
         ?? throw new ScriptNotFoundException(scriptName);
 
         try
@@ -517,7 +551,7 @@ public class ScriptManager
         if (e.Name is null || e.OldName is null)
             return;
 
-        _compiledScripts.Remove(e.OldName);
+        CompiledScripts.Remove(e.OldName);
 
         var name = Path.GetFileNameWithoutExtension(e.Name);
         var code = File.ReadAllText(e.FullPath);
@@ -525,11 +559,11 @@ public class ScriptManager
     }
 
     /// <summary>
-    /// If a script is added, compile it.
+    /// If a script is added to the script folder, automatically compile it.
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
-    private void OnScriptAdded(object sender, FileSystemEventArgs e)
+    private void OnScriptFileAdded(object sender, FileSystemEventArgs e)
     {
         Console.WriteLine($"Script {e.Name} added. Compiling...");
 
