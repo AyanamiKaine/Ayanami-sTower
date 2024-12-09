@@ -504,5 +504,4 @@ public class ECSSetControlsTests
         Assert.True(entity.Has<object>());
         Assert.True(entity.Get<object>() is TextBox);
     }
-
 }
