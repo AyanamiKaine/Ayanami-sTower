@@ -76,6 +76,7 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSFlyoutBase>();
             world.Import<ECSMenuFlyout>();
             world.Import<ECSMenuItem>();
+            world.Import<ECSDecorator>();
             world.Import<ECSMenu>();
             world.Import<ECSSelectingItemsControl>();
             world.Import<ECSToggleButton>();

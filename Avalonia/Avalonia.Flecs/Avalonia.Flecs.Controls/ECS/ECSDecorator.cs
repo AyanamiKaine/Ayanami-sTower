@@ -13,7 +13,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="world"></param>
         public void InitModule(World world)
         {
-            world.Module<ECSBorder>();
+            world.Module<ECSDecorator>();
 
             world.Component<Decorator>("Decorator")
                 .OnSet((Entity e, ref Decorator decorator) =>
