@@ -232,14 +232,14 @@ public class ScriptManager
     /// We are doing this because we want to debounce the file changes.
     /// I.e limit the amounts of time we call the recompilation function.
     /// </summary>
-    private Dictionary<string, DateTime> _lastWriteTime = [];
+    private readonly Dictionary<string, DateTime> _lastWriteTime = [];
     /// <summary>
     /// The debounce interval for file changes determines how far apart changes
     /// to the file can be before we recompile. We are doing this because
     /// simply editing the file changes several things, like content, last write
     /// time etc. This would result in multiple recompilation that are not needed.
     /// </summary>
-    private TimeSpan _debounceInterval = TimeSpan.FromMilliseconds(500);
+    private readonly TimeSpan _debounceInterval = TimeSpan.FromMilliseconds(500);
 
     /// <summary>
     /// File watcher for a defined scripts folder.
@@ -281,7 +281,7 @@ public class ScriptManager
         }
     }
 
-    private CancellationTokenSource _replCancellationTokenSource = new();
+    private readonly CancellationTokenSource _replCancellationTokenSource = new();
 
     /// <summary>
     /// The script options that are used for compiling the scripts.
