@@ -3,7 +3,7 @@ using Flecs.NET.Core;
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
-    /// This extension methods all relate to Window components
+    /// This extension methods all relate to working with properties.
     /// </summary>
     public static class GetPropertyExtension
     {
@@ -24,14 +24,14 @@ namespace Avalonia.Flecs.Controls.ECS
                 var type = entity.Get<object>().GetType();
                 var propertyInfo = type.GetProperty(propertyName);
 
-                if (propertyInfo?.CanRead == true)
+                if (propertyInfo != null && propertyInfo?.CanRead == true)
                 {
                     try
                     {
                         var value = propertyInfo.GetValue(obj);
                         if (value != null)
                         {
-                            return (T) Convert.ChangeType(value, typeof(T));
+                            return (T)Convert.ChangeType(value, typeof(T));
                         }
                     }
                     catch (Exception e)
@@ -63,7 +63,7 @@ namespace Avalonia.Flecs.Controls.ECS
                 var type = entity.Get<object>().GetType();
                 var propertyInfo = type.GetProperty(propertyName);
 
-                if (propertyInfo?.CanWrite == true)
+                if (propertyInfo != null && propertyInfo?.CanWrite == true)
                 {
                     try
                     {
