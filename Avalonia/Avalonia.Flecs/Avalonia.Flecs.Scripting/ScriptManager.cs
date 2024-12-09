@@ -643,7 +643,7 @@ public class ScriptManager
             return;
         }
 
-        var compilation = script.Compile();
+        var compilation = script.Compile(cancellationToken);
         // Check for compilation errors
         if (compilation.Any())
         {
