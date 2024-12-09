@@ -163,19 +163,6 @@ public class ScriptCompilationEventArgs(string scriptName) : EventArgs
 }
 
 /// <summary>
-/// Event handler for when a script compilation starts.
-/// </summary>
-/// <param name="sender"></param>
-/// <param name="e"></param>
-public delegate void ScriptCompilationStart(object sender, ScriptCompilationEventArgs e);
-/// <summary>
-/// Event handler for when a script compilation finishes.
-/// </summary>
-/// <param name="sender"></param>
-/// <param name="e"></param>
-public delegate void ScriptCompilationFinished(object sender, ScriptCompilationEventArgs e);
-
-/// <summary>
 /// Class that manages scripts and their compilation.
 /// </summary>
 public class ScriptManager
@@ -183,11 +170,11 @@ public class ScriptManager
     /// <summary>
     /// Event that is triggered when a script compilation starts.
     /// </summary>
-    public event ScriptCompilationStart? OnScriptCompilationStart;
+    public event EventHandler<ScriptCompilationEventArgs>? OnScriptCompilationStart;
     /// <summary>
     /// Event that is triggered when a script compilation finishes.
     /// </summary>
-    public event ScriptCompilationFinished? OnScriptCompilationFinished;
+    public event EventHandler<ScriptCompilationEventArgs>? OnScriptCompilationFinished;
 
     /// <summary>
     /// Constructor for the script manager.
