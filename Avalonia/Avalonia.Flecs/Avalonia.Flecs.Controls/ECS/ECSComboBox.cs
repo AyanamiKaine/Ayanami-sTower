@@ -22,7 +22,6 @@ namespace Avalonia.Flecs.Controls.ECS
                                     e.Set<object>(comboBox);
                                 }
                                 e.Set<ItemsControl>(comboBox);
-
                             }).OnRemove((Entity e, ref ComboBox comboBox) =>
                             {
                                 var parent = e.Parent();

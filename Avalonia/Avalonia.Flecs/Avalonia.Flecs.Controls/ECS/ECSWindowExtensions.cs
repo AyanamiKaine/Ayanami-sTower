@@ -3,13 +3,11 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /// <summary>
     /// This extension methods all relate to Window components
     /// </summary>
     public static class ECSWindowExtensions
     {
-
         /// <summary>
         /// Helper function to set the title of a window component on an entity.
         /// </summary>
@@ -31,7 +29,6 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(Window), nameof(SetWindowTitle));
         }
 
-
         /// <summary>
         /// Helper function to open a window attached to an entity.
         /// </summary>
@@ -47,6 +44,5 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             throw new ComponentNotFoundException(entity, typeof(Window), nameof(ShowWindow));
         }
-
     }
 }

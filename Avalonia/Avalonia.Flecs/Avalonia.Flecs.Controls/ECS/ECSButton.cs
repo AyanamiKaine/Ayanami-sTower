@@ -18,7 +18,6 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<Button>("Button")
                 .OnSet((Entity e, ref Button button) =>
                 {
-
                     if (!e.Has<object>())
                     {
                         e.Set<object>(button);

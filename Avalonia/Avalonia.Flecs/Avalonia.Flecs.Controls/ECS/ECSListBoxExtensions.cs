@@ -3,7 +3,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /// <summary>
     /// Here we define various methods to easily manipulate SelectingItemsControl
     /// in entities without first getting the SelectingItemsControl component.

@@ -28,7 +28,6 @@ namespace Avalonia.Flecs.Controls.ECS
                     // access the generic .content property of the button.
                     // This is good so queries can be more generic and not have to check for every possible control type.
                     e.Set<ToggleButton>(radioButton);
-
                 })
                 .OnRemove((Entity e, ref RadioButton radioButton) =>
                 {

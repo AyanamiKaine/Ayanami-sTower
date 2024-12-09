@@ -5,7 +5,6 @@ using Microsoft.CodeAnalysis.Scripting;
 
 namespace Avalonia.Flecs.Scripting;
 
-
 /// <summary>
 /// Global data that is accessible in the scripts.
 /// We can use this to interact with the ECS.
@@ -192,7 +191,6 @@ public class ScriptManager
     /// <param name="recompileScriptsOnFileChange"></param>
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
-
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
 
         Data = new GlobalData(world, entities);
@@ -435,7 +433,6 @@ public class ScriptManager
     /// <param name="e"></param>
     private async void OnScriptChange(object sender, FileSystemEventArgs e)
     {
-
         var now = DateTime.Now;
         if (_lastWriteTime.TryGetValue(e.FullPath, out var last))
         {
@@ -574,8 +571,6 @@ public class ScriptManager
         return ScriptWatcher;
     }
 
-
-
     /// <summary>
     /// Starts Interactive REPL with the GlobalData defined.
     /// The repl has access to _world, and _entities.
@@ -608,7 +603,6 @@ public class ScriptManager
 
         Console.WriteLine("REPL exited.");
     }
-
 
     private static async Task<string?> ReadLineAsync()
     {

@@ -13,7 +13,6 @@ namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
 {
-
     private World _world = World.Create();
     private NamedEntities? _entities;
 
@@ -38,7 +37,6 @@ public partial class App : Application
             .SetPaneTitle("Stella Learning")
             .ChildOf(window)
             .SetColumn(0);
-
 
         var scrollViewer = _world.Entity("ScrollViewer")
             .ChildOf(navigationView)
@@ -84,7 +82,6 @@ public partial class App : Application
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Spaced Repetition");
 
-
         navigationView.OnDisplayModeChanged((sender, args) =>
         {
             var e = navigationView;
@@ -108,11 +105,8 @@ public partial class App : Application
                         child.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
                     }
                 });
-
             }
-
         });
-
 
         navigationView.Observe<OnSelectionChanged>((Entity e) =>
         {
@@ -129,7 +123,6 @@ public partial class App : Application
 
         navigationView.OnNavViewSelectionChanged(async (sender, args) =>
         {
-
             await Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 navigationView.Emit<OnSelectionChanged>();

@@ -3,7 +3,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /*
     DESIGN NOTES:
 
@@ -16,7 +15,6 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public static class ECSTextPropertyExentions
     {
-
         /// <summary>
         /// Sets the inner left content of a TextBox control component of an entity.
         /// </summary>
@@ -104,7 +102,6 @@ namespace Avalonia.Flecs.Controls.ECS
             }
 
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetText));
-
         }
 
         /// <summary>
@@ -117,7 +114,6 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<TextBox>())
                 return entity.Get<TextBox>().Text!;
-
             else if (entity.Has<TextBlock>())
                 return entity.Get<TextBlock>().Text!;
 

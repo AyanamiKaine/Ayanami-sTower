@@ -10,7 +10,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.PureScriptingExample;
 
-
 public partial class App : Application
 {
     private World _world = World.Create();
@@ -25,10 +24,7 @@ public partial class App : Application
         _world.Set<ScriptManager>(new(_world, _entities));
         var scriptManager = _world.Get<ScriptManager>();
 
-        scriptManager.OnScriptCompilationStart += (sender, args) =>
-        {
-            Console.WriteLine($"Start Compilation of: {args.ScriptName}");
-        };
+        scriptManager.OnScriptCompilationStart += (sender, args) => Console.WriteLine($"Start Compilation of: {args.ScriptName}");
 
         scriptManager.OnScriptCompilationFinished += (sender, args) =>
         {
@@ -45,7 +41,6 @@ public partial class App : Application
             }
         };
         _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
-
 
         var window = _world.Entity("MainWindow")
             .Set(new Window())
@@ -68,7 +63,6 @@ public partial class App : Application
                     args.Handled = true;
                 }
             });
-
     }
 
     public override void OnFrameworkInitializationCompleted()

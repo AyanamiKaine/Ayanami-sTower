@@ -27,7 +27,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.SetProperty("RowDefinitions", rowDefinitions);
             }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetRowDefinitions));
-
         }
 
         /// <summary>
@@ -69,7 +68,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.GetProperty<RowDefinitions>("RowDefinitions");
             }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(GetRowDefinitions));
-
         }
 
         /// <summary>
@@ -91,7 +89,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.SetProperty("ColumnDefinitions", columnDefinitions);
             }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetColumnDefinitions));
-
         }
 
         /// <summary>
@@ -114,7 +111,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.SetProperty("ColumnDefinitions", new ColumnDefinitions(columnDefinitions));
             }
             throw new ComponentNotFoundException(entity, typeof(Grid), nameof(SetColumnDefinitions));
-
         }
 
         /// <summary>

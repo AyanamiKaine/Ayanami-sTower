@@ -9,5 +9,4 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS.Events
     public record struct OnItemExpanding(object? Sender, NavigationViewItemExpandingEventArgs Args);
     public record struct OnItemInvoked(object? Sender, NavigationViewItemInvokedEventArgs Args);
     public record struct OnPaneClosing(object? Sender, NavigationViewPaneClosingEventArgs Args);
-
 }

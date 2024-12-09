@@ -22,10 +22,8 @@ namespace Avalonia.Flecs.Controls.ECS
                         e.Set<object>(relativePanel);
                     }
                     e.Set<Panel>(relativePanel);
-
                 }).OnRemove((Entity e, ref RelativePanel relativePanel) =>
                 {
-
                     e.Remove<Panel>();
                 });
         }

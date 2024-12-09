@@ -17,7 +17,6 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<ScrollViewer>("ScrollViewer")
                             .OnSet((Entity e, ref ScrollViewer scrollViewer) =>
                             {
-
                                 if (!e.Has<object>())
                                 {
                                     e.Set<object>(scrollViewer);
@@ -25,7 +24,6 @@ namespace Avalonia.Flecs.Controls.ECS
                                 e.Set<ContentControl>(scrollViewer);
                                 // Adding event handlers
                                 // https://reference.avaloniaui.net/api/Avalonia.Controls.ScrollViewer/#Events
-
 
                             }).OnRemove((Entity e, ref ScrollViewer scrollViewer) =>
                             {

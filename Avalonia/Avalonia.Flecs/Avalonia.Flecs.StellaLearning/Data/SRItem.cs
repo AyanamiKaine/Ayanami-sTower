@@ -2,7 +2,6 @@ using System;
 
 namespace Avalonia.Flecs.StellaLearning.Data
 {
-
     public enum SRItemState
     {
         NewState,
@@ -10,7 +9,6 @@ namespace Avalonia.Flecs.StellaLearning.Data
         Review,
         Relearning,
     }
-
 
     public record struct SRItem(
         Guid Id,
@@ -26,5 +24,4 @@ namespace Avalonia.Flecs.StellaLearning.Data
         int NumberOfTimesReviewed,
         int ElapsedDays,
         int ScheduledDays);
-
 }

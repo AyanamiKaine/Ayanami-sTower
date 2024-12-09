@@ -24,7 +24,7 @@ namespace Avalonia.Flecs.Controls.ECS
                 var type = entity.Get<object>().GetType();
                 var propertyInfo = type.GetProperty(propertyName);
 
-                if (propertyInfo != null && propertyInfo.CanRead)
+                if (propertyInfo?.CanRead == true)
                 {
                     try
                     {
@@ -63,7 +63,7 @@ namespace Avalonia.Flecs.Controls.ECS
                 var type = entity.Get<object>().GetType();
                 var propertyInfo = type.GetProperty(propertyName);
 
-                if (propertyInfo != null && propertyInfo.CanWrite)
+                if (propertyInfo?.CanWrite == true)
                 {
                     try
                     {

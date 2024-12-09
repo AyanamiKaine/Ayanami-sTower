@@ -2,7 +2,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls
 {
-
     /*
     DESIGN NOTES:
     - Maybe we want to include all currently attached components in the exception message.
@@ -13,7 +12,6 @@ namespace Avalonia.Flecs.Controls
     /// </summary>
     public class ComponentNotFoundException : Exception
     {
-
         /// <summary>
         /// Constructor for ComponentNotFoundException
         /// </summary>

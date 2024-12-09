@@ -63,7 +63,6 @@ static public class SpacedRepetitionPage
         No need to depend on things that we dont care for 
         */
 
-
         var scrollViewer = world.Entity("ScrollViewer")
             .ChildOf(spacedRepetitionPage)
             .Set(new ScrollViewer())
@@ -90,7 +89,6 @@ static public class SpacedRepetitionPage
         var contextFlyout = world.Entity("ContextFlyout")
             .ChildOf(spacedRepetitionPage)
             .Set(new MenuFlyout());
-
 
         var openMenuItem = world.Entity("OpenMenuItem")
             .ChildOf(contextFlyout)
@@ -134,7 +132,6 @@ static public class SpacedRepetitionPage
             .SetRow(1)
             .SetColumnSpan(3);
 
-
         sortItemsButton.OnSelectionChanged((sender, args) =>
         {
             if (args.AddedItems.Count == 0)
@@ -144,7 +141,6 @@ static public class SpacedRepetitionPage
             var selectedItem = args.AddedItems[0]!.ToString();
             if (selectedItem == "Sort By Date")
             {
-
             }
             else if (selectedItem == "Sort By Priority")
             {

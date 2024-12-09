@@ -1,7 +1,6 @@
 using Flecs.NET.Core;
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /// <summary>
     /// This extension methods all relate to Animation components
     /// </summary>
@@ -22,7 +21,6 @@ namespace Avalonia.Flecs.Controls.ECS
             }
 
             return world.Entity(name);
-
         }
 
         /// <summary>

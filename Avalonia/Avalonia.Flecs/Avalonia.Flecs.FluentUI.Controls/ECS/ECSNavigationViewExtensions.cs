@@ -4,7 +4,6 @@ using Avalonia.Flecs.Controls;
 using FluentAvalonia.UI.Controls;
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
-
     public static class ECSNavigationViewExtensions
     {
         public static Entity SetPaneTitle(this Entity entity, string paneTitle)

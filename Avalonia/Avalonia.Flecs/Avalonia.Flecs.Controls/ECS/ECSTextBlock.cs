@@ -22,7 +22,6 @@ namespace Avalonia.Flecs.Controls.ECS
                                                 e.Set<object>(textBlock);
                                             }
                                             e.Set<Control>(textBlock);
-
                                         })
                             .OnRemove((Entity e, ref TextBlock textBlock) =>
                             {

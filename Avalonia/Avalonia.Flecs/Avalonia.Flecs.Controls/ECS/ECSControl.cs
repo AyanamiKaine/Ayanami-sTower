@@ -43,7 +43,6 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         parent.Get<ContentControl>().Content = control;
                     }
-
                 }).OnRemove((Entity e, ref Control control) =>
                 {
                     var parent = e.Parent();

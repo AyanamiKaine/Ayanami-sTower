@@ -18,7 +18,6 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Component<RepeatButton>("RepeatButton")
                 .OnSet((Entity e, ref RepeatButton repeatButton) =>
                 {
-
                     if (!e.Has<object>())
                     {
                         e.Set<object>(repeatButton);
@@ -27,7 +26,6 @@ namespace Avalonia.Flecs.Controls.ECS
                     // access the generic .content property of the button.
                     // This is good so queries can be more generic and not have to check for every possible control type.
                     e.Set<Button>(repeatButton);
-
                 })
                 .OnRemove((Entity e, ref RepeatButton repeatButton) =>
                 {

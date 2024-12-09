@@ -13,7 +13,6 @@ public partial class App : Application
 {
     World _world = World.Create();
 
-
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -27,7 +26,6 @@ public partial class App : Application
                 .SetHeight(400)
                 .SetWidth(400);
 
-
         var navigationView = _world.Entity("NavigationView")
             .ChildOf(window)
             .Set(new NavigationView())
@@ -38,7 +36,6 @@ public partial class App : Application
             .Set(new TextBlock())
             .SetText("Home");
 
-
         var settingPage = _world.Entity("SettingPage")
             .ChildOf(navigationView)
             .Set(new TextBlock())
@@ -48,7 +45,6 @@ public partial class App : Application
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetContent("Home");
-
 
         navigationView.SetColumn(0);
 
@@ -73,7 +69,6 @@ public partial class App : Application
             else if (selectedItem?.Content.ToString() == "Settings")
             {
                 Console.WriteLine("Selection Changed To Settings");
-
             }
         });
         /*

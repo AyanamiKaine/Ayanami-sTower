@@ -3,7 +3,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /*
     DESIGN NOTES:
 
@@ -16,7 +15,6 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public static class ECSTextBoxExtensions
     {
-
         /// <summary>
         /// Helper function to set the text of a TextBox control component of an entity.
         /// </summary>
@@ -35,7 +33,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.SetProperty("Watermark", text);
             }
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetWatermark));
-
         }
 
         /// <summary>

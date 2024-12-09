@@ -11,7 +11,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.ToDoApp;
 
-
 /// <summary>
 /// This class contains extension methods for the int type.
 /// It adds a method to check if a number is even.
@@ -53,7 +52,6 @@ public partial class App : Application
         var textBox = _world.Entity("ItemTextBox");
         var addButton = _world.Entity("AddItemButton");
 
-
         window
             .Set(new Window())
             .SetWindowTitle("Avalonia.Flecs.ToDoApp")
@@ -75,8 +73,6 @@ public partial class App : Application
             .ChildOf(grid)
             .Set(new ScrollViewer());
 
-
-
         /*
         This creates a template for the TodoItem class.
         It defines how this class should be displayed in the ItemsControl.
@@ -97,7 +93,6 @@ public partial class App : Application
                 [!CheckBox.ContentProperty] = new Binding("Text"),
             };
             checkBox.IsChecked = value.IsDone;
-
 
             var button = new Button()
             {
@@ -127,14 +122,11 @@ public partial class App : Application
                 ItemTemplate = template
             });
 
-
         Grid.SetRow(scrollViewer.Get<ScrollViewer>(), 1);
 
         addButton
             .Set(new Button())
             .SetContent("Add");
-
-
 
         textBox
             .ChildOf(grid)
@@ -153,7 +145,6 @@ public partial class App : Application
 
         addButton.OnClick((sender, args) =>
         {
-
             Console.WriteLine(title.Path());
             if (textBox.GetText() != "")
             {
@@ -168,7 +159,6 @@ public partial class App : Application
             }
         });
 
-
         textBox.SetRow(2);
     }
 
@@ -177,7 +167,6 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = _world.Lookup("MainWindow").Get<Window>();
-
         }
         base.OnFrameworkInitializationCompleted();
 #if DEBUG

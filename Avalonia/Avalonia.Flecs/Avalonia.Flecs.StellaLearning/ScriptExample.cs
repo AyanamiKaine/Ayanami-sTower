@@ -10,7 +10,6 @@ public static class ScriptExample
 
     public static void AddScript()
     {
-
     }
 
     public static async Task RunScriptAsync(World world)

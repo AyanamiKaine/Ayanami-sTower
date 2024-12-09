@@ -65,7 +65,6 @@ public static class SettingsPage
 
     private static Entity ObsidianPath(World world, Entity childOfEntity)
     {
-
         var browseForObsidianButton = world.Entity("BrowseForObsidianButton")
             .Set(new Button());
 
@@ -82,14 +81,10 @@ public static class SettingsPage
 
         browseForObsidianButton
             .ChildOf(obsidianPath)
-            .OnClick(async (e, args) =>
-            {
-                obsidianPath.SetText(await ObsidianFilePickerAsync(world));
-            });
+            .OnClick(async (e, args) => obsidianPath.SetText(await ObsidianFilePickerAsync(world)));
 
         return obsidianPath;
     }
-
 
     /* Unmerged change from project 'Avalonia.Flecs.StellaLearning (net9.0)'
     Before:
@@ -109,16 +104,13 @@ public static class SettingsPage
         // Create an OpenFileDialog instance
         IReadOnlyList<IStorageFile>? result = await world.Lookup("MainWindow").Get<Window>().StorageProvider.OpenFilePickerAsync(options);
 
-        if (result != null && result.Count > 0)
+        if (result != null && result?.Count > 0)
         {
             // Get the selected file
             IStorageFile file = result[0];
 
-            // Get the file path
-            string filePath = file.Path.AbsolutePath;
-
             // Do something with the file path, e.g., display it in a TextBox
-            return filePath;
+            return file.Path.AbsolutePath;
         }
         return "";
     }
@@ -129,7 +121,7 @@ public static class SettingsPage
         var currentThemeVariant = app.ActualThemeVariant;
 
         // Determine the new theme variant based on the input string
-       
+
         var newThemeVariant = string.Equals(theme, "dark", StringComparison.OrdinalIgnoreCase) ? ThemeVariant.Dark : ThemeVariant.Light;
 
         // Only update the theme if it has changed

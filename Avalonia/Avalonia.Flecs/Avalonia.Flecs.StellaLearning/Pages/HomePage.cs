@@ -11,7 +11,6 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 interface IEntityUIComponent
 {
 
-
     /* ABOUT ENTITY NAMES
     If you give an entity a name it can be later used to identify it
     It becomes a unique entity, two entities with the same name are the
@@ -41,7 +40,6 @@ interface IEntityUIComponent
     static abstract Entity Create(World world, Entity childOfEntity, string entityName = "");
     static abstract Entity Create(World world, Entity childOfEntity, params object[] props);
     static abstract Entity Create(World world, Entity childOfEntity, string entityName = "", params object[] props);
-
 }
 
 public class HomePage : IEntityUIComponent

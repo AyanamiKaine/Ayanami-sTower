@@ -9,7 +9,6 @@ using System.ComponentModel;
 namespace Avalonia.Flecs.Controls.ECS.Events
 {
 
-
     /* IMPORTANT
     ALL OBERSERVES RUN IN A NON-UI THREAD THIS IS THE DEFAULT BEHAVIOR IN AVALONIA
     ANY CODE EXECUTED IN AN OBSERVE THAT MODIFIES THE UI MUST BE DISPATCHED TO THE UI THREAD
@@ -65,7 +64,6 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     /// <param name="Sender"></param>
     /// <param name="Args"></param>
     public record struct Activated(object? Sender, EventArgs Args);
-
 
     /// <summary>
     /// Represents a AttachedToLogicalTree event in the ECS system.

@@ -25,7 +25,6 @@ namespace Avalonia.Flecs.Controls.ECS
                     // access the generic .children.add property of the panel.
                     // This is good so queries can be more generic and not have to check for every possible panel type.
                     e.Set<Panel>(grid);
-
                 }).OnRemove((Entity e, ref Grid grid) =>
                 {
                     e.Remove<Panel>();

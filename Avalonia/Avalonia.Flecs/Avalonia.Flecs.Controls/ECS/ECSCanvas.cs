@@ -22,10 +22,8 @@ namespace Avalonia.Flecs.Controls.ECS
                         e.Set<object>(canvas);
                     }
                     e.Set<Panel>(canvas);
-
                 }).OnRemove((Entity e, ref Canvas canvas) =>
                 {
-
                     e.Remove<Panel>();
                 });
         }

@@ -13,11 +13,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                            {
                                e.Set<object>(navigationView);
                                e.Set<ContentControl>(navigationView);
-
-                           }).OnRemove((Entity e, ref NavigationView navigationView) =>
-                           {
-                               e.Remove<ContentControl>();
-                           });
+                           }).OnRemove((Entity e, ref NavigationView _) => e.Remove<ContentControl>());
         }
     }
 }

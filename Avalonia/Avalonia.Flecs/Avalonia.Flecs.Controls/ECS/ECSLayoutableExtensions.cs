@@ -4,13 +4,11 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /// <summary>
     /// This extension class is used to work with Layoutable properties of a component  attached to the Entity class.
     /// </summary>
     public static class ECSLayoutableExtensions
     {
-
         /// <summary>
         /// Set the min width of the Layoutable component.
         /// </summary>
@@ -91,9 +89,6 @@ namespace Avalonia.Flecs.Controls.ECS
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetMaxHeight));
         }
 
-
-
-
         /// <summary>
         /// Set the min width of the Layoutable component.
         /// </summary>
@@ -173,7 +168,6 @@ namespace Avalonia.Flecs.Controls.ECS
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetHorizontalAlignment));
         }
-
 
         /// <summary>
         /// Set the margin of the Layoutable component.
@@ -351,7 +345,6 @@ namespace Avalonia.Flecs.Controls.ECS
             }
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetWidth));
-
         }
 
         /// <summary>
@@ -371,6 +364,5 @@ namespace Avalonia.Flecs.Controls.ECS
 
             throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(GetWidth));
         }
-
     }
 }

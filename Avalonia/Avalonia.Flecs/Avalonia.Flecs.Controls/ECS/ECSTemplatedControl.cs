@@ -23,7 +23,6 @@ namespace Avalonia.Flecs.Controls.ECS
                         e.Set<object>(templatedControl);
                     }
                     e.Set<Control>(templatedControl);
-
                 })
                 .OnRemove((Entity e, ref TemplatedControl templatedControl) =>
                 {

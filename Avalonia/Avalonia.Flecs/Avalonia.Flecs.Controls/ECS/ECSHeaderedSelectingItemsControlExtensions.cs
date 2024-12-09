@@ -3,13 +3,11 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /// <summary>
     /// This component is used to add a header to a SelectingItemsControl.
     /// </summary>
     public static class ECSHeaderedSelectingItemsControlExtensions
     {
-
         /// <summary>
         /// Set the header property of components that have it.
         /// </summary>
@@ -29,7 +27,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.SetProperty("Header", content);
             }
             throw new ComponentNotFoundException(entity, typeof(HeaderedSelectingItemsControl), nameof(SetHeader));
-
         }
 
         /// <summary>
@@ -49,7 +46,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.GetProperty<object>("Header");
             }
             throw new ComponentNotFoundException(entity, typeof(HeaderedSelectingItemsControl), nameof(GetHeader));
-
         }
     }
 }

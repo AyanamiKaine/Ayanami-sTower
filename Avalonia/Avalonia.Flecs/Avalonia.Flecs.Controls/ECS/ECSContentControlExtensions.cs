@@ -3,7 +3,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /// <summary>
     /// This ECS Module is used to register the ContentControl component
     /// </summary>

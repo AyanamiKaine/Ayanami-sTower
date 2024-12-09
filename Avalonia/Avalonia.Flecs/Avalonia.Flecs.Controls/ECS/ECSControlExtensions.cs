@@ -6,7 +6,6 @@ namespace Avalonia.Flecs.Controls.ECS
 
 
 
-
     /*
     Design Note:
     This is mostly done so we can more easily manipulate controls in entities
@@ -51,7 +50,6 @@ namespace Avalonia.Flecs.Controls.ECS
             }
 
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetRow));
-
         }
 
         /// <summary>
@@ -70,7 +68,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity;
             }
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetColumnSpan));
-
         }
 
         /// <summary>
@@ -88,7 +85,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity;
             }
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetColumn));
-
         }
 
         /// <summary>
@@ -106,7 +102,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity;
             }
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(SetRowSpan));
-
         }
     }
 }

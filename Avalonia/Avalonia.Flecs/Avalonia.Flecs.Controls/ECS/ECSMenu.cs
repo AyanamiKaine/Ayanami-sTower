@@ -38,7 +38,6 @@ namespace Avalonia.Flecs.Controls.ECS
                                 }
 
                                 DockPanel.SetDock(menu, Dock.Top);
-
                             }).OnRemove((Entity e, ref Menu menu) =>
                             {
                                 var parent = e.Parent();

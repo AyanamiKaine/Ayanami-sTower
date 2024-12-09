@@ -4,7 +4,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
 {
-
     /// <summary>
     /// Here we define various methods to easily manipulate itemscontrols
     /// in entities without first getting the itemscontrol component.
@@ -35,7 +34,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.SetProperty("ItemsSource", collection);
             }
             throw new ComponentNotFoundException(entity, typeof(ItemsControl), nameof(SetItemsSource));
-
         }
 
         /// <summary>
@@ -82,7 +80,6 @@ namespace Avalonia.Flecs.Controls.ECS
             }
 
             throw new ComponentNotFoundException("Component ItemsControl or Component MenuFlyout NOT FOUND", typeof(ItemsControl), entity);
-
         }
     }
 }

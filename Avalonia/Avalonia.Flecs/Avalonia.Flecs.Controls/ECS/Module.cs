@@ -10,7 +10,6 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public struct Module : IFlecsModule
     {
-
         ////RELATIONSHIPS
         /// <summary>
         /// Entity tag showing that the entity is a content control.
@@ -44,7 +43,6 @@ namespace Avalonia.Flecs.Controls.ECS
         /// Entity tag showing that the entity is the current page.
         /// </summary>
         public record struct CurrentPage { }
-
 
         /// <summary>
         /// Initializes the module
@@ -101,7 +99,6 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSWindow>();
             world.Import<ECSSelectingItemsControl>();
             world.Import<ECSListBox>();
-
 
             AddUIComponentTags(world);
             AddControlToParentAdderObserver(world);
@@ -190,7 +187,6 @@ namespace Avalonia.Flecs.Controls.ECS
                 });
         }
 
-
         /*
         Design NOTE:
 
@@ -234,7 +230,6 @@ namespace Avalonia.Flecs.Controls.ECS
 
                     if (child.Has<Page>())
                     {
-
                         List<Entity> pages = [];
                         parent.Children((Entity child) =>
                         {

@@ -12,7 +12,6 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="world"></param>
         public void InitModule(World world)
         {
-
             /*
             Why do we create a object component?
             We are doing this to better model existing 

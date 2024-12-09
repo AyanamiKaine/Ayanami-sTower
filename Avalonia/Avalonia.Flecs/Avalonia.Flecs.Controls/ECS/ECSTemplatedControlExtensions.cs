@@ -8,7 +8,6 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public static class ECSTemplatedControlExtensions
     {
-
         /// <summary>
         /// Helper function to set the padding of a TemplatedControl control component of an entity.
         /// </summary>

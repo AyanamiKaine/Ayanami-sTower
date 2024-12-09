@@ -45,6 +45,5 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             throw new ComponentNotFoundException(entity, typeof(ComboBox), nameof(GetPlaceholderText));
         }
-
     }
 }

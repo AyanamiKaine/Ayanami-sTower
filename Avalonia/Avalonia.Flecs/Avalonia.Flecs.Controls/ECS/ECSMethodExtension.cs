@@ -10,7 +10,6 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public static class ECSMethodExtension
     {
-
         /// <summary>
         /// Tries running a method on a control component of an entity.
         /// </summary>
