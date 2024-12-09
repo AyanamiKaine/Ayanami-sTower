@@ -12,7 +12,8 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             world.Component<Frame>("Frame")
                 .OnSet((Entity e, ref Frame frame) =>
                 {
-                    e.Set<object>(frame);
+                    if (!e.Has<object>())
+                        e.Set<object>(frame);
 
                     var parent = e.Parent();
                     if (parent == 0)

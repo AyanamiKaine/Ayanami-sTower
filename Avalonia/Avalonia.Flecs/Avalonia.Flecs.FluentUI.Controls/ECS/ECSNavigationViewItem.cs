@@ -10,7 +10,8 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             world.Component<NavigationViewItem>("NavigationViewItem")
                             .OnSet((Entity e, ref NavigationViewItem navigationViewItem) =>
                             {
-                                e.Set<object>(navigationViewItem);
+                                if (!e.Has<object>())
+                                    e.Set<object>(navigationViewItem);
 
                                 var parent = e.Parent();
                                 if (parent == 0)

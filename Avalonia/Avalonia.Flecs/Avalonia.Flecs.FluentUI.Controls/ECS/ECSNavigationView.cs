@@ -11,7 +11,9 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             world.Component<NavigationView>("NavigationView")
                            .OnSet((Entity e, ref NavigationView navigationView) =>
                            {
-                               e.Set<object>(navigationView);
+                               if (!e.Has<object>())
+                                   e.Set<object>(navigationView);
+
                                e.Set<ContentControl>(navigationView);
                            }).OnRemove((Entity e, ref NavigationView _) => e.Remove<ContentControl>());
         }
