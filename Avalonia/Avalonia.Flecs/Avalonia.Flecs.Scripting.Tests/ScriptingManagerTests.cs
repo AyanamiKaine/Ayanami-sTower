@@ -19,6 +19,12 @@ public class ScriptingManagerTests
         Assert.True(scriptManager.CompiledScripts.Contains("TestScript"));
     }
 
+    /// <summary>
+    /// A named entity should be available in scripts
+    /// to be used. Here we try add a new component 
+    /// to an already defined entity
+    /// </summary>
+    /// <returns></returns>
     [Fact]
     public async Task NamedEntitiesAreAvailableInScripts()
     {
