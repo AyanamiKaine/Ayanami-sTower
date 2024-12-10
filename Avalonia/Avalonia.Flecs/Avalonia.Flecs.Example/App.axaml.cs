@@ -72,12 +72,9 @@ public partial class App : Application
                 }
             );
 
-        button.Observe<Click>((Entity e) =>
+        button.OnClick((sender, args) =>
         {
-            var clickEventData = e.Get<Click>();
-            Console.WriteLine(e.GetAllComponents());
-            var b = clickEventData.Sender as Button;
-            if (b is null)
+            if (sender is not Button b)
             {
                 return;
             }
