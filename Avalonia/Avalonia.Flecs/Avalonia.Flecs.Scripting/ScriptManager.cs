@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using Flecs.NET.Core;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
@@ -204,6 +205,7 @@ public class ScriptManager
     public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
     {
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
+        ReplaceBuildScriptWatcherWithDevelopmentScriptWatcher();
 
         Data = new GlobalData(world, entities);
         CompiledScripts = new();
@@ -240,7 +242,7 @@ public class ScriptManager
     public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true)
     {
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
-
+        ReplaceBuildScriptWatcherWithDevelopmentScriptWatcher();
         Data = new GlobalData(world, entities);
         CompiledScripts = new();
         Options = options;
@@ -708,5 +710,46 @@ public class ScriptManager
     public void StopRepl()
     {
         _replCancellationTokenSource.Cancel();
+    }
+
+
+    /// <summary>
+    /// Creates a development script file watcher.
+    /// That watches for changes in the scripts folder
+    /// not found in the build but instead in the development
+    /// directory we expect the scripts folder to be found
+    /// next to the .csproj file. This function only runs
+    /// in DEBUG mode.
+    /// </summary>
+    /// <exception cref="InvalidOperationException"></exception>
+    [Conditional("DEBUG")]
+    void ReplaceBuildScriptWatcherWithDevelopmentScriptWatcher()
+    {
+        static string? FindProjectDirectory(string startPath)
+        {
+            string currentDir = startPath;
+            while (!string.IsNullOrEmpty(currentDir))
+            {
+                if (Directory.GetFiles(currentDir, "*.csproj").Any())
+                {
+                    return currentDir;
+                }
+                currentDir = Path.GetDirectoryName(currentDir) ?? "";
+            }
+            return null;
+        }
+
+        var developmentScriptFileWatcher = InitializeScriptWatcher(true);
+        string exePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
+             ?? throw new InvalidOperationException("Could not determine executable path");
+
+        // Traverse up to find the .csproj file
+        string? projectPath = FindProjectDirectory(exePath) ?? throw new InvalidOperationException("Could not find project directory.");
+        string scriptsPath = Path.Combine(projectPath, "scripts");
+
+        // Create scripts directory if it doesn't exist
+        Directory.CreateDirectory(scriptsPath);
+        developmentScriptFileWatcher.Path = scriptsPath;
+        ScriptWatcher = developmentScriptFileWatcher;
     }
 }
