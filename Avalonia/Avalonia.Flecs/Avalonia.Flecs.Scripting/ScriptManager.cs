@@ -189,7 +189,8 @@ public class ScriptManager
     /// <summary>
     /// Event that is triggered when a script is changed in the compiled scripts.
     /// So the contents of the script is changed most likely because it was recompiled
-    /// but its name is still the same.
+    /// but its name is still the same. A script will always be first added before the changed
+    /// event is triggered.
     /// </summary>
     public event EventHandler<ScriptEventArgs>? OnCompiledScriptChanged;
 
@@ -334,13 +335,13 @@ public class ScriptManager
 
         var script = CSharpScript.Create(code, Options, globalsType: typeof(GlobalData));
         script.Compile();
+        OnScriptCompilationFinished?.Invoke(this, new ScriptEventArgs(name));
 
         if (CompiledScripts.Contains(name))
             OnCompiledScriptChanged?.Invoke(this, new ScriptEventArgs(name));
 
         CompiledScripts[name] = script;
         OnCompiledScriptAdded?.Invoke(this, new ScriptEventArgs(name));
-        OnScriptCompilationFinished?.Invoke(this, new ScriptEventArgs(name));
     }
 
     /// <summary>
