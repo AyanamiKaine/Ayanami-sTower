@@ -18,59 +18,43 @@ public partial class App : Application
         _world.Import<Avalonia.Flecs.Controls.ECS.Module>();
 
         var window = _world.Entity("MainWindow")
-            .Set(
-                new Window()
-                {
-                    Title = "Avlonia.Flecs Example",
-                    Height = 400,
-                    Width = 400
-                });
+            .Set(new Window())
+            .SetWindowTitle("Avlonia.Flecs Example")
+            .SetHeight(400)
+            .SetWidth(400);
 
         var dockPanel = _world.Entity("MainWindowDockPanel")
             .ChildOf(window)
-            .Set(new DockPanel() { });
+            .Set(new DockPanel());
 
         var menu = _world.Entity("MainMenu")
             .ChildOf(dockPanel)
-            .Set(new Menu() { });
+            .Set(new Menu());
 
         _world.Entity("FileMenuItem")
             .ChildOf(menu)
-            .Set(new MenuItem()
-            {
-                Header = "_File"
-            });
+            .Set(new MenuItem())
+            .SetHeader("_File");
 
         _world.Entity("EditMenuItem")
                     .ChildOf(menu)
-                    .Set(new MenuItem()
-                    {
-                        Header = "_Edit"
-                    });
+                    .Set(new MenuItem())
+                    .SetHeader("_Edit");
 
         _world.Entity("SelectionMenuItem")
               .ChildOf(menu)
-              .Set(new MenuItem()
-              {
-                  Header = "_Selection"
-              });
+              .Set(new MenuItem())
+              .SetHeader("_Selection");
 
         var textBlock = _world.Entity("HelloWorldTextBlock")
             .ChildOf(dockPanel)
-            .Set(
-                new TextBlock()
-                {
-                    Text = "Avalonia + Flecs = ♥"
-                });
+            .Set(new TextBlock())
+            .SetText("Hello World!");
 
         var button = _world.Entity("Button")
             .ChildOf(dockPanel)
-            .Set(
-                new Button()
-                {
-                    Content = "CLICK ME"
-                }
-            );
+            .Set(new Button())
+            .SetContent("Click Me!");
 
         button.OnClick((sender, args) =>
         {
