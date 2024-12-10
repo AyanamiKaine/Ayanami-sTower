@@ -44,5 +44,20 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             throw new ComponentNotFoundException(entity, typeof(Window), nameof(ShowWindow));
         }
+
+        /// <summary>
+        /// Helper function to close a window attached to an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity CloseWindow(this Entity entity)
+        {
+            if (entity.Has<object>())
+            {
+                return entity.RunMethod("Close");
+            }
+            throw new ComponentNotFoundException(entity, typeof(Window), nameof(CloseWindow));
+        }
     }
 }
