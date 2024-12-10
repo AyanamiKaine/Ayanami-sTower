@@ -468,7 +468,9 @@ public class ScriptManager
     }
 
     /// <summary>
-    /// If a script is changed, recompile it.
+    /// If a script is changed, recompile it. We try around 
+    /// 50 times to read the file, because it might be locked by another process.
+    /// We try to wait around 100ms for every try.
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
@@ -513,7 +515,7 @@ public class ScriptManager
         {
             try
             {
-                using FileStream fileStream = new(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                await using FileStream fileStream = new(e.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using StreamReader reader = new(fileStream);
                 code = await reader.ReadToEndAsync();
 
