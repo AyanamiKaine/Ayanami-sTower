@@ -30,6 +30,27 @@ namespace Avalonia.Flecs.Controls.ECS
         }
 
         /// <summary>
+        /// Returns the window title if the window title
+        /// itself is null it returns an empty string instead.
+        /// If a window component is not found it will throw.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static string GetWindowTitle(this Entity entity)
+        {
+            if (entity.Has<Window>())
+            {
+                return entity.Get<Window>().Title ?? string.Empty;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<string?>("Title") ?? string.Empty;
+            }
+            throw new ComponentNotFoundException(entity, typeof(Window), nameof(GetWindowTitle));
+        }
+
+        /// <summary>
         /// Helper function to open a window attached to an entity.
         /// </summary>
         /// <param name="entity"></param>
