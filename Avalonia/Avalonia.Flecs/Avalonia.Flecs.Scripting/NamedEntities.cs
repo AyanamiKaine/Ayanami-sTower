@@ -7,6 +7,8 @@ namespace Avalonia.Flecs.Scripting;
 /// a specific name we can easily get it. It ensures that if 
 /// the entity is not found it will be created otherwise if the 
 /// entity already exists in the world we simply return it.
+/// Its used for convenience sake so we can easily refrence entities
+/// by their given name instead of their path.
 /// </summary>
 /// <param name="world"></param>
 public class NamedEntities(World world)
