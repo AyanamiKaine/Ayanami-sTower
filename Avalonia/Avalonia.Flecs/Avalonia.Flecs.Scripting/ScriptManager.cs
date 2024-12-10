@@ -256,7 +256,7 @@ public class ScriptManager
     /// The debounce interval for file changes determines how far apart changes
     /// to the file can be before we recompile. We are doing this because
     /// simply editing the file changes several things, like content, last write
-    /// time etc. This would result in multiple recompilation that are not needed.
+    /// time etc. This would result in multiple recompilations that are not needed.
     /// </summary>
     private readonly TimeSpan _debounceInterval = TimeSpan.FromMilliseconds(500);
 
