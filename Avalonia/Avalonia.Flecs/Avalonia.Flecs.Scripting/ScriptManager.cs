@@ -648,7 +648,7 @@ public class ScriptManager
         // This could involve reading from a UI element, a message queue, etc.
         // For simplicity, we'll use Task.Run(() => Console.ReadLine());
         // BEWARE: This pattern of using Task.Run() to call synchronous methods is not recommended but
-        // Console does not provide any async methods and this is the closed workaround.
+        // Console does not provide any async methods and this is the closes workaround.
 
         return await Task.Run(() => Console.ReadLine());
     }
