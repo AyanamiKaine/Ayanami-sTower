@@ -103,4 +103,30 @@ public class ScriptingManagerTests
 
         Assert.True(called);
     }
+
+    /// <summary>
+    /// We want to ensure that events are called in an expected order.
+    /// </summary>
+    [Fact]
+    public void CorrectOrderOfEvents()
+    {
+        World world = World.Create();
+        NamedEntities namedEntities = new(world);
+
+        List<string> actualEvents = [];
+        List<string> expectedEvents = ["Start", "Finished", "Added", "Start", "Finished", "Changed", "Added", "Removed"];
+
+        ScriptManager scriptManager = new(world, namedEntities, false);
+        scriptManager.OnScriptCompilationStart += (sender, args) => actualEvents.Add("Start");
+        scriptManager.OnScriptCompilationFinished += (sender, args) => actualEvents.Add("Finished");
+        scriptManager.OnCompiledScriptAdded += (sender, args) => actualEvents.Add("Added");
+        scriptManager.OnCompiledScriptChanged += (sender, args) => actualEvents.Add("Changed");
+        scriptManager.OnCompiledScriptRemoved += (sender, args) => actualEvents.Add("Removed");
+
+        scriptManager.AddScript("TestScript", "using System;");
+        scriptManager.AddScript("TestScript", "using System;");
+        scriptManager.RemoveScript("TestScript");
+
+        Assert.Equal(expectedEvents, actualEvents);
+    }
 }
