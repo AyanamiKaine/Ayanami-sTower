@@ -61,3 +61,14 @@ var button = entities["Button"]
         Console.WriteLine("HEY");
     })
     .SetMargin(10);
+
+var button3 = entities["Button3"]
+    .Set(new Button())
+    .SetContent("CLICK ME AGAIN")
+    .ChildOf(grid)
+    .SetColumn(1)
+    .OnClick((sender, args) =>
+    {
+        Console.WriteLine("HEY");
+    })
+    .SetMargin(10);
