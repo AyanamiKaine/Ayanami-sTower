@@ -34,6 +34,4 @@ public class ECSContentControlExtensionsTests
 
         Assert.True(entity.GetContent() is Button);
     }
-
-
 }
