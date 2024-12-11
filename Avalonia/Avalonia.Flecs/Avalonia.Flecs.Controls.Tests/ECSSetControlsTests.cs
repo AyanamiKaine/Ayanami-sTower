@@ -504,4 +504,18 @@ public class ECSSetControlsTests
         Assert.True(entity.Has<object>());
         Assert.True(entity.Get<object>() is TextBox);
     }
+
+    [Fact]
+    public void ToolTip()
+    {
+        var world = World.Create();
+        world.Import<Avalonia.Flecs.Controls.ECS.Module>();
+
+        var entity = world.Entity("TestEntity")
+            .Set(new ToolTip());
+
+        Assert.True(entity.Has<ToolTip>());
+        Assert.True(entity.Has<object>());
+        Assert.True(entity.Get<object>() is ToolTip);
+    }
 }
