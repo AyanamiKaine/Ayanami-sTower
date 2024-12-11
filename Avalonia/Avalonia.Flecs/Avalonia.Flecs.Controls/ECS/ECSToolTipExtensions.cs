@@ -23,11 +23,26 @@ namespace Avalonia.Flecs.Controls.ECS
                 ToolTip.SetTip(entity.Get<Control>(), toolTipEntity.Get<ToolTip>());
                 return entity;
             }
-            
+
             if (!toolTipEntity.Has<ToolTip>())
                 throw new ComponentNotFoundException(toolTipEntity, typeof(ToolTip), nameof(AttachToolTip));
             else
                 throw new ComponentNotFoundException(entity, typeof(Control), nameof(AttachToolTip));
+        }
+
+        /// <summary>
+        /// Helper function to get the tooltip of a control component of an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static object? GetAttachedToolTip(this Entity entity)
+        {
+            if (entity.Has<Control>())
+            {
+                return ToolTip.GetTip(entity.Get<Control>());
+            }
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(GetAttachedToolTip));
         }
     }
 }
