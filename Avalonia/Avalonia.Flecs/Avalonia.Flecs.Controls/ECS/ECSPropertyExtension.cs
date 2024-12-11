@@ -73,7 +73,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     catch (Exception e)
                     {
-                        throw new Exception($"Property {propertyName} not found from entity {entity.Id} in the object component", e);
+                        throw new Exception($"Property '{propertyName}' not found from entity {entity.Id} in the object component", e);
                     }
                 }
                 throw new PropertyNotFoundException(entity, entity.Get<object>().GetType(), propertyName, nameof(GetProperty));

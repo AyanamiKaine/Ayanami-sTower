@@ -26,6 +26,11 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<ContentControl>().Content = control;
                 return entity;
             }
+            if (entity.Has<ToolTip>())
+            {
+                entity.Get<ToolTip>().Content = control;
+                return entity;
+            }
             if (entity.Has<object>())
             {
                 return entity.SetProperty("Content", control);
