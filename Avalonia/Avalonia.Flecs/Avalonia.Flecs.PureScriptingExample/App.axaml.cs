@@ -1,11 +1,14 @@
 using System;
+using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Scripting;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Flecs.NET.Bindings;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.PureScriptingExample;
@@ -19,6 +22,9 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
+
+        _world.RunRESTAPI();
+
 
         _entities = new NamedEntities(_world);
         _world.Set<ScriptManager>(new(_world, _entities));
@@ -76,5 +82,6 @@ public partial class App : Application
 #if DEBUG
         this.AttachDevTools();
 #endif
+
     }
 }
