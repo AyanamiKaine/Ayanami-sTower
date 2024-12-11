@@ -46,13 +46,38 @@ static public class SpacedRepetitionPage
             .SetText("Total Items: 0")
             .SetColumn(1);
 
+
+
+
+
         List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
+
+
+
+
+        var myToolTip = world.Entity("myToolTip")
+            .Set(new ToolTip())
+            .SetContent(new TextBlock() { Text = "Summary: \ndoes this also work \n\nlets try it!" });
+
+
+        var myFlyout = new Flyout()
+        {
+            Content = new TextBlock() { Text = "Hello World" },
+            ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+        };
         var sortItemsButton = world.Entity("SortItemsButton")
             .ChildOf(spacedRepetitionPage)
-            .Set(new ComboBox())
+            .Set(new ComboBox()
+            {
+                ContextFlyout = myFlyout,
+
+            })
             .SetPlaceholderText("Sort Items")
             .SetColumn(2)
             .SetItemsSource(sortItems);
+
+        //ToolTip.SetTip(sortItemsButton.Get<ComboBox>(), myToolTip);
+
 
         /*
         I believe that entites should not know the exact control type but
@@ -94,7 +119,7 @@ static public class SpacedRepetitionPage
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Open")
-            .OnClick(async (sender, args) => await ScriptExample.RunScriptAsync(world));
+            .OnClick((sender, args) => Console.WriteLine("Open Clicked"));
 
         var editMenuItem = world.Entity("EditMenuItem")
             .ChildOf(contextFlyout)
@@ -124,7 +149,7 @@ static public class SpacedRepetitionPage
             .SetRow(1)
             .SetColumnSpan(3);
 
-        sortItemsButton.OnSelectionChanged((sender, args) =>
+        _ = sortItemsButton.OnSelectionChanged((sender, args) =>
         {
             if (args.AddedItems.Count == 0)
             {
@@ -145,7 +170,7 @@ static public class SpacedRepetitionPage
                 //(ascending order)
                 Random rng = new();
                 var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
-                t = [.. t!.OrderBy(s => rng.Next())];
+                t = [.. t!.OrderBy(_ => rng.Next())];
                 srItems.SetItemsSource(t);
             }
         });
