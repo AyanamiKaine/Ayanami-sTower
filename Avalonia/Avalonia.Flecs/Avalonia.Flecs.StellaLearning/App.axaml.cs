@@ -21,9 +21,9 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
-        
+
         _entities = new NamedEntities(_world);
-        
+
         _world
             .Set<ScriptManager>(new(_world, _entities))
             .Get<ScriptManager>().CompileScriptsFromFolder("scripts");
