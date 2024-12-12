@@ -59,27 +59,27 @@ public partial class App : Application
         _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
 
 
-        var window = _entities["MainWindow"]
+        var window = _entities.Create("MainWindow")
             .Set(new Window())
             .SetWindowTitle("Stella Learning")
             .SetHeight(400)
             .SetWidth(400);
 
-        var navigationView = _entities["NavigationView"]
+        var navigationView = _entities.Create("NavigationView")
             .Set(new NavigationView())
             .SetPaneTitle("Stella Learning")
             .ChildOf(window)
             .SetColumn(0);
 
-        var scrollViewer = _entities["ScrollViewer"]
+        var scrollViewer = _entities.Create("ScrollViewer")
             .ChildOf(navigationView)
             .Set(new ScrollViewer());
 
-        var stackPanel = _entities["StackPanel"]
+        var stackPanel = _entities.Create("StackPanel")
             .ChildOf(scrollViewer)
             .Set(new StackPanel());
 
-        var grid = _entities["MainContentDisplay"]
+        var grid = _entities.Create("MainContentDisplay")
             .ChildOf(stackPanel)
             .Set(new Grid())
             .SetColumnDefinitions(new ColumnDefinitions("2,*,*"))
@@ -100,22 +100,22 @@ public partial class App : Application
         var spacedRepetitionPage = SpacedRepetitionPage.Create(_world);
         //spacedRepetitionPage.ChildOf(navigationView);
 
-        _entities["HomeNavigationViewItem"]
+        _entities.Create("HomeNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Home");
 
-        _entities["KnowledgeVaultNavigationViewItem"]
+        _entities.Create("KnowledgeVaultNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Knowledge Vault");
 
-        _entities["LiteratureNavigationViewItem"]
+        _entities.Create("LiteratureNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Literature");
 
-        _entities["SpacedRepetitionNavigationViewItem"]
+        _entities.Create("SpacedRepetitionNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Spaced Repetition");
