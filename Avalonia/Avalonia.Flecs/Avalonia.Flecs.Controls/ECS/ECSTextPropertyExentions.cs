@@ -37,6 +37,18 @@ namespace Avalonia.Flecs.Controls.ECS
         }
 
         /// <summary>
+        /// Sets the inner left content of a TextBox control component of an entity.
+        /// To the control component of another entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="entityToSet"></param>
+        /// <returns></returns>
+        public static Entity SetInnerLeftContent(this Entity entity, Entity entityToSet)
+        {
+            return entity.SetInnerLeftContent(entityToSet.Get<Control>());
+        }
+
+        /// <summary>
         /// Gets the inner left content of a TextBox control component of an entity.
         /// </summary>
         /// <param name="entity"></param>
@@ -70,6 +82,18 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.SetProperty("InnerRightContent", content);
             }
             throw new ComponentNotFoundException(entity, typeof(TextBox), nameof(SetInnerRightContent));
+        }
+
+        /// <summary>
+        /// Sets the inner right content of a TextBox control component of an entity.
+        /// To the control component of another entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="entityToSet"></param>
+        /// <returns></returns>
+        public static Entity SetInnerRightContent(this Entity entity, Entity entityToSet)
+        {
+            return entity.SetInnerRightContent(entityToSet.Get<Control>());
         }
 
         /// <summary>
