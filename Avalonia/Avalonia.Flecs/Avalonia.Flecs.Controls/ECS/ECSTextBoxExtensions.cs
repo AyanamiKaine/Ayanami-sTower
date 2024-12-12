@@ -17,6 +17,7 @@ namespace Avalonia.Flecs.Controls.ECS
     {
         /// <summary>
         /// Helper function to set the text of a TextBox control component of an entity.
+        /// NEEDED COMPONENTS: TextBox or an object with a Watermark property
         /// </summary>
         /// <param name="entity"></param>
         /// <param name="text"></param>
