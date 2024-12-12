@@ -73,11 +73,26 @@ public static class SettingsPage
             .Set(new TextBlock())
             .SetText("Browse");
 
+
+        var toolTipTextBlock = world.Entity("ToolTipTextBlock")
+            .Set(new TextBlock())
+            .SetText(
+                """
+                When a obsidian path is set, the application 
+                will be able to open the obsidian vault when a
+                markdown file is part of an obsidian vault.
+                """);
+
+        var obsidianPathTooltip = world.Entity("ObsidianPathTooltip")
+            .Set(new ToolTip())
+            .SetContent(toolTipTextBlock);
+
         var obsidianPath = world.Entity("ObsidianPath")
             .ChildOf(childOfEntity)
             .Set(new TextBox())
             .SetWatermark("Path to Obsidian")
-            .SetInnerRightContent(browseForObsidianButton.Get<Button>());
+            .SetInnerRightContent(browseForObsidianButton)
+            .AttachToolTip(obsidianPathTooltip);
 
         browseForObsidianButton
             .ChildOf(obsidianPath)
