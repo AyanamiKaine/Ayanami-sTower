@@ -11,6 +11,7 @@ using Avalonia.Flecs.Scripting;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
 using System;
 using Avalonia.Threading;
+using static Avalonia.Flecs.Controls.ECS.Module;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -40,36 +41,45 @@ public partial class App : Application
                 {
                     _entities.Clear();
                     await scriptManager.RunScriptAsync("main");
-                    await scriptManager.StartReplAsync();
+                });
+            }
+
+            if (args.ScriptName == "KnowledgeVaultPage")
+            {
+                Console.WriteLine("Running KnowledgeVaultPage script");
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    _entities.Remove("KnowledgeVaultPage");
+                    _entities.Remove("VaultContent");
+                    await scriptManager.RunScriptAsync("KnowledgeVaultPage");
                 });
             }
         };
-        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
-        _world
-            .Set<ScriptManager>(new(_world, _entities))
-            .Get<ScriptManager>().CompileScriptsFromFolder("scripts");
 
-        var window = _world.Entity("MainWindow")
+        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
+
+
+        var window = _entities["MainWindow"]
             .Set(new Window())
             .SetWindowTitle("Stella Learning")
             .SetHeight(400)
             .SetWidth(400);
 
-        var navigationView = _world.Entity("NavigationView")
+        var navigationView = _entities["NavigationView"]
             .Set(new NavigationView())
             .SetPaneTitle("Stella Learning")
             .ChildOf(window)
             .SetColumn(0);
 
-        var scrollViewer = _world.Entity("ScrollViewer")
+        var scrollViewer = _entities["ScrollViewer"]
             .ChildOf(navigationView)
             .Set(new ScrollViewer());
 
-        var stackPanel = _world.Entity("StackPanel")
+        var stackPanel = _entities["StackPanel"]
             .ChildOf(scrollViewer)
             .Set(new StackPanel());
 
-        var grid = _world.Entity("MainContentDisplay")
+        var grid = _entities["MainContentDisplay"]
             .ChildOf(stackPanel)
             .Set(new Grid())
             .SetColumnDefinitions(new ColumnDefinitions("2,*,*"))
@@ -90,20 +100,26 @@ public partial class App : Application
         var spacedRepetitionPage = SpacedRepetitionPage.Create(_world);
         //spacedRepetitionPage.ChildOf(navigationView);
 
-        _world.Entity("HomeNavigationViewItem")
+        _entities["HomeNavigationViewItem"]
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Home");
 
-        _world.Entity("LiteratureNavigationViewItem")
+        _entities["KnowledgeVaultNavigationViewItem"]
+            .ChildOf(navigationView)
+            .Set(new NavigationViewItem())
+            .SetProperty("Content", "Knowledge Vault");
+
+        _entities["LiteratureNavigationViewItem"]
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Literature");
 
-        _world.Entity("SpacedRepetitionNavigationViewItem")
+        _entities["SpacedRepetitionNavigationViewItem"]
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Spaced Repetition");
+
 
         navigationView.OnDisplayModeChanged((sender, args) =>
         {
@@ -193,14 +209,24 @@ public partial class App : Application
                 else
                     settingPage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
+            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Knowledge Vault")
+            {
+                _entities["KnowledgeVaultPage"].ChildOf(navigationView);
+
+                if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                    _entities["KnowledgeVaultPage"].Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                else
+                    _entities["KnowledgeVaultPage"].Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+            }
         });
     }
 
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+            && _entities is not null)
         {
-            desktop.MainWindow = _world.Lookup("MainWindow").Get<Window>();
+            desktop.MainWindow = _entities["MainWindow"].Get<Window>();
         }
 
         base.OnFrameworkInitializationCompleted();
