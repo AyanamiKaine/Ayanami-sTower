@@ -60,4 +60,45 @@ public class ECSTooltipExtensionsTests
         ToolTip? foundTooltip = (ToolTip?)entity.GetAttachedToolTip();
         Assert.Equal(tooltip.Get<ToolTip>(), foundTooltip);
     }
+
+    [Fact]
+    public void HasToolTipAttached()
+    {
+        var world = World.Create();
+        world.Import<Avalonia.Flecs.Controls.ECS.Module>();
+
+        var tooltip = world.Entity("ToolTip")
+            .Set(new ToolTip())
+            .SetContent(new TextBlock()
+            {
+                Text = "Hello World"
+            });
+
+        var entity = world.Entity("Button")
+            .Set(new Button())
+            .AttachToolTip(tooltip);
+
+        Assert.True(entity.HasToolTipAttached());
+    }
+
+    [Fact]
+    public void RemoveToolTip()
+    {
+        var world = World.Create();
+        world.Import<Avalonia.Flecs.Controls.ECS.Module>();
+
+        var tooltip = world.Entity("ToolTip")
+            .Set(new ToolTip())
+            .SetContent(new TextBlock()
+            {
+                Text = "Hello World"
+            });
+
+        var entity = world.Entity("Button")
+            .Set(new Button())
+            .AttachToolTip(tooltip);
+
+        entity.RemoveToolTip();
+        Assert.False(entity.HasToolTipAttached());
+    }
 }
