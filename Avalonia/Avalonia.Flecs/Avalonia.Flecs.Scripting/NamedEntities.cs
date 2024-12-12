@@ -3,6 +3,35 @@ using Flecs.NET.Core;
 namespace Avalonia.Flecs.Scripting;
 
 /// <summary>
+/// Should be thrown when an entity is not found in the named entities dictonary.
+/// </summary>
+public class EntityNotFoundException : Exception
+{
+    /// <summary>
+    /// Constructor for EntityNotFoundException
+    /// </summary>
+    public EntityNotFoundException() : base()
+    {
+    }
+    /// <summary>
+    /// Constructor for EntityNotFoundException
+    /// </summary>
+    /// <param name="message"></param>
+    public EntityNotFoundException(string message) : base(message)
+    { }
+
+    /// <summary>
+    /// Constructor for EntityNotFoundException
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="innerException"></param>
+    public EntityNotFoundException(string message, Exception innerException) : base(message, innerException)
+    {
+    }
+}
+
+
+/// <summary>
 /// A container for named entities. We simply give an entity
 /// a specific name we can easily get it. It ensures that if 
 /// the entity is not found it will be created otherwise if the 
@@ -18,7 +47,7 @@ public class NamedEntities(World world)
 
     /// <summary>
     /// Gets or sets an entity by name. If an entity
-    /// is not found it will be created.
+    /// is already defined by name it will be replaced
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
@@ -26,15 +55,13 @@ public class NamedEntities(World world)
     {
         get
         {
-            if (_entities.TryGetValue(name, out var entity))
+            try
             {
-                return entity;
+                return _entities[name];
             }
-            else
+            catch (KeyNotFoundException)
             {
-                entity = _world.Entity(name);
-                _entities.Add(name, entity);
-                return entity;
+                throw new EntityNotFoundException($"Entity with the name:{name} was not found in the named entities dictonary. If you didnt care if the entity was created here you can use the GetEntityCreateIfNotExist method instead. If you expected that the entity was created here you should check if the entity was created before trying to access it.");
             }
         }
         set
@@ -75,5 +102,37 @@ public class NamedEntities(World world)
             entity.Value.Destruct();
         }
         _entities.Clear();
+    }
+
+    /// <summary>
+    /// Gets an entity by name. If the entity is not found
+    /// it gets created.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public Entity GetEntityCreateIfNotExist(string name)
+    {
+        if (_entities.TryGetValue(name, out var entity))
+        {
+            return entity;
+        }
+        else
+        {
+            entity = _world.Entity(name);
+            _entities.Add(name, entity);
+            return entity;
+        }
+    }
+
+    /// <summary>
+    /// Creates an entity by name
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public Entity Create(string name)
+    {
+        var entity = _world.Entity(name);
+        _entities.Add(name, entity);
+        return entity;
     }
 }
