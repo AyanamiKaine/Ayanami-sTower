@@ -10,7 +10,8 @@ namespace Avalonia.Flecs.Controls.ECS
     public static class ECSListBoxExtensions
     {
         /// <summary>
-        /// Sets the slection mode of a listbox component
+        /// Sets the selection mode of a listbox component
+        /// NEEDED COMPONENTS: ListBox or an object with a SelectionMode property
         /// </summary>
         /// <param name="entity"></param>
         /// <param name="mode"></param>
