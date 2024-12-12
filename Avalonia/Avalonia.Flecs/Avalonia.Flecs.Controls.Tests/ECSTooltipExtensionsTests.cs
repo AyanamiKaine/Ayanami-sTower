@@ -31,7 +31,7 @@ public class ECSTooltipExtensionsTests
         //Here we test what tooltip is now attached to the button class
         //We get the tooltip from the button class and compare it to the tooltip we attached
         //We expect that they are the same
-        ToolTip foundTooltip = (ToolTip)ToolTip.GetTip(entity.Get<Control>());
+        ToolTip? foundTooltip = (ToolTip?)ToolTip.GetTip(entity.Get<Control>());
         Assert.Equal(tooltip.Get<ToolTip>(), foundTooltip);
     }
 }
