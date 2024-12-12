@@ -31,7 +31,8 @@ namespace Avalonia.Flecs.Controls.ECS
         }
 
         /// <summary>
-        /// Helper function to get the tooltip of a control component of an entity.
+        /// Helper function to get the tooltip that is attached to an entities underlying
+        /// control class/component
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
