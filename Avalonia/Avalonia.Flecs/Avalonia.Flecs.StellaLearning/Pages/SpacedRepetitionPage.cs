@@ -46,38 +46,23 @@ static public class SpacedRepetitionPage
             .SetText("Total Items: 0")
             .SetColumn(1);
 
-
-
-
-
         List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
-
-
-
-
-        var myToolTip = world.Entity("myToolTip")
-            .Set(new ToolTip())
-            .SetContent(new TextBlock() { Text = "Summary: \ndoes this also work \n\nlets try it!" });
-
 
         var myFlyout = new Flyout()
         {
             Content = new TextBlock() { Text = "Hello World" },
             ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
         };
+
         var sortItemsButton = world.Entity("SortItemsButton")
             .ChildOf(spacedRepetitionPage)
-            .Set(new ComboBox()
-            {
-                ContextFlyout = myFlyout,
-
-            })
+            .Set(new ComboBox())
             .SetPlaceholderText("Sort Items")
             .SetColumn(2)
-            .SetItemsSource(sortItems);
+            .SetItemsSource(sortItems)
+            .SetContextFlyout(myFlyout);
 
         //ToolTip.SetTip(sortItemsButton.Get<ComboBox>(), myToolTip);
-
 
         /*
         I believe that entites should not know the exact control type but
@@ -126,7 +111,6 @@ static public class SpacedRepetitionPage
             .Set(new MenuItem())
             .SetHeader("Edit")
             .OnClick((sender, args) => Console.WriteLine("Edit Clicked"));
-        ;
 
         var deleteMenuItem = world.Entity("DeleteMenuItem")
             .ChildOf(contextFlyout)
