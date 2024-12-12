@@ -19,17 +19,19 @@ public World world = _world;
 /// </summary>
 public NamedEntities entities = _entities;
 
-
-var vault = entities["KnowledgeVaultPage"]
+var vault = entities.GetEntityCreateIfNotExist("KnowledgeVaultPage")
     .Add<Page>()
     .Set(new Grid())
     .SetRow(2)
     .SetColumnSpan(3);
 
-var vaultContent = entities["VaultContent"]
+var vaultContent = entities.GetEntityCreateIfNotExist("VaultContent")
     .ChildOf(vault)
     .Set(new TextBlock())
     .SetText("VaultContent")
     .SetRow(1)
     .SetColumn(0)
     .SetColumnSpan(3);
+
+
+var entityThatDoesNotExist = entities["NOT_EXISTING_ENTITY"];
