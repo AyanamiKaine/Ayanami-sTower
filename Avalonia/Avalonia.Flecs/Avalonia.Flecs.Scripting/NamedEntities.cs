@@ -57,6 +57,10 @@ public class NamedEntities(World world)
     /// <param name="name"></param>
     public void Remove(string name)
     {
+        if (!_entities.ContainsKey(name))
+        {
+            return;
+        }
         _entities[name].Destruct();
         _entities.Remove(name);
     }
