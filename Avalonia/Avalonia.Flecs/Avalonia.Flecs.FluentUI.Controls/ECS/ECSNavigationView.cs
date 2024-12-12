@@ -1,6 +1,7 @@
 using Flecs.NET.Core;
 using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
+using Avalonia.Controls.Primitives;
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
     public class ECSNavigationView : IFlecsModule
@@ -14,6 +15,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                                if (!e.Has<object>())
                                    e.Set<object>(navigationView);
 
+                               e.Set<HeaderedContentControl>(navigationView);
                                e.Set<ContentControl>(navigationView);
                            }).OnRemove((Entity e, ref NavigationView _) => e.Remove<ContentControl>());
         }
