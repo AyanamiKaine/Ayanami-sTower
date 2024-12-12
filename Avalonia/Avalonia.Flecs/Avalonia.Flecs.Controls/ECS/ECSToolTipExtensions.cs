@@ -45,5 +45,38 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             throw new ComponentNotFoundException(entity, typeof(Control), nameof(GetAttachedToolTip));
         }
+
+        /// <summary>
+        /// Helper function to remove a tooltip from an entity,
+        /// this does not destroy the tooltip entity.
+        /// So you can reattach it later or to a different entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity RemoveToolTip(this Entity entity)
+        {
+            if (entity.Has<Control>())
+            {
+                ToolTip.SetTip(entity.Get<Control>(), null);
+                return entity;
+            }
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(RemoveToolTip));
+        }
+
+        /// <summary>
+        /// Helper function to check if an entity has an attached tooltip.
+        /// It does the underlying null check for you
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public static bool HasToolTipAttached(this Entity entity)
+        {
+            if (entity.Has<Control>())
+            {
+                return ToolTip.GetTip(entity.Get<Control>()) != null;
+            }
+            throw new ComponentNotFoundException(entity, typeof(Control), nameof(HasToolTipAttached));
+        }
     }
 }
