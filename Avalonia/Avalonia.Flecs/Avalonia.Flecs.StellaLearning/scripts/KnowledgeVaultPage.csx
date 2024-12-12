@@ -32,6 +32,3 @@ var vaultContent = entities.GetEntityCreateIfNotExist("VaultContent")
     .SetRow(1)
     .SetColumn(0)
     .SetColumnSpan(3);
-
-
-var entityThatDoesNotExist = entities["NOT_EXISTING_ENTITY"];
