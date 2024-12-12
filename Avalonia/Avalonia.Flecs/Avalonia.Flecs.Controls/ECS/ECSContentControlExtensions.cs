@@ -37,6 +37,24 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             throw new ComponentNotFoundException(entity, typeof(ContentControl), nameof(SetContent));
         }
+
+        /// <summary>
+        /// Used to set the content of a ContentControl component to the 
+        /// object defined in the object component of another entity.
+        /// NEEDED COMPONENTS: object
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="controlEntity"></param>
+        /// <returns></returns>
+        public static Entity SetContent(this Entity entity, Entity controlEntity)
+        {
+            if (controlEntity.Has<object>())
+            {
+                return entity.SetContent(controlEntity.Get<object>());
+            }
+            throw new ComponentNotFoundException(controlEntity, typeof(object), nameof(SetContent));
+        }
+
         /// <summary>
         /// Helper function to get the content of a ContentControl component of an entity.
         /// </summary>
