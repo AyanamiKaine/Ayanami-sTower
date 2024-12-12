@@ -34,4 +34,30 @@ public class ECSTooltipExtensionsTests
         ToolTip? foundTooltip = (ToolTip?)ToolTip.GetTip(entity.Get<Control>());
         Assert.Equal(tooltip.Get<ToolTip>(), foundTooltip);
     }
+
+
+    /// <summary>
+    /// We have implemented a gettooltip method that gets the tooltip attached to an entity
+    /// of the underlying control class/component
+    /// </summary>
+    [Fact]
+    public void GetAttachedTooltipOfEntity()
+    {
+        var world = World.Create();
+        world.Import<Avalonia.Flecs.Controls.ECS.Module>();
+
+        var tooltip = world.Entity("ToolTip")
+            .Set(new ToolTip())
+            .SetContent(new TextBlock()
+            {
+                Text = "Hello World"
+            });
+
+        var entity = world.Entity("Button")
+            .Set(new Button())
+            .AttachToolTip(tooltip);
+
+        ToolTip? foundTooltip = (ToolTip?)entity.GetAttachedToolTip();
+        Assert.Equal(tooltip.Get<ToolTip>(), foundTooltip);
+    }
 }
