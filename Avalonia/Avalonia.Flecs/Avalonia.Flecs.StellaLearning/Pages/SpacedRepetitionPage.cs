@@ -88,6 +88,11 @@ static public class SpacedRepetitionPage
 
         listSearchSpacedRepetition.OnTextChanged((sender, args) =>
         {
+            //TODO:
+            //We would need to implement the correct sorting of the items
+            //regarding what sort settings the user set before right now
+            //they are being ingnored.
+
             string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
             var filteredItems = dummyItems.Where(item => item.ToLower().Contains(searchText));
             //srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
