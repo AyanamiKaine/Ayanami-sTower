@@ -9,6 +9,8 @@ using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Scripting;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
+using System;
+using Avalonia.Threading;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -23,7 +25,26 @@ public partial class App : Application
         _world.Import<FluentUI.Controls.ECS.Module>();
 
         _entities = new NamedEntities(_world);
+        _world.Set<ScriptManager>(new(_world, _entities));
+        var scriptManager = _world.Get<ScriptManager>();
 
+        scriptManager.OnScriptCompilationStart += (sender, args) => Console.WriteLine($"Start Compilation of: {args.ScriptName}");
+
+        scriptManager.OnScriptCompilationFinished += (sender, args) =>
+        {
+            Console.WriteLine($"Finishes Compilation of: {args.ScriptName}");
+            if (args.ScriptName == "main")
+            {
+                Console.WriteLine("Running Main script");
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    _entities.Clear();
+                    await scriptManager.RunScriptAsync("main");
+                    await scriptManager.StartReplAsync();
+                });
+            }
+        };
+        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
         _world
             .Set<ScriptManager>(new(_world, _entities))
             .Get<ScriptManager>().CompileScriptsFromFolder("scripts");
