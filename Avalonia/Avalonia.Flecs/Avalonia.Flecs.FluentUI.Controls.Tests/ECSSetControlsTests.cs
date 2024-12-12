@@ -1,4 +1,6 @@
-﻿using Flecs.NET.Core;
+﻿using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using Xunit;
 
@@ -31,6 +33,7 @@ public class ECSSetControlsTests
             .Set(new NavigationView());
 
         Assert.True(entity.Has<NavigationView>());
+        Assert.True(entity.Has<HeaderedContentControl>());
         Assert.True(entity.Has<object>());
         Assert.True(entity.Get<object>() is NavigationView);
     }
