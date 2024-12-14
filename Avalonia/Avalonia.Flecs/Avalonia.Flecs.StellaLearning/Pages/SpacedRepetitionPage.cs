@@ -134,10 +134,6 @@ static public class SpacedRepetitionPage
         dummyItems.Add("iteration");
         dummyItems.Add("JavaScript");
 
-        scrollViewer
-            .SetRow(1)
-            .SetColumnSpan(3);
-
         _ = sortItemsButton.OnSelectionChanged((sender, args) =>
         {
             if (args.AddedItems.Count == 0)
