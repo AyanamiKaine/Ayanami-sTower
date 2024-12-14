@@ -49,9 +49,20 @@ public partial class App : Application
                 Console.WriteLine("Running KnowledgeVaultPage script");
                 Dispatcher.UIThread.InvokeAsync(async () =>
                 {
-                    _entities.Remove("KnowledgeVaultPage");
-                    _entities.Remove("VaultContent");
+                    //_entities.Remove("KnowledgeVaultPage");
+                    //_entities.Remove("VaultContent");
                     await scriptManager.RunScriptAsync("KnowledgeVaultPage");
+                });
+            }
+
+            if (args.ScriptName == "ContentQueuePage")
+            {
+                Console.WriteLine("Running ContentQueuePage script");
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    //_entities.Remove("ContentPage");
+                    //_entities.Remove("ContentList");
+                    await scriptManager.RunScriptAsync("ContentQueuePage");
                 });
             }
         };
@@ -109,6 +120,11 @@ public partial class App : Application
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Knowledge Vault");
+
+        _entities.Create("ContentQueueNavigationViewItem")
+            .ChildOf(navigationView)
+            .Set(new NavigationViewItem())
+            .SetProperty("Content", "Content Queue");
 
         _entities.Create("LiteratureNavigationViewItem")
             .ChildOf(navigationView)
@@ -217,6 +233,15 @@ public partial class App : Application
                     _entities["KnowledgeVaultPage"].Get<Control>().Margin = new Thickness(50, 10, 20, 20);
                 else
                     _entities["KnowledgeVaultPage"].Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+            }
+            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Content Queue")
+            {
+                _entities["ContentQueuePage"].ChildOf(navigationView);
+
+                if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                    _entities["ContentQueuePage"].Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                else
+                    _entities["ContentQueuePage"].Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
         });
     }
