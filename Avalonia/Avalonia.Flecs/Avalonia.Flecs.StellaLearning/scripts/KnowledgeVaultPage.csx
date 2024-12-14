@@ -19,6 +19,7 @@ public World world = _world;
 /// </summary>
 public NamedEntities entities = _entities;
 
+
 var vault = entities.GetEntityCreateIfNotExist("KnowledgeVaultPage")
     .Add<Page>()
     .Set(new Grid())
@@ -29,6 +30,5 @@ var vaultContent = entities.GetEntityCreateIfNotExist("VaultContent")
     .ChildOf(vault)
     .Set(new TextBlock())
     .SetText("VaultContent")
-    .SetRow(1)
-    .SetColumn(0)
-    .SetColumnSpan(3);
+    .SetRow(0)
+    .SetColumn(0);
