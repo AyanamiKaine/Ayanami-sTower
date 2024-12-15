@@ -53,7 +53,7 @@ public partial class App : Application
                     //_entities.Remove("VaultContent");
                     await scriptManager.RunScriptAsync("KnowledgeVaultPage");
                 });
-            }
+                }
 
             if (args.ScriptName == "ContentQueuePage")
             {
