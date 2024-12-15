@@ -86,5 +86,29 @@ namespace Avalonia.Flecs.Controls.ECS
 
             throw new ComponentNotFoundException("Component ItemsControl or Component MenuFlyout NOT FOUND", typeof(ItemsControl), entity);
         }
+
+        /// <summary>
+        /// Gets the data template used in the ItemTemplate property.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static IDataTemplate? GetItemTemplate(this Entity entity)
+        {
+            if (entity.Has<ItemsControl>())
+            {
+                return entity.Get<ItemsControl>().ItemTemplate;
+            }
+            else if (entity.Has<MenuFlyout>())
+            {
+                return entity.Get<MenuFlyout>().ItemTemplate;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.GetProperty<IDataTemplate>("ItemTemplate");
+            }
+
+            throw new ComponentNotFoundException("Component ItemsControl or Component MenuFlyout NOT FOUND", typeof(ItemsControl), entity);
+        }
     }
 }
