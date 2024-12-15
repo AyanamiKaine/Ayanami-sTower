@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Markup.Xaml.Templates;
 using Flecs.NET.Core;
 
@@ -66,7 +67,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="entity">Entity with an ItemsControl Component</param>
         /// <param name="template"></param>
         /// <returns></returns>
-        public static Entity SetItemTemplate(this Entity entity, DataTemplate? template)
+        public static Entity SetItemTemplate<T>(this Entity entity, FuncDataTemplate<T>? template)
         {
             if (entity.Has<ItemsControl>())
             {
