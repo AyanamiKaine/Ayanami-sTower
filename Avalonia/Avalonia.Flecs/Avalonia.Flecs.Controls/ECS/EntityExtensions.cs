@@ -2,7 +2,7 @@ using Flecs.NET.Core;
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
-    /// This extension methods all relate to Animation components
+    /// This extension methods all relate to various entities
     /// </summary>
     public static class EntityExtensions
     {
