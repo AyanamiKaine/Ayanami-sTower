@@ -42,17 +42,14 @@ public partial class App : Application
         _world.Import<FluentUI.Controls.ECS.Module>();
         _entities = new NamedEntities(_world);
 
-
         var window = _entities.Create("MainWindow")
             .Set(new Window())
             .SetWindowTitle("Stella Learning")
             .SetHeight(400)
             .SetWidth(400);
 
-        var listBox = CreateListBoxComponent(_world)
+        CreateListBoxComponent(_world)
             .ChildOf(window);
-
-        //ChangingTheSourceItems(listBox);
     }
 
     public override void OnFrameworkInitializationCompleted()
