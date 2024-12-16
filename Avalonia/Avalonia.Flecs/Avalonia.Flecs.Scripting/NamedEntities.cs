@@ -140,4 +140,14 @@ public class NamedEntities(World world)
         _entities.Add(name, entity);
         return entity;
     }
+
+    /// <summary>
+    /// Checks if an entity exists by name
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public bool Contains(string name)
+    {
+        return _entities.ContainsKey(name);
+    }
 }
