@@ -139,15 +139,16 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
 {
     var grid = new Grid
      {
-        ColumnDefinitions = new ColumnDefinitions("Auto, *, Auto"), // Name, Description, Type
+        ColumnDefinitions = new ColumnDefinitions("*, *"), // Name, Description, Type
         RowDefinitions = new RowDefinitions("Auto, Auto"),
-        Margin = new Thickness(0)
+        Margin = new Thickness(0, 5)
     };
 
 
     // *** Create a TextBlock for the multi-line tooltip ***
     var tooltipTextBlock = new TextBlock
     {
+        FontWeight = FontWeight.Normal,
         TextWrapping = TextWrapping.Wrap, // Enable text wrapping
         MaxWidth = 200, // Set a maximum width for wrapping
         Text = "This is a very long tooltip text that spans multiple lines. " +
@@ -155,22 +156,30 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
                 "You can even add more and more text to make it even longer."
     };
 
-    // *** Set the ToolTip's Content to the TextBlock ***
-    ToolTip.SetTip(grid, tooltipTextBlock);
-
-    // Or if you want to set the tooltip dynamically through a binding:
-    tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription")); // Assuming you have a "HoverText" property in your data context
 
 
     //Name
     var nameTextBlock = new TextBlock
     {
+        TextWrapping = TextWrapping.Wrap,
+        TextTrimming = TextTrimming.CharacterEllipsis,
         FontWeight = FontWeight.Bold,
         Margin = new Thickness(0,0,5,0)
     };
     nameTextBlock.Bind(TextBlock.TextProperty, new Binding("Name"));
     Grid.SetColumn(nameTextBlock, 0);
     grid.Children.Add(nameTextBlock);
+
+    /*
+    For now only when we hover over the name the long description is shown
+    what we want is that it is also shown when we hover over the short description
+    
+    To do this we can easily use a stack panel on which we add the name and short description
+    that extends to two rows and on that stack panel then we attach the tooltip.
+    */
+    ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
+    tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription")); // Assuming you have a "HoverText" property in your data context
+
 
     //Description
     var descriptionTextBlock = new TextBlock
@@ -179,10 +188,12 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
         TextTrimming = TextTrimming.CharacterEllipsis,
         Margin = new Thickness(0,0,5,0)
     };
+    
     descriptionTextBlock.Bind(TextBlock.TextProperty, new Binding("ShortDescription"));
     Grid.SetColumn(descriptionTextBlock, 0);
     Grid.SetRow(descriptionTextBlock, 1);
     grid.Children.Add(descriptionTextBlock);
+
 
     //Type (ENUM)
     var typeTextBlock = new TextBlock
@@ -198,12 +209,27 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
     //Priority
     var priorityTextBlock = new TextBlock
     {
-        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
+        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
     };
     priorityTextBlock.Bind(TextBlock.TextProperty, new Binding("Priority") { StringFormat = "Priority: {0}" });
     Grid.SetRow(priorityTextBlock, 1);
     Grid.SetColumn(priorityTextBlock, 1);
     grid.Children.Add(priorityTextBlock);
+
+
+
+    // *** Create a TextBlock for the multi-line tooltip ***
+    var priorityTooltipTextBlock = new TextBlock
+    {
+        FontWeight = FontWeight.Normal,
+        TextWrapping = TextWrapping.Wrap, // Enable text wrapping
+        MaxWidth = 200, // Set a maximum width for wrapping
+        Text = "Priority shows the importance, it determines in which order content will be consumed."
+    };
+
+    ToolTip.SetTip(priorityTextBlock, priorityTooltipTextBlock);
+
+
 
     return grid;
 });
