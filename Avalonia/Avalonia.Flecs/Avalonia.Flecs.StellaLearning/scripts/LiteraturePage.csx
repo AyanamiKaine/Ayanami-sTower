@@ -2,7 +2,9 @@ using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Scripting;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 using static Avalonia.Flecs.Controls.ECS.Module;
+
 
 /// <summary>
 /// We can refrence the ecs world via _world its globally available in all scripts
@@ -22,3 +24,24 @@ var literaturePage = entities.GetEntityCreateIfNotExist("LiteraturePage")
     .Set(new Grid())
     .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
     .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
+
+literaturePage.AddDefaultStyling((literaturePage) => {
+    if (literaturePage.Parent() != 0 && 
+        literaturePage.Parent().Has<NavigationView>())
+    {
+        switch (literaturePage.Parent().Get<NavigationView>().DisplayMode)
+        {
+            case NavigationViewDisplayMode.Minimal:
+                literaturePage.SetMargin(50,10,20,20);
+                break;
+            default:
+                literaturePage.SetMargin(20,10,20,20);
+                break;        
+        }
+    }
+});
+
+var text = entities.GetEntityCreateIfNotExist("test")
+    .Set(new TextBlock())
+    .SetText("Literature")
+    .ChildOf(literaturePage);
