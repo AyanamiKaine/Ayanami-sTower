@@ -15,6 +15,7 @@ using System.Reflection;
 using System.Globalization;
 using System.ComponentModel;
 using FluentAvalonia.UI.Controls;
+using System.Linq;
 
 public enum ContentType
 {
@@ -37,34 +38,13 @@ public class Content(string name = "Lorem ipsum dolor sit amet, consetetur sadip
     public string LongDescription { get; set; } = longDescription;
     public int Priority { get; set; } = priority;
     public ContentType ContentType { get; set; } = contentType;
-    public int NumberOfTimesConsumed { get; set; } = 0;
+    public int NumberOfTimesSeen{ get; set; } = 0;
     public DateTime AddedDate   { get; set; } = DateTime.UtcNow;
 
     public override string ToString()
     {
         return $"{Name} \"{ShortDescription}\" ({AddedDate.ToShortDateString()}) TYPE: {ContentType}";
     }
-}
-
-public class EnumToDescriptionConverter : IValueConverter
-{
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        if (value is Enum enumValue)
-        {
-            var fieldInfo = enumValue.GetType().GetField(enumValue.ToString());
-            var descriptionAttribute = fieldInfo.GetCustomAttribute<DescriptionAttribute>();
-            return descriptionAttribute?.Description ?? enumValue.ToString();
-        }
-        return string.Empty;
-    }
-
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
-
-    // ... (ConvertBack implementation if needed)
 }
 
 /// <summary>
@@ -235,6 +215,9 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
 
     return grid;
 });
+
+//var filteredItems = new ObservableCollection<Content>(dummyItems.Where(x => x.NumberOfTimesSeen == 0));
+
 
 var vaultItems = entities.GetEntityCreateIfNotExist("VaultListBox")
     .ChildOf(scrollViewer)
