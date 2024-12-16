@@ -98,6 +98,15 @@ public partial class App : Application
                     await scriptManager.RunScriptAsync("LiteraturePage");
                 });
             }
+
+            if (args.ScriptName == "SpacedRepetitionPage")
+            {
+                Console.WriteLine("Running SpacedRepetitionPage script");
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await scriptManager.RunScriptAsync("SpacedRepetitionPage");
+                });
+            }
         };
 
         _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
@@ -139,8 +148,7 @@ public partial class App : Application
 
         var literaturePage = _entities.GetEntityCreateIfNotExist("LiteraturePage");
 
-        var spacedRepetitionPage = SpacedRepetitionPage.Create(_world);
-        //spacedRepetitionPage.ChildOf(navigationView);
+        var spacedRepetitionPage = _entities.GetEntityCreateIfNotExist("SpacedRepetitionPage");
 
         _entities.Create("HomeNavigationViewItem")
             .ChildOf(navigationView)
