@@ -22,9 +22,11 @@ public enum ContentType
   Website,
   Audio,
   Video,
+  Picture,
   Markdown, 
   Txt,
-  PDF
+  PDF,
+  Executable,
 } 
 
 //Content represents an item that can be consumed for later time
@@ -35,6 +37,7 @@ public class Content(string name = "Lorem ipsum dolor sit amet, consetetur sadip
     public string LongDescription { get; set; } = longDescription;
     public int Priority { get; set; } = priority;
     public ContentType ContentType { get; set; } = contentType;
+    public int NumberOfTimesConsumed { get; set; } = 0;
     public DateTime AddedDate   { get; set; } = DateTime.UtcNow;
 
     public override string ToString()
@@ -130,9 +133,8 @@ var scrollViewer = entities.GetEntityCreateIfNotExist("VaultScrollViewer")
 ObservableCollection<Content> dummyItems = [
     new ("My Document", "A text document.", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.", ContentType.Txt, 1),
     new ("HackerNews Rust Article", "Rust in Linux - Drama", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut" ,ContentType.Website, 2),
-    new ("HackerNews Rust Article", "Rust in Linux - Drama", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",ContentType.Website, 20),
     new (),
-    new (),
+    new ("Graham, Paul - ANSI Common Lisp", "The ANSI standard goes in detail over the refrence implementation of common lisp", "ANSI Common Lisp combines an introduction to Lisp programming, and a convenient, up-to-date reference manual for ANSI Common Lisp. Beginners will find that its careful explanations and interesting examples make Lisp programming easy to learn. Professional programmers will appreciate its thorough, practical approach.", ContentType.PDF, 15),
 ];
 
 var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
