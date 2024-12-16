@@ -137,9 +137,7 @@ public partial class App : Application
             .SetRow(2)
             .SetColumnSpan(3);
 
-        var literaturePage = LiteraturePage.Create(_world)
-            .SetRow(2)
-            .SetColumnSpan(3);
+        var literaturePage = _entities.GetEntityCreateIfNotExist("LiteraturePage");
 
         var spacedRepetitionPage = SpacedRepetitionPage.Create(_world);
         //spacedRepetitionPage.ChildOf(navigationView);
