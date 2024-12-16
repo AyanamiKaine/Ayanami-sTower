@@ -31,6 +31,13 @@ public class EntityNotFoundException : Exception
 }
 
 
+/*
+I would really like to enhance the idea of entities bringing them even more in object oriented design 
+more similar to small-talk.
+
+Entities should be so much more, for example adding a description component would be quite nice.
+*/
+
 /// <summary>
 /// A container for named entities. We simply give an entity
 /// a specific name we can easily get it. It ensures that if 
@@ -42,7 +49,7 @@ public class EntityNotFoundException : Exception
 /// <param name="world"></param>
 public class NamedEntities(World world)
 {
-    private Dictionary<string, Entity> _entities = new();
+    private Dictionary<string, Entity> _entities = [];
     private World _world = world;
 
     /// <summary>
@@ -84,7 +91,7 @@ public class NamedEntities(World world)
     /// <param name="name"></param>
     public void Remove(string name)
     {
-        if (!_entities.ContainsKey(name))
+        if (_entities.TryGetValue(name, out var _))
         {
             return;
         }
