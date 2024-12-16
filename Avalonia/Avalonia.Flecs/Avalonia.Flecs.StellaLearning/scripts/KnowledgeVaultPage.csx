@@ -3,8 +3,50 @@ using Avalonia.Flecs.Scripting;
 using Avalonia.Flecs.Controls.ECS;
 using static Avalonia.Flecs.Controls.ECS.Module;
 using Avalonia.Controls;
+using Avalonia.Data.Converters;
+using Avalonia.Data;
+using Avalonia.Data.Core.ExpressionNodes;
 using System;
+using System.Collections.ObjectModel;
+using Avalonia.Controls.Templates;
+using Avalonia.Media;
+using Avalonia;
 
+
+public enum ContentType
+{
+  File,
+  Website,
+  Audio,
+  Video,
+  Markdown, 
+  Txt,
+} 
+
+//Content represents an item that can be consumed for later time
+public class Content
+{
+    public string   Name        { get; set; } = "";
+    public string   ShortDescription { get; set; } = "";
+    public string   LongDescription { get; set; } = "";
+    public int    Priority    { get; set; } = 0;
+    public ContentType ContentType = ContentType.Txt;
+    public DateTime AddedDate   { get; set; } = DateTime.UtcNow;
+
+    public Content(string name, string shortDescription, string longDescription, ContentType contentType, int priority)
+    {
+        Name = name;
+        ShortDescription = shortDescription;
+        LongDescription = longDescription;
+        ContentType = contentType;
+        Priority = priority;
+    }
+
+    public override string ToString()
+    {
+        return $"{Name} \"{ShortDescription}\" ({AddedDate.ToShortDateString()}) TYPE: {ContentType}";
+    }
+}
 
 /// <summary>
 /// We can refrence the ecs world via _world its globally available in all scripts
@@ -20,15 +62,107 @@ public World world = _world;
 public NamedEntities entities = _entities;
 
 
-var vault = entities.GetEntityCreateIfNotExist("KnowledgeVaultPage")
+var vaultPage = entities.GetEntityCreateIfNotExist("KnowledgeVaultPage")
     .Add<Page>()
     .Set(new Grid())
-    .SetRow(2)
-    .SetColumnSpan(3);
+    .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
+    .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
 
 var vaultContent = entities.GetEntityCreateIfNotExist("VaultContent")
-    .ChildOf(vault)
+    .ChildOf(vaultPage)
     .Set(new TextBlock())
     .SetText("VaultContent")
     .SetRow(0)
     .SetColumn(0);
+
+var scrollViewer = entities.GetEntityCreateIfNotExist("VaultScrollViewer")
+    .ChildOf(vaultPage)
+    .Set(new ScrollViewer())
+    .SetRow(1)
+    .SetColumnSpan(3);
+
+
+ObservableCollection<Content> dummyItems = [
+    new ("My Document", "A text document.", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.", ContentType.Txt, 1),
+    new ("HackerNews Rust Article", "Rust in Linux - Drama", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut" ,ContentType.Website, 2),
+    new ("HackerNews Rust Article", "Rust in Linux - Drama", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",ContentType.Website, 20)
+];
+
+var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
+{
+    var grid = new Grid
+     {
+        ColumnDefinitions = new ColumnDefinitions("Auto, *, Auto"), // Name, Description, Type
+        RowDefinitions = new RowDefinitions("Auto, Auto"),
+        Margin = new Thickness(0)
+    };
+
+
+            // *** Create a TextBlock for the multi-line tooltip ***
+            var tooltipTextBlock = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap, // Enable text wrapping
+                MaxWidth = 200, // Set a maximum width for wrapping
+                Text = "This is a very long tooltip text that spans multiple lines. " +
+                       "It provides more detailed information about the content item. " +
+                       "You can even add more and more text to make it even longer."
+            };
+
+    // *** Set the ToolTip's Content to the TextBlock ***
+    ToolTip.SetTip(grid, tooltipTextBlock);
+
+    // Or if you want to set the tooltip dynamically through a binding:
+    tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription")); // Assuming you have a "HoverText" property in your data context
+
+
+    //Name
+    var nameTextBlock = new TextBlock
+    {
+        FontWeight = FontWeight.Bold,
+        Margin = new Thickness(0,0,5,0)
+    };
+    nameTextBlock.Bind(TextBlock.TextProperty, new Binding("Name"));
+    Grid.SetColumn(nameTextBlock, 0);
+    grid.Children.Add(nameTextBlock);
+
+    //Description
+    var descriptionTextBlock = new TextBlock
+    {
+        TextWrapping = TextWrapping.Wrap,
+        TextTrimming = TextTrimming.CharacterEllipsis,
+        Margin = new Thickness(0,0,5,0)
+    };
+    descriptionTextBlock.Bind(TextBlock.TextProperty, new Binding("ShortDescription"));
+    Grid.SetColumn(descriptionTextBlock, 0);
+    Grid.SetRow(descriptionTextBlock, 1);
+    grid.Children.Add(descriptionTextBlock);
+
+    //Type
+    var typeTextBlock = new TextBlock
+    {
+        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
+    };
+    typeTextBlock.Bind(TextBlock.TextProperty, new Binding("ContentType"));
+    Grid.SetRow(typeTextBlock, 0);
+    Grid.SetColumn(typeTextBlock, 1);
+    grid.Children.Add(typeTextBlock);
+
+    //Priority
+    var priorityTextBlock = new TextBlock
+    {
+        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
+    };
+    priorityTextBlock.Bind(TextBlock.TextProperty, new Binding("Priority") { StringFormat = "Priority: {0}" });
+    Grid.SetRow(priorityTextBlock, 1);
+    Grid.SetColumn(priorityTextBlock, 1);
+    grid.Children.Add(priorityTextBlock);
+
+    return grid;
+});
+
+var vaultItems = entities.GetEntityCreateIfNotExist("VaultListBox")
+    .ChildOf(scrollViewer)
+    .Set(new ListBox())
+    .SetItemsSource(dummyItems)
+    .SetItemTemplate(contentTemplate)
+    .SetSelectionMode(SelectionMode.Single);
