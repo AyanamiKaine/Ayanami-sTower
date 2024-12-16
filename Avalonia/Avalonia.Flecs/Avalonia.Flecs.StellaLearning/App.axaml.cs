@@ -12,6 +12,8 @@ using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
 using System;
 using Avalonia.Threading;
 using static Avalonia.Flecs.Controls.ECS.Module;
+using Microsoft.CodeAnalysis.Scripting;
+using System.Reflection;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -26,7 +28,33 @@ public partial class App : Application
         _world.Import<FluentUI.Controls.ECS.Module>();
 
         _entities = new NamedEntities(_world);
-        _world.Set<ScriptManager>(new(_world, _entities));
+
+
+
+        // we define our own scripting options because we 
+        // need to add references to FluentAvalonia that is by 
+        // default not loaded by the scripting manager
+        var scriptingOptions = ScriptOptions.Default
+            .AddReferences(
+                typeof(object).Assembly, // Usually needed for basic types
+                Assembly.Load("Flecs.NET"),
+                Assembly.Load("Flecs.NET.Bindings"),
+                Assembly.Load("Avalonia.Flecs.Controls"),
+                Assembly.Load("Avalonia.Controls"),
+                Assembly.Load("Avalonia.Flecs.Scripting"),
+                Assembly.Load("Avalonia"),
+                Assembly.Load("Avalonia.Desktop"),
+                Assembly.Load("Avalonia.Base"),
+                Assembly.Load("FluentAvalonia")
+            // Load your API assembly
+            )
+            .AddImports("Avalonia.Controls")
+            .AddImports("Avalonia.Flecs.Controls.ECS")
+            .AddImports("Avalonia.Flecs.Scripting")
+            .AddImports("Flecs.NET.Core");
+
+
+        _world.Set<ScriptManager>(new(_world, _entities, scriptingOptions));
         var scriptManager = _world.Get<ScriptManager>();
 
         scriptManager.OnScriptCompilationStart += (sender, args) => Console.WriteLine($"Start Compilation of: {args.ScriptName}");
@@ -53,7 +81,7 @@ public partial class App : Application
                     //_entities.Remove("VaultContent");
                     await scriptManager.RunScriptAsync("KnowledgeVaultPage");
                 });
-                }
+            }
 
             if (args.ScriptName == "ContentQueuePage")
             {
