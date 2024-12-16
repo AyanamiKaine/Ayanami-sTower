@@ -11,7 +11,10 @@ using System.Collections.ObjectModel;
 using Avalonia.Controls.Templates;
 using Avalonia.Media;
 using Avalonia;
-
+using System.Reflection;
+using System.Globalization;
+using System.ComponentModel;
+using FluentAvalonia.UI.Controls;
 
 public enum ContentType
 {
@@ -21,31 +24,44 @@ public enum ContentType
   Video,
   Markdown, 
   Txt,
+  PDF
 } 
 
 //Content represents an item that can be consumed for later time
-public class Content
+public class Content(string name = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam", string shortDescription = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam", string longDescription = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.", ContentType contentType = ContentType.File, int priority = 0)
 {
-    public string   Name        { get; set; } = "";
-    public string   ShortDescription { get; set; } = "";
-    public string   LongDescription { get; set; } = "";
-    public int    Priority    { get; set; } = 0;
-    public ContentType ContentType = ContentType.Txt;
+    public string Name { get; set; } = name;
+    public string ShortDescription { get; set; } = shortDescription;
+    public string LongDescription { get; set; } = longDescription;
+    public int Priority { get; set; } = priority;
+    public ContentType ContentType { get; set; } = contentType;
     public DateTime AddedDate   { get; set; } = DateTime.UtcNow;
-
-    public Content(string name, string shortDescription, string longDescription, ContentType contentType, int priority)
-    {
-        Name = name;
-        ShortDescription = shortDescription;
-        LongDescription = longDescription;
-        ContentType = contentType;
-        Priority = priority;
-    }
 
     public override string ToString()
     {
         return $"{Name} \"{ShortDescription}\" ({AddedDate.ToShortDateString()}) TYPE: {ContentType}";
     }
+}
+
+public class EnumToDescriptionConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is Enum enumValue)
+        {
+            var fieldInfo = enumValue.GetType().GetField(enumValue.ToString());
+            var descriptionAttribute = fieldInfo.GetCustomAttribute<DescriptionAttribute>();
+            return descriptionAttribute?.Description ?? enumValue.ToString();
+        }
+        return string.Empty;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+
+    // ... (ConvertBack implementation if needed)
 }
 
 /// <summary>
@@ -62,11 +78,40 @@ public World world = _world;
 public NamedEntities entities = _entities;
 
 
+
 var vaultPage = entities.GetEntityCreateIfNotExist("KnowledgeVaultPage")
     .Add<Page>()
     .Set(new Grid())
     .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
     .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
+
+/*
+Here we are setting Default styling for the page entity.
+This needs some serious refactoring because we want some clean
+and easy way to add default styling to an entity component like the 
+page here. 
+
+Maybe defining an extention method for entites? that takes 
+an lambda function that defines the styling for it?
+*/
+
+vaultPage.AddDefaultStyling((vaultPage) => {
+    if (vaultPage.Parent() != 0 && 
+        vaultPage.Parent().Has<NavigationView>())
+    {
+        switch (vaultPage.Parent().Get<NavigationView>().DisplayMode)
+        {
+            case NavigationViewDisplayMode.Minimal:
+                vaultPage.SetMargin(50,10,20,20);
+                break;
+            default:
+                vaultPage.SetMargin(20,10,20,20);
+                break;        
+        }
+    }
+});
+
+
 
 var vaultContent = entities.GetEntityCreateIfNotExist("VaultContent")
     .ChildOf(vaultPage)
@@ -85,7 +130,9 @@ var scrollViewer = entities.GetEntityCreateIfNotExist("VaultScrollViewer")
 ObservableCollection<Content> dummyItems = [
     new ("My Document", "A text document.", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.", ContentType.Txt, 1),
     new ("HackerNews Rust Article", "Rust in Linux - Drama", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut" ,ContentType.Website, 2),
-    new ("HackerNews Rust Article", "Rust in Linux - Drama", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",ContentType.Website, 20)
+    new ("HackerNews Rust Article", "Rust in Linux - Drama", "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At",ContentType.Website, 20),
+    new (),
+    new (),
 ];
 
 var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
@@ -98,15 +145,15 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
     };
 
 
-            // *** Create a TextBlock for the multi-line tooltip ***
-            var tooltipTextBlock = new TextBlock
-            {
-                TextWrapping = TextWrapping.Wrap, // Enable text wrapping
-                MaxWidth = 200, // Set a maximum width for wrapping
-                Text = "This is a very long tooltip text that spans multiple lines. " +
-                       "It provides more detailed information about the content item. " +
-                       "You can even add more and more text to make it even longer."
-            };
+    // *** Create a TextBlock for the multi-line tooltip ***
+    var tooltipTextBlock = new TextBlock
+    {
+        TextWrapping = TextWrapping.Wrap, // Enable text wrapping
+        MaxWidth = 200, // Set a maximum width for wrapping
+        Text = "This is a very long tooltip text that spans multiple lines. " +
+                "It provides more detailed information about the content item. " +
+                "You can even add more and more text to make it even longer."
+    };
 
     // *** Set the ToolTip's Content to the TextBlock ***
     ToolTip.SetTip(grid, tooltipTextBlock);
@@ -137,9 +184,10 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
     Grid.SetRow(descriptionTextBlock, 1);
     grid.Children.Add(descriptionTextBlock);
 
-    //Type
+    //Type (ENUM)
     var typeTextBlock = new TextBlock
     {
+        FontWeight = FontWeight.Bold,
         HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
     };
     typeTextBlock.Bind(TextBlock.TextProperty, new Binding("ContentType"));
