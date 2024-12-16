@@ -42,5 +42,17 @@ namespace Avalonia.Flecs.Controls.ECS
             );
             return formattedString;
         }
+
+        /// <summary>
+        /// Adds a default styling to an entity.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        public static Entity AddDefaultStyling(this Entity entity, Action<Entity> action)
+        {
+            action(entity);
+            return entity;
+        }
     }
 }
