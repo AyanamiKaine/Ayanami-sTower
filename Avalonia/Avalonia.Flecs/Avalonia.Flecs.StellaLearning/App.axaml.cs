@@ -159,6 +159,26 @@ public partial class App : Application
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Literature");
 
+        /*
+        The study page will be something more complex
+        it will represent various topics and different 
+        study methods specifically made for the topic.
+
+        For example for the Painting topic we could have
+        speed drawing in various times, refrence studies,
+        color studies, master studies. 
+
+        While for programming we could have code challenges,
+        and adding specific themes and quizes for the topic.
+
+        For example for garbage collection, generic programming,
+        object oriented programming, functional programming, etc.
+        */
+        _entities.Create("StudyNavigationViewItem")
+            .ChildOf(navigationView)
+            .Set(new NavigationViewItem())
+            .SetProperty("Content", "Study");
+
         _entities.Create("SpacedRepetitionNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
