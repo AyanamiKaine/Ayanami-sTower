@@ -77,8 +77,6 @@ public partial class App : Application
                 Console.WriteLine("Running KnowledgeVaultPage script");
                 Dispatcher.UIThread.InvokeAsync(async () =>
                 {
-                    //_entities.Remove("KnowledgeVaultPage");
-                    //_entities.Remove("VaultContent");
                     await scriptManager.RunScriptAsync("KnowledgeVaultPage");
                 });
             }
@@ -88,9 +86,16 @@ public partial class App : Application
                 Console.WriteLine("Running ContentQueuePage script");
                 Dispatcher.UIThread.InvokeAsync(async () =>
                 {
-                    //_entities.Remove("ContentPage");
-                    //_entities.Remove("ContentList");
                     await scriptManager.RunScriptAsync("ContentQueuePage");
+                });
+            }
+
+            if (args.ScriptName == "LiteraturePage")
+            {
+                Console.WriteLine("Running LiteraturePage script");
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await scriptManager.RunScriptAsync("LiteraturePage");
                 });
             }
         };
