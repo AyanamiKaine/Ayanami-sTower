@@ -125,9 +125,7 @@ public class NamedEntities(World world)
         }
         else
         {
-            entity = _world.Entity(name);
-            _entities.Add(name, entity);
-            return entity;
+            return Create(name);
         }
     }
 
