@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                                 {
                                     e.Set<object>(comboBox);
                                 }
+                                else if (e.Get<object>().GetType() == typeof(ComboBox))
+                                {
+                                    e.Set<object>(comboBox);
+                                }
                                 e.Set<ItemsControl>(comboBox);
                             }).OnRemove((Entity e, ref ComboBox comboBox) =>
                             {
