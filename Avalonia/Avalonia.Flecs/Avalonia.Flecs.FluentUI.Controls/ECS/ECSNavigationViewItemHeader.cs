@@ -15,6 +15,8 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                         e.Set<object>(navigationViewItemHeader);
                     else if (e.Get<object>().GetType() == typeof(NavigationViewItemHeader))
                         e.Set<object>(navigationViewItemHeader);
+
+
                     var parent = e.Parent();
                     if (parent == 0)
                     {
