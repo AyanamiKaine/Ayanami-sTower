@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(wrapPanel);
                     }
+                    else if (e.Get<object>().GetType() == typeof(WrapPanel))
+                    {
+                        e.Set<object>(wrapPanel);
+                    }
                     e.Set<Panel>(wrapPanel);
                 }).OnRemove((Entity e, ref WrapPanel _) => e.Remove<Panel>());
         }
