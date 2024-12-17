@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(listBox);
                     }
+                    else if (e.Get<object>().GetType() == typeof(ListBox))
+                    {
+                        e.Set<object>(listBox);
+                    }
                     e.Set<SelectingItemsControl>(listBox);
                 })
                 .OnRemove((Entity e, ref ListBox listBox) => e.Remove<SelectingItemsControl>());
