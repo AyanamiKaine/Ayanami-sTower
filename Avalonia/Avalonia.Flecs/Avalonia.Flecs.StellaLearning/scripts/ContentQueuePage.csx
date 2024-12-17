@@ -20,10 +20,8 @@
 // We need a way to mark content as important.
 // We need a way to mark content as not important.
 // We need a way to tag content.
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using Flecs.NET.Core;
 using Avalonia.Flecs.Scripting;
 using Avalonia.Flecs.Controls.ECS;
@@ -31,7 +29,6 @@ using static Avalonia.Flecs.Controls.ECS.Module;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using System;
 
 
 public class ContentQueueItem
