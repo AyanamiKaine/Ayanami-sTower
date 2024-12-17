@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                                 {
                                     e.Set<object>(textBox);
                                 }
+                                else if (e.Get<object>().GetType() == typeof(TextBox))
+                                {
+                                    e.Set<object>(textBox);
+                                }
                                 e.Set<TemplatedControl>(textBox);
 
                                 // Adding event handlers
