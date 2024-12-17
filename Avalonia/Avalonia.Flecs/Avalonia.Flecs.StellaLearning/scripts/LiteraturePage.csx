@@ -25,18 +25,19 @@ var literaturePage = entities.GetEntityCreateIfNotExist("LiteraturePage")
     .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
     .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
 
-literaturePage.AddDefaultStyling((literaturePage) => {
-    if (literaturePage.Parent() != 0 && 
+literaturePage.AddDefaultStyling((literaturePage) =>
+{
+    if (literaturePage.Parent() != 0 &&
         literaturePage.Parent().Has<NavigationView>())
     {
         switch (literaturePage.Parent().Get<NavigationView>().DisplayMode)
         {
             case NavigationViewDisplayMode.Minimal:
-                literaturePage.SetMargin(50,10,20,20);
+                literaturePage.SetMargin(50, 10, 20, 20);
                 break;
             default:
-                literaturePage.SetMargin(20,10,20,20);
-                break;        
+                literaturePage.SetMargin(20, 10, 20, 20);
+                break;
         }
     }
 });
