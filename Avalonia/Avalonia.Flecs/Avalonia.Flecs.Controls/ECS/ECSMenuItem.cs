@@ -22,6 +22,14 @@ namespace Avalonia.Flecs.Controls.ECS
                                 {
                                     e.Set<object>(menuItem);
                                 }
+                                else if (e.Get<object>() is MenuItem)
+                                {
+                                    e.Set<object>(menuItem);
+                                }
+                                else
+                                {
+                                    e.Set<object>(menuItem);
+                                }
                                 e.Set<HeaderedSelectingItemsControl>(menuItem);
 
                                 var parent = e.Parent();
