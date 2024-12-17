@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(relativePanel);
                     }
+                    else if (e.Get<object>().GetType() == typeof(RelativePanel))
+                    {
+                        e.Set<object>(relativePanel);
+                    }
                     e.Set<Panel>(relativePanel);
                 }).OnRemove((Entity e, ref RelativePanel relativePanel) => e.Remove<Panel>());
         }
