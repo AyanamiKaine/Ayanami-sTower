@@ -14,6 +14,8 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                            {
                                if (!e.Has<object>())
                                    e.Set<object>(navigationView);
+                               else if (e.Get<object>().GetType() == typeof(NavigationView))
+                                   e.Set<object>(navigationView);
 
                                e.Set<HeaderedContentControl>(navigationView);
                                e.Set<ContentControl>(navigationView);
