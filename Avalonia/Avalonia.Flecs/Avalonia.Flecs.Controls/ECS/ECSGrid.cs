@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(grid);
                     }
+                    else if (e.Get<object>().GetType() == typeof(Grid))
+                    {
+                        e.Set<object>(grid);
+                    }
                     // We set the panel component so systems and queries in general can more easily
                     // access the generic .children.add property of the panel.
                     // This is good so queries can be more generic and not have to check for every possible panel type.
