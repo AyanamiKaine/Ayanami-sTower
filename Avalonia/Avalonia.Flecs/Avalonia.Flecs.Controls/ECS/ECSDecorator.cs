@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(decorator);
                     }
+                    else if (e.Get<object>().GetType() == typeof(Decorator))
+                    {
+                        e.Set<object>(decorator);
+                    }
 
                     e.Set<Control>(decorator);
                 })
