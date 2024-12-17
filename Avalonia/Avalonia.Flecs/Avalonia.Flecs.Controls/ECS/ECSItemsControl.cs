@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(itemsControl);
                     }
+                    else if (e.Get<object>().GetType() == typeof(ItemsControl))
+                    {
+                        e.Set<object>(itemsControl);
+                    }
                     e.Set<Control>(itemsControl);
 
                     var parent = e.Parent();
