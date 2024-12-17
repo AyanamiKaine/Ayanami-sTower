@@ -23,6 +23,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(inputElement);
                     }
+                    else if (e.Get<object>().GetType() == typeof(InputElement))
+                    {
+                        e.Set<object>(inputElement);
+                    }
                     e.Set<Interactive>(inputElement);
                     //We set the Layoutable and Visual components to the same instance of the InputElement instead of seperate ECS modules because
                     //otherwise it would result into an stack overflow!
