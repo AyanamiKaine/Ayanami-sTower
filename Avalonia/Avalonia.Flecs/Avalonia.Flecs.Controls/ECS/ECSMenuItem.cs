@@ -26,7 +26,11 @@ namespace Avalonia.Flecs.Controls.ECS
                                 When an object component is already attached to an entity we must 
                                 check if its the same type of the current class 
                                 we want to set as an component if so replace the 
-                                current object with the class
+                                current object with the class 
+                                HUGE TODO WE MUST IMPLEMENT THIS BEHAVIOR FOR ALL OTHER COMPONENTS
+                                OTHERWISE EVENT FUNCTIONS LIKE ONCLICK WILL USE THE WRONG UNDERYLING 
+                                OBJECT IF WE RELOAD A SCRIPT AS THE MENUITEM COMPONENT WILL BE REPLACED
+                                BUT THE OBJECT COMPONENT WILL STILL BE SET TO THE OLD MENUITEM OBJECT!
                                 */
                                 else if (e.Get<object>() is MenuItem)
                                 {
