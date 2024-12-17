@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(popupFlyoutBase);
                     }
+                    else if (e.Get<object>().GetType() == typeof(PopupFlyoutBase))
+                    {
+                        e.Set<object>(popupFlyoutBase);
+                    }
                     e.Set<FlyoutBase>(popupFlyoutBase);
                 })
                 .OnRemove((Entity e, ref PopupFlyoutBase popupFlyoutBase) => e.Remove<FlyoutBase>());
