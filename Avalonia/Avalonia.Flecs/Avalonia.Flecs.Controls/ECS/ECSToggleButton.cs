@@ -23,6 +23,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(toggleButton);
                     }
+                    else if (e.Get<object>().GetType() == typeof(ToggleButton))
+                    {
+                        e.Set<object>(toggleButton);
+                    }
 
                     // We set the contentControl component so systems and queries in general can more easily
                     // access the generic .content property of the button.
