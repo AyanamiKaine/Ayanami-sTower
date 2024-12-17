@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(repeatButton);
                     }
+                    else if (e.Get<object>().GetType() == typeof(RepeatButton))
+                    {
+                        e.Set<object>(repeatButton);
+                    }
                     // We set the contentControl component so systems and queries in general can more easily
                     // access the generic .content property of the button.
                     // This is good so queries can be more generic and not have to check for every possible control type.
