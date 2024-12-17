@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(new Layoutable());
                     }
+                    else if (e.Get<object>().GetType() == typeof(Layoutable))
+                    {
+                        e.Set<object>(new Layoutable());
+                    }
                 });
         }
     }
