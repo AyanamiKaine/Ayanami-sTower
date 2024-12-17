@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(flyoutBase);
                     }
+                    else if (e.Get<object>().GetType() == typeof(FlyoutBase))
+                    {
+                        e.Set<object>(flyoutBase);
+                    }
                     e.Set<AvaloniaObject>(flyoutBase);
 
                     var parent = e.Parent();
