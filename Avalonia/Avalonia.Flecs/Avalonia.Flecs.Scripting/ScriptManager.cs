@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
+using System.Text;
 using Flecs.NET.Core;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
@@ -169,6 +170,10 @@ public class ScriptEventArgs(string scriptName) : EventArgs
 public class ScriptManager
 {
     /// <summary>
+    /// If set true #r directives are removed from the code.
+    /// </summary>
+    public bool RemoveScriptDirective { get; set; } = true;
+    /// <summary>
     /// Event that is triggered when a script compilation starts.
     /// </summary>
     public event EventHandler<ScriptEventArgs>? OnScriptCompilationStart;
@@ -202,8 +207,10 @@ public class ScriptManager
     /// <param name="world">can be refrenced in a script using _world</param>
     /// <param name="entities">can be refrenced in a script using _entities</param>
     /// <param name="recompileScriptsOnFileChange"></param>
-    public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true)
+    /// <param name="removeScriptDirective"></param>
+    public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true, bool removeScriptDirective = true)
     {
+        RemoveScriptDirective = removeScriptDirective;
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
         ReplaceBuildScriptWatcherWithDevelopmentScriptWatcher();
 
@@ -239,8 +246,10 @@ public class ScriptManager
     /// <param name="entities">can be refrenced in a script using _entities</param>
     /// <param name="options"></param>
     /// <param name="recompileScriptsOnFileChange"></param>
-    public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true)
+    /// <param name="removeScriptDirective"></param>
+    public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true, bool removeScriptDirective = true)
     {
+        RemoveScriptDirective = removeScriptDirective;
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
         ReplaceBuildScriptWatcherWithDevelopmentScriptWatcher();
         Data = new GlobalData(world, entities);
@@ -333,6 +342,11 @@ public class ScriptManager
     /// <param name="code"></param>
     public void AddScript(string name, string code)
     {
+        if (RemoveScriptDirective)
+        {
+            code = CompilerScriptDirectiveTrimming(code);
+        }
+
         OnScriptCompilationStart?.Invoke(this, new ScriptEventArgs(name));
 
         var script = CSharpScript.Create(code, Options, globalsType: typeof(GlobalData));
@@ -378,8 +392,14 @@ public class ScriptManager
         {
             try
             {
+
                 // Read the code from the file
                 var code = File.ReadAllTextAsync(file).Result;
+
+                if (RemoveScriptDirective)
+                {
+                    code = CompilerScriptDirectiveTrimming(code);
+                }
 
                 // Extract script name from filename
                 var scriptName = Path.GetFileNameWithoutExtension(file);
@@ -417,6 +437,11 @@ public class ScriptManager
             {
                 // Read the code from the file
                 var code = await File.ReadAllTextAsync(file);
+
+                if (RemoveScriptDirective)
+                {
+                    code = CompilerScriptDirectiveTrimming(code);
+                }
 
                 // Extract script name from filename
                 var scriptName = Path.GetFileNameWithoutExtension(file);
@@ -712,6 +737,38 @@ public class ScriptManager
         _replCancellationTokenSource.Cancel();
     }
 
+    /// <summary>
+    /// The main reason for this function is to remove the #r directive from the code in
+    /// a script. We do this because we already have the references defined in the Options.
+    /// We only have the refrences for the lsp server. Thats why we need to remove the #r directive.
+    /// </summary>
+    /// <param name="code"></param>
+    /// <returns></returns>
+    private string CompilerScriptDirectiveTrimming(string code)
+    {
+        if (string.IsNullOrEmpty(code))
+        {
+            return code; // Handle null or empty input
+        }
+
+        string[] lines = code.Split(["\r\n", "\r", "\n"], StringSplitOptions.None);
+        StringBuilder sb = new();
+
+        foreach (string line in lines)
+        {
+            string trimmedLine = line.TrimStart(); // Trim leading whitespace
+            if (!trimmedLine.StartsWith("#r")) // Skip lines starting with #r
+            {
+                if (!string.IsNullOrEmpty(trimmedLine) || lines.Length == 1) // prevent removing empty lines if there is only one line
+                {
+                    sb.AppendLine(trimmedLine);
+                }
+
+            }
+        }
+
+        return sb.ToString().TrimEnd(); // Remove any trailing newline
+    }
 
     /// <summary>
     /// Creates a development script file watcher.
