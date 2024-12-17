@@ -22,6 +22,12 @@ namespace Avalonia.Flecs.Controls.ECS
                                 {
                                     e.Set<object>(menuItem);
                                 }
+                                /*
+                                When an object component is already attached to an entity we must 
+                                check if its the same type of the current class 
+                                we want to set as an component if so replace the 
+                                current object with the class
+                                */
                                 else if (e.Get<object>() is MenuItem)
                                 {
                                     e.Set<object>(menuItem);
