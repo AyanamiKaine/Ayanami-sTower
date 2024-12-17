@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(autoCompleteBox);
                     }
+                    else if (e.Get<object>().GetType() == typeof(AutoCompleteBox))
+                    {
+                        e.Set<object>(autoCompleteBox);
+                    }
 
                     e.Set<TemplatedControl>(autoCompleteBox);
                 })
