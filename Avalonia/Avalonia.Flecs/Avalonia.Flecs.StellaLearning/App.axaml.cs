@@ -23,6 +23,9 @@ public partial class App : Application
 
     public override void Initialize()
     {
+
+        FSRSPythonBridge.FSRS fSRS = new();
+
         AvaloniaXamlLoader.Load(this);
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
