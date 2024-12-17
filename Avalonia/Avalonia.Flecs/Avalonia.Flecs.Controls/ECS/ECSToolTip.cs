@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(toolTip);
                     }
+                    else if (e.Get<object>().GetType() == typeof(ToolTip))
+                    {
+                        e.Set<object>(toolTip);
+                    }
                 })
                 .OnRemove((Entity e, ref ToolTip _) => e.Remove<object>());
         }
