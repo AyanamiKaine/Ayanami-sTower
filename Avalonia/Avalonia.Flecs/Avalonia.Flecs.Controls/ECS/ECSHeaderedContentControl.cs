@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(headeredContentControl);
                     }
+                    else if (e.Get<object>().GetType() == typeof(HeaderedContentControl))
+                    {
+                        e.Set<object>(headeredContentControl);
+                    }
                     e.Set<ContentControl>(headeredContentControl);
                 }).OnRemove((Entity e, ref HeaderedContentControl _) => e.Remove<ContentControl>());
         }
