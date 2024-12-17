@@ -20,6 +20,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(new Visual());
                     }
+                    else if (e.Get<object>().GetType() == typeof(Visual))
+                    {
+                        e.Set<object>(new Visual());
+                    }
                 });
         }
     }
