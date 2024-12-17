@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                                {
                                    e.Set<object>(window);
                                }
+                               else if (e.Get<object>().GetType() == typeof(Window))
+                               {
+                                   e.Set<object>(window);
+                               }
                                e.Set<ContentControl>(window);
                            })
                            .OnRemove((Entity e, ref Window window) => window.Close());
