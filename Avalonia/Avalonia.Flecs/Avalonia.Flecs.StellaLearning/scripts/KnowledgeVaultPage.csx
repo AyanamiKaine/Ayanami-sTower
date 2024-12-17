@@ -3,32 +3,26 @@ using Avalonia.Flecs.Scripting;
 using Avalonia.Flecs.Controls.ECS;
 using static Avalonia.Flecs.Controls.ECS.Module;
 using Avalonia.Controls;
-using Avalonia.Data.Converters;
 using Avalonia.Data;
-using Avalonia.Data.Core.ExpressionNodes;
 using System;
 using System.Collections.ObjectModel;
 using Avalonia.Controls.Templates;
 using Avalonia.Media;
 using Avalonia;
-using System.Reflection;
-using System.Globalization;
-using System.ComponentModel;
 using FluentAvalonia.UI.Controls;
-using System.Linq;
 
 public enum ContentType
 {
-  File,
-  Website,
-  Audio,
-  Video,
-  Picture,
-  Markdown, 
-  Txt,
-  PDF,
-  Executable,
-} 
+    File,
+    Website,
+    Audio,
+    Video,
+    Picture,
+    Markdown,
+    Txt,
+    PDF,
+    Executable,
+}
 
 //Content represents an item that can be consumed for later time
 public class Content(string name = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam", string shortDescription = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam", string longDescription = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.", ContentType contentType = ContentType.File, int priority = 0)
@@ -38,8 +32,8 @@ public class Content(string name = "Lorem ipsum dolor sit amet, consetetur sadip
     public string LongDescription { get; set; } = longDescription;
     public int Priority { get; set; } = priority;
     public ContentType ContentType { get; set; } = contentType;
-    public int NumberOfTimesSeen{ get; set; } = 0;
-    public DateTime AddedDate   { get; set; } = DateTime.UtcNow;
+    public int NumberOfTimesSeen { get; set; } = 0;
+    public DateTime AddedDate { get; set; } = DateTime.UtcNow;
 
     public override string ToString()
     {
@@ -78,18 +72,19 @@ Maybe defining an extention method for entites? that takes
 an lambda function that defines the styling for it?
 */
 
-vaultPage.AddDefaultStyling((vaultPage) => {
-    if (vaultPage.Parent() != 0 && 
+vaultPage.AddDefaultStyling((vaultPage) =>
+{
+    if (vaultPage.Parent() != 0 &&
         vaultPage.Parent().Has<NavigationView>())
     {
         switch (vaultPage.Parent().Get<NavigationView>().DisplayMode)
         {
             case NavigationViewDisplayMode.Minimal:
-                vaultPage.SetMargin(50,10,20,20);
+                vaultPage.SetMargin(50, 10, 20, 20);
                 break;
             default:
-                vaultPage.SetMargin(20,10,20,20);
-                break;        
+                vaultPage.SetMargin(20, 10, 20, 20);
+                break;
         }
     }
 });
@@ -120,7 +115,7 @@ ObservableCollection<Content> dummyItems = [
 var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
 {
     var grid = new Grid
-     {
+    {
         ColumnDefinitions = new ColumnDefinitions("*, *"), // Name, Description, Type
         RowDefinitions = new RowDefinitions("Auto, Auto"),
         Margin = new Thickness(0, 5)
@@ -146,7 +141,7 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
         TextWrapping = TextWrapping.Wrap,
         TextTrimming = TextTrimming.CharacterEllipsis,
         FontWeight = FontWeight.Bold,
-        Margin = new Thickness(0,0,5,0)
+        Margin = new Thickness(0, 0, 5, 0)
     };
     nameTextBlock.Bind(TextBlock.TextProperty, new Binding("Name"));
     Grid.SetColumn(nameTextBlock, 0);
@@ -168,9 +163,9 @@ var contentTemplate = new FuncDataTemplate<Content>((item, nameScope) =>
     {
         TextWrapping = TextWrapping.Wrap,
         TextTrimming = TextTrimming.CharacterEllipsis,
-        Margin = new Thickness(0,0,5,0)
+        Margin = new Thickness(0, 0, 5, 0)
     };
-    
+
     descriptionTextBlock.Bind(TextBlock.TextProperty, new Binding("ShortDescription"));
     Grid.SetColumn(descriptionTextBlock, 0);
     Grid.SetRow(descriptionTextBlock, 1);
