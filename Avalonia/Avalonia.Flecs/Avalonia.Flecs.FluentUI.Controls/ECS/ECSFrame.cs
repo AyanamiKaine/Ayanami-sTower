@@ -13,8 +13,13 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                 .OnSet((Entity e, ref Frame frame) =>
                 {
                     if (!e.Has<object>())
+                    {
                         e.Set<object>(frame);
-
+                    }
+                    else if (e.Get<object>().GetType() == typeof(Frame))
+                    {
+                        e.Set<object>(frame);
+                    }
                     var parent = e.Parent();
                     if (parent == 0)
                     {
