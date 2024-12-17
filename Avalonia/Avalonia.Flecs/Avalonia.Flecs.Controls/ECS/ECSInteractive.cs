@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(interactive);
                     }
+                    else if (e.Get<object>().GetType() == typeof(Interactive))
+                    {
+                        e.Set<object>(interactive);
+                    }
                 });
         }
     }
