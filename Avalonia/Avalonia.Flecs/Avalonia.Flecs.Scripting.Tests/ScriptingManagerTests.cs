@@ -30,7 +30,7 @@ public class ScriptingManagerTests
     {
         World world = World.Create();
         NamedEntities entities = new(world);
-        var entity = entities["TestEntity"];
+        var entity = entities.GetEntityCreateIfNotExist("TestEntity");
 
         ScriptManager scriptManager = new(world: world, entities: entities, recompileScriptsOnFileChange: false);
         scriptManager.AddScript("TestScript", "_entities[\"TestEntity\"].Set(new Button());");
