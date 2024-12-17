@@ -21,6 +21,10 @@ namespace Avalonia.Flecs.Controls.ECS
                                 {
                                     e.Set<object>(scrollViewer);
                                 }
+                                else if (e.Get<object>().GetType() == typeof(ScrollViewer))
+                                {
+                                    e.Set<object>(scrollViewer);
+                                }
                                 e.Set<ContentControl>(scrollViewer);
                                 // Adding event handlers
                                 // https://reference.avaloniaui.net/api/Avalonia.Controls.ScrollViewer/#Events
