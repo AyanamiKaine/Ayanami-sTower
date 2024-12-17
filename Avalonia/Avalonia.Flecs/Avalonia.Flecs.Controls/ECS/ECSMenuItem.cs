@@ -31,8 +31,9 @@ namespace Avalonia.Flecs.Controls.ECS
                                 OTHERWISE EVENT FUNCTIONS LIKE ONCLICK WILL USE THE WRONG UNDERYLING 
                                 OBJECT IF WE RELOAD A SCRIPT AS THE MENUITEM COMPONENT WILL BE REPLACED
                                 BUT THE OBJECT COMPONENT WILL STILL BE SET TO THE OLD MENUITEM OBJECT!
+                                HIGH PRIORITY!!!
                                 */
-                                else if (e.Get<object>() is MenuItem)
+                                else if (e.Get<object>().GetType() == typeof(MenuItem))
                                 {
                                     e.Set<object>(menuItem);
                                 }
