@@ -13,6 +13,8 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                             {
                                 if (!e.Has<object>())
                                     e.Set<object>(navigationViewItem);
+                                else if (e.Get<object>().GetType() == typeof(NavigationViewItem))
+                                    e.Set<object>(navigationViewItem);
 
                                 var parent = e.Parent();
                                 if (parent == 0)
