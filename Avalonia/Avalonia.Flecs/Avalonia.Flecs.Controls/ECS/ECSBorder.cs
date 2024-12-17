@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(border);
                     }
+                    else if (e.Get<object>().GetType() == typeof(Border))
+                    {
+                        e.Set<object>(border);
+                    }
 
                     e.Set<Decorator>(border);
                 })
