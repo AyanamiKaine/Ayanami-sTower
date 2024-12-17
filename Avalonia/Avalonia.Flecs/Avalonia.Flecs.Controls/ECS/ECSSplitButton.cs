@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(splitButton);
                     }
+                    else if (e.Get<object>().GetType() == typeof(SplitButton))
+                    {
+                        e.Set<object>(splitButton);
+                    }
                     e.Set<ContentControl>(splitButton);
                 })
                 .OnRemove((Entity e, ref SplitButton splitButton) => e.Remove<ContentControl>());
