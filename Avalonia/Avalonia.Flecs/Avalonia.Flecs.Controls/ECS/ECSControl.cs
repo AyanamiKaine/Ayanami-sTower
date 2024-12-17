@@ -22,6 +22,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(control);
                     }
+                    else if (e.Get<object>().GetType() == typeof(Control))
+                    {
+                        e.Set<object>(control);
+                    }
 
                     e.Set<InputElement>(control);
 
