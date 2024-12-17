@@ -23,6 +23,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(radioButton);
                     }
+                    else if (e.Get<object>().GetType() == typeof(RadioButton))
+                    {
+                        e.Set<object>(radioButton);
+                    }
 
                     // We set the contentControl component so systems and queries in general can more easily
                     // access the generic .content property of the button.
