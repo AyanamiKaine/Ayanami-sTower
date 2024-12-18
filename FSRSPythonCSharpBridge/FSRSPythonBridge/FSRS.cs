@@ -10,6 +10,10 @@ public enum Rating
     Easy = 4,   // Rating.Easy (==4) remembered the card easily
 }
 
+/// <summary>
+/// Provides access to the Python FSRS Module 4.1.0
+/// For more information on how to use it see: "https://github.com/open-spaced-repetition/py-fsrs"
+/// </summary>
 public static class FSRS
 {
     /// <summary>
@@ -78,6 +82,10 @@ public static class FSRS
         }
     }
 
+    /// <summary>
+    /// Creates a new spaced repetition card.
+    /// </summary>
+    /// <returns></returns>
     public static Card CreateCard()
     {
         using (Py.GIL())
