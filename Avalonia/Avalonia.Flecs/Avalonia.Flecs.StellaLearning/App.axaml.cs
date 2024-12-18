@@ -13,6 +13,7 @@ using Avalonia.Threading;
 using Microsoft.CodeAnalysis.Scripting;
 using System.Reflection;
 using FSRSPythonBridge;
+using System.Threading.Tasks;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -22,18 +23,11 @@ public partial class App : Application
 
     public override void Initialize()
     {
-
-        var card = FSRS.CreateCard();
-        card = FSRS.RateCard(card, Rating.Good);
-        Console.WriteLine(card.Stability);
-
-
         AvaloniaXamlLoader.Load(this);
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
 
         _entities = new NamedEntities(_world);
-
 
         // we define our own scripting options because we 
         // need to add references to FluentAvalonia that is by 
@@ -139,8 +133,8 @@ public partial class App : Application
         var grid = _entities.Create("MainContentDisplay")
             .ChildOf(stackPanel)
             .Set(new Grid())
-            .SetColumnDefinitions(new ColumnDefinitions("2,*,*"))
-            .SetRowDefinitions(new RowDefinitions("Auto"));
+            .SetColumnDefinitions("2,*,*")
+            .SetRowDefinitions("Auto");
 
         var settingPage = SettingsPage.Create(_world, navigationView)
             .SetRow(2)
@@ -199,9 +193,15 @@ public partial class App : Application
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Spaced Repetition");
 
-
         navigationView.OnDisplayModeChanged((sender, args) =>
         {
+            Task.Run(() =>
+            {
+                var card = FSRS.CreateCard();
+                card = FSRS.RateCard(card, Rating.Good);
+                Console.WriteLine(card.Stability);
+            });
+
             var e = navigationView;
 
             if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
