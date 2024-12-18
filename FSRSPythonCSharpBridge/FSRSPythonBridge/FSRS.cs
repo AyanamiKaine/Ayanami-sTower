@@ -2,12 +2,27 @@
 using Python.Runtime;
 namespace FSRSPythonBridge;
 
+/// <summary>
+/// Used to determine the rating of a card.
+/// </summary>
 public enum Rating
 {
-    Again = 1,  // Rating.Again (==1) forgot the card
-    Hard = 2,   // Rating.Hard (==2) remembered the card with serious difficulty
-    Good = 3,   // Rating.Good (==3) remembered the card after a hesitation
-    Easy = 4,   // Rating.Easy (==4) remembered the card easily
+    /// <summary>
+    /// Rating.Again (==1) forgot the card
+    /// </summary>
+    Again = 1,
+    /// <summary>
+    /// Rating.Hard (==2) remembered the card with serious difficulty
+    /// </summary>
+    Hard = 2,
+    /// <summary>
+    /// Rating.Good (==3) remembered the card after a hesitation
+    /// </summary>
+    Good = 3,
+    /// <summary>
+    /// Rating.Easy (==4) remembered the card easily
+    /// </summary>
+    Easy = 4,
 }
 
 /// <summary>
