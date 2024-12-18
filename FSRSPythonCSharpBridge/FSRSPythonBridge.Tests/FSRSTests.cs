@@ -3,16 +3,6 @@
 namespace FSRSPythonBridge.Tests;
 
 
-public class PythonFixture
-{
-    public FSRS Fsrs { get; private set; }
-
-    public PythonFixture()
-    {
-        Fsrs = new FSRS();
-    }
-}
-
 public class FSRSTests
 {
     [Fact]
