@@ -44,7 +44,7 @@ public static class FSRS
             SettingUpRuntimePythonDLL();
             PythonEngine.Initialize();
             PythonEngine.BeginAllowThreads();
-
+            SettingUpModulePath();
             /*
             All calls to python should be inside a 
             using (Py.GIL()) 
@@ -78,17 +78,39 @@ public static class FSRS
         }
     }
 
+    /// <summary>
+    /// Here we are adding the path to the fsrs module to the sys.path.
+    /// so we can import it.
+    /// </summary>
+    private static void SettingUpModulePath()
+    {
+        string appDir = AppDomain.CurrentDomain.BaseDirectory;
+        string pythonPath = Path.Combine(appDir, "python");
+
+        string newPythonPath = $"{pythonPath}";
+
+        using (Py.GIL())
+        {
+            dynamic sys = Py.Import("sys");
+            sys.path.append(newPythonPath);
+        }
+    }
+
     private static void SettingUpRuntimePythonDLL()
     {
+        // For Linux we use the system python library.
+        // as we expect the user to have python installed.
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            Runtime.PythonDLL = @"/lib64/libpython3.so";
+            if (File.Exists(@"/lib64/libpython3.so"))
+                Runtime.PythonDLL = @"/lib64/libpython3.so";
+            else throw new DllNotFoundException("Could not find libpython3.so at /lib64/libpython3.so");
         }
+        // For Windows we ship the python313.dll with the application. 
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
             string pythonPath = Path.Combine(appDir, "python", "windows");
-            // Set the Python DLL path explicitly (adjust the name if needed)
             Runtime.PythonDLL = Path.Combine(pythonPath, "python313.dll");
         }
         else
