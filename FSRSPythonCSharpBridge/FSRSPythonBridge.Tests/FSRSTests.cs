@@ -13,47 +13,26 @@ public class PythonFixture
     }
 }
 
-public class FSRSTests : IClassFixture<PythonFixture>
+public class FSRSTests
 {
-    private readonly FSRS fsrs;
-
-    public FSRSTests(PythonFixture fixture)
-    {
-        fsrs = fixture.Fsrs;
-    }
-
-    [Fact]
-    public void Creation()
-    {
-        Assert.NotNull(fsrs);
-    }
-
     [Fact]
     public void UsingFSRSMethod()
     {
-        var dueDate = fsrs.CreateCard();
+        var dueDate = FSRS.CreateCard();
         Assert.NotNull(dueDate);
-    }
-
-    [Fact]
-    public void FSRSRating()
-    {
-        int expectedRating = (int)Rating.Good;
-        int actualRating = fsrs.Rating;
-        Assert.Equal(expectedRating, actualRating);
     }
 
     [Fact]
     public void CreateCard()
     {
-        var card = fsrs.CreateCard();
+        var card = FSRS.CreateCard();
         Assert.IsType<DateTime>(card.Due);
     }
 
     [Fact]
     public void GetCardID()
     {
-        var card = fsrs.CreateCard();
+        var card = FSRS.CreateCard();
         Assert.IsType<long>(card.ID);
     }
 
@@ -64,7 +43,7 @@ public class FSRSTests : IClassFixture<PythonFixture>
     [Fact]
     public void GetCardStabilityShouldBeNull()
     {
-        var card = fsrs.CreateCard();
+        var card = FSRS.CreateCard();
         Assert.Null(card.Stability);
     }
 
@@ -75,8 +54,8 @@ public class FSRSTests : IClassFixture<PythonFixture>
     [Fact]
     public void GetCardStabilityShouldBeFloat()
     {
-        var card = fsrs.CreateCard();
-        card = fsrs.RateCard(card, Rating.Good);
+        var card = FSRS.CreateCard();
+        card = FSRS.RateCard(card, Rating.Good);
         Assert.IsType<float>(card.Stability);
     }
     /// <summary>
@@ -85,7 +64,7 @@ public class FSRSTests : IClassFixture<PythonFixture>
     [Fact]
     public void GetCardDifficultyShouldBeNull()
     {
-        var card = fsrs.CreateCard();
+        var card = FSRS.CreateCard();
         Assert.Null(card.Difficulty);
     }
 
@@ -96,31 +75,31 @@ public class FSRSTests : IClassFixture<PythonFixture>
     [Fact]
     public void GetCardDifficultyShouldBeFloat()
     {
-        var card = fsrs.CreateCard();
-        card = fsrs.RateCard(card, Rating.Good);
+        var card = FSRS.CreateCard();
+        card = FSRS.RateCard(card, Rating.Good);
         Assert.IsType<float>(card.Difficulty);
     }
 
     [Fact]
     public void LastReviewShouldBeNull()
     {
-        var card = fsrs.CreateCard();
+        var card = FSRS.CreateCard();
         Assert.Null(card.LastReview);
     }
 
     [Fact]
     public void LastReviewShouldBeDateTime()
     {
-        var card = fsrs.CreateCard();
-        card = fsrs.RateCard(card, Rating.Good);
+        var card = FSRS.CreateCard();
+        card = FSRS.RateCard(card, Rating.Good);
         Assert.IsType<DateTime>(card.LastReview);
     }
 
     [Fact]
     public void InitalCardStateShouldBeLearning()
     {
-        var card = fsrs.CreateCard();
-        card = fsrs.RateCard(card, Rating.Good);
+        var card = FSRS.CreateCard();
+        card = FSRS.RateCard(card, Rating.Good);
         Assert.Equal(CardState.Learning, card.State);
     }
 
@@ -132,11 +111,11 @@ public class FSRSTests : IClassFixture<PythonFixture>
     [Fact]
     public void GetCurrentCardState()
     {
-        var card = fsrs.CreateCard();
+        var card = FSRS.CreateCard();
 
         foreach (int i in Enumerable.Range(0, 10))
         {
-            card = fsrs.RateCard(card, Rating.Good);
+            card = FSRS.RateCard(card, Rating.Good);
         }
 
         Assert.Equal(CardState.Review, card.State);
