@@ -16,11 +16,10 @@ public class FSRS
     /// <summary>
     /// All python objects should be declared as dynamic type.
     /// </summary>
-    private readonly dynamic _fsrsModule;
-    private readonly dynamic _scheduler;
-    public dynamic Rating;
+    private static readonly dynamic _fsrsModule;
+    private static readonly dynamic _scheduler;
 
-    public FSRS()
+    static FSRS()
     {
         try
         {
@@ -38,7 +37,6 @@ public class FSRS
             {
                 _fsrsModule = Py.Import("fsrs");
                 _scheduler = _fsrsModule.Scheduler() ?? throw new Exception("Could not create scheduler object");
-                Rating = _fsrsModule.Rating.Good ?? throw new Exception("Could not create rating object");
                 if (_fsrsModule == null)
                 {
                     dynamic sys = Py.Import("sys");
@@ -79,7 +77,7 @@ public class FSRS
             throw new PlatformNotSupportedException("OS not supported");
     }
 
-    public Card CreateCard()
+    public static Card CreateCard()
     {
         using (Py.GIL())
         {
@@ -94,7 +92,7 @@ public class FSRS
     /// <param name="card"></param>
     /// <param name="rating"></param>
     /// <returns></returns>
-    public Card RateCard(Card card, Rating rating)
+    public static Card RateCard(Card card, Rating rating)
     {
         using (Py.GIL())
         {
