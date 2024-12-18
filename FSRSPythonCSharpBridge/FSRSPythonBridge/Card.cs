@@ -56,8 +56,24 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                long id = PyObject.card_id.As<long>();
-                return id;
+                return PyObject.card_id.As<long>();
+            }
+        }
+    }
+    /// <summary>
+    /// The card's current learning or relearning step or None if the card is in the Review state.
+    /// </summary>
+    public long? Step
+    {
+        get
+        {
+            using (Py.GIL())
+            {
+                if (PyObject.step == null)
+                {
+                    return null;
+                }
+                return PyObject.step.As<long>();
             }
         }
     }
