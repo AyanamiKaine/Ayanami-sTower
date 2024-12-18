@@ -22,8 +22,8 @@ public NamedEntities entities = _entities;
 var literaturePage = entities.GetEntityCreateIfNotExist("LiteraturePage")
     .Add<Page>()
     .Set(new Grid())
-    .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
-    .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
+    .SetColumnDefinitions("*, Auto, Auto")
+    .SetRowDefinitions("Auto, *, Auto");
 
 literaturePage.AddDefaultStyling((literaturePage) =>
 {
