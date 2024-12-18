@@ -11,12 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="fsrs\" />
+    <Content Include="python\**\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
-      <Target Name="CopyFsrs" AfterTargets="Build">
-    <ItemGroup>
-        <fsrs Include="fsrs\*.*" /> 
-    </ItemGroup>
-    <Copy SourceFiles="@(fsrs)" DestinationFolder="$(TargetDir)fsrs\" />
-    </Target>
 </Project>
