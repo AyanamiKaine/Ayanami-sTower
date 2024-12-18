@@ -29,10 +29,6 @@ public enum CardState
 public class Card(dynamic card)
 {
     /// <summary>
-    /// Represents the underlying python card object.
-    /// </summary>
-    private readonly dynamic _card = card;
-    /// <summary>
     /// The card's current learning state.
     /// </summary>
     public CardState State
@@ -41,7 +37,7 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                int state = _card.state.As<int>();
+                int state = PyObject.state.As<int>();
                 return (CardState)state;
             }
         }
@@ -50,13 +46,7 @@ public class Card(dynamic card)
     /// Returns the underlying pyobject HANDLE WITH CARE!.
     /// SHOULD ONLY BE USED IN A PYTHON CONTEXT
     /// </summary>
-    public dynamic PyObject
-    {
-        get
-        {
-            return _card;
-        }
-    }
+    public dynamic PyObject { get; } = card;
     /// <summary>
     /// The id of the card. Defaults to the epoch miliseconds of when the card was created.
     /// </summary>
@@ -66,7 +56,7 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                long id = _card.card_id.As<long>();
+                long id = PyObject.card_id.As<long>();
                 return id;
             }
         }
@@ -80,8 +70,8 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                string format = "yyyy-MM-dd HH:mm:ss.ffffffzzz"; // Define the exact format
-                string due = _card.due.ToString();
+                const string format = "yyyy-MM-dd HH:mm:ss.ffffffzzz"; // Define the exact format
+                string due = PyObject.due.ToString();
                 return DateTime.ParseExact(due, format, CultureInfo.InvariantCulture);
             }
         }
@@ -96,12 +86,12 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                if (_card.last_review == null)
+                if (PyObject.last_review == null)
                 {
                     return null;
                 }
-                string format = "yyyy-MM-dd HH:mm:ss.ffffffzzz"; // Define the exact format
-                string lastReview = _card.last_review.ToString();
+                const string format = "yyyy-MM-dd HH:mm:ss.ffffffzzz"; // Define the exact format
+                string lastReview = PyObject.last_review.ToString();
 
                 return DateTime.ParseExact(lastReview, format, CultureInfo.InvariantCulture);
             }
@@ -117,12 +107,12 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                if (_card.stability == null)
+                if (PyObject.stability == null)
                 {
                     return null;
                 }
 
-                return _card.stability.As<float>();
+                return PyObject.stability.As<float>();
             }
         }
     }
@@ -136,12 +126,12 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                if (_card.difficulty == null)
+                if (PyObject.difficulty == null)
                 {
                     return null;
                 }
 
-                return _card.difficulty.As<float>();
+                return PyObject.difficulty.As<float>();
             }
         }
     }
