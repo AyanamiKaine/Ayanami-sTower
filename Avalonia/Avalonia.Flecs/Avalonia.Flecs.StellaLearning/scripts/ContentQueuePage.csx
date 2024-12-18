@@ -53,8 +53,8 @@ public NamedEntities entities = _entities;
 var contentQueuePage = entities.GetEntityCreateIfNotExist("ContentQueuePage")
     .Add<Page>()
     .Set(new Grid())
-    .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
-    .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
+    .SetColumnDefinitions("*, Auto, Auto")
+    .SetRowDefinitions("Auto, *, Auto");
 
 
 var listSearch = entities.GetEntityCreateIfNotExist("ListSearchContentQueue")
