@@ -3,20 +3,38 @@ using Python.Runtime;
 namespace FSRSPythonBridge;
 
 
-
+/// <summary>
+/// Represents the current state of a card used for the scheduler.
+/// </summary>
 public enum CardState
 {
-    Learning = 1, // (==1) new card being studied for the first time
-    Review = 2, // (==2) card that has "graduated" from the Learning state
-    Relearning = 3, // (==3) card that has "lapsed" from the Review state
+    /// <summary>
+    /// (==1) new card being studied for the first time
+    /// </summary>
+    Learning = 1,
+    /// <summary>
+    /// (==2) card that has "graduated" from the Learning state
+    /// </summary>
+    Review = 2,
+    /// <summary>
+    /// (==3) card that has "lapsed" from the Review state
+    /// </summary>
+    Relearning = 3,
 }
 
+/// <summary>
+/// Represents a card used for spaced repetition
+/// </summary>
+/// <param name="card"></param>
 public class Card(dynamic card)
 {
     /// <summary>
     /// Represents the underlying python card object.
     /// </summary>
     private readonly dynamic _card = card;
+    /// <summary>
+    /// The card's current learning state.
+    /// </summary>
     public CardState State
     {
         get
@@ -39,6 +57,9 @@ public class Card(dynamic card)
             return _card;
         }
     }
+    /// <summary>
+    /// The id of the card. Defaults to the epoch miliseconds of when the card was created.
+    /// </summary>
     public long ID
     {
         get
@@ -50,6 +71,9 @@ public class Card(dynamic card)
             }
         }
     }
+    /// <summary>
+    /// The date and time when the card is due next.
+    /// </summary>
     public DateTime Due
     {
         get
@@ -63,6 +87,9 @@ public class Card(dynamic card)
         }
     }
 
+    /// <summary>
+    /// The date and time of the card's last review.
+    /// </summary>
     public DateTime? LastReview
     {
         get
@@ -81,6 +108,9 @@ public class Card(dynamic card)
         }
     }
 
+    /// <summary>
+    ///  Core mathematical parameter used for future scheduling.
+    /// </summary>
     public float? Stability
     {
         get
@@ -97,6 +127,9 @@ public class Card(dynamic card)
         }
     }
 
+    /// <summary>
+    /// Core mathematical parameter used for future scheduling.
+    /// </summary>
     public float? Difficulty
     {
         get
