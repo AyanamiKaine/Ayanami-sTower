@@ -1,6 +1,7 @@
 
 // By default script directives (#r) are being removed
-// from the script before compilation.
+// from the script before compilation. We are just doing this here 
+// so the C# Devkit can provide us with autocompletion and analysis of the code
 #r "../bin/Debug/net9.0/Avalonia.Base.dll"
 #r "../bin/Debug/net9.0/Avalonia.FreeDesktop.dll"
 #r "../bin/Debug/net9.0/Avalonia.dll"
@@ -218,8 +219,8 @@ var spacedRepetitionPage = entities.GetEntityCreateIfNotExist("SpacedRepetitionP
     fit the content within it. If you place a button in this column, 
     the column will be just wide enough to accommodate the button's size.
     */
-    .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
-    .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
+    .SetColumnDefinitions("*, Auto, Auto")
+    .SetRowDefinitions("Auto, *, Auto");
 
 spacedRepetitionPage.AddDefaultStyling((spacedRepetitionPage) =>
 {
