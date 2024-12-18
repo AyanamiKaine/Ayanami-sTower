@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSRSPythonBridge", "FSRSPythonBridge\FSRSPythonBridge.csproj", "{41E2D99A-FCF2-4499-9A6D-F83F6E9F6235}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSRSPythonBridge.Tests", "FSRSPythonBridge.Tests\FSRSPythonBridge.Tests.csproj", "{CF2BC0CB-4268-4E45-9737-0C2F64BAEC0D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{41E2D99A-FCF2-4499-9A6D-F83F6E9F6235}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41E2D99A-FCF2-4499-9A6D-F83F6E9F6235}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{41E2D99A-FCF2-4499-9A6D-F83F6E9F6235}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF2BC0CB-4268-4E45-9737-0C2F64BAEC0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF2BC0CB-4268-4E45-9737-0C2F64BAEC0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF2BC0CB-4268-4E45-9737-0C2F64BAEC0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF2BC0CB-4268-4E45-9737-0C2F64BAEC0D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
