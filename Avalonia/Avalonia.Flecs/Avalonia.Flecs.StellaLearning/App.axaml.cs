@@ -6,14 +6,13 @@ using Avalonia.Markup.Xaml;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Flecs.StellaLearning.Pages;
 using Avalonia.Flecs.Controls.ECS;
-using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Scripting;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
 using System;
 using Avalonia.Threading;
-using static Avalonia.Flecs.Controls.ECS.Module;
 using Microsoft.CodeAnalysis.Scripting;
 using System.Reflection;
+using FSRSPythonBridge;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -24,14 +23,16 @@ public partial class App : Application
     public override void Initialize()
     {
 
-        FSRSPythonBridge.FSRS fSRS = new();
+        var card = FSRS.CreateCard();
+        card = FSRS.RateCard(card, Rating.Good);
+        Console.WriteLine(card.Stability);
+
 
         AvaloniaXamlLoader.Load(this);
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
 
         _entities = new NamedEntities(_world);
-
 
 
         // we define our own scripting options because we 
