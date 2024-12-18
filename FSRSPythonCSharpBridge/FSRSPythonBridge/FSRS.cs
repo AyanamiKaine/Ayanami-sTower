@@ -16,8 +16,8 @@ public class FSRS
     /// <summary>
     /// All python objects should be declared as dynamic type.
     /// </summary>
-    private dynamic _fsrsModule;
-    private dynamic _scheduler;
+    private readonly dynamic _fsrsModule;
+    private readonly dynamic _scheduler;
     public dynamic Rating;
 
     public FSRS()
