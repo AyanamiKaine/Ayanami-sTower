@@ -37,6 +37,24 @@ public class FSRSTests
         Assert.Null(card.Stability);
     }
 
+    [Fact]
+    public void GetStepShouldBeNull()
+    {
+        var card = FSRS.CreateCard();
+        foreach (int i in Enumerable.Range(0, 10))
+        {
+            card = FSRS.RateCard(card, Rating.Good);
+        }
+        Assert.Null(card.Step);
+    }
+
+    [Fact]
+    public void GetStepShouldBeLong()
+    {
+        var card = FSRS.CreateCard();
+        Assert.IsType<long>(card.Step);
+    }
+
 
     /// <summary>
     /// After a card was reviewd it should have a float stablity value that is not null.
