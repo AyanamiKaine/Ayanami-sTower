@@ -59,8 +59,8 @@ public NamedEntities entities = _entities;
 var vaultPage = entities.GetEntityCreateIfNotExist("KnowledgeVaultPage")
     .Add<Page>()
     .Set(new Grid())
-    .SetColumnDefinitions(new ColumnDefinitions("*, Auto, Auto"))
-    .SetRowDefinitions(new RowDefinitions("Auto, *, Auto"));
+    .SetColumnDefinitions("*, Auto, Auto")
+    .SetRowDefinitions("Auto, *, Auto");
 
 /*
 Here we are setting Default styling for the page entity.
