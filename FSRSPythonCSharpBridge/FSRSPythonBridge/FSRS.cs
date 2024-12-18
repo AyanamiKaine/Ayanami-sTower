@@ -2,7 +2,6 @@
 using Python.Runtime;
 namespace FSRSPythonBridge;
 
-
 public enum Rating
 {
     Again = 1,  // Rating.Again (==1) forgot the card
@@ -11,7 +10,7 @@ public enum Rating
     Easy = 4,   // Rating.Easy (==4) remembered the card easily
 }
 
-public class FSRS
+public static class FSRS
 {
     /// <summary>
     /// All python objects should be declared as dynamic type.
@@ -74,7 +73,9 @@ public class FSRS
             Runtime.PythonDLL = Path.Combine(pythonPath, "python313.dll");
         }
         else
+        {
             throw new PlatformNotSupportedException("OS not supported");
+        }
     }
 
     public static Card CreateCard()
