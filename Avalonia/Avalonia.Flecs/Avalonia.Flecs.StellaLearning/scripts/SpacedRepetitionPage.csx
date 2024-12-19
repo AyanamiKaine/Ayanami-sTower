@@ -1,7 +1,10 @@
+#load "FileOpener.csx"
+#load "SpacedRepetitionItem.csx"
 
 // By default script directives (#r) are being removed
 // from the script before compilation. We are just doing this here 
-// so the C# Devkit can provide us with autocompletion and analysis of the code
+// so the C# Devkit and Omnisharp (For what every reason the libraries.rsp 
+// does not get used any more, new bug?) can provide us with autocompletion and analysis of the code
 #r "../bin/Debug/net9.0/Avalonia.Base.dll"
 #r "../bin/Debug/net9.0/Avalonia.FreeDesktop.dll"
 #r "../bin/Debug/net9.0/Avalonia.dll"
@@ -21,6 +24,7 @@
 
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -39,139 +43,6 @@ using Avalonia.Data.Converters;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-
-public static class FileOpener
-{
-    public static void OpenFileWithDefaultProgram(string filePath)
-    {
-        if (string.IsNullOrEmpty(filePath))
-        {
-            throw new ArgumentNullException(nameof(filePath));
-        }
-
-        try
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Windows: Use Process.Start with "explorer.exe" and the file path.
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "explorer.exe",
-                    Arguments = "\"" + filePath + "\"" // Important: Quote the path in case it contains spaces.
-                });
-
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                // Linux/macOS: Use xdg-open (Linux) or open (macOS)
-                string opener = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "open" : "xdg-open";
-
-                Process process = new()
-                {
-                    StartInfo = new ProcessStartInfo
-                    {
-                        FileName = opener,
-                        Arguments = "\"" + filePath + "\"", // Quote the path
-                        UseShellExecute = false, // Required for redirection
-                        CreateNoWindow = true, // Optional: Don't show a console window
-                        RedirectStandardError = true // Capture error output for debugging
-                    }
-                };
-                process.Start();
-                string error = process.StandardError.ReadToEnd();
-                process.WaitForExit();
-
-                if (process.ExitCode != 0 && !string.IsNullOrEmpty(error))
-                {
-                    // Handle errors (e.g., file not found, no application associated)
-                    Console.WriteLine($"Error opening file: {error}");
-                    throw new Exception($"Error opening file: {error}");
-                }
-
-            }
-            else
-            {
-                // Handle other operating systems or throw an exception.
-                throw new PlatformNotSupportedException("Operating system not supported.");
-            }
-        }
-        catch (Exception ex)
-        {
-            // Handle exceptions (e.g., file not found, no associated program).
-            Console.WriteLine($"An error occurred: {ex.Message}");
-            throw; // Re-throw the exception after logging, if needed.
-        }
-    }
-}
-
-public enum SpacedRepetitionItemType
-{
-    Image,
-    Video,
-    Quiz,
-    Flashcard,
-    Text,
-    Exercise,
-    File,
-    PDF,
-    Executable,
-}
-
-public enum SpacedRepetitionState
-{
-    NewState = 0,
-    Learning = 1,
-    Review = 2,
-    Relearning = 3
-}
-
-public class SpacedRepetitionItem
-{
-    public Guid Uid { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "Lorem Ipsum";
-    public List<string> Tags { get; set; } = [];
-    public double Stability { get; set; } = 0;
-    public double Difficulty { get; set; } = 0;
-    public int Priority { get; set; } = 0;
-    public int Reps { get; set; } = 0;
-    public int Lapsed { get; set; } = 0;
-    public DateTime LastReview { get; set; } = DateTime.UtcNow;
-    public DateTime NextReview { get; set; } = DateTime.UtcNow;
-    public int NumberOfTimesSeen { get; set; } = 0;
-    public int ElapsedDays { get; set; } = 0;
-    public int ScheduledDays { get; set; } = 0;
-    public SpacedRepetitionState SpacedRepetitionState { get; set; } = SpacedRepetitionState.NewState;
-    public SpacedRepetitionItemType SpacedRepetitionItemType { get; set; } = SpacedRepetitionItemType.Text;
-}
-
-public class SpacedRepetitionQuiz : SpacedRepetitionItem
-{
-    public string Question { get; set; } = "Lorem Ispusm";
-    public List<string> Answers { get; set; } = ["Lorem Ispusm", "Lorem Ispusmiusm Dorema"];
-    public int CorrectAnswerIndex { get; set; } = 0;
-}
-
-public class SpacedRepetitionFlashcard : SpacedRepetitionItem
-{
-    public string Front { get; set; } = "Front";
-    public string Back { get; set; } = "Back";
-}
-
-public class SpacedRepetitionVideo : SpacedRepetitionItem
-{
-    public string VideoUrl { get; set; } = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
-}
-
-public class SpacedRepetitionFile : SpacedRepetitionItem
-{
-    public string FilePath { get; set; } = "C:/Users/username/Documents/MyFile.txt";
-}
-
-public class SpacedRepetitionExercise : SpacedRepetitionItem
-{
-    public string Problem { get; set; } = "Lorem Ipsum";
-    public string Solution { get; set; } = "Lorem Ipsum";
-}
 
 public class NextReviewConverter : IValueConverter
 {
