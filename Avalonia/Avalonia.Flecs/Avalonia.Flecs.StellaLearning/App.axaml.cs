@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis.Scripting;
 using System.Reflection;
 using FSRSPythonBridge;
 using System.Threading.Tasks;
+using System.IO;
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -33,6 +34,7 @@ public partial class App : Application
         // need to add references to FluentAvalonia that is by 
         // default not loaded by the scripting manager
         var scriptingOptions = ScriptOptions.Default
+            .WithSourceResolver(new ScriptSourceRefrenceResolver())
             .AddReferences(
                 typeof(object).Assembly, // Usually needed for basic types
                 Assembly.Load("Flecs.NET"),
