@@ -763,10 +763,8 @@ public class ScriptManager
                 {
                     sb.AppendLine(trimmedLine);
                 }
-
             }
         }
-
         return sb.ToString().TrimEnd(); // Remove any trailing newline
     }
 
