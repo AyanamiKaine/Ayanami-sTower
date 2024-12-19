@@ -59,6 +59,10 @@ public partial class App : Application
 
         scriptManager.OnScriptCompilationFinished += (sender, args) =>
         {
+
+            // Here we write all the scripts we would like to 
+            // automatically recompile and run if changed 
+
             Console.WriteLine($"Finishes Compilation of: {args.ScriptName}");
             if (args.ScriptName == "main")
             {
@@ -195,13 +199,6 @@ public partial class App : Application
 
         navigationView.OnDisplayModeChanged((sender, args) =>
         {
-            Task.Run(() =>
-            {
-                var card = FSRS.CreateCard();
-                card = FSRS.RateCard(card, Rating.Good);
-                Console.WriteLine(card.Stability);
-            });
-
             var e = navigationView;
 
             if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
