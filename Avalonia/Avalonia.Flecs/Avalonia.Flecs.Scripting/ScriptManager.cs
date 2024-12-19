@@ -2,10 +2,104 @@
 using System.Reflection;
 using System.Text;
 using Flecs.NET.Core;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 
 namespace Avalonia.Flecs.Scripting;
+
+/// <summary>
+/// e
+/// </summary>
+public class ScriptSourceRefrenceResolver : SourceReferenceResolver
+{
+    private readonly string _baseDirectory;
+    /// <summary>
+    /// Constructor for ScriptSourceRefrenceResolver
+    /// </summary>
+    /// <param name="baseDirectory"></param>
+    public ScriptSourceRefrenceResolver(string baseDirectory)
+    {
+        _baseDirectory = baseDirectory;
+    }
+
+    /// <summary>
+    /// Uses the current directory as the base directory.
+    /// and defines the scripts folder as the root for source files.
+    /// 
+    /// So if you have a script file in the scripts folder you can refrence it
+    /// by its name.
+    /// </summary>
+    public ScriptSourceRefrenceResolver()
+    {
+        _baseDirectory = Path.Combine(Directory.GetCurrentDirectory(), "scripts");
+    }
+
+    /// <summary>
+    /// Resolves a reference to a script file.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="baseFilePath"></param>
+    /// <returns></returns>
+    public override string? ResolveReference(string? path, string? baseFilePath)
+    {
+        // If the path is already absolute, return it as is
+        if (Path.IsPathRooted(path))
+        {
+            return path;
+        }
+
+        // Construct a path relative to the base directory (your scripts folder)
+        var combinedPath = Path.Combine(_baseDirectory, path!);
+        return Path.GetFullPath(combinedPath); // Normalize the path
+    }
+
+    /// <summary>
+    ///     Opens a stream to the specified file.
+    /// </summary>
+    /// <param name="resolvedPath"></param>
+    /// <returns></returns>
+    public override Stream OpenRead(string resolvedPath)
+    {
+        // You might need to add error handling here in case the file doesn't exist
+        return File.OpenRead(resolvedPath);
+    }
+
+    // Implement other abstract members if necessary (NormalizePath, ResolvePath, etc.)
+    // but these defaults are often sufficient:
+    /// <summary>
+    /// Normalizes a path.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <param name="baseFilePath"></param>
+    /// <returns></returns>
+    public override string? NormalizePath(string? path, string? baseFilePath) => path;
+
+    /// <summary>
+    /// Checks if the given object is equal to this object.
+    /// </summary>
+    /// <param name="other"></param>
+    /// <returns></returns>
+    public override bool Equals(object? other)
+    {
+        // Implementation for Equals
+        if (other == null || GetType() != other.GetType())
+        {
+            return false;
+        }
+        return _baseDirectory == ((ScriptSourceRefrenceResolver)other)._baseDirectory;
+    }
+
+    /// <summary>
+    /// Gets the hash code for this object.
+    /// </summary>
+    /// <returns></returns>
+    public override int GetHashCode()
+    {
+        // Implementation for GetHashCode
+        return _baseDirectory != null ? _baseDirectory.GetHashCode() : 0;
+    }
+}
 
 /// <summary>
 /// Global data that is accessible in the scripts.
@@ -217,10 +311,14 @@ public class ScriptManager
         Data = new GlobalData(world, entities);
         CompiledScripts = new();
 
+        string baseDirectoryForScripts = Path.Combine(AppContext.BaseDirectory, "../../../../", "scripts");
+
+
         //Adding meta data seems to do nothing?
         //What does meta data even do?
         //Like this -> MetadataReference.CreateFromFile("Flecs.NET.dll"),
         Options = ScriptOptions.Default
+            .WithSourceResolver(new ScriptSourceRefrenceResolver(baseDirectoryForScripts))
             .AddReferences(
                 typeof(object).Assembly, // Usually needed for basic types
                 Assembly.Load("Flecs.NET"),
@@ -806,5 +904,56 @@ public class ScriptManager
         Directory.CreateDirectory(scriptsPath);
         developmentScriptFileWatcher.Path = scriptsPath;
         ScriptWatcher = developmentScriptFileWatcher;
+
+        // Get the build directory (where the executable is)
+        string buildDirectory = exePath;
+
+        // Copy new created and updated files from the project
+        // scripts folder to the build directory
+        developmentScriptFileWatcher.Created += (s, e) =>
+        {
+            string relativePath = Path.GetRelativePath(Path.Combine("scripts", scriptsPath), e.FullPath);
+            string destPath = Path.Combine(buildDirectory, relativePath);
+
+            // Create directory if it doesn't exist in the build directory
+            Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+
+            File.Copy(e.FullPath, destPath, true);
+            Console.WriteLine($"Copied newly created file: {e.FullPath} to {destPath}");
+        };
+
+        developmentScriptFileWatcher.Changed += (s, e) =>
+        {
+            string relativePath = Path.GetRelativePath(scriptsPath, e.FullPath);
+            string destPath = Path.Combine(buildDirectory, Path.Combine("scripts", relativePath));
+
+            // Create directory if it doesn't exist in the build directory
+            Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+
+            File.Copy(e.FullPath, destPath, true);
+            Console.WriteLine($"Copied updated file: {e.FullPath} to {destPath}");
+        };
+
+        developmentScriptFileWatcher.Renamed += (s, e) =>
+        {
+            string oldRelativePath = Path.GetRelativePath(scriptsPath, e.OldFullPath);
+            string oldDestPath = Path.Combine(buildDirectory, Path.Combine("scripts", oldRelativePath));
+            string newRelativePath = Path.GetRelativePath(scriptsPath, e.FullPath);
+            string newDestPath = Path.Combine(buildDirectory, Path.Combine("scripts", newRelativePath));
+
+            // Create directory if it doesn't exist in the build directory
+            Directory.CreateDirectory(Path.GetDirectoryName(newDestPath)!);
+
+            // Delete the old file
+            if (File.Exists(oldDestPath))
+            {
+                File.Delete(oldDestPath);
+                Console.WriteLine($"Deleted old file: {oldDestPath}");
+            }
+
+            File.Copy(e.FullPath, newDestPath, true);
+            Console.WriteLine($"Copied renamed file: {e.FullPath} to {newDestPath}");
+
+        };
     }
 }
