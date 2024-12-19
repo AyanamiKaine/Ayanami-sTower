@@ -1,8 +1,9 @@
+namespace Avalonia.Flecs.StellaLearning.Data;
+
 using System;
-using System.Globalization;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
+using FSRSPythonBridge;
+
 public enum SpacedRepetitionItemType
 {
     Image,
@@ -18,7 +19,6 @@ public enum SpacedRepetitionItemType
 
 public enum SpacedRepetitionState
 {
-    NewState = 0,
     Learning = 1,
     Review = 2,
     Relearning = 3
@@ -31,18 +31,75 @@ public class SpacedRepetitionItem
     public Guid Uid { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "Lorem Ipsum";
     public List<string> Tags { get; set; } = [];
-    public double Stability { get; set; } = 0;
-    public double Difficulty { get; set; } = 0;
+    public float? Stability { get; set; } = 0;
+    public float? Difficulty { get; set; } = 0;
     public int Priority { get; set; } = 0;
-    public int Reps { get; set; } = 0;
-    public int Lapsed { get; set; } = 0;
-    public DateTime LastReview { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// The card's current learning or relearning step or None if the card is in the Review state.
+    /// </summary>
+    public long? Step { get; set; } = 0;
+    public DateTime? LastReview { get; set; } = DateTime.UtcNow;
     public DateTime NextReview { get; set; } = DateTime.UtcNow;
     public int NumberOfTimesSeen { get; set; } = 0;
     public int ElapsedDays { get; set; } = 0;
     public int ScheduledDays { get; set; } = 0;
-    public SpacedRepetitionState SpacedRepetitionState { get; set; } = SpacedRepetitionState.NewState;
+    public SpacedRepetitionState SpacedRepetitionState { get; set; } = SpacedRepetitionState.Learning;
     public SpacedRepetitionItemType SpacedRepetitionItemType { get; set; } = SpacedRepetitionItemType.Text;
+
+    // Backing field for the Card property
+    private Card? _card;
+
+    // Represents a refrence to the underlying representation of the card
+    // Here we use a python library to create a card object using FSRS
+    private Card Card
+    {
+        get
+        {
+            return _card!;
+        }
+        set
+        {
+            _card = value;
+            Stability = Card.Stability;
+            Difficulty = Card.Difficulty;
+            SpacedRepetitionState = (SpacedRepetitionState)Card.State;
+            LastReview = Card.LastReview;
+            NextReview = Card.Due;
+            Step = Card.Step;
+        }
+    }
+
+    public SpacedRepetitionItem()
+    {
+        Card = FSRS.CreateCard();
+        Stability = Card.Stability;
+        Difficulty = Card.Difficulty;
+        SpacedRepetitionState = (SpacedRepetitionState)Card.State;
+        LastReview = Card.LastReview;
+        NextReview = Card.Due;
+        Step = Card.Step;
+    }
+
+    public void GoodReview()
+    {
+        Card = FSRS.RateCard(Card, Rating.Good);
+    }
+
+    public void AgainReview()
+    {
+        Card = FSRS.RateCard(Card, Rating.Again);
+    }
+
+    public void EasyReview()
+    {
+        Card = FSRS.RateCard(Card, Rating.Easy);
+    }
+
+    public void HardReview()
+    {
+        Card = FSRS.RateCard(Card, Rating.Hard);
+    }
 }
 
 public class SpacedRepetitionQuiz : SpacedRepetitionItem
