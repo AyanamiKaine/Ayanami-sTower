@@ -1,5 +1,5 @@
 using System;
-
+namespace Avalonia.Flecs.StellaLearning.Data;
 public enum ContentType
 {
     File,
