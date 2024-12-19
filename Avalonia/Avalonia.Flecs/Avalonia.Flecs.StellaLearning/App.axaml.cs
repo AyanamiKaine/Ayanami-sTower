@@ -45,13 +45,18 @@ public partial class App : Application
                 Assembly.Load("Avalonia"),
                 Assembly.Load("Avalonia.Desktop"),
                 Assembly.Load("Avalonia.Base"),
-                Assembly.Load("FluentAvalonia")
+                Assembly.Load("FluentAvalonia"),
+                Assembly.Load("FSRSPythonBridge"),
+                Assembly.Load("Avalonia.Flecs.StellaLearning")
+            // Used for spaced Repetition
             // Load your API assembly
             )
             .AddImports("Avalonia.Controls")
             .AddImports("Avalonia.Flecs.Controls.ECS")
             .AddImports("Avalonia.Flecs.Scripting")
-            .AddImports("Flecs.NET.Core");
+            .AddImports("Flecs.NET.Core")
+            .AddImports("FSRSPythonBridge")
+            .AddImports("Avalonia.Flecs.StellaLearning");
 
 
         _world.Set<ScriptManager>(new(_world, _entities, scriptingOptions));
