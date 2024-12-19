@@ -1,4 +1,3 @@
-#load "FileOpener.csx"
 #load "SpacedRepetitionItem.csx"
 
 // By default script directives (#r) are being removed
@@ -21,7 +20,8 @@
 #r "../bin/Debug/net9.0/Avalonia.Flecs.StellaLearning.dll"
 #r "../bin/Debug/net9.0/Avalonia.Flecs.Scripting.dll"
 #r "../bin/Debug/net9.0/Avalonia.Flecs.Scripting.xml"
-
+#r "../bin/Debug/net9.0/FSRSPythonBridge.xml"
+#r "../bin/Debug/net9.0/FSRSPythonBridge.dll"
 
 using System;
 using System.IO;
@@ -43,7 +43,8 @@ using Avalonia.Data.Converters;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-
+using FSRSPythonBridge;
+using Avalonia.Flecs.StellaLearning.Util;
 public class NextReviewConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
@@ -256,8 +257,6 @@ var spacedRepetitionTemplate = new FuncDataTemplate<SpacedRepetitionItem>((item,
     };
 
     ToolTip.SetTip(priorityTextBlock, priorityTooltipTextBlock);
-
-
 
     return grid;
 });
