@@ -1,3 +1,31 @@
+#load "FileOpener.csx"
+
+// By default script directives (#r) are being removed
+// from the script before compilation. We are just doing this here 
+// so the C# Devkit and Omnisharp (For what every reason the libraries.rsp 
+// does not get used any more, new bug?) can provide us with autocompletion and analysis of the code
+// Technically speaking this is bad, because this means that you cant refrence your own libraries
+// practically speaking this means we have to implement this behavior for the scripting manager
+// so user have the way to add their own libraries.
+// (Maybe creating a library folder where the scripting manager automatically adds all the libraries? 
+// i.e refrences?)
+#r "../bin/Debug/net9.0/Avalonia.Base.dll"
+#r "../bin/Debug/net9.0/Avalonia.FreeDesktop.dll"
+#r "../bin/Debug/net9.0/Avalonia.dll"
+#r "../bin/Debug/net9.0/Avalonia.Desktop.dll"
+#r "../bin/Debug/net9.0/Avalonia.X11.dll"
+#r "../bin/Debug/net9.0/FluentAvalonia.dll"
+#r "../bin/Debug/net9.0/Avalonia.Controls.dll"
+#r "../bin/Debug/net9.0/Avalonia.Markup.Xaml.dll"
+#r "../bin/Debug/net9.0/Flecs.NET.dll"
+#r "../bin/Debug/net9.0/Flecs.NET.Bindings.dll"
+#r "../bin/Debug/net9.0/Avalonia.Flecs.Controls.dll"
+#r "../bin/Debug/net9.0/Avalonia.Flecs.Controls.xml"
+#r "../bin/Debug/net9.0/Avalonia.Flecs.FluentUI.Controls.dll"
+#r "../bin/Debug/net9.0/Avalonia.Flecs.StellaLearning.dll"
+#r "../bin/Debug/net9.0/Avalonia.Flecs.Scripting.dll"
+#r "../bin/Debug/net9.0/Avalonia.Flecs.Scripting.xml"
+
 // Problem: There is way to much to be consumed, read, heared, seen.
 // Sometimes we see something that intrests us be we are unable 
 // to consume it at that time. This could be an article that is quite long
