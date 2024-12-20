@@ -188,5 +188,67 @@ namespace Avalonia.Flecs.Controls.ECS
             }
             throw new ComponentNotFoundException(entity, typeof(TextBlock), nameof(SetFontWeight));
         }
+
+        /// <summary>
+        /// Gets the FontWeight when the entity has a object attached with the property FontWeight.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static FontWeight GetFontWeight(this Entity entity)
+        {
+            if (entity.Has<TextBlock>())
+                return entity.Get<TextBlock>().FontWeight;
+            else if (entity.Has<TextBox>())
+                return entity.Get<TextBox>().FontWeight;
+            else if (entity.Has<Button>())
+                return entity.Get<Button>().FontWeight;
+            else if (entity.Has<object>())
+                return entity.GetProperty<FontWeight>("FontWeight");
+            throw new ComponentNotFoundException(entity, typeof(TextBlock), nameof(GetFontWeight));
+        }
+
+        /// <summary>
+        /// Sets the TextWrapping when the entity has a object attached with the property TextWrapping.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="textWrapping"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity SetTextWrapping(this Entity entity, TextWrapping textWrapping)
+        {
+            if (entity.Has<TextBlock>())
+            {
+                entity.Get<TextBlock>().TextWrapping = textWrapping;
+                return entity;
+            }
+            else if (entity.Has<TextBox>())
+            {
+                entity.Get<TextBox>().TextWrapping = textWrapping;
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("TextWrapping", textWrapping);
+            }
+            throw new ComponentNotFoundException(entity, typeof(TextBlock), nameof(SetTextWrapping));
+        }
+
+        /// <summary>
+        /// Gets the TextWrapping when the entity has a object attached with the property TextWrapping.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static TextWrapping GetTextWrapping(this Entity entity)
+        {
+            if (entity.Has<TextBlock>())
+                return entity.Get<TextBlock>().TextWrapping;
+            else if (entity.Has<TextBox>())
+                return entity.Get<TextBox>().TextWrapping;
+            else if (entity.Has<object>())
+                return entity.GetProperty<TextWrapping>("TextWrapping");
+            throw new ComponentNotFoundException(entity, typeof(TextBlock), nameof(GetTextWrapping));
+        }
     }
 }
