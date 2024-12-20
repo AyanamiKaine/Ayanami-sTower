@@ -9,6 +9,32 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public static class ECSListBoxExtensions
     {
+
+        /// <summary>
+        /// Returns the current selected item or items
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="NullReferenceException"></exception>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static T GetSelectedItem<T>(this Entity entity)
+        {
+            if (entity.Has<ListBox>())
+            {
+                if (entity.Get<ListBox>().SelectedItem != null)
+                {
+                    return (T)entity.Get<ListBox>().SelectedItem!;
+                }
+                throw new NullReferenceException(nameof(GetSelectedItem));
+            }
+            else if (entity.Has<object>())
+            {
+                return (T)entity.GetProperty<object>("SelectedItem");
+            }
+
+            throw new ComponentNotFoundException(entity, typeof(ListBox), nameof(GetSelectedItem));
+        }
+
         /// <summary>
         /// Sets the selection mode of a listbox component
         /// NEEDED COMPONENTS: ListBox or an object with a SelectionMode property
