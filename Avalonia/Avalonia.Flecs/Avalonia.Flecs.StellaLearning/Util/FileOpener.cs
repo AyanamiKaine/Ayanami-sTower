@@ -35,11 +35,15 @@ public static class FileOpener
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+
+                // Replace backslashes with forward slashes for Windows.
+                filePath = filePath.Replace(@"\\", @"\");
+
                 // Windows: Use Process.Start with "explorer.exe" and the file path.
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "explorer.exe",
-                    Arguments = "\"" + filePath + "\"" // Important: Quote the path in case it contains spaces.
+                    Arguments = "\"" + filePath + "\"", // Important: Quote the path in case it contains spaces.
                 });
 
             }
