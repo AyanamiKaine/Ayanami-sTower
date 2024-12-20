@@ -1,3 +1,4 @@
+using System.Reflection;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Scripting;
@@ -149,5 +150,59 @@ public class NamedEntities(World world)
     public bool Contains(string name)
     {
         return _entities.ContainsKey(name);
+    }
+}
+
+/// <summary>
+/// While attached event handlers are not removed from the avalonia objects of entities
+/// and this results in a memory leak. This class provides a method to clear all events.
+/// BUT for now the memory leak only happens when scripts rerun old entities are destroyed
+/// but there event handlers are not removed and the avalonia objects like a button
+/// are not garbage collected. The result is a memory leak that is rather small
+/// So small right now that it is not worth the effort to fix it.
+/// The code below represent a way to possible fix it but it is not worth the effort
+/// at least for now.
+/// </summary>
+internal static class EventCleaner
+{
+    /// <summary>
+    /// Clears all events on an object
+    /// </summary>
+    /// <param name="obj"></param>
+    internal static void ClearAllEvents(object obj)
+    {
+        if (obj == null) return;
+
+        Type type = obj.GetType();
+        EventInfo[] events = type.GetEvents(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+        foreach (EventInfo eventInfo in events)
+        {
+            FieldInfo? fieldInfo = null;
+
+            //Try to get the event field directly
+            fieldInfo = type.GetField(eventInfo.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            //If the field is not found directly, it might be a compiler-generated field (e.g., for auto-implemented events)
+            if (fieldInfo == null)
+            {
+                fieldInfo = GetCompilerGeneratedField(type, eventInfo.Name);
+            }
+            if (fieldInfo == null) continue;
+
+            try
+            {
+                fieldInfo.SetValue(obj, null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error clearing event {eventInfo.Name} on {type.Name}: {ex.Message}");
+            }
+        }
+    }
+    private static FieldInfo? GetCompilerGeneratedField(Type type, string eventName)
+    {
+        //For compiler-generated fields, the name is typically in the format <EventName>k__BackingField
+        string backingFieldName = $"<{eventName}>k__BackingField";
+        return type.GetField(backingFieldName, BindingFlags.NonPublic | BindingFlags.Instance);
     }
 }
