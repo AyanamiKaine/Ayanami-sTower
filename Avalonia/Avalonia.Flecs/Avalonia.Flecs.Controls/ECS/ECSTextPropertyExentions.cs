@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Media;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS
@@ -154,6 +155,38 @@ namespace Avalonia.Flecs.Controls.ECS
             else if (entity.Has<object>())
                 return entity.GetProperty<string>("Text");
             throw new Exception("Entity does not have a control with a text property");
+        }
+
+
+        /// <summary>
+        /// Sets the FontWeight when the entity has a object attached with the property FontWeight.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="fontWeight"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity SetFontWeight(this Entity entity, FontWeight fontWeight)
+        {
+            if (entity.Has<TextBlock>())
+            {
+                entity.Get<TextBlock>().FontWeight = fontWeight;
+                return entity;
+            }
+            else if (entity.Has<TextBox>())
+            {
+                entity.Get<TextBox>().FontWeight = fontWeight;
+                return entity;
+            }
+            else if (entity.Has<Button>())
+            {
+                entity.Get<Button>().FontWeight = fontWeight;
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("FontWeight", fontWeight);
+            }
+            throw new ComponentNotFoundException(entity, typeof(TextBlock), nameof(SetFontWeight));
         }
     }
 }
