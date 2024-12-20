@@ -250,5 +250,41 @@ namespace Avalonia.Flecs.Controls.ECS
                 return entity.GetProperty<TextWrapping>("TextWrapping");
             throw new ComponentNotFoundException(entity, typeof(TextBlock), nameof(GetTextWrapping));
         }
+
+        /// <summary>
+        /// Sets the TextTrimming when the entity has a object attached with the property TextTrimming.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="textTrimming"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity SetTextTrimming(this Entity entity, TextTrimming textTrimming)
+        {
+            if (entity.Has<TextBlock>())
+            {
+                entity.Get<TextBlock>().TextTrimming = textTrimming;
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("TextTrimming", textTrimming);
+            }
+            throw new ComponentNotFoundException(entity, typeof(TextBlock), nameof(SetTextTrimming));
+        }
+
+        /// <summary>
+        /// Gets the TextTrimming when the entity has a object attached with the property TextTrimming.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static TextTrimming GetTextTrimming(this Entity entity)
+        {
+            if (entity.Has<TextBlock>())
+                return entity.Get<TextBlock>().TextTrimming;
+            else if (entity.Has<object>())
+                return entity.GetProperty<TextTrimming>("TextTrimming");
+            throw new ComponentNotFoundException(entity, typeof(TextBlock), nameof(GetTextTrimming));
+        }
     }
 }
