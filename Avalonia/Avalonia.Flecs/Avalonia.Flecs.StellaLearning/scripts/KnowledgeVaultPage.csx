@@ -31,7 +31,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Media;
 using Avalonia;
 using FluentAvalonia.UI.Controls;
-
+using Avalonia.Flecs.StellaLearning.Data;
 
 
 /// <summary>
