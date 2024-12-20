@@ -116,6 +116,28 @@ namespace Avalonia.Flecs.Controls.ECS
         }
 
         /// <summary>
+        /// Set the min width of the Layoutable component.
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="alignment"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity SetVerticalAlignemt(this Entity entity, string alignment)
+        {
+            if (entity.Has<Layoutable>())
+            {
+                entity.Get<Layoutable>().VerticalAlignment = Enum.Parse<VerticalAlignment>(alignment);
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("VerticalAlignment", Enum.Parse<VerticalAlignment>(alignment));
+            }
+
+            throw new ComponentNotFoundException(entity, typeof(Layoutable), nameof(SetVerticalAlignment));
+        }
+
+        /// <summary>
         /// Get the min width of the Layoutable component.
         /// </summary>
         /// <param name="entity"></param>
