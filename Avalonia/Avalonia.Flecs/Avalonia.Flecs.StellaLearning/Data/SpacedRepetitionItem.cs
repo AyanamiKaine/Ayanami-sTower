@@ -101,10 +101,7 @@ public partial class SpacedRepetitionItem : ObservableObject
 
     public void GoodReview()
     {
-        Dispatcher.UIThread.Post(() =>
-        {
-            Card = FSRS.RateCard(Card, Rating.Good);
-        });
+        Card = FSRS.RateCard(Card, Rating.Good);
     }
 
     public void AgainReview()
