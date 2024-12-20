@@ -2,6 +2,8 @@ namespace Avalonia.Flecs.StellaLearning.Data;
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using Avalonia.Threading;
 using FSRSPythonBridge;
 
 public enum SpacedRepetitionItemType
@@ -26,7 +28,7 @@ public enum SpacedRepetitionState
 ///<summary>
 ///Defines an SpacedRepetitionItem that can be used for spaced repetition
 ///</summary>
-public class SpacedRepetitionItem
+public class SpacedRepetitionItem : INotifyPropertyChanged
 {
     public Guid Uid { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "Lorem Ipsum";
@@ -40,7 +42,20 @@ public class SpacedRepetitionItem
     /// </summary>
     public long? Step { get; set; } = 0;
     public DateTime? LastReview { get; set; } = DateTime.UtcNow;
-    public DateTime NextReview { get; set; } = DateTime.UtcNow;
+
+    public DateTime _nextReview;
+    public DateTime NextReview
+    {
+        get => _nextReview;
+        set
+        {
+            if (_nextReview != value)
+            {
+                _nextReview = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NextReview)));
+            }
+        }
+    }
     public int NumberOfTimesSeen { get; set; } = 0;
     public int ElapsedDays { get; set; } = 0;
     public int ScheduledDays { get; set; } = 0;
@@ -49,6 +64,8 @@ public class SpacedRepetitionItem
 
     // Backing field for the Card property
     private Card? _card;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     // Represents a refrence to the underlying representation of the card
     // Here we use a python library to create a card object using FSRS
@@ -67,6 +84,7 @@ public class SpacedRepetitionItem
             LastReview = Card.LastReview;
             NextReview = Card.Due;
             Step = Card.Step;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NextReview)));
         }
     }
 
@@ -83,7 +101,10 @@ public class SpacedRepetitionItem
 
     public void GoodReview()
     {
-        Card = FSRS.RateCard(Card, Rating.Good);
+        Dispatcher.UIThread.Post(() =>
+        {
+            Card = FSRS.RateCard(Card, Rating.Good);
+        });
     }
 
     public void AgainReview()
