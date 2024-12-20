@@ -1,5 +1,3 @@
-#load "FileOpener.csx"
-
 // By default script directives (#r) are being removed
 // from the script before compilation. We are just doing this here 
 // so the C# Devkit and Omnisharp (For what every reason the libraries.rsp 
