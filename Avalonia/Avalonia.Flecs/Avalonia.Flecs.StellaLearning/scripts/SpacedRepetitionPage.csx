@@ -206,8 +206,8 @@ var spacedRepetitionTemplate = new FuncDataTemplate<SpacedRepetitionItem>((item,
     To do this we can easily use a stack panel on which we add the name and short description
     that extends to two rows and on that stack panel then we attach the tooltip.
     */
-    ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
-    tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
+    //ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
+    //tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
 
 
     //Type (ENUM)
@@ -218,7 +218,7 @@ var spacedRepetitionTemplate = new FuncDataTemplate<SpacedRepetitionItem>((item,
         Margin = new Thickness(0, 0, 5, 0)
     };
 
-    typeTextBlock.Bind(TextBlock.TextProperty, new Binding("SpacedRepetitionItemType"));
+    typeTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.SpacedRepetitionItemType)));
     Grid.SetColumn(typeTextBlock, 0);
     Grid.SetRow(typeTextBlock, 1);
     grid.Children.Add(typeTextBlock);
@@ -240,7 +240,7 @@ var spacedRepetitionTemplate = new FuncDataTemplate<SpacedRepetitionItem>((item,
     {
         HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
     };
-    priorityTextBlock.Bind(TextBlock.TextProperty, new Binding("Priority") { StringFormat = "Priority: {0}" });
+    priorityTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.Priority)) { StringFormat = "Priority: {0}" });
     Grid.SetRow(priorityTextBlock, 1);
     Grid.SetColumn(priorityTextBlock, 1);
     grid.Children.Add(priorityTextBlock);
