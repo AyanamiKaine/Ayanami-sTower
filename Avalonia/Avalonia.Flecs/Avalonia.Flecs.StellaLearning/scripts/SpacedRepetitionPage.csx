@@ -203,12 +203,12 @@ var spacedRepetitionTemplate = new FuncDataTemplate<SpacedRepetitionItem>((item,
     /*
     For now only when we hover over the name the long description is shown
     what we want is that it is also shown when we hover over the short description
-    
+
     To do this we can easily use a stack panel on which we add the name and short description
     that extends to two rows and on that stack panel then we attach the tooltip.
     */
     ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
-    tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription")); // Assuming you have a "HoverText" property in your data context
+    tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
 
 
     //Type (ENUM)
@@ -230,7 +230,8 @@ var spacedRepetitionTemplate = new FuncDataTemplate<SpacedRepetitionItem>((item,
         FontWeight = FontWeight.Bold,
         HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
     };
-    nextReviewTextBlock.Bind(TextBlock.TextProperty, new Binding("NextReview") { Converter = new NextReviewConverter() });
+
+    nextReviewTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.NextReview)));
     Grid.SetRow(nextReviewTextBlock, 0);
     Grid.SetColumn(nextReviewTextBlock, 1);
     grid.Children.Add(nextReviewTextBlock);
@@ -267,7 +268,7 @@ var srItems = entities.GetEntityCreateIfNotExist("SpaceRepetitionList")
     .Set(new ListBox())
     .SetItemsSource(dummyItems)
     .SetItemTemplate(spacedRepetitionTemplate)
-    .SetSelectionMode(SelectionMode.Multiple);
+    .SetSelectionMode(SelectionMode.Single);
 
 listSearchSpacedRepetition.OnTextChanged((sender, args) =>
 {
@@ -294,8 +295,13 @@ var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuI
     .SetHeader("Open")
     .OnClick((sender, args) =>
     {
+        var item = srItems.GetSelectedItem<SpacedRepetitionItem>();
+        item.GoodReview();
+        //var items = (ObservableCollection<SpacedRepetitionItem>)srItems.GetItemsSource();
+        //srItems.SetItemsSource(null);
+        //srItems.SetItemsSource(items);
         Console.WriteLine("Open Clicked");
-        FileOpener.OpenFileWithDefaultProgram("/home/ayanami/Ayanami-sTower/Avalonia/Avalonia.Flecs/Avalonia.Flecs.StellaLearning/bin/Debug/net9.0/Avalonia.Flecs.Scripting.xml");
+        //FileOpener.OpenFileWithDefaultProgram("/home/ayanami/Ayanami-sTower/Avalonia/Avalonia.Flecs/Avalonia.Flecs.StellaLearning/bin/Debug/net9.0/Avalonia.Flecs.Scripting.xml");
     });
 
 var editMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionEditMenuItem")
