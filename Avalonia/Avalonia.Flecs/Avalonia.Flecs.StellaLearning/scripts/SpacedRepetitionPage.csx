@@ -300,7 +300,14 @@ var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuI
         //srItems.SetItemsSource(null);
         //srItems.SetItemsSource(items);
         Console.WriteLine("Open Clicked");
-        //FileOpener.OpenFileWithDefaultProgram("/home/ayanami/Ayanami-sTower/Avalonia/Avalonia.Flecs/Avalonia.Flecs.StellaLearning/bin/Debug/net9.0/Avalonia.Flecs.Scripting.xml");
+        try
+        {
+            FileOpener.OpenFileWithDefaultProgram("/home/ayanami/Ayanami-sTower/Avalonia/Avalonia.Flecs/Avalonia.Flecs.StellaLearning/bin/Debug/net9.0/Avalonia.Flecs.Scripting.xml");
+        }
+        catch (FileNotFoundException ex)
+        {
+            Console.WriteLine(ex.Message, ex.FileName);
+        }
     });
 
 var editMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionEditMenuItem")
