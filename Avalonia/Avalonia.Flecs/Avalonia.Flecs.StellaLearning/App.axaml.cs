@@ -118,8 +118,17 @@ public partial class App : Application
             }
         };
 
-        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
 
+        /*
+        Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            await _world.Get<ScriptManager>().CompileScriptsFromFolderAsync("scripts/");
+        });
+        */
+        // We can compile the scripts async, the problem is that scripts represents the UI
+        // so showing the ui before simply means the window opens and the user has to wait for a moment
+        // We need to implement a loading screen that shows the user that the application is loading.
+        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
 
         var window = _entities.Create("MainWindow")
             .Set(new Window())
