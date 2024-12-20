@@ -1,5 +1,3 @@
-#load "SpacedRepetitionItem.csx"
-
 // By default script directives (#r) are being removed
 // from the script before compilation. We are just doing this here 
 // so the C# Devkit and Omnisharp (For what every reason the libraries.rsp 
@@ -45,6 +43,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using FSRSPythonBridge;
 using Avalonia.Flecs.StellaLearning.Util;
+using Avalonia.Flecs.StellaLearning.Data;
 public class NextReviewConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
