@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.IO;
 
 
 namespace Avalonia.Flecs.StellaLearning.Util;
@@ -17,11 +18,17 @@ public static class FileOpener
     /// </summary>
     /// <param name="filePath"></param>
     /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="FileNotFoundException"></exception>
     public static void OpenFileWithDefaultProgram(string filePath)
     {
         if (string.IsNullOrEmpty(filePath))
         {
             throw new ArgumentNullException(nameof(filePath));
+        }
+
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException($"File:{filePath} not found", filePath);
         }
 
         try
