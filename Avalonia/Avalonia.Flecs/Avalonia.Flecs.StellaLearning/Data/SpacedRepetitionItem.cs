@@ -84,7 +84,7 @@ public class SpacedRepetitionItem : INotifyPropertyChanged
             LastReview = Card.LastReview;
             NextReview = Card.Due;
             Step = Card.Step;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NextReview)));
+            //PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NextReview)));
         }
     }
 
