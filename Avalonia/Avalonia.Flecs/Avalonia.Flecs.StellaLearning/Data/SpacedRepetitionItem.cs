@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using Avalonia.Threading;
 using FSRSPythonBridge;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 public enum SpacedRepetitionItemType
 {
@@ -28,44 +29,44 @@ public enum SpacedRepetitionState
 ///<summary>
 ///Defines an SpacedRepetitionItem that can be used for spaced repetition
 ///</summary>
-public class SpacedRepetitionItem : INotifyPropertyChanged
+public partial class SpacedRepetitionItem : ObservableObject
 {
     public Guid Uid { get; set; } = Guid.NewGuid();
-    public string Name { get; set; } = "Lorem Ipsum";
-    public List<string> Tags { get; set; } = [];
-    public float? Stability { get; set; } = 0;
-    public float? Difficulty { get; set; } = 0;
-    public int Priority { get; set; } = 0;
+    [ObservableProperty]
+    private string _name = "Lorem Ipsum";
+    [ObservableProperty]
+    private List<string> _tags = ["Lorem", "Ipsum"];
+    [ObservableProperty]
+    private float? _stability;
+    [ObservableProperty]
+    private float? _difficulty;
+    [ObservableProperty]
+    private int _priority;
 
     /// <summary>
     /// The card's current learning or relearning step or None if the card is in the Review state.
     /// </summary>
-    public long? Step { get; set; } = 0;
-    public DateTime? LastReview { get; set; } = DateTime.UtcNow;
+    [ObservableProperty]
+    private long? _step;
 
-    public DateTime _nextReview;
-    public DateTime NextReview
-    {
-        get => _nextReview;
-        set
-        {
-            if (_nextReview != value)
-            {
-                _nextReview = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(NextReview)));
-            }
-        }
-    }
-    public int NumberOfTimesSeen { get; set; } = 0;
-    public int ElapsedDays { get; set; } = 0;
-    public int ScheduledDays { get; set; } = 0;
-    public SpacedRepetitionState SpacedRepetitionState { get; set; } = SpacedRepetitionState.Learning;
-    public SpacedRepetitionItemType SpacedRepetitionItemType { get; set; } = SpacedRepetitionItemType.Text;
+    [ObservableProperty]
+    private DateTime? _lastReview;
+
+    [ObservableProperty]
+    private DateTime _nextReview;
+    [ObservableProperty]
+    private int _numberOfTimesSeen;
+    [ObservableProperty]
+    private int _elapsedDays;
+    [ObservableProperty]
+    private int _scheduledDays;
+    [ObservableProperty]
+    private SpacedRepetitionState _spacedRepetitionState = SpacedRepetitionState.Learning;
+    [ObservableProperty]
+    private SpacedRepetitionItemType _spacedRepetitionItemType = SpacedRepetitionItemType.Text;
 
     // Backing field for the Card property
     private Card? _card;
-
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     // Represents a refrence to the underlying representation of the card
     // Here we use a python library to create a card object using FSRS
