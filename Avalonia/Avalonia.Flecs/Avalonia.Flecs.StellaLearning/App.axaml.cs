@@ -110,6 +110,7 @@ public partial class App : Application
 
             if (args.ScriptName == "SpacedRepetitionPage")
             {
+
                 Console.WriteLine("Running SpacedRepetitionPage script");
                 Dispatcher.UIThread.InvokeAsync(async () =>
                 {
@@ -160,7 +161,7 @@ public partial class App : Application
             .SetRow(2)
             .SetColumnSpan(3);
 
-        var homePage = HomePage.Create(_world, "HomePage")
+        var homePage = _entities.GetEntityCreateIfNotExist("HomePage")
             .SetRow(2)
             .SetColumnSpan(3);
 
