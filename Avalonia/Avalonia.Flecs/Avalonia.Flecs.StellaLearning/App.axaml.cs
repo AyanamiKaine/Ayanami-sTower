@@ -81,6 +81,15 @@ public partial class App : Application
                 });
             }
 
+            if (args.ScriptName == "SettingsPage")
+            {
+                Console.WriteLine("Running SettingsPage script");
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await scriptManager.RunScriptAsync("SettingsPage");
+                });
+            }
+
             if (args.ScriptName == "HomePage")
             {
                 Console.WriteLine("Running HomePage script");
@@ -166,9 +175,7 @@ public partial class App : Application
             .SetColumnDefinitions("2,*,*")
             .SetRowDefinitions("Auto");
 
-        var settingPage = SettingsPage.Create(_world, navigationView)
-            .SetRow(2)
-            .SetColumnSpan(3);
+        var settingPage = _entities.GetEntityCreateIfNotExist("SettingsPage");
 
         var homePage = _entities.GetEntityCreateIfNotExist("HomePage");
 
