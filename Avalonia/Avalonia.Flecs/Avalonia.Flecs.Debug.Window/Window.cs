@@ -14,7 +14,7 @@ namespace Avalonia.Flecs.Debug.Window;
 public class Window
 {
     private World _world;
-
+    private ObservableCollection<EntityDataRepresentation> _entities = [];
     /// <summary>
     /// The Debug windows shows various information about the ecs world.
     /// </summary>
@@ -57,53 +57,34 @@ public class Window
 
         ObservableCollection<EntityDataRepresentation> dummyItems = [];
 
-
-
         var scrollViewer = world.Entity("ScrollViewer")
             .ChildOf(debugPage)
             .Set(new ScrollViewer())
             .SetRow(1)
-            .SetColumnSpan(3);
+            .SetColumnSpan(1);
 
 
         var entitiesList = world.Entity("EntitiesList")
             .ChildOf(scrollViewer)
             .Set(new ListBox())
-            .SetItemsSource(dummyItems)
+            .SetItemsSource(_entities)
             .SetSelectionMode(SelectionMode.Multiple);
 
-        q.Each((Entity entity) =>
+        /*q.Each((Entity entity) =>
         {
             dummyItems.Add(new EntityDataRepresentation(entity));
             totalEntities.SetText($"Total Entities: {q.Count()}");
         });
+        */
     }
 
     /// <summary>
-    /// We must recusively get all entities in the world.
-    /// starting from the world we get all root entities and 
-    /// then we get all children of those entities.
+    /// Adds a new entity to the debug window.
     /// </summary>
-    /// <returns></returns>
-    private List<string> GetAllEntities()
+    /// <param name="entity"></param>
+    /// <param name="name"></param>   
+    public void AddEntity(Entity entity, string name)
     {
-        var entities = new List<string>();
-        _world.Children((Entity child) =>
-        {
-            entities.Add(child.Name());
-            entities.AddRange(GetAllEntitiesFromEntity(child));
-        });
-        return entities;
-    }
-
-    private List<string> GetAllEntitiesFromEntity(Entity entity)
-    {
-        var entities = new List<string>();
-        entity.Children((Entity child) =>
-        {
-            entities.Add(child.Name());
-            entities.AddRange(GetAllEntitiesFromEntity(child));
-        });
-        return entities;
+        _entities.Add(new EntityDataRepresentation(entity, name));
     }
 }
