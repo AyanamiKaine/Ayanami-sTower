@@ -70,11 +70,10 @@ public class Window
             .ChildOf(scrollViewer)
             .Set(new ListBox())
             .SetItemsSource(dummyItems)
-            .SetSelectionMode(SelectionMode.Single);
+            .SetSelectionMode(SelectionMode.Multiple);
 
         q.Each((Entity entity) =>
         {
-
             dummyItems.Add(new EntityDataRepresentation(entity));
             totalEntities.SetText($"Total Entities: {q.Count()}");
         });
