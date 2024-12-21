@@ -151,17 +151,45 @@ always take the lowest common denominator.
 No need to depend on things that we dont care for 
 */
 
+List<string> itemTypes = ["File", "Quiz", "Cloze"];
+
+var stackPanel = new StackPanel
+{
+    Orientation = Orientation.Vertical,
+    Spacing = 5,
+};
+stackPanel.Children.Add(new Button { Content = "File", FontWeight = FontWeight.Bold });
+stackPanel.Children.Add(new Button { Content = "Quiz", FontWeight = FontWeight.Bold });
+stackPanel.Children.Add(new Button { Content = "Cloze", FontWeight = FontWeight.Bold });
+
+
+var addItemsFlyout = new Flyout()
+{
+    Content = stackPanel,
+    ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+};
+
+var addItemButton = entities.GetEntityCreateIfNotExist("AddSpacedRepetitionItemButton")
+    .ChildOf(spacedRepetitionPage)
+    .Set(new Button() { Flyout = addItemsFlyout })
+    .SetMargin(0, 20, 0, 0)
+    .SetHorizontalAlignment(HorizontalAlignment.Right)
+    .SetContent(new TextBlock() { Text = "+", FontWeight = FontWeight.Bold, FontSize = 16 })
+    .SetColumn(2)
+    .SetRow(2);
+
 var scrollViewer = entities.GetEntityCreateIfNotExist("SpacedRepetitionScrollViewer")
     .ChildOf(spacedRepetitionPage)
     .Set(new ScrollViewer())
     .SetRow(1)
     .SetColumnSpan(3);
 
-ObservableCollection<SpacedRepetitionItem> dummyItems = [
-    new(),
-    new(),
-    new(),
-];
+ObservableCollection<SpacedRepetitionItem> dummyItems = [];
+
+foreach (var i in Enumerable.Range(1, 100))
+{
+    dummyItems.Add(new());
+}
 
 
 var spacedRepetitionTemplate = new FuncDataTemplate<SpacedRepetitionItem>((item, nameScope) =>
@@ -285,7 +313,7 @@ listSearchSpacedRepetition.OnTextChanged((sender, args) =>
 //Use MenuFlyout to create a context menu
 //contextMenu is used for legacy WPF apps
 var contextFlyout = entities.GetEntityCreateIfNotExist("SpacedRepetitionContextFlyout")
-    .ChildOf(spacedRepetitionPage)
+    .ChildOf(srItems)
     .Set(new MenuFlyout());
 
 var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuItem")
@@ -302,7 +330,8 @@ var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuI
         Console.WriteLine("Open Clicked");
         try
         {
-            FileOpener.OpenFileWithDefaultProgram("/home/ayanami/Ayanami-sTower/Avalonia/Avalonia.Flecs/Avalonia.Flecs.StellaLearning/bin/Debug/net9.0/Avalonia.Flecs.Scripting.xml");
+            FileOpener.OpenMarkdownFileWithObsidian("""C:\Users\ayanami\AllTheKnowledgeReloaded\Checking if the wholeness of one center is helping another (20240518010401).md""", """C:\Users\ayanami\AppData\Local\Programs\obsidian\Obsidian.exe""");
+            FileOpener.OpenFileWithDefaultProgram("""C:\Users\ayanami\nimsuggest.log""");
         }
         catch (FileNotFoundException ex)
         {
