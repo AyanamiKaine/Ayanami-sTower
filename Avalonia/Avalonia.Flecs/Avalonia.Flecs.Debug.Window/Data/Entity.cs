@@ -47,4 +47,13 @@ public partial class EntityDataRepresentation : ObservableObject
     {
         return Name;
     }
+
+    /// <summary>
+    /// Destroys the underlying entity and removes it 
+    /// from the ecs world.
+    /// </summary>
+    public void Destroy()
+    {
+        UnderlyingEntityRefrence.Destruct();
+    }
 }
