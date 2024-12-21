@@ -21,6 +21,13 @@ public static class FileOpener
     /// <exception cref="FileNotFoundException"></exception>
     public static void OpenFileWithDefaultProgram(string filePath)
     {
+        // Remove double quotes only if they enclose the entire filepath
+        // We are doing this because when the user copies paths they usally come with double quotes
+        if (filePath.StartsWith('"') && filePath.EndsWith('"'))
+        {
+            filePath = filePath[1..^1];
+        }
+
         if (string.IsNullOrEmpty(filePath))
         {
             throw new ArgumentNullException(nameof(filePath));
@@ -85,6 +92,69 @@ public static class FileOpener
         {
             // Handle exceptions (e.g., file not found, no associated program).
             Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Opens a markdown file with Obsidian if the file is part of an Obsidian vault.
+    /// We must supply the path to the Obsidian executable and the markdown file
+    /// must be part of an Obsidian vault.
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <param name="obsidianPath"></param>
+    public static void OpenMarkdownFileWithObsidian(string filePath, string obsidianPath)
+    {
+        // Remove double quotes only if they enclose the entire filepath
+        // We are doing this because when the user copies paths they usally come with double quotes
+        if (filePath.StartsWith('"') && filePath.EndsWith('"'))
+        {
+            filePath = filePath[1..^1];
+        }
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            // Replace backslashes with forward slashes for Windows.
+            filePath = filePath.Replace(@"/", @"\");
+        }
+
+        if (filePath.EndsWith(".md") && IsFileInVault(filePath))
+        {
+            OpenFileInVault(filePath, obsidianPath);
+        }
+    }
+
+    private static bool IsFileInVault(string path)
+    {
+        // Recursively check for .obsidian folder up the directory tree
+        DirectoryInfo? directory = File.Exists(path) ? new FileInfo(path).Directory : new DirectoryInfo(path);
+        while (directory != null && directory.Exists)
+        {
+            if (Directory.Exists(Path.Combine(directory.FullName, ".obsidian")))
+            {
+                return true;
+            }
+
+            if (directory.FullName == directory.Parent?.FullName)
+            {
+                break; // Exit the loop if we're at the root
+            }
+
+            directory = directory.Parent;
+        }
+        return false;
+    }
+
+    private static void OpenFileInVault(string path, string obsidianPath)
+    {
+        try
+        {
+            Console.WriteLine($"Opening file in Obsidian: {obsidianPath} obsidian://open?path={path}");
+            Process.Start(obsidianPath, $"obsidian://open?path=\"{path}\"");
+        }
+        catch (System.Exception ex)
+        {
+            Console.WriteLine($"Error opening file in Obsidian: {ex.Message}");
+            throw;
         }
     }
 }
