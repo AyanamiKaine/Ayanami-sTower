@@ -11,8 +11,10 @@ public partial class EntityDataRepresentation : ObservableObject
     /// Represents the data of an entity in the ECS world.
     /// </summary>
     /// <param name="entity"></param>
-    public EntityDataRepresentation(Entity entity)
+    /// <param name="name"></param>
+    public EntityDataRepresentation(Entity entity, string name)
     {
+        Name = name;
         UnderlyingEntityRefrence = entity;
         Components = [.. entity.Type().Str().Split(' ')];
         for (int i = 0; i < Components.Count; i++)
@@ -29,6 +31,13 @@ public partial class EntityDataRepresentation : ObservableObject
     private List<string> _components = [];
     [ObservableProperty]
     private Entity _underlyingEntityRefrence;
+    /// <summary>
+    /// Path to the entity. (Showing its parent child relationship)
+    /// </summary>
+    public string Path
+    {
+        get => UnderlyingEntityRefrence.ToString();
+    }
 
     /// <summary>
     /// The name of the entity.
@@ -36,6 +45,6 @@ public partial class EntityDataRepresentation : ObservableObject
     /// <returns></returns>
     public override string ToString()
     {
-        return UnderlyingEntityRefrence.ToString();
+        return Name;
     }
 }
