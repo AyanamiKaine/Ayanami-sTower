@@ -81,6 +81,15 @@ public partial class App : Application
                 });
             }
 
+            if (args.ScriptName == "HomePage")
+            {
+                Console.WriteLine("Running HomePage script");
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await scriptManager.RunScriptAsync("HomePage");
+                });
+            }
+
             if (args.ScriptName == "KnowledgeVaultPage")
             {
                 Console.WriteLine("Running KnowledgeVaultPage script");
@@ -161,9 +170,7 @@ public partial class App : Application
             .SetRow(2)
             .SetColumnSpan(3);
 
-        var homePage = _entities.GetEntityCreateIfNotExist("HomePage")
-            .SetRow(2)
-            .SetColumnSpan(3);
+        var homePage = _entities.GetEntityCreateIfNotExist("HomePage");
 
         var literaturePage = _entities.GetEntityCreateIfNotExist("LiteraturePage");
 
