@@ -54,6 +54,11 @@ public class NamedEntities(World world)
     private World _world = world;
 
     /// <summary>
+    /// Event triggered when an entity is added to the NamedEntities container.
+    /// </summary>
+    public event Action<Entity, string>? OnEntityAdded;
+
+    /// <summary>
     /// Gets or sets an entity by name. If an entity
     /// is already defined by name it will be replaced
     /// </summary>
@@ -81,6 +86,7 @@ public class NamedEntities(World world)
             else
             {
                 _entities.Add(name, _world.Entity(name));
+                OnEntityAdded?.Invoke(value, name); // Invoke the event when a new entity is added
             }
             _entities[name] = value;
         }
@@ -139,6 +145,7 @@ public class NamedEntities(World world)
     {
         var entity = _world.Entity(name);
         _entities.Add(name, entity);
+        OnEntityAdded?.Invoke(entity, name); // Invoke the event when a new entity is added
         return entity;
     }
 
