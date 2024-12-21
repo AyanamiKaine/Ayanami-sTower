@@ -19,6 +19,13 @@
 #r "../bin/Debug/net9.0/Avalonia.Flecs.Scripting.dll"
 #r "../bin/Debug/net9.0/Avalonia.Flecs.Scripting.xml"
 
+using Avalonia.Controls;
+using Avalonia.Flecs.Controls.ECS;
+using Avalonia.Flecs.Scripting;
+using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
+using static Avalonia.Flecs.Controls.ECS.Module;
+
 /// <summary>
 /// We can refrence the ecs world via _world its globally available in all scripts
 /// we assing world = _world so the language server knows the world exists and
@@ -33,6 +40,5 @@ public World world = _world;
 public NamedEntities entities = _entities;
 var homePage = entities.GetEntityCreateIfNotExist("HomePage")
             .Add<Page>()
-            .ChildOf(childOfEntity)
             .Set(new TextBlock())
             .SetText("Home");
