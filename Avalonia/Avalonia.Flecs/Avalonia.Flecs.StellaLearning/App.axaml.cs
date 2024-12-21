@@ -30,6 +30,12 @@ public partial class App : Application
 
         _entities = new NamedEntities(_world);
 
+        var debugWindow = new Debug.Window.Window(_world);
+
+        _entities.OnEntityAdded += (Entity entity, string name) =>
+        {
+            debugWindow.AddEntity(entity, name);
+        };
         // we define our own scripting options because we 
         // need to add references to FluentAvalonia that is by 
         // default not loaded by the scripting manager
@@ -134,6 +140,7 @@ public partial class App : Application
                 {
                     await scriptManager.RunScriptAsync("SpacedRepetitionPage");
                 });
+
             }
         };
 
@@ -181,7 +188,8 @@ public partial class App : Application
 
         var literaturePage = _entities.GetEntityCreateIfNotExist("LiteraturePage");
 
-        var spacedRepetitionPage = _entities.GetEntityCreateIfNotExist("SpacedRepetitionPage");
+        var spacedRepetitionPage = _entities.GetEntityCreateIfNotExist("SpacedRepetitionPage")
+            .ChildOf(navigationView);
 
         _entities.Create("HomeNavigationViewItem")
             .ChildOf(navigationView)
@@ -348,7 +356,6 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
 #if DEBUG
         this.AttachDevTools();
-        var debug = new Debug.Window.Window(_world);
 #endif
     }
 }
