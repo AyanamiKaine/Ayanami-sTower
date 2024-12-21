@@ -158,9 +158,11 @@ var stackPanel = new StackPanel
     Orientation = Orientation.Vertical,
     Spacing = 5,
 };
-stackPanel.Children.Add(new Button { Content = "File", FontWeight = FontWeight.Bold });
-stackPanel.Children.Add(new Button { Content = "Quiz", FontWeight = FontWeight.Bold });
-stackPanel.Children.Add(new Button { Content = "Cloze", FontWeight = FontWeight.Bold });
+stackPanel.Children.Add(new Button { Content = "File", FontWeight = FontWeight.Normal });
+stackPanel.Children.Add(new Button { Content = "Quiz", FontWeight = FontWeight.Normal });
+stackPanel.Children.Add(new Button { Content = "Cloze", FontWeight = FontWeight.Normal });
+stackPanel.Children.Add(new Button { Content = "Audio", FontWeight = FontWeight.Normal });
+stackPanel.Children.Add(new Button { Content = "Video", FontWeight = FontWeight.Normal });
 
 
 var addItemsFlyout = new Flyout()
@@ -330,7 +332,12 @@ var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuI
         Console.WriteLine("Open Clicked");
         try
         {
-            FileOpener.OpenMarkdownFileWithObsidian("""C:\Users\ayanami\AllTheKnowledgeReloaded\Checking if the wholeness of one center is helping another (20240518010401).md""", """C:\Users\ayanami\AppData\Local\Programs\obsidian\Obsidian.exe""");
+            if(entities["SettingsProvider"].Has<Settings>())
+            {
+                string ObsidianPath = entities["SettingsProvider"].Get<Settings>().ObsidianPath;
+                FileOpener.OpenMarkdownFileWithObsidian("""C:\Users\ayanami\AllTheKnowledgeReloaded\Checking if the wholeness of one center is helping another (20240518010401).md""", ObsidianPath);
+                //C:/Users/ayanami/AppData/Local/Programs/obsidian/Obsidian.exe
+            }
             FileOpener.OpenFileWithDefaultProgram("""C:\Users\ayanami\nimsuggest.log""");
         }
         catch (FileNotFoundException ex)
