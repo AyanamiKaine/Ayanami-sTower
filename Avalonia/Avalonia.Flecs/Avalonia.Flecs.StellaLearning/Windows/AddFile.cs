@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
+using Avalonia.Input;
 using Avalonia.Platform.Storage;
 using Flecs.NET.Core;
 
@@ -58,6 +60,33 @@ public static class AddFile
 
         filePickerButton.OnClick(async (e, args) => filePath.SetText(await FilePickerAsync(entities)));
 
+        ObservableCollection<Tag> tags = [];
+
+
+        var tagsTextBox = entities.GetEntityCreateIfNotExist("tagsTextBox")
+            .ChildOf(layout)
+            .Set(new TextBox())
+            .SetWatermark("Tags");
+
+        tagsTextBox.OnKeyDown((sender, args) =>
+        {
+            if (args.Key == Key.Enter)
+            {
+                if (string.IsNullOrEmpty(tagsTextBox.GetText()))
+                    return;
+
+                tags.Add(new(tagsTextBox.GetText()));
+                tagsTextBox.SetText("");
+            }
+        });
+
+        var tagsList = entities.GetEntityCreateIfNotExist("tagsList")
+            .ChildOf(layout)
+            .Set(new ItemsControl())
+            .Set(tags)
+            .SetItemTemplate(DefineTagTemplate(entities))
+            .SetItemsSource(tags);
+
         var createFileButton = entities.GetEntityCreateIfNotExist("createFileButton")
             .ChildOf(layout)
             .Set(new Button())
@@ -108,5 +137,42 @@ public static class AddFile
             return file.TryGetLocalPath()!;
         }
         return string.Empty;
+    }
+
+    private static FuncDataTemplate<Tag> DefineTagTemplate(NamedEntities entities)
+    {
+        return new FuncDataTemplate<Tag>((tag, _) =>
+        {
+            var stackPanel = new StackPanel()
+            {
+                Orientation = Layout.Orientation.Horizontal,
+                Spacing = 5
+            };
+
+            var nameText = new TextBlock()
+            {
+                Text = tag.Name
+            };
+
+            var removeButton = new Button()
+            {
+                Content = "X"
+            };
+
+            removeButton.Click += ((sender, args) =>
+            {
+                entities["tagsList"].Get<ObservableCollection<Tag>>().Remove(tag);
+            });
+            /*
+            removeButton.OnClick((sender, args) =>
+            {
+                entities["Tags"].Get<ObservableCollection<Tag>>().Remove(tag);
+            });
+            */
+
+            stackPanel.Children.Add(nameText);
+            stackPanel.Children.Add(removeButton);
+            return stackPanel;
+        });
     }
 }
