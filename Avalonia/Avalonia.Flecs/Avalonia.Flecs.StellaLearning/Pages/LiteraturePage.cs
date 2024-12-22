@@ -42,7 +42,7 @@ public static class LiteraturePage
             }
         });
 
-        var text = entities.GetEntityCreateIfNotExist("test")
+        var text = entities.GetEntityCreateIfNotExist("LiteratureText")
             .Set(new TextBlock())
             .SetText("Literature")
             .ChildOf(literaturePage);
