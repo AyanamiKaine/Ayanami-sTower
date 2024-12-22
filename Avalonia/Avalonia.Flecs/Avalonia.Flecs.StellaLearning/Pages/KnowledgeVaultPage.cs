@@ -5,7 +5,6 @@ using Avalonia.Data;
 using System.Collections.ObjectModel;
 using Avalonia.Controls.Templates;
 using Avalonia.Media;
-using Avalonia;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
@@ -43,6 +42,7 @@ public static class KnowledgeVaultPage
 
         vaultPage.AddDefaultStyling((vaultPage) =>
         {
+            // Here we are adding default styling when the page is a child of a NavigationView 
             if (vaultPage.Parent() != 0 &&
                 vaultPage.Parent().Has<NavigationView>())
             {
