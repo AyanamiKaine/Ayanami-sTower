@@ -7,8 +7,6 @@ using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
-using Avalonia.Data.Converters;
-using System.Globalization;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 
