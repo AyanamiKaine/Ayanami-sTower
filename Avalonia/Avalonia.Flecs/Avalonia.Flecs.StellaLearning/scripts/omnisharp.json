@@ -1,7 +1,0 @@
-{
-  "script": {
-    "enableScriptNuGetReferences": true,
-    "defaultTargetFramework": "net9.0",
-    "rspFilePath": "libraries.rsp"
-  }
-}

@@ -4,17 +4,11 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Flecs.FluentUI.Controls.ECS;
 using Avalonia.Markup.Xaml;
 using FluentAvalonia.UI.Controls;
-using Avalonia.Flecs.StellaLearning.Pages;
 using Avalonia.Flecs.Controls.ECS;
-using Avalonia.Flecs.Scripting;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
-using System;
-using Avalonia.Threading;
-using Microsoft.CodeAnalysis.Scripting;
-using System.Reflection;
-using FSRSPythonBridge;
-using System.Threading.Tasks;
-using System.IO;
+using Avalonia.Flecs.Util;
+using Avalonia.Flecs.StellaLearning.Pages;
+
 namespace Avalonia.Flecs.StellaLearning;
 
 public partial class App : Application
@@ -30,131 +24,15 @@ public partial class App : Application
 
         _entities = new NamedEntities(_world);
 
-        var debugWindow = new Debug.Window.Window(_world);
+        //var debugWindow = new Debug.Window.Window(_world);
+        //_entities.OnEntityAdded += debugWindow.AddEntity;
 
-        _entities.OnEntityAdded += (Entity entity, string name) =>
-        {
-            debugWindow.AddEntity(entity, name);
-        };
-        // we define our own scripting options because we 
-        // need to add references to FluentAvalonia that is by 
-        // default not loaded by the scripting manager
-        var scriptingOptions = ScriptOptions.Default
-            .WithSourceResolver(new ScriptSourceRefrenceResolver())
-            .AddReferences(
-                typeof(object).Assembly, // Usually needed for basic types
-                Assembly.Load("Flecs.NET"),
-                Assembly.Load("Flecs.NET.Bindings"),
-                Assembly.Load("Avalonia.Flecs.Controls"),
-                Assembly.Load("Avalonia.Controls"),
-                Assembly.Load("Avalonia.Flecs.Scripting"),
-                Assembly.Load("Avalonia"),
-                Assembly.Load("Avalonia.Desktop"),
-                Assembly.Load("Avalonia.Base"),
-                Assembly.Load("FluentAvalonia"),
-                Assembly.Load("FSRSPythonBridge"),
-                Assembly.Load("Avalonia.Flecs.StellaLearning")
-            // Used for spaced Repetition
-            // Load your API assembly
-            )
-            .AddImports("Avalonia.Controls")
-            .AddImports("Avalonia.Flecs.Controls.ECS")
-            .AddImports("Avalonia.Flecs.Scripting")
-            .AddImports("Flecs.NET.Core")
-            .AddImports("FSRSPythonBridge")
-            .AddImports("Avalonia.Flecs.StellaLearning");
-
-
-        _world.Set<ScriptManager>(new(_world, _entities, scriptingOptions));
-        var scriptManager = _world.Get<ScriptManager>();
-
-        scriptManager.OnScriptCompilationStart += (sender, args) => Console.WriteLine($"Start Compilation of: {args.ScriptName}");
-
-        scriptManager.OnScriptCompilationFinished += (sender, args) =>
-        {
-
-            // Here we write all the scripts we would like to 
-            // automatically recompile and run if changed 
-
-            Console.WriteLine($"Finishes Compilation of: {args.ScriptName}");
-            if (args.ScriptName == "main")
-            {
-                Console.WriteLine("Running Main script");
-                Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    _entities.Clear();
-                    await scriptManager.RunScriptAsync("main");
-                });
-            }
-
-            if (args.ScriptName == "SettingsPage")
-            {
-                Console.WriteLine("Running SettingsPage script");
-                Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await scriptManager.RunScriptAsync("SettingsPage");
-                });
-            }
-
-            if (args.ScriptName == "HomePage")
-            {
-                Console.WriteLine("Running HomePage script");
-                Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await scriptManager.RunScriptAsync("HomePage");
-                });
-            }
-
-            if (args.ScriptName == "KnowledgeVaultPage")
-            {
-                Console.WriteLine("Running KnowledgeVaultPage script");
-                Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await scriptManager.RunScriptAsync("KnowledgeVaultPage");
-                });
-            }
-
-            if (args.ScriptName == "ContentQueuePage")
-            {
-                Console.WriteLine("Running ContentQueuePage script");
-                Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await scriptManager.RunScriptAsync("ContentQueuePage");
-                });
-            }
-
-            if (args.ScriptName == "LiteraturePage")
-            {
-                Console.WriteLine("Running LiteraturePage script");
-                Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await scriptManager.RunScriptAsync("LiteraturePage");
-                });
-            }
-
-            if (args.ScriptName == "SpacedRepetitionPage")
-            {
-
-                Console.WriteLine("Running SpacedRepetitionPage script");
-                Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await scriptManager.RunScriptAsync("SpacedRepetitionPage");
-                });
-
-            }
-        };
-
-
-        /*
-        Dispatcher.UIThread.InvokeAsync(async () =>
-        {
-            await _world.Get<ScriptManager>().CompileScriptsFromFolderAsync("scripts/");
-        });
-        */
-        // We can compile the scripts async, the problem is that scripts represents the UI
-        // so showing the ui before simply means the window opens and the user has to wait for a moment
-        // We need to implement a loading screen that shows the user that the application is loading.
-        _world.Get<ScriptManager>().CompileScriptsFromFolder("scripts/");
+        ContentQueuePage.Create(_entities);
+        KnowledgeVaultPage.Create(_entities);
+        SettingsPage.Create(_entities);
+        HomePage.Create(_entities);
+        LiteraturePage.Create(_entities);
+        SpacedRepetitionPage.Create(_entities);
 
         var window = _entities.Create("MainWindow")
             .Set(new Window())

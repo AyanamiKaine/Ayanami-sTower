@@ -7,49 +7,40 @@ using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
+using Avalonia.Data.Converters;
+using System.Globalization;
+using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.Util;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
 public static class SettingsPage
 {
-    public static Entity Create(World world)
+    public static Entity Create(NamedEntities entities)
     {
-        return world.Entity("SettingPage")
-            .Add<Page>()
-            .Set(new TextBlock()
-            {
-                Text = "Settings",
-            });
-    }
+        var settingsProvider = entities.GetEntityCreateIfNotExist("SettingsProvider")
+            .Set(new Settings());
 
-    /// <summary>
-    /// Creates a new SettingsPage entity and sets it as a child of the provided entity.
-    /// </summary>
-    /// <param name="world">Flecs ECS World where the entity is added to</param>
-    /// <param name="childOfEntity">parent of the created settings page</param>
-    /// <returns></returns>
-    public static Entity Create(World world, Entity childOfEntity)
-    {
-        var settingsPage = world.Entity("SettingsPage")
+        /// <summary>
+        /// Creates a new toggle switch entity that has the ability
+        /// to switch between dark and light mode.
+        /// </summary>
+        /// <param name="world"></param>
+        /// <param name="childOfEntity"></param>
+        /// <returns></returns>
+
+
+        var settingsPage = entities.GetEntityCreateIfNotExist("SettingsPage")
             .Add<Page>()
-            .ChildOf(childOfEntity)
             .Set(new StackPanel());
 
-        ThemeToggleSwitch(world, settingsPage);
-        ObsidianPath(world, settingsPage);
+        ThemeToggleSwitch(settingsPage, entities);
+        ObsidianPath(settingsPage, entities, settingsProvider);
         return settingsPage;
     }
-
-    /// <summary>
-    /// Creates a new toggle switch entity that has the ability
-    /// to switch between dark and light mode.
-    /// </summary>
-    /// <param name="world"></param>
-    /// <param name="childOfEntity"></param>
-    /// <returns></returns>
-    private static Entity ThemeToggleSwitch(World world, Entity childOfEntity)
+    private static Entity ThemeToggleSwitch(Entity childOfEntity, NamedEntities entities)
     {
-        var themeToggleSwitch = world.Entity("ThemeToggleSwitch")
+        var themeToggleSwitch = entities.GetEntityCreateIfNotExist("ThemeToggleSwitch")
             .ChildOf(childOfEntity)
             .Set(new ToggleSwitch())
             .SetContent("Dark Mode")
@@ -63,18 +54,18 @@ public static class SettingsPage
         return themeToggleSwitch;
     }
 
-    private static Entity ObsidianPath(World world, Entity childOfEntity)
+    private static Entity ObsidianPath(Entity childOfEntity, NamedEntities entities, Entity settingsProvider)
     {
-        var browseForObsidianButton = world.Entity("BrowseForObsidianButton")
+        var browseForObsidianButton = entities.GetEntityCreateIfNotExist("BrowseForObsidianButton")
             .Set(new Button());
 
-        var browseForObsidianButtonContent = world.Entity("TextBlock")
+        var browseForObsidianButtonContent = entities.GetEntityCreateIfNotExist("BrowseForObsidianButtonContent")
             .ChildOf(browseForObsidianButton)
             .Set(new TextBlock())
             .SetText("Browse");
 
 
-        var toolTipTextBlock = world.Entity("ToolTipTextBlock")
+        var toolTipTextBlock = entities.GetEntityCreateIfNotExist("ToolTipTextBlock")
             .Set(new TextBlock())
             .SetText(
                 """
@@ -83,20 +74,28 @@ public static class SettingsPage
                 markdown file is part of an obsidian vault.
                 """);
 
-        var obsidianPathTooltip = world.Entity("ObsidianPathTooltip")
+        var obsidianPathTooltip = entities.GetEntityCreateIfNotExist("ObsidianPathTooltip")
             .Set(new ToolTip())
             .SetContent(toolTipTextBlock);
 
-        var obsidianPath = world.Entity("ObsidianPath")
+        var obsidianPath = entities.GetEntityCreateIfNotExist("ObsidianPath")
             .ChildOf(childOfEntity)
             .Set(new TextBox())
+            .SetText(settingsProvider.Get<Settings>().ObsidianPath)
             .SetWatermark("Path to Obsidian")
             .SetInnerRightContent(browseForObsidianButton)
             .AttachToolTip(obsidianPathTooltip);
 
         browseForObsidianButton
             .ChildOf(obsidianPath)
-            .OnClick(async (e, args) => obsidianPath.SetText(await ObsidianFilePickerAsync(world)));
+            .OnClick(async (e, args) =>
+            {
+                string newObsidanPath = await ObsidianFilePickerAsync(entities);
+                if (newObsidanPath != "" && obsidianPath.GetText() == "")
+                    obsidianPath.SetText(newObsidanPath);
+                settingsProvider.Get<Settings>().ObsidianPath = obsidianPath.GetText();
+                Console.WriteLine("New Obsidian Path:" + settingsProvider.Get<Settings>().ObsidianPath);
+            });
 
         return obsidianPath;
     }
@@ -107,7 +106,7 @@ public static class SettingsPage
     After:
         private static string ObsidianFilePickerAsync(World world)
     */
-    private static async Task<string> ObsidianFilePickerAsync(World world)
+    private static async Task<string> ObsidianFilePickerAsync(NamedEntities entities)
     {
         // Create and configure the file picker options
         var options = new FilePickerOpenOptions
@@ -117,7 +116,7 @@ public static class SettingsPage
         };
 
         // Create an OpenFileDialog instance
-        IReadOnlyList<IStorageFile>? result = await world.Lookup("MainWindow").Get<Window>().StorageProvider.OpenFilePickerAsync(options);
+        IReadOnlyList<IStorageFile> result = await entities["MainWindow"].Get<Window>().StorageProvider.OpenFilePickerAsync(options);
 
         if (result != null && result?.Count > 0)
         {
@@ -146,3 +145,4 @@ public static class SettingsPage
         }
     }
 }
+
