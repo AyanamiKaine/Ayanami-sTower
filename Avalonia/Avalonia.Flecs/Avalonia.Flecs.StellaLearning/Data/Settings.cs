@@ -4,11 +4,25 @@ using System.Runtime.InteropServices;
 
 namespace Avalonia.Flecs.StellaLearning.Data;
 
+/// <summary>
+/// Settings for the application
+/// </summary>
 public class Settings
 {
+    /// <summary>
+    /// Whether the application is in dark mode
+    /// </summary>
     public bool isDarkMode;
+    /// <summary>
+    /// The path to the Obsidian executable
+    /// </summary>
     public string ObsidianPath;
 
+    /// <summary>
+    /// Create a new settings object
+    /// </summary>
+    /// <param name="isDarkMode"></param>
+    /// <param name="ObsidianPath"></param>
     public Settings(bool isDarkMode = false, string ObsidianPath = "")
     {
         if (ObsidianPath.Length == 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
