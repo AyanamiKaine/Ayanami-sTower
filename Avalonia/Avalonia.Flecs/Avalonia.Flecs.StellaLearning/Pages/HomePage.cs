@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
-using FluentAvalonia.UI.Controls;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
