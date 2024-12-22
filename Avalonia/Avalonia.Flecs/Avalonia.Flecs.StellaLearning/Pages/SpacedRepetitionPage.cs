@@ -15,6 +15,7 @@ using FluentAvalonia.UI.Controls;
 using Avalonia.Flecs.StellaLearning.Util;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
+using Avalonia.Flecs.StellaLearning.Windows;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -107,21 +108,50 @@ public static class SpacedRepetitionPage
 
         List<string> itemTypes = ["File", "Quiz", "Cloze"];
 
-        var stackPanel = new StackPanel
-        {
-            Orientation = Orientation.Vertical,
-            Spacing = 5,
-        };
-        stackPanel.Children.Add(new Button { Content = "File", FontWeight = FontWeight.Normal });
-        stackPanel.Children.Add(new Button { Content = "Quiz", FontWeight = FontWeight.Normal });
-        stackPanel.Children.Add(new Button { Content = "Cloze", FontWeight = FontWeight.Normal });
-        stackPanel.Children.Add(new Button { Content = "Audio", FontWeight = FontWeight.Normal });
-        stackPanel.Children.Add(new Button { Content = "Video", FontWeight = FontWeight.Normal });
 
+        var stackPanel = entities.GetEntityCreateIfNotExist("AddSpacedRepetitionItemStackPanel")
+            .Set(new StackPanel())
+            .SetOrientation(Orientation.Vertical)
+            .SetSpacing(5);
+
+        var addFileButton = entities.GetEntityCreateIfNotExist("AddFileButton")
+            .ChildOf(stackPanel)
+            .Set(new Button())
+            .SetContent("File")
+            .SetFontWeight(FontWeight.Normal)
+            .OnClick((sender, args) =>
+            {
+                AddFile.Create(entities).ShowWindow();
+            });
+
+        var addClozeButton = entities.GetEntityCreateIfNotExist("AddClozeButton")
+               .ChildOf(stackPanel)
+               .Set(new Button())
+               .SetContent("Cloze")
+               .SetFontWeight(FontWeight.Normal);
+
+        var addQuizButton = entities.GetEntityCreateIfNotExist("AddQuizButton")
+            .ChildOf(stackPanel)
+            .Set(new Button())
+            .SetContent("Quiz")
+            .SetFontWeight(FontWeight.Normal);
+
+        var addAudioButton = entities.GetEntityCreateIfNotExist("AddAudioButton")
+           .ChildOf(stackPanel)
+           .Set(new Button())
+           .SetContent("Audio")
+           .SetFontWeight(FontWeight.Normal);
+
+
+        var addVideoButton = entities.GetEntityCreateIfNotExist("AddVideoButton")
+           .ChildOf(stackPanel)
+           .Set(new Button())
+           .SetContent("Video")
+           .SetFontWeight(FontWeight.Normal);
 
         var addItemsFlyout = new Flyout()
         {
-            Content = stackPanel,
+            Content = stackPanel.Get<object>(),
             ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
         };
 
@@ -140,15 +170,127 @@ public static class SpacedRepetitionPage
             .SetRow(1)
             .SetColumnSpan(3);
 
+
         ObservableCollection<SpacedRepetitionItem> dummyItems = [];
 
-        foreach (var i in Enumerable.Range(1, 100))
+        foreach (var i in Enumerable.Range(1, 2))
         {
             dummyItems.Add(new());
         }
 
+        var spacedRepetitionItems = entities.GetEntityCreateIfNotExist("SpacedRepetitionItems")
+            .Set(dummyItems);
 
-        var spacedRepetitionTemplate = new FuncDataTemplate<SpacedRepetitionItem>((item, nameScope) =>
+        var srItems = entities.GetEntityCreateIfNotExist("SpaceRepetitionList")
+            .ChildOf(scrollViewer)
+            .Set(new ListBox())
+            .SetItemsSource(dummyItems)
+            .SetItemTemplate(DefineSpacedRepetitionItemTemplate())
+            .SetSelectionMode(SelectionMode.Single);
+
+        listSearchSpacedRepetition.OnTextChanged((sender, args) =>
+        {
+            //TODO:
+            //We would need to implement the correct sorting of the items
+            //regarding what sort settings the user set before right now
+            //they are being ingnored.
+
+            //string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
+            //var filteredItems = dummyItems.Where(item => item.ToLower().Contains(searchText));
+            //srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
+            //srItems.SetItemsSource(new ObservableCollection<string>(filteredItems));
+        });
+
+        //Use MenuFlyout to create a context menu
+        //contextMenu is used for legacy WPF apps
+        var contextFlyout = entities.GetEntityCreateIfNotExist("SpacedRepetitionContextFlyout")
+            .ChildOf(srItems)
+            .Set(new MenuFlyout());
+
+        var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuItem")
+            .ChildOf(contextFlyout)
+            .Set(new MenuItem())
+            .SetHeader("Open")
+            .OnClick((sender, args) =>
+            {
+                var item = srItems.GetSelectedItem<SpacedRepetitionItem>();
+                item.GoodReview();
+                Console.WriteLine("Open Clicked");
+                try
+                {
+                    if (entities["SettingsProvider"].Has<Settings>())
+                    {
+
+                        string ObsidianPath = entities["SettingsProvider"].Get<Settings>().ObsidianPath;
+
+                        if (item is SpacedRepetitionFile file)
+                        {
+                            FileOpener.OpenMarkdownFileWithObsidian(file.FilePath, ObsidianPath);
+                        }
+                    }
+                    //FileOpener.OpenFileWithDefaultProgram("""C:\Users\ayanami\nimsuggest.log""");
+                }
+                catch (FileNotFoundException ex)
+                {
+                    Console.WriteLine(ex.Message, ex.FileName);
+                }
+            });
+
+        var editMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionEditMenuItem")
+            .ChildOf(contextFlyout)
+            .Set(new MenuItem())
+            .SetHeader("Edit")
+            .OnClick((sender, args) => Console.WriteLine("Edit Clicked"));
+
+        var deleteMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionDeleteMenuItem")
+            .ChildOf(contextFlyout)
+            .Set(new MenuItem())
+            .SetHeader("Delete")
+            .OnClick((sender, args) =>
+            {
+                var item = srItems.GetSelectedItem<SpacedRepetitionItem>();
+                dummyItems.Remove(item);
+            });
+
+        _ = sortItemsButton.OnSelectionChanged((sender, args) =>
+        {
+            /*
+            if (args.AddedItems.Count == 0)
+            {
+                return;
+            }
+            var selectedItem = args.AddedItems[0]!.ToString();
+            if (selectedItem == "Sort By Date")
+            {
+            }
+            else if (selectedItem == "Sort By Priority")
+            {
+                var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
+                t = [.. t!.OrderByDescending(s => s)];
+                srItems.SetItemsSource(t);
+            }
+            else if (selectedItem == "Sort By Name")
+            {
+                //(ascending order)
+                Random rng = new();
+                var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
+                t = [.. t!.OrderBy(_ => rng.Next())];
+                srItems.SetItemsSource(t);
+            }
+            */
+        });
+
+        return spacedRepetitionPage;
+    }
+
+    /// <summary>
+    /// Define the Spaced Repetition Item Template, used to define how the
+    /// SpacedRepetitionItem is displayed in the ListBox.
+    /// </summary>
+    /// <returns></returns>
+    public static FuncDataTemplate<SpacedRepetitionItem> DefineSpacedRepetitionItemTemplate()
+    {
+        return new FuncDataTemplate<SpacedRepetitionItem>((item, nameScope) =>
         {
             var grid = new Grid
             {
@@ -244,103 +386,6 @@ public static class SpacedRepetitionPage
 
             return grid;
         });
-
-
-        var srItems = entities.GetEntityCreateIfNotExist("SpaceRepetitionList")
-            .ChildOf(scrollViewer)
-            .Set(new ListBox())
-            .SetItemsSource(dummyItems)
-            .SetItemTemplate(spacedRepetitionTemplate)
-            .SetSelectionMode(SelectionMode.Single);
-
-        listSearchSpacedRepetition.OnTextChanged((sender, args) =>
-        {
-            //TODO:
-            //We would need to implement the correct sorting of the items
-            //regarding what sort settings the user set before right now
-            //they are being ingnored.
-
-            //string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
-            //var filteredItems = dummyItems.Where(item => item.ToLower().Contains(searchText));
-            //srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
-            //srItems.SetItemsSource(new ObservableCollection<string>(filteredItems));
-        });
-
-        //Use MenuFlyout to create a context menu
-        //contextMenu is used for legacy WPF apps
-        var contextFlyout = entities.GetEntityCreateIfNotExist("SpacedRepetitionContextFlyout")
-            .ChildOf(srItems)
-            .Set(new MenuFlyout());
-
-        var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuItem")
-            .ChildOf(contextFlyout)
-            .Set(new MenuItem())
-            .SetHeader("Open")
-            .OnClick((sender, args) =>
-            {
-                var item = srItems.GetSelectedItem<SpacedRepetitionItem>();
-                item.GoodReview();
-                //var items = (ObservableCollection<SpacedRepetitionItem>)srItems.GetItemsSource();
-                //srItems.SetItemsSource(null);
-                //srItems.SetItemsSource(items);
-                Console.WriteLine("Open Clicked");
-                try
-                {
-                    if (entities["SettingsProvider"].Has<Settings>())
-                    {
-                        string ObsidianPath = entities["SettingsProvider"].Get<Settings>().ObsidianPath;
-                        FileOpener.OpenMarkdownFileWithObsidian("""C:\Users\ayanami\AllTheKnowledgeReloaded\Checking if the wholeness of one center is helping another (20240518010401).md""", ObsidianPath);
-                        //C:/Users/ayanami/AppData/Local/Programs/obsidian/Obsidian.exe
-                    }
-                    FileOpener.OpenFileWithDefaultProgram("""C:\Users\ayanami\nimsuggest.log""");
-                }
-                catch (FileNotFoundException ex)
-                {
-                    Console.WriteLine(ex.Message, ex.FileName);
-                }
-            });
-
-        var editMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionEditMenuItem")
-            .ChildOf(contextFlyout)
-            .Set(new MenuItem())
-            .SetHeader("Edit")
-            .OnClick((sender, args) => Console.WriteLine("Edit Clicked"));
-
-        var deleteMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionDeleteMenuItem")
-            .ChildOf(contextFlyout)
-            .Set(new MenuItem())
-            .SetHeader("Delete")
-            .OnClick((sender, args) => Console.WriteLine("Delete Clicked"));
-
-        _ = sortItemsButton.OnSelectionChanged((sender, args) =>
-        {
-            /*
-            if (args.AddedItems.Count == 0)
-            {
-                return;
-            }
-            var selectedItem = args.AddedItems[0]!.ToString();
-            if (selectedItem == "Sort By Date")
-            {
-            }
-            else if (selectedItem == "Sort By Priority")
-            {
-                var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
-                t = [.. t!.OrderByDescending(s => s)];
-                srItems.SetItemsSource(t);
-            }
-            else if (selectedItem == "Sort By Name")
-            {
-                //(ascending order)
-                Random rng = new();
-                var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
-                t = [.. t!.OrderBy(_ => rng.Next())];
-                srItems.SetItemsSource(t);
-            }
-            */
-        });
-
-        return spacedRepetitionPage;
     }
 }
 
