@@ -11,11 +11,17 @@ using Avalonia.Flecs.StellaLearning.Pages;
 
 namespace Avalonia.Flecs.StellaLearning;
 
+/// <summary>
+/// The main application class.
+/// </summary>
 public partial class App : Application
 {
     private World _world = World.Create();
     private NamedEntities? _entities;
 
+    /// <summary>
+    /// Initializes the application.
+    /// </summary>
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -223,6 +229,9 @@ public partial class App : Application
         });
     }
 
+    /// <summary>
+    /// Called when the application is initialized.
+    /// </summary>
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop

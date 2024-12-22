@@ -14,21 +14,20 @@ using Avalonia.Flecs.Util;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
+/// <summary>
+/// Settings Page
+/// </summary>
 public static class SettingsPage
 {
+    /// <summary>
+    /// Create the settings page
+    /// </summary>
+    /// <param name="entities"></param>
+    /// <returns></returns>
     public static Entity Create(NamedEntities entities)
     {
         var settingsProvider = entities.GetEntityCreateIfNotExist("SettingsProvider")
             .Set(new Settings());
-
-        /// <summary>
-        /// Creates a new toggle switch entity that has the ability
-        /// to switch between dark and light mode.
-        /// </summary>
-        /// <param name="world"></param>
-        /// <param name="childOfEntity"></param>
-        /// <returns></returns>
-
 
         var settingsPage = entities.GetEntityCreateIfNotExist("SettingsPage")
             .Add<Page>()
@@ -100,12 +99,6 @@ public static class SettingsPage
         return obsidianPath;
     }
 
-    /* Unmerged change from project 'Avalonia.Flecs.StellaLearning (net9.0)'
-    Before:
-        private static string ObsidianFilePicker(World world)
-    After:
-        private static string ObsidianFilePickerAsync(World world)
-    */
     private static async Task<string> ObsidianFilePickerAsync(NamedEntities entities)
     {
         // Create and configure the file picker options

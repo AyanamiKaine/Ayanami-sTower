@@ -7,8 +7,16 @@ using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
+/// <summary>
+/// Literature Page
+/// </summary>
 public static class LiteraturePage
 {
+    /// <summary>
+    /// Create the Literature Page
+    /// </summary>
+    /// <param name="entities"></param>
+    /// <returns></returns>
     public static Entity Create(NamedEntities entities)
     {
         var literaturePage = entities.GetEntityCreateIfNotExist("LiteraturePage")

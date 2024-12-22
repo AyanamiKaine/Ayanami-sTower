@@ -9,8 +9,16 @@ using Avalonia.Layout;
 using Avalonia.Flecs.Util;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
+/// <summary>
+/// Content Queue Page
+/// </summary>
 public static class ContentQueuePage
 {
+    /// <summary>
+    /// Create the Content Queue Page
+    /// </summary>
+    /// <param name="entities"></param>
+    /// <returns></returns>
     public static Entity Create(NamedEntities entities)
     {
         var contentQueuePage = entities.GetEntityCreateIfNotExist("ContentQueuePage")

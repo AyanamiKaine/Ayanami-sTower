@@ -24,8 +24,16 @@ using Avalonia.Flecs.Util;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
+/// <summary>
+/// This class represents the Spaced Repetition Page
+/// </summary>
 public static class SpacedRepetitionPage
 {
+    /// <summary>
+    /// Creates the Spaced Repetition Page
+    /// </summary>
+    /// <param name="entities"></param>
+    /// <returns></returns>
     public static Entity Create(NamedEntities entities)
     {
         var spacedRepetitionPage = entities.GetEntityCreateIfNotExist("SpacedRepetitionPage")

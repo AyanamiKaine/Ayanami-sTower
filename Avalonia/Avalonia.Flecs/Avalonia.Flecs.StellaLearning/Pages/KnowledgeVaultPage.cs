@@ -13,9 +13,16 @@ using FluentAvalonia.UI.Controls;
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
 
-
+/// <summary>
+/// Knowledge Vault Page
+/// </summary>
 public static class KnowledgeVaultPage
 {
+    /// <summary>
+    /// Create the Knowledge Vault Page
+    /// </summary>
+    /// <param name="entities"></param>
+    /// <returns></returns>
     public static Entity Create(NamedEntities entities)
     {
         var vaultPage = entities.GetEntityCreateIfNotExist("KnowledgeVaultPage")

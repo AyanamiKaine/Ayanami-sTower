@@ -6,8 +6,16 @@ using FluentAvalonia.UI.Controls;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
+/// <summary>
+/// Home Page
+/// </summary>
 public static class HomePage
 {
+    /// <summary>
+    /// Create the Home Page
+    /// </summary>
+    /// <param name="entities"></param>
+    /// <returns></returns>
     public static Entity Create(NamedEntities entities)
     {
         var homePage = entities.GetEntityCreateIfNotExist("HomePage")
