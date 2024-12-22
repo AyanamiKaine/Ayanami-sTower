@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSRSPythonBridge", "..\..\F
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.Debug.Window", "Avalonia.Flecs.Debug.Window\Avalonia.Flecs.Debug.Window.csproj", "{21FF0025-FF1E-46C8-AE2D-E86A95A19783}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.Util", "Avalonia.Flecs.Util\Avalonia.Flecs.Util.csproj", "{8E8C8854-4B86-4B1D-B179-298638CAF8A5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -105,6 +107,10 @@ Global
 		{21FF0025-FF1E-46C8-AE2D-E86A95A19783}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21FF0025-FF1E-46C8-AE2D-E86A95A19783}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21FF0025-FF1E-46C8-AE2D-E86A95A19783}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E8C8854-4B86-4B1D-B179-298638CAF8A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E8C8854-4B86-4B1D-B179-298638CAF8A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E8C8854-4B86-4B1D-B179-298638CAF8A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E8C8854-4B86-4B1D-B179-298638CAF8A5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,7 +1,7 @@
 using System.Reflection;
 using Flecs.NET.Core;
 
-namespace Avalonia.Flecs.Scripting;
+namespace Avalonia.Flecs.Util;
 
 /// <summary>
 /// Should be thrown when an entity is not found in the named entities dictonary.
