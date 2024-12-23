@@ -121,7 +121,10 @@ public static class SpacedRepetitionPage
             .SetFontWeight(FontWeight.Normal)
             .OnClick((sender, args) =>
             {
-                AddFile.Create(entities).ShowWindow();
+                if (entities.Contains("AddFileWindow"))
+                    entities["AddFileWindow"].ShowWindow();
+                else
+                    AddFile.Create(entities).ShowWindow();
             });
 
         var addClozeButton = entities.GetEntityCreateIfNotExist("AddClozeButton")
@@ -134,7 +137,14 @@ public static class SpacedRepetitionPage
             .ChildOf(stackPanel)
             .Set(new Button())
             .SetContent("Quiz")
-            .SetFontWeight(FontWeight.Normal);
+            .SetFontWeight(FontWeight.Normal)
+            .OnClick((_, _) =>
+            {
+                if (entities.Contains("AddQuizWindow"))
+                    entities["AddQuizWindow"].ShowWindow();
+                else
+                    AddQuiz.Create(entities).ShowWindow();
+            });
 
         var addAudioButton = entities.GetEntityCreateIfNotExist("AddAudioButton")
            .ChildOf(stackPanel)
