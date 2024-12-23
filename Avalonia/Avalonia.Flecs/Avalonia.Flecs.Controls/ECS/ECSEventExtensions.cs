@@ -123,13 +123,13 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="handler"></param>
         /// <returns></returns>
         /// <exception cref="MissingMemberException"></exception>
-        public static Entity OnClosed(this Entity entity, Action<object?, EventArgs> handler)
+        public static Entity OnClosed(this Entity entity, EventHandler handler)
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("Closed");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<EventArgs>(handler));
+                eventInfo.AddEventHandler(obj, new EventHandler(handler));
             }
             else
             {
@@ -744,13 +744,13 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="handler"></param>
         /// <returns></returns>
         /// <exception cref="MissingMemberException"></exception>
-        public static Entity OnClosing(this Entity entity, Action<object?, CancelEventArgs> handler)
+        public static Entity OnClosing(this Entity entity, Action<object?, WindowClosingEventArgs> handler)
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("Closing");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<CancelEventArgs>(handler));
+                eventInfo.AddEventHandler(obj, new EventHandler<WindowClosingEventArgs>(handler));
             }
             else
             {
