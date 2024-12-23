@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 using Flecs.NET.Core;
 
@@ -48,7 +49,7 @@ Entities should be so much more, for example adding a description component woul
 /// by their given name instead of their path.
 /// </summary>
 /// <param name="world"></param>
-public class NamedEntities(World world)
+public class NamedEntities(World world) : IEnumerable<Entity>
 {
     private Dictionary<string, Entity> _entities = [];
     private World _world = world;
@@ -98,7 +99,7 @@ public class NamedEntities(World world)
     /// <param name="name"></param>
     public void Remove(string name)
     {
-        if (_entities.TryGetValue(name, out var _))
+        if (!_entities.TryGetValue(name, out var _))
         {
             return;
         }
@@ -150,6 +151,21 @@ public class NamedEntities(World world)
     }
 
     /// <summary>
+    /// Creates a nameless entity, its default name 
+    /// will be its id given by flecs ecs. Usually just a number.
+    /// Use this if you intent to use an entity only in a local context
+    /// where you created it, or when you only want to use it in queries.
+    /// </summary>
+    /// <returns></returns>
+    public Entity Create()
+    {
+        var entity = _world.Entity();
+        _entities.Add(entity.ToString(), entity);
+        OnEntityAdded?.Invoke(entity, entity.ToString()); // Invoke the event when a new entity is added
+        return entity;
+    }
+
+    /// <summary>
     /// Checks if an entity exists by name
     /// </summary>
     /// <param name="name"></param>
@@ -157,6 +173,16 @@ public class NamedEntities(World world)
     public bool Contains(string name)
     {
         return _entities.ContainsKey(name);
+    }
+
+    public IEnumerator<Entity> GetEnumerator()
+    {
+        return _entities.Values.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }
 
