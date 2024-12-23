@@ -32,7 +32,31 @@ public static class AddFile
             .SetWidth(400)
             .SetHeight(400);
 
-        DefineWindowContents(entities).ChildOf(addFileWindow);
+
+        var scrollViewer = entities.GetEntityCreateIfNotExist("AddFileScrollViewer")
+            .ChildOf(addFileWindow)
+            .Set(new ScrollViewer())
+            .SetRow(1)
+            .SetColumnSpan(3);
+
+        entities["MainWindow"].OnClosed((_, _) =>
+        {
+            //When the main window is closed close the add file window as well
+            addFileWindow.CloseWindow();
+        });
+
+        addFileWindow.OnClosing((s, e) =>
+        {
+            // As long as the main window is visible dont 
+            // close the window but hide it instead
+            if (entities["MainWindow"].Get<Window>().IsVisible)
+            {
+                ((Window)s!).Hide();
+                e.Cancel = true;
+            }
+        });
+
+        DefineWindowContents(entities).ChildOf(scrollViewer);
 
         return addFileWindow;
     }
@@ -73,7 +97,9 @@ public static class AddFile
             if (args.Key == Key.Enter)
             {
                 if (string.IsNullOrEmpty(tagsTextBox.GetText()))
+                {
                     return;
+                }
 
                 tags.Add(new(tagsTextBox.GetText()));
                 tagsTextBox.SetText("");
@@ -93,12 +119,26 @@ public static class AddFile
             .SetContent("Create Item")
             .OnClick((sender, args) =>
             {
+
+                if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()))
+                {
+                    nameTextBox.SetWatermark("Name is required");
+                    filePath.SetWatermark("FilePath is required");
+                    return;
+                }
+
                 entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                 {
                     Name = nameTextBox.GetText(),
                     FilePath = filePath.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.File
                 });
+
+
+                nameTextBox.SetText("");
+                filePath.SetText("");
+                tags.Clear();
+
             });
 
         return layout;
