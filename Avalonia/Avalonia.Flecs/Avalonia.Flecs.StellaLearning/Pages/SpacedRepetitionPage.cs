@@ -131,7 +131,14 @@ public static class SpacedRepetitionPage
                .ChildOf(stackPanel)
                .Set(new Button())
                .SetContent("Cloze")
-               .SetFontWeight(FontWeight.Normal);
+               .SetFontWeight(FontWeight.Normal)
+               .OnClick((_, _) =>
+               {
+                   if (entities.Contains("AddClozeWindow"))
+                       entities["AddClozeWindow"].ShowWindow();
+                   else
+                       AddCloze.Create(entities).ShowWindow();
+               });
 
         var addQuizButton = entities.GetEntityCreateIfNotExist("AddQuizButton")
             .ChildOf(stackPanel)
