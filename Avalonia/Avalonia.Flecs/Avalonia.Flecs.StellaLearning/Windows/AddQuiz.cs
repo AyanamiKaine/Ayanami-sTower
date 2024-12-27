@@ -1,15 +1,9 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
-using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
-using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
-using Avalonia.Input;
-using Avalonia.Platform.Storage;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
@@ -69,45 +63,17 @@ public static class AddQuiz
             .SetSpacing(10)
             .SetMargin(20);
 
-        var quizNameTextBox = entities.GetEntityCreateIfNotExist("QuizNameTextBox")
+        entities.Create()
             .ChildOf(layout)
             .Set(new TextBox())
             .SetWatermark("Name");
 
-        var quizQuestionTextBox = entities.GetEntityCreateIfNotExist("QuizQuestionTextBox")
+        entities.Create()
                 .ChildOf(layout)
                 .Set(new TextBox())
                 .SetWatermark("Quiz Question");
 
-        var quizAnswers = entities.GetEntityCreateIfNotExist("QuizAnswers")
-            .ChildOf(layout)
-            .Set(new Grid())
-            .SetRowDefinitions(new RowDefinitions("Auto"))
-            .SetColumnDefinitions(new ColumnDefinitions("Auto, *, Auto"));
-
-        var toggle = entities.GetEntityCreateIfNotExist("QuizAnswerToggle")
-            .ChildOf(quizAnswers)
-            .Set(new ToggleButton())
-            .SetContent("Correct")
-            .SetColumn(0);
-
-        var quizAnswer = entities.GetEntityCreateIfNotExist("QuizAnswerTextBox")
-            .ChildOf(quizAnswers)
-            .Set(new TextBox())
-            .SetWatermark("Answer")
-            .SetColumn(1)
-            .SetMargin(5);
-
-        entities.Create()
-            .ChildOf(quizAnswers)
-            .Set(new Button())
-            .SetContent("Delete")
-            .SetColumn(2);
-
-        entities.Create()
-            .ChildOf(layout)
-            .Set(new Button())
-            .SetContent("Add Answer");
+        CreateAnswerLayout(entities).ChildOf(layout);
 
         entities.Create()
             .ChildOf(layout)
@@ -115,5 +81,43 @@ public static class AddQuiz
             .SetContent("Create Quiz");
 
         return layout;
+    }
+
+    private static Entity CreateAnswerLayout(NamedEntities entities)
+    {
+        var quizAnswers = entities.Create()
+            .Set(new Grid())
+            .SetRowDefinitions(new RowDefinitions("*,*,*,*"))
+            .SetColumnDefinitions(new ColumnDefinitions("Auto, *"));
+
+
+        foreach (int number in Enumerable.Range(0, 4))
+        {
+            entities.Create()
+                .ChildOf(quizAnswers)
+                .Set(new ToggleButton())
+                .SetContent("Correct")
+                .SetRow(number)
+                .SetColumn(0);
+
+            entities.Create()
+                .ChildOf(quizAnswers)
+                .Set(new TextBox())
+                .SetWatermark("Answer")
+                .SetColumn(1)
+                .SetRow(number)
+                .SetMargin(5);
+        }
+
+
+        Console.WriteLine(FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 0, 0)!.IsChecked);
+        return quizAnswers;
+    }
+
+    private static T? FindControl<T>(this Grid grid, int row, int column) where T : Control
+    {
+        return grid.Children
+                   .OfType<T>()
+                   .FirstOrDefault(control => Grid.GetRow(control) == row && Grid.GetColumn(control) == column);
     }
 }
