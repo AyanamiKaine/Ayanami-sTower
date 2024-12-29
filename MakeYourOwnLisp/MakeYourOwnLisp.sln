@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaLisp", "StellaLisp\StellaLisp.csproj", "{D549C976-1E15-4963-8AFF-862C8641C046}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaLisp.Tests", "StellaLisp.Tests\StellaLisp.Tests.csproj", "{D2DE633B-6844-495C-AE8E-954D88ECF170}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{491FD5ED-7F80-49FE-AA40-395FF5ED1B5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaLisp.Example.REPL", "Examples\StellaLisp.Example.REPL\StellaLisp.Example.REPL.csproj", "{2FDE02F0-1E7B-48D6-953E-48A250F73E3F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D549C976-1E15-4963-8AFF-862C8641C046}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D549C976-1E15-4963-8AFF-862C8641C046}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D549C976-1E15-4963-8AFF-862C8641C046}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D549C976-1E15-4963-8AFF-862C8641C046}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2DE633B-6844-495C-AE8E-954D88ECF170}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2DE633B-6844-495C-AE8E-954D88ECF170}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2DE633B-6844-495C-AE8E-954D88ECF170}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2DE633B-6844-495C-AE8E-954D88ECF170}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FDE02F0-1E7B-48D6-953E-48A250F73E3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FDE02F0-1E7B-48D6-953E-48A250F73E3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FDE02F0-1E7B-48D6-953E-48A250F73E3F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FDE02F0-1E7B-48D6-953E-48A250F73E3F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2FDE02F0-1E7B-48D6-953E-48A250F73E3F} = {491FD5ED-7F80-49FE-AA40-395FF5ED1B5A}
+	EndGlobalSection
+EndGlobal
