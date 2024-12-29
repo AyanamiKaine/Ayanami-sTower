@@ -153,6 +153,20 @@ public static class SpacedRepetitionPage
                     AddQuiz.Create(entities).ShowWindow();
             });
 
+        var addFlashcardButton = entities.Create()
+            .ChildOf(stackPanel)
+            .Set(new Button())
+            .SetContent("Flashcard")
+            .SetFontWeight(FontWeight.Normal)
+            .OnClick((_, _) =>
+            {
+                if (entities.Contains("AddFlashcardWindow"))
+                    entities["AddFlashcardWindow"].ShowWindow();
+                else
+                    AddFlashcard.Create(entities).ShowWindow();
+            });
+
+
         var addAudioButton = entities.GetEntityCreateIfNotExist("AddAudioButton")
            .ChildOf(stackPanel)
            .Set(new Button())
