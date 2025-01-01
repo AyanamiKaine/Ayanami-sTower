@@ -10,6 +10,10 @@ public class Token
 
 public class Reader
 {
+    /// <summary>
+    /// Using regex seems such a bad idea, why not a recursive decenting parser?
+    /// Its not that hard to implement.
+    /// </summary>
     private string tokenPattern = """[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"?|;.*|[^\s\[\]{}('"`,;)]*)""";
 
     /// <summary>

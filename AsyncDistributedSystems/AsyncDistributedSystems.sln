@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Authentication", "Authentication", "{CF7A44D7-C95A-49A2-93F9-4B5A025A47E0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RSA", "RSA", "{B4ADADCB-6AE1-42C3-832D-DD5946ABB806}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RSAExample", "Authentication\RSA\RSAExample\RSAExample.csproj", "{ED24EF43-EC42-4010-981C-F02D24A27D7C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Communication", "Communication", "{9A3446BB-ED58-4FCD-AF3F-189E755B3BBA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NamedPipes", "NamedPipes", "{296ACF44-DF65-44D3-9F52-09B192D37392}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NamedPipesClient", "Communication\NamedPipes\NamedPipesClient\NamedPipesClient.csproj", "{C5C08BFB-5C3B-408C-8FAC-5B6AD5ED2031}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NamedPipesServer", "Communication\NamedPipes\NamedPipesServer\NamedPipesServer.csproj", "{9B34762A-4140-4142-9AAF-4F224F2252EC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ED24EF43-EC42-4010-981C-F02D24A27D7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED24EF43-EC42-4010-981C-F02D24A27D7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED24EF43-EC42-4010-981C-F02D24A27D7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED24EF43-EC42-4010-981C-F02D24A27D7C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5C08BFB-5C3B-408C-8FAC-5B6AD5ED2031}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5C08BFB-5C3B-408C-8FAC-5B6AD5ED2031}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5C08BFB-5C3B-408C-8FAC-5B6AD5ED2031}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5C08BFB-5C3B-408C-8FAC-5B6AD5ED2031}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B34762A-4140-4142-9AAF-4F224F2252EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B34762A-4140-4142-9AAF-4F224F2252EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B34762A-4140-4142-9AAF-4F224F2252EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B34762A-4140-4142-9AAF-4F224F2252EC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B4ADADCB-6AE1-42C3-832D-DD5946ABB806} = {CF7A44D7-C95A-49A2-93F9-4B5A025A47E0}
+		{ED24EF43-EC42-4010-981C-F02D24A27D7C} = {B4ADADCB-6AE1-42C3-832D-DD5946ABB806}
+		{296ACF44-DF65-44D3-9F52-09B192D37392} = {9A3446BB-ED58-4FCD-AF3F-189E755B3BBA}
+		{C5C08BFB-5C3B-408C-8FAC-5B6AD5ED2031} = {296ACF44-DF65-44D3-9F52-09B192D37392}
+		{9B34762A-4140-4142-9AAF-4F224F2252EC} = {296ACF44-DF65-44D3-9F52-09B192D37392}
+	EndGlobalSection
+EndGlobal
