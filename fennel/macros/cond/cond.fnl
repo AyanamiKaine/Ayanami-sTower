@@ -1,4 +1,4 @@
-(macro cond [& clauses]
+(fn cond [& clauses]
     (if (<= (# clauses) 0)
         nil
         (let [condition (. clauses 1)
@@ -13,3 +13,5 @@
         )
     )
 )
+
+{: cond}
