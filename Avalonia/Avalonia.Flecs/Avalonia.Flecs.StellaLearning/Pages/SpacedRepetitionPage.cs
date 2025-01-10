@@ -16,6 +16,9 @@ using Avalonia.Flecs.StellaLearning.Util;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using Avalonia.Flecs.StellaLearning.Windows;
+using System.Text.Json;
+using System.Threading;
+using Avalonia.Flecs.StellaLearning.Converters;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -231,16 +234,13 @@ public static class SpacedRepetitionPage
             .SetRow(1)
             .SetColumnSpan(3);
 
-
-        ObservableCollection<SpacedRepetitionItem> dummyItems = [];
-
-        foreach (var i in Enumerable.Range(1, 2))
-        {
-            dummyItems.Add(new());
-        }
+        ObservableCollection<SpacedRepetitionItem> dummyItems = LoadSpaceRepetitionItemsFromDisk();
 
         var spacedRepetitionItems = entities.GetEntityCreateIfNotExist("SpacedRepetitionItems")
             .Set(dummyItems);
+
+        var timerEntity = entities.GetEntityCreateIfNotExist("AutoSave")
+            .Set(CreateAutoSaveTimer(dummyItems));
 
         var srItems = entities.GetEntityCreateIfNotExist("SpaceRepetitionList")
             .ChildOf(scrollViewer)
@@ -349,7 +349,90 @@ public static class SpacedRepetitionPage
             */
         });
 
+        entities["MainWindow"].OnClosed((_, _) => SaveSpaceRepetitionItemsToDisk(dummyItems));
+
         return spacedRepetitionPage;
+    }
+
+    /// <summary>
+    /// Creates an autosave timer that autosaves every 5 minutes
+    /// </summary>
+    /// <param name="spacedRepetitionItems"></param>
+    /// <returns></returns>
+    public static Timer CreateAutoSaveTimer(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    {
+        // Create a Timer object
+        var autoSaveTimer = new Timer(state =>
+        {
+            Console.WriteLine($"{DateTime.Now}: Auto-saving data..."); // Debug output
+            try
+            {
+                SaveSpaceRepetitionItemsToDisk((ObservableCollection<SpacedRepetitionItem>)state!);
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions that might occur during saving
+                // Log the error, display an error message to the user, etc.
+                Console.WriteLine($"Error during auto-save: {ex.Message}");
+            }
+        }, spacedRepetitionItems, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)); // Pass spacedRepetitionItems as state
+
+        return autoSaveTimer;
+    }
+
+    /// <summary>
+    /// Saves the spaced repetition items to disk
+    /// </summary>
+    /// <param name="spacedRepetitionItems"></param>
+    public static void SaveSpaceRepetitionItemsToDisk(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    {
+        string directoryPath = "./save";
+        Directory.CreateDirectory(directoryPath);
+        string filePath = Path.Combine(directoryPath, "space_repetition_items.json");
+
+        // Create JsonSerializerOptions and register the converter
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true, // For pretty-printing the JSON
+            Converters = { new SpacedRepetitionItemConverter() } // Register the custom converter
+        };
+
+        string jsonString = JsonSerializer.Serialize(spacedRepetitionItems, options);
+
+        File.WriteAllText(filePath, jsonString);
+    }
+
+    /// <summary>
+    /// Loads the spaced repetition items from disk
+    /// </summary>
+    /// <returns></returns>
+    public static ObservableCollection<SpacedRepetitionItem> LoadSpaceRepetitionItemsFromDisk()
+    {
+        string filePath = Path.Combine("./save", "space_repetition_items.json");
+
+        if (File.Exists(filePath))
+        {
+            string jsonString = File.ReadAllText(filePath);
+
+            // Create JsonSerializerOptions and register the converter
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new SpacedRepetitionItemConverter() }
+            };
+
+            ObservableCollection<SpacedRepetitionItem>? items = JsonSerializer.Deserialize<ObservableCollection<SpacedRepetitionItem>>(jsonString, options);
+
+            foreach (var item in items!)
+            {
+                
+            }
+
+            return items ?? new ObservableCollection<SpacedRepetitionItem>();
+        }
+        else
+        {
+            return new ObservableCollection<SpacedRepetitionItem>();
+        }
     }
 
     /// <summary>
@@ -368,7 +451,6 @@ public static class SpacedRepetitionPage
                 Margin = new Thickness(0, 5)
             };
 
-
             // *** Create a TextBlock for the multi-line tooltip ***
             var tooltipTextBlock = new TextBlock
             {
@@ -379,8 +461,6 @@ public static class SpacedRepetitionPage
                         "It provides more detailed information about the content item. " +
                         "You can even add more and more text to make it even longer."
             };
-
-
 
             //Name
             var nameTextBlock = new TextBlock
@@ -404,7 +484,6 @@ public static class SpacedRepetitionPage
             //ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
             //tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
 
-
             //Type (ENUM)
             var typeTextBlock = new TextBlock
             {
@@ -417,7 +496,6 @@ public static class SpacedRepetitionPage
             Grid.SetColumn(typeTextBlock, 0);
             Grid.SetRow(typeTextBlock, 1);
             grid.Children.Add(typeTextBlock);
-
 
             var nextReviewTextBlock = new TextBlock
             {
@@ -439,8 +517,6 @@ public static class SpacedRepetitionPage
             Grid.SetRow(priorityTextBlock, 1);
             Grid.SetColumn(priorityTextBlock, 1);
             grid.Children.Add(priorityTextBlock);
-
-
 
             // *** Create a TextBlock for the multi-line tooltip ***
             var priorityTooltipTextBlock = new TextBlock
