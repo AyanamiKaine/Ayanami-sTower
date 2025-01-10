@@ -185,8 +185,14 @@ public static class SpacedRepetitionPage
            .ChildOf(stackPanel)
            .Set(new Button())
            .SetContent("Video")
-           .SetFontWeight(FontWeight.Normal);
-
+           .SetFontWeight(FontWeight.Normal)
+           .OnClick((_, _) =>
+           {
+               if (entities.Contains("AddVideoWindow"))
+                   entities["AddVideoWindow"].ShowWindow();
+               else
+                   AddVideo.Create(entities).ShowWindow();
+           });
         var addItemsFlyout = new Flyout()
         {
             Content = stackPanel.Get<object>(),
