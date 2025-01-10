@@ -206,7 +206,14 @@ public static class SpacedRepetitionPage
             .SetMargin(0, 20, 0, 0)
             .SetColumn(0)
             .SetColumnSpan(2)
-            .SetRow(2);
+            .SetRow(2)
+            .OnClick((_, _) =>
+            {
+                if (entities.Contains("StartLearningWindow"))
+                    entities["StartLearningWindow"].ShowWindow();
+                else
+                    StartLearningWindow.Create(entities).ShowWindow();
+            });
 
 
         var addItemButton = entities.GetEntityCreateIfNotExist("AddSpacedRepetitionItemButton")
