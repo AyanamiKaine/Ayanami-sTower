@@ -1,12 +1,15 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Timers;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.Util;
 using Avalonia.Flecs.Util;
+using Avalonia.Threading;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
@@ -60,12 +63,20 @@ public static class StartLearningWindow
     }
     private static void DefineWindowContents(NamedEntities entities)
     {
-
-
-
         var spacedRepetitionItems =
                                     entities["SpacedRepetitionItems"]
                                     .Get<ObservableCollection<SpacedRepetitionItem>>();
+
+        foreach (var item in spacedRepetitionItems)
+        {
+            item.PropertyChanged += ((sender, e) =>
+            {
+                if (e.PropertyName == nameof(SpacedRepetitionItem.NextReview))
+                {
+                    DisplayRightItem(entities, spacedRepetitionItems).ChildOf(entities["StartLearningMainContentDisplay"]);
+                }
+            });
+        }
 
         DisplayRightItem(entities, spacedRepetitionItems).ChildOf(entities["StartLearningMainContentDisplay"]);
 
@@ -109,15 +120,111 @@ public static class StartLearningWindow
 
                 DisplayRightItem(entities, spacedRepetitionItems).ChildOf(entities["StartLearningMainContentDisplay"]);
             });
+
+        /*
+        Every minute we check if a item can now be reviewed
+        */
+
+        var timer = new Timer(60000)
+        {
+            AutoReset = true,
+            Enabled = true,
+        };
+
+        timer.Elapsed += ((object? sender, ElapsedEventArgs e) =>
+        {
+            Dispatcher.UIThread.Post(() =>
+                        {
+                            DisplayRightItem(entities, spacedRepetitionItems).ChildOf(entities["StartLearningMainContentDisplay"]);
+                        });
+        });
     }
 
     private static Entity LearnFileContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
         var file = (SpacedRepetitionFile)GetNextItemToBeReviewed(spacedRepetitionItems)!;
 
-        return entities.GetEntityCreateIfNotExist("LearnFileContent")
-            .Set(new TextBlock())
+        var layout = entities.GetEntityCreateIfNotExist("LearnFileLayout")
+            .Set(new StackPanel())
+            .SetOrientation(Layout.Orientation.Vertical)
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetSpacing(10)
+            .SetMargin(20);
+
+        entities.GetEntityCreateIfNotExist("LearnFileContent")
+            .ChildOf(layout)
+            .Set(new TextBlock()
+            { TextWrapping = Media.TextWrapping.Wrap })
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetMargin(0, 10)
             .SetText(file.FilePath);
+
+
+        entities.GetEntityCreateIfNotExist("FileOpenButton")
+            .Set(new Button())
+            .SetContent("Open File")
+            .SetMargin(0, 10)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .ChildOf(layout)
+            .OnClick((sender, e) =>
+            {
+                Console.WriteLine("Open Clicked");
+                try
+                {
+                    if (entities["SettingsProvider"].Has<Settings>())
+                    {
+                        string ObsidianPath = entities["SettingsProvider"].Get<Settings>().ObsidianPath;
+                        FileOpener.OpenMarkdownFileWithObsidian(file.FilePath, ObsidianPath);
+                    }
+                    FileOpener.OpenFileWithDefaultProgram(file.FilePath);
+                }
+                catch (FileNotFoundException ex)
+                {
+                    Console.WriteLine(ex.Message, ex.FileName);
+                }
+            });
+
+        var reviewButtonGrid = entities.GetEntityCreateIfNotExist("FileReviewButtonGrid")
+            .Set(new Grid())
+            .ChildOf(layout)
+            .SetColumnDefinitions("*, *, *, *")
+            .SetRowDefinitions("auto");
+
+        var easyReviewButton = entities.GetEntityCreateIfNotExist("FileEasyReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button())
+            .SetContent("Easy")
+            .SetMargin(10, 0)
+            .SetColumn(0)
+            .OnClick((_, _) => file.EasyReview());
+
+        var goodReviewButton = entities.GetEntityCreateIfNotExist("FileGoodReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button())
+            .SetContent("Good")
+            .SetMargin(10, 0)
+            .SetColumn(1)
+            .OnClick((_, _) => file.GoodReview());
+
+        var hardReviewButton = entities.GetEntityCreateIfNotExist("FileHardReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button())
+            .SetContent("Hard")
+            .SetMargin(10, 0)
+            .SetColumn(2)
+            .OnClick((_, _) => file.HardReview());
+
+        var againReviewButton = entities.GetEntityCreateIfNotExist("FileAgainReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button())
+            .SetContent("Again")
+            .SetMargin(10, 0)
+            .SetColumn(3)
+            .OnClick((_, _) => file.AgainReview());
+
+        return layout;
     }
 
     private static Entity LearnVideoContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
@@ -176,15 +283,21 @@ public static class StartLearningWindow
             SpacedRepetitionQuiz => LearnQuizContent(entities, spacedRepetitionItems),
             SpacedRepetitionVideo => LearnVideoContent(entities, spacedRepetitionItems),
             SpacedRepetitionExercise => LearnExerciseContent(entities, spacedRepetitionItems),
-            _ => NoMoreItemToBeReviewedContent(entities),
+            _ => NoMoreItemToBeReviewedContent(entities, spacedRepetitionItems),
         };
     }
 
-    private static Entity NoMoreItemToBeReviewedContent(NamedEntities entities)
+    private static Entity NoMoreItemToBeReviewedContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
+
+        var futureItem = NextItemToBeReviewedInFuture(spacedRepetitionItems);
+
         return entities.GetEntityCreateIfNotExist("NoMoreItemToBeReviewed")
             .Set(new TextBlock())
-            .SetText("No More Items To be reviewd");
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetMargin(20)
+            .SetText($"Next Item: '{futureItem!.Name}', due: {futureItem!.NextReview}");
     }
 
     private static SpacedRepetitionItem? GetNextItemToBeReviewed(ObservableCollection<SpacedRepetitionItem> items)
@@ -200,5 +313,22 @@ public static class StartLearningWindow
                 .Where(item => item.NextReview <= now) // Filter for items that are due
                 .OrderBy(item => item.NextReview)     // Order by the next review date (ascending)
                 .FirstOrDefault();                  // Take the first item (the nearest due date)
+    }
+
+    /// <summary>
+    /// Returns the next item to be reviewed that has its due date in the future.
+    /// </summary>
+    /// <param name="items"></param>
+    /// <returns></returns>
+    private static SpacedRepetitionItem? NextItemToBeReviewedInFuture(ObservableCollection<SpacedRepetitionItem> items)
+    {
+        if (items == null || !items.Any())
+        {
+            return null; // Return null if the collection is empty or null
+        }
+
+        return items
+                .OrderBy(item => item.NextReview)
+                .FirstOrDefault();
     }
 }
