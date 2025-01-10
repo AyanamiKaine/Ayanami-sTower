@@ -147,7 +147,7 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             if (entity.Has<Layoutable>())
             {
-                return entity.Get<Layoutable>().VerticalAlignment;
+                return entity.Get<Control>().VerticalAlignment;
             }
             else if (entity.Has<object>())
             {
