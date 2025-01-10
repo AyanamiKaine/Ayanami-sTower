@@ -24,6 +24,10 @@ public enum SpacedRepetitionItemType
     /// </summary>
     Video,
     /// <summary>
+    /// The item is only a audio
+    /// </summary>
+    Audio,
+    /// <summary>
     /// The item is a quiz
     /// </summary>
     Quiz,
