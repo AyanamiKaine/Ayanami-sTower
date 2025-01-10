@@ -19,7 +19,6 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public static class AddVideo
 {
-
     /// <summary>
     /// Create the Add File Window
     /// </summary>
@@ -32,7 +31,6 @@ public static class AddVideo
             .SetWindowTitle("Add Video File")
             .SetWidth(400)
             .SetHeight(400);
-
 
         var scrollViewer = entities.Create()
             .ChildOf(addVideoWindow)
@@ -87,7 +85,6 @@ public static class AddVideo
 
         ObservableCollection<Tag> tags = [];
 
-
         var tagsTextBox = entities.Create()
             .ChildOf(layout)
             .Set(new TextBox())
@@ -120,7 +117,6 @@ public static class AddVideo
             .SetContent("Create Item")
             .OnClick((sender, args) =>
             {
-
                 if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()))
                 {
                     nameTextBox.SetWatermark("Name is required");
@@ -163,17 +159,17 @@ public static class AddVideo
         {
             Title = "Select an Video File",
             AllowMultiple = false, // Set to true if you want to allow multiple file selections
-            FileTypeFilter = new List<FilePickerFileType>
-            {
+            FileTypeFilter =
+            [
                 CustomFilePickerTypes.VideoFileType,
                 FilePickerFileTypes.All // Always include "All files" as an option
-            }
+            ]
         };
 
         // Create an OpenFileDialog instance
         IReadOnlyList<IStorageFile> result = await entities["MainWindow"].Get<Window>().StorageProvider.OpenFilePickerAsync(options);
 
-        if (result != null && result.Count > 0)
+        if (result?.Count > 0)
         {
             // Get the selected file
             IStorageFile file = result[0];
