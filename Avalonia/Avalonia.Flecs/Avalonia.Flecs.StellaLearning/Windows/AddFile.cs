@@ -134,11 +134,9 @@ public static class AddFile
                     SpacedRepetitionItemType = SpacedRepetitionItemType.File
                 });
 
-
                 nameTextBox.SetText("");
                 filePath.SetText("");
                 tags.Clear();
-
             });
 
         return layout;

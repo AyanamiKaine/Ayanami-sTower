@@ -384,7 +384,7 @@ public static class SpacedRepetitionPage
             var nextReviewTextBlock = new TextBlock
             {
                 FontWeight = FontWeight.Bold,
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                HorizontalAlignment = HorizontalAlignment.Right,
             };
 
             nextReviewTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.NextReview)));
@@ -395,7 +395,7 @@ public static class SpacedRepetitionPage
             //Priority
             var priorityTextBlock = new TextBlock
             {
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                HorizontalAlignment = HorizontalAlignment.Right,
             };
             priorityTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.Priority)) { StringFormat = "Priority: {0}" });
             Grid.SetRow(priorityTextBlock, 1);

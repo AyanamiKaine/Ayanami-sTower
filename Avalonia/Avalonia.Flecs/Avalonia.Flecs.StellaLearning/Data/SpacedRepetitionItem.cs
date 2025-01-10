@@ -2,8 +2,6 @@ namespace Avalonia.Flecs.StellaLearning.Data;
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using Avalonia.Threading;
 using FSRSPythonBridge;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -12,6 +10,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 /// </summary>
 public enum SpacedRepetitionItemType
 {
+    /// <summary>
+    /// The item is a cloze
+    /// </summary>
+    Cloze,
+
     /// <summary>
     /// The item is an image
     /// </summary>
@@ -154,7 +157,7 @@ public partial class SpacedRepetitionItem : ObservableObject
     }
 
     /// <summary>
-    /// Forgot the card
+    /// Forgot the cardw
     /// </summary>
     public void AgainReview()
     {
@@ -195,6 +198,23 @@ public class SpacedRepetitionQuiz : SpacedRepetitionItem
     /// The index of the correct answer
     /// </summary>
     public int CorrectAnswerIndex { get; set; } = 0;
+}
+
+/// <summary>
+/// Represents a cloze item used for spaced repetition
+/// </summary>
+public class SpacedRepetitionCloze : SpacedRepetitionItem
+{
+    /// <summary>
+    /// The Full Text where certain words are hidden based if they appear in
+    /// in the ClozeWords list
+    /// </summary>
+    public string FullText = "Lorem Ispusm";
+
+    /// <summary>
+    /// A list of words to be hidden and asked to correctly fill out.
+    /// </summary>
+    public List<string> ClozeWords { get; set; } = [];
 }
 
 /// <summary>

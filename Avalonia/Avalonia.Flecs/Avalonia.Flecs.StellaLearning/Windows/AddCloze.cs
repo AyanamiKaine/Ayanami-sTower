@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
+using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using Avalonia.Media;
 using Flecs.NET.Core;
@@ -68,7 +69,7 @@ public static class AddCloze
                 clozes.Add(trimmedItem);
             }
         }
-        
+
         var layout = entities.Create()
             .Set(new StackPanel())
             .SetOrientation(Layout.Orientation.Vertical)
@@ -76,12 +77,12 @@ public static class AddCloze
             .SetMargin(20);
 
 
-        entities.Create()
+        var nameTextBox = entities.Create()
             .ChildOf(layout)
             .Set(new TextBox())
             .SetWatermark("Name");
 
-        var test = entities.Create()
+        var clozeBox = entities.Create()
                 .ChildOf(layout)
                 .Set(new TextBox() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap })
                 .SetWatermark("Cloze Text");
@@ -94,11 +95,11 @@ public static class AddCloze
             .SetContent("Mark as Cloze")
             .OnClick((_, _) =>
             {
-                var cloze = test.Get<TextBox>().SelectedText;
+                var cloze = clozeBox.Get<TextBox>().SelectedText;
                 AddCloze(cloze, clozes);
             });
 
-        object? flyout = test.Get<TextBox>().ContextFlyout = new Flyout() { Content = markAsClozeButton.Get<Button>() };
+        object? flyout = clozeBox.Get<TextBox>().ContextFlyout = new Flyout() { Content = markAsClozeButton.Get<Button>() };
 
         var clozeList = entities.GetEntityCreateIfNotExist("ClozeList")
             .ChildOf(layout)
@@ -110,8 +111,26 @@ public static class AddCloze
         entities.Create()
             .ChildOf(layout)
             .Set(new Button())
-            .SetContent("Create Cloze");
+            .SetContent("Create Cloze")
+            .OnClick((sender, args) =>
+            {
+                if (clozes.Count == 0 || string.IsNullOrEmpty(nameTextBox.GetText()))
+                {
+                    nameTextBox.SetWatermark("Name is required");
+                    return;
+                }
 
+                entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionCloze()
+                {
+                    Name = nameTextBox.GetText(),
+                    ClozeWords = [.. clozes],
+                    SpacedRepetitionItemType = SpacedRepetitionItemType.Cloze
+                });
+
+                nameTextBox.SetText("");
+                clozeBox.SetText("");
+                clozes.Clear();
+            });
         return layout;
     }
 
@@ -138,7 +157,6 @@ public static class AddCloze
             removeButton.Click += ((sender, args) =>
             {
                 entities["ClozeList"].Get<ObservableCollection<string>>().Remove(tag);
-
             });
 
             stackPanel.Children.Add(nameText);
