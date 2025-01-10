@@ -289,7 +289,6 @@ public static class StartLearningWindow
 
     private static Entity NoMoreItemToBeReviewedContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-
         var futureItem = NextItemToBeReviewedInFuture(spacedRepetitionItems);
 
         return entities.GetEntityCreateIfNotExist("NoMoreItemToBeReviewed")
