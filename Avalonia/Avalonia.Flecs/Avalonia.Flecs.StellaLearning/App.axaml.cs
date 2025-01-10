@@ -33,18 +33,18 @@ public partial class App : Application
         //var debugWindow = new Debug.Window.Window(_world);
         //_entities.OnEntityAdded += debugWindow.AddEntity;
 
+        var window = _entities.Create("MainWindow")
+            .Set(new Window())
+            .SetWindowTitle("Stella Learning")
+            .SetHeight(400)
+            .SetWidth(400);
+
         ContentQueuePage.Create(_entities);
         KnowledgeVaultPage.Create(_entities);
         SettingsPage.Create(_entities);
         HomePage.Create(_entities);
         LiteraturePage.Create(_entities);
         SpacedRepetitionPage.Create(_entities);
-
-        var window = _entities.Create("MainWindow")
-            .Set(new Window())
-            .SetWindowTitle("Stella Learning")
-            .SetHeight(400)
-            .SetWidth(400);
 
         var navigationView = _entities.Create("NavigationView")
             .Set(new NavigationView())
