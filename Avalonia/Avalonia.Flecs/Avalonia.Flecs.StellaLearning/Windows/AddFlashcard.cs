@@ -135,10 +135,10 @@ public static class AddFlashcard
                     SpacedRepetitionItemType = SpacedRepetitionItemType.Flashcard
                 });
 
-
                 nameTextBox.SetText("");
+                frontText.SetText("");
+                backText.SetText("");
                 tags.Clear();
-
             });
 
         return layout;
