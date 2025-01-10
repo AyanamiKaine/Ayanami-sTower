@@ -36,6 +36,29 @@ namespace Avalonia.Flecs.Controls.ECS
         }
 
         /// <summary>
+        /// Checks if a item list with the selectedItem property has an item selected, if so returns true
+        /// otherwise false
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public static bool HasItemSelected(this Entity entity)
+        {
+            if (entity.Has<ListBox>())
+            {
+                if (entity.Get<ListBox>().SelectedItem is null)
+                {
+                    return false;
+                }
+            }
+            else if (entity.Has<object>())
+            {
+                if (entity.GetProperty<object>("SelectedItem") is null)
+                    return false;
+            }
+
+            return true;
+        }
+        /// <summary>
         /// Sets the selection mode of a listbox component
         /// NEEDED COMPONENTS: ListBox or an object with a SelectionMode property
         /// </summary>

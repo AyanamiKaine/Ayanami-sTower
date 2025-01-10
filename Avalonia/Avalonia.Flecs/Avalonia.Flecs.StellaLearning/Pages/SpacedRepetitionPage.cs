@@ -171,7 +171,14 @@ public static class SpacedRepetitionPage
            .ChildOf(stackPanel)
            .Set(new Button())
            .SetContent("Audio")
-           .SetFontWeight(FontWeight.Normal);
+           .SetFontWeight(FontWeight.Normal)
+            .OnClick((_, _) =>
+            {
+                if (entities.Contains("AddAudioWindow"))
+                    entities["AddAudioWindow"].ShowWindow();
+                else
+                    AddAudio.Create(entities).ShowWindow();
+            });
 
 
         var addVideoButton = entities.GetEntityCreateIfNotExist("AddVideoButton")
@@ -237,6 +244,14 @@ public static class SpacedRepetitionPage
         var contextFlyout = entities.GetEntityCreateIfNotExist("SpacedRepetitionContextFlyout")
             .ChildOf(srItems)
             .Set(new MenuFlyout());
+
+        contextFlyout.Get<MenuFlyout>().Opened += (object? sender, EventArgs e) =>
+        {
+            if (!srItems.HasItemSelected())
+            {
+                contextFlyout.Get<MenuFlyout>().Hide();
+            }
+        };
 
         var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuItem")
             .ChildOf(contextFlyout)
