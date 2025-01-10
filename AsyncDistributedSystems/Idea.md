@@ -29,3 +29,28 @@ public class Cell : BaseCell
 - The "response" is the dispensed snack: If the coin is the right size and shape, it triggers a mechanism inside the machine (the cascade of events) that dispenses a snack (the cellular response).
 
 The vending machine doesn't "understand" that you want a snack. It simply reacts to the physical presence of the correct coin in the correct slot.
+
+## Defining Message Receive and Message Input At Compile/StartTime
+
+We need a way to define the type of what message are being received at either runtime or compile time.
+It must be quite simple.
+
+
+Something like:
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MyMessage",
+  "type": "object",
+  "properties": {
+    "content": {
+      "type": "string",
+      "x-messagepack-key": 0
+    }
+  },
+  "required": [
+    "content"
+  ],
+  "x-messagepack-object": true
+}
+```
