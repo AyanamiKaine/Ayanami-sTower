@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaLispCompiler", "StellaLispCompiler\StellaLispCompiler.csproj", "{DEEB9400-7E31-4CFF-8BBD-EA0CD15DBBB6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaLispCompilerTests", "StellaLispCompilerTests\StellaLispCompilerTests.csproj", "{60609B5E-6C09-4E0B-B2D8-F17FD87F183E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DEEB9400-7E31-4CFF-8BBD-EA0CD15DBBB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEEB9400-7E31-4CFF-8BBD-EA0CD15DBBB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEEB9400-7E31-4CFF-8BBD-EA0CD15DBBB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEEB9400-7E31-4CFF-8BBD-EA0CD15DBBB6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60609B5E-6C09-4E0B-B2D8-F17FD87F183E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60609B5E-6C09-4E0B-B2D8-F17FD87F183E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60609B5E-6C09-4E0B-B2D8-F17FD87F183E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60609B5E-6C09-4E0B-B2D8-F17FD87F183E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
