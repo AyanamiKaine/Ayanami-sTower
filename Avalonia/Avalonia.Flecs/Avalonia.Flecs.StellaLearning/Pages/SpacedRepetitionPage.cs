@@ -199,6 +199,16 @@ public static class SpacedRepetitionPage
             ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
         };
 
+        var startLearningButton = entities.Create()
+            .ChildOf(spacedRepetitionPage)
+            .Set(new Button())
+            .SetContent("Start Learning")
+            .SetMargin(0, 20, 0, 0)
+            .SetColumn(0)
+            .SetColumnSpan(2)
+            .SetRow(2);
+
+
         var addItemButton = entities.GetEntityCreateIfNotExist("AddSpacedRepetitionItemButton")
             .ChildOf(spacedRepetitionPage)
             .Set(new Button() { Flyout = addItemsFlyout })
