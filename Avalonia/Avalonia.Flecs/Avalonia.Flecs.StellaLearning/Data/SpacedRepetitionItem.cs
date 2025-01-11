@@ -252,9 +252,13 @@ public class SpacedRepetitionVideo : SpacedRepetitionItem
 public class SpacedRepetitionFile : SpacedRepetitionItem
 {
     /// <summary>
+    /// Question that is shown.
+    /// </summary>
+    public string Question { get; set; } = "Lorum Ipsum";
+    /// <summary>
     /// The path to the file
     /// </summary>
-    public string FilePath { get; set; } = "C:/Users/username/Documents/MyFile.txt";
+    public string FilePath { get; set; } = "C:/Users/YOUR_USERNAME/Documents/EXAMPLE_FILE.txt";
 }
 /// <summary>
 /// Represents a text item for spaced repetition
