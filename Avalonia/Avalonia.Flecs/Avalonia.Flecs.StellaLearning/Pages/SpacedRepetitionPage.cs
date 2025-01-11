@@ -236,8 +236,12 @@ public static class SpacedRepetitionPage
 
         ObservableCollection<SpacedRepetitionItem> dummyItems = LoadSpaceRepetitionItemsFromDisk();
 
+
+
         var spacedRepetitionItems = entities.GetEntityCreateIfNotExist("SpacedRepetitionItems")
             .Set(dummyItems);
+
+
 
         var timerEntity = entities.GetEntityCreateIfNotExist("AutoSave")
             .Set(CreateAutoSaveTimer(dummyItems));
@@ -294,6 +298,35 @@ public static class SpacedRepetitionPage
             }
             var selectedItem = args.AddedItems[0]!.ToString();
             var itemsSource = (ObservableCollection<SpacedRepetitionItem>)srItems.GetItemsSource()!;
+
+            if (selectedItem == "Sort By Date")
+            {
+                // Sort by NextReview date (ascending - soonest due date first)
+                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderBy(s => s.NextReview));
+            }
+            else if (selectedItem == "Sort By Priority")
+            {
+                // Sort by Priority (descending - highest priority first)
+                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderByDescending(s => s.Priority));
+            }
+            else if (selectedItem == "Sort By Name")
+            {
+                // Sort by Name (ascending - alphabetical order)
+                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderBy(s => s.Name));
+            }
+            // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
+
+            srItems.SetItemsSource(itemsSource);
+        });
+
+        dummyItems.CollectionChanged += ((_, _) =>
+        {
+            if (sortItemsButton.Get<ComboBox>().SelectedItem is null)
+            {
+                return;
+            }
+            var selectedItem = sortItemsButton.Get<ComboBox>().SelectedItem!.ToString();
+            var itemsSource = dummyItems;
 
             if (selectedItem == "Sort By Date")
             {
