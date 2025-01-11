@@ -114,6 +114,9 @@ namespace Avalonia.Flecs.StellaLearning.Converters
                         case SpacedRepetitionFile file when propertyName == nameof(SpacedRepetitionFile.FilePath):
                             file.FilePath = reader.GetString()!;
                             break;
+                        case SpacedRepetitionFile file when propertyName == nameof(SpacedRepetitionFile.Question):
+                            file.Question = reader.GetString()!;
+                            break;
                         case SpacedRepetitionExercise exercise when propertyName == nameof(SpacedRepetitionExercise.Problem):
                             exercise.Problem = reader.GetString()!;
                             break;
@@ -212,6 +215,7 @@ namespace Avalonia.Flecs.StellaLearning.Converters
                     break;
                 case SpacedRepetitionFile file:
                     writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionFile);
+                    writer.WriteString(nameof(SpacedRepetitionFile.Question), file.Question);
                     writer.WriteString(nameof(SpacedRepetitionFile.FilePath), file.FilePath);
                     break;
                 case SpacedRepetitionExercise exercise:
