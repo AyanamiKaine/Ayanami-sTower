@@ -475,6 +475,7 @@ public static class SpacedRepetitionPage
             grid.Children.Add(nextReviewTextBlock);
 
             //Priority
+            /*
             var priorityTextBlock = new TextBlock
             {
                 HorizontalAlignment = HorizontalAlignment.Right,
@@ -483,7 +484,7 @@ public static class SpacedRepetitionPage
             Grid.SetRow(priorityTextBlock, 1);
             Grid.SetColumn(priorityTextBlock, 1);
             grid.Children.Add(priorityTextBlock);
-
+           
             // *** Create a TextBlock for the multi-line tooltip ***
             var priorityTooltipTextBlock = new TextBlock
             {
@@ -493,8 +494,8 @@ public static class SpacedRepetitionPage
                 Text = "Priority shows the importance, it determines in which order items will be learned."
             };
 
-            ToolTip.SetTip(priorityTextBlock, priorityTooltipTextBlock);
-
+            //ToolTip.SetTip(priorityTextBlock, priorityTooltipTextBlock);
+            */
             return grid;
         });
     }
