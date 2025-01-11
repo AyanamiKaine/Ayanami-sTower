@@ -127,7 +127,6 @@ public static class AddFile
         */
         var spacedRepetitionItems = entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>();
 
-
         int calculatedPriority = 500000000;
         int heighestPossiblePriority = 999999999;
         int smallestPossiblePriority = 0;
@@ -135,17 +134,6 @@ public static class AddFile
         SpacedRepetitionItem? currentItemToCompare;
         string? currentItemName;
         var rng = new Random();
-        if (spacedRepetitionItems?.Count != 0 && spacedRepetitionItems is not null)
-        {
-            currentItemToCompare = spacedRepetitionItems.OrderBy(x => rng.Next()).First();
-            currentItemName = currentItemToCompare.Name;
-        }
-        else
-        {
-            currentItemToCompare = null;
-            currentItemName = "No Items to compare to";
-        }
-
 
         var priorityGrid = entities.Create()
             .ChildOf(layout)
@@ -165,6 +153,38 @@ public static class AddFile
             .SetColumnSpan(2)
             .SetText("Is the new item more or less important than this one?");
 
+        var lessPriorityButton = entities.Create()
+            .ChildOf(priorityGrid)
+            .Set(new Button())
+            .SetContent("Less")
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Left)
+            .SetMargin(20)
+            .SetColumn(0)
+            .SetRow(2);
+
+        var morePriorityButton = entities.Create()
+            .ChildOf(priorityGrid)
+            .Set(new Button())
+            .SetContent("More")
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Right)
+            .SetMargin(20)
+            .SetColumn(1)
+            .SetRow(2);
+
+
+        if (spacedRepetitionItems?.Count != 0 && spacedRepetitionItems is not null)
+        {
+            currentItemToCompare = spacedRepetitionItems.OrderBy(x => rng.Next()).First();
+            currentItemName = currentItemToCompare.Name;
+        }
+        else
+        {
+            morePriorityButton.Get<Button>().IsEnabled = false;
+            lessPriorityButton.Get<Button>().IsEnabled = false;
+            currentItemToCompare = null;
+            currentItemName = "No Items to compare to";
+        }
+
         var itemToCompareToTextBlock = entities.Create()
             .ChildOf(priorityGrid)
             .Set(new TextBlock()
@@ -178,8 +198,6 @@ public static class AddFile
             .SetRow(1)
             .SetColumnSpan(2)
             .SetText(currentItemName!);
-
-
 
         spacedRepetitionItems!.CollectionChanged += ((sender, e) =>
         {
@@ -196,45 +214,21 @@ public static class AddFile
                     currentItemName = "No Items to compare to";
 
                 itemToCompareToTextBlock.SetText(currentItemName);
-
             }
             else
             {
                 currentItemToCompare = null;
                 currentItemName = "No Items to compare to";
                 itemToCompareToTextBlock.SetText(currentItemName);
-
             }
         });
 
-
-        var lessPriorityButton = entities.Create()
-            .ChildOf(priorityGrid)
-            .Set(new Button())
-            .SetContent("Less")
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Left)
-            .SetMargin(20)
-            .SetColumn(0)
-            .SetRow(2);
-
-
-
-        var morePriorityButton = entities.Create()
-            .ChildOf(priorityGrid)
-            .Set(new Button())
-            .SetContent("More")
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Right)
-            .SetMargin(20)
-            .SetColumn(1)
-            .SetRow(2);
 
         lessPriorityButton.OnClick((_, _) =>
             {
                 calculatedPriority = currentItemToCompare!.Priority - 1;
 
-
                 heighestPossiblePriority = calculatedPriority;
-
 
                 var itemsBetweenLowAndHighPriority = spacedRepetitionItems
                     .Where(x => x.Priority >= smallestPossiblePriority && x.Priority <= heighestPossiblePriority);
