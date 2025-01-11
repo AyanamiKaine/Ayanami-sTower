@@ -291,12 +291,22 @@ public static class StartLearningWindow
     {
         var futureItem = NextItemToBeReviewedInFuture(spacedRepetitionItems);
 
+        string? text;
+        if (futureItem is null)
+        {
+            text = "Currently: No Items";
+        }
+        else
+        {
+            text = $"Next Item: '{futureItem?.Name}', due: {futureItem?.NextReview}";
+        }
+
         return entities.GetEntityCreateIfNotExist("NoMoreItemToBeReviewed")
             .Set(new TextBlock())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetMargin(20)
-            .SetText($"Next Item: '{futureItem!.Name}', due: {futureItem!.NextReview}");
+            .SetText(text);
     }
 
     private static SpacedRepetitionItem? GetNextItemToBeReviewed(ObservableCollection<SpacedRepetitionItem> items)
