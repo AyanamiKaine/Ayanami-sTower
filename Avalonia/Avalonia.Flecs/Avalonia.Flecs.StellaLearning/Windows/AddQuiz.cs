@@ -107,8 +107,8 @@ public static class AddQuiz
     {
         var quizAnswers = entities.Create()
             .Set(new Grid())
-            .SetRowDefinitions(new RowDefinitions("*,*,*,*"))
-            .SetColumnDefinitions(new ColumnDefinitions("Auto, *"));
+            .SetRowDefinitions("*,*,*,*")
+            .SetColumnDefinitions("Auto, *");
 
 
         foreach (int number in Enumerable.Range(0, 4))
