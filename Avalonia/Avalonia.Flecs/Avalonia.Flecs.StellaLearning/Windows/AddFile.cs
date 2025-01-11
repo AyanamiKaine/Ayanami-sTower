@@ -119,166 +119,6 @@ public static class AddFile
             .SetItemTemplate(DefineTagTemplate(entities))
             .SetItemsSource(tags);
 
-        /*
-        Determine the correct priority
-
-        How are we gonna do this?
-        Priority will be determined based on questions like is the priority higher or lower of an already created item?
-        
-        WE MUST REFACTOR THIS CODE TO BE GENERIC AND WORK FOR ALL CREATION WINDOWS!
-
-
-        var spacedRepetitionItems = entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>();
-
-        int calculatedPriority = 500000000;
-        int heighestPossiblePriority = 999999999;
-        int smallestPossiblePriority = 0;
-
-        SpacedRepetitionItem? currentItemToCompare;
-        string? currentItemName;
-        var rng = new Random();
-
-        var priorityGrid = entities.Create()
-            .ChildOf(layout)
-            .Set(new Grid())
-            .SetColumnDefinitions("*,*")
-            .SetRowDefinitions("*,*,*");
-
-        var priorityTextblock = entities.Create()
-            .ChildOf(priorityGrid)
-            .Set(new TextBlock()
-            {
-                TextWrapping = Media.TextWrapping.Wrap
-            })
-            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetRow(0)
-            .SetColumnSpan(2)
-            .SetText("Is the new item more or less important than this one?");
-
-        var lessPriorityButton = entities.Create()
-            .ChildOf(priorityGrid)
-            .Set(new Button())
-            .SetContent("Less")
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Left)
-            .SetMargin(20)
-            .SetColumn(0)
-            .SetRow(2);
-
-        var morePriorityButton = entities.Create()
-            .ChildOf(priorityGrid)
-            .Set(new Button())
-            .SetContent("More")
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Right)
-            .SetMargin(20)
-            .SetColumn(1)
-            .SetRow(2);
-
-
-        if (spacedRepetitionItems?.Count != 0 && spacedRepetitionItems is not null)
-        {
-            currentItemToCompare = spacedRepetitionItems.OrderBy(x => rng.Next()).First();
-            currentItemName = currentItemToCompare.Name;
-        }
-        else
-        {
-            morePriorityButton.Get<Button>().IsEnabled = false;
-            lessPriorityButton.Get<Button>().IsEnabled = false;
-            currentItemToCompare = null;
-            currentItemName = "No Items to compare to";
-        }
-
-        var itemToCompareToTextBlock = entities.Create()
-            .ChildOf(priorityGrid)
-            .Set(new TextBlock()
-            {
-                TextWrapping = Media.TextWrapping.Wrap,
-                FontWeight = Media.FontWeight.Bold
-            })
-            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetMargin(20)
-            .SetRow(1)
-            .SetColumnSpan(2)
-            .SetText(currentItemName!);
-
-        spacedRepetitionItems!.CollectionChanged += ((sender, e) =>
-        {
-            if (spacedRepetitionItems?.Count != 0 && spacedRepetitionItems is not null)
-            {
-                currentItemToCompare = spacedRepetitionItems
-                    .Where(x => x.Priority >= smallestPossiblePriority && x.Priority <= heighestPossiblePriority)
-                    .OrderBy(x => x.Priority)
-                    .FirstOrDefault();
-
-                if (currentItemToCompare is not null)
-                    currentItemName = currentItemToCompare.Name;
-                else
-                    currentItemName = "No Items to compare to";
-
-                itemToCompareToTextBlock.SetText(currentItemName);
-            }
-            else
-            {
-                currentItemToCompare = null;
-                currentItemName = "No Items to compare to";
-                itemToCompareToTextBlock.SetText(currentItemName);
-            }
-        });
-
-
-        lessPriorityButton.OnClick((_, _) =>
-            {
-                calculatedPriority = currentItemToCompare!.Priority - 1;
-
-                heighestPossiblePriority = calculatedPriority;
-
-                var itemsBetweenLowAndHighPriority = spacedRepetitionItems
-                    .Where(x => x.Priority >= smallestPossiblePriority && x.Priority <= heighestPossiblePriority);
-
-                currentItemToCompare = itemsBetweenLowAndHighPriority
-                    .OrderBy(x => x.Priority > heighestPossiblePriority)
-                    .Reverse()
-                    .FirstOrDefault();
-
-                if (currentItemToCompare is null || currentItemToCompare.Priority > calculatedPriority)
-                {
-                    currentItemName = "No more items to compare to";
-                    lessPriorityButton.Get<Button>().IsEnabled = false;
-                    morePriorityButton.Get<Button>().IsEnabled = false;
-                }
-                else
-                {
-                    currentItemName = currentItemToCompare.Name;
-                }
-                itemToCompareToTextBlock.SetText(currentItemName);
-            });
-
-        morePriorityButton.OnClick((_, _) =>
-            {
-                calculatedPriority = currentItemToCompare!.Priority + 1;
-
-                smallestPossiblePriority = calculatedPriority;
-
-                currentItemToCompare = spacedRepetitionItems
-                    .Where(x => x.Priority >= smallestPossiblePriority && x.Priority <= heighestPossiblePriority)
-                    .OrderBy(x => x.Priority)
-                    .FirstOrDefault();
-
-                if (currentItemToCompare is null || currentItemToCompare.Priority < calculatedPriority)
-                {
-                    currentItemName = "No more items to compare to";
-                    morePriorityButton.Get<Button>().IsEnabled = false;
-                    lessPriorityButton.Get<Button>().IsEnabled = false;
-                }
-                else
-                {
-                    currentItemName = currentItemToCompare.Name;
-                }
-                itemToCompareToTextBlock.SetText(currentItemName);
-            });
-        */
-
         var createFileButton = entities.GetEntityCreateIfNotExist("createFileButton")
             .ChildOf(layout)
             .Set(new Button())
@@ -303,17 +143,12 @@ public static class AddFile
                     FilePath = filePath.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.File
                 });
-                //morePriorityButton.Get<Button>().IsEnabled = true;
-                //lessPriorityButton.Get<Button>().IsEnabled = true;
-                calculatedPriority.Set(500000000);
 
-                //smallestPossiblePriority = 0;
-                //heighestPossiblePriority = 999999999;
+                calculatedPriority.Set(500000000);
                 nameTextBox.SetText("");
                 questionTextBox.SetText("");
                 filePath.SetText("");
                 tags.Clear();
-                //calculatedPriority = 5000000;
             });
 
         return layout;
