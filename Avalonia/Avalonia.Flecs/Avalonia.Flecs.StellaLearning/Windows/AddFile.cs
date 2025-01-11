@@ -74,6 +74,11 @@ public static class AddFile
             .Set(new TextBox())
             .SetWatermark("Name");
 
+        var questionTextBox = entities.GetEntityCreateIfNotExist("questionTextBox")
+            .ChildOf(layout)
+            .Set(new TextBox())
+            .SetWatermark("Question");
+
         var filePickerButton = FilePickerButton(entities);
 
         var filePath = entities.GetEntityCreateIfNotExist("filePathTextBox")
@@ -85,7 +90,6 @@ public static class AddFile
         filePickerButton.OnClick(async (e, args) => filePath.SetText(await FilePickerAsync(entities)));
 
         ObservableCollection<Tag> tags = [];
-
 
         var tagsTextBox = entities.GetEntityCreateIfNotExist("tagsTextBox")
             .ChildOf(layout)
@@ -130,11 +134,13 @@ public static class AddFile
                 entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                 {
                     Name = nameTextBox.GetText(),
+                    Question = questionTextBox.GetText(),
                     FilePath = filePath.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.File
                 });
 
                 nameTextBox.SetText("");
+                questionTextBox.SetText("");
                 filePath.SetText("");
                 tags.Clear();
             });
