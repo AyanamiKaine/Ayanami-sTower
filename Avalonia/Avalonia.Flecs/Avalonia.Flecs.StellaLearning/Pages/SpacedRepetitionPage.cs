@@ -251,15 +251,10 @@ public static class SpacedRepetitionPage
 
         listSearchSpacedRepetition.OnTextChanged((sender, args) =>
         {
-            //TODO:
-            //We would need to implement the correct sorting of the items
-            //regarding what sort settings the user set before right now
-            //they are being ingnored.
-
-            //string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
-            //var filteredItems = dummyItems.Where(item => item.ToLower().Contains(searchText));
-            //srItems.Get<ListBox>().ItemsSource = new ObservableCollection<string>(filteredItems);
-            //srItems.SetItemsSource(new ObservableCollection<string>(filteredItems));
+            string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
+            var filteredItems = dummyItems.Where(item => item.Name.ToLower().Contains(searchText));
+            srItems.Get<ListBox>().ItemsSource = new ObservableCollection<SpacedRepetitionItem>(filteredItems);
+            srItems.SetItemsSource(new ObservableCollection<SpacedRepetitionItem>(filteredItems));
         });
 
         //Use MenuFlyout to create a context menu
@@ -291,33 +286,33 @@ public static class SpacedRepetitionPage
                 var item = srItems.GetSelectedItem<SpacedRepetitionItem>();
                 dummyItems.Remove(item);
             });
-
         _ = sortItemsButton.OnSelectionChanged((sender, args) =>
         {
-            /*
             if (args.AddedItems.Count == 0)
             {
                 return;
             }
             var selectedItem = args.AddedItems[0]!.ToString();
+            var itemsSource = (ObservableCollection<SpacedRepetitionItem>)srItems.GetItemsSource()!;
+
             if (selectedItem == "Sort By Date")
             {
+                // Sort by NextReview date (ascending - soonest due date first)
+                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderBy(s => s.NextReview));
             }
             else if (selectedItem == "Sort By Priority")
             {
-                var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
-                t = [.. t!.OrderByDescending(s => s)];
-                srItems.SetItemsSource(t);
+                // Sort by Priority (descending - highest priority first)
+                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderByDescending(s => s.Priority));
             }
             else if (selectedItem == "Sort By Name")
             {
-                //(ascending order)
-                Random rng = new();
-                var t = (ObservableCollection<string>)srItems.GetItemsSource()!;
-                t = [.. t!.OrderBy(_ => rng.Next())];
-                srItems.SetItemsSource(t);
+                // Sort by Name (ascending - alphabetical order)
+                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderBy(s => s.Name));
             }
-            */
+            // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
+
+            srItems.SetItemsSource(itemsSource);
         });
 
         entities["MainWindow"].OnClosed((_, _) => SaveSpaceRepetitionItemsToDisk(dummyItems));
