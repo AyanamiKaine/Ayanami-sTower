@@ -75,6 +75,12 @@ public static class AddAudio
             .Set(new TextBox())
             .SetWatermark("Name");
 
+        var questionTextBox = entities.Create()
+            .ChildOf(layout)
+            .Set(new TextBox())
+            .SetWatermark("Question");
+
+
         var filePickerButton = FilePickerButton(entities);
 
         var filePath = entities.Create()
@@ -131,11 +137,13 @@ public static class AddAudio
                 entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                 {
                     Name = nameTextBox.GetText(),
+                    Question = questionTextBox.GetText(),
                     FilePath = filePath.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.Audio
                 });
 
                 nameTextBox.SetText("");
+                questionTextBox.SetText("");
                 filePath.SetText("");
                 tags.Clear();
             });
