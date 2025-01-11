@@ -126,7 +126,12 @@ public static class AddFile
         
         */
         var spacedRepetitionItems = entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>();
+
+
         int calculatedPriority = 500000000;
+        int heighestPossiblePriority = 999999999;
+        int smallestPossiblePriority = 0;
+
         SpacedRepetitionItem? currentItemToCompare;
         string? currentItemName;
         var rng = new Random();
@@ -174,6 +179,35 @@ public static class AddFile
             .SetColumnSpan(2)
             .SetText(currentItemName!);
 
+
+
+        spacedRepetitionItems!.CollectionChanged += ((sender, e) =>
+        {
+            if (spacedRepetitionItems?.Count != 0 && spacedRepetitionItems is not null)
+            {
+                currentItemToCompare = spacedRepetitionItems
+                    .Where(x => x.Priority >= smallestPossiblePriority && x.Priority <= heighestPossiblePriority)
+                    .OrderBy(x => x.Priority)
+                    .FirstOrDefault();
+
+                if (currentItemToCompare is not null)
+                    currentItemName = currentItemToCompare.Name;
+                else
+                    currentItemName = "No Items to compare to";
+
+                itemToCompareToTextBlock.SetText(currentItemName);
+
+            }
+            else
+            {
+                currentItemToCompare = null;
+                currentItemName = "No Items to compare to";
+                itemToCompareToTextBlock.SetText(currentItemName);
+
+            }
+        });
+
+
         var lessPriorityButton = entities.Create()
             .ChildOf(priorityGrid)
             .Set(new Button())
@@ -185,8 +219,21 @@ public static class AddFile
             .OnClick((_, _) =>
             {
                 calculatedPriority = currentItemToCompare!.Priority - rng.Next(500);
-                currentItemToCompare = spacedRepetitionItems!.OrderBy(x => x.Priority < calculatedPriority).First();
-                currentItemName = currentItemToCompare.Name;
+
+                if (calculatedPriority > heighestPossiblePriority)
+                    heighestPossiblePriority = calculatedPriority;
+                else
+                    smallestPossiblePriority = calculatedPriority;
+
+
+                currentItemToCompare = spacedRepetitionItems!.OrderBy(x => x.Priority < calculatedPriority).FirstOrDefault();
+
+                if (currentItemToCompare is null)
+                    currentItemName = "No more items to compare to";
+                else
+                    currentItemName = currentItemToCompare.Name;
+
+                itemToCompareToTextBlock.SetText(currentItemName);
             });
 
         var morePriorityButton = entities.Create()
@@ -199,9 +246,22 @@ public static class AddFile
             .SetRow(2).OnClick((_, _) =>
             {
                 calculatedPriority = currentItemToCompare!.Priority + rng.Next(500);
-                currentItemToCompare = spacedRepetitionItems!.OrderBy(x => x.Priority > calculatedPriority).First();
-                currentItemName = currentItemToCompare.Name;
+
+                if (calculatedPriority < heighestPossiblePriority)
+                    heighestPossiblePriority = calculatedPriority;
+                else
+                    smallestPossiblePriority = calculatedPriority;
+
+                currentItemToCompare = spacedRepetitionItems!.OrderBy(x => x.Priority > calculatedPriority).FirstOrDefault();
+
+                if (currentItemToCompare is null)
+                    currentItemName = "No more items to compare to";
+                else
+                    currentItemName = currentItemToCompare.Name;
+
+                itemToCompareToTextBlock.SetText(currentItemName);
             });
+
         var createFileButton = entities.GetEntityCreateIfNotExist("createFileButton")
             .ChildOf(layout)
             .Set(new Button())
@@ -224,6 +284,8 @@ public static class AddFile
                     SpacedRepetitionItemType = SpacedRepetitionItemType.File
                 });
 
+                smallestPossiblePriority = 0;
+                heighestPossiblePriority = 999999999;
                 nameTextBox.SetText("");
                 questionTextBox.SetText("");
                 filePath.SetText("");
