@@ -122,16 +122,17 @@ public static class AddFlashcard
             .SetContent("Create Item")
             .OnClick((sender, args) =>
             {
-
                 if (string.IsNullOrEmpty(nameTextBox.GetText()))
                 {
                     nameTextBox.SetWatermark("Name is required");
                     return;
                 }
 
-                entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
+                entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFlashcard()
                 {
                     Name = nameTextBox.GetText(),
+                    Front = frontText.GetText(),
+                    Back = backText.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.Flashcard
                 });
 
