@@ -14,7 +14,6 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public static class AddQuiz
 {
-
     /// <summary>
     /// Create the Add File Window
     /// </summary>
@@ -27,7 +26,6 @@ public static class AddQuiz
             .SetWindowTitle("Add Quiz")
             .SetWidth(400)
             .SetHeight(400);
-
 
         var scrollViewer = entities.GetEntityCreateIfNotExist("AddQuizScrollViewer")
             .ChildOf(addQuizWindow)
@@ -109,7 +107,6 @@ public static class AddQuiz
             .Set(new Grid())
             .SetRowDefinitions("*,*,*,*")
             .SetColumnDefinitions("Auto, *");
-
 
         foreach (int number in Enumerable.Range(0, 4))
         {
