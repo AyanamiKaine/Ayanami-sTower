@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -125,6 +126,21 @@ public static class AddFile
         
         */
         var spacedRepetitionItems = entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>();
+        int calculatedPriority = 500000000;
+        SpacedRepetitionItem? currentItemToCompare;
+        string? currentItemName;
+        var rng = new Random();
+        if (spacedRepetitionItems?.Count != 0 && spacedRepetitionItems is not null)
+        {
+            currentItemToCompare = spacedRepetitionItems.OrderBy(x => rng.Next()).First();
+            currentItemName = currentItemToCompare.Name;
+        }
+        else
+        {
+            currentItemToCompare = null;
+            currentItemName = "No Items to compare to";
+        }
+
 
         var priorityGrid = entities.Create()
             .ChildOf(layout)
@@ -156,7 +172,7 @@ public static class AddFile
             .SetMargin(20)
             .SetRow(1)
             .SetColumnSpan(2)
-            .SetText("ITEMS");
+            .SetText(currentItemName!);
 
         var lessPriorityButton = entities.Create()
             .ChildOf(priorityGrid)
@@ -165,7 +181,13 @@ public static class AddFile
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Left)
             .SetMargin(20)
             .SetColumn(0)
-            .SetRow(2);
+            .SetRow(2)
+            .OnClick((_, _) =>
+            {
+                calculatedPriority = currentItemToCompare!.Priority - rng.Next(500);
+                currentItemToCompare = spacedRepetitionItems!.OrderBy(x => x.Priority < calculatedPriority).First();
+                currentItemName = currentItemToCompare.Name;
+            });
 
         var morePriorityButton = entities.Create()
             .ChildOf(priorityGrid)
@@ -174,15 +196,18 @@ public static class AddFile
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Right)
             .SetMargin(20)
             .SetColumn(1)
-            .SetRow(2);
-
+            .SetRow(2).OnClick((_, _) =>
+            {
+                calculatedPriority = currentItemToCompare!.Priority + rng.Next(500);
+                currentItemToCompare = spacedRepetitionItems!.OrderBy(x => x.Priority > calculatedPriority).First();
+                currentItemName = currentItemToCompare.Name;
+            });
         var createFileButton = entities.GetEntityCreateIfNotExist("createFileButton")
             .ChildOf(layout)
             .Set(new Button())
             .SetContent("Create Item")
             .OnClick((sender, args) =>
             {
-
                 if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()))
                 {
                     nameTextBox.SetWatermark("Name is required");
@@ -193,6 +218,7 @@ public static class AddFile
                 entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                 {
                     Name = nameTextBox.GetText(),
+                    Priority = calculatedPriority,
                     Question = questionTextBox.GetText(),
                     FilePath = filePath.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.File
@@ -202,6 +228,7 @@ public static class AddFile
                 questionTextBox.SetText("");
                 filePath.SetText("");
                 tags.Clear();
+                calculatedPriority = 5000000;
             });
 
         return layout;
