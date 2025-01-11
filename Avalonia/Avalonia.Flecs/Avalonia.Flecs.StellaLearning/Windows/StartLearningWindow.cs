@@ -338,7 +338,7 @@ public static class StartLearningWindow
 
         return items
                 .Where(item => item.NextReview <= now) // Filter for items that are due
-                .OrderBy(item => item.NextReview)     // Order by the next review date (ascending)
+                .OrderBy(item => item.Priority)     // Order by the next review date (ascending)
                 .FirstOrDefault();                  // Take the first item (the nearest due date)
     }
 
