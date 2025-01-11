@@ -28,7 +28,7 @@ public static class AddFlashcard
     {
         var addFlashcardWindow = entities.GetEntityCreateIfNotExist("AddFlashcardWindow")
             .Set(new Window())
-            .SetWindowTitle("Add File")
+            .SetWindowTitle("Add Flashcard")
             .SetWidth(400)
             .SetHeight(400);
 
