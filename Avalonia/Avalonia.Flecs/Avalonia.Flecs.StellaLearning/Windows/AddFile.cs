@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Flecs.Util;
 using Avalonia.Input;
 using Avalonia.Platform.Storage;
@@ -124,7 +125,9 @@ public static class AddFile
         How are we gonna do this?
         Priority will be determined based on questions like is the priority higher or lower of an already created item?
         
-        */
+        WE MUST REFACTOR THIS CODE TO BE GENERIC AND WORK FOR ALL CREATION WINDOWS!
+
+
         var spacedRepetitionItems = entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>();
 
         int calculatedPriority = 500000000;
@@ -274,12 +277,16 @@ public static class AddFile
                 }
                 itemToCompareToTextBlock.SetText(currentItemName);
             });
+        */
 
         var createFileButton = entities.GetEntityCreateIfNotExist("createFileButton")
             .ChildOf(layout)
             .Set(new Button())
-            .SetContent("Create Item")
-            .OnClick((sender, args) =>
+            .SetContent("Create Item");
+
+        (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createFileButton);
+        priorityCompareComponent.ChildOf(layout);
+        createFileButton.OnClick((sender, args) =>
             {
                 if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()))
                 {
@@ -291,21 +298,22 @@ public static class AddFile
                 entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                 {
                     Name = nameTextBox.GetText(),
-                    Priority = calculatedPriority,
+                    Priority = calculatedPriority.Get<int>(),
                     Question = questionTextBox.GetText(),
                     FilePath = filePath.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.File
                 });
-                morePriorityButton.Get<Button>().IsEnabled = true;
-                lessPriorityButton.Get<Button>().IsEnabled = true;
+                //morePriorityButton.Get<Button>().IsEnabled = true;
+                //lessPriorityButton.Get<Button>().IsEnabled = true;
+                calculatedPriority.Set(500000000);
 
-                smallestPossiblePriority = 0;
-                heighestPossiblePriority = 999999999;
+                //smallestPossiblePriority = 0;
+                //heighestPossiblePriority = 999999999;
                 nameTextBox.SetText("");
                 questionTextBox.SetText("");
                 filePath.SetText("");
                 tags.Clear();
-                calculatedPriority = 5000000;
+                //calculatedPriority = 5000000;
             });
 
         return layout;
