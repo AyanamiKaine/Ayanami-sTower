@@ -333,7 +333,7 @@ public static class StartLearningWindow
     {
         if (items == null || !items.Any())
         {
-            return null; // Return null if the collection is empty or null
+            return null;
         }
 
         return items
