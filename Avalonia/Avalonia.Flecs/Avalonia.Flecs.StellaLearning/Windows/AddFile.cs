@@ -215,26 +215,9 @@ public static class AddFile
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Left)
             .SetMargin(20)
             .SetColumn(0)
-            .SetRow(2)
-            .OnClick((_, _) =>
-            {
-                calculatedPriority = currentItemToCompare!.Priority - rng.Next(500);
-
-                if (calculatedPriority > heighestPossiblePriority)
-                    heighestPossiblePriority = calculatedPriority;
-                else
-                    smallestPossiblePriority = calculatedPriority;
+            .SetRow(2);
 
 
-                currentItemToCompare = spacedRepetitionItems!.OrderBy(x => x.Priority < calculatedPriority).FirstOrDefault();
-
-                if (currentItemToCompare is null)
-                    currentItemName = "No more items to compare to";
-                else
-                    currentItemName = currentItemToCompare.Name;
-
-                itemToCompareToTextBlock.SetText(currentItemName);
-            });
 
         var morePriorityButton = entities.Create()
             .ChildOf(priorityGrid)
@@ -243,22 +226,58 @@ public static class AddFile
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Right)
             .SetMargin(20)
             .SetColumn(1)
-            .SetRow(2).OnClick((_, _) =>
+            .SetRow(2);
+
+        lessPriorityButton.OnClick((_, _) =>
             {
-                calculatedPriority = currentItemToCompare!.Priority + rng.Next(500);
+                calculatedPriority = currentItemToCompare!.Priority - 1;
 
-                if (calculatedPriority < heighestPossiblePriority)
-                    heighestPossiblePriority = calculatedPriority;
-                else
-                    smallestPossiblePriority = calculatedPriority;
 
-                currentItemToCompare = spacedRepetitionItems!.OrderBy(x => x.Priority > calculatedPriority).FirstOrDefault();
+                heighestPossiblePriority = calculatedPriority;
 
-                if (currentItemToCompare is null)
+
+                var itemsBetweenLowAndHighPriority = spacedRepetitionItems
+                    .Where(x => x.Priority >= smallestPossiblePriority && x.Priority <= heighestPossiblePriority);
+
+                currentItemToCompare = itemsBetweenLowAndHighPriority
+                    .OrderBy(x => x.Priority > heighestPossiblePriority)
+                    .Reverse()
+                    .FirstOrDefault();
+
+                if (currentItemToCompare is null || currentItemToCompare.Priority > calculatedPriority)
+                {
                     currentItemName = "No more items to compare to";
+                    lessPriorityButton.Get<Button>().IsEnabled = false;
+                    morePriorityButton.Get<Button>().IsEnabled = false;
+                }
                 else
+                {
                     currentItemName = currentItemToCompare.Name;
+                }
+                itemToCompareToTextBlock.SetText(currentItemName);
+            });
 
+        morePriorityButton.OnClick((_, _) =>
+            {
+                calculatedPriority = currentItemToCompare!.Priority + 1;
+
+                smallestPossiblePriority = calculatedPriority;
+
+                currentItemToCompare = spacedRepetitionItems
+                    .Where(x => x.Priority >= smallestPossiblePriority && x.Priority <= heighestPossiblePriority)
+                    .OrderBy(x => x.Priority)
+                    .FirstOrDefault();
+
+                if (currentItemToCompare is null || currentItemToCompare.Priority < calculatedPriority)
+                {
+                    currentItemName = "No more items to compare to";
+                    morePriorityButton.Get<Button>().IsEnabled = false;
+                    lessPriorityButton.Get<Button>().IsEnabled = false;
+                }
+                else
+                {
+                    currentItemName = currentItemToCompare.Name;
+                }
                 itemToCompareToTextBlock.SetText(currentItemName);
             });
 
@@ -283,6 +302,8 @@ public static class AddFile
                     FilePath = filePath.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.File
                 });
+                morePriorityButton.Get<Button>().IsEnabled = true;
+                lessPriorityButton.Get<Button>().IsEnabled = true;
 
                 smallestPossiblePriority = 0;
                 heighestPossiblePriority = 999999999;
