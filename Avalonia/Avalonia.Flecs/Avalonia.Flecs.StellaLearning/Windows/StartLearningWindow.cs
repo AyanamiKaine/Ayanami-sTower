@@ -153,6 +153,16 @@ public static class StartLearningWindow
             .SetSpacing(10)
             .SetMargin(20);
 
+
+        entities.GetEntityCreateIfNotExist("learnFileQuestion")
+            .ChildOf(layout)
+            .Set(new TextBlock()
+            { TextWrapping = Media.TextWrapping.Wrap })
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetMargin(0, 20)
+            .SetText(file.Question);
+
         entities.GetEntityCreateIfNotExist("LearnFileContent")
             .ChildOf(layout)
             .Set(new TextBlock()
