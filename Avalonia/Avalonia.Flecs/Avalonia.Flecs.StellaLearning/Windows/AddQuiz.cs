@@ -1,8 +1,10 @@
 using System;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls.ECS;
+using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
 
@@ -63,12 +65,12 @@ public static class AddQuiz
             .SetSpacing(10)
             .SetMargin(20);
 
-        entities.Create()
+        var nameTextBox = entities.Create()
             .ChildOf(layout)
             .Set(new TextBox())
             .SetWatermark("Name");
 
-        entities.Create()
+        var quizQuestionTextBox = entities.Create()
                 .ChildOf(layout)
                 .Set(new TextBox())
                 .SetWatermark("Quiz Question");
@@ -78,7 +80,25 @@ public static class AddQuiz
         entities.Create()
             .ChildOf(layout)
             .Set(new Button())
-            .SetContent("Create Quiz");
+            .SetContent("Create Quiz")
+            .OnClick((_, _) =>
+            {
+                if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                {
+                    nameTextBox.SetWatermark("Name is required");
+                    return;
+                }
+
+                entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionQuiz()
+                {
+                    Name = nameTextBox.GetText(),
+                    Question = quizQuestionTextBox.GetText(),
+                    SpacedRepetitionItemType = SpacedRepetitionItemType.Quiz
+                });
+
+                nameTextBox.SetText("");
+                quizQuestionTextBox.SetText("");
+            });
 
         return layout;
     }
@@ -108,7 +128,6 @@ public static class AddQuiz
                 .SetRow(number)
                 .SetMargin(5);
         }
-
 
         Console.WriteLine(FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 0, 0)!.IsChecked);
         return quizAnswers;
