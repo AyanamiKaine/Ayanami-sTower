@@ -73,6 +73,11 @@ public static class AddVideo
             .Set(new TextBox())
             .SetWatermark("Name");
 
+        var questionTextBox = entities.Create()
+            .ChildOf(layout)
+            .Set(new TextBox())
+            .SetWatermark("Question");
+
         var filePickerButton = FilePickerButton(entities);
 
         var filePath = entities.Create()
@@ -127,11 +132,13 @@ public static class AddVideo
                 entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                 {
                     Name = nameTextBox.GetText(),
+                    Question = questionTextBox.GetText(),
                     FilePath = filePath.GetText(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.Video
                 });
 
                 nameTextBox.SetText("");
+                questionTextBox.SetText("");
                 filePath.SetText("");
                 tags.Clear();
             });
