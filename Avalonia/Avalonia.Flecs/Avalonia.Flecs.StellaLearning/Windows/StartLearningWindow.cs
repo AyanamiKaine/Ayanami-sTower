@@ -153,7 +153,6 @@ public static class StartLearningWindow
             .SetSpacing(10)
             .SetMargin(20);
 
-
         entities.GetEntityCreateIfNotExist("learnFileQuestion")
             .ChildOf(layout)
             .Set(new TextBlock()
@@ -171,7 +170,6 @@ public static class StartLearningWindow
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetMargin(0, 10)
             .SetText(file.FilePath);
-
 
         entities.GetEntityCreateIfNotExist("FileOpenButton")
             .Set(new Button())
