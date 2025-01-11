@@ -117,6 +117,65 @@ public static class AddFile
             .SetItemTemplate(DefineTagTemplate(entities))
             .SetItemsSource(tags);
 
+        /*
+        Determine the correct priority
+
+        How are we gonna do this?
+        Priority will be determined based on questions like is the priority higher or lower of an already created item?
+        
+        */
+        var spacedRepetitionItems = entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>();
+
+        var priorityGrid = entities.Create()
+            .ChildOf(layout)
+            .Set(new Grid())
+            .SetColumnDefinitions("*,*")
+            .SetRowDefinitions("*,*,*");
+
+        var priorityTextblock = entities.Create()
+            .ChildOf(priorityGrid)
+            .Set(new TextBlock()
+            {
+                TextWrapping = Media.TextWrapping.Wrap
+            })
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetRow(0)
+            .SetColumnSpan(2)
+            .SetText("Is the new item more or less important than this one?");
+
+        var itemToCompareToTextBlock = entities.Create()
+            .ChildOf(priorityGrid)
+            .Set(new TextBlock()
+            {
+                TextWrapping = Media.TextWrapping.Wrap,
+                FontWeight = Media.FontWeight.Bold
+            })
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetMargin(20)
+            .SetRow(1)
+            .SetColumnSpan(2)
+            .SetText("ITEMS");
+
+        var lessPriorityButton = entities.Create()
+            .ChildOf(priorityGrid)
+            .Set(new Button())
+            .SetContent("Less")
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Left)
+            .SetMargin(20)
+            .SetColumn(0)
+            .SetRow(2);
+
+        var morePriorityButton = entities.Create()
+            .ChildOf(priorityGrid)
+            .Set(new Button())
+            .SetContent("More")
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Right)
+            .SetMargin(20)
+            .SetColumn(1)
+            .SetRow(2);
+
         var createFileButton = entities.GetEntityCreateIfNotExist("createFileButton")
             .ChildOf(layout)
             .Set(new Button())
