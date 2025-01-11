@@ -276,35 +276,6 @@ public static class SpacedRepetitionPage
             }
         };
 
-        var openMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionOpenMenuItem")
-            .ChildOf(contextFlyout)
-            .Set(new MenuItem())
-            .SetHeader("Open")
-            .OnClick((sender, args) =>
-            {
-                var item = srItems.GetSelectedItem<SpacedRepetitionItem>();
-                item.GoodReview();
-                Console.WriteLine("Open Clicked");
-                try
-                {
-                    if (entities["SettingsProvider"].Has<Settings>())
-                    {
-
-                        string ObsidianPath = entities["SettingsProvider"].Get<Settings>().ObsidianPath;
-
-                        if (item is SpacedRepetitionFile file)
-                        {
-                            FileOpener.OpenMarkdownFileWithObsidian(file.FilePath, ObsidianPath);
-                        }
-                    }
-                    //FileOpener.OpenFileWithDefaultProgram("""C:\Users\ayanami\nimsuggest.log""");
-                }
-                catch (FileNotFoundException ex)
-                {
-                    Console.WriteLine(ex.Message, ex.FileName);
-                }
-            });
-
         var editMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionEditMenuItem")
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
@@ -424,7 +395,7 @@ public static class SpacedRepetitionPage
 
             foreach (var item in items!)
             {
-                
+
             }
 
             return items ?? new ObservableCollection<SpacedRepetitionItem>();
