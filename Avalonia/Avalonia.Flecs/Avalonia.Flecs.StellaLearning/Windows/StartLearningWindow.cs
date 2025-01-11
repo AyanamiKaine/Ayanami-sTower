@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Timers;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
@@ -267,9 +268,16 @@ public static class StartLearningWindow
     {
         var cloze = (SpacedRepetitionCloze)GetNextItemToBeReviewed(spacedRepetitionItems)!;
 
+        StringBuilder sb = new StringBuilder(cloze.FullText);
+        foreach (string word in cloze.ClozeWords)
+        {
+            sb.Replace(word, "[...]");
+        }
+
+        string clozeRemovedText = sb.ToString();
         return entities.GetEntityCreateIfNotExist("LearnClozeContent")
             .Set(new TextBlock())
-            .SetText(cloze.FullText);
+            .SetText(clozeRemovedText);
     }
 
     private static Entity DisplayRightItem(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)

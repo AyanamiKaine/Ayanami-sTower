@@ -123,6 +123,7 @@ public static class AddCloze
                 entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionCloze()
                 {
                     Name = nameTextBox.GetText(),
+                    FullText = clozeBox.GetText(),
                     ClozeWords = [.. clozes],
                     SpacedRepetitionItemType = SpacedRepetitionItemType.Cloze
                 });
