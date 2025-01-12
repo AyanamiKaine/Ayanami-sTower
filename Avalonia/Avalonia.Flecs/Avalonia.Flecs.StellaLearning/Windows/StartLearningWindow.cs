@@ -256,11 +256,69 @@ public static class StartLearningWindow
 
     private static Entity LearnQuizContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
+        var layout = entities.Create()
+            .Set(new StackPanel())
+            .SetOrientation(Layout.Orientation.Vertical)
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetSpacing(10)
+            .SetMargin(20);
+
         var quiz = (SpacedRepetitionQuiz)GetNextItemToBeReviewed(spacedRepetitionItems)!;
 
-        return entities.GetEntityCreateIfNotExist("LearnQuizContent")
+        entities.Create()
+            .ChildOf(layout)
             .Set(new TextBlock())
+            .SetText(quiz.Name);
+
+        entities.Create()
+            .ChildOf(layout)
+            .Set(new TextBlock())
+            .SetMargin(20)
             .SetText(quiz.Question);
+
+        var reviewButtonGrid = entities.Create()
+            .Set(new Grid())
+            .ChildOf(layout)
+            .SetColumnDefinitions("auto,auto")
+            .SetRowDefinitions("*,*");
+
+        var easyReviewButton = entities.Create()
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button())
+            .SetContent(quiz.Answers[0])
+            .SetMargin(10, 0)
+            .SetColumn(0)
+            .SetRow(0)
+            .OnClick((_, _) => quiz.EasyReview());
+
+        var goodReviewButton = entities.Create()
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button())
+            .SetContent(quiz.Answers[1])
+            .SetMargin(10, 0)
+            .SetColumn(1)
+            .SetRow(0)
+            .OnClick((_, _) => quiz.GoodReview());
+
+        var hardReviewButton = entities.Create()
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button())
+            .SetContent(quiz.Answers[2])
+            .SetMargin(10, 0)
+            .SetColumn(0)
+            .SetRow(1)
+            .OnClick((_, _) => quiz.HardReview());
+
+        var againReviewButton = entities.Create()
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button())
+            .SetContent(quiz.Answers[3])
+            .SetMargin(10, 0)
+            .SetColumn(1)
+            .SetRow(1);
+
+        return layout;
     }
 
     private static Entity LearnFlashcardContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
@@ -275,7 +333,7 @@ public static class StartLearningWindow
     private static Entity LearnClozeContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
 
-        var layout = entities.GetEntityCreateIfNotExist("LearnFileLayout")
+        var layout = entities.Create()
             .Set(new StackPanel())
             .SetOrientation(Layout.Orientation.Vertical)
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
