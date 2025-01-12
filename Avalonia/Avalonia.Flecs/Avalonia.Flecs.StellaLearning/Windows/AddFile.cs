@@ -49,8 +49,7 @@ public static class AddFile
 
         addFileWindow.OnClosing((s, e) =>
         {
-            // As long as the main window is visible dont 
-            // close the window but hide it instead
+
             if (entities["MainWindow"].Get<Window>().IsVisible)
             {
                 ((Window)s!).Hide();
@@ -120,12 +119,14 @@ public static class AddFile
             .SetItemsSource(tags);
 
         var createFileButton = entities.GetEntityCreateIfNotExist("createFileButton")
-            .ChildOf(layout)
             .Set(new Button())
             .SetContent("Create Item");
 
         (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createFileButton);
         priorityCompareComponent.ChildOf(layout);
+
+        createFileButton.ChildOf(layout);
+
         createFileButton.OnClick((sender, args) =>
             {
                 if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()))
@@ -150,6 +151,16 @@ public static class AddFile
                 filePath.SetText("");
                 tags.Clear();
             });
+
+
+        entities["AddFileWindow"].OnClosing((_, _) =>
+        {
+            calculatedPriority.Set(500000000);
+            nameTextBox.SetText("");
+            questionTextBox.SetText("");
+            filePath.SetText("");
+            tags.Clear();
+        });
 
         return layout;
     }
