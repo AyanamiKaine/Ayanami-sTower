@@ -6,6 +6,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
+using Avalonia.Media;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
@@ -70,7 +71,7 @@ public static class AddQuiz
 
         var quizQuestionTextBox = entities.Create()
                 .ChildOf(layout)
-                .Set(new TextBox())
+                .Set(new TextBox() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap })
                 .SetWatermark("Quiz Question");
 
         CreateAnswerLayout(entities).ChildOf(layout);
