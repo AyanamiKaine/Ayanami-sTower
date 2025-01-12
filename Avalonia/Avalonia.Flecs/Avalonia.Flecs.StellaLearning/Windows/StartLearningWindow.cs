@@ -274,6 +274,15 @@ public static class StartLearningWindow
 
     private static Entity LearnClozeContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
+
+        var layout = entities.GetEntityCreateIfNotExist("LearnFileLayout")
+            .Set(new StackPanel())
+            .SetOrientation(Layout.Orientation.Vertical)
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetSpacing(10)
+            .SetMargin(20);
+
         var cloze = (SpacedRepetitionCloze)GetNextItemToBeReviewed(spacedRepetitionItems)!;
 
         StringBuilder sb = new StringBuilder(cloze.FullText);
@@ -283,9 +292,85 @@ public static class StartLearningWindow
         }
 
         string clozeRemovedText = sb.ToString();
-        return entities.GetEntityCreateIfNotExist("LearnClozeContent")
-            .Set(new TextBlock())
+
+
+        var clozeText = entities.GetEntityCreateIfNotExist("LearnClozeContent")
+            .Set(new TextBlock()
+            {
+                TextWrapping = Media.TextWrapping.Wrap
+            })
+            .ChildOf(layout)
             .SetText(clozeRemovedText);
+
+        var showMaskedClozeButton = entities.Create()
+            .Set(new Button())
+            .SetMargin(15)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .ChildOf(layout)
+            .SetContent("Show");
+
+        var reviewButtonGrid = entities.GetEntityCreateIfNotExist("FileReviewButtonGrid")
+            .Set(new Grid())
+            .ChildOf(layout)
+            .SetColumnDefinitions("*, *, *, *")
+            .SetRowDefinitions("auto");
+
+        var easyReviewButton = entities.GetEntityCreateIfNotExist("FileEasyReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button()
+            {
+                IsEnabled = false
+            })
+            .SetContent("Easy")
+            .SetMargin(10, 0)
+            .SetColumn(0)
+            .OnClick((_, _) => cloze.EasyReview());
+
+        var goodReviewButton = entities.GetEntityCreateIfNotExist("FileGoodReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button()
+            {
+                IsEnabled = false
+            })
+            .SetContent("Good")
+            .SetMargin(10, 0)
+            .SetColumn(1)
+            .OnClick((_, _) => cloze.GoodReview());
+
+        var hardReviewButton = entities.GetEntityCreateIfNotExist("FileHardReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button()
+            {
+                IsEnabled = false
+            })
+            .SetContent("Hard")
+            .SetMargin(10, 0)
+            .SetColumn(2)
+            .OnClick((_, _) => cloze.HardReview());
+
+        var againReviewButton = entities.GetEntityCreateIfNotExist("FileAgainReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button()
+            {
+                IsEnabled = false
+            })
+            .SetContent("Again")
+            .SetMargin(10, 0)
+            .SetColumn(3)
+            .OnClick((_, _) => cloze.AgainReview());
+
+        showMaskedClozeButton.OnClick((_, _) =>
+            {
+                clozeText.SetText(cloze.FullText);
+                againReviewButton.Get<Button>().IsEnabled = true;
+                hardReviewButton.Get<Button>().IsEnabled = true;
+                goodReviewButton.Get<Button>().IsEnabled = true;
+                easyReviewButton.Get<Button>().IsEnabled = true;
+
+            });
+
+        return layout;
     }
 
     private static Entity DisplayRightItem(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
