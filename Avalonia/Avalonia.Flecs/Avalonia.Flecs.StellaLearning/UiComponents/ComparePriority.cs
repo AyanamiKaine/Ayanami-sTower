@@ -36,11 +36,12 @@ public static class ComparePriority
         int heighestPossiblePriority = 999999999;
         int smallestPossiblePriority = 0;
 
-        SpacedRepetitionItem? currentItemToCompare;
+        SpacedRepetitionItem? currentItemToCompare = null;
         string? currentItemName;
         var rng = new Random();
 
         var priorityGrid = entities.Create()
+            .Set(currentItemToCompare)
             .ChildOf(layout)
             .Set(new Grid())
             .SetColumnDefinitions("*,*")
