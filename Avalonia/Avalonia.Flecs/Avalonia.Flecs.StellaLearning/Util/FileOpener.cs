@@ -150,6 +150,18 @@ public static class FileOpener
         {
             Console.WriteLine($"Opening file in Obsidian: {obsidianPath} obsidian://open?path={path}");
             Process.Start(obsidianPath, $"obsidian://open?path=\"{path}\"");
+
+            Process process = new()
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = obsidianPath,
+                    Arguments = $"obsidian://open?path=\"{path}\"", // Quote the path
+                    UseShellExecute = false, // Required for redirection
+                    CreateNoWindow = true, // Optional: Don't show a console window
+                }
+            };
+            process.Start();
         }
         catch (System.Exception ex)
         {
