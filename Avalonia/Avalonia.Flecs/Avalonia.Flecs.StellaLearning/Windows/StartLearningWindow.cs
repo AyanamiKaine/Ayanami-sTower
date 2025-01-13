@@ -4,12 +4,14 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Timers;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.Util;
 using Avalonia.Flecs.Util;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Flecs.NET.Core;
 
@@ -259,7 +261,7 @@ public static class StartLearningWindow
 
     private static Entity LearnQuizContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        var layout = entities.Create("LearnQuizLayou")
+        var layout = entities.GetEntityCreateIfNotExist("LearnQuizLayout")
             .Set(new StackPanel())
             .SetOrientation(Layout.Orientation.Vertical)
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
@@ -269,18 +271,18 @@ public static class StartLearningWindow
 
         var quiz = (SpacedRepetitionQuiz)GetNextItemToBeReviewed(spacedRepetitionItems)!;
 
-        entities.Create("LearnQuizContent")
+        entities.GetEntityCreateIfNotExist("LearnQuizContent")
             .ChildOf(layout)
             .Set(new TextBlock())
             .SetText(quiz.Name);
 
-        entities.Create("LearnQuizQuestion")
+        entities.GetEntityCreateIfNotExist("LearnQuizQuestion")
             .ChildOf(layout)
             .Set(new TextBlock())
             .SetMargin(20)
             .SetText(quiz.Question);
 
-        var reviewButtonGrid = entities.Create("LearnReviewButtonGrid")
+        var anwserButtonGrid = entities.GetEntityCreateIfNotExist("AnwserButtonGrid")
             .Set(new Grid())
             .ChildOf(layout)
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
@@ -288,8 +290,8 @@ public static class StartLearningWindow
             .SetColumnDefinitions("auto,auto")
             .SetRowDefinitions("*,*");
 
-        var easyReviewButton = entities.Create("LearnReviewEasy")
-            .ChildOf(reviewButtonGrid)
+        var anwser1Button = entities.GetEntityCreateIfNotExist("anwser1Button")
+            .ChildOf(anwserButtonGrid)
             .Set(new Button())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
@@ -297,10 +299,29 @@ public static class StartLearningWindow
             .SetMargin(10, 0)
             .SetColumn(0)
             .SetRow(0)
-            .OnClick((_, _) => quiz.EasyReview());
+            .OnClick(async (sender, args) =>
+            {
+                if (sender is Button button)
+                {
 
-        var goodReviewButton = entities.Create("LearnReviewGood")
-            .ChildOf(reviewButtonGrid)
+                    if (quiz.CorrectAnswerIndex == 0)
+                    {
+                        
+                        button.Background = Brushes.LightGreen;
+                        await Task.Delay(2000);
+                        quiz.GoodReview();
+                    }
+                    else
+                    {
+                        button.Background = Brushes.Red;
+                        await Task.Delay(2000);
+                        quiz.AgainReview();
+                    }
+                }
+            });
+
+        var anwser2Button = entities.GetEntityCreateIfNotExist("anwser2Button")
+            .ChildOf(anwserButtonGrid)
             .Set(new Button())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
@@ -308,10 +329,28 @@ public static class StartLearningWindow
             .SetMargin(10, 0)
             .SetColumn(1)
             .SetRow(0)
-            .OnClick((_, _) => quiz.GoodReview());
+            .OnClick(async (sender, args) =>
+            {
+                if (sender is Button button)
+                {
 
-        var hardReviewButton = entities.Create("LearnReviewHard")
-            .ChildOf(reviewButtonGrid)
+                    if (quiz.CorrectAnswerIndex == 1)
+                    {
+                        button.Background = Brushes.LightGreen;
+                        await Task.Delay(2000);
+                        quiz.GoodReview();
+                    }
+                    else
+                    {
+                        button.Background = Brushes.Red;
+                        await Task.Delay(2000);
+                        quiz.AgainReview();
+                    }
+                }
+            });
+
+        var anwser3Button = entities.GetEntityCreateIfNotExist("anwser3Button")
+            .ChildOf(anwserButtonGrid)
             .Set(new Button())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
@@ -319,17 +358,54 @@ public static class StartLearningWindow
             .SetMargin(10, 0)
             .SetColumn(0)
             .SetRow(1)
-            .OnClick((_, _) => quiz.HardReview());
+            .OnClick(async (sender, args) =>
+            {
+                if (sender is Button button)
+                {
 
-        var againReviewButton = entities.Create("LearnReviewAgain")
-            .ChildOf(reviewButtonGrid)
+                    if (quiz.CorrectAnswerIndex == 2)
+                    {
+                        button.Background = Brushes.LightGreen;
+                        await Task.Delay(2000);
+                        quiz.GoodReview();
+                    }
+                    else
+                    {
+                        button.Background = Brushes.Red;
+                        await Task.Delay(2000);
+                        quiz.AgainReview();
+                    }
+                }
+            });
+
+        var anwser4Button = entities.GetEntityCreateIfNotExist("anwser4Button")
+            .ChildOf(anwserButtonGrid)
             .Set(new Button())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[3])
             .SetMargin(10, 0)
             .SetColumn(1)
-            .SetRow(1);
+            .SetRow(1)
+            .OnClick(async (sender, args) =>
+            {
+                if (sender is Button button)
+                {
+
+                    if (quiz.CorrectAnswerIndex == 3)
+                    {
+                        button.Background = Brushes.LightGreen;
+                        await Task.Delay(2000);
+                        quiz.GoodReview();
+                    }
+                    else
+                    {
+                        button.Background = Brushes.Red;
+                        await Task.Delay(2000);
+                        quiz.AgainReview();
+                    }
+                }
+            });
 
         return layout;
     }
@@ -346,7 +422,7 @@ public static class StartLearningWindow
     private static Entity LearnClozeContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
 
-        var layout = entities.Create("LearnClozeLayout")
+        var layout = entities.GetEntityCreateIfNotExist("LearnClozeLayout")
             .Set(new StackPanel())
             .SetOrientation(Layout.Orientation.Vertical)
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
