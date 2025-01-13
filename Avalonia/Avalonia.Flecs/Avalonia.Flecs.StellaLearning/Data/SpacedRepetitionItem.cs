@@ -197,7 +197,7 @@ public class SpacedRepetitionQuiz : SpacedRepetitionItem
     /// <summary>
     /// The answers of the quiz
     /// </summary>
-    public List<string> Answers { get; set; } = ["Lorem Ispusm", "Lorem Ispusmiusm Dorema"];
+    public List<string> Answers { get; set; } = ["Lorem Ispusm", "Lorem Ispusmiusm Dorema", "Anwser3", "Anwser4"];
     /// <summary>
     /// The index of the correct answer
     /// </summary>
