@@ -187,7 +187,10 @@ public static class StartLearningWindow
                         string ObsidianPath = entities["SettingsProvider"].Get<Settings>().ObsidianPath;
                         FileOpener.OpenMarkdownFileWithObsidian(file.FilePath, ObsidianPath);
                     }
-                    FileOpener.OpenFileWithDefaultProgram(file.FilePath);
+                    else
+                    {
+                        FileOpener.OpenFileWithDefaultProgram(file.FilePath);
+                    }
                 }
                 catch (FileNotFoundException ex)
                 {
@@ -256,7 +259,7 @@ public static class StartLearningWindow
 
     private static Entity LearnQuizContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        var layout = entities.Create()
+        var layout = entities.Create("LearnQuizLayou")
             .Set(new StackPanel())
             .SetOrientation(Layout.Orientation.Vertical)
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
@@ -266,53 +269,63 @@ public static class StartLearningWindow
 
         var quiz = (SpacedRepetitionQuiz)GetNextItemToBeReviewed(spacedRepetitionItems)!;
 
-        entities.Create()
+        entities.Create("LearnQuizContent")
             .ChildOf(layout)
             .Set(new TextBlock())
             .SetText(quiz.Name);
 
-        entities.Create()
+        entities.Create("LearnQuizQuestion")
             .ChildOf(layout)
             .Set(new TextBlock())
             .SetMargin(20)
             .SetText(quiz.Question);
 
-        var reviewButtonGrid = entities.Create()
+        var reviewButtonGrid = entities.Create("LearnReviewButtonGrid")
             .Set(new Grid())
             .ChildOf(layout)
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetColumnDefinitions("auto,auto")
             .SetRowDefinitions("*,*");
 
-        var easyReviewButton = entities.Create()
+        var easyReviewButton = entities.Create("LearnReviewEasy")
             .ChildOf(reviewButtonGrid)
             .Set(new Button())
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[0])
             .SetMargin(10, 0)
             .SetColumn(0)
             .SetRow(0)
             .OnClick((_, _) => quiz.EasyReview());
 
-        var goodReviewButton = entities.Create()
+        var goodReviewButton = entities.Create("LearnReviewGood")
             .ChildOf(reviewButtonGrid)
             .Set(new Button())
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[1])
             .SetMargin(10, 0)
             .SetColumn(1)
             .SetRow(0)
             .OnClick((_, _) => quiz.GoodReview());
 
-        var hardReviewButton = entities.Create()
+        var hardReviewButton = entities.Create("LearnReviewHard")
             .ChildOf(reviewButtonGrid)
             .Set(new Button())
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[2])
             .SetMargin(10, 0)
             .SetColumn(0)
             .SetRow(1)
             .OnClick((_, _) => quiz.HardReview());
 
-        var againReviewButton = entities.Create()
+        var againReviewButton = entities.Create("LearnReviewAgain")
             .ChildOf(reviewButtonGrid)
             .Set(new Button())
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[3])
             .SetMargin(10, 0)
             .SetColumn(1)
@@ -333,7 +346,7 @@ public static class StartLearningWindow
     private static Entity LearnClozeContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
 
-        var layout = entities.Create()
+        var layout = entities.Create("LearnClozeLayout")
             .Set(new StackPanel())
             .SetOrientation(Layout.Orientation.Vertical)
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
@@ -368,13 +381,13 @@ public static class StartLearningWindow
             .ChildOf(layout)
             .SetContent("Show");
 
-        var reviewButtonGrid = entities.GetEntityCreateIfNotExist("FileReviewButtonGrid")
+        var reviewButtonGrid = entities.GetEntityCreateIfNotExist("ClozeReviewButtonGrid")
             .Set(new Grid())
             .ChildOf(layout)
             .SetColumnDefinitions("*, *, *, *")
             .SetRowDefinitions("auto");
 
-        var easyReviewButton = entities.GetEntityCreateIfNotExist("FileEasyReviewButton")
+        var easyReviewButton = entities.GetEntityCreateIfNotExist("ClozeEasyReviewButton")
             .ChildOf(reviewButtonGrid)
             .Set(new Button()
             {
@@ -385,7 +398,7 @@ public static class StartLearningWindow
             .SetColumn(0)
             .OnClick((_, _) => cloze.EasyReview());
 
-        var goodReviewButton = entities.GetEntityCreateIfNotExist("FileGoodReviewButton")
+        var goodReviewButton = entities.GetEntityCreateIfNotExist("ClozeGoodReviewButton")
             .ChildOf(reviewButtonGrid)
             .Set(new Button()
             {
@@ -396,7 +409,7 @@ public static class StartLearningWindow
             .SetColumn(1)
             .OnClick((_, _) => cloze.GoodReview());
 
-        var hardReviewButton = entities.GetEntityCreateIfNotExist("FileHardReviewButton")
+        var hardReviewButton = entities.GetEntityCreateIfNotExist("ClozeHardReviewButton")
             .ChildOf(reviewButtonGrid)
             .Set(new Button()
             {
@@ -407,7 +420,7 @@ public static class StartLearningWindow
             .SetColumn(2)
             .OnClick((_, _) => cloze.HardReview());
 
-        var againReviewButton = entities.GetEntityCreateIfNotExist("FileAgainReviewButton")
+        var againReviewButton = entities.GetEntityCreateIfNotExist("ClozeAgainReviewButton")
             .ChildOf(reviewButtonGrid)
             .Set(new Button()
             {
