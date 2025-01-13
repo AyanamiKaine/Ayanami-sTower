@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls;
@@ -74,7 +75,57 @@ public static class AddQuiz
                 .Set(new TextBox() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap })
                 .SetWatermark("Quiz Question");
 
-        CreateAnswerLayout(entities).ChildOf(layout);
+        var quizAnswers = CreateAnswerLayout(entities).ChildOf(layout);
+
+        var isAnwserCheck = (() =>
+        {
+            Console.WriteLine(FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 0, 0)!.IsChecked);
+            Console.WriteLine(FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 1, 0)!.IsChecked);
+            Console.WriteLine(FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 2, 0)!.IsChecked);
+            Console.WriteLine(FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 3, 0)!.IsChecked);
+
+
+            if (FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 0, 0)?.IsChecked ?? false)
+                return true;
+            else if (FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 1, 0)?.IsChecked ?? false)
+                return true;
+            else if (FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 2, 0)?.IsChecked ?? false)
+                return true;
+            else if (FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 3, 0)?.IsChecked ?? false)
+                return true;
+            else
+                return false;
+        });
+
+        var findAnwserIndex = (() =>
+        {
+            if (FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 0, 0)?.IsChecked ?? false)
+                return 0;
+            else if (FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 1, 0)?.IsChecked ?? false)
+                return 1;
+            else if (FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 2, 0)?.IsChecked ?? false)
+                return 2;
+            else if (FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 3, 0)?.IsChecked ?? false)
+                return 3;
+            else
+                throw new Exception("An Answer must be checked!");
+
+        });
+
+        var gatherAllAnwsers = (() =>
+        {
+            var anwsers = new List<string>
+            {
+                FindControl<TextBox>(quizAnswers.Get<Grid>(), 0, 1)?.Text ?? "Anwser1",
+                FindControl<TextBox>(quizAnswers.Get<Grid>(), 1, 1)?.Text ?? "Anwser2",
+                FindControl<TextBox>(quizAnswers.Get<Grid>(), 2, 1)?.Text ?? "Anwser3",
+                FindControl<TextBox>(quizAnswers.Get<Grid>(), 3, 1)?.Text ?? "Anwser4",
+
+            };
+
+
+            return anwsers;
+        });
 
         entities.Create()
             .ChildOf(layout)
@@ -88,15 +139,33 @@ public static class AddQuiz
                     return;
                 }
 
+                if (!isAnwserCheck())
+                {
+                    return;
+                }
+
                 entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionQuiz()
                 {
                     Name = nameTextBox.GetText(),
                     Question = quizQuestionTextBox.GetText(),
+
+                    CorrectAnswerIndex = findAnwserIndex(),
+                    Answers = gatherAllAnwsers(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.Quiz
                 });
 
                 nameTextBox.SetText("");
                 quizQuestionTextBox.SetText("");
+                FindControl<TextBox>(quizAnswers.Get<Grid>(), 0, 1)!.Text = "";
+                FindControl<TextBox>(quizAnswers.Get<Grid>(), 1, 1)!.Text = "";
+                FindControl<TextBox>(quizAnswers.Get<Grid>(), 2, 1)!.Text = "";
+                FindControl<TextBox>(quizAnswers.Get<Grid>(), 3, 1)!.Text = "";
+
+                FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 0, 0)!.IsChecked = false;
+                FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 1, 0)!.IsChecked = false;
+                FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 2, 0)!.IsChecked = false;
+                FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 3, 0)!.IsChecked = false;
+
             });
 
         return layout;
@@ -126,8 +195,6 @@ public static class AddQuiz
                 .SetRow(number)
                 .SetMargin(5);
         }
-
-        Console.WriteLine(FindControl<ToggleButton>(quizAnswers.Get<Grid>(), 0, 0)!.IsChecked);
         return quizAnswers;
     }
 
