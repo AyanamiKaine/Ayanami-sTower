@@ -41,6 +41,13 @@ public class Card(dynamic card)
                 return (CardState)state;
             }
         }
+        set
+        {
+            using (Py.GIL())
+            {
+                PyObject.state = ((int)value).ToPython();
+            }
+        }
     }
     /// <summary>
     /// Returns the underlying pyobject HANDLE WITH CARE!.
@@ -59,6 +66,13 @@ public class Card(dynamic card)
                 return PyObject.card_id.As<long>();
             }
         }
+        set
+        {
+            using (Py.GIL())
+            {
+                PyObject.card_id = value.ToPython();
+            }
+        }
     }
     /// <summary>
     /// The card's current learning or relearning step or None if the card is in the Review state.
@@ -69,11 +83,18 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                if (PyObject.step == null)
+                if (PyObject.step == null || PyObject.step.IsNone())
                 {
                     return null;
                 }
                 return PyObject.step.As<long>();
+            }
+        }
+        set
+        {
+            using (Py.GIL())
+            {
+                PyObject.step = value.ToPython();
             }
         }
     }
@@ -86,9 +107,32 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                const string format = "yyyy-MM-dd HH:mm:ss.ffffffzzz"; // Define the exact format
-                string due = PyObject.due.ToString();
-                return DateTime.ParseExact(due, format, CultureInfo.InvariantCulture);
+                string dueString = PyObject.due.ToString();
+                DateTime parsedDateTime;
+
+                // Try parsing with the first format (with fractional seconds)
+                if (DateTime.TryParseExact(dueString, "yyyy-MM-dd HH:mm:ss.ffffffzzz", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
+                {
+                    return parsedDateTime;
+                }
+                // Try parsing with the second format (without fractional seconds)
+                else if (DateTime.TryParseExact(dueString, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
+                {
+                    return parsedDateTime;
+                }
+                else
+                {
+                    // Handle the case where neither format matches
+                    throw new FormatException($"Could not parse '{dueString}' as a valid DateTime with either of the expected formats.");
+                }
+            }
+        }
+        set
+        {
+            using (Py.GIL())
+            {
+                // Convert C# DateTime to Python datetime object
+                PyObject.due = ToPythonDateTime(value);
             }
         }
     }
@@ -102,20 +146,51 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                if (PyObject.last_review == null)
+                if (PyObject.last_review == null || PyObject.last_review.IsNone())
                 {
                     return null;
                 }
-                const string format = "yyyy-MM-dd HH:mm:ss.ffffffzzz"; // Define the exact format
-                string lastReview = PyObject.last_review.ToString();
+                string lastReviewString = PyObject.last_review.ToString();
+                DateTime parsedDateTime;
 
-                return DateTime.ParseExact(lastReview, format, CultureInfo.InvariantCulture);
+                // Try parsing with the first format (with fractional seconds)
+                if (DateTime.TryParseExact(lastReviewString, "yyyy-MM-dd HH:mm:ss.ffffffzzz", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
+                {
+                    return parsedDateTime;
+                }
+                // Try parsing with the second format (without fractional seconds)
+                else if (DateTime.TryParseExact(lastReviewString, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
+                {
+                    return parsedDateTime;
+                }
+                else
+                {
+                    // Handle the case where neither format matches
+                    // You can throw an exception, log an error, or return a default value
+                    throw new FormatException($"Could not parse '{lastReviewString}' as a valid DateTime with either of the expected formats.");
+                }
+            }
+        }
+        set
+        {
+            using (Py.GIL())
+            {
+                if (value.HasValue)
+                {
+                    // Convert C# DateTime to Python datetime object
+                    PyObject pyDateTime = ToPythonDateTime(value.Value);
+                    PyObject.last_review = pyDateTime;
+                }
+                else
+                {
+                    return;
+                }
             }
         }
     }
 
     /// <summary>
-    ///  Core mathematical parameter used for future scheduling.
+    ///  Core mathematical parameter used for future scheduling.
     /// </summary>
     public float? Stability
     {
@@ -123,12 +198,19 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                if (PyObject.stability == null)
+                if (PyObject.stability == null || PyObject.stability.IsNone())
                 {
                     return null;
                 }
 
                 return PyObject.stability.As<float>();
+            }
+        }
+        set
+        {
+            using (Py.GIL())
+            {
+                PyObject.stability = value.ToPython();
             }
         }
     }
@@ -142,13 +224,49 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                if (PyObject.difficulty == null)
+                if (PyObject.difficulty == null || PyObject.difficulty.IsNone())
                 {
                     return null;
                 }
 
                 return PyObject.difficulty.As<float>();
             }
+        }
+        set
+        {
+            using (Py.GIL())
+            {
+                PyObject.difficulty = value.ToPython();
+            }
+        }
+    }
+    // Helper function to convert C# DateTime to Python datetime
+    private PyObject ToPythonDateTime(DateTime dt)
+    {
+        using (Py.GIL())
+        {
+            // Ensure the DateTime is in UTC
+            if (dt.Kind != DateTimeKind.Utc)
+            {
+                dt = dt.ToUniversalTime();
+            }
+
+            // Import the Python datetime module
+            PyObject pyDateTimeModule = Py.Import("datetime");
+            PyObject pyDateTimeType = pyDateTimeModule.GetAttr("datetime");
+            PyObject pyUtc = pyDateTimeModule.GetAttr("timezone").GetAttr("utc");
+
+            // Create an aware Python datetime object in UTC
+            return pyDateTimeType.Invoke(
+                dt.Year.ToPython(),
+                dt.Month.ToPython(),
+                dt.Day.ToPython(),
+                dt.Hour.ToPython(),
+                dt.Minute.ToPython(),
+                dt.Second.ToPython(),
+                (dt.Millisecond * 1000).ToPython(), // Python uses microseconds
+                pyUtc
+            );
         }
     }
 }

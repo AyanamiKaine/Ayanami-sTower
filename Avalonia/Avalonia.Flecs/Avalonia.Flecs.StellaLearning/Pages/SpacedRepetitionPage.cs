@@ -275,6 +275,17 @@ public static class SpacedRepetitionPage
             }
         };
 
+
+        var goodReview = entities.GetEntityCreateIfNotExist("SpacedRepetitiongoodReviewMenuItem")
+            .ChildOf(contextFlyout)
+            .Set(new MenuItem())
+            .SetHeader("GoodReview")
+            .OnClick((sender, args) =>
+            {
+                var item = srItems.GetSelectedItem<SpacedRepetitionItem>();
+                item.GoodReview();
+            });
+
         var editMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionEditMenuItem")
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
@@ -423,7 +434,7 @@ public static class SpacedRepetitionPage
 
             foreach (var item in items!)
             {
-
+                item.CreateCardFromSpacedRepetitionData();
             }
 
             return items ?? new ObservableCollection<SpacedRepetitionItem>();

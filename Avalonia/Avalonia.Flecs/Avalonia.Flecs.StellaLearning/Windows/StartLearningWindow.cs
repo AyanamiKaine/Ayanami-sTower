@@ -296,7 +296,7 @@ public static class StartLearningWindow
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[0])
-            .SetMargin(10, 0)
+            .SetMargin(10, 10)
             .SetColumn(0)
             .SetRow(0)
             .OnClick(async (sender, args) =>
@@ -306,15 +306,15 @@ public static class StartLearningWindow
 
                     if (quiz.CorrectAnswerIndex == 0)
                     {
-                        
+
                         button.Background = Brushes.LightGreen;
-                        await Task.Delay(2000);
+                        await Task.Delay(1000);
                         quiz.GoodReview();
                     }
                     else
                     {
                         button.Background = Brushes.Red;
-                        await Task.Delay(2000);
+                        await Task.Delay(1000);
                         quiz.AgainReview();
                     }
                 }
@@ -326,7 +326,7 @@ public static class StartLearningWindow
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[1])
-            .SetMargin(10, 0)
+            .SetMargin(10, 10)
             .SetColumn(1)
             .SetRow(0)
             .OnClick(async (sender, args) =>
@@ -337,13 +337,13 @@ public static class StartLearningWindow
                     if (quiz.CorrectAnswerIndex == 1)
                     {
                         button.Background = Brushes.LightGreen;
-                        await Task.Delay(2000);
+                        await Task.Delay(1000);
                         quiz.GoodReview();
                     }
                     else
                     {
                         button.Background = Brushes.Red;
-                        await Task.Delay(2000);
+                        await Task.Delay(1000);
                         quiz.AgainReview();
                     }
                 }
@@ -355,7 +355,7 @@ public static class StartLearningWindow
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[2])
-            .SetMargin(10, 0)
+            .SetMargin(10, 10)
             .SetColumn(0)
             .SetRow(1)
             .OnClick(async (sender, args) =>
@@ -366,13 +366,13 @@ public static class StartLearningWindow
                     if (quiz.CorrectAnswerIndex == 2)
                     {
                         button.Background = Brushes.LightGreen;
-                        await Task.Delay(2000);
+                        await Task.Delay(1000);
                         quiz.GoodReview();
                     }
                     else
                     {
                         button.Background = Brushes.Red;
-                        await Task.Delay(2000);
+                        await Task.Delay(1000);
                         quiz.AgainReview();
                     }
                 }
@@ -384,7 +384,7 @@ public static class StartLearningWindow
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetContent(quiz.Answers[3])
-            .SetMargin(10, 0)
+            .SetMargin(10, 10)
             .SetColumn(1)
             .SetRow(1)
             .OnClick(async (sender, args) =>
@@ -395,13 +395,13 @@ public static class StartLearningWindow
                     if (quiz.CorrectAnswerIndex == 3)
                     {
                         button.Background = Brushes.LightGreen;
-                        await Task.Delay(2000);
+                        await Task.Delay(1000);
                         quiz.GoodReview();
                     }
                     else
                     {
                         button.Background = Brushes.Red;
-                        await Task.Delay(2000);
+                        await Task.Delay(1000);
                         quiz.AgainReview();
                     }
                 }

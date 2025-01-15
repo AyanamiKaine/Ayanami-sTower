@@ -98,7 +98,7 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// The card's current learning or relearning step or None if the card is in the Review state.
     /// </summary>
     [ObservableProperty]
-    private long? _step;
+    private long? _step = null;
 
     [ObservableProperty]
     private DateTime? _lastReview;
@@ -153,11 +153,47 @@ public partial class SpacedRepetitionItem : ObservableObject
     }
 
     /// <summary>
+    /// Used for desirialisation for already created and used spaced repetition items
+    /// otherwise we would reset the card state to the initial card state that would mean
+    /// the spaced repetition would look like it was just created and not already learned
+    /// a certain amount of time.
+    /// </summary>
+    /// <param name="alreadySavedItem"></param>
+    public SpacedRepetitionItem(bool alreadySavedItem = true)
+    {
+        if (!alreadySavedItem)
+        {
+            Card = FSRS.CreateCard();
+            Stability = Card.Stability;
+            Difficulty = Card.Difficulty;
+            SpacedRepetitionState = (SpacedRepetitionState)Card.State;
+            LastReview = Card.LastReview;
+            NextReview = Card.Due;
+            Step = Card.Step;
+        }
+    }
+    /// <summary>
+    /// Converts the data from the spaced repetition item to a FSRS Card
+    /// </summary>
+    public void CreateCardFromSpacedRepetitionData()
+    {
+        var initalCard = FSRS.CreateCard();
+        initalCard.Stability = Stability;
+        initalCard.Difficulty = Difficulty;
+        initalCard.State = (CardState)SpacedRepetitionState;
+        initalCard.LastReview = LastReview;
+        initalCard.Due = NextReview;
+        initalCard.Step = Step;
+        Card = initalCard;
+    }
+
+    /// <summary>
     /// Remembered the card after a hesitation
     /// </summary>
     public void GoodReview()
     {
         Card = FSRS.RateCard(Card, Rating.Good);
+        NumberOfTimesSeen++;
     }
 
     /// <summary>
@@ -166,6 +202,7 @@ public partial class SpacedRepetitionItem : ObservableObject
     public void AgainReview()
     {
         Card = FSRS.RateCard(Card, Rating.Again);
+        NumberOfTimesSeen++;
     }
 
     /// <summary>
@@ -174,6 +211,7 @@ public partial class SpacedRepetitionItem : ObservableObject
     public void EasyReview()
     {
         Card = FSRS.RateCard(Card, Rating.Easy);
+        NumberOfTimesSeen++;
     }
 
     /// <summary>
@@ -182,6 +220,7 @@ public partial class SpacedRepetitionItem : ObservableObject
     public void HardReview()
     {
         Card = FSRS.RateCard(Card, Rating.Hard);
+        NumberOfTimesSeen++;
     }
 }
 
