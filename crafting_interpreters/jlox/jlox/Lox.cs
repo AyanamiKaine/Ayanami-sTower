@@ -9,6 +9,7 @@ public class Lox
             throw new Exception($"File Path was not found: {filePath}");
 
         var scriptToBeScanned = File.ReadAllText(filePath);
+        Run(scriptToBeScanned);
     }
 
     public static void RunPrompt()
