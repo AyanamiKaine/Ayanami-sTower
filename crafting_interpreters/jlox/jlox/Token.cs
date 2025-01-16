@@ -61,4 +61,46 @@ public class Token(TokenType type, string lexeme, object? literal, int line)
     {
         return $"{Type} {Lexeme} {Literal}";
     }
+
+    public int CompareTo(Token? other)
+    {
+        if (other is null) return 1;
+
+        // Example comparison logic: Compare by Line, then Type, then Lexeme
+        int lineComparison = Line.CompareTo(other.Line);
+        if (lineComparison != 0) return lineComparison;
+
+        int typeComparison = Type.CompareTo(other.Type);
+        if (typeComparison != 0) return typeComparison;
+
+        return Lexeme.CompareTo(other.Lexeme);
+        // You might need to handle Literal comparison differently, depending on its possible types
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null || GetType() != obj.GetType())
+            return false;
+
+        Token other = (Token)obj;
+        return Type == other.Type &&
+               Lexeme == other.Lexeme &&
+               Line == other.Line &&
+               EqualityComparer<object?>.Default.Equals(Literal, other.Literal);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Type, Lexeme, Line, Literal);
+    }
+
+    public static bool operator ==(Token left, Token right)
+    {
+        return EqualityComparer<Token>.Default.Equals(left, right);
+    }
+
+    public static bool operator !=(Token left, Token right)
+    {
+        return !(left == right);
+    }
 }
