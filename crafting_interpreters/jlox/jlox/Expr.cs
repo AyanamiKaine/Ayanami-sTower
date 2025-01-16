@@ -1,6 +1,6 @@
 namespace jlox;
 
-abstract class Expr
+public abstract class Expr
 {
     public interface IVisitor<R>
     {

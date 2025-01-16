@@ -52,10 +52,10 @@ public enum TokenType
 
 public class Token(TokenType type, string lexeme, object? literal, int line)
 {
-    readonly TokenType Type = type;
-    readonly string Lexeme = lexeme;
-    readonly object? Literal = literal;
-    readonly int Line = line;
+    public readonly TokenType Type = type;
+    public readonly string Lexeme = lexeme;
+    public readonly object? Literal = literal;
+    public readonly int Line = line;
 
     public override string ToString()
     {
