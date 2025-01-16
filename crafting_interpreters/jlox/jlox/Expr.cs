@@ -74,14 +74,14 @@ public abstract class Expr
         public readonly Expr expression = expression;
     }
 
-    public class Literal(object value) : Expr
+    public class Literal(object? value) : Expr
     {
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitLiteralExpr(this);
         }
 
-        public readonly object value = value;
+        public readonly object? value = value;
     }
 
     public class Logical(Expr left, Token op, Expr right) : Expr
