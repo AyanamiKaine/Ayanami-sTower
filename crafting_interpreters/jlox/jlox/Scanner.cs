@@ -110,7 +110,7 @@ public class Scanner(string source)
         while (IsAlphaNumeric(Peek()))
             Advance();
 
-        var text = _source.Substring(_start, _source.Length - _current + 1);
+        var text = _source.SubstringByIndex(_start, _current - 1);
 
         if (_keywords.TryGetValue(text, out TokenType type))
             AddToken(type);
@@ -148,7 +148,7 @@ public class Scanner(string source)
                 Advance();
         }
 
-        AddToken(TokenType.NUMBER, double.Parse(_source.Substring(_start, _source.Length - _current + 1)));
+        AddToken(TokenType.NUMBER, double.Parse(_source.SubstringByIndex(_start, _current - 1)));
 
     }
 
@@ -170,7 +170,7 @@ public class Scanner(string source)
         //We found the closing "!
         Advance();
 
-        var value = _source.Substring(_start + 1, _source.Length - _current + 1 - 1);
+        var value = _source.SubstringByIndex(_start + 1, _current - 2);
         AddToken(TokenType.STRING, value);
     }
 
@@ -215,7 +215,7 @@ public class Scanner(string source)
 
     private void AddToken(TokenType type, object? literal)
     {
-        var text = _source.Substring(_start, _source.Length - _current + 1);
+        var text = _source.SubstringByIndex(_start, _current - 1);
         _tokens.Add(new Token(type, text, literal, _line));
     }
 
