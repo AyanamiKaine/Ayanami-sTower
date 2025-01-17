@@ -7,6 +7,11 @@ public class LoxEnvironment
     private readonly Dictionary<string, dynamic> values = [];
     private readonly LoxEnvironment? _enclosing = null;
 
+    public LoxEnvironment()
+    {
+
+    }
+
     public LoxEnvironment(LoxEnvironment enclosing)
     {
         _enclosing = enclosing;
