@@ -3,7 +3,8 @@
 public class Lox
 {
     static private readonly Interpreter Interpreter = new();
-    static bool _hadError = false;
+    private static bool _hadError = false;
+    private static bool _hadRunTimeError = false;
     public static void RunFile(string filePath)
     {
         if (!Path.Exists(filePath))
@@ -11,6 +12,10 @@ public class Lox
 
         var scriptToBeScanned = File.ReadAllText(filePath);
         Run(scriptToBeScanned);
+        if (_hadError)
+            Environment.Exit(65);
+        if (_hadRunTimeError)
+            Environment.Exit(70);
     }
 
     public static void RunPrompt()
