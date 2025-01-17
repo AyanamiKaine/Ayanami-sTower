@@ -35,6 +35,24 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
         }
     }
 
+    private string Stringify(dynamic obj)
+    {
+        if (obj is null)
+            return "nil";
+
+        /* This code was mostly done for java, i dont think we need it for C#
+        if (obj is double value)
+        {
+            var text = value.ToString();
+            if (text.EndsWith(".0"))
+                text = text.SubstringByIndex(0, text.Length - 2);
+
+            return text;
+        }
+        */
+        return obj.ToString();
+    }
+
     private void Execute(Statement statement)
     {
         statement.Accept(this);
@@ -92,9 +110,10 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
             ? (double)left * (double)right
             : throw new RuntimeError(expr.op, "Operands must be numbers."),
 
-            TokenType.PLUS => (left is double v1 && right is double v3) ? v1 + v3 :
-                               (left is string v && right is string v2) ? v + v2 :
-                               throw new Exception("Operands must be two numbers or two strings"),
+            TokenType.PLUS =>
+            (left is double v1 && right is double v3) ? v1 + v3
+            : (left is string v && right is string v2) ? v + v2
+            : throw new RuntimeError(expr.op, "Operands must be two numbers or two strings."),
 
             TokenType.BANG_EQUAL => !IsEqual(left, right),
             TokenType.EQUAL_EQUAL => !IsEqual(left, right),
