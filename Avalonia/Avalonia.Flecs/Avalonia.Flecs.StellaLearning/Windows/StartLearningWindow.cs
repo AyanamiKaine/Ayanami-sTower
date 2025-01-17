@@ -414,9 +414,50 @@ public static class StartLearningWindow
     {
         var flashcard = (SpacedRepetitionFlashcard)GetNextItemToBeReviewed(spacedRepetitionItems)!;
 
-        return entities.GetEntityCreateIfNotExist("LearnFlashcardContent")
-            .Set(new TextBlock())
-            .SetText(flashcard.Front);
+
+        var layout = entities.GetEntityCreateIfNotExist("LearnFlashcardLayout")
+            .Set(new StackPanel())
+            .SetOrientation(Layout.Orientation.Vertical)
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetSpacing(10)
+            .SetMargin(20);
+
+        entities.GetEntityCreateIfNotExist("LearnFlashcardContent")
+                    .ChildOf(layout)
+                    .Set(new TextBlock())
+                    .SetText(flashcard.Front);
+
+        entities.GetEntityCreateIfNotExist("LearnFlashcardSeparatorLine")
+            .ChildOf(layout)
+            .Set(new Separator()
+            {
+                BorderThickness = new Thickness(100, 5, 100, 0),
+                BorderBrush = Brushes.Black,
+            });
+
+        entities.GetEntityCreateIfNotExist("LearnFlashcardRevealButton")
+            .ChildOf(layout)
+            .Set(new Button())
+            .SetContent("Reveal")
+            .SetMargin(0, 20)
+            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .OnClick((_, _) =>
+            {
+                entities["LearnFlashcardBackText"].Get<TextBlock>().IsVisible = true;
+                entities["LearnFlashcardRevealButton"].Get<Button>().IsVisible = false;
+            });
+
+        entities.GetEntityCreateIfNotExist("LearnFlashcardBackText")
+            .ChildOf(layout)
+            .Set(new TextBlock()
+            {
+                IsVisible = false,
+            })
+            .SetText(flashcard.Back);
+
+        return layout;
     }
 
     private static Entity LearnClozeContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
