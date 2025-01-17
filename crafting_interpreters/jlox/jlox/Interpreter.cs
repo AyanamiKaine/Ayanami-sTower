@@ -7,7 +7,7 @@ public class RuntimeError(Token token, string message) : Exception(message)
 public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 {
 
-    private readonly LoxEnvironment _env = new();
+    private LoxEnvironment _env = new();
 
     public dynamic? Interpret(Expr expr)
     {
@@ -220,7 +220,27 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     object? Statement.IVisitor<object?>.VisitBlockStmt(Statement.Block stmt)
     {
-        throw new NotImplementedException();
+        ExecuteBlock(stmt.statements, new LoxEnvironment(_env));
+        return null;
+    }
+
+    private void ExecuteBlock(List<Statement> statements, LoxEnvironment loxEnvironment)
+    {
+        var previous = _env;
+
+        try
+        {
+            // Now, that field represents the current environment
+            _env = loxEnvironment;
+            foreach (var statement in statements)
+            {
+                Execute(statement);
+            }
+        }
+        finally
+        {
+            _env = previous;
+        }
     }
 
     object? Statement.IVisitor<object?>.VisitClassStmt(Statement.Class stmt)
