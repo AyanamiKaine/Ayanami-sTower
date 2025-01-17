@@ -67,7 +67,10 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitAssignExpr(Expr.Assign expr)
     {
-        throw new NotImplementedException();
+        var value = Evaluate(expr.value);
+
+        _env.Assign(expr.name, value);
+        return value;
     }
 
     public dynamic VisitBinaryExpr(Expr.Binary expr)
