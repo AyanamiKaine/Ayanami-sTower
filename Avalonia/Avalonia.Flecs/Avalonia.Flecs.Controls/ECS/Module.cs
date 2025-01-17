@@ -85,6 +85,7 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSRepeatButton>();
             world.Import<ECSRadioButton>();
             world.Import<ECSSplitButton>();
+            world.Import<ECSSeparator>();
             world.Import<ECSToggleSplitButton>();
             world.Import<ECSToggleSwitch>();
             world.Import<ECSBorder>();
