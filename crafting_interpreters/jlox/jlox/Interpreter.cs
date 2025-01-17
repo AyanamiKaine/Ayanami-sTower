@@ -7,6 +7,8 @@ public class RuntimeError(Token token, string message) : Exception(message)
 public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 {
 
+    private readonly LoxEnvironment _env = new();
+
     public dynamic? Interpret(Expr expr)
     {
         try
@@ -203,7 +205,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitVariableExpr(Expr.Variable expr)
     {
-        throw new NotImplementedException();
+        return _env.Get(expr.name);
     }
 
     private static bool IsTruthy(object obj)
@@ -253,7 +255,12 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     object? Statement.IVisitor<object?>.VisitVarStmt(Statement.Var stmt)
     {
-        throw new NotImplementedException();
+        dynamic? value = null;
+        if (stmt.initializer is not null)
+            value = Evaluate(stmt.initializer);
+
+        _env.Define(stmt.name.Lexeme, value);
+        return null;
     }
 
     object? Statement.IVisitor<object?>.VisitWhileStmt(Statement.While stmt)
