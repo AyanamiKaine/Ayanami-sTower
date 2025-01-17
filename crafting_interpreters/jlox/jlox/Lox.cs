@@ -2,6 +2,7 @@
 
 public class Lox
 {
+    static private readonly Interpreter Interpreter = new();
     static bool _hadError = false;
     public static void RunFile(string filePath)
     {
@@ -37,11 +38,10 @@ public class Lox
     {
         var Scanner = new Scanner(source);
         List<Token> tokens = Scanner.ScanTokens();
+        var parser = new Parser(tokens);
+        List<Statement> statements = parser.Parse();
 
-        foreach (var token in tokens)
-        {
-            Console.WriteLine(token);
-        }
+        Interpreter.Interpret(statements);
     }
 
     public static void Error(int line, string message)
