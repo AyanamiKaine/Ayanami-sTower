@@ -15,7 +15,7 @@ public class Parser(List<Token> tokens)
         List<Statement> statements = [];
         while (!IsAtEnd())
         {
-            statements.Add(Statement());
+            statements.Add(Declaration());
         }
 
         return statements;
@@ -30,6 +30,33 @@ public class Parser(List<Token> tokens)
     public Expr? ParseAndReturnExpression()
     {
         return Expression();
+    }
+
+    private Statement? Declaration()
+    {
+        try
+        {
+            if (Match(TokenType.VAR))
+                return VarDeclaration();
+            return Statement();
+        }
+        catch (ParseError)
+        {
+            Synchronize();
+            return null;
+        }
+    }
+
+    private Statement VarDeclaration()
+    {
+        Token name = Consume(TokenType.SEMICOLON, "Expect ';' after variable name.");
+
+        Expr initializer = null;
+        if (Match(TokenType.EQUAL))
+            initializer = Expression();
+
+        Consume(TokenType.SEMICOLON, "Expect ';' after variable declaration.");
+        return new Statement.Var(name, initializer);
     }
 
     private Statement Statement()
@@ -179,6 +206,9 @@ public class Parser(List<Token> tokens)
 
         if (Match(TokenType.NUMBER, TokenType.STRING))
             return new Expr.Literal(Previous().Literal);
+
+        if (Match(TokenType.IDENTIFIER))
+            return new Expr.Variable(Previous());
 
         if (Match(TokenType.LEFT_PAREN))
         {
