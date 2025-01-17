@@ -10,6 +10,37 @@ public class Parser(List<Token> tokens)
     private readonly List<Token> Tokens = tokens;
     private int Current { get; set; } = 0;
 
+    public List<Statement> Parse()
+    {
+        List<Statement> statements = [];
+        while (!IsAtEnd())
+        {
+            statements.Add(Statement());
+        }
+
+        return statements;
+    }
+
+    private Statement Statement()
+    {
+        if (Match(TokenType.PRINT))
+            return PrintStatement();
+        return ExpressionStatement();
+    }
+
+    private Statement PrintStatement()
+    {
+        Expr value = Expression();
+        Consume(TokenType.SEMICOLON, "Expect ';' after value.");
+        return new Statement.Print(value);
+    }
+
+    private Statement ExpressionStatement()
+    {
+        Expr value = Expression();
+        Consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+        return new Statement.Expression(value);
+    }
     private Expr Expression()
     {
         return Equality();
@@ -144,6 +175,8 @@ public class Parser(List<Token> tokens)
             Consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
             return new Expr.Grouping(expr);
         }
+
+        throw Error(Peek(), "Expected Expression.");
     }
 
     private Token Consume(TokenType type, string message)
@@ -157,6 +190,32 @@ public class Parser(List<Token> tokens)
     private ParseError Error(Token token, string message)
     {
         Lox.Error(token, message);
-        return new ParseError("");
+        return new ParseError(message);
+    }
+
+    private void Synchronize()
+    {
+        Advance();
+
+        while (!IsAtEnd())
+        {
+            if (Previous().Type == TokenType.SEMICOLON)
+                return;
+
+            switch (Peek().Type)
+            {
+                case TokenType.CLASS:
+                case TokenType.FUN:
+                case TokenType.VAR:
+                case TokenType.FOR:
+                case TokenType.IF:
+                case TokenType.WHILE:
+                case TokenType.PRINT:
+                case TokenType.RETURN:
+                    return;
+            }
+
+            Advance();
+        }
     }
 }
