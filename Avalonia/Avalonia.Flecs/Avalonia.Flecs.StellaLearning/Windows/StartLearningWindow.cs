@@ -425,7 +425,10 @@ public static class StartLearningWindow
 
         entities.GetEntityCreateIfNotExist("LearnFlashcardContent")
                     .ChildOf(layout)
-                    .Set(new TextBlock())
+                    .Set(new TextBlock()
+                    {
+                        TextWrapping = TextWrapping.Wrap
+                    })
                     .SetText(flashcard.Front);
 
         entities.GetEntityCreateIfNotExist("LearnFlashcardSeparatorLine")
@@ -453,6 +456,7 @@ public static class StartLearningWindow
             .ChildOf(layout)
             .Set(new TextBlock()
             {
+                TextWrapping = TextWrapping.Wrap,
                 IsVisible = false,
             })
             .SetText(flashcard.Back);
