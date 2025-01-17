@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Flecs.Util;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -116,31 +117,40 @@ public static class AddFlashcard
             .SetItemTemplate(DefineTagTemplate(entities))
             .SetItemsSource(tags);
 
+
+
         var createFlashcardButton = entities.Create()
-            .ChildOf(layout)
             .Set(new Button())
-            .SetContent("Create Item")
+            .SetContent("Create Item");
+
+        (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createFlashcardButton);
+        priorityCompareComponent.ChildOf(layout);
+
+
+        createFlashcardButton
+            .ChildOf(layout)
             .OnClick((sender, args) =>
-            {
-                if (string.IsNullOrEmpty(nameTextBox.GetText()))
                 {
-                    nameTextBox.SetWatermark("Name is required");
-                    return;
-                }
+                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                    {
+                        nameTextBox.SetWatermark("Name is required");
+                        return;
+                    }
 
-                entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFlashcard()
-                {
-                    Name = nameTextBox.GetText(),
-                    Front = frontText.GetText(),
-                    Back = backText.GetText(),
-                    SpacedRepetitionItemType = SpacedRepetitionItemType.Flashcard
+                    entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFlashcard()
+                    {
+                        Name = nameTextBox.GetText(),
+                        Front = frontText.GetText(),
+                        Back = backText.GetText(),
+                        Priority = calculatedPriority.Get<int>(),
+                        SpacedRepetitionItemType = SpacedRepetitionItemType.Flashcard
+                    });
+                    calculatedPriority.Set(500000000);
+                    nameTextBox.SetText("");
+                    frontText.SetText("");
+                    backText.SetText("");
+                    tags.Clear();
                 });
-
-                nameTextBox.SetText("");
-                frontText.SetText("");
-                backText.SetText("");
-                tags.Clear();
-            });
 
         return layout;
     }
