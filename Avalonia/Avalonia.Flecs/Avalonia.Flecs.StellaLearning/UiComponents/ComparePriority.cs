@@ -167,7 +167,10 @@ public static class ComparePriority
             {
                 timesCompared++;
 
-                calculatedPriorityEntity.Set<int>(currentItemToCompare!.Priority + rng.Next(50));
+                if (currentItemToCompare is not null)
+                    calculatedPriorityEntity.Set<int>(currentItemToCompare!.Priority + rng.Next(50));
+                else
+                    calculatedPriorityEntity.Set<int>(rng.Next(1000));
 
                 smallestPossiblePriority = calculatedPriorityEntity.Get<int>();
 

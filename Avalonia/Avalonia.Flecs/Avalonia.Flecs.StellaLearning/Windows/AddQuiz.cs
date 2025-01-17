@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Flecs.Util;
 using Avalonia.Media;
 using Flecs.NET.Core;
@@ -127,11 +128,16 @@ public static class AddQuiz
             return anwsers;
         });
 
-        entities.Create()
-            .ChildOf(layout)
+        var createQuizButton = entities.Create()
             .Set(new Button())
-            .SetContent("Create Quiz")
-            .OnClick((_, _) =>
+            .SetContent("Create Quiz");
+
+        (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createQuizButton);
+        priorityCompareComponent.ChildOf(layout);
+
+        createQuizButton
+        .ChildOf(layout)
+        .OnClick((_, _) =>
             {
                 if (string.IsNullOrEmpty(nameTextBox.GetText()))
                 {
@@ -149,6 +155,8 @@ public static class AddQuiz
                     Name = nameTextBox.GetText(),
                     Question = quizQuestionTextBox.GetText(),
 
+                    Priority = calculatedPriority.Get<int>(),
+
                     CorrectAnswerIndex = findAnwserIndex(),
                     Answers = gatherAllAnwsers(),
                     SpacedRepetitionItemType = SpacedRepetitionItemType.Quiz
@@ -156,6 +164,8 @@ public static class AddQuiz
 
                 nameTextBox.SetText("");
                 quizQuestionTextBox.SetText("");
+                calculatedPriority.Set(500000000);
+
                 FindControl<TextBox>(quizAnswers.Get<Grid>(), 0, 1)!.Text = "";
                 FindControl<TextBox>(quizAnswers.Get<Grid>(), 1, 1)!.Text = "";
                 FindControl<TextBox>(quizAnswers.Get<Grid>(), 2, 1)!.Text = "";
