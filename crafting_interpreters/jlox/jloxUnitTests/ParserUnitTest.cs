@@ -63,12 +63,15 @@ public class ParserUnitTest
 
         var statements = parser.Parse();
 
+
         // If statements is empty we couldnt parse it correctly
         Assert.NotEmpty(statements);
         foreach (var statement in statements)
         {
             Assert.NotNull(statement);
         }
+
+        Assert.IsType<Statement.Var>(statements[0]);
     }
 
     [Fact]
@@ -96,5 +99,10 @@ public class ParserUnitTest
         {
             Assert.NotNull(statement);
         }
+        Assert.IsType<Statement.Var>(statements[0]);
+        Assert.IsType<Statement.Block>(statements[1]);
+        Assert.IsType<Statement.Var>(((Statement.Block)statements[1]).statements[0]);
+        Assert.IsType<Statement.Print>(((Statement.Block)statements[1]).statements[1]);
+
     }
 }
