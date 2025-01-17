@@ -651,7 +651,10 @@ public static class StartLearningWindow
         }
 
         return entities.GetEntityCreateIfNotExist("NoMoreItemToBeReviewed")
-            .Set(new TextBlock())
+            .Set(new TextBlock()
+            {
+                TextWrapping = TextWrapping.Wrap
+            })
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetMargin(20)
