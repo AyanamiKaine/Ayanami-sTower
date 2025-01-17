@@ -19,4 +19,15 @@ public class LoxEnvironment
         else
             throw new RuntimeError(name, $"Undefined Variable {name.Lexeme}.");
     }
+
+    public void Assign(Token name, dynamic value)
+    {
+        if (values.ContainsKey(name.Lexeme))
+        {
+            value.Add(name.Lexeme, value);
+            return;
+        }
+        else
+            throw new RuntimeError(name, $"Undefined Variable {name.Lexeme}.");
+    }
 }
