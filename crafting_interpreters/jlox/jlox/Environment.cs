@@ -5,7 +5,12 @@ namespace jlox;
 public class LoxEnvironment
 {
     private readonly Dictionary<string, dynamic> values = [];
+    private readonly LoxEnvironment? _enclosing = null;
 
+    public LoxEnvironment(LoxEnvironment enclosing)
+    {
+        _enclosing = enclosing;
+    }
 
     public void Define(string name, dynamic value)
     {
@@ -16,6 +21,11 @@ public class LoxEnvironment
     {
         if (values.TryGetValue(name.Lexeme, out var value))
             return value;
+
+        // If the variable isn’t found in this environment, 
+        // we simply try the enclosing one recursivly
+        if (_enclosing is not null)
+            return _enclosing.Get(name);
         else
             throw new RuntimeError(name, $"Undefined Variable {name.Lexeme}.");
     }
@@ -25,6 +35,11 @@ public class LoxEnvironment
         if (values.ContainsKey(name.Lexeme))
         {
             value.Add(name.Lexeme, value);
+            return;
+        }
+        if (_enclosing is not null)
+        {
+            _enclosing.Assign(name, value);
             return;
         }
         else
