@@ -49,7 +49,7 @@ public class Parser(List<Token> tokens)
 
     private Statement VarDeclaration()
     {
-        Token name = Consume(TokenType.SEMICOLON, "Expect ';' after variable name.");
+        Token name = Consume(TokenType.IDENTIFIER, "Expect variable name.");
 
         Expr initializer = null;
         if (Match(TokenType.EQUAL))
