@@ -21,6 +21,17 @@ public class Parser(List<Token> tokens)
         return statements;
     }
 
+    /// <summary>
+    /// Used when we want to simply parse one expression
+    /// this is in comparision to Parse() that works with 
+    /// statements
+    /// </summary>
+    /// <returns></returns>
+    public Expr? ParseAndReturnExpression()
+    {
+        return Expression();
+    }
+
     private Statement Statement()
     {
         if (Match(TokenType.PRINT))
