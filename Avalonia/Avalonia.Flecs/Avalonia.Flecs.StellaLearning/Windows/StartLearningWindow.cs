@@ -449,6 +449,11 @@ public static class StartLearningWindow
             .OnClick((_, _) =>
             {
                 entities["LearnFlashcardBackText"].Get<TextBlock>().IsVisible = true;
+                entities["FlashcardEasyReviewButton"].Get<Button>().IsVisible = true;
+                entities["FlashcardGoodReviewButton"].Get<Button>().IsVisible = true;
+                entities["FlashcardHardReviewButton"].Get<Button>().IsVisible = true;
+                entities["FlashcardAgainReviewButton"].Get<Button>().IsVisible = true;
+
                 entities["LearnFlashcardRevealButton"].Get<Button>().IsVisible = false;
             });
 
@@ -460,6 +465,57 @@ public static class StartLearningWindow
                 IsVisible = false,
             })
             .SetText(flashcard.Back);
+
+        var reviewButtonGrid = entities.GetEntityCreateIfNotExist("FlashcardReviewButtonGrid")
+                    .Set(new Grid())
+                    .ChildOf(layout)
+                    .SetColumnDefinitions("*, *, *, *")
+                    .SetRowDefinitions("auto");
+
+        var easyReviewButton = entities.GetEntityCreateIfNotExist("FlashcardEasyReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button()
+            {
+                IsVisible = false
+            })
+            .SetContent("Easy")
+            .SetMargin(10, 0)
+            .SetColumn(0)
+            .OnClick((_, _) => flashcard.EasyReview());
+
+        var goodReviewButton = entities.GetEntityCreateIfNotExist("FlashcardGoodReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button()
+            {
+                IsVisible = false
+            })
+            .SetContent("Good")
+            .SetMargin(10, 0)
+            .SetColumn(1)
+            .OnClick((_, _) => flashcard.GoodReview());
+
+        var hardReviewButton = entities.GetEntityCreateIfNotExist("FlashcardHardReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button()
+            {
+                IsVisible = false
+            })
+            .SetContent("Hard")
+            .SetMargin(10, 0)
+            .SetColumn(2)
+            .OnClick((_, _) => flashcard.HardReview());
+
+        var againReviewButton = entities.GetEntityCreateIfNotExist("FlashcardAgainReviewButton")
+            .ChildOf(reviewButtonGrid)
+            .Set(new Button()
+            {
+                IsVisible = false
+            })
+            .SetContent("Again")
+            .SetMargin(10, 0)
+            .SetColumn(3)
+            .OnClick((_, _) => flashcard.AgainReview());
+
 
         return layout;
     }
