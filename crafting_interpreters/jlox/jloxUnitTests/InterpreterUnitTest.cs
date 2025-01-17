@@ -12,7 +12,7 @@ public class InterpreterUnitTest
         var tokens = scanner.ScanTokens();
         var parser = new Parser(tokens);
 
-        Expr? expr = parser.Parse();
+        Expr? expr = parser.ParseAndReturnExpression();
         Assert.NotNull(expr);
 
 
@@ -34,7 +34,7 @@ public class InterpreterUnitTest
         var tokens = scanner.ScanTokens();
         var parser = new Parser(tokens);
 
-        Expr? expr = parser.Parse();
+        Expr? expr = parser.ParseAndReturnExpression();
 
         // If the expr is null the parse had an error
         Assert.NotNull(expr);
