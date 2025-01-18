@@ -103,6 +103,5 @@ public class ParserUnitTest
         Assert.IsType<Statement.Block>(statements[1]);
         Assert.IsType<Statement.Var>(((Statement.Block)statements[1]).statements[0]);
         Assert.IsType<Statement.Print>(((Statement.Block)statements[1]).statements[1]);
-
     }
 }
