@@ -61,11 +61,27 @@ public class Parser(List<Token> tokens)
 
     private Statement Statement()
     {
+        if (Match(TokenType.IF))
+            return IfStatement();
         if (Match(TokenType.PRINT))
             return PrintStatement();
         if (Match(TokenType.LEFT_BRACE))
             return new Statement.Block(Block());
         return ExpressionStatement();
+    }
+
+    private Statement IfStatement()
+    {
+        Consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+        Expr condition = Expression();
+        Consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
+
+        var thenBranch = Statement();
+        Statement? elseBranch = null;
+        if (Match(TokenType.ELSE))
+            elseBranch = Statement();
+
+        return new Statement.If(condition, thenBranch, elseBranch);
     }
 
     private List<Statement> Block()
