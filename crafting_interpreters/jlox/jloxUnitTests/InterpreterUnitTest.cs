@@ -67,6 +67,8 @@ public class InterpreterUnitTest
             Assert.NotNull(statement);
         }
 
+        // Simply, when an error happens in the interpreter
+        // it throws
         var interpreter = new Interpreter();
         interpreter.Interpret(statements);
     }
