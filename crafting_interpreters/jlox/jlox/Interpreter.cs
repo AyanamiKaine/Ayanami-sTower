@@ -261,7 +261,12 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     object? Statement.IVisitor<object?>.VisitIfStmt(Statement.If stmt)
     {
-        throw new NotImplementedException();
+        if (IsTruthy(Evaluate(stmt.condition)))
+            Execute(stmt.thenBranch);
+        else if (stmt.elseBranch is not null)
+            Execute(stmt.elseBranch);
+
+        return null;
     }
 
     object? Statement.IVisitor<object?>.VisitPrintStmt(Statement.Print stmt)
