@@ -75,6 +75,25 @@ public class ParserUnitTest
     }
 
     [Fact]
+    public void OrExpressionTest()
+    {
+        var expression = """print nil or "Hello, World!";""";
+        var scanner = new Scanner(expression);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+
+        // If statements is empty we couldnt parse it correctly
+        Assert.NotNull(statements);
+
+        // We expect that the statement holds one logical
+        // expression.
+        Assert.IsType<Expr.Logical>(((Statement.Print)statements[0]).expression);
+    }
+
+    [Fact]
     public void BlockStatementTest()
     {
         var expression =
