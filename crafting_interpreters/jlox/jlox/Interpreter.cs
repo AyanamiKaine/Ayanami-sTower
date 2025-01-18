@@ -16,7 +16,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
             dynamic value = Evaluate(expr);
             return value;
         }
-        catch (System.Exception ex)
+        catch (Exception)
         {
             return null;
         }
@@ -31,7 +31,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
                 Execute(statement);
             }
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             throw;
         }
