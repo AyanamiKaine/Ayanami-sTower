@@ -159,7 +159,20 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitLogicalExpr(Expr.Logical expr)
     {
-        throw new NotImplementedException();
+        dynamic left = Evaluate(expr.left);
+
+        if (expr.op.Type == TokenType.OR)
+        {
+            if (IsTruthy(left))
+                return left;
+        }
+        else
+        {
+            if (!IsTruthy(left))
+                return left;
+        }
+
+        return Evaluate(expr.right);
     }
 
     public dynamic VisitSetExpr(Expr.Set expr)
