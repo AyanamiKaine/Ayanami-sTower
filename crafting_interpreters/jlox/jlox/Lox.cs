@@ -20,8 +20,6 @@ public class Lox
 
     public static void RunPrompt()
     {
-        var input = Console.ReadLine();
-
         bool canceled = false;
         while (!canceled)
         {
