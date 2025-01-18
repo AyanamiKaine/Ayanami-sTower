@@ -145,7 +145,7 @@ public class Parser(List<Token> tokens)
 
     private Expr Assignment()
     {
-        Expr expr = Equality();
+        Expr expr = Or();
 
         if (Match(TokenType.EQUAL))
         {
