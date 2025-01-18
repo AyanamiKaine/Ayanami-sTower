@@ -47,4 +47,27 @@ public class InterpreterUnitTest
 
         Assert.Equal(expectedResult, actualResult);
     }
+
+    [Fact]
+    public void SimpleAssignment()
+    {
+        var expression = """var name = "Ayanami"; """;
+        var scanner = new Scanner(expression);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+
+
+        // If statements is empty we couldnt parse it correctly
+        Assert.NotEmpty(statements);
+        foreach (var statement in statements)
+        {
+            Assert.NotNull(statement);
+        }
+
+        var interpreter = new Interpreter();
+        interpreter.Interpret(statements);
+    }
 }
