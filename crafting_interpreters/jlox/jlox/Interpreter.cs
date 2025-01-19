@@ -211,7 +211,11 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitGetExpr(Expr.Get expr)
     {
-        throw new NotImplementedException();
+        dynamic obj = Evaluate(expr.obj);
+        if (obj is LoxInstance instance)
+            return instance.Get(expr.name);
+
+        throw new RuntimeError(expr.name, "Only instances have properties");
     }
 
     public dynamic VisitGroupingExpr(Expr.Grouping expr)
