@@ -117,6 +117,38 @@ public class ParserUnitTest
     }
 
     [Fact]
+    public void ClassDeclarationTest()
+    {
+        var source =
+        """
+        class Breakfast 
+        { 
+            cook() 
+            { 
+                print "Eggs a-fryin'!"; 
+            } 
+            
+            serve(who) 
+            { 
+                print "Enjoy your breakfast, " + who + "."; 
+            } 
+        }
+        """;
+
+        var scanner = new Scanner(source);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+        foreach (var statement in statements)
+        {
+            Assert.NotNull(statement);
+        }
+    }
+
+
+    [Fact]
     public void FibonacciExampleTest()
     {
         var source =
