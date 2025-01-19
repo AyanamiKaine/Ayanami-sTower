@@ -26,6 +26,43 @@ public class InterpreterUnitTest
     }
 
     [Fact]
+    public void ClassInstancesMethodCallTest()
+    {
+        var source =
+        """
+        class Person 
+        { 
+            sayName() 
+            { 
+                print this.name; 
+            } 
+        } 
+        
+        var jane = Person(); 
+        jane.name = "Jane"; 
+        
+        var bill = Person(); 
+        bill.name = "Bill"; 
+        bill.sayName = jane.sayName; 
+        
+        bill.sayName();
+        """;
+
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
+    }
+
+    [Fact]
     public void PrintClassInstanceName()
     {
         var source =
