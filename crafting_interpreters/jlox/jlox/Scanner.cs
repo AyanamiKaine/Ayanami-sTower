@@ -15,6 +15,7 @@ public class Scanner(string source)
     {
         { "and", TokenType.AND },
         { "class", TokenType.CLASS },
+        { "return", TokenType.RETURN },
         { "else", TokenType.ELSE },
         { "false", TokenType.FALSE },
         { "for", TokenType.FOR },
