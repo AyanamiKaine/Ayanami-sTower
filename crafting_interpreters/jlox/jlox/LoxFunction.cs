@@ -2,10 +2,12 @@
 
 namespace jlox;
 
-public class LoxFunction(Statement.Function declaration, LoxEnvironment closure) : ILoxCallable
+public class LoxFunction(Statement.Function declaration, LoxEnvironment closure, bool isInitalizer) : ILoxCallable
 {
     private readonly Statement.Function _declaration = declaration;
     private readonly LoxEnvironment _closure = closure;
+
+    private readonly bool _isInitalizer = isInitalizer;
     public int Arity()
     {
         return _declaration.params_.Count;
@@ -38,6 +40,6 @@ public class LoxFunction(Statement.Function declaration, LoxEnvironment closure)
     {
         LoxEnvironment environment = new(_closure);
         environment.Define("this", instance);
-        return new LoxFunction(_declaration, environment);
+        return new LoxFunction(_declaration, environment, _isInitalizer);
     }
 }
