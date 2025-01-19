@@ -34,7 +34,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
 
     public readonly LoxEnvironment Globals;
-
+    private readonly Dictionary<Expr, int> _locals = [];
     private LoxEnvironment _env;
 
     public Interpreter()
@@ -94,6 +94,11 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
     private void Execute(Statement statement)
     {
         statement.Accept(this);
+    }
+
+    public void Resolve(Expr expr, int depth)
+    {
+        _locals.Add(expr, depth);
     }
 
     public dynamic Evaluate(Expr expr)
