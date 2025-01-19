@@ -4,8 +4,10 @@ public class RuntimeError(Token token, string message) : Exception(message)
     public readonly Token Token = token;
 };
 
-
-
+public class Return(object value) : Exception()
+{
+    public dynamic Value { get; } = value;
+}
 public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 {
 
@@ -347,7 +349,11 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     object? Statement.IVisitor<object?>.VisitReturnStmt(Statement.Return stmt)
     {
-        throw new NotImplementedException();
+        dynamic? value = null;
+        if (stmt.value is not null)
+            value = Evaluate(stmt.value);
+
+        throw new Return(value);
     }
 
     object? Statement.IVisitor<object?>.VisitVarStmt(Statement.Var stmt)
