@@ -176,16 +176,17 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
         dynamic callee = Evaluate(expr.callee);
 
         var arguments = new List<dynamic>();
-        foreach (var argument in arguments)
+
+        foreach (var argument in expr.arguments)
         {
             arguments.Add(Evaluate(argument));
         }
-
 
         if (callee is not ILoxCallable)
             throw new RuntimeError(expr.paren, "Can only call functions and classes.");
 
         ILoxCallable function = (ILoxCallable)callee;
+
 
         if (arguments.Count != function.Arity())
             throw new RuntimeError(expr.paren, $"Expected {function.Arity()} arguments but got {arguments.Count} .");
