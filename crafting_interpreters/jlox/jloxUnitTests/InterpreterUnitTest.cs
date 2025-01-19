@@ -26,22 +26,57 @@ public class InterpreterUnitTest
     }
 
     [Fact]
+    public void ClassCallBackTest()
+    {
+        var source =
+        """
+        class Thing 
+        { 
+            getCallback() 
+            { 
+                fun localFunction() 
+                { 
+                    print this; 
+                } 
+                
+                return localFunction; 
+            } 
+        } 
+        
+        var callback = Thing().getCallback();
+        callback();
+        """;
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
+    }
+
+    [Fact]
     public void ClassThisMethodCallTest()
     {
         var source =
         """
-        class Person 
+        class Cake 
         { 
-            sayName() 
+            taste() 
             { 
-                print this.name; 
+                var adjective = "delicious"; 
+                print "The " + this.flavor + " cake is " + adjective + "!"; 
             } 
         } 
-        
-        var jane = Person(); 
-        jane.name = "Jane"; 
-    
-        jane.sayName();
+            
+        var cake = Cake(); 
+        cake.flavor = "German chocolate"; 
+        cake.taste();
         """;
 
         var errorHappend = false;
