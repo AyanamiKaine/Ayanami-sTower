@@ -116,6 +116,35 @@ public class ParserUnitTest
         Assert.IsType<Statement.Function>(statements[0]);
     }
 
+
+    [Fact]
+    public void FunctionReturnStatementTest()
+    {
+        var expression =
+        """
+        fun procedure() 
+        { 
+            print "Dont return anything"; 
+        }
+
+        var result = procedure();
+        print result;
+        """;
+        var scanner = new Scanner(expression);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+        foreach (var statement in statements)
+        {
+            Assert.NotNull(statement);
+        }
+        Assert.IsType<Statement.Function>(statements[0]);
+        Assert.IsType<Statement.Var>(statements[1]);
+        Assert.IsType<Statement.Print>(statements[2]);
+    }
+
     [Fact]
     public void ForStatementTest()
     {
