@@ -94,6 +94,35 @@ public class ParserUnitTest
     }
 
     [Fact]
+    public void ForStatementTest()
+    {
+        var expression =
+        """
+        var a = 0; 
+        var temp; 
+        
+        for (var b = 1; a < 10000; b = temp + b) 
+        { 
+            print a; temp = a; a = b; 
+        }
+        """;
+        var scanner = new Scanner(expression);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+
+        // If statements is empty we couldnt parse it correctly
+        Assert.NotNull(statements);
+        Assert.IsType<Statement.Var>(statements[0]);
+        Assert.IsType<Statement.Var>(statements[1]);
+        Assert.IsType<Statement.Block>(statements[2]);
+        Assert.IsType<Statement.Var>(((Statement.Block)statements[2]).statements[0]);
+        Assert.IsType<Statement.While>(((Statement.Block)statements[2]).statements[1]);
+    }
+
+    [Fact]
     public void WhileStatementTest()
     {
         var expression =
