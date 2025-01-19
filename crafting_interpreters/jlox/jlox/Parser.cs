@@ -401,6 +401,11 @@ public class Parser(List<Token> tokens)
         {
             if (Match(TokenType.LEFT_PAREN))
                 expr = FinishCall(expr);
+            else if (Match(TokenType.DOT))
+            {
+                var name = Consume(TokenType.IDENTIFIER, "Expect property name after '.'.");
+                expr = new Expr.Get(expr, name);
+            }
             else
                 break;
         }
