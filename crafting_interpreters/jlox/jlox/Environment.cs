@@ -39,7 +39,7 @@ public class LoxEnvironment
     {
         if (values.ContainsKey(name.Lexeme))
         {
-            value.Add(name.Lexeme, value);
+            values[name.Lexeme] = value;
             return;
         }
         if (_enclosing is not null)
