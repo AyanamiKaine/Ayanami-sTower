@@ -69,7 +69,9 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitClassStmt(Statement.Class stmt)
     {
-        throw new NotImplementedException();
+        Declare(stmt.name);
+        Define(stmt.name);
+        return null;
     }
 
     public object? VisitExpressionStmt(Statement.Expression stmt)
