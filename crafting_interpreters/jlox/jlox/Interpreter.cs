@@ -325,7 +325,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     object? Statement.IVisitor<object?>.VisitFunctionStmt(Statement.Function stmt)
     {
-        LoxFunction fun = new(stmt);
+        LoxFunction fun = new(stmt, _env);
         _env.Define(stmt.name.Lexeme, fun);
         return null;
     }
