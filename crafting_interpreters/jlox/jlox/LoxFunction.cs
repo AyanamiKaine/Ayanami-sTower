@@ -10,8 +10,15 @@ public class LoxFunction(Statement.Function declaration) : ILoxCallable
         throw new NotImplementedException();
     }
 
-    public dynamic Call(Interpreter interpreter, List<dynamic> arguments)
+    public dynamic? Call(Interpreter interpreter, List<dynamic> arguments)
     {
-        throw new NotImplementedException();
+        LoxEnvironment environment = new(interpreter.Globals);
+        for (int i = 0; i < _declaration.params_.Count; i++)
+        {
+            environment.Define(_declaration.params_[i].Lexeme, arguments[i]);
+        }
+
+        interpreter.ExecuteBlock(_declaration.body, environment);
+        return null;
     }
 }
