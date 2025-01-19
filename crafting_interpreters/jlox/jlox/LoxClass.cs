@@ -9,12 +9,21 @@ public class LoxClass(string name, Dictionary<string, LoxFunction> methods) : IL
 
     public int Arity()
     {
-        return 0;
+        LoxFunction? initalizer = FindMethod("init");
+        if (initalizer is null)
+            return 0;
+
+        return initalizer.Arity();
     }
 
     public dynamic? Call(Interpreter interpreter, List<dynamic> arguments)
     {
         LoxInstance instance = new(this);
+        LoxFunction? initalizer = FindMethod("init");
+        if (initalizer is not null)
+            initalizer.Bind(instance).Call(interpreter, arguments);
+
+
         return instance;
     }
 
