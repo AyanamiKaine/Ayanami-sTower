@@ -92,6 +92,9 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
         Declare(stmt.name);
         Define(stmt.name);
 
+        if (stmt.superclass is not null && stmt.name.Lexeme.Equals(stmt.superclass.name.Lexeme))
+            Lox.Error(stmt.superclass.name, "A class cant inherit from itself");
+
         if (stmt.superclass is not null)
             Resolve(stmt.superclass);
 
