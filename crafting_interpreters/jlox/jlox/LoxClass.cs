@@ -23,7 +23,7 @@ public class LoxClass(string name, Dictionary<string, LoxFunction> methods) : IL
         return Name;
     }
 
-    public LoxFunction? FindMethod(string lexeme)
+    public LoxFunction? FindMethod(string name)
     {
         if (_methods.TryGetValue(name, out LoxFunction? value))
             return value;
