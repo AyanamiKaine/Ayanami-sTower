@@ -62,6 +62,8 @@ public class Parser(List<Token> tokens)
 
     private Statement Statement()
     {
+        if (Match(TokenType.FOR))
+            return ForStatement();
         if (Match(TokenType.IF))
             return IfStatement();
         if (Match(TokenType.PRINT))
@@ -71,6 +73,53 @@ public class Parser(List<Token> tokens)
         if (Match(TokenType.LEFT_BRACE))
             return new Statement.Block(Block());
         return ExpressionStatement();
+    }
+
+    private Statement ForStatement()
+    {
+        Consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
+        Statement? initializer;
+        if (Match(TokenType.SEMICOLON))
+            initializer = null;
+        else if (Match(TokenType.VAR))
+            initializer = VarDeclaration();
+        else
+            return ExpressionStatement();
+
+        Expr condition = null;
+        if (!Check(TokenType.SEMICOLON))
+            condition = Expression();
+
+        Consume(TokenType.SEMICOLON, "Expect ';' after loop condition");
+
+        Expr increment = null;
+        if (!Check(TokenType.RIGHT_PAREN))
+            increment = Expression();
+
+        Consume(TokenType.RIGHT_PAREN, "Expect ')' after a clauses");
+
+        var body = Statement();
+
+        if (increment is not null)
+        {
+            body = new Statement.Block([
+                body,
+                new Statement.Expression(increment)
+            ]);
+        }
+
+        condition ??= new Expr.Literal(true);
+        body = new Statement.While(condition, body);
+
+        if (initializer is not null)
+        {
+            body = new Statement.Block([
+                initializer,
+                body
+            ]);
+        }
+
+        return body;
     }
 
     private Statement.While WhileStatement()
