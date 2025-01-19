@@ -7,7 +7,7 @@ public class LoxFunction(Statement.Function declaration) : ILoxCallable
 
     public int Arity()
     {
-        throw new NotImplementedException();
+        return _declaration.params_.Count;
     }
 
     public dynamic? Call(Interpreter interpreter, List<dynamic> arguments)
@@ -20,5 +20,10 @@ public class LoxFunction(Statement.Function declaration) : ILoxCallable
 
         interpreter.ExecuteBlock(_declaration.body, environment);
         return null;
+    }
+
+    public override string ToString()
+    {
+        return $"<fn {_declaration.name.Lexeme}>";
     }
 }
