@@ -37,6 +37,8 @@ public class Parser(List<Token> tokens)
     {
         try
         {
+            if (Match(TokenType.FUN))
+                return Function("function");
             if (Match(TokenType.VAR))
                 return VarDeclaration();
             return Statement();
@@ -46,6 +48,31 @@ public class Parser(List<Token> tokens)
             Synchronize();
             return null;
         }
+    }
+
+    private Statement.Function Function(string kind)
+    {
+        Token name = Consume(TokenType.IDENTIFIER, $"Expect {kind} name.");
+
+        Consume(TokenType.LEFT_PAREN, $"Expect '(' after {kind} name");
+
+        var parameters = new List<Token>();
+
+        if (!Check(TokenType.RIGHT_PAREN))
+        {
+            do
+            {
+                if (parameters.Count >= 255)
+                    Error(Peek(), "Cant have more than 255 parameters.");
+
+                parameters.Add(Consume(TokenType.IDENTIFIER, "Expect parameter name."));
+            } while (Match(TokenType.COMMA));
+        }
+        Consume(TokenType.RIGHT_PAREN, "Expect ')' affter parameters.");
+
+        Consume(TokenType.LEFT_BRACE, $"Expect '{{' before {kind} body");
+        var body = Block();
+        return new Statement.Function(name, parameters, body);
     }
 
     private Statement VarDeclaration()
