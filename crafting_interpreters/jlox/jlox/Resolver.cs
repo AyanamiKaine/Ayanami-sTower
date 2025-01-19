@@ -104,7 +104,8 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitGetExpr(Expr.Get expr)
     {
-        throw new NotImplementedException();
+        Resolve(expr.obj);
+        return null;
     }
 
     public object? VisitGroupingExpr(Expr.Grouping expr)
