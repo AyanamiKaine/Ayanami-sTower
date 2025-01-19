@@ -94,6 +94,29 @@ public class ParserUnitTest
     }
 
     [Fact]
+    public void FunctionDeclarationTest()
+    {
+        var expression =
+        """
+        fun add(a, b) 
+        { 
+            print a + b; 
+        }
+        """;
+        var scanner = new Scanner(expression);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+        foreach (var statement in statements)
+        {
+            Assert.NotNull(statement);
+        }
+        Assert.IsType<Statement.Function>(statements[0]);
+    }
+
+    [Fact]
     public void ForStatementTest()
     {
         var expression =
