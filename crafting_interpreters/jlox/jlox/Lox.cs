@@ -44,6 +44,9 @@ public class Lox
         var parser = new Parser(tokens);
         List<Statement> statements = parser.Parse();
 
+        Resolver resolver = new(Interpreter);
+        resolver.Resolve(statements);
+
         Interpreter.Interpret(statements);
     }
 
