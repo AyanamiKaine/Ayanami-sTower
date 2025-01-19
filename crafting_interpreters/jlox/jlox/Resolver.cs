@@ -186,7 +186,8 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitThisExpr(Expr.This expr)
     {
-        throw new NotImplementedException();
+        ResolveLocal(expr, expr.keyword);
+        return null;
     }
 
     public object? VisitUnaryExpr(Expr.Unary expr)
