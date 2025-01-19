@@ -87,7 +87,18 @@ public class InterpreterUnitTest
             print fib(i); 
         }
         """;
-        Lox.Run(source);
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
     }
 
     [Fact]
@@ -105,7 +116,18 @@ public class InterpreterUnitTest
             a = b; 
         }
         """;
-        Lox.Run(source);
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
     }
 
     [Fact]
@@ -120,7 +142,18 @@ public class InterpreterUnitTest
         
         sayHi("Dear", "Reader");
         """;
-        Lox.Run(source);
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
     }
 
     [Fact]
@@ -130,7 +163,18 @@ public class InterpreterUnitTest
         """
         fun add(a, b) { print a + b; }
         """;
-        Lox.Run(source);
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
     }
 
     [Fact]
@@ -141,7 +185,18 @@ public class InterpreterUnitTest
         """
         clock();
         """;
-        Lox.Run(source);
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
     }
 
 
@@ -165,7 +220,7 @@ public class InterpreterUnitTest
         {
             Lox.Run(source);
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             errorHappend = true;
         }
@@ -194,7 +249,7 @@ public class InterpreterUnitTest
         {
             Lox.Run(source);
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             errorHappend = true;
         }
