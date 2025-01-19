@@ -26,6 +26,9 @@ public class LoxFunction(Statement.Function declaration, LoxEnvironment closure,
         }
         catch (Return returnValue)
         {
+            if (_isInitalizer)
+                return _closure.GetAt(0, "this");
+
             return returnValue.Value;
         }
         return null;
