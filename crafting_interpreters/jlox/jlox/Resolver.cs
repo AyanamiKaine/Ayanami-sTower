@@ -194,7 +194,10 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
         if (_scopes.Count == 0)
             return;
 
-        _scopes.Peek().Add(name.Lexeme, true);
+        if (_scopes.Peek().ContainsKey(name.Lexeme))
+            _scopes.Peek()[name.Lexeme] = true;
+        else
+            _scopes.Peek().Add(name.Lexeme, true);
     }
 
     private void ResolveLocal(Expr expr, Token name)
@@ -216,6 +219,12 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
             return;
 
         Dictionary<string, bool> scope = _scopes.Peek();
+
+        if (scope.ContainsKey(name.Lexeme))
+        {
+            Lox.Error(name, "Already variable with this name in this scope.");
+        }
+
         scope.Add(name.Lexeme, false);
     }
 
