@@ -7,11 +7,18 @@ enum FunctionType
     METHOD,
 }
 
+enum ClassType
+{
+    NONE,
+    CLASS
+}
+
 class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVisitor<object?>
 {
     private readonly Interpreter _interpreter = interpreter;
     private readonly Stack<Dictionary<string, bool>> _scopes = new();
     private FunctionType _currentFunction = FunctionType.NONE;
+    private ClassType _currentClass = ClassType.NONE;
     public object? VisitAssignExpr(Expr.Assign expr)
     {
         Resolve(expr.value);
@@ -77,6 +84,10 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitClassStmt(Statement.Class stmt)
     {
+        ClassType enclosingClass = _currentClass;
+        _currentClass = ClassType.CLASS;
+
+
         Declare(stmt.name);
         Define(stmt.name);
 
@@ -91,6 +102,7 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
         EndScope();
 
+        _currentClass = enclosingClass;
         return null;
     }
 
@@ -191,6 +203,11 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitThisExpr(Expr.This expr)
     {
+        if (_currentClass == ClassType.NONE)
+        {
+            Lox.Error(expr.keyword, "Cant use 'this' outside of a class.");
+            return null;
+        }
         ResolveLocal(expr, expr.keyword);
         return null;
     }
