@@ -20,167 +20,113 @@ public abstract class Statement
 
     // Nested Stmt classes here...
     //> stmt-block
-    public class Block : Statement
+    public class Block(List<Statement> statements) : Statement
     {
-        public Block(List<Statement> statements)
-        {
-            this.statements = statements;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitBlockStmt(this);
         }
 
-        public readonly List<Statement> statements;
+        public readonly List<Statement> statements = statements;
     }
     //< stmt-block
     //> stmt-class
-    public class Class : Statement
+    public class Class(Token name,
+                 Expr.Variable superclass,
+                 List<Statement.Function> methods) : Statement
     {
-        public Class(Token name,
-                     Expr.Variable superclass,
-                     List<Statement.Function> methods)
-        {
-            this.name = name;
-            this.superclass = superclass;
-            this.methods = methods;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitClassStmt(this);
         }
 
-        public readonly Token name;
-        public readonly Expr.Variable superclass;
-        public readonly List<Statement.Function> methods;
+        public readonly Token name = name;
+        public readonly Expr.Variable superclass = superclass;
+        public readonly List<Statement.Function> methods = methods;
     }
     //< stmt-class
     //> stmt-expression
-    public class Expression : Statement
+    public class Expression(Expr expression) : Statement
     {
-        public Expression(Expr expression)
-        {
-            this.expression = expression;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitExpressionStmt(this);
         }
 
-        public readonly Expr expression;
+        public readonly Expr expression = expression;
     }
     //< stmt-expression
     //> stmt-function
-    public class Function : Statement
+    public class Function(Token name, List<Token> parameters, List<Statement> body) : Statement
     {
-        public Function(Token name, List<Token> parameters, List<Statement> body)
-        {
-            this.name = name;
-            this.params_ = parameters; // Renamed to avoid conflict with 'params' keyword
-            this.body = body;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitFunctionStmt(this);
         }
 
-        public readonly Token name;
-        public readonly List<Token> params_; // Renamed field
-        public readonly List<Statement> body;
+        public readonly Token name = name;
+        public readonly List<Token> params_ = parameters; // Renamed field
+        public readonly List<Statement> body = body;
     }
     //< stmt-function
     //> stmt-if
-    public class If : Statement
+    public class If(Expr condition, Statement thenBranch, Statement elseBranch) : Statement
     {
-        public If(Expr condition, Statement thenBranch, Statement elseBranch)
-        {
-            this.condition = condition;
-            this.thenBranch = thenBranch;
-            this.elseBranch = elseBranch;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitIfStmt(this);
         }
 
-        public readonly Expr condition;
-        public readonly Statement thenBranch;
-        public readonly Statement elseBranch;
+        public readonly Expr condition = condition;
+        public readonly Statement thenBranch = thenBranch;
+        public readonly Statement elseBranch = elseBranch;
     }
     //< stmt-if
     //> stmt-print
-    public class Print : Statement
+    public class Print(Expr expression) : Statement
     {
-        public Print(Expr expression)
-        {
-            this.expression = expression;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitPrintStmt(this);
         }
 
-        public readonly Expr expression;
+        public readonly Expr expression = expression;
     }
     //< stmt-print
     //> stmt-return
-    public class Return : Statement
+    public class Return(Token keyword, Expr value) : Statement
     {
-        public Return(Token keyword, Expr value)
-        {
-            this.keyword = keyword;
-            this.value = value;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitReturnStmt(this);
         }
 
-        public readonly Token keyword;
-        public readonly Expr value;
+        public readonly Token keyword = keyword;
+        public readonly Expr value = value;
     }
     //< stmt-return
     //> stmt-var
-    public class Var : Statement
+    public class Var(Token name, Expr initializer) : Statement
     {
-        public Var(Token name, Expr initializer)
-        {
-            this.name = name;
-            this.initializer = initializer;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitVarStmt(this);
         }
 
-        public readonly Token name;
-        public readonly Expr initializer;
+        public readonly Token name = name;
+        public readonly Expr initializer = initializer;
     }
     //< stmt-var
     //> stmt-while
-    public class While : Statement
+    public class While(Expr condition, Statement body) : Statement
     {
-        public While(Expr condition, Statement body)
-        {
-            this.condition = condition;
-            this.body = body;
-        }
-
         public override R Accept<R>(IVisitor<R> visitor)
         {
             return visitor.VisitWhileStmt(this);
         }
 
-        public readonly Expr condition;
-        public readonly Statement body;
+        public readonly Expr condition = condition;
+        public readonly Statement body = body;
     }
     //< stmt-while
 
