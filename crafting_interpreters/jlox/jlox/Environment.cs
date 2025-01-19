@@ -66,4 +66,9 @@ public class LoxEnvironment
 
         return env;
     }
+
+    public void AssignAt(int distance, Token name, dynamic value)
+    {
+        Ancestor(distance).Values.Add(name.Lexeme, value);
+    }
 }
