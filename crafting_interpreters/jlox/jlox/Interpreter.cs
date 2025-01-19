@@ -110,9 +110,15 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
     {
         var value = Evaluate(expr.value);
 
-        _env.Assign(expr.name, value);
+        if (_locals.TryGetValue(expr, out int distance))
+            _env.AssignAt(distance, expr.name, value);
+        else
+            Globals.Assign(expr.name, value);
+
         return value;
     }
+
+    
 
     public dynamic VisitBinaryExpr(Expr.Binary expr)
     {
