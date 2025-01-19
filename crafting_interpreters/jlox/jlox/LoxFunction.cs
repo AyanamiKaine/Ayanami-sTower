@@ -1,4 +1,5 @@
 
+
 namespace jlox;
 
 public class LoxFunction(Statement.Function declaration, LoxEnvironment closure) : ILoxCallable
@@ -31,5 +32,12 @@ public class LoxFunction(Statement.Function declaration, LoxEnvironment closure)
     public override string ToString()
     {
         return $"<fn {_declaration.name.Lexeme}>";
+    }
+
+    public LoxFunction Bind(LoxInstance instance)
+    {
+        LoxEnvironment environment = new(_closure);
+        environment.Define("this", instance);
+        return new LoxFunction(_declaration, environment);
     }
 }
