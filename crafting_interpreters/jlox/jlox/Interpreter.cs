@@ -282,7 +282,15 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitVariableExpr(Expr.Variable expr)
     {
-        return _env.Get(expr.name);
+        return LookUpVariable(expr.name, expr);
+    }
+
+    private dynamic LookUpVariable(Token name, Expr expr)
+    {
+        if (_locals.TryGetValue(expr, out int distance))
+            return _env.GetAt(distance, name.Lexeme);
+        else
+            return Globals.Get(name);
     }
 
     private static bool IsTruthy(object obj)
