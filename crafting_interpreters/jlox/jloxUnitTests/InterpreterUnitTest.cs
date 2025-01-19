@@ -143,4 +143,62 @@ public class InterpreterUnitTest
         """;
         Lox.Run(source);
     }
+
+
+    /// <summary>
+    /// You cannot refrence the same variable name in the outer scope
+    /// </summary>
+    [Fact]
+    public void RefrenceVariableInInitalizerError()
+    {
+        var source =
+        """
+        var test = "Outer";
+        {
+            var test = test;
+        }
+        """;
+
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (System.Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.True(errorHappend);
+    }
+
+    /// <summary>
+    /// Here we should be able to refrence the outer variable as it has 
+    /// a different name.
+    /// </summary>
+    [Fact]
+    public void RefrenceVariableInInitalizerNOError()
+    {
+        var source =
+        """
+        var outer = "Outer";
+        {
+            var innter = outer;
+        }
+        """;
+
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (System.Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
+    }
 }
