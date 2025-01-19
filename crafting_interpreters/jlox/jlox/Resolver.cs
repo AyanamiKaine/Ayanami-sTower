@@ -4,6 +4,7 @@ enum FunctionType
 {
     NONE,
     Function,
+    INITIALIZER,
     METHOD,
 }
 
@@ -97,6 +98,8 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
         foreach (var method in stmt.methods)
         {
             var declaration = FunctionType.METHOD;
+            if (method.name.Lexeme.Equals("init"))
+                declaration = FunctionType.INITIALIZER;
             ResolveFunction(method, declaration);
         }
 
@@ -184,7 +187,12 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
             Lox.Error(stmt.keyword, "Can't return from top level code.");
 
         if (stmt.value is not null)
+        {
+            if (_currentFunction == FunctionType.INITIALIZER)
+                Lox.Error(stmt.keyword, "Cant return a value from an initializer");
+
             Resolve(stmt.value);
+        }
 
         return null;
     }
