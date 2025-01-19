@@ -20,9 +20,8 @@ public class LoxClass(string name, Dictionary<string, LoxFunction> methods) : IL
     {
         LoxInstance instance = new(this);
         LoxFunction? initalizer = FindMethod("init");
-        if (initalizer is not null)
-            initalizer.Bind(instance).Call(interpreter, arguments);
-
+        initalizer?.Bind(instance).Call(interpreter, arguments);
+        
 
         return instance;
     }
