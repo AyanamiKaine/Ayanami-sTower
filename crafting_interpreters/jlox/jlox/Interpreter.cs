@@ -139,7 +139,26 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitCallExpr(Expr.Call expr)
     {
-        throw new NotImplementedException();
+        dynamic callee = Evaluate(expr.callee);
+
+        var arguments = new List<dynamic>();
+        foreach (var argument in arguments)
+        {
+            arguments.Add(Evaluate(argument));
+        }
+
+
+        if (callee is not LoxCallable)
+            throw new RuntimeError(expr.paren, "Can only call functions and classes.");
+
+        LoxCallable function = (LoxCallable)callee;
+
+        if (arguments.Count != function.Arity())
+            throw new RuntimeError(expr.paren, $"Expected {function.Arity()} arguments but got {arguments.Count} .");
+
+
+
+        return function.Call(this, arguments);
     }
 
     public dynamic VisitGetExpr(Expr.Get expr)
@@ -306,7 +325,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     object? Statement.IVisitor<object?>.VisitWhileStmt(Statement.While stmt)
     {
-        while(IsTruthy(Evaluate(stmt.condition)))
+        while (IsTruthy(Evaluate(stmt.condition)))
         {
             Execute(stmt.body);
         }
