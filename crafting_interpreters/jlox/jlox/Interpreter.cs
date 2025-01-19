@@ -265,7 +265,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitThisExpr(Expr.This expr)
     {
-        throw new NotImplementedException();
+        return LookUpVariable(expr.keyword, expr);
     }
 
     public dynamic VisitUnaryExpr(Expr.Unary expr)
