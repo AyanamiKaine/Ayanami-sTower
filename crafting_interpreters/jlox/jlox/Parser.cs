@@ -276,6 +276,10 @@ public class Parser(List<Token> tokens)
                 Token name = variable.name;
                 return new Expr.Assign(name, value);
             }
+            else if (expr is Expr.Get get)
+            {
+                return new Expr.Set(get.obj, get.name, value);
+            }
             Error(equals, "Invalid Assignment Target.");
         }
 
