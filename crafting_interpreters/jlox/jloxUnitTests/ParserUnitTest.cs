@@ -147,6 +147,42 @@ public class ParserUnitTest
         }
     }
 
+    /// <summary>
+    /// The parser should correctly recognize the name 
+    /// of the class.
+    /// </summary>
+    [Fact]
+    public void ClassNameResolveTest()
+    {
+        var source =
+        """
+        class Breakfast 
+        { 
+            cook() 
+            { 
+                print "Eggs a-fryin'!"; 
+            } 
+            
+            serve(who) 
+            { 
+                print "Enjoy your breakfast, " + who + "."; 
+            } 
+        }
+
+        print Breakfast;
+        """;
+
+        var scanner = new Scanner(source);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+        foreach (var statement in statements)
+        {
+            Assert.NotNull(statement);
+        }
+    }
 
     [Fact]
     public void FibonacciExampleTest()
