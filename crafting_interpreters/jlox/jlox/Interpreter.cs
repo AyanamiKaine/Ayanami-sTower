@@ -12,7 +12,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
     /// <summary>
     /// Defined a native clock function
     /// </summary>
-    private class Clock : LoxCallable
+    private class Clock : ILoxCallable
     {
         public int Arity()
         {
@@ -182,10 +182,10 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
         }
 
 
-        if (callee is not LoxCallable)
+        if (callee is not ILoxCallable)
             throw new RuntimeError(expr.paren, "Can only call functions and classes.");
 
-        LoxCallable function = (LoxCallable)callee;
+        ILoxCallable function = (ILoxCallable)callee;
 
         if (arguments.Count != function.Arity())
             throw new RuntimeError(expr.paren, $"Expected {function.Arity()} arguments but got {arguments.Count} .");
