@@ -50,7 +50,7 @@ public class Parser(List<Token> tokens)
         }
     }
 
-    private Statement? ClassDeclaration()
+    private Statement.Class? ClassDeclaration()
     {
         var name = Consume(TokenType.IDENTIFIER, "Expect class name.");
         Consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
