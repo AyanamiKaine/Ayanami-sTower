@@ -1,4 +1,5 @@
 using System.ComponentModel.Design;
+using System.Data.SqlTypes;
 using System.Text.RegularExpressions;
 
 namespace jlox;
@@ -65,12 +66,24 @@ public class Parser(List<Token> tokens)
             return IfStatement();
         if (Match(TokenType.PRINT))
             return PrintStatement();
+        if (Match(TokenType.WHILE))
+            return WhileStatement();
         if (Match(TokenType.LEFT_BRACE))
             return new Statement.Block(Block());
         return ExpressionStatement();
     }
 
-    private Statement IfStatement()
+    private Statement.While WhileStatement()
+    {
+        Consume(TokenType.LEFT_PAREN, "Expect '(' after while.");
+        Expr condition = Expression();
+        Consume(TokenType.RIGHT_PAREN, "Expect ')' after condition");
+        var body = Statement();
+
+        return new Statement.While(condition, body);
+    }
+
+    private Statement.If IfStatement()
     {
         Consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
         Expr condition = Expression();
@@ -125,14 +138,14 @@ public class Parser(List<Token> tokens)
         return expr;
     }
 
-    private Statement PrintStatement()
+    private Statement.Print PrintStatement()
     {
         Expr value = Expression();
         Consume(TokenType.SEMICOLON, "Expect ';' after value.");
         return new Statement.Print(value);
     }
 
-    private Statement ExpressionStatement()
+    private Statement.Expression ExpressionStatement()
     {
         Expr value = Expression();
         Consume(TokenType.SEMICOLON, "Expect ';' after expression.");
