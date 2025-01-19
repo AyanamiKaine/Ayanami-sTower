@@ -49,6 +49,27 @@ public class InterpreterUnitTest
     }
 
     [Fact]
+    public void ClassCantInheritFromItSelfTest()
+    {
+        var source =
+        """
+        class Oops < Oops { }         
+        """;
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.True(errorHappend);
+    }
+
+    [Fact]
     public void ClassCallBackTest()
     {
         var source =
