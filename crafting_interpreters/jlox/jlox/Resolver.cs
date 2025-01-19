@@ -170,7 +170,7 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitVariableExpr(Expr.Variable expr)
     {
-        if (!(_scopes.Count == 0) && _scopes.Peek()[expr.name.Lexeme] == false)
+        if (!(_scopes.Count == 0) && _scopes.Peek().ContainsKey(expr.name.Lexeme) && _scopes.Peek()[expr.name.Lexeme] == false)
         {
             Lox.Error(expr.name, "Cant read local variable in its own initalizer.");
         }
