@@ -26,7 +26,7 @@ public class InterpreterUnitTest
     }
 
     [Fact]
-    public void ClassInstancesMethodCallTest()
+    public void ClassThisMethodCallTest()
     {
         var source =
         """
@@ -40,12 +40,37 @@ public class InterpreterUnitTest
         
         var jane = Person(); 
         jane.name = "Jane"; 
-        
-        var bill = Person(); 
-        bill.name = "Bill"; 
-        bill.sayName = jane.sayName; 
-        
-        bill.sayName();
+    
+        jane.sayName();
+        """;
+
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
+    }
+
+    [Fact]
+    public void ClassMethodCallTest()
+    {
+        var source =
+        """
+        class Beacon 
+        { 
+            eat()
+            {
+                print "Crunch crunch crunch!"; 
+            } 
+        }
+        Beacon().eat();     
         """;
 
         var errorHappend = false;
