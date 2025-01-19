@@ -92,6 +92,9 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
         Declare(stmt.name);
         Define(stmt.name);
 
+        if (stmt.superclass is not null)
+            Resolve(stmt.superclass);
+
         BeginScope();
         _scopes.Peek().Add("this", true);
 
