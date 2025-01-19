@@ -345,7 +345,16 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
     object? Statement.IVisitor<object?>.VisitClassStmt(Statement.Class stmt)
     {
         _env.Define(stmt.name.Lexeme, null);
-        LoxClass klass = new LoxClass(stmt.name.Lexeme);
+
+        var methods = new Dictionary<string, LoxFunction>();
+
+        foreach (var method in stmt.methods)
+        {
+            var fun = new LoxFunction(method, _env);
+            methods.Add(method.name.Lexeme, fun);
+        }
+
+        LoxClass klass = new LoxClass(stmt.name.Lexeme, methods);
         _env.Assign(stmt.name, klass);
         return null;
     }
