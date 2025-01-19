@@ -1,10 +1,10 @@
 
 namespace jlox;
 
-public class LoxFunction(Statement.Function declaration) : ILoxCallable
+public class LoxFunction(Statement.Function declaration, LoxEnvironment closure) : ILoxCallable
 {
     private readonly Statement.Function _declaration = declaration;
-
+    private readonly LoxEnvironment _closure = closure;
     public int Arity()
     {
         return _declaration.params_.Count;
@@ -12,7 +12,7 @@ public class LoxFunction(Statement.Function declaration) : ILoxCallable
 
     public dynamic? Call(Interpreter interpreter, List<dynamic> arguments)
     {
-        LoxEnvironment environment = new(interpreter.Globals);
+        LoxEnvironment environment = new(_closure);
         for (int i = 0; i < _declaration.params_.Count; i++)
         {
             environment.Define(_declaration.params_[i].Lexeme, arguments[i]);
