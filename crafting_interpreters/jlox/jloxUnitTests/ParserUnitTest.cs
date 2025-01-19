@@ -94,6 +94,31 @@ public class ParserUnitTest
     }
 
     [Fact]
+    public void WhileStatementTest()
+    {
+        var expression =
+        """
+        var i = 0;
+
+        while(i < 10)
+        {
+            print("Hello World");
+            i = i + 1;
+        }
+        """;
+        var scanner = new Scanner(expression);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+
+        // If statements is empty we couldnt parse it correctly
+        Assert.NotNull(statements);
+        Assert.IsType<Statement.While>(statements[1]);
+    }
+
+    [Fact]
     public void BlockStatementTest()
     {
         var expression =
