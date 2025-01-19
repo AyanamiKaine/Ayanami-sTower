@@ -116,6 +116,33 @@ public class ParserUnitTest
         Assert.IsType<Statement.Function>(statements[0]);
     }
 
+    [Fact]
+    public void FibonacciExampleTest()
+    {
+        var source =
+        """
+        fun fib(n) 
+        { 
+            if (n <= 1) return n; 
+            return fib(n - 2) + fib(n - 1); 
+        } 
+        
+        for (var i = 0; i < 20; i = i + 1) { 
+            print fib(i); 
+        }
+        """;
+
+        var scanner = new Scanner(source);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+        foreach (var statement in statements)
+        {
+            Assert.NotNull(statement);
+        }
+    }
 
     [Fact]
     public void FunctionReturnStatementTest()
