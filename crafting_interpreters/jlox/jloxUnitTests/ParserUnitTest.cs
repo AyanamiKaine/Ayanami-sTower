@@ -185,6 +185,32 @@ public class ParserUnitTest
     }
 
     [Fact]
+    public void ClassMethodCallTest()
+    {
+        var source =
+        """
+        class Beacon 
+        { 
+            eat()
+            {
+                print "Crunch crunch crunch!"; 
+            } 
+        }     
+        Beacon.eat();
+        """;
+        var scanner = new Scanner(source);
+
+        var tokens = scanner.ScanTokens();
+        var parser = new Parser(tokens);
+
+        var statements = parser.Parse();
+        foreach (var statement in statements)
+        {
+            Assert.NotNull(statement);
+        }
+    }
+
+    [Fact]
     public void FibonacciExampleTest()
     {
         var source =
