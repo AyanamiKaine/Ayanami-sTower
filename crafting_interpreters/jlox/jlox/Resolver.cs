@@ -1,9 +1,17 @@
 namespace jlox;
 
+enum FunctionType
+{
+    NONE,
+    Function,
+    METHOD,
+}
+
 class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVisitor<object?>
 {
     private readonly Interpreter _interpreter = interpreter;
     private readonly Stack<Dictionary<string, bool>> _scopes = new();
+    private FunctionType _currentFunction = FunctionType.NONE;
     public object? VisitAssignExpr(Expr.Assign expr)
     {
         Resolve(expr.value);
@@ -71,6 +79,13 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
     {
         Declare(stmt.name);
         Define(stmt.name);
+
+        foreach (var method in stmt.methods)
+        {
+            var declaration = FunctionType.METHOD;
+            ResolveFunction(method, declaration);
+        }
+
         return null;
     }
 
@@ -85,12 +100,15 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
         Declare(stmt.name);
         Define(stmt.name);
 
-        ResolveFunction(stmt);
+        ResolveFunction(stmt, FunctionType.Function);
         return null;
     }
 
-    private void ResolveFunction(Statement.Function function)
+    private void ResolveFunction(Statement.Function function, FunctionType type)
     {
+        var enclosingFunction = _currentFunction;
+        _currentFunction = type;
+
         BeginScope();
         foreach (var param in function.params_)
         {
@@ -100,6 +118,7 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
         Resolve(function.body);
         EndScope();
+        _currentFunction = enclosingFunction;
     }
 
     public object? VisitGetExpr(Expr.Get expr)
@@ -144,6 +163,9 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitReturnStmt(Statement.Return stmt)
     {
+        if (_currentFunction == FunctionType.NONE)
+            Lox.Error(stmt.keyword, "Can't return from top level code.");
+
         if (stmt.value is not null)
             Resolve(stmt.value);
 
