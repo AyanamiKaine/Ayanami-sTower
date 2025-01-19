@@ -17,8 +17,14 @@ public class LoxFunction(Statement.Function declaration) : ILoxCallable
         {
             environment.Define(_declaration.params_[i].Lexeme, arguments[i]);
         }
-
-        interpreter.ExecuteBlock(_declaration.body, environment);
+        try
+        {
+            interpreter.ExecuteBlock(_declaration.body, environment);
+        }
+        catch (Return returnValue)
+        {
+            return returnValue.Value;
+        }
         return null;
     }
 
