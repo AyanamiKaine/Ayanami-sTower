@@ -95,11 +95,24 @@ public class Parser(List<Token> tokens)
             return IfStatement();
         if (Match(TokenType.PRINT))
             return PrintStatement();
+        if (Match(TokenType.RETURN))
+            return ReturnStatement();
         if (Match(TokenType.WHILE))
             return WhileStatement();
         if (Match(TokenType.LEFT_BRACE))
             return new Statement.Block(Block());
         return ExpressionStatement();
+    }
+
+    private Statement ReturnStatement()
+    {
+        var keyword = Previous();
+        Expr? value = null;
+        if (!Check(TokenType.SEMICOLON))
+            value = Expression();
+
+        Consume(TokenType.SEMICOLON, "Expect ';' after return value ");
+        return new Statement.Return(keyword, value);
     }
 
     private Statement ForStatement()
