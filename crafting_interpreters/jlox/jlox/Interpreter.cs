@@ -19,7 +19,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
             return 0;
         }
 
-        public dynamic Call(Interpreter interpreter, List<dynamic> arguments)
+        public dynamic? Call(Interpreter interpreter, List<dynamic> arguments)
         {
             return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
@@ -31,16 +31,16 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
     }
 
 
-    private LoxEnvironment _globals;
+    public readonly LoxEnvironment Globals;
 
     private LoxEnvironment _env;
 
     public Interpreter()
     {
-        _globals = new();
-        _env = _globals;
+        Globals = new();
+        _env = Globals;
 
-        _globals.Define("clock", new Clock());
+        Globals.Define("clock", new Clock());
     }
 
     public dynamic? Interpret(Expr expr)
@@ -290,7 +290,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
         return null;
     }
 
-    private void ExecuteBlock(List<Statement> statements, LoxEnvironment loxEnvironment)
+    public void ExecuteBlock(List<Statement> statements, LoxEnvironment loxEnvironment)
     {
         var previous = _env;
 
