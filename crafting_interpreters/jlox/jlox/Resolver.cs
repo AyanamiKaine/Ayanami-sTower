@@ -152,7 +152,9 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitSetExpr(Expr.Set expr)
     {
-        throw new NotImplementedException();
+        Resolve(expr.value);
+        Resolve(expr.obj);
+        return null;
     }
 
     public object? VisitSuperExpr(Expr.Super expr)
