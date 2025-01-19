@@ -447,6 +447,9 @@ public class Parser(List<Token> tokens)
         if (Match(TokenType.NUMBER, TokenType.STRING))
             return new Expr.Literal(Previous().Literal);
 
+        if (Match(TokenType.THIS))
+            return new Expr.This(Previous());
+
         if (Match(TokenType.IDENTIFIER))
             return new Expr.Variable(Previous());
 
