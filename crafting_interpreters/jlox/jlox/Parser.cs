@@ -1,6 +1,4 @@
-using System.ComponentModel.Design;
-using System.Data.SqlTypes;
-using System.Text.RegularExpressions;
+
 
 namespace jlox;
 
@@ -37,6 +35,8 @@ public class Parser(List<Token> tokens)
     {
         try
         {
+            if (Match(TokenType.CLASS))
+                return ClassDeclaration();
             if (Match(TokenType.FUN))
                 return Function("function");
             if (Match(TokenType.VAR))
@@ -48,6 +48,23 @@ public class Parser(List<Token> tokens)
             Synchronize();
             return null;
         }
+    }
+
+    private Statement? ClassDeclaration()
+    {
+        var name = Consume(TokenType.IDENTIFIER, "Expect class name.");
+        Consume(TokenType.LEFT_BRACE, "Expect '{' before class body.");
+
+        var methods = new List<Statement.Function>();
+
+        while (!Check(TokenType.RIGHT_BRACE) && !IsAtEnd())
+        {
+            methods.Add(Function("method"));
+        }
+
+        Consume(TokenType.RIGHT_BRACE, "Expect '}' after class body");
+
+        return new Statement.Class(name, null, methods);
     }
 
     private Statement.Function Function(string kind)
