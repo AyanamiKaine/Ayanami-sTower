@@ -1,3 +1,4 @@
+
 namespace jlox;
 
 public class LoxInstance(LoxClass klass)
@@ -16,5 +17,13 @@ public class LoxInstance(LoxClass klass)
     public override string ToString()
     {
         return Klass.Name + " instance";
+    }
+
+    public void Set(Token name, dynamic value)
+    {
+        if (!fields.ContainsKey(name.Lexeme))
+            fields.Add(name.Lexeme, value);
+        else
+            fields[name.Lexeme] = value;
     }
 }
