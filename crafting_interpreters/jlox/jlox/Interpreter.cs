@@ -4,10 +4,44 @@ public class RuntimeError(Token token, string message) : Exception(message)
     public readonly Token Token = token;
 };
 
+
+
 public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 {
 
-    private LoxEnvironment _env = new();
+    /// <summary>
+    /// Defined a native clock function
+    /// </summary>
+    private class Clock : LoxCallable
+    {
+        public int Arity()
+        {
+            return 0;
+        }
+
+        public dynamic Call(Interpreter interpreter, List<dynamic> arguments)
+        {
+            return DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+
+        public override string ToString()
+        {
+            return "<native fn>";
+        }
+    }
+
+
+    private LoxEnvironment _globals;
+
+    private LoxEnvironment _env;
+
+    public Interpreter()
+    {
+        _globals = new();
+        _env = _globals;
+
+        _globals.Define("clock", new Clock());
+    }
 
     public dynamic? Interpret(Expr expr)
     {
