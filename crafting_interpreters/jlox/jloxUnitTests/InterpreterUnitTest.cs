@@ -26,6 +26,29 @@ public class InterpreterUnitTest
     }
 
     [Fact]
+    public void ClassInheritanceTest()
+    {
+        var source =
+        """
+        class Doughnut { } 
+        
+        class BostomCream < Doughnut {}
+        """;
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
+    }
+
+    [Fact]
     public void ClassCallBackTest()
     {
         var source =
