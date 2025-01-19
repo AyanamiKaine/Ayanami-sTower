@@ -26,6 +26,30 @@ public class InterpreterUnitTest
     }
 
     [Fact]
+    public void PrintClassInstanceName()
+    {
+        var source =
+        """
+        class Bagel {} 
+        var bagel = Bagel(); 
+        print bagel;
+        """;
+
+        var errorHappend = false;
+
+        try
+        {
+            Lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
+    }
+
+    [Fact]
     public void SimpleBooleanExpressionTest()
     {
         var expression = """(2 == 2) == true""";
