@@ -115,6 +115,7 @@ public class ParserUnitTest
 
         // If statements is empty we couldnt parse it correctly
         Assert.NotNull(statements);
+        Assert.IsType<Statement.Var>(statements[0]);
         Assert.IsType<Statement.While>(statements[1]);
     }
 
