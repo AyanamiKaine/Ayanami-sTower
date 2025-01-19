@@ -322,7 +322,9 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     object? Statement.IVisitor<object?>.VisitFunctionStmt(Statement.Function stmt)
     {
-        throw new NotImplementedException();
+        LoxFunction fun = new(stmt);
+        _env.Define(stmt.name.Lexeme, fun);
+        return null;
     }
 
     object? Statement.IVisitor<object?>.VisitIfStmt(Statement.If stmt)
