@@ -80,11 +80,16 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
         Declare(stmt.name);
         Define(stmt.name);
 
+        BeginScope();
+        _scopes.Peek().Add("this", true);
+
         foreach (var method in stmt.methods)
         {
             var declaration = FunctionType.METHOD;
             ResolveFunction(method, declaration);
         }
+
+        EndScope();
 
         return null;
     }
