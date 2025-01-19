@@ -72,4 +72,75 @@ public class InterpreterUnitTest
         var interpreter = new Interpreter();
         interpreter.Interpret(statements);
     }
+
+    [Fact]
+    public void FibonacciExample()
+    {
+        var source = """
+        fun fib(n) 
+        { 
+            if (n <= 1) return n; 
+            return fib(n - 2) + fib(n - 1); 
+        } 
+        
+        for (var i = 0; i < 20; i = i + 1) { 
+            print fib(i); 
+        }
+        """;
+        Lox.Run(source);
+    }
+
+    [Fact]
+    public void ReassignmentExample()
+    {
+        var source =
+        """
+                var a = 0; 
+        var temp; 
+        
+        for (var b = 1; a < 10000; b = temp + b) 
+        { 
+            print a; 
+            temp = a; 
+            a = b; 
+        }
+        """;
+        Lox.Run(source);
+    }
+
+    [Fact]
+    public void FunctionCallMultipleArguments()
+    {
+        var source =
+        """
+                fun sayHi(first, last) 
+        { 
+            print "Hi, " + first + " " + last + "!"; 
+        } 
+        
+        sayHi("Dear", "Reader");
+        """;
+        Lox.Run(source);
+    }
+
+    [Fact]
+    public void FunctionCallPrint()
+    {
+        var source =
+        """
+        fun add(a, b) { print a + b; }
+        """;
+        Lox.Run(source);
+    }
+
+    [Fact]
+    public void NativeFunctionCall()
+    {
+        //Here the clock function is a native defined function that is in the global scope
+        var source =
+        """
+        clock();
+        """;
+        Lox.Run(source);
+    }
 }
