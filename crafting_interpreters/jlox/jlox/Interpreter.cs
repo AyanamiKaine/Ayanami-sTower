@@ -248,7 +248,14 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitSetExpr(Expr.Set expr)
     {
-        throw new NotImplementedException();
+        var obj = Evaluate(expr.obj);
+
+        if (obj is not LoxInstance)
+            throw new RuntimeError(expr.name, "Only instances have fields");
+
+        var value = Evaluate(expr.value);
+        ((LoxInstance)obj).Set(expr.name, value);
+        return value;
     }
 
     public dynamic VisitSuperExpr(Expr.Super expr)
