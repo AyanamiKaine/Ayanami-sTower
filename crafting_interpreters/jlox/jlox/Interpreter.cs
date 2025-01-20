@@ -356,6 +356,12 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
         _env.Define(stmt.name.Lexeme, null);
 
+        if (stmt.superclass is not null)
+        {
+            _env = new LoxEnvironment(_env);
+            _env.Define("super", superclass);
+        }
+
         var methods = new Dictionary<string, LoxFunction>();
 
         foreach (var method in stmt.methods)
@@ -365,6 +371,10 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
         }
 
         LoxClass klass = new LoxClass(stmt.name.Lexeme, (LoxClass)superclass, methods);
+
+        if (superclass is not null)
+            _env = _env.Enclosing;
+
         _env.Assign(stmt.name, klass);
         return null;
     }
