@@ -344,7 +344,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     object? Statement.IVisitor<object?>.VisitClassStmt(Statement.Class stmt)
     {
-        dynamic superclass = null;
+        dynamic? superclass = null;
         if (stmt.superclass is not null)
         {
             superclass = Evaluate(stmt.superclass);
