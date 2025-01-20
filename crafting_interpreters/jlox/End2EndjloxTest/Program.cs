@@ -1,11 +1,19 @@
 ﻿using jlox;
 
-var fibonacci =
+var inheritanceCall =
         """
-        class Bagel {} 
-        var bagel = Bagel(); 
-        print bagel;
+        class Doughnut 
+        { 
+            cook() 
+            { 
+                print "Fry until golden brown."; 
+            } 
+        
+        } 
+        class BostonCream < Doughnut {} 
+        BostonCream().cook();
         """;
 
+var lox = new Lox();
 
-Lox.Run(fibonacci);
+lox.Run(inheritanceCall);
