@@ -7,4 +7,9 @@ namespace clox;
 public struct LoxValue(double value)
 {
     public double Value = value;
+
+    public override readonly string ToString()
+    {
+        return Value.ToString();
+    }
 }
