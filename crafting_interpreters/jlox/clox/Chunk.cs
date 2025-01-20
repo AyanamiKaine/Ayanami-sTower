@@ -145,5 +145,41 @@ public struct Chunk : IEnumerable<byte>
     {
         return GetEnumerator();
     }
+
+    /// <summary>
+    /// Returns the chunk of byte code as a nice representation of it
+    /// think of it as pretty-print
+    /// </summary>
+    /// <returns></returns>
+    public override readonly string ToString()
+    {
+        var data = "";
+        var opcodes = new List<OpCode?>();
+        for (int offset = 0; offset < _code.Count;)
+        {
+            (var opCode, offset) = DisassembleInstruction(offset);
+            opcodes.Add(opCode);
+
+
+            // To correctly determine the offset we first 
+            // need to subtract the added offset by 
+            // DisassembleInstruction OP_CONSTANT has 
+            // an offset by two so we subtract two from the current offset
+            switch (opCode)
+            {
+                case OpCode.OP_CONSTANT:
+                    data += $"offset: '{offset - 2}' opCode:{OpCode.OP_CONSTANT} ConstantIndex:{_code[offset - 1]} ConstantValue: '{_constants[_code[offset - 1]]}'\n";
+                    break;
+                case OpCode.OP_RETURN:
+                    data += $"offset: '{offset - 1}' opCode:{OpCode.OP_RETURN}\n";
+                    break;
+                default:
+                    // Handle default case
+                    break;
+            }
+
+        }
+        return data;
+    }
 }
 
