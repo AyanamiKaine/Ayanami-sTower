@@ -11,8 +11,10 @@ public enum OpCode
 {
     /// <summary>
     /// When the VM executes a constant instruction, it "loads" the constant for use.
+    /// With a limit of 256 different constants.
     /// </summary>
     OP_CONSTANT,
+    OP_CONSTANT_LONG,
     /// <summary>
     /// Return from the current function
     /// </summary>
@@ -148,7 +150,7 @@ public struct Chunk : IEnumerable<byte>
 
     /// <summary>
     /// Returns the chunk of byte code as a nice representation of it
-    /// think of it as pretty-print
+    /// think of it as pretty-print. This can be used for example when an error occurs
     /// </summary>
     /// <returns></returns>
     public override readonly string ToString()
