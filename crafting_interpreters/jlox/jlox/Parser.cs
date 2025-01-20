@@ -99,7 +99,7 @@ public class Parser(List<Token> tokens)
         return new Statement.Function(name, parameters, body);
     }
 
-    private Statement VarDeclaration()
+    private Statement.Var VarDeclaration()
     {
         Token name = Consume(TokenType.IDENTIFIER, "Expect variable name.");
 
@@ -128,7 +128,7 @@ public class Parser(List<Token> tokens)
         return ExpressionStatement();
     }
 
-    private Statement ReturnStatement()
+    private Statement.Return ReturnStatement()
     {
         var keyword = Previous();
         Expr? value = null;
