@@ -37,6 +37,12 @@ public class LoxClass(string name, LoxClass? superClass, Dictionary<string, LoxF
         if (_methods.TryGetValue(name, out LoxFunction? value))
             return value;
 
+        // If we want to call a method that is defined in the super class
+        // we call that. If the method is already defined in the base class
+        // we call that instead. 
+        if (SuperClass is not null)
+            return SuperClass.FindMethod(name);
+
         return null;
     }
 }
