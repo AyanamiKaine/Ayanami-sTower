@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text;
 
 namespace clox;
@@ -19,7 +20,7 @@ public enum OpCode
 
 }
 
-public struct Chunk
+public struct Chunk : IEnumerable<byte>
 {
     public Chunk()
     {
@@ -38,11 +39,11 @@ public struct Chunk
     }
 
     public string Name = "";
-    private List<byte> _code = [];
-    private List<LoxValue> _constants = [];
-    private List<int> _lines = [];
+    private readonly List<byte> _code = [];
+    private readonly List<LoxValue> _constants = [];
+    private readonly List<int> _lines = [];
 
-    public (OpCode, int) DisassembleInstruction(int offset)
+    public readonly (OpCode, int) DisassembleInstruction(int offset)
     {
         byte instruction = _code[offset];
         switch (instruction)
@@ -57,12 +58,12 @@ public struct Chunk
         }
     }
 
-    private int ConstantInstruction(int offset)
+    private static int ConstantInstruction(int offset)
     {
         return offset + 2;
     }
 
-    private int SimpleInstruction(int offset)
+    private static int SimpleInstruction(int offset)
     {
         return offset + 1;
     }
@@ -72,7 +73,7 @@ public struct Chunk
     /// </summary>
     /// <param name="constant"></param>
     /// <returns></returns>
-    public int AddConstant(double constant)
+    public readonly int AddConstant(double constant)
     {
         // Creates a new LoxValue struct and adds it
         // to the list of constants
@@ -84,7 +85,7 @@ public struct Chunk
     /// Returns the opcode of the last instruction added.
     /// </summary>
     /// <returns></returns>
-    public OpCode? Disassemble()
+    public readonly OpCode? Disassemble()
     {
 
         OpCode? opCode = null;
@@ -96,28 +97,53 @@ public struct Chunk
         return opCode;
     }
 
-    public void Write(byte data)
+    /// <summary>
+    /// Returns the list of all opcodes added ignoring operands of opcodes.
+    /// </summary>
+    /// <returns></returns>
+    public readonly List<OpCode?> DisassembleAllOpcodes()
+    {
+        var opcodes = new List<OpCode?>();
+        for (int offset = 0; offset < _code.Count;)
+        {
+            (var opCode, offset) = DisassembleInstruction(offset);
+            opcodes.Add(opCode);
+        }
+        return opcodes;
+    }
+
+    public readonly void Write(byte data)
     {
         _code.Add(data);
     }
 
-    public void Write(int data)
+    public readonly void Write(int data)
     {
         _code.Add((byte)data);
     }
 
-    public void Write(OpCode opCode)
+    public readonly void Write(OpCode opCode)
     {
         _code.Add((byte)opCode);
     }
 
-    public void Write(string data)
+    public readonly void Write(string data)
     {
         byte[] ASCIIBytes = Encoding.ASCII.GetBytes(data);
         foreach (byte b in ASCIIBytes)
         {
             _code.Add(b);
         }
+    }
+
+    public readonly IEnumerator<byte> GetEnumerator()
+    {
+        return _code.GetEnumerator();
+    }
+
+    readonly IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }
 
