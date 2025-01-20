@@ -1,5 +1,5 @@
 namespace clox;
-
+/*
 /// <summary>
 /// We start simple and for now a lox value can only be a double
 /// </summary>
@@ -12,4 +12,6 @@ public struct LoxValue(double value)
     {
         return Value.ToString();
     }
+    
 }
+*/
