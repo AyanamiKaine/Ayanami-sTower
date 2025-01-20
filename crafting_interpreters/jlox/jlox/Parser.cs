@@ -454,6 +454,14 @@ public class Parser(List<Token> tokens)
         if (Match(TokenType.NUMBER, TokenType.STRING))
             return new Expr.Literal(Previous().Literal);
 
+        if (Match(TokenType.SUPER))
+        {
+            var keyword = Previous();
+            Consume(TokenType.DOT, "Expect '.' after 'super' .");
+            var method = Consume(TokenType.IDENTIFIER, "Expect superclass method name.");
+            return new Expr.Super(keyword, method);
+        }
+
         if (Match(TokenType.THIS))
             return new Expr.This(Previous());
 
