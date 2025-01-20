@@ -364,7 +364,7 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
             methods.Add(method.name.Lexeme, fun);
         }
 
-        LoxClass klass = new LoxClass(stmt.name.Lexeme, methods);
+        LoxClass klass = new LoxClass(stmt.name.Lexeme, (LoxClass)superclass, methods);
         _env.Assign(stmt.name, klass);
         return null;
     }
