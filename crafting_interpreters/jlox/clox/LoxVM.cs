@@ -11,25 +11,60 @@ public class LoxVM(Chunk chunk)
         Run();
     }
 
+    public void Interpret(string source)
+    {
+        Compiler.Compile(source);
+    }
     private void Run()
     {
-        var instruction = ReadNextInstruction();
-        switch (instruction)
+        while (true)
         {
-            case OpCode.OP_CONSTANT:
-                LoxValue constant = ReadConstant();
-                Stack.Push(constant);
-                break;
-            case OpCode.OP_NEGATE:
-                Stack.Push(-Stack.Pop());
-                break;
-            case OpCode.OP_RETURN:
-                Stack.Pop();
-                return;
-            default:
-                throw new Exception($"Unknown instruction {instruction}, DUMPING BYTECODE: {Chunk}");
-        }
 
+            var instruction = ReadNextInstruction();
+            switch (instruction)
+            {
+                case OpCode.OP_CONSTANT:
+                    LoxValue constant = ReadConstant();
+                    Push(constant);
+                    break;
+                case OpCode.OP_ADD:
+                    {
+                        double b = Pop();
+                        double a = Pop();
+                        Push(a + b);
+                    }
+                    break;
+                case OpCode.OP_SUBTRACT:
+                    {
+                        double b = Pop();
+                        double a = Pop();
+                        Push(a - b);
+                    }
+                    break;
+                case OpCode.OP_MULTIPLY:
+                    {
+                        double b = Pop();
+                        double a = Pop();
+                        Push(a * b);
+                    }
+                    break;
+                case OpCode.OP_DIVIDE:
+                    {
+                        double b = Pop();
+                        double a = Pop();
+                        Push(a / b);
+                    }
+                    break;
+                case OpCode.OP_NEGATE:
+                    Push(-Pop());
+                    break;
+                case OpCode.OP_RETURN:
+                    Pop();
+                    return;
+                default:
+                    throw new Exception($"Unknown instruction {instruction}, DUMPING BYTECODE: {Chunk}");
+            }
+        }
     }
 
     /// <summary>
@@ -48,8 +83,9 @@ public class LoxVM(Chunk chunk)
     /// <returns></returns>
     private OpCode ReadNextInstruction()
     {
+        var opCode = (OpCode)Chunk.Code[IntructionPointer];
         IntructionPointer++;
-        return (OpCode)Chunk.Code[IntructionPointer];
+        return opCode;
     }
 
     /// <summary>
@@ -58,7 +94,18 @@ public class LoxVM(Chunk chunk)
     /// <returns></returns>
     private byte ReadNextByte()
     {
+        var data = Chunk.Code[IntructionPointer];
         IntructionPointer++;
-        return Chunk.Code[IntructionPointer];
+        return data;
+    }
+
+    private void Push(double value)
+    {
+        Stack.Push(value);
+    }
+
+    private double Pop()
+    {
+        return Stack.Pop();
     }
 }
