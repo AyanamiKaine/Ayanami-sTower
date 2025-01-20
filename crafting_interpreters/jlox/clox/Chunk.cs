@@ -11,3 +11,9 @@ public enum OpCode
     /// </summary>
     OP_RETURN,
 }
+
+public struct Chunk
+{
+    public byte[] Code;
+}
+
