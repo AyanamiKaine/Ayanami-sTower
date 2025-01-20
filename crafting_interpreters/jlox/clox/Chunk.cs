@@ -14,6 +14,10 @@ public enum OpCode
     /// With a limit of 256 different constants.
     /// </summary>
     OP_CONSTANT,
+    OP_ADD,
+    OP_SUBTRACT,
+    OP_MULTIPLY,
+    OP_DIVIDE,
     OP_NEGATE,
     OP_CONSTANT_LONG,
     /// <summary>
@@ -57,6 +61,14 @@ public struct Chunk : IEnumerable<byte>
                 return (OpCode.OP_CONSTANT, ConstantInstruction(offset));
             case (byte)OpCode.OP_NEGATE:
                 return (OpCode.OP_NEGATE, SimpleInstruction(offset));
+            case (byte)OpCode.OP_ADD:
+                return (OpCode.OP_ADD, SimpleInstruction(offset));
+            case (byte)OpCode.OP_SUBTRACT:
+                return (OpCode.OP_SUBTRACT, SimpleInstruction(offset));
+            case (byte)OpCode.OP_MULTIPLY:
+                return (OpCode.OP_MULTIPLY, SimpleInstruction(offset));
+            case (byte)OpCode.OP_DIVIDE:
+                return (OpCode.OP_DIVIDE, SimpleInstruction(offset));
             default:
                 byte[] byteArray = [instruction];
                 throw new Exception($"Unknown Opcode {Encoding.ASCII.GetString(byteArray)}");
