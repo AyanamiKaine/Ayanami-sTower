@@ -11,7 +11,8 @@ enum FunctionType
 enum ClassType
 {
     NONE,
-    CLASS
+    CLASS,
+    SUBCLASS
 }
 
 class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVisitor<object?>
@@ -96,7 +97,10 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
             Lox.Error(stmt.superclass.name, "A class cant inherit from itself");
 
         if (stmt.superclass is not null)
+        {
+            _currentClass = ClassType.SUBCLASS;
             Resolve(stmt.superclass);
+        }
 
 
         if (stmt.superclass is not null)
@@ -222,6 +226,11 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitSuperExpr(Expr.Super expr)
     {
+        if (_currentClass == ClassType.NONE)
+            Lox.Error(expr.keyword, "Cant use 'super' in a class with no superclass.");
+        else if (_currentClass is not ClassType.SUBCLASS)
+            Lox.Error(expr.keyword, "Cant use 'super' in a class with no superclass");
+
         ResolveLocal(expr, expr.keyword);
         return null;
     }
