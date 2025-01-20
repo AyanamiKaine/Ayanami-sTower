@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Text;
-
+using LoxValue = double;
 namespace clox;
 
 
@@ -14,6 +14,7 @@ public enum OpCode
     /// With a limit of 256 different constants.
     /// </summary>
     OP_CONSTANT,
+    OP_NEGATE,
     OP_CONSTANT_LONG,
     /// <summary>
     /// Return from the current function
@@ -54,6 +55,8 @@ public struct Chunk : IEnumerable<byte>
                 return (OpCode.OP_RETURN, SimpleInstruction(offset));
             case (byte)OpCode.OP_CONSTANT:
                 return (OpCode.OP_CONSTANT, ConstantInstruction(offset));
+            case (byte)OpCode.OP_NEGATE:
+                return (OpCode.OP_NEGATE, SimpleInstruction(offset));
             default:
                 byte[] byteArray = [instruction];
                 throw new Exception($"Unknown Opcode {Encoding.ASCII.GetString(byteArray)}");
@@ -79,7 +82,7 @@ public struct Chunk : IEnumerable<byte>
     {
         // Creates a new LoxValue struct and adds it
         // to the list of constants
-        Constants.Add(new(constant));
+        Constants.Add(constant);
         return Constants.Count - 1;
     }
 
