@@ -260,7 +260,14 @@ public class Interpreter : Expr.IVisitor<object>, Statement.IVisitor<object?>
 
     public dynamic VisitSuperExpr(Expr.Super expr)
     {
-        throw new NotImplementedException();
+        var distance = _locals[expr];
+        var superClass = (LoxClass)_env.GetAt(distance, "super");
+
+        var obj = (LoxInstance)_env.GetAt(distance - 1, "this");
+
+        var method = superClass.FindMethod(expr.method.Lexeme) ?? throw new RuntimeError(expr.method, $"Undefined property '{expr.method.Lexeme}'.");
+        
+        return method.Bind(obj);
     }
 
     public dynamic VisitThisExpr(Expr.This expr)
