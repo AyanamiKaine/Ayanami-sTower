@@ -29,7 +29,7 @@ public class ByteChunkTest
         chunk.Write(OpCode.OP_RETURN);
 
         var actualOpCodes = chunk.DisassembleAllOpcodes();
-
+        var prettyChunk = chunk.ToString();
         Assert.Equal(expectedOpcodes, actualOpCodes);
     }
 }
