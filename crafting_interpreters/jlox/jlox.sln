@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "jloxUnitTests", "jloxUnitTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "End2EndjloxTest", "End2EndjloxTest\End2EndjloxTest.csproj", "{A57A7A21-EE5C-4957-801B-42218C7EEDB2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "clox", "clox\clox.csproj", "{4D92225F-47CB-4D45-93CE-FCEBC2AB8833}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cloxUnitTests", "cloxUnitTests\cloxUnitTests.csproj", "{A6DE6E7B-8E6F-40A5-B32D-A60CE01F85E4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,13 @@ Global
 		{A57A7A21-EE5C-4957-801B-42218C7EEDB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A57A7A21-EE5C-4957-801B-42218C7EEDB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A57A7A21-EE5C-4957-801B-42218C7EEDB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D92225F-47CB-4D45-93CE-FCEBC2AB8833}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D92225F-47CB-4D45-93CE-FCEBC2AB8833}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D92225F-47CB-4D45-93CE-FCEBC2AB8833}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D92225F-47CB-4D45-93CE-FCEBC2AB8833}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6DE6E7B-8E6F-40A5-B32D-A60CE01F85E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6DE6E7B-8E6F-40A5-B32D-A60CE01F85E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6DE6E7B-8E6F-40A5-B32D-A60CE01F85E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6DE6E7B-8E6F-40A5-B32D-A60CE01F85E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
