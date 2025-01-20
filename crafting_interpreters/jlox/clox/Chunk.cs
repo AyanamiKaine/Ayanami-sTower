@@ -27,27 +27,27 @@ public struct Chunk : IEnumerable<byte>
     public Chunk()
     {
         Name = "";
-        _code = [];
-        _constants = [];
+        Code = [];
+        Constants = [];
         _lines = [];
     }
 
     public Chunk(string name)
     {
         Name = name;
-        _code = [];
-        _constants = [];
+        Code = [];
+        Constants = [];
         _lines = [];
     }
 
     public string Name = "";
-    private readonly List<byte> _code = [];
-    private readonly List<LoxValue> _constants = [];
+    public readonly List<byte> Code = [];
+    public readonly List<LoxValue> Constants = [];
     private readonly List<int> _lines = [];
 
     public readonly (OpCode, int) DisassembleInstruction(int offset)
     {
-        byte instruction = _code[offset];
+        byte instruction = Code[offset];
         switch (instruction)
         {
             case (byte)OpCode.OP_RETURN:
@@ -79,8 +79,8 @@ public struct Chunk : IEnumerable<byte>
     {
         // Creates a new LoxValue struct and adds it
         // to the list of constants
-        _constants.Add(new(constant));
-        return _constants.Count - 1;
+        Constants.Add(new(constant));
+        return Constants.Count - 1;
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ public struct Chunk : IEnumerable<byte>
     {
 
         OpCode? opCode = null;
-        for (int offset = 0; offset < _code.Count;)
+        for (int offset = 0; offset < Code.Count;)
         {
             (opCode, offset) = DisassembleInstruction(offset);
         }
@@ -106,7 +106,7 @@ public struct Chunk : IEnumerable<byte>
     public readonly List<OpCode?> DisassembleAllOpcodes()
     {
         var opcodes = new List<OpCode?>();
-        for (int offset = 0; offset < _code.Count;)
+        for (int offset = 0; offset < Code.Count;)
         {
             (var opCode, offset) = DisassembleInstruction(offset);
             opcodes.Add(opCode);
@@ -116,17 +116,17 @@ public struct Chunk : IEnumerable<byte>
 
     public readonly void Write(byte data)
     {
-        _code.Add(data);
+        Code.Add(data);
     }
 
     public readonly void Write(int data)
     {
-        _code.Add((byte)data);
+        Code.Add((byte)data);
     }
 
     public readonly void Write(OpCode opCode)
     {
-        _code.Add((byte)opCode);
+        Code.Add((byte)opCode);
     }
 
     public readonly void Write(string data)
@@ -134,13 +134,13 @@ public struct Chunk : IEnumerable<byte>
         byte[] ASCIIBytes = Encoding.ASCII.GetBytes(data);
         foreach (byte b in ASCIIBytes)
         {
-            _code.Add(b);
+            Code.Add(b);
         }
     }
 
     public readonly IEnumerator<byte> GetEnumerator()
     {
-        return _code.GetEnumerator();
+        return Code.GetEnumerator();
     }
 
     readonly IEnumerator IEnumerable.GetEnumerator()
@@ -157,7 +157,7 @@ public struct Chunk : IEnumerable<byte>
     {
         var data = "";
         var opcodes = new List<OpCode?>();
-        for (int offset = 0; offset < _code.Count;)
+        for (int offset = 0; offset < Code.Count;)
         {
             (var opCode, offset) = DisassembleInstruction(offset);
             opcodes.Add(opCode);
@@ -170,7 +170,7 @@ public struct Chunk : IEnumerable<byte>
             switch (opCode)
             {
                 case OpCode.OP_CONSTANT:
-                    data += $"offset: '{offset - 2}' opCode:{OpCode.OP_CONSTANT} ConstantIndex:{_code[offset - 1]} ConstantValue: '{_constants[_code[offset - 1]]}'\n";
+                    data += $"offset: '{offset - 2}' opCode:{OpCode.OP_CONSTANT} ConstantIndex:{Code[offset - 1]} ConstantValue: '{Constants[Code[offset - 1]]}'\n";
                     break;
                 case OpCode.OP_RETURN:
                     data += $"offset: '{offset - 1}' opCode:{OpCode.OP_RETURN}\n";
