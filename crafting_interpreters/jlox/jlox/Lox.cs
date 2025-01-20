@@ -2,10 +2,10 @@
 
 public class Lox
 {
-    static private readonly Interpreter Interpreter = new();
-    private static bool _hadError = false;
-    private static bool _hadRunTimeError = false;
-    public static void RunFile(string filePath)
+    private readonly Interpreter Interpreter = new();
+    private bool _hadError = false;
+    private bool _hadRunTimeError = false;
+    public void RunFile(string filePath)
     {
         if (!Path.Exists(filePath))
             throw new Exception($"File Path was not found: {filePath}");
@@ -18,7 +18,7 @@ public class Lox
             Environment.Exit(70);
     }
 
-    public static void RunPrompt()
+    public void RunPrompt()
     {
         bool canceled = false;
         while (!canceled)
@@ -37,7 +37,7 @@ public class Lox
         }
     }
 
-    public static void Run(string source)
+    public void Run(string source)
     {
         var Scanner = new Scanner(source);
         List<Token> tokens = Scanner.ScanTokens();
