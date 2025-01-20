@@ -2,10 +2,10 @@
 
 namespace jlox;
 
-public class LoxClass(string name, LoxClass superClass, Dictionary<string, LoxFunction> methods) : ILoxCallable
+public class LoxClass(string name, LoxClass? superClass, Dictionary<string, LoxFunction> methods) : ILoxCallable
 {
     public readonly string Name = name;
-    public readonly LoxClass SuperClass = superClass;
+    public readonly LoxClass? SuperClass = superClass;
     private readonly Dictionary<string, LoxFunction> _methods = methods;
 
     public int Arity()
