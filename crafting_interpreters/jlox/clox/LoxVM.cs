@@ -1,10 +1,11 @@
 ﻿namespace clox;
+using LoxValue = double;
 
 public class LoxVM(Chunk chunk)
 {
     private Chunk Chunk = chunk;
     public int IntructionPointer = 0;
-
+    public Stack<LoxValue> Stack = new();
     public void Interpret()
     {
         Run();
@@ -17,8 +18,13 @@ public class LoxVM(Chunk chunk)
         {
             case OpCode.OP_CONSTANT:
                 LoxValue constant = ReadConstant();
+                Stack.Push(constant);
+                break;
+            case OpCode.OP_NEGATE:
+                Stack.Push(-Stack.Pop());
                 break;
             case OpCode.OP_RETURN:
+                Stack.Pop();
                 return;
             default:
                 throw new Exception($"Unknown instruction {instruction}, DUMPING BYTECODE: {Chunk}");
