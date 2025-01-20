@@ -98,6 +98,13 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
         if (stmt.superclass is not null)
             Resolve(stmt.superclass);
 
+
+        if (stmt.superclass is not null)
+        {
+            BeginScope();
+            _scopes.Peek().Add("super", true);
+        }
+
         BeginScope();
         _scopes.Peek().Add("this", true);
 
@@ -110,6 +117,9 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
         }
 
         EndScope();
+
+        if (stmt.superclass is not null)
+            EndScope();
 
         _currentClass = enclosingClass;
         return null;
@@ -212,7 +222,8 @@ class Resolver(Interpreter interpreter) : Expr.IVisitor<object?>, Statement.IVis
 
     public object? VisitSuperExpr(Expr.Super expr)
     {
-        throw new NotImplementedException();
+        ResolveLocal(expr, expr.keyword);
+        return null;
     }
 
     public object? VisitThisExpr(Expr.This expr)
