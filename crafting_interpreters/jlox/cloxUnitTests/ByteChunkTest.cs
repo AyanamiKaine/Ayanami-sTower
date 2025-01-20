@@ -33,6 +33,23 @@ public class ByteChunkTest
     }
 
     [Fact]
+    public void AddingNegateOpCodeToChunkTest()
+    {
+        List<OpCode?> expectedOpcodes = [OpCode.OP_CONSTANT, OpCode.OP_NEGATE, OpCode.OP_RETURN];
+
+        var chunk = new Chunk("Test Chunk");
+        var index = chunk.AddConstant(1.2);
+
+        chunk.Write(OpCode.OP_CONSTANT);
+        chunk.Write(index);
+        chunk.Write(OpCode.OP_NEGATE);
+        chunk.Write(OpCode.OP_RETURN);
+
+        var actualOpCodes = chunk.DisassembleAllOpcodes();
+        Assert.Equal(expectedOpcodes, actualOpCodes);
+    }
+
+    [Fact]
     public void AddingConstantsLongToChunkTest()
     {
         List<OpCode?> expectedOpcodes = [OpCode.OP_CONSTANT_LONG, OpCode.OP_RETURN];
