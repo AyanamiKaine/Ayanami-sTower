@@ -2,9 +2,10 @@
 
 namespace jlox;
 
-public class LoxClass(string name, Dictionary<string, LoxFunction> methods) : ILoxCallable
+public class LoxClass(string name, LoxClass superClass, Dictionary<string, LoxFunction> methods) : ILoxCallable
 {
     public readonly string Name = name;
+    public readonly LoxClass SuperClass = superClass;
     private readonly Dictionary<string, LoxFunction> _methods = methods;
 
     public int Arity()
@@ -21,7 +22,7 @@ public class LoxClass(string name, Dictionary<string, LoxFunction> methods) : IL
         LoxInstance instance = new(this);
         LoxFunction? initalizer = FindMethod("init");
         initalizer?.Bind(instance).Call(interpreter, arguments);
-        
+
 
         return instance;
     }
