@@ -35,10 +35,10 @@ public class InterpreterUnitTest
         class BostomCream < Doughnut {}
         """;
         var errorHappend = false;
-
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -57,9 +57,10 @@ public class InterpreterUnitTest
         """;
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -67,6 +68,37 @@ public class InterpreterUnitTest
         }
 
         Assert.True(errorHappend);
+    }
+
+    [Fact]
+    public void ClassInheritanceSuperClassCall()
+    {
+        var source =
+        """
+        class Doughnut 
+        { 
+            cook() 
+            { 
+                print "Fry until golden brown."; 
+            } 
+        
+        } 
+        class BostonCream < Doughnut {} 
+        BostonCream().cook();
+        """;
+
+        var errorHappend = false;
+        var lox = new Lox();
+        try
+        {
+            lox.Run(source);
+        }
+        catch (Exception)
+        {
+            errorHappend = true;
+        }
+
+        Assert.False(errorHappend);
     }
 
     [Fact]
@@ -92,9 +124,10 @@ public class InterpreterUnitTest
         """;
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -125,9 +158,10 @@ public class InterpreterUnitTest
 
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -154,9 +188,10 @@ public class InterpreterUnitTest
 
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -178,9 +213,10 @@ public class InterpreterUnitTest
 
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -254,9 +290,10 @@ public class InterpreterUnitTest
         """;
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -283,9 +320,10 @@ public class InterpreterUnitTest
         """;
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -309,9 +347,10 @@ public class InterpreterUnitTest
         """;
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -330,9 +369,10 @@ public class InterpreterUnitTest
         """;
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -352,9 +392,10 @@ public class InterpreterUnitTest
         """;
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -381,9 +422,10 @@ public class InterpreterUnitTest
 
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
@@ -410,9 +452,10 @@ public class InterpreterUnitTest
 
         var errorHappend = false;
 
+        var lox = new Lox();
         try
         {
-            Lox.Run(source);
+            lox.Run(source);
         }
         catch (Exception)
         {
