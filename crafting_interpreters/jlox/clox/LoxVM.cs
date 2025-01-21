@@ -13,7 +13,7 @@ public class LoxVM(Chunk chunk)
 
     public void Interpret(string source)
     {
-        Compiler.Compile(source);
+
     }
     private void Run()
     {
