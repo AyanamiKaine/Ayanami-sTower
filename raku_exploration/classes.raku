@@ -14,5 +14,4 @@ my Dog $spot .= new(name => "Spot");
 $spot.bark;        # Output: Woof! My name is Spot
 $spot.rename("Buddy");
 $spot.bark;        # Output: Woof! My name is Buddy
-say $spot.name = "w"
 
