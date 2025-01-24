@@ -27,6 +27,8 @@ class WindowEvent is repr('CStruct') {
 }
 
 # See for more: "https://wiki.libsdl.org/SDL3/SDL_Event"
+# I believe i must correctly implement ALL events and the complete
+# CUnion type otherwise it wont work at all...
 class Event is repr('CUnion') {
   has uint32        $.type;
   has CommonEvent   $.common;
