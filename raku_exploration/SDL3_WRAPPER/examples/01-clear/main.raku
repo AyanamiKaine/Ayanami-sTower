@@ -26,16 +26,15 @@ $renderer = SDL3::Render::CreateRenderer($window, 0);
 
 my $frame-counter = 0;
 
-while $frame-counter < 3000 {
+while True {
 
     while (SDL3::Event::PollEvent $event)
     {
-        say  $event.type;
+        say $event.type;
     }
     SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 0, 255);
     SDL3::Render::RenderClear($renderer);
     SDL3::Render::RenderPresent($renderer);
-    $frame-counter += 1;
 }
 
 SDL3::Timer::Delay($DELAY);
