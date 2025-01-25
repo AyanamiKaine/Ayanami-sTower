@@ -12,6 +12,8 @@ bazel-*
 ## Ignore build folder
 /build/
 
+# Raku
+/.precomp/
 
 # JavaScript/Svelte
 **/dist/
