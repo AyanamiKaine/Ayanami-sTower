@@ -45,27 +45,7 @@ my $running = True;
 my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 while $running {
-    SDL3::Render::SetRenderDrawColor($renderer, 33, 33, 33, 255);
-    SDL3::Render::RenderClear($renderer);
 
-    # draw a filled rectangle in the middle of the canvas.
-    SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 255, 255);
-    my SDL3::Rect::FRect $rect = SDL3::Rect::FRect.new;
-    $rect.x = 100.Num;
-    $rect.y = 100.Num;
-    $rect.w = 440.Num;
-    $rect.h = 280.Num;
-    # RenderFillRect expects a rect struct as a pointer, so we need to create a rect pointer.
-    my $rect-pointer = nativecast(Pointer[SDL3::Rect::FRect], $rect);
-    SDL3::Render::RenderFillRect($renderer, $rect-pointer);
-
-    # Draw some points across the canvas
-    SDL3::Render::SetRenderDrawColor($renderer, 255, 0, 0, 255);
-    for ^500 -> $i {
-        SDL3::Render::RenderPoint($renderer, $points[$i].x, $points[$i].y);
-    }
-
-    
     while (SDL3::Event::PollEvent $event)
     {
         # To correctly print we must flush manually
@@ -83,5 +63,33 @@ while $running {
             }
         }
     }
+
+    SDL3::Render::SetRenderDrawColor($renderer, 33, 33, 33, 255);
+    SDL3::Render::RenderClear($renderer);
+
+    # draw a filled rectangle in the middle of the canvas.
+    # blue, full alpha
+    SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 255, 255);
+    my SDL3::Rect::FRect $rect = SDL3::Rect::FRect.new;
+    $rect.x = 100.Num;
+    $rect.y = 100.Num;
+    $rect.w = 440.Num;
+    $rect.h = 280.Num;
+    # RenderFillRect expects a rect struct as a pointer, so we need to create a rect pointer.
+    my $rect-pointer = nativecast(Pointer[SDL3::Rect::FRect], $rect);
+    SDL3::Render::RenderFillRect($renderer, $rect-pointer);
+
+    # Draw some points across the canvas
+    # red, full alpha
+    SDL3::Render::SetRenderDrawColor($renderer, 255, 0, 0, 255);
+    for ^500 -> $i {
+        SDL3::Render::RenderPoint($renderer, $points[$i].x, $points[$i].y);
+    }
+
+    # yellow, full alpha
+    SDL3::Render::SetRenderDrawColor($renderer, 255, 255, 0, 255);
+    SDL3::Render::RenderLine($renderer, 0.Num, 0.Num, 640.Num, 480.Num);
+    SDL3::Render::RenderLine($renderer, 0.Num, 480.Num, 640.Num, 0.Num);
+
     SDL3::Render::RenderPresent($renderer);
 }
