@@ -5,6 +5,10 @@ constant $SDL-LIB = 'SDL3';
 
 our class Renderer is repr('CPointer') {};
 
+class FPoint is repr('CStruct') {
+    has num32 $.x is rw;
+    has num32 $.y is rw;
+}
 # Define the FRect type, for the render module, I have no idea how i can refrence the FRect class defined in the Rect Module
 #class FRect is repr('CStruct') {
 #	has num32 $.x;
@@ -35,7 +39,10 @@ our sub DestroyRender(Renderer) is native($SDL-LIB) is symbol('SDL_DestroyRender
 our sub RenderFillRect(Renderer, Pointer) returns Bool is native($SDL-LIB) is symbol('SDL_RenderFillRect') { * };
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderPoints"
-our sub RenderPoints(Renderer, Pointer, int64) returns Bool is native($SDL-LIB) is symbol('SDL_RenderPoints') { * };
+our sub RenderPoints(Renderer, CArray[FPoint], int32) returns Bool is native($SDL-LIB) is symbol('SDL_RenderPoints') { * };
+
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderPoint"
+our sub RenderPoint(Renderer, num32, num32) returns Bool is native($SDL-LIB) is symbol('') { * };
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderLine"
 our sub RenderLines(Renderer, num32, num32, num32, num32) returns Bool is symbol('SDL_RenderLine'){ * }
