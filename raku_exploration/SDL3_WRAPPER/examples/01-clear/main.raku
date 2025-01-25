@@ -21,7 +21,10 @@ my SDL3::Render::Renderer $renderer = SDL3::Render::Renderer.new;
 
 SDL3::Init::InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
 
-$window = SDL3::Video::CreateWindow("Raku SDL3 Example", $WIDTH, $HEIGHT, 0x0000000000000020);
+$window = SDL3::Video::CreateWindow(
+    "Raku SDL3 Example", 
+    $WIDTH, $HEIGHT, 
+    SDL3::Video::Window-Flags::RESIZABLE);
 
 $renderer = SDL3::Render::CreateRenderer($window, $NULL);
 
