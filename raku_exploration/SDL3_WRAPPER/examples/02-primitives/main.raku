@@ -34,7 +34,7 @@ for ^500 -> $i {
 SDL3::Init::InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
 
 $window = SDL3::Video::CreateWindow(
-    "Raku SDL3 Example", 
+    "Raku SDL3 Example Renderer Primitives", 
     $WIDTH, $HEIGHT, 
     0);
 
@@ -85,6 +85,13 @@ while $running {
     for ^500 -> $i {
         SDL3::Render::RenderPoint($renderer, $points[$i].x, $points[$i].y);
     }
+
+    SDL3::Render::SetRenderDrawColor($renderer, 0, 255, 0, 255);
+    $rect.x += 30.Num;
+    $rect.y += 30.Num;
+    $rect.w -= 60.Num;
+    $rect.h -= 60.Num;
+    SDL3::Render::RenderRect($renderer, $rect-pointer);
 
     # yellow, full alpha
     SDL3::Render::SetRenderDrawColor($renderer, 255, 255, 0, 255);
