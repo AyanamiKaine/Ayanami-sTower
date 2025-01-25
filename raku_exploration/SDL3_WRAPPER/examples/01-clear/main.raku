@@ -25,7 +25,9 @@ $window = SDL3::Video::CreateWindow("Raku SDL3 Example", $WIDTH, $HEIGHT, 0x0000
 
 $renderer = SDL3::Render::CreateRenderer($window, $NULL);
 
-while True {
+
+my $running = True;
+while $running {
 
     while (SDL3::Event::PollEvent $event)
     {
@@ -33,6 +35,13 @@ while True {
         # because sdl seems to otherwise prevent it
         # say $event.type;
         # $*OUT.flush;
+        
+        given $event.type {
+            when SDL3::Event::Event-Type::QUIT 
+            { 
+                $running = False;
+            }
+        }
     }
 
     SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 0, 255);
@@ -40,9 +49,9 @@ while True {
     SDL3::Render::RenderPresent($renderer);
 }
 
-SDL3::Timer::Delay($DELAY);
+# For some reason when we try to quit and destroy
+# We get heap corruption, I wonder why?
+#SDL3::Render::DestroyRender($renderer);
+#SDL3::Video::DestroyWindow($window);
+#SDL3::Init::Quit();
 
-SDL3::Render::DestroyRender($renderer);
-SDL3::Video::DestroyWindow($window);
-
-SDL3::Init::Quit();
