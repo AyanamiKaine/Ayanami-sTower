@@ -30,8 +30,12 @@ while True {
 
     while (SDL3::Event::PollEvent $event)
     {
-        say $event.type;
+        # To correctly print we must flush manually
+        # because sdl seems to otherwise prevent it
+        # say $event.type;
+        # $*OUT.flush;
     }
+
     SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 0, 255);
     SDL3::Render::RenderClear($renderer);
     SDL3::Render::RenderPresent($renderer);
