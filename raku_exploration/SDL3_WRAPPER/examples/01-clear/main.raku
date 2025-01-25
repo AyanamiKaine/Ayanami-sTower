@@ -47,6 +47,12 @@ while $running {
         }
     }
 
+    constant $now = SDL_GetTicks() / 1000.0;  # convert from milliseconds to seconds.
+    #choose the color for the frame we will draw. The sine wave trick makes it fade between colors smoothly. */
+    constant $red = (float) (0.5 + 0.5 * SDL_sin(now));
+    constant $green = (float) (0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
+    constant $blue = (float) (0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
+
     SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 0, 255);
     SDL3::Render::RenderClear($renderer);
     SDL3::Render::RenderPresent($renderer);
