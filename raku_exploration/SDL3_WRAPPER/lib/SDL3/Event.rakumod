@@ -140,12 +140,12 @@ our enum Event-Type is export (
     ENUM_PADDING             => 0x7FFFFFFF # This just makes sure the enum is the size of Uint32
 );
 
-our class CommonEvent is repr('CUnion') is export {
+our class CommonEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint32 $.timestamp;
 }
 
-our class DisplayEvent is repr('CUnion') is export {
+our class DisplayEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint32 $.timestamp;
     has uint32 $.display;
@@ -154,7 +154,7 @@ our class DisplayEvent is repr('CUnion') is export {
 }
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WindowEvent"
-our class WindowEvent is repr('CUnion') is export {
+our class WindowEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint64 $.timestamp;
     has uint32 $.windowID;
@@ -163,18 +163,18 @@ our class WindowEvent is repr('CUnion') is export {
     has int32  $.data2;
 }
 
-our class QuitEvent is repr('CUnion') is export {
+our class QuitEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint32 $.reserved;
     has uint64 $.timestamp; # In nanoseconds, populated using SDL_GetTicksNS()
 } 
-our class KeyboardDeviceEvent is repr('CUnion') is export {
+our class KeyboardDeviceEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint32 $.reserved;
     has uint64 $.timestamp; # In nanoseconds, populated using SDL_GetTicksNS()
     has uint32 $.which;     # The keyboard instance id
 } 
-our class KeyboardEvent is repr('CUnion') is export {
+our class KeyboardEvent is repr('CStruct') is export {
     has uint32  $.type;
     has uint32  $.reserved;
     has uint64  $.timestamp;       # In nanoseconds, populated using SDL_GetTicksNS()
@@ -187,7 +187,18 @@ our class KeyboardEvent is repr('CUnion') is export {
     has bool    $.down;            # true if the key is pressed */
     has bool    $.repeat;          # true if this is a key repeat */
 }
-our class TextEditingEvent is repr('CUnion') is export {
+
+our class TextEditingEvent is repr('CStruct') is export {
+    has uint32  $.type;
+    has uint32  $.reserved;
+    has uint64  $.timestamp;       # In nanoseconds, populated using SDL_GetTicksNS()
+    has uint32  $.windowID;        # The window with keyboard focus, if any 
+    has Str     $.text;            # The editing text
+    has int32   $.start;           # The start cursor of selected editing text, or -1 if not set
+    has int32   $.length;          # The length of selected editing text, or -1 if not set
+}
+
+our class TextEditingCandidatesEvent is repr('CStruct') is export {
     has uint32  $.type;
     has uint32  $.reserved;
     has uint64  $.timestamp;       # In nanoseconds, populated using SDL_GetTicksNS()
