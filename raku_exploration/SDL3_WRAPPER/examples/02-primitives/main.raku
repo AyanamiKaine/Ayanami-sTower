@@ -14,10 +14,10 @@ constant $NULL = 0;
 constant $HEIGHT = 480;
 constant $WIDTH  = 640;
     
-my SDL3::Video::Window $window = SDL3::Video::Window.new;
-my SDL3::Event::Event $event = SDL3::Event::Event.new;
-my SDL3::Render::Renderer $renderer = SDL3::Render::Renderer.new;
-my $points = CArray[SDL3::Rect::FPoint].allocate(500);
+my Window $window = Window.new;
+my Event $event = Event.new;
+my Renderer $renderer = Renderer.new;
+my $points = CArray[FPoint].allocate(500);
 
 # Same as in C
 #for (i = 0; i < SDL_arraysize(points); i++) {
@@ -26,19 +26,19 @@ my $points = CArray[SDL3::Rect::FPoint].allocate(500);
 #}
 
 for ^500 -> $i {
-    $points[$i].x = ((SDL3::Stdinc::Randf() * 440.0) + 100.0).Num;
-    $points[$i].y = ((SDL3::Stdinc::Randf() * 280.0) + 100.0).Num;
+    $points[$i].x = ((Randf() * 440.0) + 100.0).Num;
+    $points[$i].y = ((Randf() * 280.0) + 100.0).Num;
 }
 
 
-SDL3::Init::InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
+InitSubSystem(INIT_FLAGS::VIDEO);
 
-$window = SDL3::Video::CreateWindow(
+$window = CreateWindow(
     "Raku SDL3 Example Renderer Primitives", 
     $WIDTH, $HEIGHT, 
     0);
 
-$renderer = SDL3::Render::CreateRenderer($window, $NULL);
+$renderer = CreateRenderer($window, $NULL);
 
 
 my $running = True;
@@ -56,39 +56,39 @@ while $running {
         }
     }
 
-    SDL3::Render::SetRenderDrawColor($renderer, 33, 33, 33, 255);
-    SDL3::Render::RenderClear($renderer);
+    SetRenderDrawColor($renderer, 33, 33, 33, 255);
+    RenderClear($renderer);
 
     # draw a filled rectangle in the middle of the canvas.
     # blue, full alpha
-    SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 255, 255);
-    my SDL3::Rect::FRect $rect = SDL3::Rect::FRect.new;
+    SetRenderDrawColor($renderer, 0, 0, 255, 255);
+    my FRect $rect = FRect.new;
     $rect.x = 100.Num;
     $rect.y = 100.Num;
     $rect.w = 440.Num;
     $rect.h = 280.Num;
     # RenderFillRect expects a rect struct as a pointer, so we need to create a rect pointer.
-    my $rect-pointer = nativecast(Pointer[SDL3::Rect::FRect], $rect);
-    SDL3::Render::RenderFillRect($renderer, $rect-pointer);
+    my $rect-pointer = nativecast(Pointer[FRect], $rect);
+    RenderFillRect($renderer, $rect-pointer);
 
     # Draw some points across the canvas
     # red, full alpha
-    SDL3::Render::SetRenderDrawColor($renderer, 255, 0, 0, 255);
+    SetRenderDrawColor($renderer, 255, 0, 0, 255);
     for ^500 -> $i {
-        SDL3::Render::RenderPoint($renderer, $points[$i].x, $points[$i].y);
+        RenderPoint($renderer, $points[$i].x, $points[$i].y);
     }
 
-    SDL3::Render::SetRenderDrawColor($renderer, 0, 255, 0, 255);
+    SetRenderDrawColor($renderer, 0, 255, 0, 255);
     $rect.x += 30.Num;
     $rect.y += 30.Num;
     $rect.w -= 60.Num;
     $rect.h -= 60.Num;
-    SDL3::Render::RenderRect($renderer, $rect-pointer);
+    RenderRect($renderer, $rect-pointer);
 
     # yellow, full alpha
-    SDL3::Render::SetRenderDrawColor($renderer, 255, 255, 0, 255);
-    SDL3::Render::RenderLine($renderer, 0.Num, 0.Num, 640.Num, 480.Num);
-    SDL3::Render::RenderLine($renderer, 0.Num, 480.Num, 640.Num, 0.Num);
+    SetRenderDrawColor($renderer, 255, 255, 0, 255);
+    RenderLine($renderer, 0.Num, 0.Num, 640.Num, 480.Num);
+    RenderLine($renderer, 0.Num, 480.Num, 640.Num, 0.Num);
 
-    SDL3::Render::RenderPresent($renderer);
+    RenderPresent($renderer);
 }
