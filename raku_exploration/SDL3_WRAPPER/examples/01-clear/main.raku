@@ -39,6 +39,9 @@ while $running {
         # because sdl seems to otherwise prevent it
         # say $event.type;
         # $*OUT.flush;
+        # Probably because SDL_LOG, does in someway capture it
+        # The right way to print to the console in SDL would be
+        # using its logging function.
         
         given $event.type {
             when SDL3::Event::Event-Type::QUIT 
@@ -52,16 +55,17 @@ while $running {
     # By default divisions are turned into rat values 1/2
     my uint64 $now = (SDL3::Timer::GetTicks() / 1000.0).uint64;  # convert from milliseconds to seconds.
     #choose the color for the frame we will draw. The sine wave trick makes it fade between colors smoothly. */
-    my num32 $red = (0.5 + 0.5 * sin($now));
-    my num32 $green = (0.5 + 0.5 * sin($now + π * 2 / 3));
-    my num32 $blue = (0.5 + 0.5 * sin($now + π * 4 / 3));
 
     # Why are we saying $red.Num? because the above expressions produce rat values
     # As an example 1/2, we need to manually turn it into a float using the Num() 
     # function.
+    my num32 $red = (0.5 + 0.5 * sin($now)).Num;
+    my num32 $green = (0.5 + 0.5 * sin($now + π * 2 / 3)).Num;
+    my num32 $blue = (0.5 + 0.5 * sin($now + π * 4 / 3)).Num;
+
     SDL3::Render::SetRenderDrawColorFloat(
         $renderer, 
-        $red.Num, $green.Num, $blue.Num, 
+        $red, $green, $blue, 
         $SDL-ALPHA-OPAQUE-FLOAT
     );
     SDL3::Render::RenderClear($renderer);
