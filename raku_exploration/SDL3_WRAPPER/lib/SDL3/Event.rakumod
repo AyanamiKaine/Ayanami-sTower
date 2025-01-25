@@ -198,16 +198,19 @@ our class TextEditingEvent is repr('CStruct') is export {
     has int32   $.length;          # The length of selected editing text, or -1 if not set
 }
 
-our class TextEditingCandidatesEvent is repr('CStruct') is export {
-    has uint32  $.type;
-    has uint32  $.reserved;
-    has uint64  $.timestamp;       # In nanoseconds, populated using SDL_GetTicksNS()
-    has uint32  $.windowID;        # The window with keyboard focus, if any 
-    has Str     $.text;            # The editing text
-    has int32   $.start;           # The start cursor of selected editing text, or -1 if not set
-    has int32   $.length;          # The length of selected editing text, or -1 if not set
+class TextEditingCandidatesEvent is repr('CStruct') {
+    has uint32 $.type;
+    has uint32 $.reserved;
+    has uint64 $.timestamp;
+    has uint32 $.windowID;
+    has Pointer[Str] $.candidates;  # Pointer to an array of strings (const char * const *)
+    has int32 $.num_candidates;     # The number of strings in `candidates
+    has int32 $.selected_candidate; # The index of the selected candidate, or -1 if no candidate is selected
+    has bool $.horizontal;          # true if the list is horizontal, false if it's vertical
+    has uint8 $.padding1;
+    has uint8 $.padding2;
+    has uint8 $.padding3;
 }
-
 
 # See for more: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class Event is repr('CUnion') is export {
@@ -219,6 +222,7 @@ our class Event is repr('CUnion') is export {
     has KeyboardDeviceEvent $.kdevice;
     has KeyboardEvent       $.key;
     has TextEditingEvent    $.edit;
+    has TextEditingCandidatesEvent $.edit_candidates;
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
 }
 
