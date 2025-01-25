@@ -187,6 +187,16 @@ our class KeyboardEvent is repr('CUnion') is export {
     has bool    $.down;            # true if the key is pressed */
     has bool    $.repeat;          # true if this is a key repeat */
 }
+our class TextEditingEvent is repr('CUnion') is export {
+    has uint32  $.type;
+    has uint32  $.reserved;
+    has uint64  $.timestamp;       # In nanoseconds, populated using SDL_GetTicksNS()
+    has uint32  $.windowID;        # The window with keyboard focus, if any 
+    has Str     $.text;            # The editing text
+    has int32   $.start;           # The start cursor of selected editing text, or -1 if not set
+    has int32   $.length;          # The length of selected editing text, or -1 if not set
+}
+
 
 # See for more: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class Event is repr('CUnion') is export {
@@ -197,6 +207,7 @@ our class Event is repr('CUnion') is export {
     has QuitEvent           $.quit;
     has KeyboardDeviceEvent $.kdevice;
     has KeyboardEvent       $.key;
+    has TextEditingEvent    $.edit;
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
 }
 
