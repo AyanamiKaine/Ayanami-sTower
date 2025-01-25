@@ -174,7 +174,19 @@ our class KeyboardDeviceEvent is repr('CUnion') is export {
     has uint64 $.timestamp; # In nanoseconds, populated using SDL_GetTicksNS()
     has uint32 $.which;     # The keyboard instance id
 } 
- 
+our class KeyboardEvent is repr('CUnion') is export {
+    has uint32  $.type;
+    has uint32  $.reserved;
+    has uint64  $.timestamp;       # In nanoseconds, populated using SDL_GetTicksNS()
+    has uint32  $.windowID;        # The window with keyboard focus, if any 
+    has uint32  $.which;           # The keyboard instance id, or 0 if unknown or virtual */
+    has uint32  $.scancode;        # SDL physical key code */
+    has uint32  $.key;             # SDL virtual key code */
+    has uint32  $.mod;             # current key modifiers */
+    has uint16  $.raw;             # The platform dependent scancode for this event */
+    has bool    $.down;            # true if the key is pressed */
+    has bool    $.repeat;          # true if this is a key repeat */
+}
 
 # See for more: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class Event is repr('CUnion') is export {
@@ -184,6 +196,7 @@ our class Event is repr('CUnion') is export {
     has WindowEvent         $.window;
     has QuitEvent           $.quit;
     has KeyboardDeviceEvent $.kdevice;
+    has KeyboardEvent       $.key;
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
 }
 
