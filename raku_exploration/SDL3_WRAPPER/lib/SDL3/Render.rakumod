@@ -45,4 +45,4 @@ our sub RenderPoints(Renderer, CArray[FPoint], int32) returns Bool is native($SD
 our sub RenderPoint(Renderer, num32, num32) returns Bool is native($SDL-LIB) is symbol('SDL_RenderPoint') { * };
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderLine"
-our sub RenderLines(Renderer, num32, num32, num32, num32) returns Bool is symbol('SDL_RenderLine'){ * }
+our sub RenderLine(Renderer, num32, num32, num32, num32) returns Bool is native($SDL-LIB) is symbol('SDL_RenderLine') { * }
