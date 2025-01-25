@@ -12,8 +12,7 @@ constant $NULL = 0;
 constant $HEIGHT = 600;
 constant $WIDTH  = 800;
 constant $DELAY  = 5000;
-
-
+ 
 my SDL3::Video::Window $window = SDL3::Video::Window.new;
 my SDL3::Event::Event $event = SDL3::Event::Event.new;
 my SDL3::Render::Renderer $renderer = SDL3::Render::Renderer.new;
@@ -30,6 +29,8 @@ $renderer = SDL3::Render::CreateRenderer($window, $NULL);
 
 
 my $running = True;
+my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
+
 while $running {
 
     while (SDL3::Event::PollEvent $event)
@@ -47,13 +48,22 @@ while $running {
         }
     }
 
-    my $now = SDL3::Timer::GetTicks() / 1000.0;  # convert from milliseconds to seconds.
+    # We need to turn the rat value into a uint64.
+    # By default divisions are turned into rat values 1/2
+    my uint64 $now = (SDL3::Timer::GetTicks() / 1000.0).uint64;  # convert from milliseconds to seconds.
     #choose the color for the frame we will draw. The sine wave trick makes it fade between colors smoothly. */
-    my $red = (0.5 + 0.5 * SDL3::Stdinc::Sin($now));
-    my $green = (0.5 + 0.5 * SDL3::Stdinc::Sin($now + π * 2 / 3));
-    my $blue = (0.5 + 0.5 * SDL3::Stdinc::Sin($now + π * 4 / 3));
+    my num32 $red = (0.5 + 0.5 * sin($now));
+    my num32 $green = (0.5 + 0.5 * sin($now + π * 2 / 3));
+    my num32 $blue = (0.5 + 0.5 * sin($now + π * 4 / 3));
 
-    SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 0, 255);
+    # Why are we saying $red.Num? because the above expressions produce rat values
+    # As an example 1/2, we need to manually turn it into a float using the Num() 
+    # function.
+    SDL3::Render::SetRenderDrawColorFloat(
+        $renderer, 
+        $red.Num, $green.Num, $blue.Num, 
+        $SDL-ALPHA-OPAQUE-FLOAT
+    );
     SDL3::Render::RenderClear($renderer);
     SDL3::Render::RenderPresent($renderer);
 }
