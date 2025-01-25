@@ -48,14 +48,6 @@ while $running {
 
     while (SDL3::Event::PollEvent $event)
     {
-        # To correctly print we must flush manually
-        # because sdl seems to otherwise prevent it
-        # say $event.type;
-        # $*OUT.flush;
-        # Probably because SDL_LOG, does in someway capture it
-        # The right way to print to the console in SDL would be
-        # using its logging function.
-        
         given $event.type {
             when SDL3::Event::Event-Type::QUIT 
             { 
