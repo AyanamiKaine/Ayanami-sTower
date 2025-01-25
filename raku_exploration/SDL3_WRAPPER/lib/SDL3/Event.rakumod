@@ -164,21 +164,30 @@ our class WindowEvent is repr('CUnion') is export {
 }
 
 our class QuitEvent is repr('CUnion') is export {
-
     has uint32 $.type;
     has uint32 $.reserved;
     has uint64 $.timestamp; # In nanoseconds, populated using SDL_GetTicksNS()
 } 
+our class KeyboardDeviceEvent is repr('CUnion') is export {
+    has uint32 $.type;
+    has uint32 $.reserved;
+    has uint64 $.timestamp; # In nanoseconds, populated using SDL_GetTicksNS()
+    has uint32 $.which;     # The keyboard instance id
+} 
+ 
 
 # See for more: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class Event is repr('CUnion') is export {
-    has uint32        $.type;
-    has CommonEvent   $.common;
-    has DisplayEvent  $.display;
-    has WindowEvent   $.window;
-    has QuitEvent     $.quit;
+    has uint32              $.type;
+    has CommonEvent         $.common;
+    has DisplayEvent        $.display;
+    has WindowEvent         $.window;
+    has QuitEvent           $.quit;
+    has KeyboardDeviceEvent $.kdevice;
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
 }
+
+
 
 
 # For more See: "https://wiki.libsdl.org/SDL3/SDL_PollEvent"
