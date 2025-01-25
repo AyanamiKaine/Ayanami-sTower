@@ -5,6 +5,14 @@ constant $SDL-LIB = 'SDL3';
 
 our class Renderer is repr('CPointer') {};
 
+# Define the FRect type, for the render module, I have no idea how i can refrence the FRect class defined in the Rect Module
+class FRect is repr('CStruct') {
+	has num32 $.x;
+	has num32 $.y;
+	has num32 $.w;
+	has num32 $.h;
+}
+
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_CreateWindowAndRenderer"
 our sub CreateWindowAndRenderer(Str, uint32, uint32, uint32, uint32) returns Bool is native($SDL-LIB) is symbol('SDL_CreateWindowAndRenderer') { * }
@@ -22,3 +30,6 @@ our sub RenderPresent(Renderer) is native($SDL-LIB) is symbol('SDL_RenderPresent
 our sub RenderClear(Renderer) is native($SDL-LIB) is symbol('SDL_RenderClear') { * }
 
 our sub DestroyRender(Renderer) is native($SDL-LIB) is symbol('SDL_DestroyRenderer') { * }
+
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderFillRect"
+our sub RenderFillRect(Renderer, FRect) returns Bool is native($SDL-LIB) is symbol('SDL_RenderFillRect') { * };
