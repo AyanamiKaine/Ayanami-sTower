@@ -5,6 +5,10 @@ use SDL3::Init;
 use SDL3::Event;
 use SDL3::Render;
 
+# We create a NULL constant to better represent that we PASS NULL
+# and not just a number that is coincidentally ZERO
+constant $NULL = 0;
+
 constant $HEIGHT = 600;
 constant $WIDTH  = 800;
 constant $DELAY  = 5000;
@@ -14,15 +18,12 @@ my SDL3::Video::Window $window = SDL3::Video::Window.new;
 my SDL3::Event::Event $event = SDL3::Event::Event.new;
 my SDL3::Render::Renderer $renderer = SDL3::Render::Renderer.new;
 
+
 SDL3::Init::InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
 
 $window = SDL3::Video::CreateWindow("Raku SDL3 Example", $WIDTH, $HEIGHT, 0x0000000000000020);
 
-class NULL is repr('CPointer') { }
-# If we pass NULL to the createRendere SDL choices what driver to use
-# For now i dont know how I can easily pass a NULLPTR, without
-# creating it myself like the above code.
-$renderer = SDL3::Render::CreateRenderer($window, 0);
+$renderer = SDL3::Render::CreateRenderer($window, $NULL);
 
 my $frame-counter = 0;
 
