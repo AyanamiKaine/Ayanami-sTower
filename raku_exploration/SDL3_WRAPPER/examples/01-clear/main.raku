@@ -4,7 +4,7 @@ use SDL3::Timer;
 use SDL3::Init;
 use SDL3::Event;
 use SDL3::Render;
-
+use SDL3::Stdinc;
 # We create a NULL constant to better represent that we PASS NULL
 # and not just a number that is coincidentally ZERO
 constant $NULL = 0;
@@ -47,11 +47,11 @@ while $running {
         }
     }
 
-    constant $now = SDL_GetTicks() / 1000.0;  # convert from milliseconds to seconds.
+    my $now = SDL3::Timer::GetTicks() / 1000.0;  # convert from milliseconds to seconds.
     #choose the color for the frame we will draw. The sine wave trick makes it fade between colors smoothly. */
-    constant $red = (float) (0.5 + 0.5 * SDL_sin(now));
-    constant $green = (float) (0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
-    constant $blue = (float) (0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
+    my $red = (0.5 + 0.5 * SDL3::Stdinc::Sin($now));
+    my $green = (0.5 + 0.5 * SDL3::Stdinc::Sin($now + π * 2 / 3));
+    my $blue = (0.5 + 0.5 * SDL3::Stdinc::Sin($now + π * 4 / 3));
 
     SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 0, 255);
     SDL3::Render::RenderClear($renderer);
