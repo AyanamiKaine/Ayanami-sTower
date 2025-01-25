@@ -33,3 +33,5 @@ our sub DestroyRender(Renderer) is native($SDL-LIB) is symbol('SDL_DestroyRender
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderFillRect"
 our sub RenderFillRect(Renderer, Pointer) returns Bool is native($SDL-LIB) is symbol('SDL_RenderFillRect') { * };
+
+our sub RenderPoints(Renderer, Pointer, int64) returns Bool is native($SDL-LIB) is symbol('SDL_RenderPoints') { * };
