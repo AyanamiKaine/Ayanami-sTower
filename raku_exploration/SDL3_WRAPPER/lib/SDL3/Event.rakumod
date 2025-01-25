@@ -3,7 +3,7 @@ unit module SDL3::Event;
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
-our enum Event-Type (
+our enum Event-Type is export (
     FIRST                    => 0,      # Unused (do not remove)
     QUIT                     => 0x100,  # User-requested quit
     TERMINATING              => 0x101,  # The application is being terminated by the OS
@@ -140,12 +140,12 @@ our enum Event-Type (
     ENUM_PADDING             => 0x7FFFFFFF # This just makes sure the enum is the size of Uint32
 );
 
-class CommonEvent is repr('CUnion') {
+our class CommonEvent is repr('CUnion') is export {
     has uint32 $.type;
     has uint32 $.timestamp;
 }
 
-class DisplayEvent is repr('CUnion') {
+our class DisplayEvent is repr('CUnion') is export {
     has uint32 $.type;
     has uint32 $.timestamp;
     has uint32 $.display;
@@ -154,7 +154,7 @@ class DisplayEvent is repr('CUnion') {
 }
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WindowEvent"
-class WindowEvent is repr('CUnion') {
+our class WindowEvent is repr('CUnion') is export {
     has uint32 $.type;
     has uint64 $.timestamp;
     has uint32 $.windowID;
@@ -163,7 +163,7 @@ class WindowEvent is repr('CUnion') {
     has int32  $.data2;
 }
 
-class QuitEvent is repr('CUnion') {
+our class QuitEvent is repr('CUnion') is export {
 
     has uint32 $.type;
     has uint32 $.reserved;
@@ -171,7 +171,7 @@ class QuitEvent is repr('CUnion') {
 } 
 
 # See for more: "https://wiki.libsdl.org/SDL3/SDL_Event"
-class Event is repr('CUnion') {
+our class Event is repr('CUnion') is export {
     has uint32        $.type;
     has CommonEvent   $.common;
     has DisplayEvent  $.display;
@@ -182,4 +182,4 @@ class Event is repr('CUnion') {
 
 
 # For more See: "https://wiki.libsdl.org/SDL3/SDL_PollEvent"
-our sub PollEvent(Event) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') { * }
+our sub PollEvent(Event) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }
