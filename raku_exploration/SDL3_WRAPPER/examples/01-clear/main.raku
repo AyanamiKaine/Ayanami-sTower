@@ -25,8 +25,6 @@ $window = SDL3::Video::CreateWindow("Raku SDL3 Example", $WIDTH, $HEIGHT, 0x0000
 
 $renderer = SDL3::Render::CreateRenderer($window, $NULL);
 
-my $frame-counter = 0;
-
 while True {
 
     while (SDL3::Event::PollEvent $event)
