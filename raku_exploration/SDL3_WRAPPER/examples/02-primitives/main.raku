@@ -46,10 +46,10 @@ my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 while $running {
 
-    while (SDL3::Event::PollEvent $event)
+    while (PollEvent $event)
     {
         given $event.type {
-            when SDL3::Event::Event-Type::QUIT 
+            when Event-Type::QUIT 
             { 
                 $running = False;
             }
