@@ -11,10 +11,9 @@ use SDL3::Rect;
 # and not just a number that is coincidentally ZERO
 constant $NULL = 0;
 
-constant $HEIGHT = 600;
-constant $WIDTH  = 800;
-constant $DELAY  = 5000;
- 
+constant $HEIGHT = 480;
+constant $WIDTH  = 640;
+    
 my SDL3::Video::Window $window = SDL3::Video::Window.new;
 my SDL3::Event::Event $event = SDL3::Event::Event.new;
 my SDL3::Render::Renderer $renderer = SDL3::Render::Renderer.new;
@@ -37,7 +36,7 @@ SDL3::Init::InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
 $window = SDL3::Video::CreateWindow(
     "Raku SDL3 Example", 
     $WIDTH, $HEIGHT, 
-    SDL3::Video::Window-Flags::RESIZABLE);
+    0);
 
 $renderer = SDL3::Render::CreateRenderer($window, $NULL);
 
@@ -46,21 +45,27 @@ my $running = True;
 my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 while $running {
-    SDL3::Render::SetRenderDrawColor($renderer, 33.Num, 33.Num, 33.Num, $SDL-ALPHA-OPAQUE-FLOAT);
+    SDL3::Render::SetRenderDrawColor($renderer, 33, 33, 33, 255);
     SDL3::Render::RenderClear($renderer);
 
-    SDL3::Render::SetRenderDrawColor($renderer, 0.Num, 0.Num, 255.Num, $SDL-ALPHA-OPAQUE-FLOAT);
+    # draw a filled rectangle in the middle of the canvas.
+    SDL3::Render::SetRenderDrawColor($renderer, 0, 0, 255, 255);
     my SDL3::Rect::FRect $rect = SDL3::Rect::FRect.new;
     $rect.x = 100.Num;
     $rect.y = 100.Num;
     $rect.w = 440.Num;
     $rect.h = 280.Num;
-
-    #RenderFillRect expects a rect struct as a pointer, so we need to create a rect pointer.
+    # RenderFillRect expects a rect struct as a pointer, so we need to create a rect pointer.
     my $rect-pointer = nativecast(Pointer[SDL3::Rect::FRect], $rect);
-
     SDL3::Render::RenderFillRect($renderer, $rect-pointer);
 
+    # Draw some points across the canvas
+    SDL3::Render::SetRenderDrawColor($renderer, 255, 0, 0, 255);
+    for ^500 -> $i {
+        SDL3::Render::RenderPoint($renderer, $points[$i].x, $points[$i].y);
+    }
+
+    
     while (SDL3::Event::PollEvent $event)
     {
         # To correctly print we must flush manually
