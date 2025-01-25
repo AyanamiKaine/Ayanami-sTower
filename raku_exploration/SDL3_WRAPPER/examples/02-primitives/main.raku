@@ -1,3 +1,4 @@
+use NativeCall;
 use lib 'lib'; # Relative path to the 'lib' directory
 use SDL3::Video;
 use SDL3::Timer;
@@ -5,6 +6,7 @@ use SDL3::Init;
 use SDL3::Event;
 use SDL3::Render;
 use SDL3::Stdinc;
+use SDL3::Rect;
 # We create a NULL constant to better represent that we PASS NULL
 # and not just a number that is coincidentally ZERO
 constant $NULL = 0;
@@ -16,6 +18,18 @@ constant $DELAY  = 5000;
 my SDL3::Video::Window $window = SDL3::Video::Window.new;
 my SDL3::Event::Event $event = SDL3::Event::Event.new;
 my SDL3::Render::Renderer $renderer = SDL3::Render::Renderer.new;
+my $points = CArray[SDL3::Rect::FPoint].allocate(500);
+
+# Same as in C
+#for (i = 0; i < SDL_arraysize(points); i++) {
+#    points[i].x = (SDL_randf() * 440.0f) + 100.0f;
+#    points[i].y = (SDL_randf() * 280.0f) + 100.0f;
+#}
+
+for ^500 -> $i {
+    $points[$i].x = ((SDL3::Stdinc::Randf() * 440.0) + 100.0).Num;
+    $points[$i].y = ((SDL3::Stdinc::Randf() * 280.0) + 100.0).Num;
+}
 
 
 SDL3::Init::InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
@@ -32,6 +46,20 @@ my $running = True;
 my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 while $running {
+    SDL3::Render::SetRenderDrawColor($renderer, 33.Num, 33.Num, 33.Num, $SDL-ALPHA-OPAQUE-FLOAT);
+    SDL3::Render::RenderClear($renderer);
+
+    SDL3::Render::SetRenderDrawColor($renderer, 0.Num, 0.Num, 255.Num, $SDL-ALPHA-OPAQUE-FLOAT);
+    my SDL3::Rect::FRect $rect = SDL3::Rect::FRect.new;
+    $rect.x = 100.Num;
+    $rect.y = 100.Num;
+    $rect.w = 440.Num;
+    $rect.h = 280.Num;
+
+    #RenderFillRect expects a rect struct as a pointer, so we need to create a rect pointer.
+    my $rect-pointer = nativecast(Pointer[SDL3::Rect::FRect], $rect);
+
+    SDL3::Render::RenderFillRect($renderer, $rect-pointer);
 
     while (SDL3::Event::PollEvent $event)
     {
@@ -50,24 +78,5 @@ while $running {
             }
         }
     }
-
-    # We need to turn the rat value into a uint64.
-    # By default divisions are turned into rat values 1/2
-    my uint64 $now = (SDL3::Timer::GetTicks() / 1000.0).uint64;  # convert from milliseconds to seconds.
-    #choose the color for the frame we will draw. The sine wave trick makes it fade between colors smoothly. */
-
-    # Why are we saying $red.Num? because the above expressions produce rat values
-    # As an example 1/2, we need to manually turn it into a float using the Num() 
-    # function.
-    my num32 $red = (0.5 + 0.5 * sin($now)).Num;
-    my num32 $green = (0.5 + 0.5 * sin($now + π * 2 / 3)).Num;
-    my num32 $blue = (0.5 + 0.5 * sin($now + π * 4 / 3)).Num;
-
-    SDL3::Render::SetRenderDrawColorFloat(
-        $renderer, 
-        $red, $green, $blue, 
-        $SDL-ALPHA-OPAQUE-FLOAT
-    );
-    SDL3::Render::RenderClear($renderer);
     SDL3::Render::RenderPresent($renderer);
 }
