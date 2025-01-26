@@ -7,6 +7,8 @@ use SDL3::Event;
 use SDL3::Render;
 use SDL3::Stdinc;
 use SDL3::Rect;
+use SDL3::Log;
+
 # We create a NULL constant to better represent that we PASS NULL
 # and not just a number that is coincidentally ZERO
 constant $NULL = 0;
