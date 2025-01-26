@@ -1,22 +1,12 @@
 unit module SDL3::Render;
+use SDL3::Rect; 
+# You can refrence other modules from the same, the language server simply shits it self...
 
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
 our class Renderer is repr('CPointer') is export {};
-
-class FPoint is repr('CStruct') {
-    has num32 $.x is rw;
-    has num32 $.y is rw;
-}
-# Define the FRect type, for the render module, I have no idea how i can refrence the FRect class defined in the Rect Module
-#class FRect is repr('CStruct') {
-#	has num32 $.x;
-#	has num32 $.y;
-#	has num32 $.w;
-#	has num32 $.h;
-#}
-
+our class FRectPointer is repr('CPointer') is export {};
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_CreateWindowAndRenderer"
 our sub CreateWindowAndRenderer(Str, uint32, uint32, uint32, uint32) returns Bool is native($SDL-LIB) is symbol('SDL_CreateWindowAndRenderer') is export { * }
@@ -35,9 +25,10 @@ our sub RenderClear(Renderer) is native($SDL-LIB) is symbol('SDL_RenderClear') i
 
 our sub DestroyRender(Renderer) is native($SDL-LIB) is symbol('SDL_DestroyRenderer') is export { * }
 
-our sub RenderRect(Renderer, Pointer) returns Bool is native($SDL-LIB) is symbol('SDL_RenderRect') is export { * };
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderRect"
+our sub RenderRect(Renderer, FRectPointer) returns Bool is native($SDL-LIB) is symbol('SDL_RenderRect') is export { * };
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderFillRect"
-our sub RenderFillRect(Renderer, Pointer) returns Bool is native($SDL-LIB) is symbol('SDL_RenderFillRect') is export { * };
+our sub RenderFillRect(Renderer, FRectPointer) returns Bool is native($SDL-LIB) is symbol('SDL_RenderFillRect') is export { * };
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderPoints"
 our sub RenderPoints(Renderer, CArray[FPoint], int32) returns Bool is native($SDL-LIB) is symbol('SDL_RenderPoints') is export { * };
