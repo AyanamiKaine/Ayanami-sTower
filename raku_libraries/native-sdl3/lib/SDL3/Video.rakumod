@@ -3,7 +3,7 @@ unit module SDL3::Video;
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
-our enum Window-Flags is export (
+our enum Window-Flags(
     FULLSCREEN           => 0x0000000000000001,
     OPENGL               => 0x0000000000000002,
     OCCLUDED             => 0x0000000000000004,
@@ -32,6 +32,6 @@ our enum Window-Flags is export (
 );
 
 # Window related functions
-our class Window is repr('CPointer') is export {};
+our class Window is repr('CPointer') {};
 our sub CreateWindow(Str, int32, int32, uint64) returns Window is native($SDL-LIB) is symbol('SDL_CreateWindow') is export { * }
 our sub DestroyWindow(Window) is native($SDL-LIB) is symbol('SDL_DestroyWindow') is export { * }

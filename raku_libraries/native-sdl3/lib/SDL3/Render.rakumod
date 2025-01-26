@@ -5,8 +5,8 @@ use SDL3::Rect;
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
-our class Renderer is repr('CPointer') is export {};
-our class FRectPointer is repr('CPointer') is export {};
+our class Renderer is repr('CPointer') {};
+our class FRectPointer is repr('CPointer') {};
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_CreateWindowAndRenderer"
 our sub CreateWindowAndRenderer(Str, uint32, uint32, uint32, uint32) returns Bool is native($SDL-LIB) is symbol('SDL_CreateWindowAndRenderer') is export { * }

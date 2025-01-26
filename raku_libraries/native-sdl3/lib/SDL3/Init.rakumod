@@ -20,7 +20,7 @@ our enum AppResult is export (
     APP_FAILURE     => 2,
 );
 
-our constant INIT_EVERYTHING is export = [+|] INIT_FLAGS::.values;
+our constant INIT_EVERYTHING = [+|] INIT_FLAGS::.values;
 
 # This function and SDL_Init() are interchangeable.
 # (bool) Returns true on success or false on failure; call SDL_GetError() for more information.
