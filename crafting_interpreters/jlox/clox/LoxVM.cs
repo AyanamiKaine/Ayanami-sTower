@@ -13,7 +13,7 @@ public class LoxVM(Chunk chunk)
 
     public void Interpret(string source)
     {
-
+        var test = "Hello World"u8;
     }
     private void Run()
     {
