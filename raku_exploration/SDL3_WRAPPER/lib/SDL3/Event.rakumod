@@ -1,5 +1,4 @@
 unit module SDL3::Event;
-
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
