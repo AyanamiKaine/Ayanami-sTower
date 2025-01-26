@@ -1054,3 +1054,4 @@ CTestTestfile.cmake
 _deps
 sl_build_script/build.zip
 sl_build_script/build
+raku_exploration/SDL3_WRAPPER/SDL3.dll
