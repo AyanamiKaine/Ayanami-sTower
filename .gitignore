@@ -1056,3 +1056,5 @@ sl_build_script/build.zip
 sl_build_script/build
 raku_exploration/SDL3_WRAPPER/SDL3.dll
 Avalonia/Avalonia.Flecs/Avalonia.Flecs.StellaLearning/save/space_repetition_items.json
+raku_libraries/native-sdl3/SDL3.dll
+c_libraries/c_string
