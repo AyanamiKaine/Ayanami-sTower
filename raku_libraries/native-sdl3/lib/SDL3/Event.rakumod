@@ -211,7 +211,7 @@ class SDL_TextEditingCandidatesEvent is repr('CStruct') {
     has uint8 $.padding3;
 }
 
-# See for more: "https://wiki.libsdl.org/SDL3/SDL_Event"
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class SDL_Event is repr('CUnion') is export {
     has uint32              $.type;
     has SDL_CommonEvent         $.common;
@@ -228,5 +228,7 @@ our class SDL_Event is repr('CUnion') is export {
 
 
 
-# For more See: "https://wiki.libsdl.org/SDL3/SDL_PollEvent"
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_PollEvent"
 our sub SDL_PollEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_WaitEvent"
+our sub SDL_WaitEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_WaitEvent') is export { * }
