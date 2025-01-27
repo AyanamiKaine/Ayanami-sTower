@@ -4,4 +4,6 @@ use Anima::App;
 
 my $app = App.new(name=> "Raku App", heigth => 600, width => 460);
 
-#$app.handle-event(-> $event {});
+while $app.IsRunning {
+    $app.handle-event(-> $event {});
+}
