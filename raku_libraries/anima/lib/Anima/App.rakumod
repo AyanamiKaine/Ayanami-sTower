@@ -1,3 +1,9 @@
+use Anima::Window;
+use SDL3::Video;
 unit class App;
 
-has $.window;
+has Window $.window;
+
+submethod TWEAK() {
+
+}
