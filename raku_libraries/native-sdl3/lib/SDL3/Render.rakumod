@@ -5,6 +5,7 @@ use SDL3::Rect;
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
+# SDL_Renderer is an opaque pointer;
 our class SDL_Renderer is repr('CPointer') is export {};
 our class SDL_FRectPointer is repr('CPointer') is export {};
 
@@ -26,9 +27,9 @@ our sub SDL_RenderClear(SDL_Renderer) is native($SDL-LIB) is symbol('SDL_RenderC
 our sub SDL_DestroyRender(SDL_Renderer) is native($SDL-LIB) is symbol('SDL_DestroyRenderer') is export { * }
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderRect"
-our sub SDL_RenderRect(SDL_Renderer, SDL_FRectPointer) returns Bool is native($SDL-LIB) is symbol('SDL_RenderRect') is export { * };
+our sub SDL_RenderRect(SDL_Renderer, SDL_FRect is rw) returns Bool is native($SDL-LIB) is symbol('SDL_RenderRect') is export { * };
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderFillRect"
-our sub SDL_RenderFillRect(SDL_Renderer, SDL_FRectPointer) returns Bool is native($SDL-LIB) is symbol('SDL_RenderFillRect') is export { * };
+our sub SDL_RenderFillRect(SDL_Renderer, SDL_FRect is rw) returns Bool is native($SDL-LIB) is symbol('SDL_RenderFillRect') is export { * };
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderPoints"
 our sub SDL_RenderPoints(SDL_Renderer, CArray[SDL_FPoint], int32) returns Bool is native($SDL-LIB) is symbol('SDL_RenderPoints') is export { * };
