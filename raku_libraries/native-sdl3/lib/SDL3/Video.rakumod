@@ -3,7 +3,7 @@ unit module SDL3::Video;
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
-our enum Window-Flags(
+our enum SDL_WindowFlags is export (
     FULLSCREEN           => 0x0000000000000001,
     OPENGL               => 0x0000000000000002,
     OCCLUDED             => 0x0000000000000004,
