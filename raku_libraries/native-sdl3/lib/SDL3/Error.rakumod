@@ -2,4 +2,4 @@ unit module SDL3::Log;
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
-our sub GetError() returns Str is native($SDL-LIB) is symbol('SDL_GetError') is export { * }
+our sub SDL_GetError() returns Str is native($SDL-LIB) is export { * }

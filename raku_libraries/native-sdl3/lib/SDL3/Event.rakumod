@@ -139,12 +139,12 @@ our enum Event-Type is export (
     ENUM_PADDING             => 0x7FFFFFFF # This just makes sure the enum is the size of Uint32
 );
 
-our class CommonEvent is repr('CStruct') is export {
+our class SDL_CommonEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint32 $.timestamp;
 }
 
-our class DisplayEvent is repr('CStruct') is export {
+our class SDL_DisplayEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint32 $.timestamp;
     has uint32 $.display;
@@ -153,7 +153,7 @@ our class DisplayEvent is repr('CStruct') is export {
 }
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WindowEvent"
-our class WindowEvent is repr('CStruct') is export {
+our class SDL_WindowEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint64 $.timestamp;
     has uint32 $.windowID;
@@ -162,18 +162,18 @@ our class WindowEvent is repr('CStruct') is export {
     has int32  $.data2;
 }
 
-our class QuitEvent is repr('CStruct') is export {
+our class SDL_QuitEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint32 $.reserved;
     has uint64 $.timestamp; # In nanoseconds, populated using SDL_GetTicksNS()
 } 
-our class KeyboardDeviceEvent is repr('CStruct') is export {
+our class SDL_KeyboardDeviceEvent is repr('CStruct') is export {
     has uint32 $.type;
     has uint32 $.reserved;
     has uint64 $.timestamp; # In nanoseconds, populated using SDL_GetTicksNS()
     has uint32 $.which;     # The keyboard instance id
 } 
-our class KeyboardEvent is repr('CStruct') is export {
+our class SDL_KeyboardEvent is repr('CStruct') is export {
     has uint32  $.type;
     has uint32  $.reserved;
     has uint64  $.timestamp;       # In nanoseconds, populated using SDL_GetTicksNS()
@@ -187,7 +187,7 @@ our class KeyboardEvent is repr('CStruct') is export {
     has bool    $.repeat;          # true if this is a key repeat */
 }
 
-our class TextEditingEvent is repr('CStruct') is export {
+our class SDL_TextEditingEvent is repr('CStruct') is export {
     has uint32  $.type;
     has uint32  $.reserved;
     has uint64  $.timestamp;       # In nanoseconds, populated using SDL_GetTicksNS()
@@ -197,7 +197,7 @@ our class TextEditingEvent is repr('CStruct') is export {
     has int32   $.length;          # The length of selected editing text, or -1 if not set
 }
 
-class TextEditingCandidatesEvent is repr('CStruct') {
+class SDL_TextEditingCandidatesEvent is repr('CStruct') {
     has uint32 $.type;
     has uint32 $.reserved;
     has uint64 $.timestamp;
@@ -212,16 +212,16 @@ class TextEditingCandidatesEvent is repr('CStruct') {
 }
 
 # See for more: "https://wiki.libsdl.org/SDL3/SDL_Event"
-our class Event is repr('CUnion') is export {
+our class SDL_Event is repr('CUnion') is export {
     has uint32              $.type;
-    has CommonEvent         $.common;
-    has DisplayEvent        $.display;
-    has WindowEvent         $.window;
-    has QuitEvent           $.quit;
-    has KeyboardDeviceEvent $.kdevice;
-    has KeyboardEvent       $.key;
-    has TextEditingEvent    $.edit;
-    has TextEditingCandidatesEvent $.edit_candidates;
+    has SDL_CommonEvent         $.common;
+    has SDL_DisplayEvent        $.display;
+    has SDL_WindowEvent         $.window;
+    has SDL_QuitEvent           $.quit;
+    has SDL_KeyboardDeviceEvent $.kdevice;
+    has SDL_KeyboardEvent       $.key;
+    has SDL_TextEditingEvent    $.edit;
+    has SDL_TextEditingCandidatesEvent $.edit_candidates;
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
 }
 
@@ -229,4 +229,4 @@ our class Event is repr('CUnion') is export {
 
 
 # For more See: "https://wiki.libsdl.org/SDL3/SDL_PollEvent"
-our sub PollEvent(Event) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }
+our sub SDL_PollEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }

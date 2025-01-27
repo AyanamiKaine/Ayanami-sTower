@@ -32,6 +32,6 @@ our enum Window-Flags(
 );
 
 # Window related functions
-our class Window is repr('CPointer') {};
-our sub CreateWindow(Str, int32, int32, uint64) returns Window is native($SDL-LIB) is symbol('SDL_CreateWindow') is export { * }
-our sub DestroyWindow(Window) is native($SDL-LIB) is symbol('SDL_DestroyWindow') is export { * }
+our class SDL_Window is repr('CPointer') is export {};
+our sub SDL_CreateWindow(Str, int32, int32, uint64) returns SDL_Window is native($SDL-LIB) is symbol('SDL_CreateWindow') is export { * }
+our sub SDL_DestroyWindow(SDL_Window) is native($SDL-LIB) is symbol('SDL_DestroyWindow') is export { * }
