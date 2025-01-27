@@ -1,0 +1,14 @@
+{
+    "name": "Anima",
+    "version": "0.1.0",
+    "description": "App Framework",
+    "authors": ["Ayanami"],
+    "license": "Artistic-2.0",
+    "provides": {
+        "Anima::Window": "lib/Anima/Window.rakumod",
+        "Anima::App": "lib/Anima/App.rakumod",
+        "Anima::Renderer": "lib/Anima/Renderer.rakumod"
+
+    },
+    "depends": ["SDL3"]
+}
