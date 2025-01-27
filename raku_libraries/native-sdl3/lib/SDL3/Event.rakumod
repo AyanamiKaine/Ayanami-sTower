@@ -1,5 +1,8 @@
 unit module SDL3::Event;
 use NativeCall;
+use SDL3::Video;
+
+
 constant $SDL-LIB = 'SDL3';
 
 our enum Event-Type is export (
@@ -232,3 +235,7 @@ our class SDL_Event is repr('CUnion') is export {
 our sub SDL_PollEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WaitEvent"
 our sub SDL_WaitEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_WaitEvent') is export { * }
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_RegisterEvents"
+our sub SDL_RegisterEvents(int32) returns uint32 is native($SDL-LIB) is symbol('SDL_RegisterEvents') is export { * }
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_GetWindowFromEvent"
+our sub SDL_GetWindowFromEvent(SDL_Event) returns SDL_Window  is native($SDL-LIB) is symbol('SDL_GetWindowFromEvent') is export { * }
