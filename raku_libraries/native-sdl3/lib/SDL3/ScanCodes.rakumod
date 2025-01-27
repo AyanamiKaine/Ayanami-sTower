@@ -1,7 +1,7 @@
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_Scancode"
 unit module SDL3::ScanCode;
 
-our enum ScanCodes is export (
+our enum SDL_ScanCodes is export (
     SDL_SCANCODE_UNKNOWN => 0,
 
     #/**
