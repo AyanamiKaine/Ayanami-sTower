@@ -13,19 +13,19 @@ constant $HEIGHT = 600;
 constant $WIDTH  = 800;
 constant $DELAY  = 5000;
  
-my SDL3::Video::Window $window = SDL3::Video::Window.new;
-my SDL3::Event::Event $event = SDL3::Event::Event.new;
-my SDL3::Render::Renderer $renderer = SDL3::Render::Renderer.new;
+my SDL3::Video::SDL_Window $window = SDL3::Video::SDL_Window.new;
+my SDL3::Event::SDL_Event $event = SDL3::Event::SDL_Event.new;
+my SDL3::Render::SDL_Renderer $renderer = SDL3::Render::SDL_Renderer.new;
 
 
-SDL3::Init::InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
+SDL3::Init::SDL_InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
 
-$window = SDL3::Video::CreateWindow(
+$window = SDL3::Video::SDL_CreateWindow(
     "Raku SDL3 Example", 
     $WIDTH, $HEIGHT, 
     SDL3::Video::Window-Flags::RESIZABLE);
 
-$renderer = SDL3::Render::CreateRenderer($window, $NULL);
+$renderer = SDL3::Render::SDL_CreateRenderer($window, $NULL);
 
 
 my $running = True;
@@ -33,7 +33,7 @@ my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 while $running {
 
-    while (SDL3::Event::PollEvent $event)
+    while (SDL3::Event::SDL_PollEvent $event)
     {
         # To correctly print we must flush manually
         # because sdl seems to otherwise prevent it
@@ -53,7 +53,7 @@ while $running {
 
     # We need to turn the rat value into a uint64.
     # By default divisions are turned into rat values 1/2
-    my uint64 $now = (SDL3::Timer::GetTicks() / 1000.0).uint64;  # convert from milliseconds to seconds.
+    my uint64 $now = (SDL3::Timer::SDL_GetTicks() / 1000.0).uint64;  # convert from milliseconds to seconds.
     #choose the color for the frame we will draw. The sine wave trick makes it fade between colors smoothly. */
 
     # Why are we saying $red.Num? because the above expressions produce rat values
@@ -63,13 +63,13 @@ while $running {
     my num32 $green = (0.5 + 0.5 * sin($now + π * 2 / 3)).Num;
     my num32 $blue = (0.5 + 0.5 * sin($now + π * 4 / 3)).Num;
 
-    SDL3::Render::SetRenderDrawColorFloat(
+    SDL3::Render::SDL_SetRenderDrawColorFloat(
         $renderer, 
         $red, $green, $blue, 
         $SDL-ALPHA-OPAQUE-FLOAT
     );
-    SDL3::Render::RenderClear($renderer);
-    SDL3::Render::RenderPresent($renderer);
+    SDL3::Render::SDL_RenderClear($renderer);
+    SDL3::Render::SDL_RenderPresent($renderer);
 }
 
 # For some reason when we try to quit and destroy

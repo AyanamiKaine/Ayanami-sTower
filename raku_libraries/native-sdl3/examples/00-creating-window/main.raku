@@ -8,13 +8,13 @@ constant $WIDTH  = 800;
 constant $DELAY  = 5000;
 
 
-my SDL3::Video::Window $window = SDL3::Video::Window.new;
+my SDL3::Video::SDL_Window $window = SDL3::Video::SDL_Window.new;
 
-SDL3::Init::InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
+SDL3::Init::SDL_InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
 
-$window = SDL3::Video::CreateWindow("Raku SDL3 Example", $WIDTH, $HEIGHT, 0);
+$window = SDL3::Video::SDL_CreateWindow("Raku SDL3 Example", $WIDTH, $HEIGHT, 0);
 
-SDL3::Timer::Delay($DELAY);
+SDL3::Timer::SDL_Delay($DELAY);
 
-SDL3::Video::DestroyWindow($window);
-SDL3::Init::Quit();
+SDL3::Video::SDL_DestroyWindow($window);
+SDL3::Init::SDL_Quit();
