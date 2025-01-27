@@ -235,6 +235,10 @@ our class SDL_Event is repr('CUnion') is export {
 our sub SDL_PollEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WaitEvent"
 our sub SDL_WaitEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_WaitEvent') is export { * }
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_WaitEventTimeout"
+our sub SDL_WaitEventTimeout(SDL_Event, int32) is native($SDL-LIB) is symbol('SDL_WaitEventTimeout') is export { * }
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_PushEvent"
+our sub SDL_PushEvent(SDL_Event) is native($SDL-LIB) is symbol('SDL_PushEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_SetEventEnabled"
 our sub SDL_SetEventEnabled(uint32, bool) is native($SDL-LIB) is symbol('SDL_SetEventEnabled') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_EventEnabled"
