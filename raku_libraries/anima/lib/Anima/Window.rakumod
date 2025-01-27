@@ -6,7 +6,7 @@ unit class Window;
 has Str $.name;
 has $.heigth;
 has $.width;
-has SDL_Window $.window-ptr is rw;
+has SDL_Window $.window-ptr;
 
 submethod TWEAK(:$!name = "Example", :$!heigth, :$!width) {
     say "Initializing window with height: ", $!heigth, " and width: ", $!width;
