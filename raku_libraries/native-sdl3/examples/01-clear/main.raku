@@ -5,6 +5,7 @@ use SDL3::Init;
 use SDL3::Event;
 use SDL3::Render;
 use SDL3::Stdinc;
+use SDL3::Log;
 # We create a NULL constant to better represent that we PASS NULL
 # and not just a number that is coincidentally ZERO
 constant $NULL = 0;
@@ -14,9 +15,9 @@ constant $WIDTH  = 800;
 constant $DELAY  = 5000;
  
 my SDL3::Video::SDL_Window $window = SDL3::Video::SDL_Window.new;
-my SDL3::Event::SDL_Event $event = SDL3::Event::SDL_Event.new;
-my SDL3::Render::SDL_Renderer $renderer = SDL3::Render::SDL_Renderer.new;
 
+my SDL3::Render::SDL_Renderer $renderer = SDL3::Render::SDL_Renderer.new;
+my SDL3::Event::SDL_Event $event = SDL3::Event::SDL_Event.new;
 
 SDL3::Init::SDL_InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
 
@@ -32,8 +33,7 @@ my $running = True;
 my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 while $running {
-
-    while (SDL3::Event::SDL_PollEvent $event)
+    if (SDL3::Event::SDL_WaitEvent $event)
     {
         # To correctly print we must flush manually
         # because sdl seems to otherwise prevent it
@@ -49,6 +49,8 @@ while $running {
                 $running = False;
             }
         }
+
+        SDL_Log($event.type.Str)
     }
 
     # We need to turn the rat value into a uint64.
