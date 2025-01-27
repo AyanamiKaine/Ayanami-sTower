@@ -70,8 +70,7 @@ while $running {
     $rect.w = 440.Num;
     $rect.h = 280.Num;
     # RenderFillRect expects a rect struct as a pointer, so we need to create a rect pointer.
-    my $rect-pointer = nativecast(Pointer[SDL_FRect], $rect);
-    SDL_RenderFillRect($renderer, $rect-pointer);
+    SDL_RenderFillRect($renderer, $rect);
 
     # Draw some points across the canvas
     # red, full alpha
@@ -85,7 +84,7 @@ while $running {
     $rect.y += 30.Num;
     $rect.w -= 60.Num;
     $rect.h -= 60.Num;
-    SDL_RenderRect($renderer, $rect-pointer);
+    SDL_RenderRect($renderer, $rect);
 
     # yellow, full alpha
     SDL_SetRenderDrawColor($renderer, 255, 255, 0, 255);
