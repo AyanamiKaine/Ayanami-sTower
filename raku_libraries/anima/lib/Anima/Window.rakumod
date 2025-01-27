@@ -6,16 +6,16 @@ unit class Window;
 has Str $.name;
 has $.heigth;
 has $.width;
-has SDL3::Video::Window $.window-ptr is rw;
+has SDL_Window $.window-ptr is rw;
 
 submethod TWEAK(:$!name = "Example", :$!heigth, :$!width) {
     say "Initializing window with height: ", $!heigth, " and width: ", $!width;
 
-    SDL3::Init::InitSubSystem(SDL3::Init::INIT_EVERYTHING);
+    SDL_InitSubSystem(SDL_INIT_EVERYTHING);
 
-    $!window-ptr = SDL3::Video::CreateWindow($!name, $!width, $!heigth, SDL3::Video::Window-Flags::RESIZABLE);
+    $!window-ptr = SDL_CreateWindow($!name, $!width, $!heigth, SDL_WindowFlags::RESIZABLE);
 }
 
 submethod DESTROY {
-    SDL3::Video::DestroyWindow($!window-ptr);
+   SDL_DestroyWindow($!window-ptr);
 }
