@@ -3,5 +3,5 @@ use Anima::Window;
 use Anima::App;
 
 my $app = App.new(name=> "Raku App", heigth => 600, width => 460);
-loop {
-}
+
+#$app.handle-event(-> $event {});
