@@ -214,17 +214,19 @@ class SDL_TextEditingCandidatesEvent is repr('CStruct') {
     has uint8 $.padding3;
 }
 
+# "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
+
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class SDL_Event is repr('CUnion') is export {
     has uint32              $.type;
-    has SDL_CommonEvent         $.common;
-    has SDL_DisplayEvent        $.display;
-    has SDL_WindowEvent         $.window;
-    has SDL_QuitEvent           $.quit;
-    has SDL_KeyboardDeviceEvent $.kdevice;
-    has SDL_KeyboardEvent       $.key;
-    has SDL_TextEditingEvent    $.edit;
-    has SDL_TextEditingCandidatesEvent $.edit_candidates;
+    HAS  SDL_CommonEvent         $.common;
+    HAS  SDL_DisplayEvent        $.display;
+    HAS  SDL_WindowEvent         $.window;
+    HAS  SDL_QuitEvent           $.quit;
+    HAS  SDL_KeyboardDeviceEvent $.kdevice;
+    HAS  SDL_KeyboardEvent       $.key;
+    HAS  SDL_TextEditingEvent    $.edit;
+    HAS  SDL_TextEditingCandidatesEvent $.edit_candidates;
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
 }
 
@@ -232,13 +234,13 @@ our class SDL_Event is repr('CUnion') is export {
 
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_PollEvent"
-our sub SDL_PollEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }
+our sub SDL_PollEvent(SDL_Event is rw) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WaitEvent"
-our sub SDL_WaitEvent(SDL_Event) returns bool is native($SDL-LIB) is symbol('SDL_WaitEvent') is export { * }
+our sub SDL_WaitEvent(SDL_Event is rw) returns bool is native($SDL-LIB) is symbol('SDL_WaitEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WaitEventTimeout"
-our sub SDL_WaitEventTimeout(SDL_Event, int32) is native($SDL-LIB) is symbol('SDL_WaitEventTimeout') is export { * }
+our sub SDL_WaitEventTimeout(SDL_Event is rw, int32) is native($SDL-LIB) is symbol('SDL_WaitEventTimeout') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_PushEvent"
-our sub SDL_PushEvent(SDL_Event) is native($SDL-LIB) is symbol('SDL_PushEvent') is export { * }
+our sub SDL_PushEvent(SDL_Event is rw) is native($SDL-LIB) is symbol('SDL_PushEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_SetEventEnabled"
 our sub SDL_SetEventEnabled(uint32, bool) is native($SDL-LIB) is symbol('SDL_SetEventEnabled') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_EventEnabled"
@@ -246,4 +248,4 @@ our sub SDL_EventEnabled(uint32) returns bool is native($SDL-LIB) is symbol('SDL
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RegisterEvents"
 our sub SDL_RegisterEvents(int32) returns uint32 is native($SDL-LIB) is symbol('SDL_RegisterEvents') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_GetWindowFromEvent"
-our sub SDL_GetWindowFromEvent(SDL_Event) returns SDL_Window  is native($SDL-LIB) is symbol('SDL_GetWindowFromEvent') is export { * }
+our sub SDL_GetWindowFromEvent(SDL_Event is rw) returns SDL_Window  is native($SDL-LIB) is symbol('SDL_GetWindowFromEvent') is export { * }
