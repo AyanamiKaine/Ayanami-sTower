@@ -7,6 +7,7 @@
     "provides": {
         "SDL3::Clipboard": "lib/SDL3/Clipboard.rakumod",
         "SDL3::CpuInfo": "lib/SDL3/CpuInfo.rakumod",
+        "SDL3::Version": "lib/SDL3/Version.rakumod",
         "SDL3::Error": "lib/SDL3/Error.rakumod",
         "SDL3::Keycode": "lib/SDL3/Keycode.rakumod",
         "SDL3::Log": "lib/SDL3/Log.rakumod",
