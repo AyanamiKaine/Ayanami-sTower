@@ -23,7 +23,7 @@ SDL3::Init::SDL_InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
 $window = SDL3::Video::SDL_CreateWindow(
     "Raku SDL3 Example", 
     $WIDTH, $HEIGHT, 
-    SDL3::Video::Window-Flags::RESIZABLE);
+    SDL3::Video::SDL_WindowFlags::RESIZABLE);
 
 $renderer = SDL3::Render::SDL_CreateRenderer($window, $NULL);
 
