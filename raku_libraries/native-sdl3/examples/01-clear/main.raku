@@ -19,7 +19,7 @@ my SDL3::Video::SDL_Window $window = SDL3::Video::SDL_Window.new;
 my SDL3::Render::SDL_Renderer $renderer = SDL3::Render::SDL_Renderer.new;
 my SDL3::Event::SDL_Event $event = SDL3::Event::SDL_Event.new;
 
-SDL3::Init::SDL_InitSubSystem(SDL3::Init::INIT_FLAGS::VIDEO);
+SDL3::Init::SDL_InitSubSystem(SDL3::Init::SDL_INIT_EVERYTHING);
 
 $window = SDL3::Video::SDL_CreateWindow(
     "Raku SDL3 Example", 
@@ -47,6 +47,9 @@ while $running {
             when SDL3::Event::Event-Type::QUIT 
             { 
                 $running = False;
+                # Is probably better to just exit, instead of doing
+                # any shutdown sequence in SDL.
+                exit;
             }
         }
 
@@ -73,10 +76,11 @@ while $running {
     SDL3::Render::SDL_RenderClear($renderer);
     SDL3::Render::SDL_RenderPresent($renderer);
 }
-
 # For some reason when we try to quit and destroy
 # We get heap corruption, I wonder why?
-#SDL3::Render::DestroyRender($renderer);
-#SDL3::Video::DestroyWindow($window);
-#SDL3::Init::Quit();
+# On windows this works fine, on linux on the otherhand, we get 
+# heap corruption no matter if we destry or dont
+#SDL3::Render::SDL_DestroyRenderer($renderer);
+#SDL3::Video::SDL_DestroyWindow($window);
+#SDL3::Init::SDL_Quit();
 
