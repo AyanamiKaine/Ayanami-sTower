@@ -2,9 +2,12 @@
     "name": "SDL3",
     "version": "0.1.0",
     "description": "A native Raku wrapper for SDL3",
-    "authors": ["Ayanami"],
+    "authors": [
+        "Ayanami"
+    ],
     "license": "Artistic-2.0",
     "provides": {
+        "SDL3::Pixels": "lib/SDL3/Pixels.rakumod",
         "SDL3::Clipboard": "lib/SDL3/Clipboard.rakumod",
         "SDL3::CpuInfo": "lib/SDL3/CpuInfo.rakumod",
         "SDL3::Version": "lib/SDL3/Version.rakumod",
@@ -20,5 +23,7 @@
         "SDL3::Event": "lib/SDL3/Event.rakumod",
         "SDL3::Stdinc": "lib/SDL3/Stdinc.rakumod"
     },
-    "depends": ["NativeCall"]
+    "depends": [
+        "NativeCall"
+    ]
 }
