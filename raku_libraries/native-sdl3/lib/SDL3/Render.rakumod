@@ -7,7 +7,7 @@ use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_PixelFormat"
-our enum SDL_PixelFormat is export(
+our enum SDL_PixelFormat is export (
     SDL_PIXELFORMAT_UNKNOWN    => 0x0,
     SDL_PIXELFORMAT_INDEX1LSB  => 0x11100100,
     SDL_PIXELFORMAT_INDEX1MSB  => 0x11200100,
@@ -78,7 +78,10 @@ our enum SDL_PixelFormat is export(
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_Texture"
 our class SDL_Texture is repr('CStruct') is export
 {
-    has SDL_PixelFormat $.format;
+    # The format is a uint from the enum SDL_PixelFormat
+    # We cannot directly use the raku enum in the struct so 
+    # we use a uint instead.
+    has uint32 $.format;
     has int64 $.w;
     has int64 $.h;
     has int64 $.refcount;
