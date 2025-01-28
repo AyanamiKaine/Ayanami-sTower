@@ -40,4 +40,5 @@ our class SDL_Window is repr('CPointer') is export {
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_CreateWindow"
 our sub SDL_CreateWindow(Str $title, int32 $w, int32 $h, uint64 $flags) returns SDL_Window is native($SDL-LIB, v0) is symbol('SDL_CreateWindow') is export { * }
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_DestroyWindow"
 our sub SDL_DestroyWindow(SDL_Window $window) is native($SDL-LIB, v0) is symbol('SDL_DestroyWindow') is export { * }
