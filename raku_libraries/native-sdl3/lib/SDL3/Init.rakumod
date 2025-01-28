@@ -24,7 +24,7 @@ our constant SDL_INIT_EVERYTHING is export = [+|] INIT_FLAGS::.values ;
 
 # This function and SDL_Init() are interchangeable.
 # (bool) Returns true on success or false on failure; call SDL_GetError() for more information.
-our sub SDL_InitSubSystem(uint32) returns bool is native($SDL-LIB, v0) is export { * }
+our sub SDL_InitSubSystem(uint32 $init-flags) returns bool is native($SDL-LIB, v0) is export { * }
 
 # See for more: https://wiki.libsdl.org/SDL3/SDL_Quit
 # You should call this function even if you have already shutdown each initialized subsystem with SDL_QuitSubSystem(). It is safe to call this function even in the case of errors in initialization.
