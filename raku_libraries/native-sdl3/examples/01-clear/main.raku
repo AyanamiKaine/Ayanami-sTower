@@ -80,7 +80,7 @@ while $running {
 # We get heap corruption, I wonder why?
 # On windows this works fine, on linux on the otherhand, we get 
 # heap corruption no matter if we destry or dont
-#SDL3::Render::SDL_DestroyRenderer($renderer);
-#SDL3::Video::SDL_DestroyWindow($window);
-#SDL3::Init::SDL_Quit();
+# SDL3::Render::SDL_DestroyRenderer($renderer);
+# SDL3::Video::SDL_DestroyWindow($window);
+# SDL3::Init::SDL_Quit();
 
