@@ -10,7 +10,7 @@ our class SDL_Color is repr('CStruct') is export {
     has uint8 $.b;
     has uint8 $.a;   
 }
-
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_FColor"
 our class SDL_FColor is repr('CStruct') is export {
     has num32 $.r;
     has num32 $.g;
