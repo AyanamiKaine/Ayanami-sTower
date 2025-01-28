@@ -32,6 +32,10 @@ our enum SDL_WindowFlags is export (
 );
 
 # SDL_Window is an opaque pointer;
-our class SDL_Window is repr('CPointer') is export {};
-our sub SDL_CreateWindow(Str, int32, int32, uint64) returns SDL_Window is native($SDL-LIB) is symbol('SDL_CreateWindow') is export { * }
-our sub SDL_DestroyWindow(SDL_Window is rw) is native($SDL-LIB) is symbol('SDL_DestroyWindow') is export { * }
+our class SDL_Window is repr('CPointer') is export {
+    submethod DESTROY {
+        SDL_DestroyWindow(self);
+    }
+};
+our sub SDL_CreateWindow(Str, int32, int32, uint64) returns SDL_Window is native($SDL-LIB, v0) is symbol('SDL_CreateWindow') is export { * }
+our sub SDL_DestroyWindow(SDL_Window) is native($SDL-LIB, v0) is symbol('SDL_DestroyWindow') is export { * }
