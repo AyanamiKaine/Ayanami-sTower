@@ -113,6 +113,9 @@ our sub SDL_SetRenderDrawColor(SDL_Renderer, uint8, uint8, uint8, uint8) returns
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_SetRenderDrawColorFloat"
 our sub SDL_SetRenderDrawColorFloat(SDL_Renderer, num32, num32, num32, num32) returns Bool is native($SDL-LIB, v0) is symbol('SDL_SetRenderDrawColorFloat') is export { * };
 
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderGeometry"
+our sub SDL_SDL_RenderGeometry() returns Bool is native($SDL-LIB, v0) is symbol('SDL_RenderGeometry') is export { * };
+
 our sub SDL_RenderPresent(SDL_Renderer) is native($SDL-LIB, v0) is symbol('SDL_RenderPresent') is export { * }
 
 our sub SDL_RenderClear(SDL_Renderer) is native($SDL-LIB, v0) is symbol('SDL_RenderClear') is export { * }
