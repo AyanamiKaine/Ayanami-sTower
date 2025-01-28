@@ -48,7 +48,8 @@ while $running {
             { 
                 $running = False;
                 # Is probably better to just exit, instead of doing
-                # any shutdown sequence in SDL.
+                # any shutdown sequence in SDL. let the os handle the
+                # rest of the memory not the vm.
                 exit;
             }
         }
