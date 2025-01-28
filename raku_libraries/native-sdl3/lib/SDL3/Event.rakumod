@@ -234,18 +234,18 @@ our class SDL_Event is repr('CUnion') is export {
 
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_PollEvent"
-our sub SDL_PollEvent(SDL_Event is rw) returns bool is native($SDL-LIB) is symbol('SDL_PollEvent') is export { * }
+our sub SDL_PollEvent(SDL_Event is rw) returns bool is native($SDL-LIB, v0) is symbol('SDL_PollEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WaitEvent"
-our sub SDL_WaitEvent(SDL_Event is rw) returns bool is native($SDL-LIB) is symbol('SDL_WaitEvent') is export { * }
+our sub SDL_WaitEvent(SDL_Event is rw) returns bool is native($SDL-LIB, v0) is symbol('SDL_WaitEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_WaitEventTimeout"
-our sub SDL_WaitEventTimeout(SDL_Event is rw, int32) is native($SDL-LIB) is symbol('SDL_WaitEventTimeout') is export { * }
+our sub SDL_WaitEventTimeout(SDL_Event is rw, int32) is native($SDL-LIB, v0) is symbol('SDL_WaitEventTimeout') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_PushEvent"
-our sub SDL_PushEvent(SDL_Event is rw) is native($SDL-LIB) is symbol('SDL_PushEvent') is export { * }
+our sub SDL_PushEvent(SDL_Event is rw) is native($SDL-LIB, v0) is symbol('SDL_PushEvent') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_SetEventEnabled"
-our sub SDL_SetEventEnabled(uint32, bool) is native($SDL-LIB) is symbol('SDL_SetEventEnabled') is export { * }
+our sub SDL_SetEventEnabled(uint32, bool) is native($SDL-LIB, v0) is symbol('SDL_SetEventEnabled') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_EventEnabled"
-our sub SDL_EventEnabled(uint32) returns bool is native($SDL-LIB) is symbol('SDL_EventEnabled') is export { * }
+our sub SDL_EventEnabled(uint32) returns bool is native($SDL-LIB, v0) is symbol('SDL_EventEnabled') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RegisterEvents"
-our sub SDL_RegisterEvents(int32) returns uint32 is native($SDL-LIB) is symbol('SDL_RegisterEvents') is export { * }
+our sub SDL_RegisterEvents(int32) returns uint32 is native($SDL-LIB, v0) is symbol('SDL_RegisterEvents') is export { * }
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_GetWindowFromEvent"
-our sub SDL_GetWindowFromEvent(SDL_Event is rw) returns SDL_Window  is native($SDL-LIB) is symbol('SDL_GetWindowFromEvent') is export { * }
+our sub SDL_GetWindowFromEvent(SDL_Event is rw) returns SDL_Window  is native($SDL-LIB, v0) is symbol('SDL_GetWindowFromEvent') is export { * }
