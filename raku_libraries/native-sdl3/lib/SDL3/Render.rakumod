@@ -87,16 +87,6 @@ our class SDL_Texture is repr('CStruct') is export
     has int64 $.refcount;
 }
 
-our class SDL_RendererInfo is repr('CStruct') is export 
-{
-    has Str $.name;                                                     #/**< The name of the renderer */
-    has uint32 $.flags;                                                 #/**< Supported SDL_RendererFlags */
-    has uint32 $.num_texture_formats;                                   #/**< The number of available texture formats */
-    has CArray[uint32] $.texture_formats = CArray[uint32].new(0 xx 16); #/**< The available texture formats */
-    has int64 $.max_texture_width;                                      #/**< The maximum texture width */
-    has int64 $.max_texture_height;                                     #/**< The maximum texture height */
-}
-
 our class SDL_Vertex is repr('CStruct') is export 
 {
     has SDL_FPoint $.position;
