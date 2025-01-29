@@ -6,6 +6,7 @@ use SDL3::Event;
 use SDL3::Render;
 use SDL3::Stdinc;
 use SDL3::Log;
+use SDL3::Error;
 # We create a NULL constant to better represent that we PASS NULL
 # and not just a number that is coincidentally ZERO
 constant $NULL = 0;
@@ -14,7 +15,7 @@ constant $HEIGHT = 600;
 constant $WIDTH  = 800;
 constant $DELAY  = 5000;
  
-my SDL3::Video::SDL_Window $window = SDL3::Video::SDL_Window.new;
+my SDL3::Video::SDL_Window $window = SDL3::Video::SDL_Window.new or SDL3::Error::SDL_GetError();
 
 my SDL3::Render::SDL_Renderer $renderer = SDL3::Render::SDL_Renderer.new;
 my SDL3::Event::SDL_Event $event = SDL3::Event::SDL_Event.new;
@@ -26,11 +27,11 @@ $window = SDL3::Video::SDL_CreateWindow(
     $WIDTH, $HEIGHT, 
     SDL3::Video::SDL_WindowFlags::RESIZABLE);
 
-$renderer = SDL3::Render::SDL_CreateRenderer($window, $NULL);
-
+$renderer = SDL3::Render::SDL_CreateRenderer($window, Str);
 
 my $running = True;
 my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
+
 
 while $running {
     if (SDL3::Event::SDL_WaitEvent $event)
