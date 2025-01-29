@@ -18,7 +18,7 @@ constant $HEIGHT = 600;
 constant $WIDTH  = 800;
 constant $DELAY  = 5000;
  
-my SDL3::Video::SDL_Window $window = SDL3::Video::SDL_Window.new or SDL3::Error::SDL_GetError();
+my SDL3::Video::SDL_Window $window = SDL3::Video::SDL_Window.new;
 
 my SDL3::Render::SDL_Renderer $renderer = SDL3::Render::SDL_Renderer.new;
 my SDL3::Event::SDL_Event $event = SDL3::Event::SDL_Event.new;
@@ -36,18 +36,47 @@ my $running = True;
 my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 
-my $vert = SDL_Vertex.new();
-$vert.position.x = 2e0;
+my $vert = CArray[SDL_Vertex].allocate(3);
+
+# Initialize first vertex
+$vert[0].position.x = 400.Num;
+$vert[0].position.y = 150.Num;
+$vert[0].color.r = 1.0.Num;
+$vert[0].color.g = 0.0.Num;
+$vert[0].color.b = 0.0.Num;
+$vert[0].color.a = 1.0.Num;
+
+# Initialize second vertex
+$vert[1].position.x = 200.Num;
+$vert[1].position.y = 450.Num;
+$vert[1].color.r = 0.0.Num;
+$vert[1].color.g = 0.0.Num;
+$vert[1].color.b = 1.0.Num;
+$vert[1].color.a = 1.0.Num;
+
+$vert[2].position.x = 600.Num;
+$vert[2].position.y = 450.Num;
+$vert[2].color.r = 0.0.Num;
+$vert[2].color.g = 1.0.Num;
+$vert[2].color.b = 0.0.Num;
+$vert[2].color.a = 1.0.Num;
+
 
 
 my $my-render-function = sub () {
+                SDL3::Render::SDL_SetRenderDrawColor($renderer, 0, 0, 0, 255);
                 SDL3::Render::SDL_RenderClear($renderer);
 
+                my $result = SDL_RenderGeometry(
+                        $renderer,
+                        Pointer.new(0),
+                        $vert,
+                        3,
+                        Pointer.new(0),
+                        0
+                    );
 
-
-
-
-                SDL3::Render::SDL_RenderClear($renderer);
+                die "Rendering failed: {SDL_GetError()}" unless $result;
                 SDL3::Render::SDL_RenderPresent($renderer);
                 return False;
 };
@@ -59,7 +88,7 @@ SDL_SetEventFilter(
         given $event.type {
             when WINDOW_EXPOSED
             { 
-                $my-render-function();
+                #$my-render-function();
                 return False;
             }
         }
