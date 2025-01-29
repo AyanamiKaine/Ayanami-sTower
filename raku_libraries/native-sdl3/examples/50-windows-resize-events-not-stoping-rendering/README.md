@@ -1,6 +1,6 @@
 On windows draging the window blocks the thread as long as the event is happening, this means when you check for events in the same thread as the rendering it will block as long as the user holds the window. Often times this is not necessary, to circumvent this we must run the event handling in another thread using callbacks.
 
-This problem was fixed in SDL 2.3 see: "https://github.com/libsdl-org/SDL/issues/1059"
+This problem was fixed in SDL 2.3 see: "https://github.com/libsdl-org/SDL/issues/1059". As far as I know on Linux this problem does not exist.
 
 # The Basics
 
@@ -35,11 +35,11 @@ int main(int argc, char* argv[]) {
     SDL_SetEventFilter(MyEventFilter, NULL);
 
     // ... Rest of your application ...
-    bool running = true; 
+    bool running = true;
     SDL_Event event;
 
     while (running) {
-        while (SDL_PollEvent(&event)) { 
+        while (SDL_PollEvent(&event)) {
             switch (event.type) {
                 case SDL_EVENT_QUIT:
                     running = SDL_FALSE;
