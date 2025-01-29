@@ -81,17 +81,18 @@ our class SDL_Texture is repr('CStruct') is export
     # The format is a uint from the enum SDL_PixelFormat
     # We cannot directly use the raku enum in the struct so 
     # we use a uint instead.
-    has uint32 $.format;
-    has int64 $.w;
-    has int64 $.h;
-    has int64 $.refcount;
+    has uint32 $.format     is rw;
+    has int64 $.w           is rw;
+    has int64 $.h           is rw;
+    has int64 $.refcount    is rw;
 }
 
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_Vertex"
 our class SDL_Vertex is repr('CStruct') is export 
 {
-    has SDL_FPoint $.position;
-    has SDL_FColor $.color;
-    has SDL_FPoint $.tex_coord;
+    has SDL_FPoint $.position   is rw;
+    has SDL_FColor $.color      is rw;
+    has SDL_FPoint $.tex_coord  is rw;
 };
 
 # SDL_Renderer is an opaque pointer;
