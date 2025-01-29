@@ -216,17 +216,20 @@ class SDL_TextEditingCandidatesEvent is repr('CStruct') {
 
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
+# When you have a struct with pointers with a type of a struct use has, if they are value use HAS
+
+
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class SDL_Event is repr('CUnion') is export {
     has uint32              $.type;
-    HAS  SDL_CommonEvent         $.common;
-    HAS  SDL_DisplayEvent        $.display;
-    HAS  SDL_WindowEvent         $.window;
-    HAS  SDL_QuitEvent           $.quit;
-    HAS  SDL_KeyboardDeviceEvent $.kdevice;
-    HAS  SDL_KeyboardEvent       $.key;
-    HAS  SDL_TextEditingEvent    $.edit;
-    HAS  SDL_TextEditingCandidatesEvent $.edit_candidates;
+    has  SDL_CommonEvent         $.common;
+    has  SDL_DisplayEvent        $.display;
+    has  SDL_WindowEvent         $.window;
+    has  SDL_QuitEvent           $.quit;
+    has  SDL_KeyboardDeviceEvent $.kdevice;
+    has  SDL_KeyboardEvent       $.key;
+    has  SDL_TextEditingEvent    $.edit;
+    has  SDL_TextEditingCandidatesEvent $.edit_candidates;
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
 }
 
