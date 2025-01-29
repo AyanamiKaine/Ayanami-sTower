@@ -115,12 +115,22 @@ our sub SDL_SetRenderDrawColor(SDL_Renderer $renderer, uint8, uint8, uint8, uint
 our sub SDL_SetRenderDrawColorFloat(SDL_Renderer $renderer, num32, num32, num32, num32) returns Bool is native($SDL-LIB, v0) is symbol('SDL_SetRenderDrawColorFloat') is export { * };
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderGeometry"
-our sub SDL_SDL_RenderGeometry() returns Bool is native($SDL-LIB, v0) is symbol('SDL_RenderGeometry') is export { * };
+our sub SDL_RenderGeometry(
+    Pointer $renderer,           # SDL_Renderer*
+    Pointer $texture,            # SDL_Texture* (can be NULL)
+    CArray[SDL_Vertex] $vertices,# Array of vertices
+    int32 $num_vertices,
+    Pointer[int32] $indices,     # Array of indices (can be NULL)
+    int32 $num_indices
+) returns Bool is native($SDL-LIB, v0) is symbol('SDL_RenderGeometry') is export { * };
 
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderPresent"
 our sub SDL_RenderPresent(SDL_Renderer $renderer) is native($SDL-LIB, v0) is symbol('SDL_RenderPresent') is export { * }
 
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderClear"
 our sub SDL_RenderClear(SDL_Renderer $renderer) is native($SDL-LIB, v0) is symbol('SDL_RenderClear') is export { * }
 
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_DestroyRenderer"
 our sub SDL_DestroyRenderer(SDL_Renderer $renderer) is native($SDL-LIB, v0) is symbol('SDL_DestroyRenderer') is export { * }
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderRect"
