@@ -64,6 +64,11 @@ my $my-render-function = sub () {
 # What we want to do it to redraw the WINDOW_EXPOSED event happens
 SDL_SetEventFilter(
     sub ($_, $event) {
+        # If you are asking does this run on another thread? 
+        # In the offical docs it states that filters may run on different threads, what does that mean?
+        # Some events are run in different threads and others not, in this case it safe to run code that is not thread-safe
+        # as window-exposed events are only happening on the main thread. (BUT THIS NEEDS MORE CONFIRMATION)
+        # Is this really true or are people simply saying it?
         given $event.type {
             when WINDOW_EXPOSED
             { 
