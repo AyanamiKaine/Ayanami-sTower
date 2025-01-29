@@ -88,7 +88,7 @@ SDL_SetEventFilter(
         given $event.type {
             when WINDOW_EXPOSED
             { 
-                #$my-render-function();
+                $my-render-function();
                 return False;
             }
         }
