@@ -29,7 +29,7 @@ our enum Event-Type is export (
 
     WINDOW_SHOWN             => 0x202,  # Window has been shown
     WINDOW_HIDDEN            => 0x203,  # Window has been hidden
-    WINDOW_EXPOSED           => 0x204,  # Window has been exposed and should be redrawn
+    WINDOW_EXPOSED           => 0x204,  # Window has been exposed and should be redrawn and can be redrawn directly from event watchers for this event 
     WINDOW_MOVED             => 0x205,  # Window has been moved to data1, data2
     WINDOW_RESIZED           => 0x206,  # Window has been resized to data1xdata2
     WINDOW_PIXEL_SIZE_CHANGED => 0x207, # The pixel size of the window has changed to data1xdata2
