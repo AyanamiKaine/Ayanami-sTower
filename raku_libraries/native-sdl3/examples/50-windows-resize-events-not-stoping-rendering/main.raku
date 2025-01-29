@@ -61,20 +61,17 @@ my $my-render-function = sub () {
 };
 
 # THIS IS WHERE THE MAGIC HAPPENS
-# What we want to do it to redraw the window_resized event happens
+# What we want to do it to redraw the WINDOW_EXPOSED event happens
 SDL_SetEventFilter(
     sub ($_, $event) {
         given $event.type {
-            when WINDOW_RESIZED
+            when WINDOW_EXPOSED
             { 
                 $my-render-function();
-                # We return false so the event queue does not get the resize event and blocks
-                # as Windows will block until the rezize is finished.
                 return False;
             }
         }
         
-        # Putting all other events in the event queue, so poll event can handle and see them.
         return True;
         
         }, Str);
@@ -88,8 +85,6 @@ while $running {
             { 
                 $running = False;
             }
-            SDL_Log (Event-Type($event.type)).Str;
-
         }
     }
     $my-render-function();
