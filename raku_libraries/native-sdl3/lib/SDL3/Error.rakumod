@@ -1,4 +1,4 @@
-unit module SDL3::Log;
+unit module SDL3::Error;
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
 
