@@ -106,7 +106,7 @@ our class SDL_FRectPointer is repr('CPointer') is export {};
 our sub SDL_CreateWindowAndRenderer(Str, uint32, uint32, uint32, uint32) returns Bool is native($SDL-LIB, v0) is symbol('SDL_CreateWindowAndRenderer') is export { * }
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_CreateRenderer"
-our sub SDL_CreateRenderer(Pointer, uint32) returns SDL_Renderer is native($SDL-LIB, v0) is symbol('SDL_CreateRenderer') is export { * }
+our sub SDL_CreateRenderer(Pointer, Str) returns SDL_Renderer is native($SDL-LIB, v0) is symbol('SDL_CreateRenderer') is export { * }
 
 our sub SDL_SetRenderDrawColor(SDL_Renderer $renderer, uint8, uint8, uint8, uint8) returns Bool is native($SDL-LIB, v0) is symbol('SDL_SetRenderDrawColor') is export { * }
 
@@ -137,7 +137,7 @@ our sub SDL_RenderPoint(SDL_Renderer $renderer, num32, num32) returns Bool is na
 our sub SDL_RenderLine(SDL_Renderer $renderer, num32, num32, num32, num32) returns Bool is native($SDL-LIB, v0) is symbol('SDL_RenderLine') is export { * }
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_GetRenderDriver"
-our sub SDL_GetRenderDriver(int64 $index) returns Str is native($SDL-LIB, v0) is symbol('SDL_GetRenderDrivers') is export { * }
+our sub SDL_GetRenderDriver(int64 $index) returns Str is native($SDL-LIB, v0) is symbol('SDL_GetRenderDriver') is export { * }
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_GetNumRenderDrivers"
 our sub SDL_GetNumRenderDrivers() returns int64 is native($SDL-LIB, v0) is symbol('SDL_GetNumRenderDrivers') is export { * }
