@@ -90,9 +90,9 @@ our class SDL_Texture is repr('CStruct') is export
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_Vertex"
 our class SDL_Vertex is repr('CStruct') is export 
 {
-    has SDL_FPoint $.position   is rw;
-    has SDL_FColor $.color      is rw;
-    has SDL_FPoint $.tex_coord  is rw;
+    HAS SDL_FPoint $.position   is rw;
+    HAS SDL_FColor $.color      is rw;
+    HAS SDL_FPoint $.tex_coord  is rw;
 };
 
 # SDL_Renderer is an opaque pointer;
