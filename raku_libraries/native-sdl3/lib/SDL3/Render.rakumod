@@ -135,3 +135,6 @@ our sub SDL_RenderPoint(SDL_Renderer, num32, num32) returns Bool is native($SDL-
 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_RenderLine"
 our sub SDL_RenderLine(SDL_Renderer, num32, num32, num32, num32) returns Bool is native($SDL-LIB, v0) is symbol('SDL_RenderLine') is export { * }
+
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_GetRenderDriver"
+our sub SDL_GetRenderDriver(int64 $index) returns Str is native($SDL-LIB, v0) is symbol('SDL_GetRenderDrivers') is export { * }
