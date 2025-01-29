@@ -34,6 +34,7 @@ my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 
 while $running {
+    # Blocks until an event happens
     if (SDL3::Event::SDL_WaitEvent $event)
     {
         # To correctly print we must flush manually
