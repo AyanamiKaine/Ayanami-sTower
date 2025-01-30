@@ -218,7 +218,9 @@ class SDL_TextEditingCandidatesEvent is repr('CStruct') {
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
 
-
+# I believe there is a memory corruption here, somehow memory gets written to the wrong addresses,
+# for now I am unsure if the problem is here. I think the reason is two folded. I didnt implement all
+# Events and my knowledge about CUnions is lacking. 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class SDL_Event is repr('CUnion') is export {
     has uint32              $.type;
