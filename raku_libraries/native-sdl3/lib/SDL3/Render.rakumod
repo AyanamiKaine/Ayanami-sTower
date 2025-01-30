@@ -1,3 +1,4 @@
+# For more see: "https://wiki.libsdl.org/SDL3/CategoryRender"
 unit module SDL3::Render;
 use SDL3::Rect; 
 use SDL3::Pixels;
