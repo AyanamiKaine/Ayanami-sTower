@@ -1,3 +1,4 @@
+# For more see: "https://wiki.libsdl.org/SDL3/CategoryTimer"
 unit module SDL3::Timer;
 
 use NativeCall;
