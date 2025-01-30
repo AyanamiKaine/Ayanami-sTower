@@ -1,3 +1,4 @@
+# For more see: "https://wiki.libsdl.org/SDL3/CategoryVideo"
 unit module SDL3::Video;
 
 use NativeCall;
