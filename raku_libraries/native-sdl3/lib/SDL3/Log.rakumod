@@ -1,3 +1,4 @@
+# For more see: "https://wiki.libsdl.org/SDL3/CategoryLog"
 unit module SDL3::SLog;
 use NativeCall;
 constant $SDL-LIB = 'SDL3';
