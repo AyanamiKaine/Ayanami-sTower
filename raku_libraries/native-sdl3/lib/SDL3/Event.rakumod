@@ -326,6 +326,15 @@ our class SDL_DropEvent is repr('CStruct') is export is rw {
     has Str    $.data;      #/**< The text for SDL_EVENT_DROP_TEXT and the file name for SDL_EVENT_DROP_FILE, NULL for other events */
 }
 
+our class SDL_ClipboardEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;      #/**< SDL_EVENT_CLIPBOARD_UPDATE */
+    has uint32 $.reserved;
+    has uint64 $.timestamp;
+    has bool   $.owner;     #/**< are we owning the clipboard (internal update) */
+    has uint32 $.num_mime_types; # /**< number of mime types */
+    has Pointer[Str]    $.nime_types; #/**< current mime types */
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
