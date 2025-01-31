@@ -40,7 +40,7 @@ $window = SDL_CreateWindow(
     $WIDTH, $HEIGHT, 
     SDL3::Video::SDL_WindowFlags::RESIZABLE);
 
-$renderer = SDL3::Render::SDL_CreateRenderer($window, Str);
+$renderer = SDL3::Render::SDL_CreateRenderer($window, Nil);
 
 
 my $running = True;
