@@ -243,6 +243,20 @@ our class SDL_MouseMotionEvent is repr('CStruct') is export is rw {
     has num32  $.yrel;          #/**< The relative motion in the Y direction */
 }
 
+our class SDL_MouseButtonEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;          #/**< SDL_EVENT_MOUSE_ADDED or SDL_EVENT_MOUSE_REMOVED *
+    has uint32 $.reserved;
+    has uint64 $.timestamp;     #/**< In nanoseconds, populated using SDL_GetTicksNS() */
+    has uint32 $.windowID;      #/**< The window with mouse focus, if any */
+    has uint32 $.which;         #/**< The mouse instance id */
+    has uint8  $.button;        #/**< The mouse button index */
+    has bool   $.down;          #/**< true if the button is pressed */
+    has uint8  $.clicks;        #/**< 1 for single-click, 2 for double-click, etc. */
+    has uint8  $.padding;
+    has num32  $.x;             #/**< X coordinate, relative to window */
+    has num32  $.y;             #/**< Y coordinate, relative to window */
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
