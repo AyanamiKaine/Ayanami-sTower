@@ -10,6 +10,7 @@ use SDL3::Render;
 use SDL3::Stdinc;
 use SDL3::Log;
 use SDL3::Error;
+use SDL3::Pixels;
 # We create a NULL constant to better represent that we PASS NULL
 # and not just a number that is coincidentally ZERO
 constant $NULL = 0;
@@ -36,7 +37,8 @@ my $running = True;
 my num32 $SDL-ALPHA-OPAQUE-FLOAT = 1.0.Num;
 
 
-my $vert = CArray[SDL_Vertex].allocate(3);
+my $vert = CArray[SDL_Vertex].allocate(3); # moved allocation to declaration
+
 
 # Initialize first vertex
 $vert[0].position.x = 400.Num;

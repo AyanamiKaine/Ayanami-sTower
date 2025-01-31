@@ -277,6 +277,13 @@ our class SDL_JoyDeviceEvent is repr('CStruct') is export is rw {
     has uint32 $.which;         # /**< The joystick instance id */
 }
 
+our class SDL_JoyAxisEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;          #/**< SDL_EVENT_JOYSTICK_ADDED or SDL_EVENT_JOYSTICK_REMOVED or SDL_EVENT_JOYSTICK_UPDATE_COMPLETE */
+    has uint32 $.reserved;
+    has uint64 $.timestamp;     #/**< In nanoseconds, populated using SDL_GetTicksNS() */
+    has uint32 $.which;         # /**< The joystick instance id */
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
@@ -289,12 +296,11 @@ our class SDL_JoyDeviceEvent is repr('CStruct') is export is rw {
 # for now I am unsure if the problem is here. I think the reason is two folded. I didnt implement all
 # Events and my knowledge about CUnions is lacking. 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_Event"
-our class SDL_Event is repr('CUnion') is export {
+our class SDL_Event is repr('CUnion') is export is rw {
     has uint32                   $.type;
     HAS  SDL_CommonEvent         $.common;
     HAS  SDL_DisplayEvent        $.display;
     HAS  SDL_WindowEvent         $.window;
-    HAS  SDL_QuitEvent           $.quit;
     HAS  SDL_KeyboardDeviceEvent $.kdevice;
     HAS  SDL_KeyboardEvent       $.key;
     HAS  SDL_TextEditingEvent    $.edit;
@@ -307,29 +313,29 @@ our class SDL_Event is repr('CUnion') is export {
     HAS SDL_MouseWheelEvent $.wheel;              #/**< Mouse wheel event data */
     HAS SDL_JoyDeviceEvent $.jdevice;             #/**< Joystick device change event data */
     HAS SDL_JoyAxisEvent $.jaxis;                 #/**< Joystick axis event data */
-    HAS SDL_JoyBallEvent $.jball;                 #/**< Joystick ball event data */
-    HAS SDL_JoyHatEvent $.jhat;                   #/**< Joystick hat event data */
-    HAS SDL_JoyButtonEvent $.jbutton;             #/**< Joystick button event data */
-    HAS SDL_JoyBatteryEvent $.jbattery;           #/**< Joystick battery event data */
-    HAS SDL_GamepadDeviceEvent $.gdevice;         #/**< Gamepad device event data */
-    HAS SDL_GamepadAxisEvent $.gaxis;             #/**< Gamepad axis event data */
-    HAS SDL_GamepadButtonEvent $.gbutton;         #/**< Gamepad button event data */
-    HAS SDL_GamepadTouchpadEvent $.gtouchpad;     #/**< Gamepad touchpad event data */
-    HAS SDL_GamepadSensorEvent $.gsensor;         #/**< Gamepad sensor event data */
-    HAS SDL_AudioDeviceEvent $.adevice;           #/**< Audio device event data */
-    HAS SDL_CameraDeviceEvent $.cdevice;          #/**< Camera device event data */
-    HAS SDL_SensorEvent $.sensor;                 #/**< Sensor event data */
+    #HAS SDL_JoyBallEvent $.jball;                 #/**< Joystick ball event data */
+    #HAS SDL_JoyHatEvent $.jhat;                   #/**< Joystick hat event data */
+    #HAS SDL_JoyButtonEvent $.jbutton;             #/**< Joystick button event data */
+    #HAS SDL_JoyBatteryEvent $.jbattery;           #/**< Joystick battery event data */
+    #HAS SDL_GamepadDeviceEvent $.gdevice;         #/**< Gamepad device event data */
+    #HAS SDL_GamepadAxisEvent $.gaxis;             #/**< Gamepad axis event data */
+    #HAS SDL_GamepadButtonEvent $.gbutton;         #/**< Gamepad button event data */
+    #HAS SDL_GamepadTouchpadEvent $.gtouchpad;     #/**< Gamepad touchpad event data */
+    #HAS SDL_GamepadSensorEvent $.gsensor;         #/**< Gamepad sensor event data */
+    #HAS SDL_AudioDeviceEvent $.adevice;           #/**< Audio device event data */
+    #HAS SDL_CameraDeviceEvent $.cdevice;          #/**< Camera device event data */
+    #HAS SDL_SensorEvent $.sensor;                 #/**< Sensor event data */
     HAS SDL_QuitEvent $.quit;                     #/**< Quit request event data */
-    HAS SDL_UserEvent $.user;                     #/**< Custom event data */
-    HAS SDL_TouchFingerEvent $.tfinger;           #/**< Touch finger event data */
-    HAS SDL_PenProximityEvent $.pproximity;       #/**< Pen proximity event data */
-    HAS SDL_PenTouchEvent $.ptouch;               #/**< Pen tip touching event data */
-    HAS SDL_PenMotionEvent $.pmotion;             #/**< Pen motion event data */
-    HAS SDL_PenButtonEvent $.pbutton;             #/**< Pen button event data */
-    HAS SDL_PenAxisEvent $.paxis;                 #/**< Pen axis event data */
-    HAS SDL_RenderEvent $.render;                 #/**< Render event data */
-    HAS SDL_DropEvent $.drop;                     #/**< Drag and drop event data */
-    HAS SDL_ClipboardEvent $.clipboard;           #/**< Clipboard event data */
+    #HAS SDL_UserEvent $.user;                     #/**< Custom event data */
+    #HAS SDL_TouchFingerEvent $.tfinger;           #/**< Touch finger event data */
+    #HAS SDL_PenProximityEvent $.pproximity;       #/**< Pen proximity event data */
+    #HAS SDL_PenTouchEvent $.ptouch;               #/**< Pen tip touching event data */
+    #HAS SDL_PenMotionEvent $.pmotion;             #/**< Pen motion event data */
+    #HAS SDL_PenButtonEvent $.pbutton;             #/**< Pen button event data */
+    #HAS SDL_PenAxisEvent $.paxis;                 #/**< Pen axis event data */
+    #HAS SDL_RenderEvent $.render;                 #/**< Render event data */
+    #HAS SDL_DropEvent $.drop;                     #/**< Drag and drop event data */
+    #HAS SDL_ClipboardEvent $.clipboard;           #/**< Clipboard event data */
 
 
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
