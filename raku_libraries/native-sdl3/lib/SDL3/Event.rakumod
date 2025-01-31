@@ -200,7 +200,7 @@ our class SDL_TextEditingEvent is repr('CStruct') is export {
     has int32   $.length;          # The length of selected editing text, or -1 if not set
 }
 
-class SDL_TextEditingCandidatesEvent is repr('CStruct') {
+our class SDL_TextEditingCandidatesEvent is repr('CStruct') {
     has uint32 $.type;
     has uint32 $.reserved;
     has uint64 $.timestamp;
@@ -214,11 +214,25 @@ class SDL_TextEditingCandidatesEvent is repr('CStruct') {
     has uint8 $.padding3;
 }
 
+our class SDL_TextInputEvent is repr('CStruct') {
+    has uint32 $.type;
+    has uint32 $.reserved;
+    has uint64 $.timestamp;
+    has uint32 $.windowID;
+    has Str  $.text;
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
 
+#Raku Declarator	C Equivalent	    Relationship
+#has	            Pointer (Type *)	Referenced/Indirect
+#HAS	            Value (Type)	    Embedded/Direct
 
+# I believe there is a memory corruption here, somehow memory gets written to the wrong addresses,
+# for now I am unsure if the problem is here. I think the reason is two folded. I didnt implement all
+# Events and my knowledge about CUnions is lacking. 
 # For more see: "https://wiki.libsdl.org/SDL3/SDL_Event"
 our class SDL_Event is repr('CUnion') is export {
     has uint32              $.type;
@@ -230,6 +244,39 @@ our class SDL_Event is repr('CUnion') is export {
     HAS  SDL_KeyboardEvent       $.key;
     HAS  SDL_TextEditingEvent    $.edit;
     HAS  SDL_TextEditingCandidatesEvent $.edit_candidates;
+
+    HAS SDL_TextInputEvent $.text;                #/**< Text input event data */
+    HAS SDL_MouseDeviceEvent $.mdevice;           #/**< Mouse device change event data */
+    HAS SDL_MouseMotionEvent $.motion;            #/**< Mouse motion event data */
+    HAS SDL_MouseButtonEvent $.button;            #/**< Mouse button event data */
+    HAS SDL_MouseWheelEvent $.wheel;              #/**< Mouse wheel event data */
+    HAS SDL_JoyDeviceEvent $.jdevice;             #/**< Joystick device change event data */
+    HAS SDL_JoyAxisEvent $.jaxis;                 #/**< Joystick axis event data */
+    HAS SDL_JoyBallEvent $.jball;                 #/**< Joystick ball event data */
+    HAS SDL_JoyHatEvent $.jhat;                   #/**< Joystick hat event data */
+    HAS SDL_JoyButtonEvent $.jbutton;             #/**< Joystick button event data */
+    HAS SDL_JoyBatteryEvent $.jbattery;           #/**< Joystick battery event data */
+    HAS SDL_GamepadDeviceEvent $.gdevice;         #/**< Gamepad device event data */
+    HAS SDL_GamepadAxisEvent $.gaxis;             #/**< Gamepad axis event data */
+    HAS SDL_GamepadButtonEvent $.gbutton;         #/**< Gamepad button event data */
+    HAS SDL_GamepadTouchpadEvent $.gtouchpad;     #/**< Gamepad touchpad event data */
+    HAS SDL_GamepadSensorEvent $.gsensor;         #/**< Gamepad sensor event data */
+    HAS SDL_AudioDeviceEvent $.adevice;           #/**< Audio device event data */
+    HAS SDL_CameraDeviceEvent $.cdevice;          #/**< Camera device event data */
+    HAS SDL_SensorEvent $.sensor;                 #/**< Sensor event data */
+    HAS SDL_QuitEvent $.quit;                     #/**< Quit request event data */
+    HAS SDL_UserEvent $.user;                     #/**< Custom event data */
+    HAS SDL_TouchFingerEvent $.tfinger;           #/**< Touch finger event data */
+    HAS SDL_PenProximityEvent $.pproximity;       #/**< Pen proximity event data */
+    HAS SDL_PenTouchEvent $.ptouch;               #/**< Pen tip touching event data */
+    HAS SDL_PenMotionEvent $.pmotion;             #/**< Pen motion event data */
+    HAS SDL_PenButtonEvent $.pbutton;             #/**< Pen button event data */
+    HAS SDL_PenAxisEvent $.paxis;                 #/**< Pen axis event data */
+    HAS SDL_RenderEvent $.render;                 #/**< Render event data */
+    HAS SDL_DropEvent $.drop;                     #/**< Drag and drop event data */
+    HAS SDL_ClipboardEvent $.clipboard;           #/**< Clipboard event data */
+
+
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
 }
 

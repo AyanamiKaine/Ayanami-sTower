@@ -1,3 +1,4 @@
+# For more see: "https://wiki.libsdl.org/SDL3/CategoryStdinc"
 unit module SDL3::Stdinc;
 
 use NativeCall;

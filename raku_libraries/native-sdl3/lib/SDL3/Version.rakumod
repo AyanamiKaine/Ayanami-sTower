@@ -1,3 +1,4 @@
+# Fore more see: "https://wiki.libsdl.org/SDL3/CategoryVersion"
 unit module SDL3::Version;
 
 use NativeCall;

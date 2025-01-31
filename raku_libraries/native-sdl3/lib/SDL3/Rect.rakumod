@@ -1,3 +1,4 @@
+# For more see: "https://wiki.libsdl.org/SDL3/CategoryRect"
 unit module SDL3::Rect;
 
 use NativeCall;
