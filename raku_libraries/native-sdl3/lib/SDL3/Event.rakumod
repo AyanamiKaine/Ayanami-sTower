@@ -308,6 +308,13 @@ our class SDL_JoyHatEvent is repr('CStruct') is export is rw {
     has uint8  $.padding3;
 }
 
+our class SDL_RenderEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;      #/**< SDL_EVENT_RENDER_TARGETS_RESET, SDL_EVENT_RENDER_DEVICE_RESET, SDL_EVENT_RENDER_DEVICE_LOST */
+    has uint32 $.reserved;
+    has uint64 $.timestamp;
+    has uint32 $.windowID;  #/**< The window containing the renderer in question. */
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
@@ -357,7 +364,7 @@ our class SDL_Event is repr('CUnion') is export is rw {
     #HAS SDL_PenMotionEvent $.pmotion;             #/**< Pen motion event data */
     #HAS SDL_PenButtonEvent $.pbutton;             #/**< Pen button event data */
     #HAS SDL_PenAxisEvent $.paxis;                 #/**< Pen axis event data */
-    #HAS SDL_RenderEvent $.render;                 #/**< Render event data */
+    HAS SDL_RenderEvent $.render;                 #/**< Render event data */
     #HAS SDL_DropEvent $.drop;                     #/**< Drag and drop event data */
     #HAS SDL_ClipboardEvent $.clipboard;           #/**< Clipboard event data */
 
