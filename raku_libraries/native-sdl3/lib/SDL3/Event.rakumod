@@ -270,6 +270,13 @@ our class SDL_MouseWheelEvent is repr('CStruct') is export is rw {
     has num32  $.mouse_y;       #/**< Y coordinate, relative to window */
 }
 
+our class SDL_JoyDeviceEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;          #/**< SDL_EVENT_JOYSTICK_ADDED or SDL_EVENT_JOYSTICK_REMOVED or SDL_EVENT_JOYSTICK_UPDATE_COMPLETE */
+    has uint32 $.reserved;
+    has uint64 $.timestamp;     #/**< In nanoseconds, populated using SDL_GetTicksNS() */
+    has uint32 $.which;         # /**< The joystick instance id */
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
