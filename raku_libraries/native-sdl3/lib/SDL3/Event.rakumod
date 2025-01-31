@@ -315,6 +315,17 @@ our class SDL_RenderEvent is repr('CStruct') is export is rw {
     has uint32 $.windowID;  #/**< The window containing the renderer in question. */
 }
 
+our class SDL_DropEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;      #/**< SDL_EVENT_DROP_BEGIN or SDL_EVENT_DROP_FILE or SDL_EVENT_DROP_TEXT or SDL_EVENT_DROP_COMPLETE or SDL_EVENT_DROP_POSITION */
+    has uint32 $.reserved;
+    has uint64 $.timestamp;
+    has uint32 $.windowID;  #/**< The window that was dropped on, if any */
+    has num32  $.x;         #/**< X coordinate, relative to window (not on begin) */
+    has num32  $.y;         #/**< Y coordinate, relative to window (not on begin) */
+    has Str    $.source;    #/**< The source app that sent this drop event, or NULL if that isn't available */
+    has Str    $.data;      #/**< The text for SDL_EVENT_DROP_TEXT and the file name for SDL_EVENT_DROP_FILE, NULL for other events */
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
@@ -365,7 +376,7 @@ our class SDL_Event is repr('CUnion') is export is rw {
     #HAS SDL_PenButtonEvent $.pbutton;             #/**< Pen button event data */
     #HAS SDL_PenAxisEvent $.paxis;                 #/**< Pen axis event data */
     HAS SDL_RenderEvent $.render;                 #/**< Render event data */
-    #HAS SDL_DropEvent $.drop;                     #/**< Drag and drop event data */
+    HAS SDL_DropEvent $.drop;                     #/**< Drag and drop event data */
     #HAS SDL_ClipboardEvent $.clipboard;           #/**< Clipboard event data */
 
 
