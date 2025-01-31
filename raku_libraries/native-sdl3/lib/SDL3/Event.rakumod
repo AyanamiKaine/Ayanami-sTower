@@ -347,6 +347,17 @@ our class SDL_AudioDeviceEvent is repr('CStruct') is export is rw {
     has uint8  $.padding3; 
 }
 
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_UserEvent"
+our class SDL_UserEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;          #/**< SDL_EVENT_USER through SDL_EVENT_LAST-1, Uint32 because these are not in the SDL_EventType enumeration */
+    has uint32  $.reserved;
+    has uint64  $.timestamp;
+    has uint32  $.windowID;     #/**< The associated window if any */
+    has uint32  $.code;         #/**< User defined event code */
+    has Pointer $.data1;        #/**< User defined data pointer */
+    has Pointer $.data2;        #/**< User defined data pointer */
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
@@ -389,7 +400,7 @@ our class SDL_Event is repr('CUnion') is export is rw {
     #HAS SDL_CameraDeviceEvent $.cdevice;          #/**< Camera device event data */
     #HAS SDL_SensorEvent $.sensor;                 #/**< Sensor event data */
     HAS SDL_QuitEvent $.quit;                     #/**< Quit request event data */
-    #HAS SDL_UserEvent $.user;                     #/**< Custom event data */
+    HAS SDL_UserEvent $.user;                     #/**< Custom event data */
     #HAS SDL_TouchFingerEvent $.tfinger;           #/**< Touch finger event data */
     #HAS SDL_PenProximityEvent $.pproximity;       #/**< Pen proximity event data */
     #HAS SDL_PenTouchEvent $.ptouch;               #/**< Pen tip touching event data */
