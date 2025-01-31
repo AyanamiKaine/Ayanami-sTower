@@ -231,7 +231,7 @@ our class SDL_MouseDeviceEvent is repr('CStruct') is export is rw {
 
 
 our class SDL_MouseMotionEvent is repr('CStruct') is export is rw {
-    has uint32 $.type;          #/**< SDL_EVENT_MOUSE_ADDED or SDL_EVENT_MOUSE_REMOVED *
+    has uint32 $.type;          
     has uint32 $.reserved;
     has uint64 $.timestamp;     #/**< In nanoseconds, populated using SDL_GetTicksNS() */
     has uint32 $.windowID;      #/**< The window with mouse focus, if any */
@@ -244,7 +244,7 @@ our class SDL_MouseMotionEvent is repr('CStruct') is export is rw {
 }
 
 our class SDL_MouseButtonEvent is repr('CStruct') is export is rw {
-    has uint32 $.type;          #/**< SDL_EVENT_MOUSE_ADDED or SDL_EVENT_MOUSE_REMOVED *
+    has uint32 $.type;          
     has uint32 $.reserved;
     has uint64 $.timestamp;     #/**< In nanoseconds, populated using SDL_GetTicksNS() */
     has uint32 $.windowID;      #/**< The window with mouse focus, if any */
@@ -255,6 +255,19 @@ our class SDL_MouseButtonEvent is repr('CStruct') is export is rw {
     has uint8  $.padding;
     has num32  $.x;             #/**< X coordinate, relative to window */
     has num32  $.y;             #/**< Y coordinate, relative to window */
+}
+
+our class SDL_MouseWheelEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;          #/**< SDL_EVENT_MOUSE_WHEEL */
+    has uint32 $.reserved;
+    has uint64 $.timestamp;     #/**< In nanoseconds, populated using SDL_GetTicksNS() */
+    has uint32 $.windowID;      #/**< The window with mouse focus, if any */
+    has uint32 $.which;         #/**< The mouse instance id */
+    has num32  $.x;             #/**< The amount scrolled horizontally, positive to the right and negative to the left */
+    has num32  $.y;             #/**< The amount scrolled vertically, positive away from the user and negative toward the user */
+    has uint32 $.direction;
+    has num32  $.mouse_x;       #/**< X coordinate, relative to window */
+    has num32  $.mouse_y;       #/**< Y coordinate, relative to window */
 }
 
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
