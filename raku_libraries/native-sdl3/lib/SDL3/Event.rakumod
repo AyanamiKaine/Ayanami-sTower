@@ -335,6 +335,18 @@ our class SDL_ClipboardEvent is repr('CStruct') is export is rw {
     has Pointer[Str]    $.nime_types; #/**< current mime types */
 }
 
+# For more see: "https://wiki.libsdl.org/SDL3/SDL_AudioDeviceEvent"
+our class SDL_AudioDeviceEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;      #/**< SDL_EVENT_AUDIO_DEVICE_ADDED, or SDL_EVENT_AUDIO_DEVICE_REMOVED, or SDL_EVENT_AUDIO_DEVICE_FORMAT_CHANGED */
+    has uint32 $.reserved;
+    has uint64 $.timestamp;
+    has uint32 $.which;     #/**< SDL_AudioDeviceID for the device being added or removed or changing */
+    has bool   $.recoding;  #/**< false if a playback device, true if a recording device. */
+    has uint8  $.padding1; 
+    has uint8  $.padding2; 
+    has uint8  $.padding3; 
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
@@ -373,7 +385,7 @@ our class SDL_Event is repr('CUnion') is export is rw {
     #HAS SDL_GamepadButtonEvent $.gbutton;         #/**< Gamepad button event data */
     #HAS SDL_GamepadTouchpadEvent $.gtouchpad;     #/**< Gamepad touchpad event data */
     #HAS SDL_GamepadSensorEvent $.gsensor;         #/**< Gamepad sensor event data */
-    #HAS SDL_AudioDeviceEvent $.adevice;           #/**< Audio device event data */
+    HAS SDL_AudioDeviceEvent $.adevice;           #/**< Audio device event data */
     #HAS SDL_CameraDeviceEvent $.cdevice;          #/**< Camera device event data */
     #HAS SDL_SensorEvent $.sensor;                 #/**< Sensor event data */
     HAS SDL_QuitEvent $.quit;                     #/**< Quit request event data */
