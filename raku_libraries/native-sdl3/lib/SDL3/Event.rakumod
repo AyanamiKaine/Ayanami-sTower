@@ -284,6 +284,19 @@ our class SDL_JoyAxisEvent is repr('CStruct') is export is rw {
     has uint32 $.which;         # /**< The joystick instance id */
 }
 
+our class SDL_JoyBallEvent is repr('CStruct') is export is rw {
+    has uint32 $.type;          #/**< SDL_EVENT_JOYSTICK_ADDED or SDL_EVENT_JOYSTICK_REMOVED or SDL_EVENT_JOYSTICK_UPDATE_COMPLETE */
+    has uint32 $.reserved;
+    has uint64 $.timestamp;     #/**< In nanoseconds, populated using SDL_GetTicksNS() */
+    has uint32 $.which;         #/**< The joystick instance id */
+    has uint8  $.ball;          #/**< The joystick trackball index */
+    has uint8  $.padding1;      
+    has uint8  $.padding2;      
+    has uint8  $.padding3;
+    has int16  $.xrel;          #/**< The relative motion in the X direction */
+    has int16  $.yrel;          #/**< The relative motion in the Y direction */
+}
+
 # "CStructs and CUnions can be in turn referenced by—or embedded into—a surrounding CStruct and CUnion. To say the former we use has as usual, and to do the latter we use the HAS declarator instead"
 
 # When you have a struct with pointers with a type of a struct use has, if they are value use HAS
@@ -313,7 +326,7 @@ our class SDL_Event is repr('CUnion') is export is rw {
     HAS SDL_MouseWheelEvent $.wheel;              #/**< Mouse wheel event data */
     HAS SDL_JoyDeviceEvent $.jdevice;             #/**< Joystick device change event data */
     HAS SDL_JoyAxisEvent $.jaxis;                 #/**< Joystick axis event data */
-    #HAS SDL_JoyBallEvent $.jball;                 #/**< Joystick ball event data */
+    HAS SDL_JoyBallEvent $.jball;                 #/**< Joystick ball event data */
     #HAS SDL_JoyHatEvent $.jhat;                   #/**< Joystick hat event data */
     #HAS SDL_JoyButtonEvent $.jbutton;             #/**< Joystick button event data */
     #HAS SDL_JoyBatteryEvent $.jbattery;           #/**< Joystick battery event data */
