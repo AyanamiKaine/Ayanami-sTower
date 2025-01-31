@@ -386,7 +386,7 @@ our class SDL_Event is repr('CUnion') is export is rw {
     #HAS SDL_PenAxisEvent $.paxis;                 #/**< Pen axis event data */
     HAS SDL_RenderEvent $.render;                 #/**< Render event data */
     HAS SDL_DropEvent $.drop;                     #/**< Drag and drop event data */
-    #HAS SDL_ClipboardEvent $.clipboard;           #/**< Clipboard event data */
+    HAS SDL_ClipboardEvent $.clipboard;           #/**< Clipboard event data */
 
 
     has CArray[uint8] $.padding = CArray[uint8].new(0 xx 128);
