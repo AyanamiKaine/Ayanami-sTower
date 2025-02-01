@@ -53,6 +53,7 @@ while $running {
         given $event.type {
             when Event-Type::QUIT 
             { 
+                SDL_Log($event.quit.type.Str);
                 $running = False;
             }
         }
@@ -64,11 +65,8 @@ while $running {
     # draw a filled rectangle in the middle of the canvas.
     # blue, full alpha
     SDL_SetRenderDrawColor($renderer, 0, 0, 255, 255);
-    my SDL_FRect $rect =  SDL_FRect.new;
-    $rect.x = 100.Num;
-    $rect.y = 100.Num;
-    $rect.w = 440.Num;
-    $rect.h = 280.Num;
+    my SDL_FRect $rect =  SDL_FRect.new(x => 100.Num, y => 100.Num, w => 440.Num, h => 280.Num);
+
     # RenderFillRect expects a rect struct as a pointer, so we need to create a rect pointer.
     SDL_RenderFillRect($renderer, $rect);
 
