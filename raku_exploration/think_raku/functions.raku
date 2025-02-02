@@ -11,7 +11,6 @@ say(round(20, 1));
 # some functions have method equivalents so we can say
 # That does not mean that raku has Universal Function Call Syntax (UFCS) 
 say 20.2.round(1);
-
 # But we could turn it into one using &
 sub is-even(Int $n) { $n %% 2 }
 say 4.&is-even;  # True
