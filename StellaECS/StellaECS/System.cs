@@ -1,9 +1,12 @@
 namespace StellaECS;
 
 /// <summary>
-/// Represents a function that runs against a database.
+/// Represents a system.
 /// </summary>
-public class System
+public interface ISystem
 {
-
+    /// <summary>
+    /// Executes the system's logic.
+    /// </summary>
+    public void Run();
 }
