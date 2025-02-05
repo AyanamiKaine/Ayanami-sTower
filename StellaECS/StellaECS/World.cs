@@ -15,10 +15,17 @@ public class World : IDisposable
     /// Initializes a new instance of the <see cref="World"/> class.
     /// </summary>
     /// <param name="name">The name of the database.</param>
+    /// <exception cref="InvalidOperationException">Thrown when a database file with the same name already exists.</exception>
     public World(string name)
     {
-        var connectionString = $"Data Source={name}.db";
-        _connection = new SqliteConnection(connectionString);
+        var dbPath = $"{name}.db";
+        if (File.Exists(dbPath))
+        {
+            throw new InvalidOperationException($"A database file '{dbPath}' already exists.");
+        }
+
+        _connectionString = $"Data Source={dbPath}.db";
+        _connection = new SqliteConnection(_connectionString);
         _connection.Open();
 
         DatabaseOptimizations();
