@@ -45,6 +45,74 @@ public class World : IDisposable
     }
 
     /// <summary>
+    /// Creates a new entity in the database.
+    /// </summary>
+    /// <returns>The ID of the newly created entity.</returns>
+    public int CreateEntity()
+    {
+        const string statement =
+        """
+            INSERT INTO entities DEFAULT VALUES;
+            SELECT last_insert_rowid();
+            """;
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = statement;
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    /// <summary>
+    /// Creates a new entity in the database with a specified name.
+    /// </summary>
+    /// <param name="name">The name of the entity.</param>
+    /// <returns>The ID of the newly created entity.</returns>
+    public int CreateEntity(string name)
+    {
+        using var transaction = _connection.BeginTransaction();
+        try
+        {
+            // Create entity
+            const string createEntityStatement =
+            """
+                INSERT INTO entities DEFAULT VALUES;
+                SELECT last_insert_rowid();
+                """;
+
+            int entityId;
+            using (var command = _connection.CreateCommand())
+            {
+                command.CommandText = createEntityStatement;
+                command.Transaction = transaction;
+                entityId = Convert.ToInt32(command.ExecuteScalar());
+            }
+
+            // Add name component
+            const string addNameStatement =
+            """
+                INSERT INTO name_component (entity_id, name)
+                VALUES (@entityId, @name);
+                """;
+
+            using (var command = _connection.CreateCommand())
+            {
+                command.CommandText = addNameStatement;
+                command.Transaction = transaction;
+                command.Parameters.AddWithValue("@entityId", entityId);
+                command.Parameters.AddWithValue("@name", name);
+                command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+            return entityId;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
+    /// <summary>
     /// Optimizes the database for local concurrent performance.
     /// </summary>
     private void DatabaseOptimizations()
