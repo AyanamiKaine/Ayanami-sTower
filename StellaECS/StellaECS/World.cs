@@ -20,6 +20,7 @@ public class World : IDisposable
     private readonly SqliteConnection _connection;
     private bool _disposed;
     private readonly string _connectionString = string.Empty;
+    private readonly List<ISystem> _systems = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="World"/> class.
@@ -144,6 +145,25 @@ public class World : IDisposable
             transaction.Rollback();
             throw;
         }
+    }
+
+    /// <summary>
+    /// Runs all systems exactly one time.
+    /// </summary>
+    public void Progress()
+    {
+        foreach (var system in _systems)
+        {
+            system.Run();
+        }
+    }
+
+    /// <summary>
+    /// Adds a system to the world.
+    /// </summary>
+    public void AddSystem(ISystem system)
+    {
+        _systems.Add(system);
     }
 
     private void InitalizeDatabaseTables()
