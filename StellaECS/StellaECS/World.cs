@@ -7,6 +7,16 @@ namespace StellaECS;
 /// </summary>
 public class World : IDisposable
 {
+    /// <summary>
+    /// Gets the total number of entities in the world.
+    /// </summary>
+    public int Size
+    {
+        get
+        {
+            return GetTotalNumberOfEntities();
+        }
+    }
     private readonly SqliteConnection _connection;
     private bool _disposed;
     private readonly string _connectionString = string.Empty;
@@ -43,6 +53,7 @@ public class World : IDisposable
         _connection.Open();
 
         DatabaseOptimizations();
+        InitalizeDatabaseTables();
     }
 
     /// <summary>
@@ -60,7 +71,28 @@ public class World : IDisposable
         using var command = _connection.CreateCommand();
         command.CommandText = statement;
         var entityID = Convert.ToInt32(command.ExecuteScalar());
-        return new Entity(entityID);
+        return new Entity(entityID, this);
+    }
+
+    /// <summary>
+    /// Gets the name of the specified entity.
+    /// </summary>
+    /// <param name="entity">The entity whose name is to be retrieved.</param>
+    /// <returns>The name of the specified entity.</returns>
+    public string GetEntityName(Entity entity)
+    {
+        const string statement =
+        """
+        SELECT name 
+        FROM name_component 
+        WHERE entity_id = @entityId
+        """;
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = statement;
+        command.Parameters.AddWithValue("@entityId", entity.ID);
+
+        return command.ExecuteScalar()?.ToString() ?? "";
     }
 
     /// <summary>
@@ -105,7 +137,7 @@ public class World : IDisposable
             }
 
             transaction.Commit();
-            return new Entity(entityId);
+            return new Entity(entityId, this);
         }
         catch
         {
@@ -117,6 +149,7 @@ public class World : IDisposable
     private void InitalizeDatabaseTables()
     {
         CreateEntities();
+        CreateNameComponent();
     }
 
     /// <summary>
@@ -147,6 +180,33 @@ public class World : IDisposable
         using var command = _connection.CreateCommand();
         command.CommandText = statement;
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Creates the name component table in the database if it does not already exist.
+    /// </summary>
+    private void CreateNameComponent()
+    {
+        const string statement =
+        """
+            CREATE TABLE IF NOT EXISTS name_component (
+                entity_id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                FOREIGN KEY (entity_id) REFERENCES entities(id)
+            );
+            """;
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = statement;
+        command.ExecuteNonQuery();
+    }
+
+    private int GetTotalNumberOfEntities()
+    {
+        const string statement = "SELECT COUNT(*) FROM entities";
+        using var command = _connection.CreateCommand();
+        command.CommandText = statement;
+        return Convert.ToInt32(command.ExecuteScalar());
     }
 
     /// <summary>
