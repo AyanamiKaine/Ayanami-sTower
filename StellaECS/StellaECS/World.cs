@@ -29,6 +29,7 @@ public class World : IDisposable
         _connection.Open();
 
         DatabaseOptimizations();
+        InitalizeDatabaseTables();
     }
 
     /// <summary>
@@ -113,6 +114,11 @@ public class World : IDisposable
         }
     }
 
+    private void InitalizeDatabaseTables()
+    {
+        CreateEntities();
+    }
+
     /// <summary>
     /// Optimizes the database for local concurrent performance.
     /// </summary>
@@ -126,6 +132,20 @@ public class World : IDisposable
                 PRAGMA temp_store = memory;
                 PRAGMA mmap_size = 30000000000;
                 ";
+        command.ExecuteNonQuery();
+    }
+
+    private void CreateEntities()
+    {
+        const string statement =
+        """
+            CREATE TABLE IF NOT EXISTS entities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT
+            );
+            """;
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = statement;
         command.ExecuteNonQuery();
     }
 
