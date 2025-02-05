@@ -18,4 +18,4 @@ My goal is it to use sqlite as the backbone of the ECS framework that is perform
 
 ## Side Notes
 
-I really want just Sqlite as a dependency. Also I think I want to only create thin abstraction around Sqlite.
+I really want just Sqlite as a dependency. Also I think I want to only create thin abstraction around Sqlite. What about certain sqlite performance improvements mostly found in another [branch](https://sqlite.org/src/timeline?r=bedrock) like WAL2 and CONCURRENT? For more read [this](https://news.ycombinator.com/item?id=38988949)
