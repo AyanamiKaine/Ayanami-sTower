@@ -36,6 +36,18 @@ I think a criterion should have the ability to intergerate an object. Asking if 
 
 Also maybe we should add the reason why a criterion didnt match in the object. So users can say why-didnt-match, .Reason or something like that that returns a string showing what was expected and what actual happened.
 
+### Where does criterion get its data.
+
+We must tackle the question where a criterion gets its data from. Imagine a predicate like `$x > 100` where does x come from? What we want is to define where the data could be found via a key. Something like:
+
+```
+Criterion.new(field => "health", object-with-field => Player, predicate => -> $x --> Bool { $x > 100})
+```
+
+Here we **explicitly** say where the key `"health"` should be used to get a value in this case we supply an object called `Player` with a `health` field.
+
+We could do something more **implicit** where we have a database where all facts/state is stored like a relational database or ECS framework where we can easily query data from it.
+
 # Running Tests
 
 To run all tests run `prove6 --lib t/`
