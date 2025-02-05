@@ -48,7 +48,7 @@ public class World : IDisposable
     /// Creates a new entity in the database.
     /// </summary>
     /// <returns>The ID of the newly created entity.</returns>
-    public int CreateEntity()
+    public Entity CreateEntity()
     {
         const string statement =
         """
@@ -58,7 +58,8 @@ public class World : IDisposable
 
         using var command = _connection.CreateCommand();
         command.CommandText = statement;
-        return Convert.ToInt32(command.ExecuteScalar());
+        var entityID = Convert.ToInt32(command.ExecuteScalar());
+        return new Entity(entityID);
     }
 
     /// <summary>
@@ -66,7 +67,7 @@ public class World : IDisposable
     /// </summary>
     /// <param name="name">The name of the entity.</param>
     /// <returns>The ID of the newly created entity.</returns>
-    public int CreateEntity(string name)
+    public Entity CreateEntity(string name)
     {
         using var transaction = _connection.BeginTransaction();
         try
@@ -103,7 +104,7 @@ public class World : IDisposable
             }
 
             transaction.Commit();
-            return entityId;
+            return new Entity(entityId);
         }
         catch
         {
