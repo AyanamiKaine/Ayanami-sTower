@@ -34,6 +34,8 @@ public static class SpacedRepetitionPage
     /// <returns></returns>
     public static Entity Create(NamedEntities entities)
     {
+        ObservableCollection<SpacedRepetitionItem> dummyItems = LoadSpaceRepetitionItemsFromDisk(); ;
+
         var spacedRepetitionPage = entities.GetEntityCreateIfNotExist("SpacedRepetitionPage")
         .Add<Page>()
         .Set(new Grid())
@@ -79,8 +81,10 @@ public static class SpacedRepetitionPage
             .Set(new TextBlock())
             .SetVerticalAlignment(VerticalAlignment.Center)
             .SetMargin(new Thickness(10, 0))
-            .SetText("Total Items: 0")
+            .SetText($"Total Items: {dummyItems.Count}")
             .SetColumn(1);
+
+        dummyItems.CollectionChanged += (sender, args) => totalItems.SetText($"Total Items: {dummyItems.Count}");
 
         List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
 
@@ -233,8 +237,6 @@ public static class SpacedRepetitionPage
             .Set(new ScrollViewer())
             .SetRow(1)
             .SetColumnSpan(3);
-
-        ObservableCollection<SpacedRepetitionItem> dummyItems = LoadSpaceRepetitionItemsFromDisk();
 
 
 
