@@ -115,7 +115,6 @@ public static class SpacedRepetitionPage
 
         List<string> itemTypes = ["File", "Quiz", "Cloze"];
 
-
         var stackPanel = entities.GetEntityCreateIfNotExist("AddSpacedRepetitionItemStackPanel")
             .Set(new StackPanel())
             .SetOrientation(Orientation.Vertical)
@@ -173,7 +172,6 @@ public static class SpacedRepetitionPage
                     AddFlashcard.Create(entities).ShowWindow();
             });
 
-
         var addAudioButton = entities.GetEntityCreateIfNotExist("AddAudioButton")
            .ChildOf(stackPanel)
            .Set(new Button())
@@ -186,7 +184,6 @@ public static class SpacedRepetitionPage
                 else
                     AddAudio.Create(entities).ShowWindow();
             });
-
 
         var addVideoButton = entities.GetEntityCreateIfNotExist("AddVideoButton")
            .ChildOf(stackPanel)
@@ -222,7 +219,6 @@ public static class SpacedRepetitionPage
                     StartLearningWindow.Create(entities).ShowWindow();
             });
 
-
         var addItemButton = entities.GetEntityCreateIfNotExist("AddSpacedRepetitionItemButton")
             .ChildOf(spacedRepetitionPage)
             .Set(new Button() { Flyout = addItemsFlyout })
@@ -238,12 +234,8 @@ public static class SpacedRepetitionPage
             .SetRow(1)
             .SetColumnSpan(3);
 
-
-
         var spacedRepetitionItems = entities.GetEntityCreateIfNotExist("SpacedRepetitionItems")
             .Set(dummyItems);
-
-
 
         var timerEntity = entities.GetEntityCreateIfNotExist("AutoSave")
             .Set(CreateAutoSaveTimer(dummyItems));
@@ -277,7 +269,6 @@ public static class SpacedRepetitionPage
             }
         };
 
-
         var editMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionEditMenuItem")
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
@@ -305,17 +296,17 @@ public static class SpacedRepetitionPage
             if (selectedItem == "Sort By Date")
             {
                 // Sort by NextReview date (ascending - soonest due date first)
-                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderBy(s => s.NextReview));
+                itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
             }
             else if (selectedItem == "Sort By Priority")
             {
                 // Sort by Priority (descending - highest priority first)
-                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderByDescending(s => s.Priority));
+                itemsSource = [.. itemsSource.OrderByDescending(s => s.Priority)];
             }
             else if (selectedItem == "Sort By Name")
             {
                 // Sort by Name (ascending - alphabetical order)
-                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderBy(s => s.Name));
+                itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
             }
             // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
 
@@ -334,17 +325,17 @@ public static class SpacedRepetitionPage
             if (selectedItem == "Sort By Date")
             {
                 // Sort by NextReview date (ascending - soonest due date first)
-                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderBy(s => s.NextReview));
+                itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
             }
             else if (selectedItem == "Sort By Priority")
             {
                 // Sort by Priority (descending - highest priority first)
-                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderByDescending(s => s.Priority));
+                itemsSource = [.. itemsSource.OrderByDescending(s => s.Priority)];
             }
             else if (selectedItem == "Sort By Name")
             {
                 // Sort by Name (ascending - alphabetical order)
-                itemsSource = new ObservableCollection<SpacedRepetitionItem>(itemsSource.OrderBy(s => s.Name));
+                itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
             }
             // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
 
@@ -429,11 +420,11 @@ public static class SpacedRepetitionPage
                 item.CreateCardFromSpacedRepetitionData();
             }
 
-            return items ?? new ObservableCollection<SpacedRepetitionItem>();
+            return items ?? [];
         }
         else
         {
-            return new ObservableCollection<SpacedRepetitionItem>();
+            return [];
         }
     }
 
@@ -536,4 +527,3 @@ public static class SpacedRepetitionPage
         });
     }
 }
-
