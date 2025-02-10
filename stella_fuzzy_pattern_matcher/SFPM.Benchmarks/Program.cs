@@ -155,7 +155,7 @@ public class SFPMBenchmarks
     }
 
     [Benchmark]
-    public void IterateOver10000RulesPredicate()
+    public void IterateOver100000RulesPredicate()
     {
         for (int i = 0; i < 9999; i++)
         {
@@ -164,7 +164,7 @@ public class SFPMBenchmarks
     }
 
     [Benchmark]
-    public void ParralelIterateOver10000RulesPredicate()
+    public void ParralelIterateOver100000RulesPredicate()
     {
         Parallel.For(0, 9999, i =>
         {
@@ -173,7 +173,7 @@ public class SFPMBenchmarks
     }
 
     [Benchmark]
-    public void IterateOver10000RulesOperator()
+    public void IterateOver100000RulesOperator()
     {
         for (int i = 0; i < 9999; i++)
         {
