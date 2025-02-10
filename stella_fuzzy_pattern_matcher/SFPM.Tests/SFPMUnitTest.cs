@@ -24,4 +24,57 @@ public class SFPMUnitTest
     {
 
     }
+
+    [Fact]
+    public void SimpleOneRuleTwoCriteriaMatch()
+    {
+        var rule1 = new Rule([
+            new Criteria<string>("who", "Nick", Operator.Equal),
+            new Criteria<string>("concept", "onHit", Operator.Equal),
+        ]);
+
+        var (matched, numberMatched) = rule1.Evaluate(new Dictionary<string, object>
+        {
+            { "concept", "onHit" },
+            { "who", "Nick"}
+        });
+
+        Assert.True(matched);
+        Assert.Equal(2, numberMatched);
+    }
+
+    [Fact]
+    public void SimpleOneRuleTwoCriteriaPredicateBasedMatch()
+    {
+        var rule1 = new Rule([
+            new Criteria<string>("who", who => { return who == "Nick"; }),
+            new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+        ]);
+
+        var (matched, numberMatched) = rule1.Evaluate(new Dictionary<string, object>
+        {
+            { "concept", "onHit" },
+            { "who", "Nick"}
+        });
+
+        Assert.True(matched);
+        Assert.Equal(2, numberMatched);
+    }
+
+    [Fact]
+    public void SimpleOneRuleOneCriteriaMatch()
+    {
+        var rule1 = new Rule([
+            new Criteria<string>("who", "Nick", Operator.Equal),
+            new Criteria<string>("concept", "onHit", Operator.Equal),
+        ]);
+
+        var (completeMatch, numberOfMatchedCriteria) = rule1.Evaluate(new Dictionary<string, object>
+        {
+            { "concept", "onHit" },
+        });
+
+        Assert.False(completeMatch);
+        Assert.Equal(1, numberOfMatchedCriteria);
+    }
 }
