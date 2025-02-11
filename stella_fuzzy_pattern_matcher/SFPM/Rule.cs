@@ -169,6 +169,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
                                                                                                                                 // Consider re-throwing or handling the exception as needed in your application logic.
                                                                                                                                 // For now, we're logging the error.
 #endif
+            Console.WriteLine(ex.Message);
         }
     }
 
