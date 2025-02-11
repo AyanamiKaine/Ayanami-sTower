@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SFPM.Tests", "SFPM.Tests\SF
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SFPM.Benchmarks", "SFPM.Benchmarks\SFPM.Benchmarks.csproj", "{2A4C5226-D827-4EF7-A800-1B45BE22A9C5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SFPM.Example", "SFPM.Example\SFPM.Example.csproj", "{B3790713-19DC-4AAD-9F34-01F00CD14243}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{2A4C5226-D827-4EF7-A800-1B45BE22A9C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A4C5226-D827-4EF7-A800-1B45BE22A9C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A4C5226-D827-4EF7-A800-1B45BE22A9C5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B3790713-19DC-4AAD-9F34-01F00CD14243}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3790713-19DC-4AAD-9F34-01F00CD14243}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3790713-19DC-4AAD-9F34-01F00CD14243}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3790713-19DC-4AAD-9F34-01F00CD14243}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
