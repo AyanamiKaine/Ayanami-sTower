@@ -66,7 +66,6 @@ public class Query()
             var groupedByPriority = acceptedRules.GroupBy(r => r.Priority)
                                                .OrderByDescending(g => g.Key)
                                                .First();
-            
             // Randomly select one rule from the highest priority group
             var random = new Random();
             var selectedRule = groupedByPriority.ElementAt(random.Next(groupedByPriority.Count()));
