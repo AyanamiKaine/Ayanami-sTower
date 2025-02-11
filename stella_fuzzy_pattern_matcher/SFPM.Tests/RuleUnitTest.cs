@@ -1,6 +1,6 @@
 ﻿namespace SFPM.Tests;
 
-public class SFPMUnitTest
+public class RuleUnitTest
 {
     [Fact]
     public void Creation()
