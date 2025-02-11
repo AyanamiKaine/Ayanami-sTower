@@ -75,6 +75,72 @@ public class SFPMBenchmarks
                     new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
                     new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
                 ], () => { }),
+
+
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                ], () => { }),
+
+
+
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                ], () => { }),
+
+                new Rule([
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                ], () => { }),
+
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                ], () => { }),
+
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                ], ()=>{
+                }),
+
+                new Rule([
+                    new Criteria<string>("attacker", attacker => { return attacker == "Hunter"; }),
+                    new Criteria<string>("concept", concept => { return concept == "OnHit"; }),
+                    new Criteria<double>("damage", damage => { return damage == 12.4; }),
+                ], ()=>{
+                }),
+
+                new Rule([
+                    new Criteria<string>("concept", concept => concept == "OnHit"),
+                    new Criteria<double>("damage", damage => damage > 10.0),
+                ], () => {
+                }),
+
+                new Rule([
+                    new Criteria<string>("attacker", attacker => attacker.StartsWith("H")),
+                    new Criteria<double>("damage", damage => damage < 20.0),
+                ], () => {
+                })
             ];
         // Sort rules by criteria count in descending order (highest count first)
         rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
