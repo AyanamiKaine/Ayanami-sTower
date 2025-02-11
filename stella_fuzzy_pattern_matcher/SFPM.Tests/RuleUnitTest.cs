@@ -167,7 +167,11 @@ public class RuleUnitTest
     public void LeftForDeadExample()
     {
         var query = new Query();
-        var ruleExecuted = false;
+        var rule1Executed = false;
+        var rule2Executed = false;
+        var rule3Executed = false;
+        var rule4Executed = false;
+        var rule5Executed = false;
 
         query
             .Add("who", "Nick")
@@ -184,6 +188,7 @@ public class RuleUnitTest
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
                 ], ()=>{
                     Console.WriteLine("Ouch");
+                    rule1Executed = true;
                 }),
           new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
@@ -191,6 +196,7 @@ public class RuleUnitTest
                     new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
                 ], ()=>{
                     Console.WriteLine("ow help!");
+                    rule2Executed = true;
                 }),
           new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
@@ -198,6 +204,7 @@ public class RuleUnitTest
                     new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
                 ], ()=>{
                     Console.WriteLine("This Circus Sucks!");
+                    rule3Executed = true;
                 }),
           new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
@@ -205,6 +212,7 @@ public class RuleUnitTest
                     new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
                 ], ()=>{
                     Console.WriteLine("Stupid Clown!");
+                    rule4Executed = true;
                 }),
           new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
@@ -213,12 +221,12 @@ public class RuleUnitTest
                     new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
                 ], ()=>{
                     Console.WriteLine("I hate circus clowns!");
-                    ruleExecuted = true;
+                    rule5Executed = true;
                 }),
         ];
 
         query.Match(rules);
 
-        Assert.True(ruleExecuted);
+        Assert.True(rule5Executed);
     }
 }
