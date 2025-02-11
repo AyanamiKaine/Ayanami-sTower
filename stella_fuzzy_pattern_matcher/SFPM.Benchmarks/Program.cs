@@ -76,6 +76,8 @@ public class SFPMBenchmarks
                     new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
                 ], () => { }),
             ];
+        // Sort rules by criteria count in descending order (highest count first)
+        rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
 
         OperatorBasedRule1Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
@@ -310,10 +312,10 @@ public class SFPMBenchmarks
     {
         public static void Main(string[] args)
         {
-            var config = ManualConfig.Create(DefaultConfig.Instance)
-                .WithSummaryStyle(SummaryStyle.Default.WithTimeUnit(TimeUnit.Nanosecond));
+            //var config = ManualConfig.Create(DefaultConfig.Instance)
+            //    .WithSummaryStyle(SummaryStyle.Default.WithTimeUnit(TimeUnit.Nanosecond));
 
-            BenchmarkRunner.Run<SFPMBenchmarks>(config);
+            BenchmarkRunner.Run<SFPMBenchmarks>();
         }
     }
 }
