@@ -30,11 +30,11 @@ public class SFPMBenchmarks
     {
         OperatorBasedRule1Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
-        ]);
+        ], () => { });
 
         PredicateBasedRule1Criteria = new Rule([
             new Criteria<string>("who", who => { return who == "Nick"; }),
-        ]);
+        ], () => { });
 
         BigOperatorRule10Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
@@ -47,7 +47,7 @@ public class SFPMBenchmarks
             new Criteria<int>("stamina", 5, Operator.LessThanOrEqual),
             new Criteria<bool>("isSprinting", true, Operator.Equal),
             new Criteria<int>("stamina", 5, Operator.LessThanOrEqual)
-        ]);
+        ], () => { });
 
         BigPredicateRule10Criteria = new Rule([
             new Criteria<string>("who", who => { return who == "Nick"; }),
@@ -60,7 +60,7 @@ public class SFPMBenchmarks
             new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
             new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
             new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
-        ]);
+        ], () => { });
 
         Facts = new Dictionary<string, object>
         {
@@ -156,25 +156,25 @@ public class SFPMBenchmarks
     [Benchmark]
     public void OneRuleTwoCriteriaOperatorBasedMatch()
     {
-        var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
+        var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
     }
 
     [Benchmark]
     public void OneRuleTwoCriteriaPredicateBasedMatch()
     {
-        var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
+        var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
     }
 
     [Benchmark]
     public void BigPredicateBasedMatch()
     {
-        var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(Facts);
+        var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
     }
 
     [Benchmark]
     public void BigOperatorBasedMatch()
     {
-        var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(Facts);
+        var (matched, numberMatched) = BigOperatorRule10Criteria.StrictEvaluate(Facts);
     }
 
 
@@ -183,7 +183,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 99999, i =>
         {
-            var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
         });
     }
 
@@ -192,7 +192,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 99999, i =>
         {
-            var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = BigOperatorRule10Criteria.StrictEvaluate(Facts);
         });
     }
 
@@ -201,7 +201,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 99999, i =>
         {
-            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
         });
     }
 
@@ -210,7 +210,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 99999, i =>
         {
-            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
         });
     }
 
@@ -220,7 +220,7 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 99999; i++)
         {
-            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
         }
     }
 
@@ -229,7 +229,7 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 99999; i++)
         {
-            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
         }
     }
 
