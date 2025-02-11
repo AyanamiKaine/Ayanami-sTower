@@ -92,6 +92,69 @@ public class RuleUnitTest
         Assert.Equal(1, numberOfMatchedCriteria);
     }
 
+    [Fact]
+    public void RandomRuleSelectionIfMultipleRulesMatch()
+    {
+        var query = new Query();
+        var rule1Executed = false;
+        var rule2Executed = false;
+        var rule3Executed = false;
+
+        query
+            .Add("who", "Nick")
+            .Add("concept", "onHit")
+            .Add("curMap", "circus")
+            .Add("health", 0.66)
+            .Add("nearAllies", 2)
+            .Add("hitBy", "zombieClown");
+
+
+        List<Rule> rules = [
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                ], ()=>{
+                    Console.WriteLine("Ouch");
+                }),
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
+                ], ()=>{
+                    Console.WriteLine("ow help!");
+                    rule1Executed = true;
+                }),
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
+                ], ()=>{
+                    Console.WriteLine("This Circus Sucks!");
+                    rule2Executed = true;
+                }),
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
+                ], ()=>{
+                    Console.WriteLine("Stupid Clown!");
+                    rule3Executed = true;
+                }),
+        ];
+
+
+        // We query match 1000000 times so we can guarantee that each rule atleast once matched and got executed.
+        for (int i = 0; i < 100000; i++)
+        {
+            query.Match(rules);
+        }
+
+        Assert.True(rule1Executed);
+        Assert.True(rule2Executed);
+        Assert.True(rule3Executed);
+
+    }
+
     /// <summary>
     /// This example was given in this [AI-driven Dynamic Dialog through Fuzzy Pattern Matching](https://www.youtube.com/watch?v=tAbBID3N64A&t) talk.
     /// </summary>
