@@ -32,10 +32,7 @@ public class SFPMBenchmarks
     public void Setup()
     {
 
-        query = new Query()
-            .Add("concept", "OnHit")
-            .Add("attacker", "Hunter")
-            .Add("damage", 12.4);
+
 
         tenthousandRules = [];
         for (int i = 0; i < 3333; i++)
@@ -297,6 +294,8 @@ public class SFPMBenchmarks
             { "isIndoors", false },              // bool  - Is the player indoors?
             { "region_type", "Temperate" },       // string - Type of geographical region (e.g., "Temperate", "Desert", "Arctic")
         };
+
+        query = new Query(Facts);
     }
 
 
