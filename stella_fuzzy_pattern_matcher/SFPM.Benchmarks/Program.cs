@@ -143,13 +143,13 @@ public class SFPMBenchmarks
 
 
     [Benchmark]
-    public void OneRuleTwoCriteriaMatch()
+    public void OneRuleTwoCriteriaOperatorBasedMatch()
     {
         var (matched, numberMatched) = OperatorBasedRule.Evaluate(Facts);
     }
 
     [Benchmark]
-    public void SimpleOneRuleTwoCriteriaPredicateBasedMatch()
+    public void OneRuleTwoCriteriaPredicateBasedMatch()
     {
         var (matched, numberMatched) = PredicateBasedRule.Evaluate(Facts);
     }
@@ -157,7 +157,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void IterateOver100000RulesPredicate()
     {
-        for (int i = 0; i < 9999; i++)
+        for (int i = 0; i < 99999; i++)
         {
             var (matched, numberMatched) = PredicateBasedRule.Evaluate(Facts);
         }
@@ -166,16 +166,26 @@ public class SFPMBenchmarks
     [Benchmark]
     public void ParralelIterateOver100000RulesPredicate()
     {
-        Parallel.For(0, 9999, i =>
+        Parallel.For(0, 99999, i =>
         {
             var (matched, numberMatched) = PredicateBasedRule.Evaluate(Facts);
         });
     }
 
     [Benchmark]
+    public void ParralelIterateOver100000RulesOperator()
+    {
+        Parallel.For(0, 99999, i =>
+        {
+            var (matched, numberMatched) = OperatorBasedRule.Evaluate(Facts);
+        });
+    }
+
+
+    [Benchmark]
     public void IterateOver100000RulesOperator()
     {
-        for (int i = 0; i < 9999; i++)
+        for (int i = 0; i < 99999; i++)
         {
             var (matched, numberMatched) = OperatorBasedRule.Evaluate(Facts);
         }
