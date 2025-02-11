@@ -40,19 +40,10 @@ public class Query()
     /// <param name="rules"></param>
     public void Match(List<Rule> rules)
     {
-        /*
-        Why dont we automatically sort the rules here?
-        because if we try that we cant parallelly run this function
-        */
-
         var acceptedRules = new List<Rule>();
         var currentHighestScore = 0;
         foreach (var rule in rules)
         {
-            // When we already matched a rule that is the most specifc rule
-            // we have, we stop matching other rules. 
-            // Avoiding linear growth in the best case.
-            // In the worst case allowing it.
             if (rule.CriteriaCount < currentHighestScore)
                 break;
 
@@ -71,9 +62,15 @@ public class Query()
         }
         else if (acceptedRules.Count > 1)
         {
-            // Sort by priority in descending order and execute the highest priority rule
-            var highestPriorityRule = acceptedRules.OrderByDescending(r => r.Priority).First();
-            highestPriorityRule.ExecutePayload();
+            // Group rules by priority
+            var groupedByPriority = acceptedRules.GroupBy(r => r.Priority)
+                                               .OrderByDescending(g => g.Key)
+                                               .First();
+            
+            // Randomly select one rule from the highest priority group
+            var random = new Random();
+            var selectedRule = groupedByPriority.ElementAt(random.Next(groupedByPriority.Count()));
+            selectedRule.ExecutePayload();
         }
     }
 }
