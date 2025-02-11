@@ -34,7 +34,10 @@ public class Rule(List<ICriteria> criterias, Action payload)
                     matchedCriteriaCount++; // Increment the counter if the criteria matches
                 }
             }
-            return (false, 0);
+            else
+            {
+                return (false, 0);
+            }
         }
 
         // Rule is considered fully true if all criteria are matched.
