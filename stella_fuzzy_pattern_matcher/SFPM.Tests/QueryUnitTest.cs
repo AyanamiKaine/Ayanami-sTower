@@ -57,7 +57,24 @@ public class QueryUnitTest
                     // This should be executed.
                     ruleExecuted = true;
                 }),
-            ];
+
+                new Rule([
+                    new Criteria<string>("concept", concept => concept == "OnHit"),
+                    new Criteria<double>("damage", damage => damage > 10.0),
+                ], () => {
+                    // Less specific rule, shouldn't be chosen
+                    ruleExecuted = false;
+                }),
+
+                new Rule([
+                    new Criteria<string>("attacker", attacker => attacker.StartsWith("H")),
+                    new Criteria<double>("damage", damage => damage < 20.0),
+                ], () => {
+                    // Less specific rule, shouldn't be chosen
+                    ruleExecuted = false;
+                })
+        ];
+
 
 
         query.Match(rules);
