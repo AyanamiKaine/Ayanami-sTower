@@ -27,8 +27,6 @@ public class Query()
     /// <param name="rules"></param>
     public void Match(List<Rule> rules)
     {
-        // Sort rules by criteria count in descending order (highest count first)
-        rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
         // Rules with the most criteria will be at the front of the list       
         var acceptedRules = new List<Rule>();
         var currentHighestScore = 0;
