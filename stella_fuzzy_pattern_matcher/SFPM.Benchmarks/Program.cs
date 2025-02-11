@@ -8,7 +8,7 @@ using BenchmarkDotNet.Reports;
 using Perfolizer.Horology;
 
 [SimpleJob(RuntimeMoniker.Net90)]               // JIT
-//[SimpleJob(RuntimeMoniker.NativeAot90)]       // AOT
+[SimpleJob(RuntimeMoniker.NativeAot90)]       // AOT
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
@@ -16,6 +16,7 @@ public class SFPMBenchmarks
 {
     private Query query;
     private List<Rule> rules;
+    private List<Rule> tenthousandRules;
     private Rule OperatorBasedRule1Criteria;
     private Rule PredicateBasedRule1Criteria;
     private Rule BigPredicateRule10Criteria;
@@ -35,6 +36,34 @@ public class SFPMBenchmarks
             .Add("concept", "OnHit")
             .Add("attacker", "Hunter")
             .Add("damage", 12.4);
+
+        tenthousandRules = [];
+        for (int i = 0; i < 3333; i++)
+        {
+            tenthousandRules.Add(new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<bool>("isSprinting", sprinting => { return sprinting == true; }),
+                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                ], () => { }));
+
+            tenthousandRules.Add(new Rule([
+                    new Criteria<string>("who", "Nick", Operator.Equal),
+                    new Criteria<string>("weather", "Rainy", Operator.Equal),
+                ], () => { }));
+
+            tenthousandRules.Add(new Rule([
+                    new Criteria<string>("who", "Nick", Operator.Equal),
+                    new Criteria<string>("weather", "Rainy", Operator.Equal),
+                    new Criteria<bool>("isSprinting", true, Operator.Equal),
+                ], () => { }));
+        }
 
         rules = [
                 new Rule([
@@ -144,6 +173,7 @@ public class SFPMBenchmarks
             ];
         // Sort rules by criteria count in descending order (highest count first)
         rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
+        tenthousandRules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
 
         OperatorBasedRule1Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
@@ -294,10 +324,17 @@ public class SFPMBenchmarks
         query.Match(rules);
     }
 
+
+    [Benchmark]
+    public void QueryMatch10000Rules()
+    {
+        query.Match(tenthousandRules);
+    }
+
     [Benchmark]
     public void QueryMatch10000Times()
     {
-        for (int i = 0; i < 99999; i++)
+        for (int i = 0; i < 9999; i++)
         {
             query.Match(rules);
         }
@@ -306,7 +343,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void ParraleQueryMatch10000Times()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             query.Match(rules);
         });
@@ -322,7 +359,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void ParralelIterateOver100000RulesBigPredicate()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
         });
@@ -331,7 +368,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void ParralelIterateOver100000RulesBigOperator()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             var (matched, numberMatched) = BigOperatorRule10Criteria.StrictEvaluate(Facts);
         });
@@ -340,7 +377,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void ParralelIterateOver100000RulesPredicate()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
         });
@@ -349,7 +386,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void ParralelIterateOver100000RulesOperator()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
         });
@@ -359,7 +396,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void IterateOver100000RulesOperator()
     {
-        for (int i = 0; i < 99999; i++)
+        for (int i = 0; i < 9999; i++)
         {
             var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
         }
@@ -368,7 +405,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void IterateOver100000RulesPredicate()
     {
-        for (int i = 0; i < 99999; i++)
+        for (int i = 0; i < 9999; i++)
         {
             var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
         }
