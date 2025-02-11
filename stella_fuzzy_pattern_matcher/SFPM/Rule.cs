@@ -15,13 +15,14 @@ public class Rule(List<ICriteria> criterias, Action payload)
 
     /// <summary>
     /// Checks if the rule is true based on a set of facts and returns the number of matched criteria.
+    /// IT WILL RETURN IMMEDIATLY IF ONE CRITERIA IS NOT MATCHED. The matched count will be 0.
     /// </summary>
     /// <param name="facts">A dictionary of facts to check against the criteria.</param>
     /// <returns>A tuple containing:
     ///     - Item1: True if all criteria match the facts, otherwise false.
     ///     - Item2: The number of criteria that matched the facts.
     /// </returns>
-    public (bool IsTrue, int MatchedCriteriaCount) Evaluate(Dictionary<string, object> facts)
+    public (bool IsTrue, int MatchedCriteriaCount) StrictEvaluate(Dictionary<string, object> facts)
     {
         int matchedCriteriaCount = 0;
         foreach (var criteria in _criterias)
@@ -33,8 +34,35 @@ public class Rule(List<ICriteria> criterias, Action payload)
                     matchedCriteriaCount++; // Increment the counter if the criteria matches
                 }
             }
-            // We do not return false immediately if a criteria fails to match.
-            // We continue to check all criteria to count the matches.
+            return (false, 0);
+        }
+
+        // Rule is considered fully true if all criteria are matched.
+        bool isTrue = matchedCriteriaCount == _criterias.Count;
+        return (isTrue, matchedCriteriaCount);
+    }
+
+    /// <summary>
+    /// Checks if the rule is true based on a set of facts and returns the number of matched criteria.
+    /// IT WILL NOT RETURN IMMEDIATLY IF ONE CRITERIA IS NOT MATCHED.
+    /// </summary>
+    /// <param name="facts">A dictionary of facts to check against the criteria.</param>
+    /// <returns>A tuple containing:
+    ///     - Item1: True if all criteria match the facts, otherwise false.
+    ///     - Item2: The number of criteria that matched the facts.
+    /// </returns>
+    public (bool IsTrue, int MatchedCriteriaCount) RelaxedEvaluate(Dictionary<string, object> facts)
+    {
+        int matchedCriteriaCount = 0;
+        foreach (var criteria in _criterias)
+        {
+            if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
+            {
+                if (criteria.Matches(factValue)) // Call the interface method
+                {
+                    matchedCriteriaCount++; // Increment the counter if the criteria matches
+                }
+            }
         }
 
         // Rule is considered fully true if all criteria are matched.
@@ -50,9 +78,9 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// <returns>True if all criteria match the facts, otherwise false.</returns>
     public bool IsTrue(Dictionary<string, object> facts) // Keeping the old IsTrue for compatibility
     {
-        return Evaluate(facts).IsTrue; // Just calls the new Evaluate and returns the boolean part
+        return StrictEvaluate(facts).IsTrue; // Just calls the new Evaluate and returns the boolean part
     }
-    
+
     /// <summary>
     /// Executes the payload action associated with this rule.
     /// </summary>
