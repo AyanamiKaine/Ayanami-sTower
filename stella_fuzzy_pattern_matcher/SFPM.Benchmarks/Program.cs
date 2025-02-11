@@ -14,6 +14,8 @@ using Perfolizer.Horology;
 [RankColumn]
 public class SFPMBenchmarks
 {
+    private Query query;
+    private List<Rule> rules;
     private Rule OperatorBasedRule1Criteria;
     private Rule PredicateBasedRule1Criteria;
     private Rule BigPredicateRule10Criteria;
@@ -28,6 +30,53 @@ public class SFPMBenchmarks
     [GlobalSetup]
     public void Setup()
     {
+
+        query = new Query()
+            .Add("concept", "OnHit")
+            .Add("attacker", "Hunter")
+            .Add("damage", 12.4);
+
+        rules = [
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                ], ()=>{
+                }),
+
+                new Rule([
+                    new Criteria<string>("attacker", attacker => { return attacker == "Hunter"; }),
+                    new Criteria<string>("concept", concept => { return concept == "OnHit"; }),
+                    new Criteria<double>("damage", damage => { return damage == 12.4; }),
+                ], ()=>{
+                }),
+
+                new Rule([
+                    new Criteria<string>("who", "Nick", Operator.Equal),
+                    new Criteria<string>("concept", "onHit", Operator.Equal),
+                    new Criteria<string>("timeOfDay", "Night", Operator.Equal),
+                    new Criteria<string>("weather", "Rainy", Operator.Equal),
+                    new Criteria<int>("numberOfEnemiesNearby", 1, Operator.GreaterThanOrEqual),
+                    new Criteria<string>("equippedWeapon_type", "Sword", Operator.Equal),
+                    new Criteria<bool>("isSprinting", true, Operator.Equal),
+                    new Criteria<int>("stamina", 5, Operator.LessThanOrEqual),
+                    new Criteria<bool>("isSprinting", true, Operator.Equal),
+                    new Criteria<int>("stamina", 5, Operator.LessThanOrEqual)
+                ], () => { }),
+
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<bool>("isSprinting", sprinting => { return sprinting == true; }),
+                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                ], () => { }),
+            ];
+
         OperatorBasedRule1Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
         ], () => { });
@@ -169,6 +218,30 @@ public class SFPMBenchmarks
     public void BigPredicateBasedMatch()
     {
         var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
+    }
+
+    [Benchmark]
+    public void QueryMatch()
+    {
+        query.Match(rules);
+    }
+
+    [Benchmark]
+    public void QueryMatch10000Times()
+    {
+        for (int i = 0; i < 99999; i++)
+        {
+            query.Match(rules);
+        }
+    }
+
+    [Benchmark]
+    public void ParraleQueryMatch10000Times()
+    {
+        Parallel.For(0, 99999, i =>
+        {
+            query.Match(rules);
+        });
     }
 
     [Benchmark]
