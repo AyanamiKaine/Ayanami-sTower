@@ -7,6 +7,16 @@ namespace SFPM;
 /// </summary>
 public class Query()
 {
+
+    /// <summary>
+    /// Sets the query data from an dictionary
+    /// </summary>
+    /// <param name="queryData"></param>
+    public Query(Dictionary<string, object> queryData) : this()
+    {
+        _queryData = queryData;
+    }
+
     private readonly Dictionary<string, object> _queryData = [];
 
     /// <summary>
