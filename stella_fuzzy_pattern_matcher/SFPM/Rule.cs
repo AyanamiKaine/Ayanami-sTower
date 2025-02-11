@@ -87,20 +87,45 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// </returns>
     public (bool IsTrue, int MatchedCriteriaCount) RelaxedEvaluate(Dictionary<string, object> facts)
     {
+#if DEBUG
+        logger.Debug("SFPM.Rule.RelaxedEvaluate: Starting relaxed evaluation for rule with {CriteriaCount} criteria.", CriteriaCount); // Debug log for method entry
+#endif
+
         int matchedCriteriaCount = 0;
         foreach (var criteria in _criterias)
         {
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
             {
-                if (criteria.Matches(factValue)) // Call the interface method
+                if (criteria.Matches(factValue))
                 {
-                    matchedCriteriaCount++; // Increment the counter if the criteria matches
+                    matchedCriteriaCount++;
+#if DEBUG
+                    logger.Trace("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' matched (relaxed). Matched count: {MatchedCriteriaCount}", criteria.FactName,
+                    matchedCriteriaCount); // Trace level for relaxed match
+#endif
                 }
+#if DEBUG
+
+                else
+                {
+                    logger.Trace("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' did NOT match (relaxed).", criteria.FactName); // Trace level for relaxed non-match
+                }
+#endif
+
             }
+#if DEBUG
+            else
+            {
+                logger.Trace("SFPM.Rule.RelaxedEvaluate: Fact '{FactName}' not found or fact name is empty (relaxed).", criteria.FactName); // Trace for fact not found in relaxed
+            }
+#endif
         }
 
         // Rule is considered fully true if all criteria are matched.
         bool isTrue = matchedCriteriaCount == _criterias.Count;
+#if DEBUG
+        logger.Debug("SFPM.Rule.RelaxedEvaluate: Relaxed evaluation finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", isTrue, matchedCriteriaCount); // Debug log for method exit and result
+#endif
         return (isTrue, matchedCriteriaCount);
     }
 
@@ -112,7 +137,14 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// <returns>True if all criteria match the facts, otherwise false.</returns>
     public bool IsTrue(Dictionary<string, object> facts) // Keeping the old IsTrue for compatibility
     {
-        return StrictEvaluate(facts).IsTrue; // Just calls the new Evaluate and returns the boolean part
+#if DEBUG
+        logger.Debug("SFPM.Rule.IsTrue: Calling StrictEvaluate for IsTrue check."); // Debug log before calling StrictEvaluate
+#endif
+        bool result = StrictEvaluate(facts).IsTrue;
+#if DEBUG
+        logger.Debug("SFPM.Rule.IsTrue: StrictEvaluate returned {Result} for IsTrue.", result); // Debug log after StrictEvaluate
+#endif
+        return result; // Just calls the new Evaluate and returns the boolean part
     }
 
     /// <summary>
@@ -120,17 +152,23 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// </summary>
     public void ExecutePayload()
     {
+#if DEBUG
         logger.Info("SFPM.Rule.ExecutePayload: Executing payload for rule (Priority: {Priority}).", Priority); // Info level for payload execution, including priority
+#endif
         try
         {
             _payload();
+#if DEBUG
             logger.Debug("SFPM.Rule.ExecutePayload: Payload executed successfully (Priority: {Priority}).", Priority); // Debug log on successful payload execution
+#endif
         }
         catch (Exception ex)
         {
+#if DEBUG
             logger.Error(ex, "SFPM.Rule.ExecutePayload: Exception during payload execution (Priority: {Priority}).", Priority); // Error log with exception details
-            // Consider re-throwing or handling the exception as needed in your application logic.
-            // For now, we're logging the error.
+                                                                                                                                // Consider re-throwing or handling the exception as needed in your application logic.
+                                                                                                                                // For now, we're logging the error.
+#endif
         }
     }
 
