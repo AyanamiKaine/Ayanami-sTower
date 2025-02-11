@@ -96,9 +96,12 @@ public class RuleUnitTest
     public void RandomRuleSelectionIfMultipleRulesMatch()
     {
         var query = new Query();
+        // Should never execute
         var rule1Executed = false;
+        // These should should always execute
         var rule2Executed = false;
         var rule3Executed = false;
+        var rule4Executed = false;
 
         query
             .Add("who", "Nick")
@@ -115,6 +118,8 @@ public class RuleUnitTest
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
                 ], ()=>{
                     Console.WriteLine("Ouch");
+                    // Should never execute
+                    rule1Executed = true;
                 }),
           new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
@@ -122,7 +127,7 @@ public class RuleUnitTest
                     new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
                 ], ()=>{
                     Console.WriteLine("ow help!");
-                    rule1Executed = true;
+                    rule2Executed = true;
                 }),
           new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
@@ -130,7 +135,7 @@ public class RuleUnitTest
                     new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
                 ], ()=>{
                     Console.WriteLine("This Circus Sucks!");
-                    rule2Executed = true;
+                    rule3Executed = true;
                 }),
           new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
@@ -138,7 +143,7 @@ public class RuleUnitTest
                     new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
                 ], ()=>{
                     Console.WriteLine("Stupid Clown!");
-                    rule3Executed = true;
+                    rule4Executed = true;
                 }),
         ];
 
@@ -149,10 +154,10 @@ public class RuleUnitTest
             query.Match(rules);
         }
 
-        Assert.True(rule1Executed);
+        Assert.False(rule1Executed);
         Assert.True(rule2Executed);
         Assert.True(rule3Executed);
-
+        Assert.True(rule4Executed);
     }
 
     /// <summary>
