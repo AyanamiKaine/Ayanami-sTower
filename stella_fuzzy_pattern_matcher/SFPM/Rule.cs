@@ -120,7 +120,18 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// </summary>
     public void ExecutePayload()
     {
-        _payload();
+        logger.Info("SFPM.Rule.ExecutePayload: Executing payload for rule (Priority: {Priority}).", Priority); // Info level for payload execution, including priority
+        try
+        {
+            _payload();
+            logger.Debug("SFPM.Rule.ExecutePayload: Payload executed successfully (Priority: {Priority}).", Priority); // Debug log on successful payload execution
+        }
+        catch (Exception ex)
+        {
+            logger.Error(ex, "SFPM.Rule.ExecutePayload: Exception during payload execution (Priority: {Priority}).", Priority); // Error log with exception details
+            // Consider re-throwing or handling the exception as needed in your application logic.
+            // For now, we're logging the error.
+        }
     }
 
     /// <summary>
