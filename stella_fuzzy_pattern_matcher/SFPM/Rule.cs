@@ -10,6 +10,12 @@ namespace SFPM;
 /// <param name="payload">The payload is a function that gets executed when the rule is the most matched rule</param>
 public class Rule(List<ICriteria> criterias, Action payload)
 {
+    /// <summary>
+    /// We might set a priority for a rule, its used when a query matches more than one rule with the same
+    /// number of criteria. We then select the rule with the highest priority. If the have both the same 
+    /// priority we select a random one.
+    /// </summary>
+    public int Priority { get; set; }
     private readonly Action _payload = payload;
     private readonly List<ICriteria> _criterias = criterias ?? throw new ArgumentNullException(nameof(criterias)); // Use the interface ICriteria
 
