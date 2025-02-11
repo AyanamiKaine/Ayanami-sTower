@@ -34,7 +34,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
         foreach (var criteria in _criterias)
         {
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
-            {
+            {                 
                 if (criteria.Matches(factValue)) // Call the interface method
                 {
                     matchedCriteriaCount++; // Increment the counter if the criteria matches
