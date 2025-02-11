@@ -44,6 +44,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
 
     /// <summary>
     /// Checks if the rule is true based on a set of facts and returns the number of matched criteria.
+    /// This is useful if you want to allow paritally matched criteria in a rule.
     /// IT WILL NOT RETURN IMMEDIATLY IF ONE CRITERIA IS NOT MATCHED.
     /// </summary>
     /// <param name="facts">A dictionary of facts to check against the criteria.</param>
