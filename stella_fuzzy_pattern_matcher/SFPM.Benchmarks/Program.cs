@@ -8,7 +8,7 @@ using BenchmarkDotNet.Reports;
 using Perfolizer.Horology;
 
 [SimpleJob(RuntimeMoniker.Net90)]               // JIT
-[SimpleJob(RuntimeMoniker.NativeAot90)]       // AOT
+//[SimpleJob(RuntimeMoniker.NativeAot90)]       // AOT
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
