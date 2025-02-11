@@ -23,11 +23,18 @@ public class Query()
     /// <summary>
     /// Matches a query against a list of rules, it tries to select a rule that matches the most
     /// (i.e. the most criteria) as its more specific. Then it runs the payload of the rule.
+    /// 
+    /// To improve performance, sort rules from most specific rule to less.
+    /// I.e. the first rule in the list should have the most criteria.
     /// </summary>
     /// <param name="rules"></param>
     public void Match(List<Rule> rules)
     {
-        // Rules with the most criteria will be at the front of the list       
+        /*
+        Why dont we automatically sort the rules here?
+        because if we try that we cant parallelly run this function
+        */
+
         var acceptedRules = new List<Rule>();
         var currentHighestScore = 0;
         foreach (var rule in rules)
