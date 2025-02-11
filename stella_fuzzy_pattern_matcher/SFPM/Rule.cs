@@ -1,3 +1,5 @@
+using NLog;
+
 namespace SFPM;
 
 /// <summary>
@@ -10,6 +12,9 @@ namespace SFPM;
 /// <param name="payload">The payload is a function that gets executed when the rule is the most matched rule</param>
 public class Rule(List<ICriteria> criterias, Action payload)
 {
+
+    private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// We might set a priority for a rule, its used when a query matches more than one rule with the same
     /// number of criteria. We then select the rule with the highest priority. If the have both the same 
@@ -30,25 +35,43 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// </returns>
     public (bool IsTrue, int MatchedCriteriaCount) StrictEvaluate(Dictionary<string, object> facts)
     {
+#if DEBUG
+        logger.Debug($"SFPM.Rule.StrictEvaluate: Evaluating rule with {CriteriaCount} criteria.");
+        logger.Debug($"SFPM.Rule.StrictEvaluate: Facts provided: {string.Join(", ", facts)}");
+#endif
+
         int matchedCriteriaCount = 0;
         foreach (var criteria in _criterias)
         {
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
-            {                 
-                if (criteria.Matches(factValue)) // Call the interface method
+            {
+#if DEBUG
+                logger.Debug($"SFPM.Rule.StrictEvaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'.");
+#endif
+                if (criteria.Matches(factValue))
                 {
-                    matchedCriteriaCount++; // Increment the counter if the criteria matches
+#if DEBUG
+                    logger.Debug($"SFPM.Rule.StrictEvaluate: Criteria for fact '{criteria.FactName}' matched.");
+#endif
+                    matchedCriteriaCount++;
+                }
+                else
+                {
+#if DEBUG
+                    logger.Debug($"SFPM.Rule.StrictEvaluate: Criteria for fact '{criteria.FactName}' did NOT match. StrictEvaluate returning false.");
+#endif
+                    return (false, 0);
                 }
             }
             else
             {
+#if DEBUG
+                logger.Debug($"SFPM.Rule.StrictEvaluate: Fact '{criteria.FactName}' not found or fact name is empty. StrictEvaluate returning false.");
+#endif
                 return (false, 0);
             }
         }
-
-        // Rule is considered fully true if all criteria are matched.
-        bool isTrue = matchedCriteriaCount == _criterias.Count;
-        return (isTrue, matchedCriteriaCount);
+        return (true, matchedCriteriaCount);
     }
 
     /// <summary>
