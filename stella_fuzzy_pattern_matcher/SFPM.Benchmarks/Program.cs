@@ -3,6 +3,9 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Reports;
+using Perfolizer.Horology;
 
 [SimpleJob(RuntimeMoniker.Net90)]               // JIT
 //[SimpleJob(RuntimeMoniker.NativeAot90)]       // AOT
@@ -11,10 +14,10 @@ using BenchmarkDotNet.Jobs;
 [RankColumn]
 public class SFPMBenchmarks
 {
-    private Rule OperatorBasedRule;
-    private Rule PredicateBasedRule;
-    private Rule BigPredicateRule;
-    private Rule BigOperatorRule;
+    private Rule OperatorBasedRule1Criteria;
+    private Rule PredicateBasedRule1Criteria;
+    private Rule BigPredicateRule10Criteria;
+    private Rule BigOperatorRule10Criteria;
 
     /// <summary>
     /// Here we try to stress test the number of facts, they are auto generated
@@ -25,17 +28,15 @@ public class SFPMBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        OperatorBasedRule = new Rule([
+        OperatorBasedRule1Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
-            new Criteria<string>("concept", "onHit", Operator.Equal),
         ]);
 
-        PredicateBasedRule = new Rule([
+        PredicateBasedRule1Criteria = new Rule([
             new Criteria<string>("who", who => { return who == "Nick"; }),
-            new Criteria<string>("concept", concept => { return concept == "onHit"; }),
         ]);
 
-        BigOperatorRule = new Rule([
+        BigOperatorRule10Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
             new Criteria<string>("concept", "onHit", Operator.Equal),
             new Criteria<string>("timeOfDay", "Night", Operator.Equal),
@@ -43,12 +44,22 @@ public class SFPMBenchmarks
             new Criteria<int>("numberOfEnemiesNearby", 1, Operator.GreaterThanOrEqual),
             new Criteria<string>("equippedWeapon_type", "Sword", Operator.Equal),
             new Criteria<bool>("isSprinting", true, Operator.Equal),
+            new Criteria<int>("stamina", 5, Operator.LessThanOrEqual),
+            new Criteria<bool>("isSprinting", true, Operator.Equal),
             new Criteria<int>("stamina", 5, Operator.LessThanOrEqual)
         ]);
 
-        BigPredicateRule = new Rule([
+        BigPredicateRule10Criteria = new Rule([
             new Criteria<string>("who", who => { return who == "Nick"; }),
             new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+            new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
+            new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
+            new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+            new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+            new Criteria<bool>("isSprinting", sprinting => { return sprinting == true; }),
+            new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
+            new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+            new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
         ]);
 
         Facts = new Dictionary<string, object>
@@ -145,22 +156,44 @@ public class SFPMBenchmarks
     [Benchmark]
     public void OneRuleTwoCriteriaOperatorBasedMatch()
     {
-        var (matched, numberMatched) = OperatorBasedRule.Evaluate(Facts);
+        var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
     }
 
     [Benchmark]
     public void OneRuleTwoCriteriaPredicateBasedMatch()
     {
-        var (matched, numberMatched) = PredicateBasedRule.Evaluate(Facts);
+        var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
     }
 
     [Benchmark]
-    public void IterateOver100000RulesPredicate()
+    public void BigPredicateBasedMatch()
     {
-        for (int i = 0; i < 99999; i++)
+        var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(Facts);
+    }
+
+    [Benchmark]
+    public void BigOperatorBasedMatch()
+    {
+        var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(Facts);
+    }
+
+
+    [Benchmark]
+    public void ParralelIterateOver100000RulesBigPredicate()
+    {
+        Parallel.For(0, 99999, i =>
         {
-            var (matched, numberMatched) = PredicateBasedRule.Evaluate(Facts);
-        }
+            var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(Facts);
+        });
+    }
+
+    [Benchmark]
+    public void ParralelIterateOver100000RulesBigOperator()
+    {
+        Parallel.For(0, 99999, i =>
+        {
+            var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(Facts);
+        });
     }
 
     [Benchmark]
@@ -168,7 +201,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 99999, i =>
         {
-            var (matched, numberMatched) = PredicateBasedRule.Evaluate(Facts);
+            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
         });
     }
 
@@ -177,7 +210,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 99999, i =>
         {
-            var (matched, numberMatched) = OperatorBasedRule.Evaluate(Facts);
+            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
         });
     }
 
@@ -187,7 +220,16 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 99999; i++)
         {
-            var (matched, numberMatched) = OperatorBasedRule.Evaluate(Facts);
+            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
+        }
+    }
+
+    [Benchmark]
+    public void IterateOver100000RulesPredicate()
+    {
+        for (int i = 0; i < 99999; i++)
+        {
+            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
         }
     }
 
@@ -195,7 +237,10 @@ public class SFPMBenchmarks
     {
         public static void Main(string[] args)
         {
-            BenchmarkRunner.Run<SFPMBenchmarks>();
+            var config = ManualConfig.Create(DefaultConfig.Instance)
+                .WithSummaryStyle(SummaryStyle.Default.WithTimeUnit(TimeUnit.Nanosecond));
+
+            BenchmarkRunner.Run<SFPMBenchmarks>(config);
         }
     }
 }
