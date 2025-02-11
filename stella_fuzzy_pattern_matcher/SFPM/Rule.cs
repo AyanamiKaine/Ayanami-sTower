@@ -26,7 +26,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// <param name="facts">A dictionary of facts to check against the criteria.</param>
     /// <returns>A tuple containing:
     ///     - Item1: True if all criteria match the facts, otherwise false.
-    ///     - Item2: The number of criteria that matched the facts.
+    ///     - Item2: The number of criteria that matched the facts, if not all criteria matched returns 0
     /// </returns>
     public (bool IsTrue, int MatchedCriteriaCount) StrictEvaluate(Dictionary<string, object> facts)
     {
