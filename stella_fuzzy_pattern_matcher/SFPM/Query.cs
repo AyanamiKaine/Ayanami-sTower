@@ -3,7 +3,7 @@ using System.Collections;
 namespace SFPM;
 
 /// <summary>
-/// Represents a query, its a set of key, value pairs.
+/// Represents a query, its a set facts, represented as a key value pair.
 /// </summary>
 public class Query()
 {
@@ -50,9 +50,15 @@ public class Query()
             var (matched, matchedCriteriaCount) = rule.StrictEvaluate(_queryData);
             if (matched)
             {
-                acceptedRules.Add(rule);
                 if (matchedCriteriaCount > currentHighestScore)
+                {
                     currentHighestScore = matchedCriteriaCount;
+                    acceptedRules.Clear();
+                }
+                if (matchedCriteriaCount == currentHighestScore)
+                {
+                    acceptedRules.Add(rule);
+                }
             }
         }
 
@@ -62,13 +68,13 @@ public class Query()
         }
         else if (acceptedRules.Count > 1)
         {
-            // Group rules by priority
-            var groupedByPriority = acceptedRules.GroupBy(r => r.Priority)
-                                               .OrderByDescending(g => g.Key)
-                                               .First();
+            // Group highest priority rules
+            var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
+                                                   .OrderByDescending(g => g.Key)
+                                                   .First();
             // Randomly select one rule from the highest priority group
             var random = new Random();
-            var selectedRule = groupedByPriority.ElementAt(random.Next(groupedByPriority.Count()));
+            var selectedRule = highestPriorityRules.ElementAt(random.Next(highestPriorityRules.Count()));
             selectedRule.ExecutePayload();
         }
     }
