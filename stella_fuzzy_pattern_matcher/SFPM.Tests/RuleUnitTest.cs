@@ -1,7 +1,18 @@
-﻿namespace SFPM.Tests;
+﻿using NLog;
+
+namespace SFPM.Tests;
 
 public class RuleUnitTest
 {
+
+    public RuleUnitTest()
+    {
+        // Deactive Logging for unit tests
+        LogManager.Configuration.LoggingRules.Clear();
+        LogManager.ReconfigExistingLoggers();
+    }
+
+
     [Fact]
     public void Creation()
     {

@@ -1,7 +1,17 @@
+using NLog;
+
 namespace SFPM.Tests;
 
 public class QueryUnitTest
 {
+
+    public QueryUnitTest()
+    {
+        // Deactive Logging for unit tests
+        LogManager.Configuration.LoggingRules.Clear();
+        LogManager.ReconfigExistingLoggers();
+    }
+
     [Fact]
     public void Creation()
     {
