@@ -12,9 +12,14 @@ var query = new Query()
     .Add("nearAllies", 2)
     .Add("hitBy", "zombieClown");
 
-
 /*
 Here we define a list of rules that are composed out of a list of criteria.
+
+A rule is matched when its the most specific one, a rule is rejected automatically when one criteria does not match.
+
+If multiple rules match completly, the rule with the most criteria is automatically selected.
+If multiple rules with the same number of criteria are matched a random rule is selected.
+Also if a rule has a defined priority then a rule with the higher priority is selected. 
 */
 List<Rule> rules = [
             new Rule([
