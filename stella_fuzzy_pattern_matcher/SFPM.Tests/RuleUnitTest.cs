@@ -9,9 +9,6 @@ public class RuleUnitTest
         Assert.NotNull(SFPM);
     }
 
-
-
-
     /// <summary>
     /// When we use the pattern match we want to be able to see how each rule is scored.
     /// 
@@ -93,5 +90,67 @@ public class RuleUnitTest
 
         Assert.False(completeMatch);
         Assert.Equal(1, numberOfMatchedCriteria);
+    }
+
+    /// <summary>
+    /// This example was given in this [AI-driven Dynamic Dialog through Fuzzy Pattern Matching](https://www.youtube.com/watch?v=tAbBID3N64A&t) talk.
+    /// </summary>
+    [Fact]
+    public void LeftForDeadExample()
+    {
+        var query = new Query();
+        var ruleExecuted = false;
+
+        query
+            .Add("who", "Nick")
+            .Add("concept", "onHit")
+            .Add("curMap", "circus")
+            .Add("health", 0.66)
+            .Add("nearAllies", 2)
+            .Add("hitBy", "zombieClown");
+
+
+        List<Rule> rules = [
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                ], ()=>{
+                    Console.WriteLine("Ouch");
+                }),
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
+                ], ()=>{
+                    Console.WriteLine("ow help!");
+                }),
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
+                ], ()=>{
+                    Console.WriteLine("This Circus Sucks!");
+                }),
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
+                ], ()=>{
+                    Console.WriteLine("Stupid Clown!");
+                }),
+          new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
+                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
+                ], ()=>{
+                    Console.WriteLine("I hate circus clowns!");
+                    ruleExecuted = true;
+                }),
+        ];
+
+        query.Match(rules);
+
+        Assert.True(ruleExecuted);
     }
 }
