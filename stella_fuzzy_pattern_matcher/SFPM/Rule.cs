@@ -6,9 +6,12 @@ namespace SFPM;
 /// 
 /// Partial matching is possible.
 /// </summary>
-public class Rule(List<ICriteria> criterias)
+/// <param name="criterias"></param>
+/// <param name="payload">The payload is a function that gets executed when the rule is the most matched rule</param>
+public class Rule(List<ICriteria> criterias, Action payload)
 {
-    private readonly List<ICriteria> criterias = criterias ?? throw new ArgumentNullException(nameof(criterias)); // Use the interface ICriteria
+    private readonly Action _payload = payload;
+    private readonly List<ICriteria> _criterias = criterias ?? throw new ArgumentNullException(nameof(criterias)); // Use the interface ICriteria
 
     /// <summary>
     /// Checks if the rule is true based on a set of facts and returns the number of matched criteria.
@@ -21,7 +24,7 @@ public class Rule(List<ICriteria> criterias)
     public (bool IsTrue, int MatchedCriteriaCount) Evaluate(Dictionary<string, object> facts)
     {
         int matchedCriteriaCount = 0;
-        foreach (var criteria in criterias)
+        foreach (var criteria in _criterias)
         {
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
             {
@@ -35,7 +38,7 @@ public class Rule(List<ICriteria> criterias)
         }
 
         // Rule is considered fully true if all criteria are matched.
-        bool isTrue = matchedCriteriaCount == criterias.Count;
+        bool isTrue = matchedCriteriaCount == _criterias.Count;
         return (isTrue, matchedCriteriaCount);
     }
 
@@ -49,27 +52,17 @@ public class Rule(List<ICriteria> criterias)
     {
         return Evaluate(facts).IsTrue; // Just calls the new Evaluate and returns the boolean part
     }
+    
+    /// <summary>
+    /// Executes the payload action associated with this rule.
+    /// </summary>
+    public void ExecutePayload()
+    {
+        _payload();
+    }
 
     /// <summary>
     /// Gets the number of criteria in this rule.
     /// </summary>
-    public int CriteriaCount => criterias.Count;
-
-    /// <summary>
-    /// Combines two rules by concatenating their criteria lists.
-    /// </summary>
-    /// <param name="rule1">The first rule to combine.</param>
-    /// <param name="rule2">The second rule to combine.</param>
-    /// <returns>A new Rule containing all criteria from both input rules.</returns>
-    public static Rule operator +(Rule rule1, Rule rule2)
-    {
-        ArgumentNullException.ThrowIfNull(rule1);
-        ArgumentNullException.ThrowIfNull(rule2);
-
-        // Concatenate the criteria lists from both rules using LINQ's Concat
-        List<ICriteria> combinedCriteria = [.. rule1.criterias, .. rule2.criterias];
-
-        // Create a new Rule with the combined criteria
-        return new Rule(combinedCriteria);
-    }
+    public int CriteriaCount => _criterias.Count;
 }
