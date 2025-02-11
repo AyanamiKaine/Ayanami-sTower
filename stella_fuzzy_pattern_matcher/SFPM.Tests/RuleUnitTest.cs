@@ -226,7 +226,10 @@ public class RuleUnitTest
         ];
 
         query.Match(rules);
-
+        Assert.False(rule1Executed);
+        Assert.False(rule2Executed);
+        Assert.False(rule3Executed);
+        Assert.False(rule4Executed);
         Assert.True(rule5Executed);
     }
 }
