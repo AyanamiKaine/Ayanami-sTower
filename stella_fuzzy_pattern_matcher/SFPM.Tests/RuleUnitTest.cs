@@ -31,7 +31,7 @@ public class RuleUnitTest
         var rule1 = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
             new Criteria<string>("concept", "onHit", Operator.Equal),
-        ]);
+        ], () => { });
 
         var (matched, numberMatched) = rule1.Evaluate(new Dictionary<string, object>
         {
@@ -49,7 +49,7 @@ public class RuleUnitTest
         var rule1 = new Rule([
             new Criteria<string>("who", who => { return who == "Nick"; }),
             new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-        ]);
+        ], () => { });
 
         var (matched, numberMatched) = rule1.Evaluate(new Dictionary<string, object>
         {
@@ -67,7 +67,7 @@ public class RuleUnitTest
         var rule1 = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
             new Criteria<string>("concept", "onHit", Operator.Equal),
-        ]);
+        ], () => { });
 
         var (completeMatch, numberOfMatchedCriteria) = rule1.Evaluate(new Dictionary<string, object>
         {
