@@ -423,10 +423,10 @@ public class SFPMBenchmarks
     {
         public static void Main(string[] args)
         {
-            //var config = ManualConfig.Create(DefaultConfig.Instance)
-            //    .WithSummaryStyle(SummaryStyle.Default.WithTimeUnit(TimeUnit.Nanosecond));
+            var config = ManualConfig.Create(DefaultConfig.Instance)
+                .WithSummaryStyle(SummaryStyle.Default.WithTimeUnit(TimeUnit.Millisecond));
 
-            BenchmarkRunner.Run<SFPMBenchmarks>();
+            BenchmarkRunner.Run<SFPMBenchmarks>(config);
         }
     }
 }
