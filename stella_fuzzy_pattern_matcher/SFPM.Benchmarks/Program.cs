@@ -331,6 +331,15 @@ public class SFPMBenchmarks
     }
 
     [Benchmark]
+    public void QueryMatch10000Rules10000Times()
+    {
+        for (int i = 0; i < 9999; i++)
+        {
+            query.Match(tenthousandRules);
+        }
+    }
+
+    [Benchmark]
     public void QueryMatch10000Times()
     {
         for (int i = 0; i < 9999; i++)
@@ -356,7 +365,7 @@ public class SFPMBenchmarks
 
 
     [Benchmark]
-    public void ParralelIterateOver100000RulesBigPredicate()
+    public void ParralelIterateOver10000RulesBigPredicate()
     {
         Parallel.For(0, 9999, i =>
         {
@@ -365,7 +374,7 @@ public class SFPMBenchmarks
     }
 
     [Benchmark]
-    public void ParralelIterateOver100000RulesBigOperator()
+    public void ParralelIterateOver10000RulesBigOperator()
     {
         Parallel.For(0, 9999, i =>
         {
@@ -374,7 +383,7 @@ public class SFPMBenchmarks
     }
 
     [Benchmark]
-    public void ParralelIterateOver100000RulesPredicate()
+    public void ParralelIterateOver10000RulesPredicate()
     {
         Parallel.For(0, 9999, i =>
         {
@@ -383,7 +392,7 @@ public class SFPMBenchmarks
     }
 
     [Benchmark]
-    public void ParralelIterateOver100000RulesOperator()
+    public void ParralelIterateOver10000RulesOperator()
     {
         Parallel.For(0, 9999, i =>
         {
@@ -393,7 +402,7 @@ public class SFPMBenchmarks
 
 
     [Benchmark]
-    public void IterateOver100000RulesOperator()
+    public void IterateOver10000RulesOperator()
     {
         for (int i = 0; i < 9999; i++)
         {
@@ -402,7 +411,7 @@ public class SFPMBenchmarks
     }
 
     [Benchmark]
-    public void IterateOver100000RulesPredicate()
+    public void IterateOver10000RulesPredicate()
     {
         for (int i = 0; i < 9999; i++)
         {
