@@ -37,9 +37,6 @@ public class QueryUnitTest
             .Add("attacker", "Hunter")
             .Add("damage", 12.4);
 
-
-
-
         List<Rule> rules = [
                 new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
