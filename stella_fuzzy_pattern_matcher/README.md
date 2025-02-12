@@ -25,6 +25,10 @@ This is useful to add "memory". Imagine we want to say EventA happened, this is 
 
 It would be quite nice if we log information about how queries are matched and what rules are rejected and why.
 
+### Flecs.Net Intergration
+
+Queriering data can be quite combersome. I think using an entity component system like Flecs that gets simply used as a flat data storage could work quite nicely.
+
 ## Performance Goals
 
 I want that one query wont take longer than some microseconds(μs) over a list of 10000 rules.
@@ -35,4 +39,5 @@ I want that one query wont take longer than some microseconds(μs) over a list o
 | Method                 | Mean          | Error        | StdDev        | Rank  | Gen0      | Gen1   | Allocated |
 | OneQueryOver10000Rules | 521,152 ns    | 9,924.667 ns | 11,031.241 ns | 10    | 6.8359    | 0.9766 | 132096 B  |
 ```
+
 Or rounded in 521 microseconds(µs).
