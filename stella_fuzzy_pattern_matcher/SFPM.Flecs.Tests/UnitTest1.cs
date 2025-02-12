@@ -49,8 +49,6 @@ public class UnitTest1
         We could also go further write rules in C# scripts so they can be modified, added or removed at runtime 
         */
 
-
-
         rule1.Set<NPC, Rule>(new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
@@ -90,61 +88,14 @@ public class UnitTest1
                     ruleExecuted = false;
                 }));
 
-        /*
-        We need to move the entire query logic into a function, that takes as an argument an dictonary of <string, object>, it 
-        represents a list of facts.
-        */
-
-        var acceptedRules = new List<Rule>();
-        var currentHighestScore = 0;
-
-
-
-        world.Each<NPC, Rule>((Entity entity, ref Rule rule) =>
-        {
-            if (rule.CriteriaCount < currentHighestScore)
-                return;
-
-
-            /*
-            This here remains a big problem, where does the rule get its data from? From one entity? From the world?
-            From an ECS query? Conceptually a key would be the type of a component like Health and the value the data of the component.
-            */
-            var (matched, matchedCriteriaCount) = rule.StrictEvaluate(new Dictionary<string, object>
+        var queryData = new Dictionary<string, object>
             {
                 { "concept",    "onHit" },
                 { "who",        player.Get<Name>()}, // Here we query the data from an entity and its component
                 { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
-            });
-            if (matched)
-            {
-                if (matchedCriteriaCount > currentHighestScore)
-                {
-                    currentHighestScore = matchedCriteriaCount;
-                    acceptedRules.Clear();
-                }
-                if (matchedCriteriaCount == currentHighestScore)
-                {
-                    acceptedRules.Add(rule);
-                }
-            }
-        });
+            };
 
-        if (acceptedRules.Count == 1)
-        {
-            acceptedRules[0].ExecutePayload();
-        }
-        else if (acceptedRules.Count > 1)
-        {
-            // Group highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
-                                                   .OrderByDescending(g => g.Key)
-                                                   .First();
-            // Randomly select one rule from the highest priority group
-            var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(random.Next(highestPriorityRules.Count()));
-            selectedRule.ExecutePayload();
-        }
+        world.Match<NPC>(queryData);
 
         Assert.True(ruleExecuted);
         Assert.Equal("AirPort", world.Get<Map>().Name);
