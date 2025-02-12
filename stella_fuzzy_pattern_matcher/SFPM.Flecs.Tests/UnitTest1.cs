@@ -95,7 +95,7 @@ public class UnitTest1
                 { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
             };
 
-        world.Match<NPC>(queryData);
+        world.MatchOnEntities<NPC>(queryData);
 
         Assert.True(ruleExecuted);
         Assert.Equal("AirPort", world.Get<Map>().Name);
@@ -175,49 +175,7 @@ public class UnitTest1
                 { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
             };
 
-        var acceptedRules = new List<Rule>();
-        var currentHighestScore = 0;
-
-        ref var rules = ref world.GetMutSecond<NPC, List<Rule>>();
-
-        foreach (var rule in rules)
-        {
-            if (rule.CriteriaCount < currentHighestScore)
-                return;
-
-            /*
-            This here remains a big problem, where does the rule get its data from? From one entity? From the world?
-            From an ECS query? Conceptually a key would be the type of a component like Health and the value the data of the component.
-            */
-            var (matched, matchedCriteriaCount) = rule.StrictEvaluate(queryData);
-            if (matched)
-            {
-                if (matchedCriteriaCount > currentHighestScore)
-                {
-                    currentHighestScore = matchedCriteriaCount;
-                    acceptedRules.Clear();
-                }
-                if (matchedCriteriaCount == currentHighestScore)
-                {
-                    acceptedRules.Add(rule);
-                }
-            }
-        }
-        if (acceptedRules.Count == 1)
-        {
-            acceptedRules[0].ExecutePayload();
-        }
-        else if (acceptedRules.Count > 1)
-        {
-            // Group highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
-                                                   .OrderByDescending(g => g.Key)
-                                                   .First();
-            // Randomly select one rule from the highest priority group
-            var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(random.Next(highestPriorityRules.Count()));
-            selectedRule.ExecutePayload();
-        }
+        world.MatchOnWorld<NPC>(queryData);
 
         Assert.True(ruleExecuted);
         Assert.Equal("AirPort", world.Get<Map>().Name);
