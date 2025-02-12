@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SFPM.Flecs\SFPM.Flecs.csproj" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.14.1-nightly.20250102.201" />
   </ItemGroup>
 
 </Project>

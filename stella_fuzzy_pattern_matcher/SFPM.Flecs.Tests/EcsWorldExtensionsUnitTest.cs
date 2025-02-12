@@ -180,4 +180,52 @@ public class EcsWorldExtensionsUnitTest
         Assert.True(ruleExecuted);
         Assert.Equal("AirPort", world.Get<Map>().Name);
     }
+
+    [Fact]
+    public void OptimizingRulesList()
+    {
+
+        World world = World.Create();
+        world.Set(new Map("circus"));
+        world.Set<NPC, List<Rule>>
+            (new List<Rule>([
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                ], () =>
+                {
+                }),
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
+                ], () =>
+                {
+                }),
+                new Rule([
+                    new Criteria<Name>("who", who => { return who.Value == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<Map>("curMap", curMap => { return curMap.Name == "circus"; }),
+                ], () =>
+                {
+
+                }),
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
+                ], () =>
+                {
+                })
+            ]));
+
+        world.OptimizeWorldRules<NPC>();
+
+        /*
+        Initally the first rule in the rules list has only 2 criteria after we optimize it the rules with the most
+        criteria should be at the front. In this case 3.
+        */
+
+        Assert.Equal(3, world.GetSecond<NPC, List<Rule>>()[0].CriteriaCount);
+    }
 }
