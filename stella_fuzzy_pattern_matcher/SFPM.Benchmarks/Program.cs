@@ -163,12 +163,11 @@ public class SFPMBenchmarks
                 }),
 
                 new Rule([
-                    new Criteria<string>("attacker", attacker => attacker.StartsWith("H")),
+                    new Criteria<string>("attacker", attacker => attacker.StartsWith('H')),
                     new Criteria<double>("damage", damage => damage < 20.0),
                 ], () => {
                 })
             ];
-        // Sort rules by criteria count in descending order (highest count first)
         rules.OptimizeRules();
         tenthousandRules.OptimizeRules();
 
