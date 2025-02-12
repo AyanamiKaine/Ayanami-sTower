@@ -15,7 +15,7 @@ public record struct Map(string Name) : IComparable<Map>
 {
     public readonly int CompareTo(Map other) => Name.CompareTo(other.Name);
 }
-public class UnitTest1
+public class EcsWorldExtensionsUnitTest
 {
 
     /// <summary>
