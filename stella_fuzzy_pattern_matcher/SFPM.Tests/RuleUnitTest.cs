@@ -159,8 +159,9 @@ public class RuleUnitTest
         ];
 
 
-        // We query match 1000000 times so we can guarantee that each rule atleast once matched and got executed.
-        for (int i = 0; i < 100000; i++)
+        // We query match 1000 times so we can guarantee that each rule atleast once matched and got executed.
+        // Its a 33/100 chance that one of the rules gets executed. 
+        for (int i = 0; i < 1000; i++)
         {
             query.Match(rules);
         }
