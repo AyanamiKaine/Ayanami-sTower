@@ -7,12 +7,10 @@ namespace SFPM.Flecs;
 /// </summary>
 public static class EcsWorldExtensions
 {
-
     /*
     Right now I see one crucial problem, while we can improve performance by splitting up rules with tags, we cannot sort the Rules component array 
     from rules with most criteria at the beginning to least criteria at the end.
     */
-
 
     /// <summary>
     /// Evaluates rules in the ECS world against provided query data and executes the best matching rule's payload.
