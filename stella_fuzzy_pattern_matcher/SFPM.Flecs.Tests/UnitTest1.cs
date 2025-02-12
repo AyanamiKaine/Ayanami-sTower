@@ -22,7 +22,7 @@ public class UnitTest1
     /// Implementing the basic usage. 
     /// </summary>
     [Fact]
-    public void BasicIdea()
+    public void BasicIdeaDefiningRulesAsEntities()
     {
         World world = World.Create();
         world.Set(new Map("circus"));
@@ -96,6 +96,128 @@ public class UnitTest1
             };
 
         world.Match<NPC>(queryData);
+
+        Assert.True(ruleExecuted);
+        Assert.Equal("AirPort", world.Get<Map>().Name);
+    }
+
+    /// <summary>
+    /// To get more control over the rules array we can define it as a singleton on the world itself
+    /// </summary>
+    [Fact]
+    public void DefiningARuleGlobalComponent()
+    {
+
+        var ruleExecuted = false;
+
+        World world = World.Create();
+        world.Set(new Map("circus"));
+        world.Set<NPC, List<Rule>>
+            (new List<Rule>([
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                ], () =>
+                {
+                    ruleExecuted = false;
+                }),
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
+                ], () =>
+                {
+                    ruleExecuted = false;
+                }),
+                new Rule([
+                    new Criteria<Name>("who", who => { return who.Value == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<Map>("curMap", curMap => { return curMap.Name == "circus"; }),
+                ], () =>
+                {
+                    // In the payload of rules we can interact with the ecs world,
+                    // here we simulate a map change.
+                    ref Map curMap = ref world.GetMut<Map>();
+                    curMap.Name = "AirPort";
+                    ruleExecuted = true;
+                }),
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
+                ], () =>
+                {
+                    ruleExecuted = false;
+                })
+            ]));
+
+        var player = world.Entity();
+
+        player
+            .Set<Name>(new("Nick"))
+            .Set<Health>(new(100))
+            .Set<Position>(new(10, 20));
+
+        /*
+        We can implement this because components are stored in arrays, so when we have to entites with one rule component they should be stored in one array.
+
+        We dont need to create a array of rules ourselves, not only that but we get tagged rules for free.
+
+        The cool thing is we can easily modify, add or remove existing rules. 
+
+        We could also go further write rules in C# scripts so they can be modified, added or removed at runtime 
+        */
+
+        var queryData = new Dictionary<string, object>
+            {
+                { "concept",    "onHit" },
+                { "who",        player.Get<Name>()}, // Here we query the data from an entity and its component
+                { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
+            };
+
+        var acceptedRules = new List<Rule>();
+        var currentHighestScore = 0;
+
+        ref var rules = ref world.GetMutSecond<NPC, List<Rule>>();
+
+        foreach (var rule in rules)
+        {
+            if (rule.CriteriaCount < currentHighestScore)
+                return;
+
+            /*
+            This here remains a big problem, where does the rule get its data from? From one entity? From the world?
+            From an ECS query? Conceptually a key would be the type of a component like Health and the value the data of the component.
+            */
+            var (matched, matchedCriteriaCount) = rule.StrictEvaluate(queryData);
+            if (matched)
+            {
+                if (matchedCriteriaCount > currentHighestScore)
+                {
+                    currentHighestScore = matchedCriteriaCount;
+                    acceptedRules.Clear();
+                }
+                if (matchedCriteriaCount == currentHighestScore)
+                {
+                    acceptedRules.Add(rule);
+                }
+            }
+        }
+        if (acceptedRules.Count == 1)
+        {
+            acceptedRules[0].ExecutePayload();
+        }
+        else if (acceptedRules.Count > 1)
+        {
+            // Group highest priority rules
+            var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
+                                                   .OrderByDescending(g => g.Key)
+                                                   .First();
+            // Randomly select one rule from the highest priority group
+            var random = new Random();
+            var selectedRule = highestPriorityRules.ElementAt(random.Next(highestPriorityRules.Count()));
+            selectedRule.ExecutePayload();
+        }
 
         Assert.True(ruleExecuted);
         Assert.Equal("AirPort", world.Get<Map>().Name);
