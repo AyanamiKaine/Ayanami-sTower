@@ -20,6 +20,7 @@ public class SFPMBenchmarks
     private Rule OperatorBasedRule1Criteria;
     private Rule PredicateBasedRule1Criteria;
     private Rule BigPredicateRule10Criteria;
+    private Rule PredicateCriteriaCustomType;
     private Rule BigOperatorRule10Criteria;
 
     /// <summary>
@@ -31,9 +32,6 @@ public class SFPMBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-
-
-
         tenthousandRules = [];
         for (int i = 0; i < 3333; i++)
         {
@@ -205,6 +203,12 @@ public class SFPMBenchmarks
             new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
         ], () => { });
 
+        PredicateCriteriaCustomType = new Rule([
+            new Criteria<EnemyCounter>("numberOfEnemiesNearby", enemies => { return enemies.Count >= 1; }),
+            new Criteria<Stamina>("stamina", stamina => { return stamina.Value <= 5; }),
+        ], () => { });
+
+
         Facts = new Dictionary<string, object>
         {
             { "concept", "onHit" },
@@ -314,6 +318,15 @@ public class SFPMBenchmarks
     public void BigPredicateBasedMatch()
     {
         var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
+    }
+
+    /// <summary>
+    /// Here we benchmark Criteria<CustomType> to understand the performance implications using a custom type vs a primitiv type
+    /// </summary>
+    [Benchmark]
+    public void BigPredicateBasedMatchCustomTypeCriteria()
+    {
+        var (matched, numberMatched) = PredicateCriteriaCustomType.StrictEvaluate(Facts);
     }
 
     [Benchmark]
@@ -428,4 +441,13 @@ public class SFPMBenchmarks
             BenchmarkRunner.Run<SFPMBenchmarks>(config);
         }
     }
+}
+
+internal record struct EnemyCounter(int Count) : IComparable<EnemyCounter>
+{
+    public readonly int CompareTo(EnemyCounter other) => Count.CompareTo(other.Count);
+}
+internal record struct Stamina(double Value) : IComparable<Stamina>
+{
+    public readonly int CompareTo(Stamina other) => Value.CompareTo(other.Value);
 }
