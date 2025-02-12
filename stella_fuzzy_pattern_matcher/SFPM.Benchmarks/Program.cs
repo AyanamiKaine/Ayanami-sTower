@@ -169,8 +169,8 @@ public class SFPMBenchmarks
                 })
             ];
         // Sort rules by criteria count in descending order (highest count first)
-        rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
-        tenthousandRules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
+        rules.OptimizeRules();
+        tenthousandRules.OptimizeRules();
 
         OperatorBasedRule1Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
