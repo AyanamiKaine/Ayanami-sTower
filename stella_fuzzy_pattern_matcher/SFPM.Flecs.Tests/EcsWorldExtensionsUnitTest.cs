@@ -7,6 +7,9 @@ public struct NPC { };
 public record struct Player { };
 public record struct Health(int Value);
 public record struct Position(int X, int Y);
+
+// For now components need to implement the IComparable interface so it can be used in a criteria.
+// Maybe its good, maybe its bad. Could this be automated?
 public record struct Name(string Value) : IComparable<Name>
 {
     public readonly int CompareTo(Name other) => Value.CompareTo(other.Value);
@@ -130,6 +133,8 @@ public class EcsWorldExtensionsUnitTest
                     ruleExecuted = false;
                 }),
                 new Rule([
+                    // TODO: Its important to benchmark Criteria<CustomType> vs Criteria<PrimitiveType> to understand
+                    // the drawbacks if there are any.
                     new Criteria<Name>("who", who => { return who.Value == "Nick"; }),
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
                     new Criteria<Map>("curMap", curMap => { return curMap.Name == "circus"; }),
