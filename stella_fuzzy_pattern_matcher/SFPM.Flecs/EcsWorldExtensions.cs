@@ -252,4 +252,36 @@ public static class EcsWorldExtensions
             selectedRule.ExecutePayload();
         }
     }
+
+    /// <summary>
+    /// Optimizes the evaluation order of rules in the world by sorting them based on their criteria count.
+    /// Rules with more criteria are evaluated first to potentially reduce the number of evaluations needed.
+    /// </summary>
+    /// <param name="world">The Flecs world containing the rules to optimize.</param>
+    /// <remarks>
+    /// The optimization is performed by sorting rules in descending order based on their criteria count.
+    /// This can improve performance by evaluating more specific rules (those with more criteria) before
+    /// more general ones.
+    /// </remarks>
+    public static void OptimizeWorldRules(this World world)
+    {
+        ref var rules = ref world.GetMut<List<Rule>>();
+        rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
+    }
+
+    /// <summary>
+    /// Optimizes the evaluation order of rules in the world by sorting them based on their criteria count.
+    /// Rules with more criteria are evaluated first to potentially reduce the number of evaluations needed.
+    /// </summary>
+    /// <param name="world">The Flecs world containing the rules to optimize.</param>
+    /// <remarks>
+    /// The optimization is performed by sorting rules in descending order based on their criteria count.
+    /// This can improve performance by evaluating more specific rules (those with more criteria) before
+    /// more general ones.
+    /// </remarks>
+    public static void OptimizeWorldRules<Tag>(this World world)
+    {
+        ref var rules = ref world.GetMutSecond<Tag, List<Rule>>();
+        rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
+    }
 }
