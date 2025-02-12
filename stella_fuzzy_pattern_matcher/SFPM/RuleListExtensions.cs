@@ -34,4 +34,21 @@ public static class RuleListExtensions
             throw new ArgumentException("Rules list cannot be empty.", nameof(rules));
         return rules.MaxBy(r => r.CriteriaCount)!;
     }
+
+    /// <summary>
+    /// Finds and returns the rule with the least number of criteria from the given list of rules.
+    /// </summary>
+    /// <param name="rules">The list of rules to search through.</param>
+    /// <returns>The rule with the minimum number of criteria.</returns>
+    /// <exception cref="ArgumentException">Thrown when the rules list is empty.</exception>
+    /// <remarks>
+    /// The rule's specificity is determined by its criteria count - the fewer criteria a rule has,
+    /// the less specific it is considered to be.
+    /// </remarks>
+    public static Rule LeastSpecificRule(this List<Rule> rules)
+    {
+        if (rules.Count == 0)
+            throw new ArgumentException("Rules list cannot be empty.", nameof(rules));
+        return rules.MinBy(r => r.CriteriaCount)!;
+    }
 }
