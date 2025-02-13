@@ -269,6 +269,9 @@ public static class EcsWorldExtensions
         rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
     }
 
+    // TODO: We should consolidate the tag rules list optimizer and the normal rules list optimizer
+    // into one, so the optimizer uses a wildcard as a tag. We simply query every rules list and
+    // optimize it regardless of tag.
     /// <summary>
     /// Optimizes the evaluation order of rules in the world by sorting them based on their criteria count.
     /// Rules with more criteria are evaluated first to potentially reduce the number of evaluations needed.
