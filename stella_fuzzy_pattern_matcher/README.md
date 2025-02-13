@@ -107,6 +107,7 @@ world
     .Set(new Map("circus"))
     .Set(new List<Rule>([
             new Rule([
+                // While its totally possible to use a custom type for the criteria to use, In dont think its needed, the added dependency on the type Name has no real value in comparision to just using string. Also if you use a custom type it must implement the IComparable interface
                 new Criteria<Name>("who", who => { return who.Value == "Nick"; }),
                 new Criteria<string>("concept", concept => { return concept == "onHit"; }),
                 new Criteria<Map>("curMap", curMap => { return curMap.Name == "circus"; }),
