@@ -1,7 +1,17 @@
+using NLog;
+
 namespace SFPM.Tests;
 
 public class QueryUnitTest
 {
+
+    public QueryUnitTest()
+    {
+        // Deactive Logging for unit tests
+        LogManager.Configuration.LoggingRules.Clear();
+        LogManager.ReconfigExistingLoggers();
+    }
+
     [Fact]
     public void Creation()
     {
@@ -36,9 +46,6 @@ public class QueryUnitTest
             .Add("concept", "OnHit")
             .Add("attacker", "Hunter")
             .Add("damage", 12.4);
-
-
-
 
         List<Rule> rules = [
                 new Rule([

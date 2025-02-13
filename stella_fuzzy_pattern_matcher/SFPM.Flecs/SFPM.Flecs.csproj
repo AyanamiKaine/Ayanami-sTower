@@ -7,13 +7,13 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>preview</AnalysisLevel>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
-  
-  <ItemGroup>
-  
-    <PackageReference Include="NLog" Version="5.4.0" />
 
+  <ItemGroup>
+    <ProjectReference Include="..\SFPM\SFPM.csproj" />
+    <PackageReference Include="Flecs.NET.Debug" Version="4.0.3" />
+    <PackageReference Include="Flecs.NET.Release" Version="4.0.3" />
+  
     <PackageReference Include="Roslynator.Analyzers" Version="4.12.9">
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         <PrivateAssets>all</PrivateAssets>    
@@ -28,12 +28,6 @@
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="NLog.config">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+  
   </ItemGroup>
 </Project>

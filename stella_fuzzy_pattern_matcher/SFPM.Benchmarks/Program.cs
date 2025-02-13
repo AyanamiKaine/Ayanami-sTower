@@ -16,9 +16,11 @@ public class SFPMBenchmarks
 {
     private Query query;
     private List<Rule> rules;
+    private List<Rule> tenthousandRules;
     private Rule OperatorBasedRule1Criteria;
     private Rule PredicateBasedRule1Criteria;
     private Rule BigPredicateRule10Criteria;
+    private Rule PredicateCriteriaCustomType;
     private Rule BigOperatorRule10Criteria;
 
     /// <summary>
@@ -30,11 +32,33 @@ public class SFPMBenchmarks
     [GlobalSetup]
     public void Setup()
     {
+        tenthousandRules = [];
+        for (int i = 0; i < 3333; i++)
+        {
+            tenthousandRules.Add(new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<bool>("isSprinting", sprinting => { return sprinting == true; }),
+                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
+                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                ], () => { }));
 
-        query = new Query()
-            .Add("concept", "OnHit")
-            .Add("attacker", "Hunter")
-            .Add("damage", 12.4);
+            tenthousandRules.Add(new Rule([
+                    new Criteria<string>("who", "Nick", Operator.Equal),
+                    new Criteria<string>("weather", "Rainy", Operator.Equal),
+                ], () => { }));
+
+            tenthousandRules.Add(new Rule([
+                    new Criteria<string>("who", "Nick", Operator.Equal),
+                    new Criteria<string>("weather", "Rainy", Operator.Equal),
+                    new Criteria<bool>("isSprinting", true, Operator.Equal),
+                ], () => { }));
+        }
 
         rules = [
                 new Rule([
@@ -137,13 +161,13 @@ public class SFPMBenchmarks
                 }),
 
                 new Rule([
-                    new Criteria<string>("attacker", attacker => attacker.StartsWith("H")),
+                    new Criteria<string>("attacker", attacker => attacker.StartsWith('H')),
                     new Criteria<double>("damage", damage => damage < 20.0),
                 ], () => {
                 })
             ];
-        // Sort rules by criteria count in descending order (highest count first)
-        rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
+        rules.OptimizeRules();
+        tenthousandRules.OptimizeRules();
 
         OperatorBasedRule1Criteria = new Rule([
             new Criteria<string>("who", "Nick", Operator.Equal),
@@ -178,6 +202,12 @@ public class SFPMBenchmarks
             new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
             new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
         ], () => { });
+
+        PredicateCriteriaCustomType = new Rule([
+            new Criteria<EnemyCounter>("numberOfEnemiesNearby", enemies => { return enemies.Count >= 1; }),
+            new Criteria<Stamina>("stamina", stamina => { return stamina.Value <= 5; }),
+        ], () => { });
+
 
         Facts = new Dictionary<string, object>
         {
@@ -267,6 +297,8 @@ public class SFPMBenchmarks
             { "isIndoors", false },              // bool  - Is the player indoors?
             { "region_type", "Temperate" },       // string - Type of geographical region (e.g., "Temperate", "Desert", "Arctic")
         };
+
+        query = new Query(Facts);
     }
 
 
@@ -288,16 +320,41 @@ public class SFPMBenchmarks
         var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
     }
 
+    /// <summary>
+    /// Here we benchmark Criteria<CustomType> to understand the performance implications using a custom type vs a primitiv type
+    /// </summary>
+    [Benchmark]
+    public void BigPredicateBasedMatchCustomTypeCriteria()
+    {
+        var (matched, numberMatched) = PredicateCriteriaCustomType.StrictEvaluate(Facts);
+    }
+
     [Benchmark]
     public void QueryMatch()
     {
         query.Match(rules);
     }
 
+
+    [Benchmark]
+    public void QueryMatch10000Rules()
+    {
+        query.Match(tenthousandRules);
+    }
+
+    [Benchmark]
+    public void QueryMatch10000Rules10000Times()
+    {
+        for (int i = 0; i < 9999; i++)
+        {
+            query.Match(tenthousandRules);
+        }
+    }
+
     [Benchmark]
     public void QueryMatch10000Times()
     {
-        for (int i = 0; i < 99999; i++)
+        for (int i = 0; i < 9999; i++)
         {
             query.Match(rules);
         }
@@ -306,7 +363,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void ParraleQueryMatch10000Times()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             query.Match(rules);
         });
@@ -320,36 +377,36 @@ public class SFPMBenchmarks
 
 
     [Benchmark]
-    public void ParralelIterateOver100000RulesBigPredicate()
+    public void ParralelIterateOver10000RulesBigPredicate()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
         });
     }
 
     [Benchmark]
-    public void ParralelIterateOver100000RulesBigOperator()
+    public void ParralelIterateOver10000RulesBigOperator()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             var (matched, numberMatched) = BigOperatorRule10Criteria.StrictEvaluate(Facts);
         });
     }
 
     [Benchmark]
-    public void ParralelIterateOver100000RulesPredicate()
+    public void ParralelIterateOver10000RulesPredicate()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
         });
     }
 
     [Benchmark]
-    public void ParralelIterateOver100000RulesOperator()
+    public void ParralelIterateOver10000RulesOperator()
     {
-        Parallel.For(0, 99999, i =>
+        Parallel.For(0, 9999, i =>
         {
             var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
         });
@@ -357,18 +414,18 @@ public class SFPMBenchmarks
 
 
     [Benchmark]
-    public void IterateOver100000RulesOperator()
+    public void IterateOver10000RulesOperator()
     {
-        for (int i = 0; i < 99999; i++)
+        for (int i = 0; i < 9999; i++)
         {
             var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
         }
     }
 
     [Benchmark]
-    public void IterateOver100000RulesPredicate()
+    public void IterateOver10000RulesPredicate()
     {
-        for (int i = 0; i < 99999; i++)
+        for (int i = 0; i < 9999; i++)
         {
             var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
         }
@@ -378,10 +435,19 @@ public class SFPMBenchmarks
     {
         public static void Main(string[] args)
         {
-            //var config = ManualConfig.Create(DefaultConfig.Instance)
-            //    .WithSummaryStyle(SummaryStyle.Default.WithTimeUnit(TimeUnit.Nanosecond));
+            var config = ManualConfig.Create(DefaultConfig.Instance)
+                .WithSummaryStyle(SummaryStyle.Default.WithTimeUnit(TimeUnit.Millisecond));
 
-            BenchmarkRunner.Run<SFPMBenchmarks>();
+            BenchmarkRunner.Run<SFPMBenchmarks>(config);
         }
     }
+}
+
+internal record struct EnemyCounter(int Count) : IComparable<EnemyCounter>
+{
+    public readonly int CompareTo(EnemyCounter other) => Count.CompareTo(other.Count);
+}
+internal record struct Stamina(double Value) : IComparable<Stamina>
+{
+    public readonly int CompareTo(Stamina other) => Value.CompareTo(other.Value);
 }
