@@ -89,7 +89,7 @@ Maybe I cant provide a good general abstraction for a query without knowing more
 Using the ECS framework Flecs we use the world and its entities to gather the data from components used to match rules.
 
 ```C#
-// Defining Components
+// Define components that will be used to store data in the ECS world
 public record struct Name(string Value) : IComparable<Name>
 {
     public readonly int CompareTo(Name other) => Value.CompareTo(other.Value);
@@ -99,9 +99,10 @@ public record struct Map(string Name) : IComparable<Map>
     public readonly int CompareTo(Map other) => Name.CompareTo(other.Name);
 }
 
-
+// Create a new ECS world
 world = World.Create();
 
+// Set up the world with initial data: a map and a list of rules
 world
     .Set(new Map("circus"))
     .Set(new List<Rule>([
@@ -112,19 +113,23 @@ world
             ], () => { })
     ]));
 
+// Create a player entity with components
 player = world.Entity()
     .Set<Name>(new("Nick"))
     .Set<Health>(new(100))
     .Set<Position>(new(10, 20));
 
+// Set up query data using components from both the world and player entity
 queryData = new Dictionary<string, object>
     {
         { "concept",    "onHit" },
-        { "who",        player.Get<Name>()}, // Here we query the data from an entity and its component
-        { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
+        { "who",        player.Get<Name>()}, // Query data from player entity's Name component
+        { "curMap",     world.Get<Map>()}    // Query data from world's Map component
     };
 
+// Try to match rules using the query data
 world.MatchOnWorld(queryData);
+```
 ```
 
 ### The ability for rules to add new facts.
