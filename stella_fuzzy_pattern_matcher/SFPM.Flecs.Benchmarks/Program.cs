@@ -20,28 +20,21 @@ public record struct Map(string Name) : IComparable<Map>
 public record struct Health(int Value);
 public record struct Position(int X, int Y);
 
-[SimpleJob(RuntimeMoniker.Net90)]               // JIT
+[SimpleJob(RuntimeMoniker.Net90)]
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
 public class SFPMFlecsBenchmarks
 {
-
     World world;
-    Entity rulesList;
-
     Dictionary<string, object> queryData;
+    Entity player;
 
     [GlobalSetup]
     public void Setup()
     {
-        var player = world.Entity();
-        player
-            .Set<Name>(new("Nick"))
-            .Set<Health>(new(100))
-            .Set<Position>(new(10, 20));
-
         world = World.Create();
+
         world.Set(new Map("circus"));
 
         world.Set
@@ -76,9 +69,14 @@ public class SFPMFlecsBenchmarks
                 })
         ]));
 
+        player = world.Entity()
+            .Set<Name>(new("Nick"))
+            .Set<Health>(new(100))
+            .Set<Position>(new(10, 20));
+
         world.OptimizeWorldRules();
 
-        var queryData = new Dictionary<string, object>
+        queryData = new Dictionary<string, object>
             {
                 { "concept",    "onHit" },
                 { "who",        player.Get<Name>()}, // Here we query the data from an entity and its component
@@ -98,7 +96,12 @@ public class SFPMFlecsBenchmarks
     {
         public static void Main(string[] args)
         {
-            BenchmarkRunner.Run<SFPMFlecsBenchmarks>();
+            // Otherwise it complains that flecs is not build in release,
+            // I dont think its true.
+            var config = ManualConfig.Create(DefaultConfig.Instance)
+                .WithOptions(ConfigOptions.DisableOptimizationsValidator);
+
+            BenchmarkRunner.Run<SFPMFlecsBenchmarks>(config);
         }
     }
 }
