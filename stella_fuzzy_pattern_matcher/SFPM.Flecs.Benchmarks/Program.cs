@@ -17,6 +17,9 @@ public record struct Map(string Name) : IComparable<Map>
     public readonly int CompareTo(Map other) => Name.CompareTo(other.Name);
 }
 
+public record struct Health(int Value);
+public record struct Position(int X, int Y);
+
 [SimpleJob(RuntimeMoniker.Net90)]               // JIT
 [MemoryDiagnoser]
 [Orderer(SummaryOrderPolicy.FastestToSlowest)]
@@ -27,10 +30,20 @@ public class SFPMFlecsBenchmarks
     World world;
     Entity rulesList;
 
+    Dictionary<string, object> queryData;
+
     [GlobalSetup]
     public void Setup()
     {
+        var player = world.Entity();
+        player
+            .Set<Name>(new("Nick"))
+            .Set<Health>(new(100))
+            .Set<Position>(new(10, 20));
+
         world = World.Create();
+        world.Set(new Map("circus"));
+
         world.Set
             (new List<Rule>([
                         new Rule([
@@ -63,14 +76,21 @@ public class SFPMFlecsBenchmarks
                 })
         ]));
 
-
         world.OptimizeWorldRules();
+
+        var queryData = new Dictionary<string, object>
+            {
+                { "concept",    "onHit" },
+                { "who",        player.Get<Name>()}, // Here we query the data from an entity and its component
+                { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
+            };
     }
 
 
     [Benchmark]
-    public void OneRuleTwoCriteriaOperatorBasedMatch()
+    public void MatchOnWorld()
     {
+        world.MatchOnWorld(queryData);
     }
 
 
