@@ -1,5 +1,18 @@
 # Stella Fuzzy Pattern Matcher
 
+Entirely based on [AI-driven Dynamic Dialog through Fuzzy Pattern Matching](https://www.youtube.com/watch?v=tAbBID3N64A&t)
+
+The main problem we want to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem.
+
+The main idea is to decouple where each branch of a tree is defined.
+- A branch can be created arbitrary high or deep. 
+- It can have some conditions or many
+- They can be easily edited, removed, added at runtime.
+
+In essence we match a list of facts to a list of conditions if all conditions met we execute its body.
+
+Here we defined a condition as a `Criteria`, a list of `Criteria` as one `Rule` with a `payload`.
+
 ## Implemented Features
 
 ## Missing Features
@@ -16,6 +29,21 @@ query.Add("Concept", "OnHit")
 ```
 
 Here the query tries to select the rule that matches the most from its source.
+
+Maybe I cant provide a good general abstraction for a query without knowing more of the architecture where it gets used.
+
+#### Using Flecs.Net
+
+Using the ECS framework Flecs we use the world and its entities to gather the data from components used to match rules.
+
+```C#
+Entity player = world.Entity()
+    .Set(new Health(20))
+    .Set(new Name("Nick"));
+
+query.Add("Who", player.Get<Name>());
+query.Add("Concept", "OnHit")
+```
 
 ### The ability for rules to add new facts.
 
