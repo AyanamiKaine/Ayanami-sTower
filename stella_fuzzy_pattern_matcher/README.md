@@ -4,6 +4,57 @@ Entirely based on [AI-driven Dynamic Dialog through Fuzzy Pattern Matching](http
 
 The main problem we want to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem.
 
+```csharp
+```csharp
+// Traditional approach with deeply nested conditions
+if (player.Level >= 10 && 
+    player.HasItem("MagicSword") && 
+    !questLog.IsCompleted("DragonSlayer") &&
+    world.TimeOfDay == "Night" && 
+    player.Location == "MysticalForest" &&
+    player.Health > 50 && 
+    player.MagicPoints >= 30 &&
+    !player.HasStatusEffect("Cursed") && 
+    player.Reputation > 100)
+{
+    // Trigger special encounter with ancient dragon
+    SpawnAncientDragon();
+}
+```
+
+With our fuzzy pattern matcher, we can express this more elegantly as a rule:
+
+```csharp
+var dragonEncounterRule = new Rule([
+        new Criteria<int>("PlayerLevel", level => level >= 10),
+        new Criteria<string>("HasItem", item => item == "MagicSword"),
+        new Criteria<string>("QuestStatus", status => status != "DragonSlayerComplete"),
+        new Criteria<string>("TimeOfDay", time => time == "Night"),
+        new Criteria<string>("Location", loc => loc == "MysticalForest"),
+        new Criteria<int>("Health", health => health > 50),
+        new Criteria<int>("MagicPoints", mp => mp >= 30),
+        new Criteria<string>("Status", status => status != "Cursed"),
+        new Criteria<int>("Reputation", rep => rep > 100)
+    ], () => SpawnAncientDragon());
+```
+
+The tree can be easily extended adding new scenarios or events.
+
+```C#
+var bigDragonEncounterRule = new Rule([
+        // Here we increase the player level
+        new Criteria<int>("PlayerLevel", level => level >= 15),
+        new Criteria<string>("HasItem", item => item == "MagicSword"),
+        new Criteria<string>("QuestStatus", status => status != "DragonSlayerComplete"),
+        new Criteria<string>("TimeOfDay", time => time == "Night"),
+        new Criteria<string>("Location", loc => loc == "MysticalForest"),
+        new Criteria<int>("Health", health => health > 50),
+        new Criteria<int>("MagicPoints", mp => mp >= 30),
+        new Criteria<string>("Status", status => status != "Cursed"),
+        new Criteria<int>("Reputation", rep => rep > 100)
+    ], () => SpawnBigAncientDragon());
+```
+
 The main idea is to decouple where each branch of a tree is defined.
 - A branch can be created arbitrary high or deep. 
 - It can have some conditions or many
