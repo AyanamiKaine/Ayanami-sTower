@@ -89,12 +89,42 @@ Maybe I cant provide a good general abstraction for a query without knowing more
 Using the ECS framework Flecs we use the world and its entities to gather the data from components used to match rules.
 
 ```C#
-Entity player = world.Entity()
-    .Set(new Health(20))
-    .Set(new Name("Nick"));
+// Defining Components
+public record struct Name(string Value) : IComparable<Name>
+{
+    public readonly int CompareTo(Name other) => Value.CompareTo(other.Value);
+}
+public record struct Map(string Name) : IComparable<Map>
+{
+    public readonly int CompareTo(Map other) => Name.CompareTo(other.Name);
+}
 
-query.Add("Who", player.Get<Name>());
-query.Add("Concept", "OnHit")
+
+world = World.Create();
+
+world
+    .Set(new Map("circus"))
+    .Set(new List<Rule>([
+            new Rule([
+                new Criteria<Name>("who", who => { return who.Value == "Nick"; }),
+                new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                new Criteria<Map>("curMap", curMap => { return curMap.Name == "circus"; }),
+            ], () => { })
+    ]));
+
+player = world.Entity()
+    .Set<Name>(new("Nick"))
+    .Set<Health>(new(100))
+    .Set<Position>(new(10, 20));
+
+queryData = new Dictionary<string, object>
+    {
+        { "concept",    "onHit" },
+        { "who",        player.Get<Name>()}, // Here we query the data from an entity and its component
+        { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
+    };
+
+world.MatchOnWorld(queryData);
 ```
 
 ### The ability for rules to add new facts.
