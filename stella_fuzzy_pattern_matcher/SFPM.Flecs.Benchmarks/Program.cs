@@ -39,7 +39,7 @@ public class SFPMFlecsBenchmarks
 
         world.Set
             (new List<Rule>([
-                        new Rule([
+                    new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
                 ], () =>
