@@ -5,7 +5,6 @@ Entirely based on [AI-driven Dynamic Dialog through Fuzzy Pattern Matching](http
 The main problem we want to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem.
 
 ```csharp
-```csharp
 // Traditional approach with deeply nested conditions
 if (player.Level >= 10 && 
     player.HasItem("MagicSword") && 
@@ -52,7 +51,9 @@ var bigDragonEncounterRule = new Rule([
         new Criteria<int>("MagicPoints", mp => mp >= 30),
         new Criteria<string>("Status", status => status != "Cursed"),
         new Criteria<int>("Reputation", rep => rep > 100)
-    ], () => SpawnBigAncientDragon());
+    ], 
+    // and trigger the spawn of a bigger acient dragon
+    () => SpawnBigAncientDragon());
 ```
 
 The main idea is to decouple where each branch of a tree is defined.
