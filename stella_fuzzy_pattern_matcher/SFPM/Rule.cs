@@ -52,79 +52,36 @@ public class Rule(List<ICriteria> criterias, Action payload)
     ///     - Item1: True if all criteria match the facts, otherwise false.
     ///     - Item2: The number of criteria that matched the facts, if not all criteria matched returns 0
     /// </returns>
-    public (bool IsTrue, int MatchedCriteriaCount) StrictEvaluate(Dictionary<string, object> facts)
+    public (bool IsTrue, int MatchedCriteriaCount) Evaluate(Dictionary<string, object> facts)
     {
-        logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Evaluating rule with {CriteriaCount} criteria.");
-        logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Facts provided: {string.Join(", ", facts)}");
+        logger.ConditionalDebug($"SFPM.Rule.Evaluate: Evaluating rule with {CriteriaCount} criteria.");
+        logger.ConditionalDebug($"SFPM.Rule.Evaluate: Facts provided: {string.Join(", ", facts)}");
 
         int matchedCriteriaCount = 0;
         foreach (var criteria in Criterias)
         {
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
             {
-                logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'.");
+                logger.ConditionalDebug($"SFPM.Rule.Evaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'.");
                 if (criteria.Matches(factValue))
                 {
-                    logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Criteria for fact '{criteria.FactName}' matched.");
+                    logger.ConditionalDebug($"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' matched.");
                     matchedCriteriaCount++;
                 }
                 else
                 {
-                    logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Criteria for fact '{criteria.FactName}' did NOT match. StrictEvaluate returning false.");
+                    logger.ConditionalDebug($"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' did NOT match. Evaluate returning false.");
                     return (false, 0);
                 }
             }
             else
             {
-                logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Fact '{criteria.FactName}' not found or fact name is empty. StrictEvaluate returning false.");
+                logger.ConditionalDebug($"SFPM.Rule.Evaluate: Fact '{criteria.FactName}' not found or fact name is empty. Evaluate returning false.");
                 return (false, 0);
             }
         }
-        logger.ConditionalDebug("SFPM.Rule.StrictEvaluate: Strict Evaluate finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", true, matchedCriteriaCount);
+        logger.ConditionalDebug("SFPM.Rule.Evaluate: Strict Evaluate finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", true, matchedCriteriaCount);
         return (true, matchedCriteriaCount);
-    }
-
-    /// <summary>
-    /// Checks if the rule is true based on a set of facts and returns the number of matched criteria.
-    /// This is useful if you want to allow paritally matched criteria in a rule. But it reduces performances
-    /// as we have to evaluate all criteria. Grows linearly.
-    /// IT WILL NOT RETURN IMMEDIATLY IF ONE CRITERIA IS NOT MATCHED.
-    /// </summary>
-    /// <param name="facts">A dictionary of facts to check against the criteria.</param>
-    /// <returns>A tuple containing:
-    ///     - Item1: True if all criteria match the facts, otherwise false.
-    ///     - Item2: The number of criteria that matched the facts.
-    /// </returns>
-    public (bool IsTrue, int MatchedCriteriaCount) RelaxedEvaluate(Dictionary<string, object> facts)
-    {
-        logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Starting relaxed evaluation for rule with {CriteriaCount} criteria.", CriteriaCount); // Debug log for method entry
-
-        int matchedCriteriaCount = 0;
-        foreach (var criteria in Criterias)
-        {
-            if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
-            {
-                if (criteria.Matches(factValue))
-                {
-                    matchedCriteriaCount++;
-                    logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' matched (relaxed). Matched count: {MatchedCriteriaCount}", criteria.FactName,
-                    matchedCriteriaCount); // Trace level for relaxed match
-                }
-                else
-                {
-                    logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' did NOT match (relaxed).", criteria.FactName); // Trace level for relaxed non-match
-                }
-            }
-            else
-            {
-                logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Fact '{FactName}' not found or fact name is empty (relaxed).", criteria.FactName); // Trace for fact not found in relaxed
-            }
-        }
-
-        // Rule is considered fully true if all criteria are matched.
-        bool isTrue = matchedCriteriaCount == Criterias.Count;
-        logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Relaxed evaluation finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", isTrue, matchedCriteriaCount); // Debug log for method exit and result
-        return (isTrue, matchedCriteriaCount);
     }
 
     /// <summary>
@@ -134,9 +91,9 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// <returns>True if all criteria match the facts, otherwise false.</returns>
     public bool IsTrue(Dictionary<string, object> facts) // Keeping the old IsTrue for compatibility
     {
-        logger.ConditionalDebug("SFPM.Rule.IsTrue: Calling StrictEvaluate for IsTrue check."); // Debug log before calling StrictEvaluate
-        bool result = StrictEvaluate(facts).IsTrue;
-        logger.ConditionalDebug("SFPM.Rule.IsTrue: StrictEvaluate returned {Result} for IsTrue.", result); // Debug log after StrictEvaluate
+        logger.ConditionalDebug("SFPM.Rule.IsTrue: Calling Evaluate for IsTrue check."); // Debug log before calling Evaluate
+        bool result = Evaluate(facts).IsTrue;
+        logger.ConditionalDebug("SFPM.Rule.IsTrue: Evaluate returned {Result} for IsTrue.", result); // Debug log after Evaluate
         return result; // Just calls the new Evaluate and returns the boolean part
     }
 

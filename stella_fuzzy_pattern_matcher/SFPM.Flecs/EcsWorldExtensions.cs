@@ -41,7 +41,7 @@ public static class EcsWorldExtensions
             This here remains a big problem, where does the rule get its data from? From one entity? From the world?
             From an ECS query? Conceptually a key would be the type of a component like Health and the value the data of the component.
             */
-            var (matched, matchedCriteriaCount) = rule.StrictEvaluate(queryData);
+            var (matched, matchedCriteriaCount) = rule.Evaluate(queryData);
             if (matched)
             {
                 if (matchedCriteriaCount > currentHighestScore)
@@ -101,7 +101,7 @@ public static class EcsWorldExtensions
             This here remains a big problem, where does the rule get its data from? From one entity? From the world?
             From an ECS query? Conceptually a key would be the type of a component like Health and the value the data of the component.
             */
-            var (matched, matchedCriteriaCount) = rule.StrictEvaluate(queryData);
+            var (matched, matchedCriteriaCount) = rule.Evaluate(queryData);
             if (matched)
             {
                 if (matchedCriteriaCount > currentHighestScore)
@@ -162,7 +162,7 @@ public static class EcsWorldExtensions
             This here remains a big problem, where does the rule get its data from? From one entity? From the world?
             From an ECS query? Conceptually a key would be the type of a component like Health and the value the data of the component.
             */
-            var (matched, matchedCriteriaCount) = rule.StrictEvaluate(queryData);
+            var (matched, matchedCriteriaCount) = rule.Evaluate(queryData);
             if (matched)
             {
                 if (matchedCriteriaCount > currentHighestScore)
@@ -221,7 +221,7 @@ public static class EcsWorldExtensions
             This here remains a big problem, where does the rule get its data from? From one entity? From the world?
             From an ECS query? Conceptually a key would be the type of a component like Health and the value the data of the component.
             */
-            var (matched, matchedCriteriaCount) = rule.StrictEvaluate(queryData);
+            var (matched, matchedCriteriaCount) = rule.Evaluate(queryData);
             if (matched)
             {
                 if (matchedCriteriaCount > currentHighestScore)

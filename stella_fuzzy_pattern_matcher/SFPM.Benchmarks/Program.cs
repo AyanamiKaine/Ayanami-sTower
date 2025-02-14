@@ -305,19 +305,19 @@ public class SFPMBenchmarks
     [Benchmark]
     public void OneRuleTwoCriteriaOperatorBasedMatch()
     {
-        var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
+        var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
     }
 
     [Benchmark]
     public void OneRuleTwoCriteriaPredicateBasedMatch()
     {
-        var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
+        var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
     }
 
     [Benchmark]
     public void BigPredicateBasedMatch()
     {
-        var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
+        var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(Facts);
     }
 
     /// <summary>
@@ -326,7 +326,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void BigPredicateBasedMatchCustomTypeCriteria()
     {
-        var (matched, numberMatched) = PredicateCriteriaCustomType.StrictEvaluate(Facts);
+        var (matched, numberMatched) = PredicateCriteriaCustomType.Evaluate(Facts);
     }
 
     [Benchmark]
@@ -372,7 +372,7 @@ public class SFPMBenchmarks
     [Benchmark]
     public void BigOperatorBasedMatch()
     {
-        var (matched, numberMatched) = BigOperatorRule10Criteria.StrictEvaluate(Facts);
+        var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(Facts);
     }
 
 
@@ -381,7 +381,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 9999, i =>
         {
-            var (matched, numberMatched) = BigPredicateRule10Criteria.StrictEvaluate(Facts);
+            var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(Facts);
         });
     }
 
@@ -390,7 +390,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 9999, i =>
         {
-            var (matched, numberMatched) = BigOperatorRule10Criteria.StrictEvaluate(Facts);
+            var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(Facts);
         });
     }
 
@@ -399,7 +399,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 9999, i =>
         {
-            var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
+            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
         });
     }
 
@@ -408,7 +408,7 @@ public class SFPMBenchmarks
     {
         Parallel.For(0, 9999, i =>
         {
-            var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
+            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
         });
     }
 
@@ -418,7 +418,7 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 9999; i++)
         {
-            var (matched, numberMatched) = OperatorBasedRule1Criteria.StrictEvaluate(Facts);
+            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
         }
     }
 
@@ -427,7 +427,7 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 9999; i++)
         {
-            var (matched, numberMatched) = PredicateBasedRule1Criteria.StrictEvaluate(Facts);
+            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
         }
     }
 

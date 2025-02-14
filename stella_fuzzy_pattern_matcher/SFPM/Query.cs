@@ -53,7 +53,7 @@ public class Query()
                 logger.ConditionalDebug("SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
             }
 
-            var (matched, matchedCriteriaCount) = rule.StrictEvaluate(_queryData);
+            var (matched, matchedCriteriaCount) = rule.Evaluate(_queryData);
             if (matched)
             {
                 if (matchedCriteriaCount > currentHighestScore)

@@ -20,7 +20,7 @@ public class RuleUnitTest
             new Criteria<string>("concept", "onHit", Operator.Equal),
         ], () => { });
 
-        var (matched, numberMatched) = rule1.StrictEvaluate(new Dictionary<string, object>
+        var (matched, numberMatched) = rule1.Evaluate(new Dictionary<string, object>
         {
             { "concept", "onHit" },
             { "who", "Nick"}
@@ -38,7 +38,7 @@ public class RuleUnitTest
             new Criteria<string>("concept", concept => { return concept == "onHit"; }),
         ], () => { });
 
-        var (matched, numberMatched) = rule1.StrictEvaluate(new Dictionary<string, object>
+        var (matched, numberMatched) = rule1.Evaluate(new Dictionary<string, object>
         {
             { "concept", "onHit" },
             { "who", "Nick"}
@@ -56,30 +56,13 @@ public class RuleUnitTest
             new Criteria<string>("concept", "onHit", Operator.Equal),
         ], () => { });
 
-        var (completeMatch, numberOfMatchedCriteria) = rule1.StrictEvaluate(new Dictionary<string, object>
+        var (completeMatch, numberOfMatchedCriteria) = rule1.Evaluate(new Dictionary<string, object>
         {
             { "concept", "onHit" },
         });
 
         Assert.False(completeMatch);
         Assert.Equal(0, numberOfMatchedCriteria);
-    }
-
-    [Fact]
-    public void SimpleOneRuleOneCriteriaRelaxedMatch()
-    {
-        var rule1 = new Rule([
-            new Criteria<string>("who", "Nick", Operator.Equal),
-            new Criteria<string>("concept", "onHit", Operator.Equal),
-        ], () => { });
-
-        var (completeMatch, numberOfMatchedCriteria) = rule1.RelaxedEvaluate(new Dictionary<string, object>
-        {
-            { "concept", "onHit" },
-        });
-
-        Assert.False(completeMatch);
-        Assert.Equal(1, numberOfMatchedCriteria);
     }
 
     [Fact]
