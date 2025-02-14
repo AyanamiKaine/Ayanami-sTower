@@ -36,133 +36,269 @@ public class SFPMBenchmarks
         for (int i = 0; i < 3333; i++)
         {
             tenthousandRules.Add(new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
-                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
-                    new Criteria<bool>("isSprinting", sprinting => { return sprinting == true; }),
-                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<string>(
+                        factName: "who",
+                        predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<string>(
+                        factName: "timeOfDay",
+                        predicate: timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>(
+                        factName: "weather",
+                        predicate:  weather => { return weather == "Rainy"; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                        predicate:  enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate:  weapon => { return weapon == "Sword"; }),
+                    new Criteria<bool>(
+                        factName: "isSprinting",
+                        predicate:  sprinting => { return sprinting == true; }),
+                    new Criteria<int>(
+                        factName: "stamina",
+                        predicate:  stamina => { return stamina <= 5; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                        predicate:  enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate:  weapon => { return weapon == "Sword"; }),
                 ], () => { }));
 
             tenthousandRules.Add(new Rule([
-                    new Criteria<string>("who", "Nick", Operator.Equal),
-                    new Criteria<string>("weather", "Rainy", Operator.Equal),
+                    new Criteria<string>(
+                        factName: "who",
+                        expectedValue: "Nick",
+                        @operator: Operator.Equal),
+                    new Criteria<string>(
+                        factName: "weather",
+                        expectedValue: "Rainy",
+                        @operator: Operator.Equal),
                 ], () => { }));
 
             tenthousandRules.Add(new Rule([
-                    new Criteria<string>("who", "Nick", Operator.Equal),
-                    new Criteria<string>("weather", "Rainy", Operator.Equal),
-                    new Criteria<bool>("isSprinting", true, Operator.Equal),
+                    new Criteria<string>(factName: "who", "Nick", Operator.Equal),
+                    new Criteria<string>(factName: "weather", "Rainy", Operator.Equal),
+                    new Criteria<bool>(factName: "isSprinting", true, Operator.Equal),
                 ], () => { }));
         }
 
         rules = [
                 new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>(
+                        factName: "who",
+                        predicate:  who => { return who == "Nick"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate:  concept => { return concept == "onHit"; }),
                 ], ()=>{
                 }),
 
                 new Rule([
-                    new Criteria<string>("attacker", attacker => { return attacker == "Hunter"; }),
-                    new Criteria<string>("concept", concept => { return concept == "OnHit"; }),
-                    new Criteria<double>("damage", damage => { return damage == 12.4; }),
+                    new Criteria<string>(
+                        factName: "attacker",
+                        predicate:  attacker => { return attacker == "Hunter"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate:  concept => { return concept == "OnHit"; }),
+                    new Criteria<double>(
+                        factName: "damage",
+                        predicate:  damage => { return damage == 12.4; }),
                 ], ()=>{
                 }),
 
                 new Rule([
-                    new Criteria<string>("who", "Nick", Operator.Equal),
-                    new Criteria<string>("concept", "onHit", Operator.Equal),
-                    new Criteria<string>("timeOfDay", "Night", Operator.Equal),
-                    new Criteria<string>("weather", "Rainy", Operator.Equal),
-                    new Criteria<int>("numberOfEnemiesNearby", 1, Operator.GreaterThanOrEqual),
-                    new Criteria<string>("equippedWeapon_type", "Sword", Operator.Equal),
-                    new Criteria<bool>("isSprinting", true, Operator.Equal),
-                    new Criteria<int>("stamina", 5, Operator.LessThanOrEqual),
-                    new Criteria<bool>("isSprinting", true, Operator.Equal),
-                    new Criteria<int>("stamina", 5, Operator.LessThanOrEqual)
+                    new Criteria<string>(
+                        factName: "who", "Nick", Operator.Equal),
+                    new Criteria<string>(
+                        factName: "concept", "onHit", Operator.Equal),
+                    new Criteria<string>(
+                        factName: "timeOfDay", "Night", Operator.Equal),
+                    new Criteria<string>(
+                        factName: "weather", "Rainy", Operator.Equal),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby", 1, Operator.GreaterThanOrEqual),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type", "Sword", Operator.Equal),
+                    new Criteria<bool>(
+                        factName: "isSprinting", true, Operator.Equal),
+                    new Criteria<int>(
+                        factName: "stamina", 5, Operator.LessThanOrEqual),
+                    new Criteria<bool>(
+                        factName: "isSprinting", true, Operator.Equal),
+                    new Criteria<int>(
+                        factName: "stamina", 5, Operator.LessThanOrEqual)
                 ], () => { }),
 
                 new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
-                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
-                    new Criteria<bool>("isSprinting", sprinting => { return sprinting == true; }),
-                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<string>(
+                        factName: "who",
+                        predicate:  who => { return who == "Nick"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate:  concept => { return concept == "onHit"; }),
+                    new Criteria<string>(
+                        factName: "timeOfDay",
+                        predicate:  timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>(
+                        factName: "weather",
+                        predicate:  weather => { return weather == "Rainy"; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                        predicate:  enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate:  weapon => { return weapon == "Sword"; }),
+                    new Criteria<bool>(
+                        factName: "isSprinting",
+                        predicate:  sprinting => { return sprinting == true; }),
+                    new Criteria<int>(
+                        factName: "stamina",
+                        predicate:  stamina => { return stamina <= 5; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                         predicate:  enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate:  weapon => { return weapon == "Sword"; }),
                 ], () => { }),
 
 
                 new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
-                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
-                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "who",
+                        predicate:  who => { return who == "Nick"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate:  concept => { return concept == "onHit"; }),
+                    new Criteria<string>(
+                        factName: "timeOfDay",
+                        predicate:  timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>(
+                        factName: "weather",
+                        predicate:  weather => { return weather == "Rainy"; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                        predicate:  enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate:  weapon => { return weapon == "Sword"; }),
+                    new Criteria<int>(
+                        factName: "stamina",
+                        predicate:  stamina => { return stamina <= 5; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                        predicate:  enemies => { return enemies >= 1; }),
                 ], () => { }),
 
 
 
                 new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
-                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
-                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<string>(
+                        factName: "who",
+                        predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<string>(
+                        factName: "timeOfDay",
+                        predicate: timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<string>(
+                        factName: "weather",
+                        predicate: weather => { return weather == "Rainy"; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate: weapon => { return weapon == "Sword"; }),
+                    new Criteria<int>(
+                        factName: "stamina",
+                        predicate: stamina => { return stamina <= 5; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                        predicate: enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate: weapon => { return weapon == "Sword"; }),
                 ], () => { }),
 
                 new Rule([
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-                    new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<string>(
+                        factName: "weather",
+                        predicate: weather => { return weather == "Rainy"; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate: weapon => { return weapon == "Sword"; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                        predicate: enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "equippedWeapon_type",
+                        predicate: weapon => { return weapon == "Sword"; }),
                 ], () => { }),
 
                 new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
-                    new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
-                    new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
+                    new Criteria<string>(
+                        factName: "who",
+                        predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<string>(
+                        factName: "timeOfDay",
+                        predicate: timeOfDay => { return timeOfDay == "Night"; }),
+                    new Criteria<int>(
+                        factName: "stamina",
+                        predicate: stamina => { return stamina <= 5; }),
+                    new Criteria<int>(
+                        factName: "numberOfEnemiesNearby",
+                        predicate: enemies => { return enemies >= 1; }),
                 ], () => { }),
 
                 new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>(
+                        factName: "who",
+                        predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => { return concept == "onHit"; }),
                 ], ()=>{
                 }),
 
                 new Rule([
-                    new Criteria<string>("attacker", attacker => { return attacker == "Hunter"; }),
-                    new Criteria<string>("concept", concept => { return concept == "OnHit"; }),
-                    new Criteria<double>("damage", damage => { return damage == 12.4; }),
+                    new Criteria<string>(
+                        factName: "attacker",
+                        predicate: attacker => { return attacker == "Hunter"; }),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => { return concept == "OnHit"; }),
+                    new Criteria<double>(
+                        factName: "damage",
+                        predicate: damage => { return damage == 12.4; }),
                 ], ()=>{
                 }),
 
                 new Rule([
-                    new Criteria<string>("concept", concept => concept == "OnHit"),
-                    new Criteria<double>("damage", damage => damage > 10.0),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "OnHit"),
+                    new Criteria<double>(
+                        factName: "damage",
+                        predicate: damage => damage > 10.0),
                 ], () => {
                 }),
 
                 new Rule([
-                    new Criteria<string>("attacker", attacker => attacker.StartsWith('H')),
-                    new Criteria<double>("damage", damage => damage < 20.0),
+                    new Criteria<string>(
+                        factName: "attacker",
+                        predicate: attacker => attacker.StartsWith('H')),
+                    new Criteria<double>(
+                        factName: "damage",
+                        predicate: damage => damage < 20.0),
                 ], () => {
                 })
             ];
@@ -178,34 +314,58 @@ public class SFPMBenchmarks
         ], () => { });
 
         BigOperatorRule10Criteria = new Rule([
-            new Criteria<string>("who", "Nick", Operator.Equal),
-            new Criteria<string>("concept", "onHit", Operator.Equal),
-            new Criteria<string>("timeOfDay", "Night", Operator.Equal),
-            new Criteria<string>("weather", "Rainy", Operator.Equal),
-            new Criteria<int>("numberOfEnemiesNearby", 1, Operator.GreaterThanOrEqual),
-            new Criteria<string>("equippedWeapon_type", "Sword", Operator.Equal),
-            new Criteria<bool>("isSprinting", true, Operator.Equal),
-            new Criteria<int>("stamina", 5, Operator.LessThanOrEqual),
-            new Criteria<bool>("isSprinting", true, Operator.Equal),
-            new Criteria<int>("stamina", 5, Operator.LessThanOrEqual)
+            new Criteria<string>(factName: "who", "Nick", Operator.Equal),
+            new Criteria<string>(factName: "concept", "onHit", Operator.Equal),
+            new Criteria<string>(factName: "timeOfDay", "Night", Operator.Equal),
+            new Criteria<string>(factName: "weather", "Rainy", Operator.Equal),
+            new Criteria<int>(factName: "numberOfEnemiesNearby", 1, Operator.GreaterThanOrEqual),
+            new Criteria<string>(factName: "equippedWeapon_type", "Sword", Operator.Equal),
+            new Criteria<bool>(factName: "isSprinting", true, Operator.Equal),
+            new Criteria<int>(factName: "stamina", 5, Operator.LessThanOrEqual),
+            new Criteria<bool>(factName: "isSprinting", true, Operator.Equal),
+            new Criteria<int>(factName: "stamina", 5, Operator.LessThanOrEqual)
         ], () => { });
 
         BigPredicateRule10Criteria = new Rule([
-            new Criteria<string>("who", who => { return who == "Nick"; }),
-            new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-            new Criteria<string>("timeOfDay", timeOfDay => { return timeOfDay == "Night"; }),
-            new Criteria<string>("weather", weather => { return weather == "Rainy"; }),
-            new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-            new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
-            new Criteria<bool>("isSprinting", sprinting => { return sprinting == true; }),
-            new Criteria<int>("stamina", stamina => { return stamina <= 5; }),
-            new Criteria<int>("numberOfEnemiesNearby", enemies => { return enemies >= 1; }),
-            new Criteria<string>("equippedWeapon_type", weapon => { return weapon == "Sword"; }),
+            new Criteria<string>(
+                factName: "who",
+                predicate: who => { return who == "Nick"; }),
+            new Criteria<string>(
+                factName: "concept",
+                predicate: concept => { return concept == "onHit"; }),
+            new Criteria<string>(
+                factName: "timeOfDay",
+                predicate: timeOfDay => { return timeOfDay == "Night"; }),
+            new Criteria<string>(
+                factName: "weather",
+                predicate: weather => { return weather == "Rainy"; }),
+            new Criteria<int>(
+                factName: "numberOfEnemiesNearby",
+                predicate: enemies => { return enemies >= 1; }),
+            new Criteria<string>(
+                factName: "equippedWeapon_type",
+                predicate: weapon => { return weapon == "Sword"; }),
+            new Criteria<bool>(
+                factName: "isSprinting",
+                predicate: sprinting => { return sprinting == true; }),
+            new Criteria<int>(
+                factName: "stamina",
+                predicate: stamina => { return stamina <= 5; }),
+            new Criteria<int>(
+                factName: "numberOfEnemiesNearby",
+                predicate: enemies => { return enemies >= 1; }),
+            new Criteria<string>(
+                factName: "equippedWeapon_type",
+                predicate: weapon => { return weapon == "Sword"; }),
         ], () => { });
 
         PredicateCriteriaCustomType = new Rule([
-            new Criteria<EnemyCounter>("numberOfEnemiesNearby", enemies => { return enemies.Count >= 1; }),
-            new Criteria<Stamina>("stamina", stamina => { return stamina.Value <= 5; }),
+            new Criteria<EnemyCounter>(
+                factName: "numberOfEnemiesNearby",
+                predicate: enemies => { return enemies.Count >= 1; }),
+            new Criteria<Stamina>(
+                factName: "stamina",
+                predicate: stamina => { return stamina.Value <= 5; }),
         ], () => { });
 
 
