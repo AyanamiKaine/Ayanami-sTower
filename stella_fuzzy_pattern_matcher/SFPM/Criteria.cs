@@ -117,7 +117,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
             if (Operator == Operator.Predicate && _predicate != null) // Check for Custom operator and predicate
             {
                 var result = _predicate(typedFactValue); // Execute the predicate lambda
-                logger.ConditionalDebug($"SFPM.Criteria.Matches: FactName={FactName}, PredicateName={(_predicateName == "" ? "no name given" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}");
+                logger.ConditionalDebug($"SFPM.Criteria.Matches: FactName={FactName}, Predicate={(_predicateName.Length == 0 ? "NoNameGiven" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}");
                 return result;
             }
             else
