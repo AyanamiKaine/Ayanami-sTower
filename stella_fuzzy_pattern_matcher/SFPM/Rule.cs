@@ -11,7 +11,6 @@ namespace SFPM;
 /// <param name="payload">The payload is a function that gets executed when the rule is the most matched rule</param>
 public class Rule(List<ICriteria> criterias, Action payload)
 {
-
     private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
