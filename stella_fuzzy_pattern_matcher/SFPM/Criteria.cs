@@ -111,9 +111,6 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
         // **Crucial Type Check:**
         if (factValue is TValue typedFactValue) // Check if factValue is of the correct type
         {
-            // Currently this does not work correctly for predicates, maybe we need a custom predicate type with a name field, we can use
-            // to better log Prediacte="NameIsTom" was false
-
             if (Operator == Operator.Predicate && _predicate != null) // Check for Custom operator and predicate
             {
                 var result = _predicate(typedFactValue); // Execute the predicate lambda
