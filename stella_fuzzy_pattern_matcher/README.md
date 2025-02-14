@@ -70,6 +70,8 @@ Here we defined a condition as a `Criteria`, a list of `Criteria` as one `Rule` 
 
 ## Implemented Features
 
+- Extensive logging in debug builds.
+
 ## Missing Features
 
 ### Define where a query queries its data from.
@@ -138,10 +140,6 @@ world.MatchOnWorld(queryData);
 ### The ability for rules to add new facts.
 
 This is useful to add "memory". Imagine we want to say EventA happened, this is a scenario for a boolean flag. But the added data can be more complex like. A custom data structure or counter. Imagine we want to store how often a specific object or enemy was encountered. This could be used to execute a specific dialog that mentions that over 100 enemies where killed.
-
-### Extra Debugging Features
-
-It would be quite nice if we log information about how queries are matched and what rules are rejected and why.
 
 ### Flecs.Net Intergration
 
