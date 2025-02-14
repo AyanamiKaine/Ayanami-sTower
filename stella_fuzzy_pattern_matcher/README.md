@@ -39,15 +39,33 @@ With our fuzzy pattern matcher, we can express this more elegantly as a rule:
 
 ```csharp
 var dragonEncounterRule = new Rule([
-        new Criteria<int>("PlayerLevel", level => level >= 10),
-        new Criteria<string>("HasItem", item => item == "MagicSword"),
-        new Criteria<string>("QuestStatus", status => status != "DragonSlayerComplete"),
-        new Criteria<string>("TimeOfDay", time => time == "Night"),
-        new Criteria<string>("Location", loc => loc == "MysticalForest"),
-        new Criteria<int>("Health", health => health > 50),
-        new Criteria<int>("MagicPoints", mp => mp >= 30),
-        new Criteria<string>("Status", status => status != "Cursed"),
-        new Criteria<int>("Reputation", rep => rep > 100)
+        new Criteria<int>(
+            factName: "PlayerLevel",
+            predicate: level => level >= 10),
+        new Criteria<string>(
+            factName: "HasItem",
+            predicate: item => item == "MagicSword"),
+        new Criteria<string>(
+            factName: "QuestStatus",
+            predicate: status => status != "DragonSlayerComplete"),
+        new Criteria<string>(
+            factName: "TimeOfDay",
+            predicate: time => time == "Night"),
+        new Criteria<string>(
+            factName: "Location",
+            predicate: loc => loc == "MysticalForest"),
+        new Criteria<int>(
+            factName: "Health",
+            predicate: health => health > 50),
+        new Criteria<int>(
+            factName: "MagicPoints",
+            predicate: mp => mp >= 30),
+        new Criteria<string>(
+            factName: "Status",
+            predicate: status => status != "Cursed"),
+        new Criteria<int>(
+            factName: "Reputation",
+            predicate: rep => rep > 100)
     ], () => SpawnAncientDragon());
 ```
 
@@ -56,15 +74,33 @@ The tree can be easily extended adding new scenarios or events.
 ```C#
 var bigDragonEncounterRule = new Rule([
         // Here we increase the player level
-        new Criteria<int>("PlayerLevel", level => level >= 15),
-        new Criteria<string>("HasItem", item => item == "MagicSword"),
-        new Criteria<string>("QuestStatus", status => status != "DragonSlayerComplete"),
-        new Criteria<string>("TimeOfDay", time => time == "Night"),
-        new Criteria<string>("Location", loc => loc == "MysticalForest"),
-        new Criteria<int>("Health", health => health > 50),
-        new Criteria<int>("MagicPoints", mp => mp >= 30),
-        new Criteria<string>("Status", status => status != "Cursed"),
-        new Criteria<int>("Reputation", rep => rep > 100)
+        new Criteria<int>(
+            factName: "PlayerLevel",
+            predicate: level => level >= 15),
+        new Criteria<string>(
+            factName: "HasItem",
+            predicate: item => item == "MagicSword"),
+        new Criteria<string>(
+            factName: "QuestStatus",
+            predicate: status => status != "DragonSlayerComplete"),
+        new Criteria<string>(
+            factName: "TimeOfDay",
+            predicate: time => time == "Night"),
+        new Criteria<string>(
+            factName: "Location",
+            predicate: loc => loc == "MysticalForest"),
+        new Criteria<int>(
+            factName: "Health",
+            predicate: health => health > 50),
+        new Criteria<int>(
+            factName: "MagicPoints",
+            predicate: mp => mp >= 30),
+        new Criteria<string>(
+            factName: "Status",
+            predicate: status => status != "Cursed"),
+        new Criteria<int>(
+            factName: "Reputation",
+            predicate: rep => rep > 100)
     ],
     // and trigger the spawn of a bigger acient dragon
     () => SpawnBigAncientDragon());
@@ -87,7 +123,9 @@ Solution: Use a predicate with OR.
 
 ```C#
 new Rule([
-        new Criteria<string>("PlayerName", name => name == "Tom" || name == "Tim"),
+        new Criteria<string>(
+            factName: "PlayerName",
+            prediacte: name => name == "Tom" || name == "Tim"),
     ]
 ```
 
