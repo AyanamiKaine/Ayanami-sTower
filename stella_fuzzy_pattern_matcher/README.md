@@ -156,7 +156,7 @@ I want that one query wont take longer than some microseconds(μs) over a list o
 ```
 
 | Method                 | Mean       | Error        | StdDev        | Rank | Gen0   | Gen1     | Allocated |
-| OneQueryOver10000Rules | 521,152 ns | 9,924.667 ns | 11,031.241 ns | 10   | 6.8359 | 0.9766   | 132096 B |
+| OneQueryOver10000Rules | 521,152 ns | 9,924.667 ns | 11,031.241 ns | 10   | 6.8359 | 0.9766   | 132096 B  |
 
 ```
 
