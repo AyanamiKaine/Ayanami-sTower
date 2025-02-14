@@ -124,12 +124,12 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
             {
                 return Operator switch
                 {
-                    Operator.Equal => EqualityComparer<TValue>.Default.Equals(typedFactValue, ExpectedValue),
-                    Operator.GreaterThan => typedFactValue.CompareTo(ExpectedValue) > 0,
-                    Operator.LessThan => typedFactValue.CompareTo(ExpectedValue) < 0,
-                    Operator.GreaterThanOrEqual => typedFactValue.CompareTo(ExpectedValue) >= 0,
-                    Operator.LessThanOrEqual => typedFactValue.CompareTo(ExpectedValue) <= 0,
-                    Operator.NotEqual => !EqualityComparer<TValue>.Default.Equals(typedFactValue, ExpectedValue),
+                    Operator.Equal => EqualityComparer<TValue>.Default.Equals(x: typedFactValue, y: ExpectedValue),
+                    Operator.GreaterThan => typedFactValue.CompareTo(other: ExpectedValue) > 0,
+                    Operator.LessThan => typedFactValue.CompareTo(other: ExpectedValue) < 0,
+                    Operator.GreaterThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue) >= 0,
+                    Operator.LessThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue) <= 0,
+                    Operator.NotEqual => !EqualityComparer<TValue>.Default.Equals(x: typedFactValue, y: ExpectedValue),
                     _ => throw new ArgumentOutOfRangeException(nameof(Operator), Operator, "Unknown operator"),
                 };
             }
