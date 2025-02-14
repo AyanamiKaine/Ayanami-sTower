@@ -41,6 +41,11 @@ public class Rule(List<ICriteria> criterias, Action payload)
     public List<ICriteria> Criterias { get; set; } = criterias ?? throw new ArgumentNullException(nameof(criterias));
 
     /// <summary>
+    /// Gets the number of criteria in this rule.
+    /// </summary>
+    public int CriteriaCount => Criterias.Count;
+
+    /// <summary>
     /// Checks if the rule is true based on a set of facts and returns the number of matched criteria.
     /// IT WILL RETURN IMMEDIATLY IF ONE CRITERIA IS NOT MATCHED. The matched count will be 0.
     /// </summary>
@@ -188,9 +193,4 @@ public class Rule(List<ICriteria> criterias, Action payload)
             Console.WriteLine(ex.Message);
         }
     }
-
-    /// <summary>
-    /// Gets the number of criteria in this rule.
-    /// </summary>
-    public int CriteriaCount => Criterias.Count;
 }
