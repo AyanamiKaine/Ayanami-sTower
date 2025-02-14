@@ -86,11 +86,19 @@ public class SFPMFlecsBenchmarks
 
 
     [Benchmark]
-    public void MatchOnWorld()
+    public void MatchOnWorldOnce()
     {
         world.MatchOnWorld(queryData);
     }
 
+    [Benchmark]
+    public void MatchOnWorld10000Times()
+    {
+        for (int i = 0; i < 9999; i++)
+        {
+            world.MatchOnWorld(queryData);
+        }
+    }
 
     public class Program
     {
