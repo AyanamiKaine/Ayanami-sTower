@@ -81,6 +81,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
                 return (false, 0);
             }
         }
+        logger.ConditionalDebug("SFPM.Rule.StrictEvaluate: Strict Evaluate finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", true, matchedCriteriaCount);
         return (true, matchedCriteriaCount);
     }
 
