@@ -25,21 +25,13 @@ List<Rule> rules = [
             new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
-                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
-                ], ()=>{
-                    Console.WriteLine("I hate circus clowns!");
-                }),
-            new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
                 ], ()=>{
                     Console.WriteLine("Ouch");
                 }),
             new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
+                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 5; }),
                 ], ()=>{
                     Console.WriteLine("ow help!");
                 }),
@@ -51,11 +43,19 @@ List<Rule> rules = [
                     Console.WriteLine("This Circus Sucks!");
                 }),
             new Rule([
+                    new Criteria<string>("who", who => { return who == "Tom"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClowns"; }),
+                ], ()=>{
+                    Console.WriteLine("Stupid Clown!");
+                }),
+            new Rule([
                     new Criteria<string>("who", who => { return who == "Nick"; }),
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
                     new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
+                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
                 ], ()=>{
-                    Console.WriteLine("Stupid Clown!");
+                    Console.WriteLine("I hate circus clowns!");
                 }),
         ];
 
