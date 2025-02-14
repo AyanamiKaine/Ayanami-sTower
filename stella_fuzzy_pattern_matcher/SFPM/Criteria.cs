@@ -8,7 +8,7 @@ namespace SFPM;
 public interface ICriteria
 {
     /// <summary>
-    /// Gets the name of the fact.
+    /// The FactName is used as a key to get the value out of the query data.
     /// </summary>
     string FactName { get; }
     /// <summary>
@@ -66,7 +66,7 @@ public enum Operator
 /// <remarks>
 /// Initializes a new instance of the <see cref="Criteria{TValue}"/> class.
 /// </remarks>
-/// <param name="factName">The name of the fact. Used to better identify the checked fact.</param>
+/// <param name="factName">The name of the fact. Used as a key for the query data.</param>
 /// <param name="expectedValue">The expected value for comparison.</param>
 /// <param name="operator">The operator used for comparison.</param>
 public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @operator) : ICriteria where TValue : IComparable<TValue>
