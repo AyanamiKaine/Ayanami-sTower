@@ -55,39 +55,29 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// </returns>
     public (bool IsTrue, int MatchedCriteriaCount) StrictEvaluate(Dictionary<string, object> facts)
     {
-#if DEBUG
-        logger.Debug($"SFPM.Rule.StrictEvaluate: Evaluating rule with {CriteriaCount} criteria.");
-        logger.Debug($"SFPM.Rule.StrictEvaluate: Facts provided: {string.Join(", ", facts)}");
-#endif
+        logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Evaluating rule with {CriteriaCount} criteria.");
+        logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Facts provided: {string.Join(", ", facts)}");
 
         int matchedCriteriaCount = 0;
         foreach (var criteria in Criterias)
         {
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
             {
-#if DEBUG
-                logger.Debug($"SFPM.Rule.StrictEvaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'.");
-#endif
+                logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'.");
                 if (criteria.Matches(factValue))
                 {
-#if DEBUG
-                    logger.Debug($"SFPM.Rule.StrictEvaluate: Criteria for fact '{criteria.FactName}' matched.");
-#endif
+                    logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Criteria for fact '{criteria.FactName}' matched.");
                     matchedCriteriaCount++;
                 }
                 else
                 {
-#if DEBUG
-                    logger.Debug($"SFPM.Rule.StrictEvaluate: Criteria for fact '{criteria.FactName}' did NOT match. StrictEvaluate returning false.");
-#endif
+                    logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Criteria for fact '{criteria.FactName}' did NOT match. StrictEvaluate returning false.");
                     return (false, 0);
                 }
             }
             else
             {
-#if DEBUG
-                logger.Debug($"SFPM.Rule.StrictEvaluate: Fact '{criteria.FactName}' not found or fact name is empty. StrictEvaluate returning false.");
-#endif
+                logger.ConditionalDebug($"SFPM.Rule.StrictEvaluate: Fact '{criteria.FactName}' not found or fact name is empty. StrictEvaluate returning false.");
                 return (false, 0);
             }
         }
@@ -107,9 +97,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// </returns>
     public (bool IsTrue, int MatchedCriteriaCount) RelaxedEvaluate(Dictionary<string, object> facts)
     {
-#if DEBUG
-        logger.Debug("SFPM.Rule.RelaxedEvaluate: Starting relaxed evaluation for rule with {CriteriaCount} criteria.", CriteriaCount); // Debug log for method entry
-#endif
+        logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Starting relaxed evaluation for rule with {CriteriaCount} criteria.", CriteriaCount); // Debug log for method entry
 
         int matchedCriteriaCount = 0;
         foreach (var criteria in Criterias)
@@ -119,33 +107,26 @@ public class Rule(List<ICriteria> criterias, Action payload)
                 if (criteria.Matches(factValue))
                 {
                     matchedCriteriaCount++;
-#if DEBUG
-                    logger.Trace("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' matched (relaxed). Matched count: {MatchedCriteriaCount}", criteria.FactName,
+                    logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' matched (relaxed). Matched count: {MatchedCriteriaCount}", criteria.FactName,
                     matchedCriteriaCount); // Trace level for relaxed match
-#endif
+
                 }
-#if DEBUG
 
                 else
                 {
-                    logger.Trace("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' did NOT match (relaxed).", criteria.FactName); // Trace level for relaxed non-match
+                    logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' did NOT match (relaxed).", criteria.FactName); // Trace level for relaxed non-match
                 }
-#endif
 
             }
-#if DEBUG
             else
             {
-                logger.Trace("SFPM.Rule.RelaxedEvaluate: Fact '{FactName}' not found or fact name is empty (relaxed).", criteria.FactName); // Trace for fact not found in relaxed
+                logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Fact '{FactName}' not found or fact name is empty (relaxed).", criteria.FactName); // Trace for fact not found in relaxed
             }
-#endif
         }
 
         // Rule is considered fully true if all criteria are matched.
         bool isTrue = matchedCriteriaCount == Criterias.Count;
-#if DEBUG
-        logger.Debug("SFPM.Rule.RelaxedEvaluate: Relaxed evaluation finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", isTrue, matchedCriteriaCount); // Debug log for method exit and result
-#endif
+        logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Relaxed evaluation finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", isTrue, matchedCriteriaCount); // Debug log for method exit and result
         return (isTrue, matchedCriteriaCount);
     }
 
@@ -157,13 +138,9 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// <returns>True if all criteria match the facts, otherwise false.</returns>
     public bool IsTrue(Dictionary<string, object> facts) // Keeping the old IsTrue for compatibility
     {
-#if DEBUG
-        logger.Debug("SFPM.Rule.IsTrue: Calling StrictEvaluate for IsTrue check."); // Debug log before calling StrictEvaluate
-#endif
+        logger.ConditionalDebug("SFPM.Rule.IsTrue: Calling StrictEvaluate for IsTrue check."); // Debug log before calling StrictEvaluate
         bool result = StrictEvaluate(facts).IsTrue;
-#if DEBUG
-        logger.Debug("SFPM.Rule.IsTrue: StrictEvaluate returned {Result} for IsTrue.", result); // Debug log after StrictEvaluate
-#endif
+        logger.ConditionalDebug("SFPM.Rule.IsTrue: StrictEvaluate returned {Result} for IsTrue.", result); // Debug log after StrictEvaluate
         return result; // Just calls the new Evaluate and returns the boolean part
     }
 
@@ -172,23 +149,17 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// </summary>
     public void ExecutePayload()
     {
-#if DEBUG
-        logger.Info("SFPM.Rule.ExecutePayload: Executing payload for rule (Priority: {Priority}).", Priority); // Info level for payload execution, including priority
-#endif
+        logger.ConditionalDebug("SFPM.Rule.ExecutePayload: Executing payload for rule (Priority: {Priority}).", Priority); // Info level for payload execution, including priority
         try
         {
             Payload();
-#if DEBUG
-            logger.Debug("SFPM.Rule.ExecutePayload: Payload executed successfully (Priority: {Priority}).", Priority); // Debug log on successful payload execution
-#endif
+            logger.ConditionalDebug("SFPM.Rule.ExecutePayload: Payload executed successfully (Priority: {Priority}).", Priority); // Debug log on successful payload execution
         }
         catch (Exception ex)
         {
-#if DEBUG
-            logger.Error(ex, "SFPM.Rule.ExecutePayload: Exception during payload execution (Priority: {Priority}).", Priority); // Error log with exception details
-                                                                                                                                // Consider re-throwing or handling the exception as needed in your application logic.
-                                                                                                                                // For now, we're logging the error.
-#endif
+            logger.ConditionalDebug(ex, "SFPM.Rule.ExecutePayload: Exception during payload execution (Priority: {Priority}).", Priority); // Error log with exception details
+                                                                                                                                           // Consider re-throwing or handling the exception as needed in your application logic.
+                                                                                                                                           // For now, we're logging the error.
             Console.WriteLine(ex.Message);
         }
     }
