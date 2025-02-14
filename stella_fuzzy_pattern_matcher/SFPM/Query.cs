@@ -1,4 +1,5 @@
 using System.Collections;
+using NLog;
 
 namespace SFPM;
 
@@ -18,6 +19,7 @@ public class Query()
     }
 
     private readonly Dictionary<string, object> _queryData = [];
+    private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Adds a key and value to the query.
@@ -47,7 +49,9 @@ public class Query()
         foreach (var rule in rules)
         {
             if (rule.CriteriaCount < currentHighestScore)
-                break;
+            {
+                logger.ConditionalDebug("SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
+            }
 
             var (matched, matchedCriteriaCount) = rule.StrictEvaluate(_queryData);
             if (matched)
@@ -70,6 +74,7 @@ public class Query()
         }
         else if (acceptedRules.Count > 1)
         {
+            logger.ConditionalDebug("SFPM.Query.Match: More than one rule with the same number of criteria matched. Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
             // Group highest priority rules
             var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
                                                    .OrderByDescending(g => g.Key)
