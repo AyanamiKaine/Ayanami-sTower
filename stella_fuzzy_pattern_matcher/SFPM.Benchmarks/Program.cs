@@ -342,7 +342,7 @@ public class SFPMBenchmarks
         query.Match(tenthousandRules);
     }
 
-    [Benchmark]
+    //[Benchmark]
     public void QueryMatch10000Rules10000Times()
     {
         for (int i = 0; i < 9999; i++)
