@@ -109,14 +109,11 @@ public class Rule(List<ICriteria> criterias, Action payload)
                     matchedCriteriaCount++;
                     logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' matched (relaxed). Matched count: {MatchedCriteriaCount}", criteria.FactName,
                     matchedCriteriaCount); // Trace level for relaxed match
-
                 }
-
                 else
                 {
                     logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Criteria for fact '{FactName}' did NOT match (relaxed).", criteria.FactName); // Trace level for relaxed non-match
                 }
-
             }
             else
             {
@@ -129,7 +126,6 @@ public class Rule(List<ICriteria> criterias, Action payload)
         logger.ConditionalDebug("SFPM.Rule.RelaxedEvaluate: Relaxed evaluation finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", isTrue, matchedCriteriaCount); // Debug log for method exit and result
         return (isTrue, matchedCriteriaCount);
     }
-
 
     /// <summary>
     /// Checks if the rule is true based on a set of facts. (Legacy method - for backwards compatibility or simpler use cases)
