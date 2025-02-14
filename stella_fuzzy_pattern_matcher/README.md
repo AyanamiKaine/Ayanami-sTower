@@ -125,7 +125,7 @@ Solution: Use a predicate with OR.
 new Rule([
         new Criteria<string>(
             factName: "PlayerName",
-            prediacte: name => name == "Tom" || name == "Tim"),
+            predicate: name => name == "Tom" || name == "Tim"),
     ]
 ```
 
