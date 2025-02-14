@@ -66,7 +66,7 @@ public enum Operator
 /// <remarks>
 /// Initializes a new instance of the <see cref="Criteria{TValue}"/> class.
 /// </remarks>
-/// <param name="factName">The name of the fact.</param>
+/// <param name="factName">The name of the fact. Used to better identify the checked fact.</param>
 /// <param name="expectedValue">The expected value for comparison.</param>
 /// <param name="operator">The operator used for comparison.</param>
 public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @operator) : ICriteria where TValue : IComparable<TValue>
@@ -90,7 +90,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// <summary>
     /// Initializes a new instance of the <see cref="Criteria{TValue}"/> class with a custom predicate.
     /// </summary>
-    /// <param name="factName">The name of the fact.</param>
+    /// <param name="factName">The name of the fact. Used to better identify the checked fact.</param>
     /// <param name="predicate">The predicate used for custom evaluation.</param>
     /// <param name="predicateName">Optional name for the predicate function. Used for display purposes. Pick a descriptive name what the predicate checks</param>
     public Criteria(string factName, Predicate<TValue> predicate, string predicateName = "")
