@@ -53,26 +53,26 @@ public class EcsWorldExtensionsUnitTest
         */
 
         rule1.Set<NPC, Rule>(new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                    new Criteria<string>(factName: "who", predicate: who => { return who == "Nick"; }, predicateName: "IsNick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => { return concept == "onHit"; }),
                 ], () =>
                 {
                     ruleExecuted = false;
                 }));
 
         rule2.Set<NPC, Rule>(new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
+                    new Criteria<string>(factName: "who", predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(factName: "concept", predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => { return nearAllies > 1; }),
                 ], () =>
                 {
                     ruleExecuted = false;
                 }));
 
         rule3.Set<NPC, Rule>(new Rule([
-                    new Criteria<Name>("who", who => { return who.Value == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<Map>("curMap", curMap => { return curMap.Name == "circus"; }),
+                    new Criteria<Name>(factName: "who", predicate: who => { return who.Value == "Nick"; }),
+                    new Criteria<string>(factName: "concept", predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<Map>(factName: "curMap", predicate: curMap => { return curMap.Name == "circus"; }),
                 ], () =>
                 {
                     // In the payload of rules we can interact with the ecs world,
@@ -83,9 +83,9 @@ public class EcsWorldExtensionsUnitTest
                 }));
 
         rule4.Set<NPC, Rule>(new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
+                    new Criteria<string>(factName: "who", predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(factName: "concept", predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<string>(factName: "hitBy", predicate: hitBy => { return hitBy == "zombieClown"; }),
                 ], () =>
                 {
                     ruleExecuted = false;
