@@ -85,19 +85,6 @@ public class Rule(List<ICriteria> criterias, Action payload)
     }
 
     /// <summary>
-    /// Checks if the rule is true based on a set of facts. (Legacy method - for backwards compatibility or simpler use cases)
-    /// </summary>
-    /// <param name="facts">A dictionary of facts to check against the criteria.</param>
-    /// <returns>True if all criteria match the facts, otherwise false.</returns>
-    public bool IsTrue(Dictionary<string, object> facts) // Keeping the old IsTrue for compatibility
-    {
-        logger.ConditionalDebug("SFPM.Rule.IsTrue: Calling Evaluate for IsTrue check."); // Debug log before calling Evaluate
-        bool result = Evaluate(facts).IsTrue;
-        logger.ConditionalDebug("SFPM.Rule.IsTrue: Evaluate returned {Result} for IsTrue.", result); // Debug log after Evaluate
-        return result; // Just calls the new Evaluate and returns the boolean part
-    }
-
-    /// <summary>
     /// Executes the payload action associated with this rule.
     /// </summary>
     public void ExecutePayload()
