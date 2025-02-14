@@ -80,6 +80,19 @@ In essence we match a list of facts to a list of conditions if all conditions me
 
 Here we defined a condition as a `Criteria`, a list of `Criteria` as one `Rule` with a `payload`.
 
+### Partial Criteria Matching
+
+Problem: You want create a rule/criteria for when player has name "Tom" or "Tim"
+Solution: Use a predicate with OR.
+
+```C#
+new Rule([
+        new Criteria<string>("PlayerName", name => name == "Tom" || name == "Tim"),
+    ]
+```
+
+Now this rule is matched when the player has the name "Tom" or "Tim"
+
 ### Implemented Features
 
 - Extensive logging in debug builds.
