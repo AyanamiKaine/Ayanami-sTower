@@ -36,16 +36,16 @@ List<Rule> rules = [
                     Console.WriteLine("ow help!");
                 }),
             new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("who", who => { return who == "Nick"; }, "IsNick"),
                     new Criteria<string>("concept", concept => { return concept == "onHit"; }),
                     new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
                 ], ()=>{
                     Console.WriteLine("This Circus Sucks!");
                 }),
             new Rule([
-                    new Criteria<string>("who", who => { return who == "Tom"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClowns"; }),
+                    new Criteria<string>("who", who => { return who == "Tom"; }, "IsTom"),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }, "ConceptIsOnHit"),
+                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClowns"; }, "HitByZombieClowns"),
                 ], ()=>{
                     Console.WriteLine("Stupid Clown!");
                 }),
