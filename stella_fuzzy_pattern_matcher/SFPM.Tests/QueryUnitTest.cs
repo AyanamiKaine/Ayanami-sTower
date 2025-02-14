@@ -82,10 +82,61 @@ public class QueryUnitTest
                 })
         ];
 
-
-
         query.Match(rules);
 
+        Assert.True(ruleExecuted);
+    }
+
+    /// <summary>
+    /// We should be able to add new information to queries, or change existing ones.
+    /// </summary>
+    [Fact]
+    public void AddingMemoryToQuery()
+    {
+        var query = new Query();
+        var ruleExecuted = false;
+
+        query
+            .Add("concept", "OnHit")
+            .Add("attacker", "Hunter")
+            .Add("damage", 12.4);
+
+        List<Rule> rules = [
+                new Rule([
+                    new Criteria<string>("who", who => { return who == "Nick"; }),
+                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
+                ], ()=>{
+                }),
+
+                new Rule([
+                    new Criteria<string>("attacker", attacker => { return attacker == "Hunter"; }),
+                    new Criteria<string>("concept", concept => { return concept == "OnHit"; }),
+                    new Criteria<double>("damage", damage => { return damage == 12.4; }),
+                ], ()=>{
+                    query.Add("EventAHappened", true);
+                }),
+
+                new Rule([
+                    new Criteria<string>("attacker", attacker => { return attacker == "Hunter"; }),
+                    new Criteria<string>("concept", concept => concept == "OnHit"),
+                    new Criteria<double>("damage", damage => { return damage == 12.4; }),
+                    new Criteria<bool>("EventAHappened", EventAHappened =>{ return EventAHappened == true; })
+                ], () =>
+                {
+                        ruleExecuted = true;
+                }),
+
+                new Rule([
+                    new Criteria<string>("attacker", attacker => attacker.StartsWith("H")),
+                    new Criteria<double>("damage", damage => damage < 20.0),
+                ], () =>
+                {
+                })
+        ];
+        // We first match the rule that adds the EventAHappened to the query
+        query.Match(rules);
+        // Now we should match the rule with the EventAHappened criteria
+        query.Match(rules);
         Assert.True(ruleExecuted);
     }
 }
