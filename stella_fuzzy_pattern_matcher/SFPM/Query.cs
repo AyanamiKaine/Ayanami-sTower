@@ -28,7 +28,9 @@ public class Query()
     /// <param name="value"></param>
     public Query Add(string key, object value)
     {
-        _queryData.Add(key, value);
+        _queryData.Add(
+            key: key,
+            value: value);
         return this;
     }
 
@@ -53,7 +55,7 @@ public class Query()
                 logger.ConditionalDebug("SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
             }
 
-            var (matched, matchedCriteriaCount) = rule.Evaluate(_queryData);
+            var (matched, matchedCriteriaCount) = rule.Evaluate(facts: _queryData);
             if (matched)
             {
                 if (matchedCriteriaCount > currentHighestScore)
@@ -63,7 +65,7 @@ public class Query()
                 }
                 if (matchedCriteriaCount == currentHighestScore)
                 {
-                    acceptedRules.Add(rule);
+                    acceptedRules.Add(item: rule);
                 }
             }
         }
@@ -81,7 +83,7 @@ public class Query()
                                                    .First();
             // Randomly select one rule from the highest priority group
             var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(random.Next(highestPriorityRules.Count()));
+            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(highestPriorityRules.Count()));
             selectedRule.ExecutePayload();
         }
     }
