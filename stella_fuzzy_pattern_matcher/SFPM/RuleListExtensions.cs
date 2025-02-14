@@ -1,9 +1,13 @@
+using NLog;
+
 namespace SFPM;
 /// <summary>
 /// Provides extension methods for <see cref="List{Rule}"/> to optimize rule processing.
 /// </summary>
 public static class RuleListExtensions
 {
+    private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// Optimizes the rules list by sorting rules based on their criteria count in descending order.
     /// </summary>
@@ -50,5 +54,54 @@ public static class RuleListExtensions
         if (rules.Count == 0)
             throw new ArgumentException("Rules list cannot be empty.", nameof(rules));
         return rules.MinBy(r => r.CriteriaCount)!;
+    }
+
+    /// <summary>
+    /// Matches rules against the provided query data and executes the payload of the best matching rule.
+    /// </summary>
+    /// <param name="rules">The list of rules to match against.</param>
+    /// <param name="queryData">The dictionary containing the data to match.</param>
+    public static void Match(this List<Rule> rules, Dictionary<string, object> queryData)
+    {
+        var acceptedRules = new List<Rule>();
+        var currentHighestScore = 0;
+        foreach (var rule in rules)
+        {
+            if (rule.CriteriaCount < currentHighestScore)
+            {
+                logger.ConditionalDebug("SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
+            }
+
+            var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
+            if (matched)
+            {
+                if (matchedCriteriaCount > currentHighestScore)
+                {
+                    currentHighestScore = matchedCriteriaCount;
+                    acceptedRules.Clear();
+                }
+                if (matchedCriteriaCount == currentHighestScore)
+                {
+                    acceptedRules.Add(item: rule);
+                }
+            }
+        }
+
+        if (acceptedRules.Count == 1)
+        {
+            acceptedRules[0].ExecutePayload();
+        }
+        else if (acceptedRules.Count > 1)
+        {
+            logger.ConditionalDebug($"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
+            // Group highest priority rules
+            var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
+                                                   .OrderByDescending(g => g.Key)
+                                                   .First();
+            // Randomly select one rule from the highest priority group
+            var random = new Random();
+            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(highestPriorityRules.Count()));
+            selectedRule.ExecutePayload();
+        }
     }
 }
