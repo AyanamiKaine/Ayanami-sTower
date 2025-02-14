@@ -4,8 +4,7 @@ namespace SFPM;
 
 /// <summary>
 /// A list of criterions that if all matched the rule "matches", if
-/// no criterion is matched the rule rejects the match. 
-/// 
+/// no criterion is matched the rule rejects the match.
 /// Partial matching is possible.
 /// </summary>
 /// <param name="criterias"></param>
