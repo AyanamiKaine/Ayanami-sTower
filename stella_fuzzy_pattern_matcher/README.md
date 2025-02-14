@@ -1,5 +1,17 @@
 # Stella Fuzzy Pattern Matcher
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+## Table of Contents
+
+- [Introduction](#stella-fuzzy-pattern-matcher)
+- [Problem Statement](#the-main-problem)
+- [Implemented Features](#implemented-features)
+- [Missing Features](#missing-features)
+- [Performance Goals](#performance-goals)
+
+### Introduction
+
 Entirely based on [AI-driven Dynamic Dialog through Fuzzy Pattern Matching](https://www.youtube.com/watch?v=tAbBID3N64A&t)
 
 - Another good read is [You Merely Adopted Rules.csv, I Was Born Into It](https://fractalsoftworks.com/2023/11/13/you-merely-adopted-rules-csv-i-was-born-into-it/)
@@ -68,13 +80,13 @@ In essence we match a list of facts to a list of conditions if all conditions me
 
 Here we defined a condition as a `Criteria`, a list of `Criteria` as one `Rule` with a `payload`.
 
-## Implemented Features
+### Implemented Features
 
 - Extensive logging in debug builds.
 
-## Missing Features
+### Missing Features
 
-### Define where a query queries its data from.
+#### Define where a query queries its data from.
 
 For now we must do that ourselves, it would be quite nicer to say something like:
 
@@ -137,19 +149,19 @@ queryData = new Dictionary<string, object>
 world.MatchOnWorld(queryData);
 ```
 
-### The ability for rules to add new facts.
+#### The ability for rules to add new facts.
 
 This is useful to add "memory". Imagine we want to say EventA happened, this is a scenario for a boolean flag. But the added data can be more complex like. A custom data structure or counter. Imagine we want to store how often a specific object or enemy was encountered. This could be used to execute a specific dialog that mentions that over 100 enemies where killed.
 
-### Flecs.Net Intergration
+#### Flecs.Net Intergration
 
 Queriering data can be quite combersome. I think using an entity component system like Flecs that gets simply used as a flat data storage could work quite nicely.
 
-## Performance Goals
+### Performance Goals
 
 I want that one query wont take longer than some microseconds(μs) over a list of 10000 rules.
 
-### Last Result
+#### Last Result
 
 ```
 
