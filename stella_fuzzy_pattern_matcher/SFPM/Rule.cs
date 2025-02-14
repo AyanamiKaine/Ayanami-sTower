@@ -63,7 +63,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
             {
                 logger.ConditionalDebug($"SFPM.Rule.Evaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'.");
-                if (criteria.Matches(factValue))
+                if (criteria.Matches(factValue: factValue))
                 {
                     logger.ConditionalDebug($"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' matched.");
                     matchedCriteriaCount++;
