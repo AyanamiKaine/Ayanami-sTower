@@ -134,7 +134,7 @@ Now this rule is matched when the player has the name "Tom" or "Tim"
 ### Implemented Features
 
 - Extensive logging in debug builds.
-
+- Various extension methods for conveniance use.
 ### Missing Features
 
 #### Define where a query queries its data from.
