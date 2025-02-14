@@ -83,7 +83,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// Gets the operator used for comparison.
     /// </summary>
     public Operator Operator { get; } = @operator;
-    private readonly Predicate<TValue>? _predicate; // Nullable predicate, used for custom logic
+    private readonly Predicate<TValue> _predicate = _ => false; // Nullable predicate, used for custom logic
     private readonly string _predicateName = "";
     private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -111,7 +111,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
         // **Crucial Type Check:**
         if (factValue is TValue typedFactValue) // Check if factValue is of the correct type
         {
-            if (Operator == Operator.Predicate && _predicate != null) // Check for Custom operator and predicate
+            if (Operator == Operator.Predicate) // Check for Custom operator and predicate
             {
                 var result = _predicate(typedFactValue); // Execute the predicate lambda
                 logger.ConditionalDebug($"SFPM.Criteria.Matches: FactName={FactName}, Predicate={(_predicateName.Length == 0 ? "NoNameGiven" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}");
