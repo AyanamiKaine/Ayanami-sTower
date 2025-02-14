@@ -74,7 +74,7 @@ public class Query()
         }
         else if (acceptedRules.Count > 1)
         {
-            logger.ConditionalDebug("SFPM.Query.Match: More than one rule with the same number of criteria matched. Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
+            logger.ConditionalDebug($"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
             // Group highest priority rules
             var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
                                                    .OrderByDescending(g => g.Key)
