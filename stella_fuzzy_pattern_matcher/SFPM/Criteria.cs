@@ -90,7 +90,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// <summary>
     /// Initializes a new instance of the <see cref="Criteria{TValue}"/> class with a custom predicate.
     /// </summary>
-    /// <param name="factName">The name of the fact. Used to better identify the checked fact.</param>
+    /// <param name="factName">The name of the fact. Used as a key for the query data.</param>
     /// <param name="predicate">The predicate used for custom evaluation.</param>
     /// <param name="predicateName">Optional name for the predicate function. Used for display purposes. Pick a descriptive name what the predicate checks</param>
     public Criteria(string factName, Predicate<TValue> predicate, string predicateName = "")
