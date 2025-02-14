@@ -161,7 +161,3 @@ I want that one query wont take longer than some microseconds(μs) over a list o
 ```
 
 Or rounded in 521 microseconds(µs).
-
-```
-
-```
