@@ -154,8 +154,6 @@ public class Rule(List<ICriteria> criterias, Action payload)
         catch (Exception ex)
         {
             logger.ConditionalDebug(ex, "SFPM.Rule.ExecutePayload: Exception during payload execution (Priority: {Priority}).", Priority); // Error log with exception details
-                                                                                                                                           // Consider re-throwing or handling the exception as needed in your application logic.
-                                                                                                                                           // For now, we're logging the error.
             Console.WriteLine(ex.Message);
         }
     }
