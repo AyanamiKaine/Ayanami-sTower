@@ -1,3 +1,5 @@
+using NLog;
+
 namespace SFPM;
 
 /// <summary>
@@ -82,6 +84,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// </summary>
     public Operator Operator { get; } = @operator;
     private readonly Predicate<TValue>? predicate; // Nullable predicate, used for custom logic
+    private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Criteria{TValue}"/> class with a custom predicate.
@@ -126,6 +129,8 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
         }
         else
         {
+            logger.ConditionalDebug($"SFPM.Criteria.Matches: Fact '{FactName}' of type '{factValue?.GetType().Name ?? "null"}' does not match expected type '{typeof(TValue).Name}'. Fact value: '{factValue}'.");
+
             // Handle case where factValue is not of the expected type TValue
             // You might want to:
             // - Return false (fact doesn't match if wrong type) - as shown below
