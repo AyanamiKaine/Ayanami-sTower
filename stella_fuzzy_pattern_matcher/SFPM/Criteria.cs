@@ -55,7 +55,7 @@ public enum Operator
     /// <summary>
     /// Added Custom operator for predicate-based criteria
     /// </summary>
-    Custom
+    Predicate
 }
 
 
@@ -92,7 +92,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// <param name="factName">The name of the fact.</param>
     /// <param name="predicate">The predicate used for custom evaluation.</param>
     public Criteria(string factName, Predicate<TValue> predicate)
-        : this(factName, default, Operator.Custom)
+        : this(factName, default, Operator.Predicate)
     {
         this.predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
     }
@@ -108,13 +108,14 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
         // **Crucial Type Check:**
         if (factValue is TValue typedFactValue) // Check if factValue is of the correct type
         {
-            if (Operator == Operator.Custom && predicate != null) // Check for Custom operator and predicate
+            logger.ConditionalDebug($"SFPM.Criteria.Matches: FactName={FactName}, Operator={Operator}, ExpectedValue={predicate}, ActualValue={typedFactValue}");
+
+            if (Operator == Operator.Predicate && predicate != null) // Check for Custom operator and predicate
             {
                 return predicate(typedFactValue); // Execute the predicate lambda
             }
             else
             {
-
                 return Operator switch
                 {
                     Operator.Equal => EqualityComparer<TValue>.Default.Equals(typedFactValue, ExpectedValue),
@@ -129,8 +130,6 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
         }
         else
         {
-            logger.ConditionalDebug($"SFPM.Criteria.Matches: Fact '{FactName}' of type '{factValue?.GetType().Name ?? "null"}' does not match expected type '{typeof(TValue).Name}'. Fact value: '{factValue}'.");
-
             // Handle case where factValue is not of the expected type TValue
             // You might want to:
             // - Return false (fact doesn't match if wrong type) - as shown below
