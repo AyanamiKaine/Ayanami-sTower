@@ -83,7 +83,8 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// Gets the operator used for comparison.
     /// </summary>
     public Operator Operator { get; } = @operator;
-    private readonly Predicate<TValue>? predicate; // Nullable predicate, used for custom logic
+    private readonly Predicate<TValue>? _predicate; // Nullable predicate, used for custom logic
+    private readonly string _predicateName = "";
     private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
@@ -91,10 +92,12 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// </summary>
     /// <param name="factName">The name of the fact.</param>
     /// <param name="predicate">The predicate used for custom evaluation.</param>
-    public Criteria(string factName, Predicate<TValue> predicate)
+    /// <param name="predicateName">Optional name for the predicate function. Used for display purposes.</param>
+    public Criteria(string factName, Predicate<TValue> predicate, string predicateName = "")
         : this(factName, default, Operator.Predicate)
     {
-        this.predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+        this._predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+        _predicateName = predicateName;
     }
 
     /// <summary>
@@ -110,11 +113,12 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
         {
             // Currently this does not work correctly for predicates, maybe we need a custom predicate type with a name field, we can use
             // to better log Prediacte="NameIsTom" was false
-            //logger.ConditionalDebug($"SFPM.Criteria.Matches: FactName={FactName}, Operator={Operator}, ExpectedValue={predicate}, ActualValue={typedFactValue}");
 
-            if (Operator == Operator.Predicate && predicate != null) // Check for Custom operator and predicate
+            if (Operator == Operator.Predicate && _predicate != null) // Check for Custom operator and predicate
             {
-                return predicate(typedFactValue); // Execute the predicate lambda
+                var result = _predicate(typedFactValue); // Execute the predicate lambda
+                logger.ConditionalDebug($"SFPM.Criteria.Matches: FactName={FactName}, PredicateName={(_predicateName == "" ? "no name given" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}");
+                return result;
             }
             else
             {
