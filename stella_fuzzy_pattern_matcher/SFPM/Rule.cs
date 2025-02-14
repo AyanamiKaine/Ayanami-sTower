@@ -21,8 +21,24 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// priority we select a random one.
     /// </summary>
     public int Priority { get; set; }
-    private readonly Action _payload = payload;
-    private readonly List<ICriteria> _criterias = criterias ?? throw new ArgumentNullException(nameof(criterias)); // Use the interface ICriteria
+    /// <summary>
+    /// Gets or sets the action to be executed when this rule matches.
+    /// Represents a delegate that encapsulates a method that takes no parameters and does not return a value.
+    /// </summary>
+    /// <value>
+    /// The action delegate to be executed.
+    /// </value>
+    public Action Payload { get; set; } = payload;
+    /// <summary>
+    /// Gets or sets the list of criteria that compose this rule.
+    /// </summary>
+    /// <value>
+    /// A list of <see cref="ICriteria"/> objects that define the conditions for this rule.
+    /// </value>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when attempting to set a null value for the criteria list.
+    /// </exception>
+    public List<ICriteria> Criterias { get; set; } = criterias ?? throw new ArgumentNullException(nameof(criterias));
 
     /// <summary>
     /// Checks if the rule is true based on a set of facts and returns the number of matched criteria.
@@ -41,7 +57,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
 #endif
 
         int matchedCriteriaCount = 0;
-        foreach (var criteria in _criterias)
+        foreach (var criteria in Criterias)
         {
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
             {
@@ -92,7 +108,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
 #endif
 
         int matchedCriteriaCount = 0;
-        foreach (var criteria in _criterias)
+        foreach (var criteria in Criterias)
         {
             if (!string.IsNullOrEmpty(criteria.FactName) && facts.TryGetValue(criteria.FactName ?? string.Empty, out object? factValue))
             {
@@ -122,7 +138,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
         }
 
         // Rule is considered fully true if all criteria are matched.
-        bool isTrue = matchedCriteriaCount == _criterias.Count;
+        bool isTrue = matchedCriteriaCount == Criterias.Count;
 #if DEBUG
         logger.Debug("SFPM.Rule.RelaxedEvaluate: Relaxed evaluation finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", isTrue, matchedCriteriaCount); // Debug log for method exit and result
 #endif
@@ -157,7 +173,7 @@ public class Rule(List<ICriteria> criterias, Action payload)
 #endif
         try
         {
-            _payload();
+            Payload();
 #if DEBUG
             logger.Debug("SFPM.Rule.ExecutePayload: Payload executed successfully (Priority: {Priority}).", Priority); // Debug log on successful payload execution
 #endif
@@ -176,5 +192,5 @@ public class Rule(List<ICriteria> criterias, Action payload)
     /// <summary>
     /// Gets the number of criteria in this rule.
     /// </summary>
-    public int CriteriaCount => _criterias.Count;
+    public int CriteriaCount => Criterias.Count;
 }
