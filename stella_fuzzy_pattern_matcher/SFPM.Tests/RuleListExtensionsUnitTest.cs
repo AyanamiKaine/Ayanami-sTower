@@ -15,62 +15,70 @@ public class RuleListExtensionsUnitTest
     public void MostSpecificRuleTest()
     {
         List<Rule> rules = [
-                  new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                ], ()=>{
+                  new Rule(criterias:
+                  [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                ], payload: ()=>{
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => nearAllies > 1),
+                ], payload: ()=>{
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<string>(factName: "curMap", predicate: curMap => curMap == "circus"),
+                ], payload: ()=>{
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                ], payload: ()=>{
                 }),
         ];
 
         var mostSpecificRule = rules.MostSpecificRule();
 
-        Assert.Equal(3, mostSpecificRule.CriteriaCount);
+        Assert.Equal(expected: 3, actual: mostSpecificRule.CriteriaCount);
     }
 
     [Fact]
     public void LeastSpecificRuleTest()
     {
         List<Rule> rules = [
-                  new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                ], ()=>{
+                  new Rule(criterias:
+                  [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                ], payload: ()=>{
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => nearAllies > 1),
+                ], payload: ()=>{
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<string>(factName: "curMap", predicate: curMap => curMap == "circus"),
+                ], payload: ()=>{
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                ], payload: ()=>{
                 }),
         ];
 
         var mostSpecificRule = rules.LeastSpecificRule();
 
-        Assert.Equal(1, mostSpecificRule.CriteriaCount);
+        Assert.Equal(expected: 1, actual: mostSpecificRule.CriteriaCount);
     }
 
     [Fact]
@@ -79,36 +87,40 @@ public class RuleListExtensionsUnitTest
         var ruleExecuted = false;
 
         List<Rule> rules = [
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                ], payload: ()=>{
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => nearAllies > 1),
+                ], payload: ()=>{
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<string>(factName: "curMap", predicate: curMap => curMap == "circus"),
+                ], payload: ()=>{
                     ruleExecuted = true;
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                ], ()=>{
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                ], payload: ()=>{
                 }),
         ];
 
-        rules.Match(new Dictionary<string, object>
+        rules.Match(queryData: new Dictionary<string, object>
             {
                 { "concept",    "onHit" },
                 { "who",        "Nick"},
                 { "curMap",     "circus"}
             });
 
-        Assert.True(ruleExecuted);
+        Assert.True(condition: ruleExecuted);
     }
 }
