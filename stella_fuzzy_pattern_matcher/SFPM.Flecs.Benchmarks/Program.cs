@@ -10,19 +10,19 @@ using Flecs.NET.Core;
 namespace SFPM.Flecs.Benchmarks;
 public record struct Name(string Value) : IComparable<Name>
 {
-    public readonly int CompareTo(Name other) => Value.CompareTo(other.Value);
+    public readonly int CompareTo(Name other) => Value.CompareTo(strB: other.Value);
 }
 public record struct Map(string Name) : IComparable<Map>
 {
-    public readonly int CompareTo(Map other) => Name.CompareTo(other.Name);
+    public readonly int CompareTo(Map other) => Name.CompareTo(strB: other.Name);
 }
 
 public record struct Health(int Value);
 public record struct Position(int X, int Y);
 
-[SimpleJob(RuntimeMoniker.Net90)]
+[SimpleJob(runtimeMoniker: RuntimeMoniker.Net90)]
 [MemoryDiagnoser]
-[Orderer(SummaryOrderPolicy.FastestToSlowest)]
+[Orderer(summaryOrderPolicy: SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
 public class SFPMFlecsBenchmarks
 {
@@ -35,44 +35,49 @@ public class SFPMFlecsBenchmarks
     {
         world = World.Create();
 
-        world.Set(new Map("circus"));
+        world.Set(data: new Map(Name: "circus"));
 
         world.Set
-            (new List<Rule>([
-                    new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                ], () =>
+            (data: new List<Rule>(collection:
+            [
+                    new Rule(criterias:
+                    [
+                    new Criteria<string>(factName: "who", predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(factName: "concept", predicate: concept => { return concept == "onHit"; }),
+                ], payload: () =>
                 {
                 }),
-                new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
-                ], () =>
+                new Rule(criterias:
+                [
+                    new Criteria<string>(factName: "who", predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(factName: "concept", predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => { return nearAllies > 1; }),
+                ], payload: () =>
                 {
                 }),
-                new Rule([
-                    new Criteria<Name>("who", who => { return who.Value == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<Map>("curMap", curMap => { return curMap.Name == "circus"; }),
-                ], () =>
+                new Rule(criterias:
+                [
+                    new Criteria<Name>(factName: "who", predicate: who => { return who.Value == "Nick"; }),
+                    new Criteria<string>(factName: "concept", predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<Map>(factName: "curMap", predicate: curMap => { return curMap.Name == "circus"; }),
+                ], payload: () =>
                 {
 
                 }),
-                new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
-                ], () =>
+                new Rule(criterias:
+                [
+                    new Criteria<string>(factName: "who", predicate: who => { return who == "Nick"; }),
+                    new Criteria<string>(factName: "concept", predicate: concept => { return concept == "onHit"; }),
+                    new Criteria<string>(factName: "hitBy", predicate: hitBy => { return hitBy == "zombieClown"; }),
+                ], payload: () =>
                 {
                 })
         ]));
 
         player = world.Entity()
-            .Set<Name>(new("Nick"))
-            .Set<Health>(new(100))
-            .Set<Position>(new(10, 20));
+            .Set<Name>(data: new(Value: "Nick"))
+            .Set<Health>(data: new(Value: 100))
+            .Set<Position>(data: new(X: 10, Y: 20));
 
         world.OptimizeWorldRules();
 
@@ -88,7 +93,7 @@ public class SFPMFlecsBenchmarks
     [Benchmark]
     public void MatchOnWorldOnce()
     {
-        world.MatchOnWorld(queryData);
+        world.MatchOnWorld(queryData: queryData);
     }
 
     [Benchmark]
@@ -96,7 +101,7 @@ public class SFPMFlecsBenchmarks
     {
         for (int i = 0; i < 9999; i++)
         {
-            world.MatchOnWorld(queryData);
+            world.MatchOnWorld(queryData: queryData);
         }
     }
 
@@ -106,19 +111,19 @@ public class SFPMFlecsBenchmarks
         {
             // Otherwise it complains that flecs is not build in release,
             // I dont think its true.
-            var config = ManualConfig.Create(DefaultConfig.Instance)
-                .WithOptions(ConfigOptions.DisableOptimizationsValidator);
+            var config = ManualConfig.Create(config: DefaultConfig.Instance)
+                .WithOptions(options: ConfigOptions.DisableOptimizationsValidator);
 
-            BenchmarkRunner.Run<SFPMFlecsBenchmarks>(config);
+            BenchmarkRunner.Run<SFPMFlecsBenchmarks>(config: config);
         }
     }
 }
 
 internal record struct EnemyCounter(int Count) : IComparable<EnemyCounter>
 {
-    public readonly int CompareTo(EnemyCounter other) => Count.CompareTo(other.Count);
+    public readonly int CompareTo(EnemyCounter other) => Count.CompareTo(value: other.Count);
 }
 internal record struct Stamina(double Value) : IComparable<Stamina>
 {
-    public readonly int CompareTo(Stamina other) => Value.CompareTo(other.Value);
+    public readonly int CompareTo(Stamina other) => Value.CompareTo(value: other.Value);
 }
