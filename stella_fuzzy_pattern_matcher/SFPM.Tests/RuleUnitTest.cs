@@ -1,13 +1,16 @@
 ﻿using NLog;
+using Xunit.Abstractions;
 
 namespace SFPM.Tests;
 
 public class RuleUnitTest
 {
+    private readonly ITestOutputHelper _testOutputHelper;
 
-    public RuleUnitTest()
+    public RuleUnitTest(ITestOutputHelper testOutputHelper)
     {
-        // Deactive Logging for unit tests
+        _testOutputHelper = testOutputHelper;
+        // Deactivate Logging for unit tests
         LogManager.Configuration.LoggingRules.Clear();
         LogManager.ReconfigExistingLoggers();
     }
@@ -15,54 +18,57 @@ public class RuleUnitTest
     [Fact]
     public void SimpleOneRuleTwoCriteriaStrictMatch()
     {
-        var rule1 = new Rule([
-            new Criteria<string>("who", "Nick", Operator.Equal),
-            new Criteria<string>("concept", "onHit", Operator.Equal),
-        ], () => { });
+        var rule1 = new Rule(criterias:
+        [
+            new Criteria<string>(factName: "who", expectedValue: "Nick", @operator: Operator.Equal),
+            new Criteria<string>(factName: "concept", expectedValue: "onHit", @operator: Operator.Equal),
+        ], payload: () => { });
 
-        var (matched, numberMatched) = rule1.Evaluate(new Dictionary<string, object>
+        var (matched, numberMatched) = rule1.Evaluate(facts: new Dictionary<string, object>
         {
             { "concept", "onHit" },
             { "who", "Nick"}
         });
 
-        Assert.True(matched);
-        Assert.Equal(2, numberMatched);
+        Assert.True(condition: matched);
+        Assert.Equal(expected: 2, actual: numberMatched);
     }
 
     [Fact]
     public void SimpleOneRuleTwoCriteriaPredicateBasedStrictMatch()
     {
-        var rule1 = new Rule([
-            new Criteria<string>("who", who => { return who == "Nick"; }),
-            new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-        ], () => { });
+        var rule1 = new Rule(criterias:
+        [
+            new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+            new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+        ], payload: () => { });
 
-        var (matched, numberMatched) = rule1.Evaluate(new Dictionary<string, object>
+        var (matched, numberMatched) = rule1.Evaluate(facts: new Dictionary<string, object>
         {
             { "concept", "onHit" },
             { "who", "Nick"}
         });
 
-        Assert.True(matched);
-        Assert.Equal(2, numberMatched);
+        Assert.True(condition: matched);
+        Assert.Equal(expected: 2, actual: numberMatched);
     }
 
     [Fact]
     public void SimpleOneRuleOneCriteriaStrictMatch()
     {
-        var rule1 = new Rule([
-            new Criteria<string>("who", "Nick", Operator.Equal),
-            new Criteria<string>("concept", "onHit", Operator.Equal),
-        ], () => { });
+        var rule1 = new Rule(criterias:
+        [
+            new Criteria<string>(factName: "who", expectedValue: "Nick", @operator: Operator.Equal),
+            new Criteria<string>(factName: "concept", expectedValue: "onHit", @operator: Operator.Equal),
+        ], payload: () => { });
 
-        var (completeMatch, numberOfMatchedCriteria) = rule1.Evaluate(new Dictionary<string, object>
+        var (completeMatch, numberOfMatchedCriteria) = rule1.Evaluate(facts: new Dictionary<string, object>
         {
             { "concept", "onHit" },
         });
 
-        Assert.False(completeMatch);
-        Assert.Equal(0, numberOfMatchedCriteria);
+        Assert.False(condition: completeMatch);
+        Assert.Equal(expected: 0, actual: numberOfMatchedCriteria);
     }
 
     [Fact]
@@ -71,67 +77,71 @@ public class RuleUnitTest
         var query = new Query();
         // Should never execute
         var rule1Executed = false;
-        // These should should always execute
+        // These should always execute
         var rule2Executed = false;
         var rule3Executed = false;
         var rule4Executed = false;
 
         query
-            .Add("who", "Nick")
-            .Add("concept", "onHit")
-            .Add("curMap", "circus")
-            .Add("health", 0.66)
-            .Add("nearAllies", 2)
-            .Add("hitBy", "zombieClown");
+            .Add(key: "who", value: "Nick")
+            .Add(key: "concept", value: "onHit")
+            .Add(key: "curMap", value: "circus")
+            .Add(key: "health", value: 0.66)
+            .Add(key: "nearAllies", value: 2)
+            .Add(key: "hitBy", value: "zombieClown");
 
 
         List<Rule> rules = [
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                ], ()=>{
-                    Console.WriteLine("Ouch");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "Ouch");
                     // Should never execute
                     rule1Executed = true;
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
-                ], ()=>{
-                    Console.WriteLine("ow help!");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => nearAllies > 1),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "ow help!");
                     rule2Executed = true;
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
-                ], ()=>{
-                    Console.WriteLine("This Circus Sucks!");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<string>(factName: "curMap", predicate: curMap => curMap == "circus"),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "This Circus Sucks!");
                     rule3Executed = true;
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
-                ], ()=>{
-                    Console.WriteLine("Stupid Clown!");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<string>(factName: "hitBy", predicate: hitBy => hitBy == "zombieClown"),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "Stupid Clown!");
                     rule4Executed = true;
                 }),
         ];
 
 
-        // We query match 1000 times so we can guarantee that each rule atleast once matched and got executed.
-        // Its a 33/100 chance that one of the rules gets executed. 
+        // We query match 1000 times so we can guarantee that each rule at least once matched and got executed.
+        // It's a 33/100 chance that one of the rules gets executed. 
         for (int i = 0; i < 1000; i++)
         {
-            query.Match(rules);
+            query.Match(rules: rules);
         }
 
-        Assert.False(rule1Executed);
-        Assert.True(rule2Executed);
-        Assert.True(rule3Executed);
-        Assert.True(rule4Executed);
+        Assert.False(condition: rule1Executed);
+        Assert.True(condition: rule2Executed);
+        Assert.True(condition: rule3Executed);
+        Assert.True(condition: rule4Executed);
     }
 
     /// <summary>
@@ -148,62 +158,67 @@ public class RuleUnitTest
         var rule5Executed = false;
 
         query
-            .Add("who", "Nick")
-            .Add("concept", "onHit")
-            .Add("curMap", "circus")
-            .Add("health", 0.66)
-            .Add("nearAllies", 2)
-            .Add("hitBy", "zombieClown");
+            .Add(key: "who", value: "Nick")
+            .Add(key: "concept", value: "onHit")
+            .Add(key: "curMap", value: "circus")
+            .Add(key: "health", value: 0.66)
+            .Add(key: "nearAllies", value: 2)
+            .Add(key: "hitBy", value: "zombieClown");
 
 
         List<Rule> rules = [
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                ], ()=>{
-                    Console.WriteLine("Ouch");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "Ouch");
                     rule1Executed = true;
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<int>("nearAllies", nearAllies => { return nearAllies > 1; }),
-                ], ()=>{
-                    Console.WriteLine("ow help!");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => nearAllies > 1),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "ow help!");
                     rule2Executed = true;
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
-                ], ()=>{
-                    Console.WriteLine("This Circus Sucks!");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<string>(factName: "curMap", predicate: curMap => curMap == "circus"),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "This Circus Sucks!");
                     rule3Executed = true;
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
-                ], ()=>{
-                    Console.WriteLine("Stupid Clown!");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<string>(factName: "hitBy", predicate: hitBy => hitBy == "zombieClown"),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "Stupid Clown!");
                     rule4Executed = true;
                 }),
-          new Rule([
-                    new Criteria<string>("who", who => { return who == "Nick"; }),
-                    new Criteria<string>("concept", concept => { return concept == "onHit"; }),
-                    new Criteria<string>("hitBy", hitBy => { return hitBy == "zombieClown"; }),
-                    new Criteria<string>("curMap", curMap => { return curMap == "circus"; }),
-                ], ()=>{
-                    Console.WriteLine("I hate circus clowns!");
+          new Rule(criterias:
+          [
+                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
+                    new Criteria<string>(factName: "hitBy", predicate: hitBy => hitBy == "zombieClown"),
+                    new Criteria<string>(factName: "curMap", predicate: curMap => curMap == "circus"),
+                ], payload: ()=>{
+                    _testOutputHelper.WriteLine(message: "I hate circus clowns!");
                     rule5Executed = true;
                 }),
         ];
 
-        query.Match(rules);
-        Assert.False(rule1Executed);
-        Assert.False(rule2Executed);
-        Assert.False(rule3Executed);
-        Assert.False(rule4Executed);
-        Assert.True(rule5Executed);
+        query.Match(rules: rules);
+        Assert.False(condition: rule1Executed);
+        Assert.False(condition: rule2Executed);
+        Assert.False(condition: rule3Executed);
+        Assert.False(condition: rule4Executed);
+        Assert.True(condition: rule5Executed);
     }
 }
