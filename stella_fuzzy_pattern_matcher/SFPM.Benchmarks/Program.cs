@@ -7,10 +7,10 @@ using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Reports;
 using Perfolizer.Horology;
 
-[SimpleJob(RuntimeMoniker.Net90)]               // JIT
+[SimpleJob(runtimeMoniker: RuntimeMoniker.Net90)]               // JIT
 //[SimpleJob(RuntimeMoniker.NativeAot90)]       // AOT
 [MemoryDiagnoser]
-[Orderer(SummaryOrderPolicy.FastestToSlowest)]
+[Orderer(summaryOrderPolicy: SummaryOrderPolicy.FastestToSlowest)]
 [RankColumn]
 public class SFPMBenchmarks
 {
@@ -35,7 +35,8 @@ public class SFPMBenchmarks
         tenthousandRules = [];
         for (int i = 0; i < 3333; i++)
         {
-            tenthousandRules.Add(new Rule([
+            tenthousandRules.Add(item: new Rule(criterias:
+            [
                     new Criteria<string>(
                         factName: "who",
                         predicate: who => { return who == "Nick"; }),
@@ -66,9 +67,10 @@ public class SFPMBenchmarks
                     new Criteria<string>(
                         factName: "equippedWeapon_type",
                         predicate:  weapon => { return weapon == "Sword"; }),
-                ], () => { }));
+                ], payload: () => { }));
 
-            tenthousandRules.Add(new Rule([
+            tenthousandRules.Add(item: new Rule(criterias:
+            [
                     new Criteria<string>(
                         factName: "who",
                         expectedValue: "Nick",
@@ -77,27 +79,30 @@ public class SFPMBenchmarks
                         factName: "weather",
                         expectedValue: "Rainy",
                         @operator: Operator.Equal),
-                ], () => { }));
+                ], payload: () => { }));
 
-            tenthousandRules.Add(new Rule([
-                    new Criteria<string>(factName: "who", "Nick", Operator.Equal),
-                    new Criteria<string>(factName: "weather", "Rainy", Operator.Equal),
-                    new Criteria<bool>(factName: "isSprinting", true, Operator.Equal),
-                ], () => { }));
+            tenthousandRules.Add(item: new Rule(criterias:
+            [
+                    new Criteria<string>(factName: "who", expectedValue: "Nick", @operator: Operator.Equal),
+                    new Criteria<string>(factName: "weather", expectedValue: "Rainy", @operator: Operator.Equal),
+                    new Criteria<bool>(factName: "isSprinting", expectedValue: true, @operator: Operator.Equal),
+                ], payload: () => { }));
         }
 
         rules = [
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "who",
                         predicate:  who => { return who == "Nick"; }),
                     new Criteria<string>(
                         factName: "concept",
                         predicate:  concept => { return concept == "onHit"; }),
-                ], ()=>{
+                ], payload: ()=>{
                 }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "attacker",
                         predicate:  attacker => { return attacker == "Hunter"; }),
@@ -107,33 +112,35 @@ public class SFPMBenchmarks
                     new Criteria<double>(
                         factName: "damage",
                         predicate:  damage => { return damage == 12.4; }),
-                ], ()=>{
+                ], payload: ()=>{
                 }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
-                        factName: "who", "Nick", Operator.Equal),
+                        factName: "who", expectedValue: "Nick", @operator: Operator.Equal),
                     new Criteria<string>(
-                        factName: "concept", "onHit", Operator.Equal),
+                        factName: "concept", expectedValue: "onHit", @operator: Operator.Equal),
                     new Criteria<string>(
-                        factName: "timeOfDay", "Night", Operator.Equal),
+                        factName: "timeOfDay", expectedValue: "Night", @operator: Operator.Equal),
                     new Criteria<string>(
-                        factName: "weather", "Rainy", Operator.Equal),
+                        factName: "weather", expectedValue: "Rainy", @operator: Operator.Equal),
                     new Criteria<int>(
-                        factName: "numberOfEnemiesNearby", 1, Operator.GreaterThanOrEqual),
+                        factName: "numberOfEnemiesNearby", expectedValue: 1, @operator: Operator.GreaterThanOrEqual),
                     new Criteria<string>(
-                        factName: "equippedWeapon_type", "Sword", Operator.Equal),
+                        factName: "equippedWeapon_type", expectedValue: "Sword", @operator: Operator.Equal),
                     new Criteria<bool>(
-                        factName: "isSprinting", true, Operator.Equal),
+                        factName: "isSprinting", expectedValue: true, @operator: Operator.Equal),
                     new Criteria<int>(
-                        factName: "stamina", 5, Operator.LessThanOrEqual),
+                        factName: "stamina", expectedValue: 5, @operator: Operator.LessThanOrEqual),
                     new Criteria<bool>(
-                        factName: "isSprinting", true, Operator.Equal),
+                        factName: "isSprinting", expectedValue: true, @operator: Operator.Equal),
                     new Criteria<int>(
-                        factName: "stamina", 5, Operator.LessThanOrEqual)
-                ], () => { }),
+                        factName: "stamina", expectedValue: 5, @operator: Operator.LessThanOrEqual)
+                ], payload: () => { }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "who",
                         predicate:  who => { return who == "Nick"; }),
@@ -164,10 +171,11 @@ public class SFPMBenchmarks
                     new Criteria<string>(
                         factName: "equippedWeapon_type",
                         predicate:  weapon => { return weapon == "Sword"; }),
-                ], () => { }),
+                ], payload: () => { }),
 
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "who",
                         predicate:  who => { return who == "Nick"; }),
@@ -192,11 +200,12 @@ public class SFPMBenchmarks
                     new Criteria<int>(
                         factName: "numberOfEnemiesNearby",
                         predicate:  enemies => { return enemies >= 1; }),
-                ], () => { }),
+                ], payload: () => { }),
 
 
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "who",
                         predicate: who => { return who == "Nick"; }),
@@ -221,9 +230,10 @@ public class SFPMBenchmarks
                     new Criteria<string>(
                         factName: "equippedWeapon_type",
                         predicate: weapon => { return weapon == "Sword"; }),
-                ], () => { }),
+                ], payload: () => { }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "concept",
                         predicate: concept => { return concept == "onHit"; }),
@@ -239,9 +249,10 @@ public class SFPMBenchmarks
                     new Criteria<string>(
                         factName: "equippedWeapon_type",
                         predicate: weapon => { return weapon == "Sword"; }),
-                ], () => { }),
+                ], payload: () => { }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "who",
                         predicate: who => { return who == "Nick"; }),
@@ -257,19 +268,21 @@ public class SFPMBenchmarks
                     new Criteria<int>(
                         factName: "numberOfEnemiesNearby",
                         predicate: enemies => { return enemies >= 1; }),
-                ], () => { }),
+                ], payload: () => { }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "who",
                         predicate: who => { return who == "Nick"; }),
                     new Criteria<string>(
                         factName: "concept",
                         predicate: concept => { return concept == "onHit"; }),
-                ], ()=>{
+                ], payload: ()=>{
                 }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "attacker",
                         predicate: attacker => { return attacker == "Hunter"; }),
@@ -279,54 +292,60 @@ public class SFPMBenchmarks
                     new Criteria<double>(
                         factName: "damage",
                         predicate: damage => { return damage == 12.4; }),
-                ], ()=>{
+                ], payload: ()=>{
                 }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "concept",
                         predicate: concept => concept == "OnHit"),
                     new Criteria<double>(
                         factName: "damage",
                         predicate: damage => damage > 10.0),
-                ], () => {
+                ], payload: () => {
                 }),
 
-                new Rule([
+                new Rule(criterias:
+                [
                     new Criteria<string>(
                         factName: "attacker",
-                        predicate: attacker => attacker.StartsWith('H')),
+                        predicate: attacker => attacker.StartsWith(value: 'H')),
                     new Criteria<double>(
                         factName: "damage",
                         predicate: damage => damage < 20.0),
-                ], () => {
+                ], payload: () => {
                 })
             ];
         rules.OptimizeRules();
         tenthousandRules.OptimizeRules();
 
-        OperatorBasedRule1Criteria = new Rule([
-            new Criteria<string>("who", "Nick", Operator.Equal),
-        ], () => { });
+        OperatorBasedRule1Criteria = new Rule(criterias:
+        [
+            new Criteria<string>(factName: "who", expectedValue: "Nick", @operator: Operator.Equal),
+        ], payload: () => { });
 
-        PredicateBasedRule1Criteria = new Rule([
-            new Criteria<string>("who", who => { return who == "Nick"; }),
-        ], () => { });
+        PredicateBasedRule1Criteria = new Rule(criterias:
+        [
+            new Criteria<string>(factName: "who", predicate: who => { return who == "Nick"; }),
+        ], payload: () => { });
 
-        BigOperatorRule10Criteria = new Rule([
-            new Criteria<string>(factName: "who", "Nick", Operator.Equal),
-            new Criteria<string>(factName: "concept", "onHit", Operator.Equal),
-            new Criteria<string>(factName: "timeOfDay", "Night", Operator.Equal),
-            new Criteria<string>(factName: "weather", "Rainy", Operator.Equal),
-            new Criteria<int>(factName: "numberOfEnemiesNearby", 1, Operator.GreaterThanOrEqual),
-            new Criteria<string>(factName: "equippedWeapon_type", "Sword", Operator.Equal),
-            new Criteria<bool>(factName: "isSprinting", true, Operator.Equal),
-            new Criteria<int>(factName: "stamina", 5, Operator.LessThanOrEqual),
-            new Criteria<bool>(factName: "isSprinting", true, Operator.Equal),
-            new Criteria<int>(factName: "stamina", 5, Operator.LessThanOrEqual)
-        ], () => { });
+        BigOperatorRule10Criteria = new Rule(criterias:
+        [
+            new Criteria<string>(factName: "who", expectedValue: "Nick", @operator: Operator.Equal),
+            new Criteria<string>(factName: "concept", expectedValue: "onHit", @operator: Operator.Equal),
+            new Criteria<string>(factName: "timeOfDay", expectedValue: "Night", @operator: Operator.Equal),
+            new Criteria<string>(factName: "weather", expectedValue: "Rainy", @operator: Operator.Equal),
+            new Criteria<int>(factName: "numberOfEnemiesNearby", expectedValue: 1, @operator: Operator.GreaterThanOrEqual),
+            new Criteria<string>(factName: "equippedWeapon_type", expectedValue: "Sword", @operator: Operator.Equal),
+            new Criteria<bool>(factName: "isSprinting", expectedValue: true, @operator: Operator.Equal),
+            new Criteria<int>(factName: "stamina", expectedValue: 5, @operator: Operator.LessThanOrEqual),
+            new Criteria<bool>(factName: "isSprinting", expectedValue: true, @operator: Operator.Equal),
+            new Criteria<int>(factName: "stamina", expectedValue: 5, @operator: Operator.LessThanOrEqual)
+        ], payload: () => { });
 
-        BigPredicateRule10Criteria = new Rule([
+        BigPredicateRule10Criteria = new Rule(criterias:
+        [
             new Criteria<string>(
                 factName: "who",
                 predicate: who => { return who == "Nick"; }),
@@ -357,16 +376,17 @@ public class SFPMBenchmarks
             new Criteria<string>(
                 factName: "equippedWeapon_type",
                 predicate: weapon => { return weapon == "Sword"; }),
-        ], () => { });
+        ], payload: () => { });
 
-        PredicateCriteriaCustomType = new Rule([
+        PredicateCriteriaCustomType = new Rule(criterias:
+        [
             new Criteria<EnemyCounter>(
                 factName: "numberOfEnemiesNearby",
                 predicate: enemies => { return enemies.Count >= 1; }),
             new Criteria<Stamina>(
                 factName: "stamina",
                 predicate: stamina => { return stamina.Value <= 5; }),
-        ], () => { });
+        ], payload: () => { });
 
 
         Facts = new Dictionary<string, object>
@@ -458,26 +478,26 @@ public class SFPMBenchmarks
             { "region_type", "Temperate" },       // string - Type of geographical region (e.g., "Temperate", "Desert", "Arctic")
         };
 
-        query = new Query(Facts);
+        query = new Query(queryData: Facts);
     }
 
 
     [Benchmark]
     public void OneRuleTwoCriteriaOperatorBasedMatch()
     {
-        var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
+        var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(facts: Facts);
     }
 
     [Benchmark]
     public void OneRuleTwoCriteriaPredicateBasedMatch()
     {
-        var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
+        var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(facts: Facts);
     }
 
     [Benchmark]
     public void BigPredicateBasedMatch()
     {
-        var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(Facts);
+        var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(facts: Facts);
     }
 
     /// <summary>
@@ -486,20 +506,20 @@ public class SFPMBenchmarks
     [Benchmark]
     public void BigPredicateBasedMatchCustomTypeCriteria()
     {
-        var (matched, numberMatched) = PredicateCriteriaCustomType.Evaluate(Facts);
+        var (matched, numberMatched) = PredicateCriteriaCustomType.Evaluate(facts: Facts);
     }
 
     [Benchmark]
     public void QueryMatch()
     {
-        query.Match(rules);
+        query.Match(rules: rules);
     }
 
 
     [Benchmark]
     public void QueryMatch10000Rules()
     {
-        query.Match(tenthousandRules);
+        query.Match(rules: tenthousandRules);
     }
 
     //[Benchmark]
@@ -507,7 +527,7 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 9999; i++)
         {
-            query.Match(tenthousandRules);
+            query.Match(rules: tenthousandRules);
         }
     }
 
@@ -516,59 +536,59 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 9999; i++)
         {
-            query.Match(rules);
+            query.Match(rules: rules);
         }
     }
 
     [Benchmark]
     public void ParraleQueryMatch10000Times()
     {
-        Parallel.For(0, 9999, i =>
+        Parallel.For(fromInclusive: 0, toExclusive: 9999, body: i =>
         {
-            query.Match(rules);
+            query.Match(rules: rules);
         });
     }
 
     [Benchmark]
     public void BigOperatorBasedMatch()
     {
-        var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(Facts);
+        var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(facts: Facts);
     }
 
 
     [Benchmark]
     public void ParralelIterateOver10000RulesBigPredicate()
     {
-        Parallel.For(0, 9999, i =>
+        Parallel.For(fromInclusive: 0, toExclusive: 9999, body: i =>
         {
-            var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = BigPredicateRule10Criteria.Evaluate(facts: Facts);
         });
     }
 
     [Benchmark]
     public void ParralelIterateOver10000RulesBigOperator()
     {
-        Parallel.For(0, 9999, i =>
+        Parallel.For(fromInclusive: 0, toExclusive: 9999, body: i =>
         {
-            var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = BigOperatorRule10Criteria.Evaluate(facts: Facts);
         });
     }
 
     [Benchmark]
     public void ParralelIterateOver10000RulesPredicate()
     {
-        Parallel.For(0, 9999, i =>
+        Parallel.For(fromInclusive: 0, toExclusive: 9999, body: i =>
         {
-            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(facts: Facts);
         });
     }
 
     [Benchmark]
     public void ParralelIterateOver10000RulesOperator()
     {
-        Parallel.For(0, 9999, i =>
+        Parallel.For(fromInclusive: 0, toExclusive: 9999, body: i =>
         {
-            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(facts: Facts);
         });
     }
 
@@ -578,7 +598,7 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 9999; i++)
         {
-            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = OperatorBasedRule1Criteria.Evaluate(facts: Facts);
         }
     }
 
@@ -587,7 +607,7 @@ public class SFPMBenchmarks
     {
         for (int i = 0; i < 9999; i++)
         {
-            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(Facts);
+            var (matched, numberMatched) = PredicateBasedRule1Criteria.Evaluate(facts: Facts);
         }
     }
 
@@ -595,19 +615,19 @@ public class SFPMBenchmarks
     {
         public static void Main(string[] args)
         {
-            var config = ManualConfig.Create(DefaultConfig.Instance)
-                .WithSummaryStyle(SummaryStyle.Default.WithTimeUnit(TimeUnit.Millisecond));
+            var config = ManualConfig.Create(config: DefaultConfig.Instance)
+                .WithSummaryStyle(summaryStyle: SummaryStyle.Default.WithTimeUnit(timeUnit: TimeUnit.Millisecond));
 
-            BenchmarkRunner.Run<SFPMBenchmarks>(config);
+            BenchmarkRunner.Run<SFPMBenchmarks>(config: config);
         }
     }
 }
 
 internal record struct EnemyCounter(int Count) : IComparable<EnemyCounter>
 {
-    public readonly int CompareTo(EnemyCounter other) => Count.CompareTo(other.Count);
+    public readonly int CompareTo(EnemyCounter other) => Count.CompareTo(value: other.Count);
 }
 internal record struct Stamina(double Value) : IComparable<Stamina>
 {
-    public readonly int CompareTo(Stamina other) => Value.CompareTo(other.Value);
+    public readonly int CompareTo(Stamina other) => Value.CompareTo(value: other.Value);
 }
