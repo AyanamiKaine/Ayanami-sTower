@@ -3,13 +3,13 @@ using NLog;
 namespace SFPM;
 
 /// <summary>
-/// Represents a query, its a set facts, represented as a key value pair.
+/// Represents a query, it's a set facts, represented as a key value pair.
 /// </summary>
 public class Query()
 {
 
     /// <summary>
-    /// Sets the query data from an dictionary
+    /// Sets the query data from a dictionary
     /// </summary>
     /// <param name="queryData"></param>
     public Query(Dictionary<string, object> queryData) : this()
@@ -18,7 +18,7 @@ public class Query()
     }
 
     private readonly Dictionary<string, object> _queryData = [];
-    private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Adds a key and value to the query.
@@ -51,7 +51,7 @@ public class Query()
         {
             if (rule.CriteriaCount < currentHighestScore)
             {
-                logger.ConditionalDebug("SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
+                Logger.ConditionalDebug(message: "SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
             }
 
             var (matched, matchedCriteriaCount) = rule.Evaluate(facts: _queryData);
@@ -71,18 +71,18 @@ public class Query()
 
         if (acceptedRules.Count == 1)
         {
-            acceptedRules[0].ExecutePayload();
+            acceptedRules[index: 0].ExecutePayload();
         }
         else if (acceptedRules.Count > 1)
         {
-            logger.ConditionalDebug($"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
-            // Group highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
-                                                   .OrderByDescending(g => g.Key)
+            Logger.ConditionalDebug(message: $"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
+            // Group the highest priority rules
+            var highestPriorityRules = acceptedRules.GroupBy(keySelector: r => r.Priority)
+                                                   .OrderByDescending(keySelector: g => g.Key)
                                                    .First();
             // Randomly select one rule from the highest priority group
             var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(highestPriorityRules.Count()));
+            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(maxValue: highestPriorityRules.Count()));
             selectedRule.ExecutePayload();
         }
     }
