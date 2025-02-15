@@ -8,8 +8,30 @@
     <AnalysisLevel>preview</AnalysisLevel>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>
+
+    <PackageId>StellaFuzzyPatternMatcher</PackageId>         
+    <Version>1.0.0</Version>                     
+    <Authors>Ayanami</Authors>     
+    <Title>Stella Fuzzy Pattern Matcher (SFPM)</Title>              
+    <Description>A lightweight C# library for rule-based pattern matching with support for fuzzy matching and priority-based rule selection..</Description> 
+    <Copyright>Copyright (c) Ayanami</Copyright> 
+    <PackageLicenseExpression>MIT</PackageLicenseExpression> 
+    <PackageProjectUrl>https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/stella_fuzzy_pattern_matcher</PackageProjectUrl> 
+    <RepositoryUrl>https://github.com/your-username/your-repo</RepositoryUrl> 
+    <RepositoryType>git</RepositoryType>          
+    <PackageTags>pattern-matching;rule-engine;fuzzy-matching;priority-rules;dotnet;fluent-api;performance;lightweight</PackageTags>
+    <NeutralLanguage>en-US</NeutralLanguage>       
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild> 
+    <PackageReadmeFile>README.md</PackageReadmeFile>    
+    <IncludeSymbols>true</IncludeSymbols>         
+    <DebugType>embedded</DebugType>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-  
+
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
   <ItemGroup>
   
     <PackageReference Include="NLog" Version="5.4.0" />
