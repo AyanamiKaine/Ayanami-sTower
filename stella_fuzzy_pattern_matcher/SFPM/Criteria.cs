@@ -85,7 +85,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     public Operator Operator { get; } = @operator;
     private readonly Predicate<TValue> _predicate = _ => false; // Nullable predicate, used for custom logic
     private readonly string _predicateName = "";
-    private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Criteria{TValue}"/> class with a custom predicate.
@@ -94,9 +94,9 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// <param name="predicate">The predicate used for custom evaluation.</param>
     /// <param name="predicateName">Optional name for the predicate function. Used for display purposes. Pick a descriptive name what the predicate checks</param>
     public Criteria(string factName, Predicate<TValue> predicate, string predicateName = "")
-        : this(factName, default, Operator.Predicate)
+        : this(factName: factName, expectedValue: default, @operator: Operator.Predicate)
     {
-        this._predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+        this._predicate = predicate ?? throw new ArgumentNullException(paramName: nameof(predicate));
         _predicateName = predicateName;
     }
 
@@ -113,8 +113,8 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
         {
             if (Operator == Operator.Predicate) // Check for Custom operator and predicate
             {
-                var result = _predicate(typedFactValue); // Execute the predicate lambda
-                logger.ConditionalDebug($"SFPM.Criteria.Matches: FactName={FactName}, Predicate={(_predicateName.Length == 0 ? "NoNameGiven" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}");
+                var result = _predicate(obj: typedFactValue); // Execute the predicate lambda
+                Logger.ConditionalDebug(message: $"SFPM.Criteria.Matches: FactName={FactName}, Predicate={(_predicateName.Length == 0 ? "NoNameGiven" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}");
                 return result;
             }
             else
@@ -127,7 +127,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
                     Operator.GreaterThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue) >= 0,
                     Operator.LessThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue) <= 0,
                     Operator.NotEqual => !EqualityComparer<TValue>.Default.Equals(x: typedFactValue, y: ExpectedValue),
-                    _ => throw new ArgumentOutOfRangeException(nameof(Operator), Operator, "Unknown operator"),
+                    _ => throw new ArgumentOutOfRangeException(paramName: nameof(Operator), actualValue: Operator, message: "Unknown operator"),
                 };
             }
         }
