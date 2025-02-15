@@ -6,7 +6,7 @@ namespace SFPM;
 /// </summary>
 public static class RuleListExtensions
 {
-    private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Optimizes the rules list by sorting rules based on their criteria count in descending order.
@@ -18,7 +18,7 @@ public static class RuleListExtensions
     /// </remarks>
     public static void OptimizeRules(this List<Rule> rules)
     {
-        rules.Sort((a, b) => b.CriteriaCount.CompareTo(a.CriteriaCount));
+        rules.Sort(comparison: (a, b) => b.CriteriaCount.CompareTo(value: a.CriteriaCount));
     }
 
     /// <summary>
@@ -30,13 +30,13 @@ public static class RuleListExtensions
     /// <exception cref="ArgumentNullException">Thrown when rules parameter is null.</exception>
     /// <remarks>
     /// This method uses LINQ's MaxBy operation to find the rule with the highest criteria count.
-    /// The operation runs in O(n) time where n is the number of rules in the list.
+    /// The operation runs in O(n) time when n is the number of rules in the list.
     /// </remarks>
     public static Rule MostSpecificRule(this List<Rule> rules)
     {
         if (rules.Count == 0)
-            throw new ArgumentException("Rules list cannot be empty.", nameof(rules));
-        return rules.MaxBy(r => r.CriteriaCount)!;
+            throw new ArgumentException(message: "Rules list cannot be empty.", paramName: nameof(rules));
+        return rules.MaxBy(keySelector: r => r.CriteriaCount)!;
     }
 
     /// <summary>
@@ -52,8 +52,8 @@ public static class RuleListExtensions
     public static Rule LeastSpecificRule(this List<Rule> rules)
     {
         if (rules.Count == 0)
-            throw new ArgumentException("Rules list cannot be empty.", nameof(rules));
-        return rules.MinBy(r => r.CriteriaCount)!;
+            throw new ArgumentException(message: "Rules list cannot be empty.", paramName: nameof(rules));
+        return rules.MinBy(keySelector: r => r.CriteriaCount)!;
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ public static class RuleListExtensions
         {
             if (rule.CriteriaCount < currentHighestScore)
             {
-                logger.ConditionalDebug("SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
+                Logger.ConditionalDebug(message: "SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
             }
 
             var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
@@ -89,18 +89,18 @@ public static class RuleListExtensions
 
         if (acceptedRules.Count == 1)
         {
-            acceptedRules[0].ExecutePayload();
+            acceptedRules[index: 0].ExecutePayload();
         }
         else if (acceptedRules.Count > 1)
         {
-            logger.ConditionalDebug($"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
-            // Group highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(r => r.Priority)
-                                                   .OrderByDescending(g => g.Key)
+            Logger.ConditionalDebug(message: $"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
+            // Group the highest priority rules
+            var highestPriorityRules = acceptedRules.GroupBy(keySelector: r => r.Priority)
+                                                   .OrderByDescending(keySelector: g => g.Key)
                                                    .First();
             // Randomly select one rule from the highest priority group
             var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(highestPriorityRules.Count()));
+            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(maxValue: highestPriorityRules.Count()));
             selectedRule.ExecutePayload();
         }
     }
