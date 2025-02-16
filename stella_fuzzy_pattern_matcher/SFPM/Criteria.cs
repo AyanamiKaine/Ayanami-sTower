@@ -84,7 +84,7 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     /// </summary>
     public Operator Operator { get; } = @operator;
     private readonly Predicate<TValue> _predicate = _ => false; // Nullable predicate, used for custom logic
-    private readonly string _predicateName = "";
+    private readonly string _predicateName = string.Empty;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
