@@ -17,7 +17,6 @@
     <Copyright>Copyright (c) Ayanami</Copyright> 
     <PackageLicenseExpression>MIT</PackageLicenseExpression> 
     <PackageProjectUrl>https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/stella_fuzzy_pattern_matcher</PackageProjectUrl> 
-    <RepositoryUrl>https://github.com/your-username/your-repo</RepositoryUrl> 
     <RepositoryType>git</RepositoryType>          
     <PackageTags>pattern-matching;rule-engine;fuzzy-matching;priority-rules;dotnet;fluent-api;performance;lightweight</PackageTags>
     <NeutralLanguage>en-US</NeutralLanguage>       
