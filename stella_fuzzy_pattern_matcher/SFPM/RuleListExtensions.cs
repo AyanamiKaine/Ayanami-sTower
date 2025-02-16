@@ -84,6 +84,7 @@ public static class RuleListExtensions
                 }
                 if (matchedCriteriaCount == currentHighestScore)
                 {
+                    Logger.ConditionalDebug(message: "SFPM.Query.Match: Rule with the same number of highest criteria matched, adding it to the accepted rules list.");
                     acceptedRules.Add(item: rule);
                 }
             }
