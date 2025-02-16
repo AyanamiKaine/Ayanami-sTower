@@ -150,47 +150,7 @@ public static class EcsWorldExtensions
     /// </remarks>
     public static void MatchOnWorld<TTag>(this World world, Dictionary<string, object> queryData)
     {
-        var acceptedRules = new List<Rule>();
-        var currentHighestScore = 0;
-
-        foreach (var rule in world.GetSecond<TTag, List<Rule>>())
-        {
-            if (rule.CriteriaCount < currentHighestScore)
-                return;
-
-            /*
-            This here remains a big problem, where does the rule get its data from? From one entity? From the world?
-            From an ECS query? Conceptually a key would be the type of component like Health and the value the data of the component.
-            */
-            var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
-            if (matched)
-            {
-                if (matchedCriteriaCount > currentHighestScore)
-                {
-                    currentHighestScore = matchedCriteriaCount;
-                    acceptedRules.Clear();
-                }
-                if (matchedCriteriaCount == currentHighestScore)
-                {
-                    acceptedRules.Add(item: rule);
-                }
-            }
-        }
-        if (acceptedRules.Count == 1)
-        {
-            acceptedRules[index: 0].ExecutePayload();
-        }
-        else if (acceptedRules.Count > 1)
-        {
-            // Group the highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(keySelector: r => r.Priority)
-                                                   .OrderByDescending(keySelector: g => g.Key)
-                                                   .First();
-            // Randomly select one rule from the highest priority group
-            var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(maxValue: highestPriorityRules.Count()));
-            selectedRule.ExecutePayload();
-        }
+        world.GetSecond<TTag, List<Rule>>().Match(queryData: queryData);
     }
     /// <summary>
     /// Matches rules stored in the ECS world rules component against provided query data and executes the payload of the best matching rule.
@@ -209,48 +169,7 @@ public static class EcsWorldExtensions
     /// <exception cref="ArgumentNullException">Thrown when world or queryData parameters are null.</exception>
     public static void MatchOnWorld(this World world, Dictionary<string, object> queryData)
     {
-        var acceptedRules = new List<Rule>();
-        var currentHighestScore = 0;
-
-        foreach (var rule in world.Get<List<Rule>>())
-        {
-            if (rule.CriteriaCount < currentHighestScore)
-                return;
-
-            /*
-            This here remains a big problem, where does the rule get its data from? From one entity? From the world?
-            From an ECS query? Conceptually a key would be the type of component like Health and the value the data of the component.
-            */
-            var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
-            if (matched)
-            {
-                if (matchedCriteriaCount > currentHighestScore)
-                {
-                    currentHighestScore = matchedCriteriaCount;
-                    acceptedRules.Clear();
-                }
-                if (matchedCriteriaCount == currentHighestScore)
-                {
-                    acceptedRules.Add(item: rule);
-                }
-            }
-        }
-
-        if (acceptedRules.Count == 1)
-        {
-            acceptedRules[index: 0].ExecutePayload();
-        }
-        else if (acceptedRules.Count > 1)
-        {
-            // Group the highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(keySelector: r => r.Priority)
-                                                   .OrderByDescending(keySelector: g => g.Key)
-                                                   .First();
-            // Randomly select one rule from the highest priority group
-            var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(maxValue: highestPriorityRules.Count()));
-            selectedRule.ExecutePayload();
-        }
+        world.Get<List<Rule>>().Match(queryData: queryData);
     }
 
     /// <summary>
