@@ -90,6 +90,7 @@ public static class RuleListExtensions
 
         if (acceptedRules.Count == 1)
         {
+            Logger.ConditionalDebug(message: "SFPM.Query.Match: Matching one Rule only");
             acceptedRules[index: 0].ExecutePayload();
         }
         else if (acceptedRules.Count > 1)
