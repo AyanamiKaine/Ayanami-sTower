@@ -22,14 +22,18 @@ If multiple rules with the same number of criteria are matched a random rule is 
 Also if a rule has a defined priority then a rule with the higher priority is selected. 
 */
 List<Rule> rules = [
-            new Rule(criterias:
+            new Rule(
+                name: "Nick Got Hit",
+                criterias:
             [
                     new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
                     new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
                 ], payload: ()=>{
                     Console.WriteLine(value: "Ouch");
                 }),
-            new Rule(criterias:
+            new Rule(
+                name: "Nick Got Hit with allies around",
+                criterias:
             [
                     new Criteria<string>(factName: "who", predicate: who =>  who == "Nick" ),
                     new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
@@ -37,7 +41,9 @@ List<Rule> rules = [
                 ], payload: ()=>{
                     Console.WriteLine(value: "ow help!");
                 }),
-            new Rule(criterias:
+            new Rule(
+                name: "Nick Got Hit on the map circus",
+                criterias:
             [
                     new Criteria<string>(factName: "who", predicate: who =>  who == "Nick" , predicateName: "IsNick"),
                     new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit" ),
@@ -45,7 +51,9 @@ List<Rule> rules = [
                 ], payload: ()=>{
                     Console.WriteLine(value: "This Circus Sucks!");
                 }),
-            new Rule(criterias:
+            new Rule(
+                name: "Nick Got Hit by a clown",
+                criterias:
             [
                     new Criteria<string>(factName: "who", predicate: who => who == "Tom", predicateName: "IsTom"),
                     new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit", predicateName: "ConceptIsOnHit"),
@@ -53,7 +61,9 @@ List<Rule> rules = [
                 ], payload: ()=>{
                     Console.WriteLine(value: "Stupid Clown!");
                 }),
-            new Rule(criterias:
+            new Rule(
+                name: "Nick Got Hit by a clown on the circus map",
+                criterias:
             [
                     new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
                     new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
