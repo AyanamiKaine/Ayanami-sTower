@@ -47,6 +47,8 @@ public class Query()
     {
         var acceptedRules = new List<Rule>();
         var currentHighestScore = 0;
+        Logger.ConditionalDebug(message: $"SFPM.Query.Match: Matching against {rules.Count} rules.");
+
         foreach (var rule in rules)
         {
             if (rule.CriteriaCount < currentHighestScore)
