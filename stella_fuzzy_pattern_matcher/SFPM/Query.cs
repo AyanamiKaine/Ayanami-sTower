@@ -45,47 +45,7 @@ public class Query()
     /// <param name="rules"></param>
     public void Match(List<Rule> rules)
     {
-        var acceptedRules = new List<Rule>();
-        var currentHighestScore = 0;
         Logger.ConditionalDebug(message: $"SFPM.Query.Match: Matching against {rules.Count} rules.");
-
-        foreach (var rule in rules)
-        {
-            if (rule.CriteriaCount < currentHighestScore)
-            {
-                Logger.ConditionalDebug(message: "SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
-            }
-
-            var (matched, matchedCriteriaCount) = rule.Evaluate(facts: _queryData);
-            if (matched)
-            {
-                if (matchedCriteriaCount > currentHighestScore)
-                {
-                    currentHighestScore = matchedCriteriaCount;
-                    acceptedRules.Clear();
-                }
-                if (matchedCriteriaCount == currentHighestScore)
-                {
-                    acceptedRules.Add(item: rule);
-                }
-            }
-        }
-
-        if (acceptedRules.Count == 1)
-        {
-            acceptedRules[index: 0].ExecutePayload();
-        }
-        else if (acceptedRules.Count > 1)
-        {
-            Logger.ConditionalDebug(message: $"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
-            // Group the highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(keySelector: r => r.Priority)
-                                                   .OrderByDescending(keySelector: g => g.Key)
-                                                   .First();
-            // Randomly select one rule from the highest priority group
-            var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(maxValue: highestPriorityRules.Count()));
-            selectedRule.ExecutePayload();
-        }
+        rules.Match(_queryData);
     }
 }
