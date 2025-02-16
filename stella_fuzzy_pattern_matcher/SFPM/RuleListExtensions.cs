@@ -78,6 +78,7 @@ public static class RuleListExtensions
             {
                 if (matchedCriteriaCount > currentHighestScore)
                 {
+                    Logger.ConditionalDebug(message: $"SFPM.Query.Match: New more specifc rule found, clearing accepted rules list. Old highest criteria rule count: {currentHighestScore}. New Highest criteria rule count: {matchedCriteriaCount}");
                     currentHighestScore = matchedCriteriaCount;
                     acceptedRules.Clear();
                 }
