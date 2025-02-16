@@ -12,7 +12,7 @@
     <Version>1.0.1</Version>                     
     <Authors>Ayanami</Authors>     
     <Title>Stella Fuzzy Pattern Matcher (SFPM) Flecs Extensions</Title>              
-    <Description>A lightweight C# library for rule-based pattern matching with support for fuzzy matching and priority-based rule selection..</Description> 
+    <Description>A lightweight C# library for rule-based pattern matching with support for fuzzy matching and priority-based rule selection with flecs method extensions</Description> 
     <Copyright>Copyright (c) Ayanami</Copyright> 
     <PackageLicenseExpression>MIT</PackageLicenseExpression> 
     <PackageProjectUrl>https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/stella_fuzzy_pattern_matcher</PackageProjectUrl> 
