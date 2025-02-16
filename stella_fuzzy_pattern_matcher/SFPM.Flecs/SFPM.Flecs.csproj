@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SFPM\SFPM.csproj" />
+    <PackageReference Include="StellaFuzzyPatternMatcher" Version="*" />
     <PackageReference Include="Flecs.NET.Debug" Version="4.0.3" />
     <PackageReference Include="Flecs.NET.Release" Version="4.0.3" />
   
