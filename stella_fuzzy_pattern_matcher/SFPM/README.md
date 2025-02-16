@@ -1,15 +1,17 @@
-# Stella Fuzzy Pattern Matcher (SFPM)
+# Fuzzy Rule Matcher
 
 A lightweight C# library for rule-based pattern matching with support for fuzzy matching and priority-based rule selection.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![NuGet](https://img.shields.io/nuget/v/SFPM.svg)](https://www.nuget.org/packages/FuzzyRuleMatcher/)
 
 ## Table of Contents
 
-- [Introduction](#stella-fuzzy-pattern-matcher)
+- [Introduction](#Fuzzy-Rule-Matcher)
 - [Installation](#Installation)
 - [Quickstart](#Quick-Start)
 - [Performance Considerations](Performance-Considerations)
+- [License](#license)
 
 ### Introduction
 
@@ -117,7 +119,7 @@ In essence we match a list of facts to a list of conditions if all conditions me
 
 Here we defined a condition as a `Criteria`, a list of `Criteria` as one `Rule` with a `payload`.
 
-### Installation
+## Installation
 
 Install via NuGet:
 
@@ -125,7 +127,7 @@ Install via NuGet:
 dotnet add package SFPM
 ```
 
-### Quick Start
+## Quick Start
 
 ```C#
 using SFPM;
@@ -154,7 +156,7 @@ var query = new Query()
 query.Match(rules);
 ```
 
-### Rule Matching
+## Rule Matching
 
 Rules are evaluated based on their criteria. The rule with the most matching criteria is selected. When multiple rules match with the same number of criteria:
 
@@ -162,7 +164,7 @@ Rules are evaluated based on their criteria. The rule with the most matching cri
 2. Highest priority rules are selected
 3. If multiple rules have the same priority, one is chosen randomly
 
-### Rule List Extensions and Optimization
+## Rule List Extensions and Optimization
 
 SFPM provides extension methods for optimizing and managing rule collections:
 
@@ -219,7 +221,7 @@ var facts = new Dictionary<string, object>
 rules.Match(facts); // Will output "Critical situation!" due to highest match count and priority
 ```
 
-### Performance Considerations
+## Performance Considerations
 
 - Use `OptimizeRules()` when your rule set is static to improve matching performance
 - Rules with more criteria are evaluated first after optimization
@@ -238,3 +240,11 @@ rules.OptimizeRules();
 var mostSpecific = rules.MostSpecificRule();
 var leastSpecific = rules.LeastSpecificRule();
 ```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
