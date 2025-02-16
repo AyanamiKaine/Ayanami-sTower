@@ -52,7 +52,7 @@ List<Rule> rules = [
                     Console.WriteLine(value: "This Circus Sucks!");
                 }),
             new Rule(
-                name: "Nick Got Hit by a clown",
+                name: "Tom Got Hit by a clown",
                 criterias:
             [
                     new Criteria<string>(factName: "who", predicate: who => who == "Tom", predicateName: "IsTom"),
