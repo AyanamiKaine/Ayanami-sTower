@@ -1,13 +1,13 @@
-# Fuzzy Rule Matcher
+# Stella Fuzzy Pattern Matcher
 
 A lightweight C# library for rule-based pattern matching with support for fuzzy matching and priority-based rule selection.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![NuGet](https://img.shields.io/nuget/v/SFPM.svg)](https://www.nuget.org/packages/FuzzyRuleMatcher/)
+[![NuGet](https://img.shields.io/nuget/v/SFPM.svg)](https://www.nuget.org/packages/StellaFuzzyPatternMatcher/)
 
 ## Table of Contents
 
-- [Introduction](#Fuzzy-Rule-Matcher)
+- [Introduction](#Stella-Fuzzy-Pattern-Matcher)
 - [Installation](#Installation)
 - [Quickstart](#Quick-Start)
 - [Performance Considerations](Performance-Considerations)
