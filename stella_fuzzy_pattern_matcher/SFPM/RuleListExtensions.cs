@@ -68,6 +68,7 @@ public static class RuleListExtensions
         Logger.ConditionalDebug(message: $"SFPM.Query.Match: Matching against {rules.Count} rules.");
         foreach (var rule in rules)
         {
+            Logger.ConditionalDebug(message: $"SFPM.Query.Match: Trying to match new rule with the critera amount {rule.CriteriaCount}");
             if (rule.CriteriaCount < currentHighestScore)
             {
                 Logger.ConditionalDebug(message: "SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
