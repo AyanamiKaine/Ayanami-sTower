@@ -138,9 +138,9 @@ var rules = new List<Rule>
     new Rule(
         new List<ICriteria>
         {
-            new Criteria<string>("weather", "Rainy"),
-            new Criteria<int>("stamina", 5, Operator.LessThanOrEqual),
-            new Criteria<bool>("isSprinting", true)
+            new Criteria<string>("weather", weather => weather == "Rainy"),
+            new Criteria<int>("stamina", stamina => stamina < 5),
+            new Criteria<bool>("isSprinting", isSprinting => isSprinting == true)
         },
         () => Console.WriteLine("Player is tired and running in the rain!")
     )
@@ -176,7 +176,7 @@ var rules = new List<Rule>
     new Rule(
         new List<ICriteria>
         {
-            new Criteria<int>("health", 50, Operator.LessThan),
+            new Criteria<int>("health", health => health < 50),
             new Criteria<bool>("isInCombat", true),
             new Criteria<string>("weather", "Stormy")
         },
@@ -187,8 +187,8 @@ var rules = new List<Rule>
     new Rule(
         new List<ICriteria>
         {
-            new Criteria<int>("health", 80, Operator.LessThan),
-            new Criteria<bool>("isInCombat", true)
+            new Criteria<int>("health", health => health < 80),
+            new Criteria<bool>("isInCombat", isInCombat => isInCombat == true)
         },
         () => Console.WriteLine("Combat situation")
     ) { Priority = 2 },
@@ -197,7 +197,7 @@ var rules = new List<Rule>
     new Rule(
         new List<ICriteria>
         {
-            new Criteria<int>("health", 30, Operator.LessThan)
+            new Criteria<int>("health", health => health < 60)
         },
         () => Console.WriteLine("Low health warning")
     ) { Priority = 1 }
