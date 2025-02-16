@@ -7,8 +7,8 @@ namespace SFPM;
 /// </summary>
 /// <param name="criterias"></param>
 /// <param name="payload">The payload is a function that gets executed when the rule is the most matched rule</param>
-/// <param name="Name">Optional name identifier for the rule used in debugging.</param>
-public class Rule(List<ICriteria> criterias, Action payload, string Name = "")
+/// <param name="name">Optional name identifier for the rule used in debugging.</param>
+public class Rule(List<ICriteria> criterias, Action payload, string name = "")
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -18,7 +18,7 @@ public class Rule(List<ICriteria> criterias, Action payload, string Name = "")
     /// <value>
     /// The name that identifies this rule.
     /// </value>
-    public required string Name { get; set; } = Name;
+    public string Name { get; set; } = name;
     /// <summary>
     /// We might set a priority for a rule, its used when a query matches more than one rule with the same
     /// number of criteria. We then select the rule with the highest priority. If they have both the same 
