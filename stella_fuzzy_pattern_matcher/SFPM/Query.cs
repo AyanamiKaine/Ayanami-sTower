@@ -45,7 +45,6 @@ public class Query()
     /// <param name="rules"></param>
     public void Match(List<Rule> rules)
     {
-        Logger.ConditionalDebug(message: $"SFPM.Query.Match: Matching against {rules.Count} rules.");
         rules.Match(_queryData);
     }
 }
