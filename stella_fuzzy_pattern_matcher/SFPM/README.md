@@ -2,16 +2,122 @@
 
 A lightweight C# library for rule-based pattern matching with support for fuzzy matching and priority-based rule selection.
 
-## Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- 🎯 Rule-based pattern matching with multiple criteria
-- 🔍 Support for custom predicates and comparison operators
-- ⚡ Performance optimizations for rule evaluation
-- 🎲 Handles multiple matching rules with priority and random selection
-- 📝 Comprehensive logging with NLog integration
-- 📊 Easy to use fluent API
+## Table of Contents
 
-## Installation
+- [Introduction](#stella-fuzzy-pattern-matcher)
+- [Installation](#Installation)
+- [Quickstart](#Quick-Start)
+- [Performance Considerations](Performance-Considerations)
+
+### Introduction
+
+Entirely based on [AI-driven Dynamic Dialog through Fuzzy Pattern Matching](https://www.youtube.com/watch?v=tAbBID3N64A&t)
+
+- Another good read is [You Merely Adopted Rules.csv, I Was Born Into It](https://fractalsoftworks.com/2023/11/13/you-merely-adopted-rules-csv-i-was-born-into-it/)
+
+The main problem we want to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem.
+
+```csharp
+// Traditional approach with deeply nested conditions
+if (player.Level >= 10 &&
+    player.HasItem("MagicSword") &&
+    !questLog.IsCompleted("DragonSlayer") &&
+    world.TimeOfDay == "Night" &&
+    player.Location == "MysticalForest" &&
+    player.Health > 50 &&
+    player.MagicPoints >= 30 &&
+    !player.HasStatusEffect("Cursed") &&
+    player.Reputation > 100)
+{
+    // Trigger special encounter with ancient dragon
+    SpawnAncientDragon();
+}
+```
+
+With our fuzzy pattern matcher, we can express this more elegantly as a rule:
+
+```csharp
+var dragonEncounterRule = new Rule([
+        new Criteria<int>(
+            factName: "PlayerLevel",
+            predicate: level => level >= 10),
+        new Criteria<string>(
+            factName: "HasItem",
+            predicate: item => item == "MagicSword"),
+        new Criteria<string>(
+            factName: "QuestStatus",
+            predicate: status => status != "DragonSlayerComplete"),
+        new Criteria<string>(
+            factName: "TimeOfDay",
+            predicate: time => time == "Night"),
+        new Criteria<string>(
+            factName: "Location",
+            predicate: loc => loc == "MysticalForest"),
+        new Criteria<int>(
+            factName: "Health",
+            predicate: health => health > 50),
+        new Criteria<int>(
+            factName: "MagicPoints",
+            predicate: mp => mp >= 30),
+        new Criteria<string>(
+            factName: "Status",
+            predicate: status => status != "Cursed"),
+        new Criteria<int>(
+            factName: "Reputation",
+            predicate: rep => rep > 100)
+    ], () => SpawnAncientDragon());
+```
+
+The tree can be easily extended adding new scenarios or events.
+
+```C#
+var bigDragonEncounterRule = new Rule([
+        // Here we increase the player level
+        new Criteria<int>(
+            factName: "PlayerLevel",
+            predicate: level => level >= 15),
+        new Criteria<string>(
+            factName: "HasItem",
+            predicate: item => item == "MagicSword"),
+        new Criteria<string>(
+            factName: "QuestStatus",
+            predicate: status => status != "DragonSlayerComplete"),
+        new Criteria<string>(
+            factName: "TimeOfDay",
+            predicate: time => time == "Night"),
+        new Criteria<string>(
+            factName: "Location",
+            predicate: loc => loc == "MysticalForest"),
+        new Criteria<int>(
+            factName: "Health",
+            predicate: health => health > 50),
+        new Criteria<int>(
+            factName: "MagicPoints",
+            predicate: mp => mp >= 30),
+        new Criteria<string>(
+            factName: "Status",
+            predicate: status => status != "Cursed"),
+        new Criteria<int>(
+            factName: "Reputation",
+            predicate: rep => rep > 100)
+    ],
+    // and trigger the spawn of a bigger acient dragon
+    () => SpawnBigAncientDragon());
+```
+
+The main idea is to decouple where each branch of a tree is defined.
+
+- A branch can be created arbitrary high or deep.
+- It can have some conditions or many
+- They can be easily edited, removed, added at runtime.
+
+In essence we match a list of facts to a list of conditions if all conditions met we execute its body.
+
+Here we defined a condition as a `Criteria`, a list of `Criteria` as one `Rule` with a `payload`.
+
+### Installation
 
 Install via NuGet:
 
@@ -19,7 +125,7 @@ Install via NuGet:
 dotnet add package SFPM
 ```
 
-## Quick Start
+### Quick Start
 
 ```C#
 using SFPM;
@@ -48,7 +154,7 @@ var query = new Query()
 query.Match(rules);
 ```
 
-## Rule Matching
+### Rule Matching
 
 Rules are evaluated based on their criteria. The rule with the most matching criteria is selected. When multiple rules match with the same number of criteria:
 
@@ -56,8 +162,7 @@ Rules are evaluated based on their criteria. The rule with the most matching cri
 2. Highest priority rules are selected
 3. If multiple rules have the same priority, one is chosen randomly
 
-
-## Rule List Extensions and Optimization
+### Rule List Extensions and Optimization
 
 SFPM provides extension methods for optimizing and managing rule collections:
 
@@ -132,21 +237,4 @@ rules.OptimizeRules();
 // Get most/least specific rules
 var mostSpecific = rules.MostSpecificRule();
 var leastSpecific = rules.LeastSpecificRule();
-```
-
-## Custom Predicates
-
-```C#
-var customRule = new Rule(
-    new List<ICriteria>
-    {
-        new Criteria<int>("enemyCount",
-            count => count > 5 && count < 10,
-            "EnemyCountBetween5And10"),
-        new Criteria<double>("playerHealth",
-            health => health < 50.0,
-            "HealthBelow50Percent")
-    },
-    () => Console.WriteLine("Player is in danger!")
-);
 ```
