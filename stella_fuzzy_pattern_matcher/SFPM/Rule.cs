@@ -3,16 +3,22 @@ using NLog;
 namespace SFPM;
 
 /// <summary>
-/// A list of criterias that if all matched the rule "matches", if
-/// no criterion is matched the rule rejects the match.
-/// Partial matching is possible.
+/// Represents a rule in a fuzzy pattern matching system that contains criteria and an action to execute when matched.
 /// </summary>
 /// <param name="criterias"></param>
 /// <param name="payload">The payload is a function that gets executed when the rule is the most matched rule</param>
-public class Rule(List<ICriteria> criterias, Action payload)
+/// <param name="Name">Optional name identifier for the rule used in debugging.</param>
+public class Rule(List<ICriteria> criterias, Action payload, string Name = "")
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    /// <summary>
+    /// Gets or sets the name of the rule. Used for debugging purposes. When defined helps finding the rule in the logging output.
+    /// </summary>
+    /// <value>
+    /// The name that identifies this rule.
+    /// </value>
+    public required string Name { get; set; } = Name;
     /// <summary>
     /// We might set a priority for a rule, its used when a query matches more than one rule with the same
     /// number of criteria. We then select the rule with the highest priority. If they have both the same 
