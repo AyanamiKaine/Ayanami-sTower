@@ -56,7 +56,6 @@ Rules are evaluated based on their criteria. The rule with the most matching cri
 2. Highest priority rules are selected
 3. If multiple rules have the same priority, one is chosen randomly
 
-...existing code...
 
 ## Rule List Extensions and Optimization
 
