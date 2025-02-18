@@ -135,6 +135,7 @@ Now this rule is matched when the player has the name "Tom" or "Tim"
 
 - Extensive logging in debug builds.
 - Various extension methods for conveniance use.
+
 ### Missing Features
 
 #### Define where a query queries its data from.
@@ -211,14 +212,3 @@ Queriering data can be quite combersome. I think using an entity component syste
 ### Performance Goals
 
 I want that one query wont take longer than some microseconds(μs) over a list of 10000 rules.
-
-#### Last Result
-
-```
-
-| Method                 | Mean       | Error        | StdDev        | Rank | Gen0   | Gen1     | Allocated |
-| OneQueryOver10000Rules | 521,152 ns | 9,924.667 ns | 11,031.241 ns | 10   | 6.8359 | 0.9766   | 132096 B  |
-
-```
-
-Or rounded in 521 microseconds(µs).
