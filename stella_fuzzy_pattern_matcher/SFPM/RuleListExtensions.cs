@@ -72,6 +72,7 @@ public static class RuleListExtensions
             if (rule.CriteriaCount < currentHighestScore)
             {
                 Logger.ConditionalDebug(message: "SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
+                break;
             }
 
             var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
