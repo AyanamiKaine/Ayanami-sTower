@@ -516,6 +516,15 @@ public class SFPMBenchmarks
     }
 
 
+    /// <summary>
+    /// This benchmark is really bad, why?
+    /// because I created the 10000 rules by creating 3 rules 3333 times,
+    /// so in the end 3333 rules with match and we need to create a LINQ group 
+    /// and select a random rule out of it. It allocates, also it would evaluate 
+    /// 3333 rules because they dont have less criteria. So its more accurate to say
+    /// that if 3333 rules would match it would take around 0.5 ms to execute.
+    /// This is somewhat unrealistic
+    /// </summary>
     [Benchmark]
     public void QueryMatch10000Rules()
     {
