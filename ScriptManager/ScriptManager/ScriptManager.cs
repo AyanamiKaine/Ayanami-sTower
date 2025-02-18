@@ -262,7 +262,7 @@ public class ScriptEventArgs(string scriptName) : EventArgs
 /// <summary>
 /// Class that manages scripts and their compilation.
 /// </summary>
-public class ScriptManager
+public class ScriptHandler
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -305,7 +305,7 @@ public class ScriptManager
     /// <param name="entities">can be refrenced in a script using _entities</param>
     /// <param name="recompileScriptsOnFileChange"></param>
     /// <param name="removeScriptDirective"></param>
-    public ScriptManager(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true, bool removeScriptDirective = true)
+    public ScriptHandler(World world, NamedEntities entities, bool recompileScriptsOnFileChange = true, bool removeScriptDirective = true)
     {
         RemoveScriptDirective = removeScriptDirective;
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);
@@ -325,7 +325,7 @@ public class ScriptManager
     /// <param name="options"></param>
     /// <param name="recompileScriptsOnFileChange"></param>
     /// <param name="removeScriptDirective"></param>
-    public ScriptManager(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true, bool removeScriptDirective = true)
+    public ScriptHandler(World world, NamedEntities entities, ScriptOptions options, bool recompileScriptsOnFileChange = true, bool removeScriptDirective = true)
     {
         RemoveScriptDirective = removeScriptDirective;
         ScriptWatcher = InitializeScriptWatcher(recompileScriptsOnFileChange);

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptManager.Test", "Scrip
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptManager.Benchmark", "ScriptManager.Benchmark\ScriptManager.Benchmark.csproj", "{5A9B8AD3-5D13-42A9-A805-1292DE740D65}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptManager.Example", "ScriptManager.Example\ScriptManager.Example.csproj", "{9B6EFE25-B08A-4010-8BB1-EC4C26893589}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{5A9B8AD3-5D13-42A9-A805-1292DE740D65}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A9B8AD3-5D13-42A9-A805-1292DE740D65}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A9B8AD3-5D13-42A9-A805-1292DE740D65}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B6EFE25-B08A-4010-8BB1-EC4C26893589}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B6EFE25-B08A-4010-8BB1-EC4C26893589}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B6EFE25-B08A-4010-8BB1-EC4C26893589}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B6EFE25-B08A-4010-8BB1-EC4C26893589}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
