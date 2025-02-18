@@ -5,6 +5,7 @@ using Flecs.NET.Core;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using NLog;
 
 namespace ScriptManager;
 
@@ -263,6 +264,8 @@ public class ScriptEventArgs(string scriptName) : EventArgs
 /// </summary>
 public class ScriptManager
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// If set true #r directives are removed from the code.
     /// </summary>
@@ -311,30 +314,7 @@ public class ScriptManager
         Data = new GlobalData(world, entities);
         CompiledScripts = new();
 
-        string baseDirectoryForScripts = Path.Combine(AppContext.BaseDirectory, "../../../../", "scripts");
-
-
-        //Adding meta data seems to do nothing?
-        //What does meta data even do?
-        //Like this -> MetadataReference.CreateFromFile("Flecs.NET.dll"),
-        Options = ScriptOptions.Default
-            .WithSourceResolver(new ScriptSourceRefrenceResolver(baseDirectoryForScripts))
-            .AddReferences(
-                typeof(object).Assembly, // Usually needed for basic types
-                Assembly.Load("Flecs.NET"),
-                Assembly.Load("Flecs.NET.Bindings"),
-                Assembly.Load("Avalonia.Flecs.Controls"),
-                Assembly.Load("Avalonia.Controls"),
-                Assembly.Load("Avalonia.Flecs.Scripting"),
-                Assembly.Load("Avalonia"),
-                Assembly.Load("Avalonia.Desktop"),
-                Assembly.Load("Avalonia.Base")
-            // Load your API assembly
-            )
-            .AddImports("Avalonia.Controls")
-            .AddImports("Avalonia.Flecs.Controls.ECS")
-            .AddImports("Avalonia.Flecs.Scripting")
-            .AddImports("Flecs.NET.Core");
+        Options = DefaultOptions;
     }
 
     /// <summary>
@@ -420,6 +400,28 @@ public class ScriptManager
     }
 
     /// <summary>
+    /// Gets or sets the default script options used for script compilation.
+    /// Contains pre-configured settings including source resolution and assembly references.
+    /// </summary>
+    /// <remarks>
+    /// The default configuration includes:
+    /// - Source resolution from the base scripts directory
+    /// - References to core assemblies including:
+    ///   - System.Object assembly
+    ///   - Flecs.NET assembly
+    ///   - Flecs.NET.Bindings assembly
+    /// - Default imports for Flecs.NET.Core namespace
+    /// </remarks>
+    public ScriptOptions DefaultOptions { get; set; } = ScriptOptions.Default
+            .WithSourceResolver(new ScriptSourceRefrenceResolver(Path.Combine(AppContext.BaseDirectory, "../../../../", "scripts")))
+            .AddReferences(
+                typeof(object).Assembly, // Usually needed for basic types
+                Assembly.Load("Flecs.NET"),
+                Assembly.Load("Flecs.NET.Bindings")
+            )
+            .AddImports("Flecs.NET.Core");
+
+    /// <summary>
     /// The global data is accessible in the scripts and can be used to interact with the ECS.
     /// </summary>
     public GlobalData Data
@@ -459,9 +461,13 @@ public class ScriptManager
     }
 
     /// <summary>
-    /// Removes a script from the list of compiled scripts.
+    /// Removes a compiled script from the script manager.
     /// </summary>
-    /// <param name="scriptName"></param>
+    /// <param name="scriptName">The name of the script to remove.</param>
+    /// <remarks>
+    /// If the script exists in the compiled scripts collection, it will be removed and the CompiledScriptRemoved event will be triggered.
+    /// If the script does not exist, no action is taken.
+    /// </remarks>
     public void RemoveScript(string scriptName)
     {
         if (CompiledScripts.Contains(scriptName))
@@ -484,13 +490,10 @@ public class ScriptManager
         }
 
         // Get all .cs files in the folder
-        var scriptFiles = Directory.GetFiles(folderPath, "*.csx");
-
-        foreach (var file in scriptFiles)
+        foreach (var file in Directory.GetFiles(folderPath, "*.csx"))
         {
             try
             {
-
                 // Read the code from the file
                 var code = File.ReadAllTextAsync(file).Result;
 
@@ -508,7 +511,7 @@ public class ScriptManager
             catch (Exception ex)
             {
                 // Handle exceptions like IOException, compilation errors, etc.
-                Console.WriteLine($"Error compiling script {file}: {ex.Message}");
+                Logger.Trace($"Error compiling script {file}: {ex.Message}");
             }
         }
     }
@@ -527,9 +530,7 @@ public class ScriptManager
         }
 
         // Get all .cs files in the folder
-        var scriptFiles = Directory.GetFiles(folderPath, "*.csx");
-
-        foreach (var file in scriptFiles)
+        foreach (var file in Directory.GetFiles(folderPath, "*.csx"))
         {
             try
             {
@@ -572,7 +573,7 @@ public class ScriptManager
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error running script '{scriptName}': {e.Message}");
+            Logger.Trace($"Error running script '{scriptName}': {e.Message}");
         }
     }
 
@@ -609,7 +610,7 @@ public class ScriptManager
         }
         _lastWriteTime[e.FullPath] = now;
 
-        Console.WriteLine($"Script {e.Name} changed. Recompiling...");
+        Logger.Trace($"Script {e.Name} changed. Recompiling...");
 
         if (e.Name is null)
             return;
@@ -656,7 +657,7 @@ public class ScriptManager
                 await Task.Delay(100);
             }
         }
-        Console.WriteLine($"Retry count: {retryCount}, because of the file was locked.");
+        Logger.Trace($"Retry count: {retryCount}, because of the file was locked.");
 
         if (!string.IsNullOrEmpty(code))
         {
@@ -664,7 +665,7 @@ public class ScriptManager
         }
         else
         {
-            Console.WriteLine($"Failed to read script {name} after {maxRetries} retries");
+            Logger.Trace($"Failed to read script {name} after {maxRetries} retries");
         }
     }
 
@@ -675,7 +676,7 @@ public class ScriptManager
     /// <param name="e"></param>
     private void OnScriptRenamed(object sender, RenamedEventArgs e)
     {
-        Console.WriteLine($"Script {e.OldName} renamed to {e.Name}. Recompiling...");
+        Logger.Trace($"Script {e.OldName} renamed to {e.Name}. Recompiling...");
 
         if (e.Name is null || e.OldName is null)
             return;
@@ -694,7 +695,7 @@ public class ScriptManager
     /// <param name="e"></param>
     private void OnScriptFileAdded(object sender, FileSystemEventArgs e)
     {
-        Console.WriteLine($"Script {e.Name} added. Compiling...");
+        Logger.Trace($"Script {e.Name} added. Compiling...");
 
         if (e.Name is null)
             return;
@@ -730,7 +731,7 @@ public class ScriptManager
             EnableRaisingEvents = true
         };
 
-        ScriptWatcher.Error += (s, e) => Console.WriteLine($"FileSystemWatcher error: {e.GetException()}");
+        ScriptWatcher.Error += (s, e) => Logger.Trace($"FileSystemWatcher error: {e.GetException()}");
 
         RecompileScriptsOnFileChange = recompileScriptsOnFileChange;
         return ScriptWatcher;
@@ -744,7 +745,7 @@ public class ScriptManager
     /// <returns></returns>
     public async Task StartReplAsync()
     {
-        Console.WriteLine("Starting REPL...");
+        Logger.Trace("Starting REPL...");
 
         while (!_replCancellationTokenSource.IsCancellationRequested)
         {
@@ -812,7 +813,7 @@ public class ScriptManager
         {
             foreach (var error in compilation)
             {
-                Console.WriteLine($"Compilation error: {error.ToString()}");
+                Logger.Trace($"Compilation error: {error.ToString()}");
             }
             return;
         }
@@ -823,7 +824,7 @@ public class ScriptManager
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error running script: {e.Message}");
+            Logger.Trace($"Error running script: {e.Message}");
         }
     }
 
@@ -919,7 +920,7 @@ public class ScriptManager
             Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
 
             File.Copy(e.FullPath, destPath, true);
-            Console.WriteLine($"Copied newly created file: {e.FullPath} to {destPath}");
+            Logger.Trace($"Copied newly created file: {e.FullPath} to {destPath}");
         };
 
         developmentScriptFileWatcher.Changed += (s, e) =>
@@ -931,7 +932,7 @@ public class ScriptManager
             Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
 
             File.Copy(e.FullPath, destPath, true);
-            Console.WriteLine($"Copied updated file: {e.FullPath} to {destPath}");
+            Logger.Trace($"Copied updated file: {e.FullPath} to {destPath}");
         };
 
         developmentScriptFileWatcher.Renamed += (s, e) =>
@@ -948,12 +949,11 @@ public class ScriptManager
             if (File.Exists(oldDestPath))
             {
                 File.Delete(oldDestPath);
-                Console.WriteLine($"Deleted old file: {oldDestPath}");
+                Logger.Trace($"Deleted old file: {oldDestPath}");
             }
 
             File.Copy(e.FullPath, newDestPath, true);
-            Console.WriteLine($"Copied renamed file: {e.FullPath} to {newDestPath}");
-
+            Logger.Trace($"Copied renamed file: {e.FullPath} to {newDestPath}");
         };
     }
 }
