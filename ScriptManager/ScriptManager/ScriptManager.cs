@@ -400,8 +400,9 @@ public class ScriptManager
     }
 
     /// <summary>
-    /// Gets or sets the default script options used for script compilation.
+    /// Gets the default script options used for script compilation.
     /// Contains pre-configured settings including source resolution and assembly references.
+    /// Useful when you need to add your own namespaces to the scripts.
     /// </summary>
     /// <remarks>
     /// The default configuration includes:
@@ -412,7 +413,7 @@ public class ScriptManager
     ///   - Flecs.NET.Bindings assembly
     /// - Default imports for Flecs.NET.Core namespace
     /// </remarks>
-    public ScriptOptions DefaultOptions { get; set; } = ScriptOptions.Default
+    public static ScriptOptions DefaultOptions { get; } = ScriptOptions.Default
             .WithSourceResolver(new ScriptSourceRefrenceResolver(Path.Combine(AppContext.BaseDirectory, "../../../../", "scripts")))
             .AddReferences(
                 typeof(object).Assembly, // Usually needed for basic types
