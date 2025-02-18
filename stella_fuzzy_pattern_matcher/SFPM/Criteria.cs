@@ -57,7 +57,9 @@ public enum Operator
     /// </summary>
     Predicate
 }
-
+/*
+Maybe we can improve this by adding a source code generator, for generating the conditions
+*/
 
 /// <summary>
 /// Represents a criteria for matching facts with a specific value and operator.
