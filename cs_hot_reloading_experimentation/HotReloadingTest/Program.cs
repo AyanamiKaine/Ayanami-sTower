@@ -1,6 +1,5 @@
 ﻿using Flecs.NET;
 using Flecs.NET.Core;
-
 namespace HotReloadingTest;
 
 
