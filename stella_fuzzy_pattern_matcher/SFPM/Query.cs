@@ -18,7 +18,7 @@ public class Query()
     }
 
     private readonly Dictionary<string, object> _queryData = [];
-    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Adds a key and value to the query.
