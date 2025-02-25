@@ -1,4 +1,4 @@
-namespace StellaInvicta.Tags.Diplomacy;
+namespace StellaInvicta.Tags.Relationships;
 
 /// <summary>
 /// Marks an entity as having a neutral diplomatic relationship with the player's faction.

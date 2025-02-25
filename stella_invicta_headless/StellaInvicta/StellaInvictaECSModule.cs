@@ -29,6 +29,12 @@ public class StellaInvictaECSModule : IFlecsModule
 
         // Used for game date handling. Similar to how you would imagine CK2/Vic2 doing it with their time.
         world.RegisterComponent<GameDate>("GameDate");
+        world.RegisterComponent<Age>("Age")
+            .Member<int>("Value");
+
+        world.RegisterComponent<Wealth>("Wealth")
+            .Member<double>("Value");
+
         AddTags(world);
         AddWorldGlobals(world);
     }
@@ -61,9 +67,11 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.CelestialBodies.Moon>("Moon");
         world.RegisterTag<Tags.CelestialBodies.Planet>("Planet");
         world.RegisterTag<Tags.CelestialBodies.Star>("Star");
-        world.RegisterTag<Tags.Diplomacy.Ally>("Ally");
-        world.RegisterTag<Tags.Diplomacy.AtWar>("AtWar");
-        world.RegisterTag<Tags.Diplomacy.Enemy>("Enemy");
-        world.RegisterTag<Tags.Diplomacy.Neutral>("Neutral");
+
+        world.RegisterTag<Tags.Relationships.Ally>("Ally");
+        world.RegisterTag<Tags.Relationships.AtWar>("AtWar");
+        world.RegisterTag<Tags.Relationships.Enemy>("Enemy");
+        world.RegisterTag<Tags.Relationships.Neutral>("Neutral");
+        world.RegisterTag<Tags.Relationships.Owner>("Owner");
     }
 }

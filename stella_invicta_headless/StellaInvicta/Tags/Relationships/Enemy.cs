@@ -1,4 +1,4 @@
-namespace StellaInvicta.Tags.Diplomacy;
+namespace StellaInvicta.Tags.Relationships;
 
 /// <summary>
 /// Marks an entity as hostile to the player's faction. Used for diplomatic and combat systems.
