@@ -68,10 +68,11 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.CelestialBodies.Planet>("Planet");
         world.RegisterTag<Tags.CelestialBodies.Star>("Star");
 
-        world.RegisterTag<Tags.Relationships.Ally>("Ally");
-        world.RegisterTag<Tags.Relationships.AtWar>("AtWar");
-        world.RegisterTag<Tags.Relationships.Enemy>("Enemy");
-        world.RegisterTag<Tags.Relationships.Neutral>("Neutral");
-        world.RegisterTag<Tags.Relationships.Owner>("Owner");
+        world.RegisterTag<Tags.Relationships.IsAtWarWith>("IsAtWarWith");
+        world.RegisterTag<Tags.Relationships.OwnedBy>("OwnedBy");
+
+        world.RegisterTag<Tags.Identifiers.Ally>("Ally");
+        world.RegisterTag<Tags.Identifiers.Enemy>("Enemy");
+        world.RegisterTag<Tags.Identifiers.Neutral>("Neutral");
     }
 }

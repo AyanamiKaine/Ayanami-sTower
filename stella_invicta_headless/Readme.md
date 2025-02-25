@@ -8,6 +8,8 @@ The simulation must be vast, fast and dynamic.
 
 I want that the player can destroy the economy of an empire without waging war.
 
+Empires, must rise and fall with reason.
+
 ## Inspirations
 
 - X4: Foundations
