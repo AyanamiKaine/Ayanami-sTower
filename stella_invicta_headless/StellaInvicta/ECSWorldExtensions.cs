@@ -20,10 +20,10 @@ public static class ECSWorldExtensions
     /// <typeparam name="T">The type of the tag component to register.</typeparam>
     /// <param name="world">The game world to which the tag will be added.</param>
     /// <param name="tagName">The name of the tag component.</param>
-    public static void RegisterTag<T>(this World world, string tagName)
+    public static Component<T> RegisterTag<T>(this World world, string tagName)
     {
         Logger.ConditionalDebug($"Registering {tagName} component tag.");
-        world.Component<T>(tagName);
+        return world.Component<T>(tagName);
     }
 
     /// <summary>
@@ -35,9 +35,9 @@ public static class ECSWorldExtensions
     /// <remarks>
     /// This method logs a debug message when registering the component.
     /// </remarks>
-    public static void RegisterComponent<T>(this World world, string componentName)
+    public static Component<T> RegisterComponent<T>(this World world, string componentName)
     {
         Logger.ConditionalDebug($"Registering {componentName} as component.");
-        world.Component<T>(componentName);
+        return world.Component<T>(componentName);
     }
 }
