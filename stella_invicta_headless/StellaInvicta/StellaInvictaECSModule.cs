@@ -1,0 +1,69 @@
+﻿using Flecs.NET.Core;
+using NLog;
+using StellaInvicta.Components;
+namespace StellaInvicta;
+
+/// <summary>
+/// Module responsible for initializing and configuring the ECS (Entity Component System) components for Stella Invicta.
+/// </summary>
+/// <remarks>
+/// This module implements IFlecsModule interface to provide ECS setup functionality.
+/// Use this class to register systems, components, and entities required for the game.
+/// </remarks>
+public class StellaInvictaECSModule : IFlecsModule
+{
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+
+    /// <summary>
+    /// Initializes the ECS module with the specified world instance.
+    /// </summary>
+    /// <param name="world">The ECS world instance to initialize the module with.</param>
+    /// <remarks>
+    /// This method is responsible for setting up all necessary systems, components, and entities
+    /// required for the Stella Invicta ECS module to function properly within the given world context.
+    /// </remarks>
+    public void InitModule(World world)
+    {
+        world.Module<StellaInvictaECSModule>();
+
+        // Used for game date handling. Similar to how you would imagine CK2/Vic2 doing it with their time.
+        world.RegisterComponent<GameDate>("GameDate");
+        AddTags(world);
+        AddWorldGlobals(world);
+    }
+
+    /// <summary>
+    /// Adds global variables to the specified ECS world.
+    /// </summary>
+    /// <param name="world">The ECS world to which global variables will be added.</param>
+    /// <remarks>
+    /// Currently initializes a default DateTime instance as a global variable in the world.
+    /// </remarks>
+    public static void AddWorldGlobals(World world)
+    {
+        Logger.ConditionalDebug("Adding GameDate component directly to the game world as a global");
+        world.Set<GameDate>(new());
+    }
+
+    /// <summary>
+    /// Registers celestial body and diplomacy tag components within the specified world.
+    /// </summary>
+    /// <param name="world">The game world to which the tags will be added.</param>
+    /// <remarks>
+    /// This method initializes both celestial body tags (Asteroid, GasGiant, Moon, Planet, Star) 
+    /// and diplomatic relationship tags (Ally, AtWar, Enemy, Neutral) as components in the ECS world.
+    /// </remarks>
+    public static void AddTags(World world)
+    {
+        world.RegisterTag<Tags.CelestialBodies.Asteroid>("Asteroid");
+        world.RegisterTag<Tags.CelestialBodies.GasGiant>("GasGiant");
+        world.RegisterTag<Tags.CelestialBodies.Moon>("Moon");
+        world.RegisterTag<Tags.CelestialBodies.Planet>("Planet");
+        world.RegisterTag<Tags.CelestialBodies.Star>("Star");
+        world.RegisterTag<Tags.Diplomacy.Ally>("Ally");
+        world.RegisterTag<Tags.Diplomacy.AtWar>("AtWar");
+        world.RegisterTag<Tags.Diplomacy.Enemy>("Enemy");
+        world.RegisterTag<Tags.Diplomacy.Neutral>("Neutral");
+    }
+}
