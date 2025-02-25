@@ -1,6 +1,6 @@
 ﻿namespace StellaInvicta.Test;
 
-public class UnitTest1
+public class PopulationUnitTest
 {
     [Fact]
     public void Test1()
