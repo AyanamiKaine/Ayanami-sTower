@@ -15,7 +15,7 @@ public class CharacterUnitTest
         world.Import<StellaInvictaECSModule>();
 
 
-        // Current Year
+        // Set Current Year
         world.Set<GameDate>(new(year: 29, month: 12, day: 1));
 
         world.AddSystem(new GameTimeSystem());
