@@ -7,7 +7,7 @@ namespace StellaInvicta.Components;
 /// 30 Days each month
 /// 360 Days each year
 /// </summary>
-public struct GameDate(int year, int month = 1, int day = 1, int hour = 0, int minute = 0, int turn = 0)
+public struct GameDate(int year, int month = 1, int day = 1, int hour = 0, int minute = 0, int turn = 0) : IEquatable<GameDate>
 {
     /// <summary>
     /// Gets or sets the year component of the game date.
@@ -145,5 +145,55 @@ public struct GameDate(int year, int month = 1, int day = 1, int hour = 0, int m
     {
         Turn += turns;
         AdvanceDay(turns * daysPerTurn);
+    }
+
+    /// <summary>
+    /// Determines whether this GameDate instance is equal to another GameDate instance.
+    /// </summary>
+    /// <param name="other">The GameDate to compare with this instance.</param>
+    /// <returns>true if the specified GameDate is equal to this instance; otherwise, false.</returns>
+    public readonly bool Equals(GameDate other)
+    {
+        return Year == other.Year &&
+               Month == other.Month &&
+               Day == other.Day &&
+               Hour == other.Hour &&
+               Minute == other.Minute &&
+               Turn == other.Turn;
+    }
+
+    /// <summary>
+    /// Determines whether this GameDate instance is equal to the specified object.
+    /// </summary>
+    /// <param name="obj">The object to compare with this instance.</param>
+    /// <returns>true if the specified object is a GameDate and equal to this instance; otherwise, false.</returns>
+    public override readonly bool Equals(object? obj)
+    {
+        return obj is GameDate date && Equals(date);
+    }
+
+    /// <summary>
+    /// Returns a hash code for this instance.
+    /// </summary>
+    /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures.</returns>
+    public override readonly int GetHashCode()
+    {
+        return HashCode.Combine(Year, Month, Day, Hour, Minute, Turn);
+    }
+
+    /// <summary>
+    /// Determines whether two GameDate instances are equal.
+    /// </summary>
+    public static bool operator ==(GameDate left, GameDate right)
+    {
+        return left.Equals(right);
+    }
+
+    /// <summary>
+    /// Determines whether two GameDate instances are not equal.
+    /// </summary>
+    public static bool operator !=(GameDate left, GameDate right)
+    {
+        return !left.Equals(right);
     }
 }
