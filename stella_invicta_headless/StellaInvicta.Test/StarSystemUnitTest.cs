@@ -29,13 +29,15 @@ public class StarSystemUnitTest
 
         var starSystem = world.Entity("Mexo-5")
             .Add<Star>()
-            .Set<Position, Vector3>(new Vector3(x: 0, y: 0, z: 0))
+            .Set<Position, Vector3>(Vector3.Zero)
             .Add<LocatedAt>(galaxy);
 
         var planet = world.Entity("Tomaxa")
             .Add<Planet>()
             .Set<Quaternion>(new())
+            .Set<Mass>(new(1.0f))
             .Set<Position, Vector3>(new Vector3(x: 20, y: 50, z: 70))
+            .Set<Velocity, Vector3>(new Vector3(x: 0, y: 0, z: 10))
             .Add<Orbits>(starSystem);
 
         Assert.True(planet.Orbits(starSystem));
