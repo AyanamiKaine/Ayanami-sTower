@@ -1,4 +1,4 @@
-namespace StellaInvicta.Tags.Ships;
+namespace StellaInvicta.Tags.Identifiers;
 /// <summary>
 /// Represents a transporter ship type in the Stella Invicta universe.
 /// </summary>

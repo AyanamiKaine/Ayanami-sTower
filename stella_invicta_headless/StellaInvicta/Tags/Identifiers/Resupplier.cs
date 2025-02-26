@@ -1,4 +1,4 @@
-namespace StellaInvicta.Tags.Ships;
+namespace StellaInvicta.Tags.Identifiers;
 /// <summary>
 /// Represents a resupplier ship tag structure.
 /// This tag is used to mark ships that have resupply capabilities.

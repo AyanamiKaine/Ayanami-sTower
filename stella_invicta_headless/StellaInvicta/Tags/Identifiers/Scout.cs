@@ -1,4 +1,4 @@
-namespace StellaInvicta.Tags.Ships;
+namespace StellaInvicta.Tags.Identifiers;
 /// <summary>
 /// Represents a scout ship structure in the Stella Invicta game.
 /// Scout ships are specialized vessels designed for reconnaissance and exploration.

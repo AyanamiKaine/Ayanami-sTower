@@ -1,5 +1,5 @@
 
-namespace StellaInvicta.Tags.Ships;
+namespace StellaInvicta.Tags.Identifiers;
 /// <summary>
 /// Represents a freighter vessel structure in the Stella Invicta game.
 /// </summary>
