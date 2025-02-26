@@ -1,4 +1,5 @@
-﻿using Flecs.NET.Core;
+﻿using System.Numerics;
+using Flecs.NET.Core;
 using NLog;
 using StellaInvicta.Components;
 namespace StellaInvicta;
@@ -51,6 +52,21 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterComponent<GameDate>("GameDate");
         world.RegisterComponent<Age>("Age")
             .Member<int>("Value");
+
+        world.RegisterComponent<Vector3>("Vector3")
+            .Member<float>("X")
+            .Member<float>("Y")
+            .Member<float>("Z");
+
+        world.RegisterComponent<Vector2>("Vector2")
+            .Member<float>("X")
+            .Member<float>("Y");
+
+        world.RegisterComponent<Quaternion>("Quaternion")
+            .Member<float>("X")
+            .Member<float>("Y")
+            .Member<float>("Z")
+            .Member<float>("W");
 
         world.RegisterComponent<Wealth>("Wealth")
             .Member<double>("Value");
