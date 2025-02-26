@@ -39,7 +39,7 @@ public class StellaInvictaECSModule : IFlecsModule
     /// <remarks>
     /// Currently initializes a default DateTime instance as a global variable in the world.
     /// </remarks>
-    public static void AddWorldGlobals(World world)
+    private static void AddWorldGlobals(World world)
     {
         Logger.ConditionalDebug("Adding GameDate component directly to the game world as a global");
         world.Set<GameDate>(new());
@@ -64,7 +64,7 @@ public class StellaInvictaECSModule : IFlecsModule
     /// This method initializes both celestial body tags (Asteroid, GasGiant, Moon, Planet, Star) 
     /// and diplomatic relationship tags (Ally, AtWar, Enemy, Neutral) as components in the ECS world.
     /// </remarks>
-    public static void AddTags(World world)
+    private static void AddTags(World world)
     {
         world.RegisterTag<Tags.CelestialBodies.Asteroid>("Asteroid");
         world.RegisterTag<Tags.CelestialBodies.GasGiant>("GasGiant");
