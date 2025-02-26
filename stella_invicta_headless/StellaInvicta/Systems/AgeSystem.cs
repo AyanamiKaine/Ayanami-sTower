@@ -9,7 +9,7 @@ namespace StellaInvicta.Systems;
 /// <summary>
 /// Ensures that with passing time when the birthday of an entity is reached its age increases.
 /// </summary>
-public class AgeSystem : ISystem
+public class AgeSystem() : ISystem
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
