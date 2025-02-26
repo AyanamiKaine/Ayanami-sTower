@@ -15,4 +15,6 @@ Empires, must rise and fall with reason.
 - X4: Foundations
 - Victoria 2
 - Crusader Kings 2/3
+- Endless Legend
 - Player Driven Economies found in MMOs like Eve Online
+- https://www.youtube.com/watch?v=R5Uk13mQdm0&list=PLPORGQF3Rir9rM9GNqnJP_ZsJ_ZNoj6aS&index=3
