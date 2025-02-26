@@ -29,4 +29,15 @@ public static class ECSEntityExtensions
     {
         return entityA.Has<ConnectedTo>(entityB);
     }
+
+    /// <summary>
+    /// Determines whether one entity orbits another entity.
+    /// </summary>
+    /// <param name="entityA">The entity that may be orbiting.</param>
+    /// <param name="entityB">The entity that may be orbited.</param>
+    /// <returns>True if entityA orbits entityB, false otherwise.</returns>
+    public static bool Orbits(this Entity entityA, Entity entityB)
+    {
+        return entityA.Has<Orbits>(entityB);
+    }
 }
