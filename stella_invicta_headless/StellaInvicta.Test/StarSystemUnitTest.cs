@@ -1,7 +1,9 @@
+using System.Numerics;
 using Flecs.NET.Core;
 using NLog.LayoutRenderers;
 using StellaInvicta.Components;
 using StellaInvicta.Tags.CelestialBodies;
+using StellaInvicta.Tags.Identifiers;
 using StellaInvicta.Tags.Relationships;
 
 namespace StellaInvicta.Test;
@@ -27,12 +29,13 @@ public class StarSystemUnitTest
 
         var starSystem = world.Entity("Mexo-5")
             .Add<Star>()
-            .Set<Position3D>(new(X: 0, Y: 0, Z: 0))
+            .Set<Position, Vector3>(new Vector3(x: 0, y: 0, z: 0))
             .Add<LocatedAt>(galaxy);
 
         var planet = world.Entity("Tomaxa")
             .Add<Planet>()
-            .Set<Position3D>(new(X: 20, Y: 50, Z: 70))
+            .Set<Quaternion>(new())
+            .Set<Position, Vector3>(new Vector3(x: 20, y: 50, z: 70))
             .Add<Orbits>(starSystem);
 
         Assert.True(planet.Orbits(starSystem));
@@ -41,7 +44,7 @@ public class StarSystemUnitTest
         world.Progress();
 
         // The planet should not have its inital position after rotating a bit around its star
-        Assert.NotEqual(new Position3D(X: 20, Y: 50, Z: 70), planet.Get<Position3D>());
+        Assert.NotEqual(new Vector3(x: 20, y: 50, z: 70), planet.GetSecond<Position, Vector3>());
     }
 
     [Fact]
