@@ -1,5 +1,6 @@
 using Flecs.NET.Core;
 using NLog;
+using StellaInvicta.Components;
 using StellaInvicta.Systems;
 using StellaInvicta.Tags.Relationships;
 
@@ -39,5 +40,27 @@ public static class ECSEntityExtensions
     public static bool Orbits(this Entity entityA, Entity entityB)
     {
         return entityA.Has<Orbits>(entityB);
+    }
+
+    /// <summary>
+    /// Mines a resource of type T from the target entity.
+    /// </summary>
+    /// <typeparam name="T">The type of resource to mine</typeparam>
+    /// <param name="miner">The entity performing the mining action</param>
+    /// <param name="entityWithResources">The target entity containing the resources to be mined</param>
+    /// <returns>The miner entity</returns>
+    public static Entity Mine<T>(this Entity miner, Entity entityWithResources) where T : IResource
+    {
+        if (entityWithResources.Has<T>())
+        {
+            ref T resource = ref entityWithResources.GetMut<T>();  // Get mutable reference
+            resource.Subtract(20);
+            return miner;
+        }
+        else
+        {
+            Logger.ConditionalDebug($"Miner: {miner.Name()} tried to mine resource but entity with resource({entityWithResources.Name()}) does not have the resource!");
+            return miner;
+        }
     }
 }
