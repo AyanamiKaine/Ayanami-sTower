@@ -27,14 +27,7 @@ public class StellaInvictaECSModule : IFlecsModule
     {
         world.Module<StellaInvictaECSModule>();
 
-        // Used for game date handling. Similar to how you would imagine CK2/Vic2 doing it with their time.
-        world.RegisterComponent<GameDate>("GameDate");
-        world.RegisterComponent<Age>("Age")
-            .Member<int>("Value");
-
-        world.RegisterComponent<Wealth>("Wealth")
-            .Member<double>("Value");
-
+        AddComponents(world);
         AddTags(world);
         AddWorldGlobals(world);
     }
@@ -50,6 +43,17 @@ public class StellaInvictaECSModule : IFlecsModule
     {
         Logger.ConditionalDebug("Adding GameDate component directly to the game world as a global");
         world.Set<GameDate>(new());
+    }
+
+    private static void AddComponents(World world)
+    {
+        // Used for game date handling. Similar to how you would imagine CK2/Vic2 doing it with their time.
+        world.RegisterComponent<GameDate>("GameDate");
+        world.RegisterComponent<Age>("Age")
+            .Member<int>("Value");
+
+        world.RegisterComponent<Wealth>("Wealth")
+            .Member<double>("Value");
     }
 
     /// <summary>
@@ -69,15 +73,18 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.CelestialBodies.Star>("Star");
 
 
-        world.Component<Tags.Relationships.Orbits>("Orbits").Entity.Add(Ecs.Exclusive);
-        world.Component<Tags.Relationships.DockedAt>("DockedAt").Entity.Add(Ecs.Exclusive);
-        world.Component<Tags.Relationships.HomeStation>("HomeStation").Entity.Add(Ecs.Exclusive);
+        world.RegisterTag<Tags.Relationships.Orbits>("Orbits")
+            .Entity.Add(Ecs.Exclusive);
+        world.RegisterTag<Tags.Relationships.DockedAt>("DockedAt")
+            .Entity.Add(Ecs.Exclusive);
+        world.RegisterTag<Tags.Relationships.HomeStation>("HomeStation")
+            .Entity.Add(Ecs.Exclusive);
 
         world.RegisterTag<Tags.Relationships.IsAtWarWith>("IsAtWarWith");
         world.RegisterTag<Tags.Relationships.OwnedBy>("OwnedBy")
                         .Entity.Add(Ecs.Exclusive);
 
-        world.Component<Tags.Relationships.ConnectedTo>("ConnectedTo")
+        world.RegisterTag<Tags.Relationships.ConnectedTo>("ConnectedTo")
             .Entity.Add(Ecs.Symmetric);
 
         world.RegisterTag<Tags.Identifiers.Ally>("Ally");
