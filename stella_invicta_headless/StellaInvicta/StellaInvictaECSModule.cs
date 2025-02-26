@@ -74,7 +74,11 @@ public class StellaInvictaECSModule : IFlecsModule
         world.Component<Tags.Relationships.HomeStation>("HomeStation").Entity.Add(Ecs.Exclusive);
 
         world.RegisterTag<Tags.Relationships.IsAtWarWith>("IsAtWarWith");
-        world.RegisterTag<Tags.Relationships.OwnedBy>("OwnedBy");
+        world.RegisterTag<Tags.Relationships.OwnedBy>("OwnedBy")
+                        .Entity.Add(Ecs.Exclusive);
+
+        world.Component<Tags.Relationships.ConnectedTo>("ConnectedTo")
+            .Entity.Add(Ecs.Symmetric);
 
         world.RegisterTag<Tags.Identifiers.Ally>("Ally");
         world.RegisterTag<Tags.Identifiers.Enemy>("Enemy");
