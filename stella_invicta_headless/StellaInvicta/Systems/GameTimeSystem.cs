@@ -13,7 +13,7 @@ namespace StellaInvicta.Systems;
 /// This system operates on the GameDate component and handles the progression of time
 /// in the game. It provides functionality to enable and disable time advancement.
 /// </remarks>
-public class GameTimeSystem : ISystem
+public class GameTimeSystem() : ISystem
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
