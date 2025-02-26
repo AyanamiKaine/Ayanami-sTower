@@ -1,5 +1,6 @@
 using Flecs.NET.Core;
 using NLog;
+using StellaInvicta.Systems;
 
 namespace StellaInvicta;
 
@@ -39,5 +40,19 @@ public static class ECSWorldExtensions
     {
         Logger.ConditionalDebug($"Registering {componentName} as component.");
         return world.Component<T>(componentName);
+    }
+
+    /// <summary>
+    /// Adds a system to the specified world and enables it.
+    /// </summary>
+    /// <param name="world">The world to which the system will be added.</param>
+    /// <param name="system">The system to be added and enabled.</param>
+    /// <returns>The entity representing the enabled system in the world.</returns>
+    public static Entity AddSystem(this World world, ISystem system)
+    {
+        var systemEntity = system.Enable(world);
+        Logger.ConditionalDebug($"Adding System with the name: '{systemEntity.Name()}'");
+
+        return systemEntity;
     }
 }
