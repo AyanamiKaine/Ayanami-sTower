@@ -1,5 +1,6 @@
 using Flecs.NET.Core;
 using NLog.LayoutRenderers;
+using StellaInvicta.Components;
 using StellaInvicta.Tags.CelestialBodies;
 using StellaInvicta.Tags.Relationships;
 
@@ -11,7 +12,8 @@ namespace StellaInvicta.Test;
 public class StarSystemUnitTest
 {
     /// <summary>
-    /// Universe Structure
+    /// Objects orbiting other objects should get their positions updated, 
+    /// because they are moving around an object.
     /// </summary>
     [Fact]
     public void PlanetOrbitingStar()
@@ -25,14 +27,21 @@ public class StarSystemUnitTest
 
         var starSystem = world.Entity("Mexo-5")
             .Add<Star>()
+            .Set<Position3D>(new(X: 0, Y: 0, Z: 0))
             .Add<LocatedAt>(galaxy);
 
         var planet = world.Entity("Tomaxa")
             .Add<Planet>()
+            .Set<Position3D>(new(X: 20, Y: 50, Z: 70))
             .Add<Orbits>(starSystem);
 
         Assert.True(planet.Orbits(starSystem));
         Assert.False(planet.Orbits(galaxy));
+
+        world.Progress();
+
+        // The planet should not have its inital position after rotating a bit around its star
+        Assert.NotEqual(new Position3D(X: 20, Y: 50, Z: 70), planet.Get<Position3D>());
     }
 
     [Fact]
