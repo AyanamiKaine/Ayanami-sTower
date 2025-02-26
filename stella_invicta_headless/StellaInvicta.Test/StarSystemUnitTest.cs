@@ -10,8 +10,11 @@ namespace StellaInvicta.Test;
 /// </summary>
 public class StarSystemUnitTest
 {
+    /// <summary>
+    /// Universe Structure
+    /// </summary>
     [Fact]
-    public void Test1()
+    public void PlanetOrbitingStar()
     {
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
@@ -28,6 +31,8 @@ public class StarSystemUnitTest
             .Add<Planet>()
             .Add<Orbits>(starSystem);
 
+        Assert.True(planet.Orbits(starSystem));
+        Assert.False(planet.Orbits(galaxy));
     }
 
     [Fact]
