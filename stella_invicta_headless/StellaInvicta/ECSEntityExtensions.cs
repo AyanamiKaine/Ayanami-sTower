@@ -1,0 +1,32 @@
+using Flecs.NET.Core;
+using NLog;
+using StellaInvicta.Systems;
+using StellaInvicta.Tags.Relationships;
+
+namespace StellaInvicta;
+
+/// <summary>
+/// Provides extension methods for Entity operations in the ECS (Entity Component System) framework.
+/// </summary>
+/// <remarks>
+/// This static class contains utility methods that extend the functionality of Entity objects,
+/// particularly for checking connections and relationships between entities.
+/// </remarks>
+public static class ECSEntityExtensions
+{
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    /// <summary>
+    /// Determines whether two entities are connected to each other.
+    /// </summary>
+    /// <param name="entityA">The first entity to check.</param>
+    /// <param name="entityB">The second entity to check.</param>
+    /// <returns>True if entityA is connected to entityB, false otherwise.</returns>
+    /// <remarks>
+    /// This extension method checks if entityA has a connection component referencing entityB.
+    /// </remarks>
+    public static bool ConnectedTo(this Entity entityA, Entity entityB)
+    {
+        return entityA.Has<ConnectedTo>(entityB);
+    }
+}
