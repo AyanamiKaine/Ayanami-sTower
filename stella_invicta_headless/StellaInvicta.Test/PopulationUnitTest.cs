@@ -12,10 +12,16 @@ public class PopulationUnitTest
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
 
+        var solariLifeNeeds = world.Entity("Solari-LIFENEEDS")
+            .Add<LifeNeed>()
+            .Set<ShortDescription>(new("Solari consume gold as part of their diet."))
+            .Set<Gold>(new(20));
+
         // We define a species as an entity.
         // With that we can give the species various different traits.
         var solari = world.Entity("Solari-SPECIE")
             .Add<Specie>()
+            .Add<LifeNeed>(solariLifeNeeds)
             .Set<Name>(new("Solari"));
 
         // Something similar goes for cultures
@@ -60,8 +66,14 @@ public class PopulationUnitTest
             .Set<Name>(new("Kryll Blood-Faith"))
             .Set<ShortDescription>(new("The Kryll are the chosen species, destined to rule the galaxy. Strength, conquest, and the shedding of blood are sacred acts. Their ancestors watch from the afterlife, judging their worthiness."));
 
-        var workerPop = world.Entity()
-            .Add<Worker>()
+        var worker = world.Entity("Worker-POPTYPE")
+            .Add<PopType>()
+            .Set<Name>(new("Worker"))
+            .Set<ShortDescription>(new("Workers to the basic work"));
+
+
+        var workerPops = world.Entity()
+            .Add<PopType>(worker)
             .Add<Bank>(federalSolariBank)
             .Add<Culture>(solmantum)
             .Add<Specie>(solari)
