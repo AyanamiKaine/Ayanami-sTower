@@ -1,3 +1,8 @@
+
+## Special Mechanic
+
+Only traders of the void have the technology to use the void lines. It greatly increases their possibility to use shorter times and increased profit margins. Void traders have special void technologies that can be used to penetrate the void. If factions have good relationships with them they might sell those parts. 
+
 ## Lore
 
 ### The Voice of the Void
