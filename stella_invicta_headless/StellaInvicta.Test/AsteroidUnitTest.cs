@@ -32,6 +32,7 @@ public class AsteroidUnitTest
             .Add<Orbits>(starSystem);
 
 
+
         var miningShip = world.Entity()
             .Add<LocatedAt>(starSystem)
             .Set<Position, Vector3>(new Vector3(x: 50, y: 0, z: 0))
