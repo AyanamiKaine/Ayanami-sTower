@@ -1,4 +1,4 @@
 - The galaxy must be really dynamic.
-- When you do a Timelapse the galaxy should change. You see this terribly done in Vic3 as its gamemap seldomly changes in radically ways.
+- When you do a Timelapse the galaxy should change. You see this terribly done in Vic3 as its game map seldomly changes in radically ways.
 - Empires must fall and rise.
 - The player must have the ability to change the galaxy in radical ways.
