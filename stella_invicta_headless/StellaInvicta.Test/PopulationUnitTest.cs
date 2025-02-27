@@ -88,7 +88,11 @@ public class PopulationUnitTest
 
     /// <summary>
     /// Populations have different needs based on their culture and species.
-    /// We need an easy way of querying those needs.
+    /// We need an easy way of querying those needs. The thing is that the needs
+    /// calucluation is used to create buy order for the goods. Also its unclear 
+    /// should we subtract the amount of needed goods each month when they are supplied
+    /// and then renewed each month? and if they are met 100% last month we say that 
+    /// the good was matched?
     /// </summary>
     [Fact]
     public void CorrectlyCalculateNeeds()
