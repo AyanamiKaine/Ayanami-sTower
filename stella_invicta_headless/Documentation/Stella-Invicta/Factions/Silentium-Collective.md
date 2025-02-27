@@ -6,7 +6,7 @@
 
 The Silentium Collective believes in the profound power of silence. For them, silence is not merely the absence of sound; it's a state of being, a pathway to enlightenment, and the natural order of the cosmos. They view sound, especially the cacophony of galactic civilization, as a disruptive force, a source of chaos, deception, and spiritual pollution.
 
-**:** They see sound, particularly complex and artificial sounds, as a form of manipulation and misinformation. Loud noises, constant chatter, and musical expressions are perceived as disruptive to inner peace and clouding of clear thought. They may even view [[The-Symphony-Of-Stars]] music as deliberately deceptive and chaotic propaganda.
+They see sound, particularly complex and artificial sounds, as a form of manipulation and misinformation. Loud noises, constant chatter, and musical expressions are perceived as disruptive to inner peace and clouding of clear thought. They may even view [[The-Symphony-Of-Stars]] music as deliberately deceptive and chaotic propaganda.
 
 ### The Great Silence (as a Goal) 
 Their ultimate aim might be to bring about a "Great Silence" across the galaxy – a state of pervasive tranquillity where the disruptive noise of civilization is minimized or eliminated, allowing true understanding to flourish. This goal could be interpreted by others as benevolent peacekeeping or as tyrannical suppression
