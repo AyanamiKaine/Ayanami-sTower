@@ -4,4 +4,4 @@ namespace StellaInvicta.Components;
 /// Overall satisfaction and well-being
 /// </summary>
 /// <param name="Value">Current Happiness</param>
-public record struct Happiness(double Value = 0);
+public record struct Happiness(float Value = 0);
