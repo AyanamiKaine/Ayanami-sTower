@@ -1,5 +1,15 @@
 ## Summary
 - Xenophile
+## Special Mechanic
+
+The symphony of stars has the ability to construct Resonating Instruments to increase the power of the great song, making its modifiers stronger and also influencing more factions outside its own reach. The [[Verdant-Dominion|Verdant Dominion]]  possibly found being influenced by it. Characters influenced by it should get a trait that reflects that. This should influence how they behave.
+
+Should the great song extend to all reaches of the galaxy it can greatly buff all factions. Or if the great song is of sinister nature...
+
+### The nature of the great song
+
+The meaning of the song can be changed adding new verses or changing the text entirely. This changes the nature of great song meaning its influence is differently interpreted. Imaging changing the song to a more war like primitive nature. Now all characters influenced by it changed drastically in character. This would also change the name from The Symphony of Stars to maybe the War Orchestra of the doomed.
+
 ## Lore
 
 ### Concept:
