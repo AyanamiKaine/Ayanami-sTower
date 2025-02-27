@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Mechanics/Guided Roleplay.md",
+                "file": "Factions/Void-Trader.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Guided Roleplay"
+              "title": "Void-Trader"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Mechanics/Guided Roleplay.md",
+                "file": "Factions/Void-Trader.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Guided Roleplay"
+              "title": "Backlinks for Void-Trader"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Mechanics/Guided Roleplay.md",
+                "file": "Factions/Void-Trader.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Guided Roleplay"
+              "title": "Outgoing links from Void-Trader"
             }
           },
           {
@@ -142,13 +142,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Mechanics/Guided Roleplay.md",
+                "file": "Factions/Void-Trader.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Guided Roleplay"
+              "title": "Outline of Void-Trader"
             }
           }
         ]
@@ -168,27 +168,30 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "623e85b42490ea08",
+  "active": "d8c48c985a9be1b2",
   "lastOpenFiles": [
-    "Mechanics/Dynamic.md",
-    "Mechanics/Character.md",
-    "Mechanics/UnknownReaches.md",
-    "Mechanics/Scale.md",
-    "Mechanics/Modes-Of-Operation.md",
-    "Mechanics/Guided Roleplay.md",
-    "GalaxyMap.png",
-    "Factions/Dual-Kingdoms-Of-Solar-And-Lunara.md",
-    "Factions/The-Eternal-Spire.md",
-    "Factions/Firstborn-houses.md",
-    "Factions/Golden-Exchange.md",
-    "Factions/Kryll-Imperium.md",
-    "Factions/Obsidian-Market.md",
+    "GalaxyMap.png~",
+    "GalaxyMap.kra~",
     "Factions/Silentium-Collective.md",
+    "Factions/The-Eternal-Spire.md",
+    "Factions/The-Fringe-Collective.md",
     "Factions/Void-Trader.md",
     "Factions/Verdant-Dominion.md",
     "Factions/Unified-Directorate.md",
     "Factions/The-Symphony-Of-Stars.md",
-    "Factions/The-Fringe-Collective.md",
+    "Factions/Firstborn-houses.md",
+    "Factions/Dual-Kingdoms-Of-Solar-And-Lunara.md",
+    "Factions/Golden-Exchange.md",
+    "Factions/Kryll-Imperium.md",
+    "Mechanics/UnknownReaches.md",
+    "GalaxyMap.png",
+    "Factions/Obsidian-Market.md",
+    "Mechanics/Ideology.md",
+    "Mechanics/Guided Roleplay.md",
+    "Mechanics/Character.md",
+    "Mechanics/Dynamic.md",
+    "Mechanics/Modes-Of-Operation.md",
+    "Mechanics/Scale.md",
     "Index.md",
     "NoModifiers.md",
     "GalaxyMap.kra",
