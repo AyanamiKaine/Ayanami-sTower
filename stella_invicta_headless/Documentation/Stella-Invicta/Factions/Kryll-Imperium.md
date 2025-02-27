@@ -1,0 +1,7 @@
+
+
+## Summary
+- Imperialistic
+- Xenophobe
+
+## Lore

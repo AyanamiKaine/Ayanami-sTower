@@ -1,5 +1,3 @@
-# Void Trader
-
 ## Lore
 
 ### The Voice of the Void

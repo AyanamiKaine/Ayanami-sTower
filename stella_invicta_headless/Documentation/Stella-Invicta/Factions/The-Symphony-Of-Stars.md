@@ -1,5 +1,5 @@
-# The Symphony of Stars
-
+## Summary
+- Xenophile
 ## Lore
 
 ### Concept:
@@ -12,7 +12,7 @@ A species with highly sensitive auditory organs, or whose brains are wired to pr
 
 ### The Great Song
 
-The origins of the great song are a mysterium in itself. While many of the new parts are clearly documented the first and second verse meaning is unclear. Some think its simply a prasing of life others believe it tells the true origin of the `Sonari`.
+The origins of the great song are mysterious in itself. While many of the new parts are clearly documented the first and second verse meaning is unclear. Some think its simply a phrasing of life others believe it tells the true origin of the `Sonari`.
 
 This is the central pillar of `Sonari` society. It's constantly being added to, reinterpreted, and performed. Think of it as a living, breathing constitution, legal code, and cultural epic all at once. Different sections of the Song represent different aspects of life: history, laws, moral principles, scientific knowledge, artistic expression.
 
@@ -20,7 +20,7 @@ This is the central pillar of `Sonari` society. It's constantly being added to, 
 
 The `Sonari` created various mega structures used to produce sound in the everlasting void that is space. Its unclear how such devices can work, as they break the laws of physic, at least it seems that way...
 
-Should these instruments cease to make music, no one knows what could happen. While many believe a long moment of silence utters the end of an ara others believe their music keeps the creatures of the deep void away from the galaxy.
+Should these instruments cease to make music, no one knows what could happen. While many believe a long moment of silence utters the end of an era others believe their music keeps the creatures of the deep void away from the galaxy.
 
 ### The Choristers
 

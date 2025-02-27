@@ -1,5 +1,3 @@
-# Dual Kindoms Of Solar And Lunara
-
 ## Lore
 
 `This faction directly echoes the Austria-Hungary structure.`
@@ -14,9 +12,9 @@ Imagine an empire comprised of two distinct, powerful kingdoms, Solara and Lunar
 
 ### Historical Basis
 
-Solara and Lunara were once bitter rivals but the exential threat of `The Eternal Spire` brought both Solara and Lunara to their bring of extinction. Because of the unique position of their homeworlds they had no choice but to cooperate. 200 Years of war forged a new kind of alliance. When the king of Solara married the queen of Lunara. Bringing the vast armada of Solara and the resources and technolgy of Lunara together.
+Solara and Lunara were once bitter rivals but the exential threat of [[The-Eternal-Spire]] brought both Solara and Lunara to their bring of extinction. Because of the unique position of their home worlds they had no choice but to cooperate. 200 Years of war forged a new kind of alliance. When the king of Solara married the queen of Lunara. Bringing the vast armada of Solara and the resources and technology of Lunara together.
 
-While the rulling houses might be now working together, their populations still remember the deep rivalry.
+While the ruling houses might be now working together, their populations still remember the deep rivalry.
 
 ### Government Structure
 

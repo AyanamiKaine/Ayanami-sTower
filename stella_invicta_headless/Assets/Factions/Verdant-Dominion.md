@@ -1,3 +1,0 @@
-# Verdant Dominion
-
-## Lore

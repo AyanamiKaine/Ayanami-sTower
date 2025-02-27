@@ -1,3 +1,0 @@
-# The Fringe Collective
-
-## Lore

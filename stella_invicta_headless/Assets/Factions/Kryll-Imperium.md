@@ -1,3 +1,0 @@
-# Kryll Imperium
-
-## Lore

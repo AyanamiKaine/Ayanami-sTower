@@ -1,5 +1,3 @@
-# Golden Exchange
-
 ## Lore
 
 ### MONEY, MONEY, MONEY

@@ -1,5 +1,3 @@
-# Silentium Collective
-
 ## Lore
 
 ### The Silence
