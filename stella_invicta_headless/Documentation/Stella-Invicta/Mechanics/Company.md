@@ -1,0 +1,1 @@
+Companies represent the private sector, they are owned and guided by characters. They are the backbone of the economy. They build mining facilities and private space stations.
