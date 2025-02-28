@@ -1,6 +1,7 @@
 using Flecs.NET.Core;
 using StellaInvicta.Components;
 using StellaInvicta.Systems;
+using StellaInvicta.Tags.Identifiers;
 using StellaInvicta.Tags.Relationships;
 
 namespace StellaInvicta.Test;
@@ -23,6 +24,7 @@ public class CharacterUnitTest
 
         var Marina = world.Entity("Marina")
             .Set<Birthday, GameDate>(new GameDate(year: 0, month: 1, day: 1))
+            .Add<Character>()
             .Set<Name>(new("Marina"))
             .Set<Age>(new(29));
 
