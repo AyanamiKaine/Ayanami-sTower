@@ -1,3 +1,4 @@
+#Faction
 ## Lore
 
 ### The Silence
