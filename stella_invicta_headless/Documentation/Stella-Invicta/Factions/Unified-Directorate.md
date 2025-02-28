@@ -1,3 +1,4 @@
+#Faction
 ## Lore
 - Its Modern Germany, as a caricature of over bureaucracy
 - Its government structure should be overly complicated with many indirections with the main goal of two factions either reducing this structure or even increasing it.
