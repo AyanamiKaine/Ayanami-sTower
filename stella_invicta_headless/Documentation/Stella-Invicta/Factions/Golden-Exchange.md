@@ -24,3 +24,10 @@ Because of the desire to trade with as many and as freely as possible the `Golde
 ### The opportunity of [[UnknownReaches|The Unknown Reaches]]
 
 Maybe we could create a struggle for the golden exchange to establish themselves in the unknown reaches. This could result in either the golden exchange also controlling the logistics in the unknown reaches or another exchanging rising. Creating a rivalry and possibly disturbing their trade in their Home. 
+
+
+## Structures 
+
+**The Grand Bazaar** - An artificial ring surrounding a resource-rich gas giant. The Bazaar is a perpetual marketplace where everything has a price. Its multiple levels house trading floors for commodities, luxury goods, information, and even sovereign rights to entire star systems.
+
+**The Ledger** - A planet-sized supercomputer dedicated to calculating and tracking all debts and credits across the Exchange's territory. Its surface is covered in cooling systems.
