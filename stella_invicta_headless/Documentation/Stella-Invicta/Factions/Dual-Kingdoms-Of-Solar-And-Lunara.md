@@ -13,7 +13,10 @@ Imagine an empire comprised of two distinct, powerful kingdoms, Solara and Lunar
 
 ### Historical Basis
 
-Solara and Lunara were once bitter rivals but the exential threat of [[The-Eternal-Spire]] brought both Solara and Lunara to their bring of extinction. Because of the unique position of their home worlds they had no choice but to cooperate. 200 Years of war forged a new kind of alliance. When the king of Solara married the queen of Lunara. Bringing the vast armada of Solara and the resources and technology of Lunara together.
+Solara and Lunara were once bitter rivals but the exential threat of [[The-Eternal-Spire]] brought both Solara and Lunara to their bring of extinction. 
+- This was conflict was started by both Solara and Lunara by their desire to get the technologies of the eternal spire. Solara and Lunara both wanted to get the upper hand in their fierce rivalry in the end angering the keepers of the eternal spire so much that they believed that both are a danger to the knowledge itself.
+
+Because of the unique position of their home worlds they had no choice but to cooperate. 200 Years of war forged a new kind of alliance. When the king of Solara married the queen of Lunara. Bringing the vast armada of Solara and the resources and technology of Lunara together.
 
 While the ruling houses might be now working together, their populations still remember the deep rivalry.
 
@@ -46,3 +49,7 @@ Describe the typical Lunar citizen. Are they more traditionalist, agrarian, spir
 ### Tensions and Synergies:
 
 The inherent tension is the potential for conflict between Solara and Lunara. However, there are also synergies. Perhaps Solara needs resources that Lunara provides, and Lunara benefits from Solara's technology and protection. Internal politics would revolve around navigating this delicate balance and managing the inherent rivalry.
+
+## Structures
+
+**The Celestial Dyarchy** - A massive space station orbiting the binary stars at the heart of their territory. Half blazes with golden solar panels perpetually facing their primary star, while the other half gleams with silvery lunar architecture eternally in shadow. The two halves are connected by the Bridge of Duality, where the Solar King and Lunar Queen hold court on alternating cycles.
