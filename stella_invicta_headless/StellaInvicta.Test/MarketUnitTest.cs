@@ -26,7 +26,9 @@ public class MarketUnitTest
         world.Import<StellaInvictaECSModule>();
 
         var market = world.Entity("")
-            .Add<Market>();
+            .Add<Market>()
+            .Set<BuyOrders, List<Entity>>([])
+            .Set<SellOrders, List<Entity>>([]);
 
         var buyOrder = world.Entity("")
             .Add<Market>(market);
