@@ -88,7 +88,7 @@ public class Pair
             .Add<MustHave>(moon)
             .Add<MustHave>(asteroid);
 
-        entity.Each<MustHave>((Entity e) =>
+        entity.Each<MustHave>(e =>
         {
             // This will be called twice, once for moon and once for asteroid
         });
