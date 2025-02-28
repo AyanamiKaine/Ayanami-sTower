@@ -65,7 +65,8 @@ public static class ECSEntityExtensions
     }
 
     /// <summary>
-    /// Gets the component from an entity, should the entity not have the component it will try setting it.
+    /// Gets the component from an entity, should the entity not have the component it will try setting it with its
+    /// default new() constructor.
     /// </summary>
     /// <param name="e"></param>
     /// <returns></returns>
@@ -83,7 +84,8 @@ public static class ECSEntityExtensions
     }
 
     /// <summary>
-    /// Gets mutable managed reference for the component from an entity, should the entity not have the component it will try first setting it.
+    /// Gets mutable managed reference for the component from an entity, should the entity not have the component it will try first setting it with its
+    /// default new() constructor.
     /// </summary>
     /// <param name="e"></param>
     /// <returns></returns>
