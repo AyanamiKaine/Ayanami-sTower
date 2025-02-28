@@ -12,6 +12,9 @@ public class PopulationUnitTest
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
 
+        var exampleProvince = world.Entity("Example-PROVINCE")
+               .Add<Province>();
+
         var solariLifeNeeds = world.Entity("Solari-LIFENEEDS")
             .Add<LifeNeed>()
             .Set<ShortDescription>(new("Solari consume gold as part of their diet."))
@@ -74,6 +77,7 @@ public class PopulationUnitTest
 
 
         var workerPops = world.Entity()
+            .Add<Province>(exampleProvince)
             .Add<PopType>(worker)
             .Add<Bank>(federalSolariBank)
             .Add<Culture>(solmantum)
@@ -82,9 +86,10 @@ public class PopulationUnitTest
             .Add<Religion>(eternalCycle)
             // Here is workerpops expect to have around 200 credits in the bank
             .Set<Expected, Credits>(new Credits(200))
-            .Set<Quantity>(new(20))
+            // The question is what should 1 quantity of pop represent 10000k people?
+            .Set<Quantity>(new(2000))
             .Set<Literacy>(Literacy.FromPercentage(5.5f))
-            .Set<Militancy>(new(0.0f))
+            .Set<Militancy>(Militancy.FromPercentage(2.5f))
             .Set<Consciousness>(new(0.0f))
             .Set<Happiness>(new(0.0f));
     }
