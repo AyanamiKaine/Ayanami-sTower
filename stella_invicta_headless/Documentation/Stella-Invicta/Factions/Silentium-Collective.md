@@ -27,3 +27,7 @@ A "silent" military might seem contradictory, but they could be highly effective
 - **Information Warfare and Espionage:** They might prioritize information gathering and manipulation as a form of "silent warfare," disrupting enemy communications and sowing confusion without loud displays of force.
 - **Sonic and Vibrational Weaponry (Paradoxical but Potent):** Ironically, they might develop highly focused and controlled _sonic weapons_. These wouldn't be loud and chaotic, but precise and directional, used to disrupt enemy technology, incapacitate with infrasound, or even target specific frequencies to cause targeted damage – "silent but deadly" in a literal sense. They might see these weapons as tools to _enforce_ silence, to eliminate disruptive noise at its source.
 - **Psychological Warfare (Silence as a Weapon):** The very silence of their approach could be psychologically unsettling to enemies accustomed to noise and bravado. They might utilize periods of enforced silence before attacks to create unease and disrupt enemy morale.
+
+## Structure
+
+**Mind Nexuses** - Crystalline structures that serve as communication hubs for the telepathically linked Collective. Each Nexus amplifies thought patterns, allowing members to share consciousness across vast distances.
