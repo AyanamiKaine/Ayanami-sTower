@@ -50,3 +50,9 @@ Musical Castes/Guilds: Society could be stratified based on musical skill and kn
 ### "Dissonance" as Crime
 
 Actions that disrupt the harmony of the Song or create "dissonance" in society are considered crimes. This could range from social missteps to violations of Song-Law.
+
+## Structures
+
+**Harmonic Resonators** - Planet-sized instruments that convert stellar radiation into sound waves, creating music that can be heard across entire systems. Each Resonator is tuned to complement the others, creating an ever-changing cosmic symphony.
+
+**The Conservatory** - A hollow moon transformed into the greatest acoustic chamber ever constructed. Within its precisely engineered interior, compositions played by the Symphony's maestros create patterns of sound that manifest as visible light forms.
