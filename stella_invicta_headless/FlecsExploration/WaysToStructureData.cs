@@ -28,7 +28,13 @@ public static class EntityExtensions
 
     public static bool MineBlock(this Entity entity, float hardness, float deltaTime)
     {
-        if (!entity.Has<Mining>()) return false;
+        // Using GetOrSet we could even remove the check
+        // if (!entity.Has<Mining>()) return false;
+
+        // You could use this if you always want to ensure that the components 
+        // exists in this context. Just beware that the component exists also 
+        // after this. Again think of it as a field you just added.
+
 
         // Start or continue breaking block
         ref var blockBreaking = ref entity.GetMutOrSet<BlockBreaking>();
