@@ -72,3 +72,7 @@ Exploration teams are now finding artifacts within the Unknown Reaches bearing s
 Despite technological disadvantages, the Firstborn field massive armies through sheer population advantage. Their warriors follow a code called the "Celestial Disciplines" - martial arts and battle tactics passed down for generations.
 
 Their ships, while outdated, are numerous and operated by crews willing to sacrifice themselves for house honor. This creates a military doctrine focused on overwhelming force rather than tactical superiority.
+
+## Structures
+
+**Dynasty Towers** - Each of the major Firstborn Houses maintains a towering spire on their homeworld, with height proportional to lineage age. The oldest towers stretch beyond the atmosphere, requiring specialized breathing apparatus for visitors to the upper levels.
