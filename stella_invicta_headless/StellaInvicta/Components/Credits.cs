@@ -8,4 +8,4 @@ namespace StellaInvicta.Components;
 /// Credits are implemented as a record struct for efficient value-based operations and immutability.
 /// </remarks>
 /// <param name="Ammount">The numerical value of credits. Defaults to 0 if not specified.</param>
-public record struct Credits(double Ammount = 0);
+public record struct Credits(float Ammount = 0);
