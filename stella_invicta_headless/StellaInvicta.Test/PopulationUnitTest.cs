@@ -76,6 +76,7 @@ public class PopulationUnitTest
             .Set<ShortDescription>(new("Workers to the basic work"));
 
 
+        // We group specific pops with a set of types
         var workerPops = world.Entity()
             .Add<Province>(exampleProvince)
             .Add<PopType>(worker)
@@ -85,7 +86,7 @@ public class PopulationUnitTest
             .Add<Ideology>(socialism)
             .Add<Religion>(eternalCycle)
             // Here is workerpops expect to have around 200 credits in the bank
-            .Set<Expected, Credits>(new Credits(200f))
+            .Set<Expected, Credits>(new Credits(200))
             // The question is what should 1 quantity of pop represent 10000k people?
             .Set<Quantity>(new(2000))
             .Set<Literacy>(Literacy.FromPercentage(5.5f))
@@ -108,16 +109,24 @@ public class PopulationUnitTest
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
 
-        var solariLifeNeeds = world.Entity("Solari-LIFENEEDS")
+        var solariGoldLifeNeed = world.Entity("SolariGold-LIFENEED")
             .Add<LifeNeed>()
+            .Set<Name>(new("Gold"))
             .Set<ShortDescription>(new("Solari consume gold as part of their diet."))
-            .Set<Gold>(new(20));
+            .Set<Quantity>(new(20));
+
+        var solariFishLifeNeed = world.Entity("SolariFish-LIFENEED")
+            .Add<LifeNeed>()
+            .Set<Name>(new("Fish"))
+            .Set<ShortDescription>(new("Solari also quite like fish"))
+            .Set<Quantity>(new(25));
 
         // We define a species as an entity.
         // With that we can give the species various different traits.
         var solari = world.Entity("Solari-SPECIE")
             .Add<Specie>()
-            .Add<LifeNeed>(solariLifeNeeds)
+            .Add<LifeNeed>(solariGoldLifeNeed)
+            .Add<LifeNeed>(solariFishLifeNeed)
             .Set<ShortDescription>(new("The solari are a specie that bathed in the sun."))
             .Set<Name>(new("Solari"));
 
@@ -153,8 +162,14 @@ public class PopulationUnitTest
             .Add<Bank>()
             .Set<Name>(new("Bank Of Solari"));
 
+        var eternalCycleLuxuryFishNeed = world.Entity()
+            .Add<LuxuryNeed>()
+            .Set<Name>(new("Fish"))
+            .Set<Quantity>(new(5));
+
         var eternalCycle = world.Entity("Eternal-Cycle-RELIGION")
             .Add<Religion>()
+            .Add<LuxuryNeed>(eternalCycleLuxuryFishNeed)
             .Set<Name>(new("Eternal Cycle"))
             .Set<ShortDescription>(new("Time is cyclical. The universe is born, dies, and is reborn in an endless cycle."));
 
@@ -163,8 +178,14 @@ public class PopulationUnitTest
             .Set<Name>(new("Kryll Blood-Faith"))
             .Set<ShortDescription>(new("The Kryll are the chosen species, destined to rule the galaxy. Strength, conquest, and the shedding of blood are sacred acts. Their ancestors watch from the afterlife, judging their worthiness."));
 
+        var workerIronLifeNeed = world.Entity()
+            .Add<LifeNeed>()
+            .Set<Name>(new("Iron"))
+            .Set<Quantity>(new(10));
+
         var worker = world.Entity("Worker-POPTYPE")
             .Add<PopType>()
+            .Add<LifeNeed>(workerIronLifeNeed)
             .Set<Name>(new("Worker"))
             .Set<ShortDescription>(new("Workers to the basic work"));
 
@@ -181,8 +202,46 @@ public class PopulationUnitTest
             .Set<Consciousness>(new(0.0f))
             .Set<Happiness>(new(0.0f));
 
-        //workerPops.CalculateNeeds();
+        //workerPops.TotalLifeNeeds();
 
-        Assert.True(false);
+
+        var specieLifeNeedFound = false;
+        var popTypeLifeNeedFound = false;
+        var religionLifeNeedFound = false;
+
+        workerPops.Target<Specie>().Each<LifeNeed>(e =>
+        {
+            if (e.Get<Name>().Value == "Gold")
+                Assert.Equal(20, e.Get<Quantity>().Value);
+
+            if (e.Get<Name>().Value == "Fish")
+            {
+                specieLifeNeedFound = true;
+                Assert.Equal(25, e.Get<Quantity>().Value);
+            }
+        });
+
+        workerPops.Target<PopType>().Each<LifeNeed>(e =>
+        {
+            if (e.Get<Name>().Value == "Iron")
+            {
+                Assert.Equal(10, e.Get<Quantity>().Value);
+                popTypeLifeNeedFound = true;
+            }
+        });
+
+        workerPops.Target<Religion>().Each<LuxuryNeed>(e =>
+        {
+            if (e.Get<Name>().Value == "Fish")
+            {
+                Assert.Equal(5, e.Get<Quantity>().Value);
+                religionLifeNeedFound = true;
+            }
+        });
+
+        Assert.True(specieLifeNeedFound);
+        Assert.True(popTypeLifeNeedFound);
+        Assert.True(religionLifeNeedFound);
+
     }
 }
