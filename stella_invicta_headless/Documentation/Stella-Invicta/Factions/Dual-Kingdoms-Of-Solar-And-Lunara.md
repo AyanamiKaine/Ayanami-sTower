@@ -1,3 +1,4 @@
+#Faction
 ## Lore
 
 `This faction directly echoes the Austria-Hungary structure.`
