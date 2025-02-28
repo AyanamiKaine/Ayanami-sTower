@@ -1,3 +1,4 @@
+#Faction
 ## Mechanics
 
 ### The spire
