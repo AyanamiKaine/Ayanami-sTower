@@ -242,6 +242,5 @@ public class PopulationUnitTest
         Assert.True(specieLifeNeedFound);
         Assert.True(popTypeLifeNeedFound);
         Assert.True(religionLifeNeedFound);
-
     }
 }
