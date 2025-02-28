@@ -80,7 +80,7 @@ public class PopulationUnitTest
             .Add<Specie>(solari)
             .Add<Ideology>(socialism)
             .Add<Religion>(eternalCycle)
-            .Set<Literacy>(new(0.0f))
+            .Set<Literacy>(Literacy.FromPercentage(5.5f))
             .Set<Militancy>(new(0.0f))
             .Set<Consciousness>(new(0.0f))
             .Set<Happiness>(new(0.0f));
@@ -121,17 +121,17 @@ public class PopulationUnitTest
             .Add<Culture>()
             .Set<Name>(new("solmantum"));
 
-        var socialism = world.Entity("Socialism-IDEOLOGY")
+        var sharedProsperityDoctrine = world.Entity("Shared-Prosperity-Doctrine-IDEOLOGY")
             .Add<Ideology>()
-            .Set<Name>(new("Socialism"))
+            .Set<Name>(new("Shared Prosperity Doctrine"))
             .Set<ShortDescription>(new("Advocates for social equality and the empowerment of the working class."))
             .Set<LongDescription>(new(
                 """
-                Socialism, as a political ideology, promises a radical restructuring of society with a focus on social equality and worker empowerment.  In contrast to the perceived inequalities of capitalism, Socialism champions the rights of the working class and advocates for a more equitable distribution of wealth and resources.
+                Shared Prosperity Doctrine, as a political ideology, promises a radical restructuring of society with a focus on social equality and worker empowerment.  In contrast to the perceived inequalities of the Golden Rule Charter, Shared Prosperity Doctrine champions the rights of the working class and advocates for a more equitable distribution of wealth and resources.
 
-                Pops adhering to Socialist ideals will likely demand significant social reforms, such as improved working conditions, minimum wages, and social welfare programs. They may also agitate for political reforms that grant greater power to the working class and potentially challenge existing hierarchies and power structures.
+                Pops adhering to Doctrine ideals will likely demand significant social reforms, such as improved working conditions, minimum wages, and social welfare programs. They may also agitate for political reforms that grant greater power to the working class and potentially challenge existing hierarchies and power structures.
 
-                Economically, Socialist pops may favor state intervention and control over the economy, potentially leading to demands for nationalization of industries and a shift away from laissez-faire capitalism.  High militancy among Socialist pops can lead to unrest and even revolution if their demands are not met, but successfully managing them can unlock powerful social and economic reforms that reshape your nation.
+                Economically, Doctrine pops may favor state intervention and control over the economy, potentially leading to demands for nationalization of industries and a shift away from the Golden Rule Charter.  High militancy among Shared Prosperity pops can lead to unrest and even revolution if their demands are not met, but successfully managing them can unlock powerful social and economic reforms that reshape your nation.
                 """));
 
 
@@ -166,7 +166,7 @@ public class PopulationUnitTest
             .Add<Bank>(federalSolariBank)
             .Add<Culture>(solmantum)
             .Add<Specie>(solari)
-            .Add<Ideology>(socialism)
+            .Add<Ideology>(sharedProsperityDoctrine)
             .Add<Religion>(eternalCycle)
             .Set<Literacy>(new(0.0f))
             .Set<Militancy>(new(0.0f))
