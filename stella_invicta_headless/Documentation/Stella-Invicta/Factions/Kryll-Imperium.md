@@ -60,3 +60,7 @@ Finally, here are some gameplay mechanics that could make the Kryll distinctive:
 2. **Caste Advancement**: Allow characters to rise through the Kryll caste system through military achievements, with gameplay benefits at each level.
 3. **Subjugation Mechanics**: Unique options for dealing with conquered planets, balancing between harsh control (maximum short-term resources but resistance) and integration (slower returns but eventual acceptance).
 4. **War Trophy System**: Collecting significant victories or conquests could provide cumulative bonuses, representing the Kryll's increased status on the [[The Path of Ascension]].
+
+## Structures
+
+**Victory Columns** - On each subjugated world, the Kryll erect enormous pillars inscribed with the names of the conquered. These monuments serve as both administrative centers and reminders of Imperial might.
