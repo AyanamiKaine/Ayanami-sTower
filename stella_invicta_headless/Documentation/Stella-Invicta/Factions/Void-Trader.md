@@ -11,6 +11,11 @@ Characters that embraced the void can travel the void lines and get access to mo
 
 When the void approaches a chant should appear that slowly becomes louder.
 
+#### Examples
+"We... Are... Coming!"
+"You... Are... Chosen!"
+
+
 # The Void Traders: Navigators of the Unseen
 
 ## Origins and History
