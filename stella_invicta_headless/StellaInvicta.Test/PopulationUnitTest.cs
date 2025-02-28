@@ -162,6 +162,11 @@ public class PopulationUnitTest
             .Add<Bank>()
             .Set<Name>(new("Bank Of Solari"));
 
+        /*
+        Also imagine being highly indebt in the golden exchange and then destroying it!
+        all your debt GONE!
+        */
+
         var eternalCycleLuxuryFishNeed = world.Entity()
             .Add<LuxuryNeed>()
             .Set<Name>(new("Fish"))
