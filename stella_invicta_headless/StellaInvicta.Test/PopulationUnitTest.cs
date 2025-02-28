@@ -173,6 +173,8 @@ public class PopulationUnitTest
             .Set<Consciousness>(new(0.0f))
             .Set<Happiness>(new(0.0f));
 
+        //workerPops.CalculateNeeds();
+
         Assert.True(false);
     }
 }
