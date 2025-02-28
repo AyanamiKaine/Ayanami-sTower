@@ -91,7 +91,7 @@ public class PopulationUnitTest
             .Set<Literacy>(Literacy.FromPercentage(5.5f))
             .Set<Militancy>(Militancy.FromPercentage(2.5f))
             .Set<Consciousness>(Consciousness.FromPercentage(1.5f))
-            .Set<Happiness>(Happiness.FromPercentage(0.0f));
+            .Set<Happiness>(Happiness.FromPercentage(80));
     }
 
     /// <summary>
