@@ -80,6 +80,8 @@ public class PopulationUnitTest
             .Add<Specie>(solari)
             .Add<Ideology>(socialism)
             .Add<Religion>(eternalCycle)
+            // Here is workerpops expect to have around 200 credits in the bank
+            .Set<Expected, Credits>(new Credits(200))
             .Set<Literacy>(Literacy.FromPercentage(5.5f))
             .Set<Militancy>(new(0.0f))
             .Set<Consciousness>(new(0.0f))
