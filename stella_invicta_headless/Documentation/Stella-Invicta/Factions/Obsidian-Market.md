@@ -1,1 +1,2 @@
+#Faction
 ## Lore
