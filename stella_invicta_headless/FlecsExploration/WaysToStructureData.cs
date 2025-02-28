@@ -226,6 +226,10 @@ public class WaysToStructureData
         playerEntity.Move(Vector3.UnitX);
         playerEntity.MineBlock(1.5f, 2.0f);
 
+        // Prefer system where you can write them.
+        // When you need to work with single entites, you can 
+        // write simple extensions methods like in this example.
+
         // Assertions for ECS approach
         Assert.Equal(15, playerEntity.Get<Health>().Value);
         Assert.Equal(new Vector3(100.5f, 64, 200), playerEntity.Get<Position>().Value);
