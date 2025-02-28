@@ -1,3 +1,4 @@
+#Faction
 ## Lore
 
 **Core Concept/Ideology: Life as Power, Harmony as Control, the Galaxy as a Garden**
