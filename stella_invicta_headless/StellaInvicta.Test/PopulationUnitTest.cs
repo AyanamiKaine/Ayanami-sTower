@@ -85,7 +85,7 @@ public class PopulationUnitTest
             .Add<Ideology>(socialism)
             .Add<Religion>(eternalCycle)
             // Here is workerpops expect to have around 200 credits in the bank
-            .Set<Expected, Credits>(new Credits(200))
+            .Set<Expected, Credits>(new Credits(200f))
             // The question is what should 1 quantity of pop represent 10000k people?
             .Set<Quantity>(new(2000))
             .Set<Literacy>(Literacy.FromPercentage(5.5f))
