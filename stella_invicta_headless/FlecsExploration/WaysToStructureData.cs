@@ -1,5 +1,6 @@
 using System.Numerics;
 using Flecs.NET.Core;
+using StellaInvicta;
 using static FlecsExploration.WaysToStructureData;
 
 namespace FlecsExploration;
@@ -11,7 +12,7 @@ public static class EntityExtensions
     {
         if (!entity.Has<Health>()) return;
 
-        ref var health = ref entity.GetMut<Health>();
+        ref var health = ref entity.GetMutOrSet<Health>();
         health.Value -= damageAmount;
         if (health.Value < 0) health.Value = 0;
     }
@@ -20,8 +21,8 @@ public static class EntityExtensions
     {
         if (!entity.Has<Position>() || !entity.Has<MovementSpeed>()) return;
 
-        ref var position = ref entity.GetMut<Position>();
-        var speed = entity.Get<MovementSpeed>().Value;
+        ref var position = ref entity.GetMutOrSet<Position>();
+        var speed = entity.GetOrSet<MovementSpeed>().Value;
         position.Value += direction * speed;
     }
 
@@ -30,12 +31,11 @@ public static class EntityExtensions
         if (!entity.Has<Mining>()) return false;
 
         // Start or continue breaking block
-        entity.Set<BlockBreaking>(new());
-        ref var blockBreaking = ref entity.GetMut<BlockBreaking>();
+        ref var blockBreaking = ref entity.GetMutOrSet<BlockBreaking>();
         blockBreaking.InProgress = true;
 
         // Calculate progress
-        float miningSpeed = entity.Get<Mining>().Speed;
+        float miningSpeed = entity.GetOrSet<Mining>().Speed;
         blockBreaking.Progress += miningSpeed * deltaTime;
 
         // Check if block is broken
