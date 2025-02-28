@@ -1,3 +1,4 @@
+#Faction
 ## Summary
 - Xenophile
 ## Special Mechanic
