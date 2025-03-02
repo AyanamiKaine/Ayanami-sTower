@@ -7,7 +7,10 @@ namespace StellaInvicta.Components;
 /// 30 Days each month
 /// 360 Days each year
 /// </summary>
-public struct GameDate : IEquatable<GameDate>
+/// <remarks>
+/// Initializes a new instance of the GameDate struct.
+/// </remarks>
+public class GameDate(int year = 0, int month = 1, int day = 1, int hour = 0, int minute = 0, int turn = 0) : IEquatable<GameDate>
 {
     // Define delegate types for our events
     /// <summary>
@@ -54,51 +57,38 @@ public struct GameDate : IEquatable<GameDate>
     /// <summary>
     /// Gets or sets the year component of the game date.
     /// </summary>
-    public int Year { get; set; }
+    public int Year { get; set; } = year;
 
     /// <summary>
     /// Gets or sets the Month component of the game date.
     /// </summary>
-    public int Month { get; set; }
+    public int Month { get; set; } = month;
 
     /// <summary>
     /// Gets or sets the Day component of the game date.
     /// </summary>
-    public int Day { get; set; }
+    public int Day { get; set; } = day;
 
     /// <summary>
     /// Gets or sets the Hour component of the game date.
     /// </summary>
-    public int Hour { get; set; }
+    public int Hour { get; set; } = hour;
 
     /// <summary>
     /// Gets or sets the Minute component of the game date.
     /// </summary>
-    public int Minute { get; set; }
+    public int Minute { get; set; } = minute;
 
     /// <summary>
     /// Gets or sets the Turn component of the game date.
     /// </summary>
-    public int Turn { get; set; }
-
-    /// <summary>
-    /// Initializes a new instance of the GameDate struct.
-    /// </summary>
-    public GameDate(int year, int month = 1, int day = 1, int hour = 0, int minute = 0, int turn = 0)
-    {
-        Year = year;
-        Month = month;
-        Day = day;
-        Hour = hour;
-        Minute = minute;
-        Turn = turn;
-    }
+    public int Turn { get; set; } = turn;
 
     /// <summary>
     /// Returns the date in a format suitable for space 4X display.
     /// </summary>
     /// <returns>A string representation of the star date.</returns>
-    public readonly string GetStarDateFormat()
+    public string GetStarDateFormat()
     {
         // Popular sci-fi style format: [Year].[Fraction of Year]
         double yearFraction = ((Month - 1) * 30) + Day;
@@ -110,7 +100,7 @@ public struct GameDate : IEquatable<GameDate>
     /// Returns the game date in a formatted string.
     /// </summary>
     /// <returns>A string representation of the date in the format "YYYY.MM.DD" where MM and DD are zero-padded.</returns>
-    public readonly string GetFormattedDate() => $"{Year}.{Month:D2}.{Day:D2}";
+    public string GetFormattedDate() => $"{Year}.{Month:D2}.{Day:D2}";
 
     /// <summary>
     /// Advances the game date by the specified number of days, triggering appropriate events.
@@ -254,8 +244,9 @@ public struct GameDate : IEquatable<GameDate>
     /// </summary>
     /// <param name="other">The GameDate to compare with this instance.</param>
     /// <returns>true if the specified GameDate is equal to this instance; otherwise, false.</returns>
-    public readonly bool Equals(GameDate other)
+    public bool Equals(GameDate? other)
     {
+        if (other is null) return false;
         return Year == other.Year &&
                Month == other.Month &&
                Day == other.Day &&
@@ -269,7 +260,7 @@ public struct GameDate : IEquatable<GameDate>
     /// </summary>
     /// <param name="obj">The object to compare with this instance.</param>
     /// <returns>true if the specified object is a GameDate and equal to this instance; otherwise, false.</returns>
-    public override readonly bool Equals(object? obj)
+    public override bool Equals(object? obj)
     {
         return obj is GameDate date && Equals(date);
     }
@@ -278,7 +269,7 @@ public struct GameDate : IEquatable<GameDate>
     /// Returns a hash code for this instance.
     /// </summary>
     /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures.</returns>
-    public override readonly int GetHashCode()
+    public override int GetHashCode()
     {
         return HashCode.Combine(Year, Month, Day, Hour, Minute, Turn);
     }
