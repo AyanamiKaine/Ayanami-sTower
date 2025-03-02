@@ -14,6 +14,9 @@ world.Import<Ecs.Stats>();
 var simulationSpeed = world.Timer("SimulationSpeed")
     .Interval(SimulationSpeed.Unlocked);
 
+var gameDate = new GameDate(year: 29, month: 12, day: 1);
+GameDate.YearChanged += (oldDate, newDate) => { };
+
 // Set Current Year
 world.Set<GameDate>(new(year: 29, month: 12, day: 1));
 world.AddSystem(new GameTimeSystem(), simulationSpeed);
