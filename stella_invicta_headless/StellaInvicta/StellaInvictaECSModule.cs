@@ -103,19 +103,21 @@ public class StellaInvictaECSModule : IFlecsModule
         // TODO: HUGE
         // BIG QUESTION DO I NEED TO ALSO ADD THE PRIVATE FIELDS AS MEMBER?
         // I personally think so because how else should it know the right offset?
+        // ANSWER: YES, all fields that are actual part of the datastructure must be added
+        // why are Value and Percentages excluded? Because they are only properties, Value
+        // is a get setter, and Percentage is a caluclate property, when accessed it gets
+        // calculated.
         world.RegisterComponent<Happiness>("Happiness")
-            //.Member<float>("_value") // Do we need to do this?
-            .Member<float>("Value")
-            .Member<float>("Percentage");
+            .Member<float>("_value");
+        //.Member<float>("Value")
+        //.Member<float>("Percentage");
 
         world.RegisterComponent<Health>("Health")
             .Member<double>("Value");
 
 
         world.RegisterComponent<Literacy>("Literacy")
-            //.Member<float>("_value") // Do we need to do this?
-            .Member<float>("Value")
-            .Member<float>("Percentage");
+            .Member<float>("_value");
 
         world.RegisterComponent<ShortDescription>("ShortDescription");
         world.RegisterComponent<Name>("Name");
