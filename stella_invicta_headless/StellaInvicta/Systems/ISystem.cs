@@ -11,8 +11,9 @@ public interface ISystem
     /// <summary>
     /// Enables the system and if its not already part of the ecs world adds it automatically.
     /// </summary>
-    /// <param name="world"></param>
-    public Entity Enable(World world);
+    /// <param name="world">The ECS world to enable the system in.</param>
+    /// <param name="simulationSpeed">The simulation speed timer entity. It determines how fast the system runs</param>
+    public Entity Enable(World world, TimerEntity simulationSpeed);
 
     /// <summary>
     /// Disables the systems
