@@ -23,11 +23,13 @@ public class GameTimeSystem() : ISystem
     /// Enables the game time system and initializes time tracking functionality.
     /// </summary>
     /// <param name="world">The game world instance to enable the system in.</param>
+    /// <param name="simulationSpeed">The timer entity that controls the tick rate of this system.</param>
     /// <returns>The system entity that represents the enabled game time system.</returns>
-    public Entity Enable(World world)
+    public Entity Enable(World world, TimerEntity simulationSpeed)
     {
         return systemEntity = world.System<GameDate>("GameTimeSystem")
             .TermAt(0).Singleton()
+            .TickSource(simulationSpeed)
             .Each((ref GameDate gameDate) =>
             {
                 Logger.ConditionalDebug($"Advancing GameTime by one day | Current Date: {gameDate.GetFormattedDate()}");
