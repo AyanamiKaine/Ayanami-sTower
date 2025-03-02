@@ -121,6 +121,9 @@ public class StellaInvictaECSModule : IFlecsModule
 
         world.RegisterComponent<ShortDescription>("ShortDescription");
         world.RegisterComponent<Name>("Name");
+
+        world.RegisterComponent<Size>("Size")
+            .Member<int>("Value");
     }
 
     /// <summary>
