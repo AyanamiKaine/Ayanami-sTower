@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Flecs.NET.Bindings;
 using Flecs.NET.Core;
 using NLog;
 using StellaInvicta.Components;
@@ -116,11 +117,8 @@ public class StellaInvictaECSModule : IFlecsModule
             .Member<float>("Value")
             .Member<float>("Percentage");
 
-        world.RegisterComponent<ShortDescription>("ShortDescription")
-            .Member<string>("Value");
-
-        world.RegisterComponent<Name>("Name")
-            .Member<string>("Value");
+        world.RegisterComponent<ShortDescription>("ShortDescription");
+        world.RegisterComponent<Name>("Name");
     }
 
     /// <summary>
