@@ -116,7 +116,8 @@ public class StellaInvictaECSModule : IFlecsModule
 
         world.RegisterComponent<Health>("Health")
             .Member<double>("Value");
-        world.RegisterComponent<Militancy>("Happiness")
+
+        world.RegisterComponent<Militancy>("Militancy")
             .Member<float>("Value");
 
         world.RegisterComponent<Literacy>("Literacy")
