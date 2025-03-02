@@ -1,7 +1,7 @@
 namespace StellaInvicta.Components;
 
 /// <summary>
-/// Represents an intrigue value in the game system.
+/// Represents an intrigue stats similar to how its done in Ck2/3
 /// </summary>
 /// <remarks>
 /// Intrigue is implemented as a record struct for performance and immutability.
