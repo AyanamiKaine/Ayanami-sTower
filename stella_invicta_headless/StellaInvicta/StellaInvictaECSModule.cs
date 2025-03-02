@@ -49,7 +49,14 @@ public class StellaInvictaECSModule : IFlecsModule
     private static void AddComponents(World world)
     {
         // Used for game date handling. Similar to how you would imagine CK2/Vic2 doing it with their time.
-        world.RegisterComponent<GameDate>("GameDate");
+        world.RegisterComponent<GameDate>("GameDate")
+            .Member<int>("Year")
+            .Member<int>("Month")
+            .Member<int>("Day")
+            .Member<int>("Hour")
+            .Member<int>("Minute")
+            .Member<int>("Turn");
+
         world.RegisterComponent<Age>("Age")
             .Member<int>("Value");
 
@@ -70,6 +77,50 @@ public class StellaInvictaECSModule : IFlecsModule
 
         world.RegisterComponent<Wealth>("Wealth")
             .Member<double>("Value");
+
+        world.RegisterComponent<Age>("Age")
+            .Member<int>("Value");
+
+        world.RegisterComponent<Consciousness>("Consciousness")
+            .Member<float>("Value");
+
+
+        world.RegisterComponent<Credits>("Credits")
+            .Member<float>("Amount");
+
+
+        world.RegisterComponent<Diplomacy>("Diplomacy")
+            .Member<double>("Value");
+
+
+        world.RegisterComponent<Fertility>("Fertility")
+            .Member<double>("Value");
+
+        world.RegisterComponent<Greed>("Greed")
+            .Member<double>("Value");
+
+        // TODO: HUGE
+        // BIG QUESTION DO I NEED TO ALSO ADD THE PRIVATE FIELDS AS MEMBER?
+        // I personally think so because how else should it know the right offset?
+        world.RegisterComponent<Happiness>("Happiness")
+            //.Member<float>("_value") // Do we need to do this?
+            .Member<float>("Value")
+            .Member<float>("Percentage");
+
+        world.RegisterComponent<Health>("Health")
+            .Member<double>("Value");
+
+
+        world.RegisterComponent<Literacy>("Literacy")
+            //.Member<float>("_value") // Do we need to do this?
+            .Member<float>("Value")
+            .Member<float>("Percentage");
+
+        world.RegisterComponent<ShortDescription>("ShortDescription")
+            .Member<string>("Value");
+
+        world.RegisterComponent<Name>("Name")
+            .Member<string>("Value");
     }
 
     /// <summary>
