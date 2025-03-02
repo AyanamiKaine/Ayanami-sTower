@@ -1,3 +1,5 @@
+using Flecs.NET.Bindings;
+
 namespace StellaInvicta.Components;
 
 /// <summary>
