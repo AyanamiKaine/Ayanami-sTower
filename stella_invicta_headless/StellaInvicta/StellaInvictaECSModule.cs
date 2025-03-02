@@ -28,7 +28,7 @@ public class StellaInvictaECSModule : IFlecsModule
     public void InitModule(World world)
     {
         world.Module<StellaInvictaECSModule>();
-
+        AddSimulationTickSource(world);
         AddComponents(world);
         AddTags(world);
         AddWorldGlobals(world);
@@ -160,5 +160,16 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.Identifiers.Ally>("Ally");
         world.RegisterTag<Tags.Identifiers.Enemy>("Enemy");
         world.RegisterTag<Tags.Identifiers.Neutral>("Neutral");
+    }
+
+    /// <summary>
+    /// Creates an ticksource entity called "SimulationSpeed" that
+    /// runs every second.
+    /// </summary>
+    /// <param name="world"></param>
+    private static void AddSimulationTickSource(World world)
+    {
+        world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.ReallyVeryFast);
     }
 }
