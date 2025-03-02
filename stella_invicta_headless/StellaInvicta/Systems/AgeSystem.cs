@@ -16,13 +16,16 @@ public class AgeSystem() : ISystem
     Entity systemEntity;
 
     /// <summary>
-    /// Enables the age system and if its not already part of the ecs world adds it automatically.
+    /// Enables the Age system that calculates and updates entity ages based on their birthday and current game date.
     /// </summary>
-    /// <param name="world"></param>
-    public Entity Enable(World world)
+    /// <param name="world">The world containing the entities to process.</param>
+    /// <param name="simulationSpeed">The timer entity that controls the tick rate of this system.</param>
+    /// <returns>The system entity that was enabled.</returns>
+    public Entity Enable(World world, TimerEntity simulationSpeed)
     {
         return systemEntity = world.System<Age>("AgeSystem")
             .With<Birthday, GameDate>() // Look for Birthday relationship to GameDate
+            .TickSource(simulationSpeed)
             .Each((Entity e, ref Age age) =>
             {
                 var gameDate = world.Get<GameDate>();
