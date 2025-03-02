@@ -12,15 +12,16 @@ public class CharacterUnitTest
     public void CharactersShouldAge()
     {
         World world = World.Create();
-
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
         world.Import<StellaInvictaECSModule>();
 
 
         // Set Current Year
         world.Set<GameDate>(new(year: 29, month: 12, day: 1));
 
-        world.AddSystem(new GameTimeSystem());
-        world.AddSystem(new AgeSystem());
+        world.AddSystem(new GameTimeSystem(), simulationSpeed);
+        world.AddSystem(new AgeSystem(), simulationSpeed);
 
         var Marina = world.Entity("Marina")
             .Set<Birthday, GameDate>(new GameDate(year: 0, month: 1, day: 1))
