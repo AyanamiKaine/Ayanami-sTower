@@ -4,6 +4,7 @@ using StellaInvicta.Systems;
 
 namespace StellaInvicta;
 
+
 /// <summary>
 /// Provides extension methods for the ECS World class to handle component and tag registration.
 /// </summary>
@@ -47,10 +48,11 @@ public static class ECSWorldExtensions
     /// </summary>
     /// <param name="world">The world to which the system will be added.</param>
     /// <param name="system">The system to be added and enabled.</param>
+    /// <param name="simulationSpeed">The timer entity that controls the tick rate of this system.</param>
     /// <returns>The entity representing the enabled system in the world.</returns>
-    public static Entity AddSystem(this World world, ISystem system)
+    public static Entity AddSystem(this World world, ISystem system, TimerEntity simulationSpeed)
     {
-        var systemEntity = system.Enable(world);
+        var systemEntity = system.Enable(world, simulationSpeed);
         Logger.ConditionalDebug($"Adding System with the name: '{systemEntity.Name()}'");
 
         return systemEntity;
