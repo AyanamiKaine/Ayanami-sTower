@@ -16,7 +16,9 @@ public class GameTimeUnitTest
 
         world.Set<GameDate>(new(year: 0, month: 1, day: 1));
 
-        world.AddSystem(new GameTimeSystem());
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
+        world.AddSystem(new GameTimeSystem(), simulationSpeed);
 
         var expectedGameDate = new GameDate(year: 0, month: 1, day: 30);
 
@@ -37,10 +39,11 @@ public class GameTimeUnitTest
         World world = World.Create();
 
         world.Import<StellaInvictaECSModule>();
-
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
+        world.AddSystem(new GameTimeSystem(), simulationSpeed);
         world.Set<GameDate>(new(year: 0, month: 1, day: 1));
 
-        world.AddSystem(new GameTimeSystem());
 
         var expectedGameDate = new GameDate(year: 0, month: 2, day: 1);
 
@@ -64,7 +67,9 @@ public class GameTimeUnitTest
 
         world.Set<GameDate>(new(year: 0, month: 1, day: 1));
 
-        world.AddSystem(new GameTimeSystem());
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
+        world.AddSystem(new GameTimeSystem(), simulationSpeed);
 
         var expectedGameDate = new GameDate(year: 1, month: 1, day: 1);
 
