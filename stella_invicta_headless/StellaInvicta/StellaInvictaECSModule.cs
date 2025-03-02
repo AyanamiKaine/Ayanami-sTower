@@ -102,7 +102,7 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterComponent<Greed>("Greed")
             .Member<double>("Value");
 
-        // TODO: HUGE
+        // DONE!
         // BIG QUESTION DO I NEED TO ALSO ADD THE PRIVATE FIELDS AS MEMBER?
         // I personally think so because how else should it know the right offset?
         // ANSWER: YES, all fields that are actual part of the datastructure must be added
@@ -116,7 +116,8 @@ public class StellaInvictaECSModule : IFlecsModule
 
         world.RegisterComponent<Health>("Health")
             .Member<double>("Value");
-
+        world.RegisterComponent<Militancy>("Happiness")
+            .Member<float>("Value");
 
         world.RegisterComponent<Literacy>("Literacy")
             .Member<float>("Value");
