@@ -51,6 +51,7 @@ public class StellaInvictaECSModule : IFlecsModule
     {
         // Used for game date handling. Similar to how you would imagine CK2/Vic2 doing it with their time.
         world.RegisterComponent<GameDate>("GameDate")
+            .SetDocBrief("Used to represent a date in the gameworld. 24 Hour Days | 30 Days each month | 360 Days each year")
             .Member<int>("Year")
             .Member<int>("Month")
             .Member<int>("Day")
@@ -59,6 +60,7 @@ public class StellaInvictaECSModule : IFlecsModule
             .Member<int>("Turn");
 
         world.RegisterComponent<Age>("Age")
+            .SetDocBrief("Used to represent an age related to the global gamedate")
             .Member<int>("Value");
 
         world.RegisterComponent<Vector3>("Vector3")
@@ -108,7 +110,7 @@ public class StellaInvictaECSModule : IFlecsModule
         // is a get setter, and Percentage is a caluclate property, when accessed it gets
         // calculated.
         world.RegisterComponent<Happiness>("Happiness")
-            .Member<float>("_value");
+            .Member<float>("Value");
         //.Member<float>("Value")
         //.Member<float>("Percentage");
 
@@ -117,7 +119,11 @@ public class StellaInvictaECSModule : IFlecsModule
 
 
         world.RegisterComponent<Literacy>("Literacy")
-            .Member<float>("_value");
+            .Member<float>("Value");
+
+
+        world.RegisterComponent<Quantity>("Quantity")
+            .Member<int>("Value");
 
         world.RegisterComponent<ShortDescription>("ShortDescription");
         world.RegisterComponent<Name>("Name");
@@ -160,6 +166,17 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.Identifiers.Ally>("Ally");
         world.RegisterTag<Tags.Identifiers.Enemy>("Enemy");
         world.RegisterTag<Tags.Identifiers.Neutral>("Neutral");
+
+        world.RegisterTag<Tags.Identifiers.Position>("Position");
+        world.RegisterTag<Tags.Identifiers.Velocity>("Velocity");
+
+
+        world.RegisterTag<Tags.Identifiers.Alive>("Alive");
+        world.RegisterTag<Tags.Identifiers.Died>("Died");
+        world.RegisterTag<Tags.Identifiers.Bank>("Bank");
+
+
+
     }
 
     /// <summary>
