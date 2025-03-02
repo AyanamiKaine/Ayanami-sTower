@@ -7,34 +7,92 @@ namespace StellaInvicta.Components;
 /// 30 Days each month
 /// 360 Days each year
 /// </summary>
-public struct GameDate(int year, int month = 1, int day = 1, int hour = 0, int minute = 0, int turn = 0) : IEquatable<GameDate>
+public struct GameDate : IEquatable<GameDate>
 {
+    // Define delegate types for our events
+    /// <summary>
+    /// Delegate for day change events, providing the old and new date.
+    /// </summary>
+    public delegate void DayChangedEventHandler(GameDate oldDate, GameDate newDate);
+
+    /// <summary>
+    /// Delegate for month change events, providing the old and new date.
+    /// </summary>
+    public delegate void MonthChangedEventHandler(GameDate oldDate, GameDate newDate);
+
+    /// <summary>
+    /// Delegate for year change events, providing the old and new date.
+    /// </summary>
+    public delegate void YearChangedEventHandler(GameDate oldDate, GameDate newDate);
+
+    /// <summary>
+    /// Delegate for turn change events, providing the old and new date.
+    /// </summary>
+    public delegate void TurnChangedEventHandler(GameDate oldDate, GameDate newDate, int turnsPassed);
+
+    // Static events that subscribers can register with
+    /// <summary>
+    /// Event that fires when a day changes.
+    /// </summary>
+    public static event DayChangedEventHandler? DayChanged;
+
+    /// <summary>
+    /// Event that fires when a month changes.
+    /// </summary>
+    public static event MonthChangedEventHandler? MonthChanged;
+
+    /// <summary>
+    /// Event that fires when a year changes.
+    /// </summary>
+    public static event YearChangedEventHandler? YearChanged;
+
+    /// <summary>
+    /// Event that fires when a turn changes.
+    /// </summary>
+    public static event TurnChangedEventHandler? TurnChanged;
+
     /// <summary>
     /// Gets or sets the year component of the game date.
     /// </summary>
-    public int Year { get; set; } = year;
+    public int Year { get; set; }
+
     /// <summary>
     /// Gets or sets the Month component of the game date.
     /// </summary>
-    public int Month { get; set; } = month;
+    public int Month { get; set; }
+
     /// <summary>
     /// Gets or sets the Day component of the game date.
     /// </summary>
-    public int Day { get; set; } = day;
+    public int Day { get; set; }
+
     /// <summary>
     /// Gets or sets the Hour component of the game date.
     /// </summary>
-    public int Hour { get; set; } = hour;
+    public int Hour { get; set; }
+
     /// <summary>
     /// Gets or sets the Minute component of the game date.
     /// </summary>
-    public int Minute { get; set; } = minute;
+    public int Minute { get; set; }
 
     /// <summary>
     /// Gets or sets the Turn component of the game date.
     /// </summary>
-    public int Turn { get; set; } = turn;
+    public int Turn { get; set; }
 
+    /// <summary>
+    /// Initializes a new instance of the GameDate struct.
+    /// </summary>
+    public GameDate(int year, int month = 1, int day = 1, int hour = 0, int minute = 0, int turn = 0)
+    {
+        Year = year;
+        Month = month;
+        Day = day;
+        Hour = hour;
+        Minute = minute;
+        Turn = turn;
+    }
 
     /// <summary>
     /// Returns the date in a format suitable for space 4X display.
@@ -55,40 +113,55 @@ public struct GameDate(int year, int month = 1, int day = 1, int hour = 0, int m
     public readonly string GetFormattedDate() => $"{Year}.{Month:D2}.{Day:D2}";
 
     /// <summary>
-    /// Advances the game date by the specified number of days.
+    /// Advances the game date by the specified number of days, triggering appropriate events.
     /// </summary>
     /// <param name="days">The number of days to advance the date by. Defaults to 1 if not specified.</param>
-    /// <remarks>
-    /// This is a simplified implementation that assumes all months have 30 days.
-    /// When the day count exceeds 30, it increments the month and resets the day count accordingly.
-    /// Similarly, when the month exceeds 12, it increments the year and resets the month to 1.
-    /// </remarks>
     public void AdvanceDay(int days = 1)
     {
+        // Store the original date for event callbacks
+        GameDate oldDate = this;
+
         Day += days;
+        bool monthChanged = false;
+        bool yearChanged = false;
+
         while (Day > 30) // Simplified - real implementation would account for varying month lengths
         {
             Day -= 30;
             Month++;
+            monthChanged = true;
 
             if (Month > 12)
             {
                 Month = 1;
                 Year++;
+                yearChanged = true;
             }
+        }
+
+        // Trigger events in proper order: day, month, year
+        DayChanged?.Invoke(oldDate, this);
+
+        if (monthChanged)
+        {
+            MonthChanged?.Invoke(oldDate, this);
+        }
+
+        if (yearChanged)
+        {
+            YearChanged?.Invoke(oldDate, this);
         }
     }
 
     /// <summary>
-    /// Advances the game date by the specified number of hours.
+    /// Advances the game date by the specified number of hours, triggering appropriate events.
     /// </summary>
     /// <param name="hours">The number of hours to advance the time by. Defaults to 1 if not specified.</param>
-    /// <remarks>
-    /// When the hour count exceeds 23, it increments the day and resets the hour count accordingly.
-    /// This will cascade to month and year changes as needed.
-    /// </remarks>
     public void AdvanceHour(int hours = 1)
     {
+        // Store the original date for event callbacks
+        GameDate oldDate = this;
+
         Hour += hours;
         int daysToAdvance = 0;
 
@@ -104,47 +177,76 @@ public struct GameDate(int year, int month = 1, int day = 1, int hour = 0, int m
         {
             AdvanceDay(daysToAdvance);
         }
+        else
+        {
+            // If no days were advanced but hours were, we still trigger a day change event
+            // This allows for hourly updates without requiring a full day to pass
+            DayChanged?.Invoke(oldDate, this);
+        }
     }
 
     /// <summary>
-    /// Advances the game date by the specified number of months.
+    /// Advances the game date by the specified number of months, triggering appropriate events.
     /// </summary>
     /// <param name="months">The number of months to advance the date by. Defaults to 1 if not specified.</param>
-    /// <remarks>
-    /// When the month count exceeds 12, it increments the year and resets the month count accordingly.
-    /// </remarks>
     public void AdvanceMonth(int months = 1)
     {
+        // Store the original date for event callbacks
+        GameDate oldDate = this;
+
         Month += months;
+        bool yearChanged = false;
 
         while (Month > 12)
         {
             Month -= 12;
             Year++;
+            yearChanged = true;
+        }
+
+        // Trigger the month changed event
+        MonthChanged?.Invoke(oldDate, this);
+
+        // Trigger the year changed event if applicable
+        if (yearChanged)
+        {
+            YearChanged?.Invoke(oldDate, this);
         }
     }
 
     /// <summary>
-    /// Advances the game date by the specified number of years.
+    /// Advances the game date by the specified number of years, triggering appropriate events.
     /// </summary>
     /// <param name="years">The number of years to advance the date by. Defaults to 1 if not specified.</param>
     public void AdvanceYear(int years = 1)
     {
+        // Store the original date for event callbacks
+        GameDate oldDate = this;
+
         Year += years;
+
+        // Trigger the year changed event
+        YearChanged?.Invoke(oldDate, this);
     }
 
     /// <summary>
-    /// Advances the game by the specified number of turns.
+    /// Advances the game by the specified number of turns, triggering appropriate events.
     /// </summary>
     /// <param name="turns">The number of turns to advance. Defaults to 1 if not specified.</param>
     /// <param name="daysPerTurn">The number of days each turn represents. Defaults to 30 (one month).</param>
-    /// <remarks>
-    /// This allows for flexible turn-based gameplay that advances the calendar accordingly.
-    /// </remarks>
     public void AdvanceTurn(int turns = 1, int daysPerTurn = 30)
     {
+        // Store the original date and turn for event callbacks
+        GameDate oldDate = this;
+        int oldTurn = Turn;
+
         Turn += turns;
+
+        // Advance the days
         AdvanceDay(turns * daysPerTurn);
+
+        // Trigger the turn changed event
+        TurnChanged?.Invoke(oldDate, this, Turn - oldTurn);
     }
 
     /// <summary>
