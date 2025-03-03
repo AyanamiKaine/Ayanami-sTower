@@ -3,6 +3,7 @@ using Flecs.NET.Bindings;
 using Flecs.NET.Core;
 using NLog;
 using StellaInvicta.Components;
+using StellaInvicta.Tags.Identifiers;
 namespace StellaInvicta;
 
 /// <summary>
@@ -169,15 +170,24 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.Identifiers.Enemy>("Enemy");
         world.RegisterTag<Tags.Identifiers.Neutral>("Neutral");
 
-        world.RegisterTag<Tags.Identifiers.Position>("Position");
-        world.RegisterTag<Tags.Identifiers.Velocity>("Velocity");
+        world.RegisterTag<Tags.Identifiers.Position>("Position").Add(Ecs.Exclusive);
+        world.RegisterTag<Tags.Identifiers.Velocity>("Velocity").Add(Ecs.Exclusive);
 
+        world.RegisterTag<Tags.Identifiers.Population>("Population");
 
         world.RegisterTag<Tags.Identifiers.Alive>("Alive");
         world.RegisterTag<Tags.Identifiers.Died>("Died");
-        world.RegisterTag<Tags.Identifiers.Bank>("Bank");
 
 
+        // You can have only one bank
+        world.RegisterTag<Tags.Identifiers.Bank>("Bank")
+            .Add(Ecs.Exclusive);
+        // TODO: When we say something like, pop.add<province>(PROVINE-ENTITY) to indicate
+        // that the population is part of the province so and so. We would like to give the province
+        // prov.add<Population>(pop), to indicate that the province has the population so and so.
+        // HINT: probably we can use observers to add the other relationship when the other is added.
+        world.RegisterTag<Tags.Identifiers.Province>("Province")
+            .Add(Ecs.Exclusive);
 
     }
 
