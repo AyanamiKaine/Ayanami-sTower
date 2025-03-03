@@ -248,4 +248,16 @@ public class PopulationUnitTest
         Assert.True(popTypeLifeNeedFound);
         Assert.True(religionLifeNeedFound);
     }
+
+    /// <summary>
+    /// Populations should grow and shrink based on various factors.
+    /// Populations can never ge bigger than the province capacity.
+    /// It should have in mind how much of their life needs are fullfilt 
+    ///  and how Infrastructure there is. 
+    /// </summary>
+    [Fact]
+    public void PopulationsShouldExpandAndContract()
+    {
+        Assert.False(true);
+    }
 }
