@@ -15,7 +15,7 @@ var simulationSpeed = world.Timer("SimulationSpeed")
     .Interval(SimulationSpeed.Unlocked);
 
 var gameDate = new GameDate(year: 29, month: 12, day: 1);
-GameDate.YearChanged += (oldDate, newDate) => { };
+
 
 // Set Current Year
 world.Set<GameDate>(new(year: 29, month: 12, day: 1));
@@ -123,7 +123,7 @@ var worker = world.Entity("Worker-POPTYPE")
     .Add<PopType>()
     .Add<LifeNeed>(workerIronLifeNeed)
     .Set<Name>(new("Worker"))
-    .Set<ShortDescription>(new("Workers to the basic work"));
+    .Set<ShortDescription>(new("Workers for the basic work"));
 
 
 var workerPops = world.Entity("workerPopsOfAurelianReach-POPULATION")
@@ -141,11 +141,15 @@ var workerPops = world.Entity("workerPopsOfAurelianReach-POPULATION")
     .Set<Happiness>(new(0.0f));
 
 
-var marina = world.Entity("Marina")
-    .Set<Birthday, GameDate>(new GameDate(year: 0, month: 1, day: 1))
-    .Add<Character>()
-    .Add<LocatedAt>(aurelianReach)
-    .Set<Name>(new("Marina"))
-    .Set<Age>(new(29));
+
+var marina = EntityCreator.CreateCharacter(
+    world: world,
+    locatedAt: aurelianReach,
+    culture: solmantum,
+    specie: solari,
+    religion: eternalCycle,
+    birthDate: new GameDate(year: 0, month: 1, day: 1),
+    characterName: "Marina",
+    age: 29);
 
 world.App().EnableRest().EnableStats().Run();
