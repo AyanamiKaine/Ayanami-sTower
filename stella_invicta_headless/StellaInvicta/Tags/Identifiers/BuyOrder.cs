@@ -1,5 +1,5 @@
 namespace StellaInvicta.Tags.Identifiers;
 /// <summary>
-/// Tags a datastructure to be buy orders
+/// Tags a datastructure to be buy order
 /// </summary>
-public struct BuyOrders;
+public struct BuyOrder;
