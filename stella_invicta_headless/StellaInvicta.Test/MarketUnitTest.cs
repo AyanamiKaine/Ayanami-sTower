@@ -27,11 +27,11 @@ public class MarketUnitTest
 
         var market = world.Entity("")
             .Add<Market>()
-            .Set<BuyOrders, List<Entity>>([])
-            .Set<SellOrders, List<Entity>>([]);
+            .Set<BuyOrder, List<Entity>>([])
+            .Set<SellOrder, List<Entity>>([]);
 
         var buyOrder = world.Entity("")
-            .Add<Market>(market);
+            .Add<BuyOrder>(market);
 
     }
 }
