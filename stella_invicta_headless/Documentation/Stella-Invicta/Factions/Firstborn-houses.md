@@ -2,6 +2,46 @@
 ## Summary
 - Somewhat modeled after Qing China their decadents and slow technology advancements. 
 - Isolation, they dont participate in the golden exchange and dont profit from it. At least in the beginning.
+
+## Notes
+- I would really like it when we added some kind of **national anthem** for each faction.
+
+# National Anthem (The Celestial Hymn)
+
+## National Anthem of the Firstborn Houses
+
+### Verse 1
+
+First to emerge from void's embrace, Children of stars, the chosen race. Ancient bloodlines, proud and true, The cosmos bends to our virtue.
+
+### Chorus
+
+Firstborn Houses, divine by right, Celestial wisdom, eternal light. Through isolation's veil, we persevere, For galactic dominion, our destiny clear!
+
+### Verse 2
+
+Five Celestial Houses, standing tall, Bound by tradition, we answered the call. No longer confined by cosmic storms, We claim the stars as rightful lords.
+
+### Chorus
+
+Firstborn Houses, divine by right, Celestial wisdom, eternal light. Through isolation's veil, we persevere, For galactic dominion, our destiny clear!
+
+### Bridge
+
+Our towers reach beyond the sky, Genesis Records tell no lie. Ancient ways, preserved with care, Our birthright to rule beyond compare.
+
+### Verse 3
+
+The veil has lifted, our path revealed, With ancestral honor, our fate is sealed. A thousand worlds await our decree, Firstborn reign for eternity.
+
+### Chorus
+
+Firstborn Houses, divine by right, Celestial wisdom, eternal light. Through isolation's veil, we persevere, For galactic dominion, our destiny clear!
+
+### Outro
+
+Hear our anthem across the stars, The Firstborn march to claim what's ours. By blood and honor, we lead the way, For the Celestial Houses shall forever reign!
+
 ## Lore
 
 ### Firstborn
