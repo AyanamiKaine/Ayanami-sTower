@@ -1,3 +1,4 @@
+#Faction 
 # The Unified Remnant Collective
 
 ## Origins
@@ -77,6 +78,8 @@ The Unified Remnant Collective has established a significant presence in a regio
 # The Unified Remnant Collective - Classified Intelligence File
 *"This idea would be so much cooler when the player decides to play with another faction and slowly as their faction and they themselves realise the façade. We should make it clear for new players NOT TO PLAY THIS FACTION, or maybe we simply disallow it for their first playthrough until the façade falls."*
 
+
+**There is something even funnier, there are certain worlds that claim to be part of the unified remnant collective as the propaganda is told, they truly believe being part of a huge empire that does not exist**
 ## ONLY FOR AUTHORIZED PERSONNEL OF THE COMMITTEE
 
 The previously stated history and current affairs are not true. While named "Unified," this couldn't be farther from the truth. The stated map of our glorious collective is just a mere fantasy. Many of our claimed controlled systems are places of high anarchy. We exert no control over them.
