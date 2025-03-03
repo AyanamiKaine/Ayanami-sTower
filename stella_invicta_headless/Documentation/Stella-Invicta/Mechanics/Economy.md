@@ -1,3 +1,4 @@
+[[Economy.excalidraw]]
 # Scale
 
 The scale of the economy is as follows.
