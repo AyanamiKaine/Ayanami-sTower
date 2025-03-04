@@ -118,73 +118,51 @@ public class GoodsList : IEnumerable<IGood>
     /// <summary>
     /// + operator to combine two GoodsLists
     /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
     public static GoodsList operator +(GoodsList a, GoodsList b)
     {
-        return [
-            // Add all goods from first list
-            .. a._goods.Values,
-            // Add all goods from second list
-            .. b._goods.Values,
-        ];
+        // Modify GoodsList a instead of creating a new one
+        a.AddRange(b._goods.Values);
+        return a;
     }
+
     /// <summary>
     /// Add operator overloads for GoodsList + IGood
     /// </summary>
-    /// <param name="list"></param>
-    /// <param name="good"></param>
-    /// <returns></returns>
     public static GoodsList operator +(GoodsList list, IGood good)
     {
-        return [
-            // First add all existing goods
-            .. list._goods.Values,
-            // Then add the new good
-            good,
-        ];
+        list.Add(good);
+        return list;
     }
 
     /// <summary>
     /// Add the reverse operator for Good + GoodsList
     /// </summary>
-    /// <param name="good"></param>
-    /// <param name="list"></param>
-    /// <returns></returns>
     public static GoodsList operator +(IGood good, GoodsList list)
     {
-        return list + good; // Reuse the implementation above
+        return list + good;
     }
 
     /// <summary>
     /// Subtract one GoodsList from another
     /// </summary>
-    /// <param name="a">The GoodsList to subtract from</param>
-    /// <param name="b">The GoodsList to subtract</param>
-    /// <returns>A new GoodsList containing the difference</returns>
     public static GoodsList operator -(GoodsList a, GoodsList b)
     {
-        GoodsList result = [];
-
-        // Process each good in the first list
-        foreach (var good in a._goods.Values)
+        // Modify GoodsList a directly
+        foreach (var good in b._goods.Values)
         {
-            string goodId = good.GoodId;
-            int quantityA = good.Quantity;
-            int quantityB = b.GetQuantity(goodId);
-
-            // Calculate remaining quantity after subtraction
-            int remainingQuantity = Math.Max(0, quantityA - quantityB);
-
-            // Only add to result if there's something left
-            if (remainingQuantity > 0)
+            if (a._goods.TryGetValue(good.GoodId, out IGood? existingGood))
             {
-                result.Add(good.WithQuantity(remainingQuantity));
+                // Subtract directly from the existing good
+                existingGood.Quantity = Math.Max(0, existingGood.Quantity - good.Quantity);
+
+                // Remove the good if quantity becomes zero
+                if (existingGood.Quantity == 0)
+                {
+                    a._goods.Remove(good.GoodId);
+                }
             }
         }
-
-        return result;
+        return a;
     }
 
     /// <summary>
