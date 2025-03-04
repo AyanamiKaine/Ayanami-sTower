@@ -52,6 +52,9 @@ public abstract class Good(string goodId, int quantity) : IGood
     /// </summary>
     public virtual IGood WithQuantity(int newQuantity)
     {
+        //TODO: To further improve the performance we could put this runtime contrained
+        // in a roslyn analyser that warns about ignoring the constrained. Benchmarks
+        // showed that it gives an around 5-10% performance increase.
         Quantity = Math.Max(0, newQuantity);
         return this;
     }
