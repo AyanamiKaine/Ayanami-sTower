@@ -1,5 +1,12 @@
 namespace StellaInvicta.Components;
 /// <summary>
-/// // Basic construction
+/// Iron good, used for basic construction
 /// </summary>
-public record struct Iron(int Quantity);
+public class Iron(int quantity) : Good("Iron", quantity)
+{
+    /// <inheritdoc/>
+    public override IGood WithQuantity(int newQuantity)
+    {
+        return new Iron(newQuantity);
+    }
+}
