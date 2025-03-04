@@ -160,3 +160,7 @@ public class StellaInvictaBenchmarks
         }
     }
 }
+
+//TODO: Implement performance analyser that report when a benchmark falls below a
+// user defined baseline: See: "https://github.com/NewDayTechnology/benchmarkdotnet.analyser"
+// and "https://dev.to/newday-technology/measuring-performance-using-benchmarkdotnet-part-3-breaking-builds-36il"
