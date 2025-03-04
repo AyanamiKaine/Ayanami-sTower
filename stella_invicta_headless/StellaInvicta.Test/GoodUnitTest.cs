@@ -91,6 +91,60 @@ public class GoodUnitTest
     }
 
     [Fact]
+    public void MultiplyOperatorGoods()
+    {
+        Iron iron1 = new(10);
+
+        var expectedIron = new Iron(20);
+        Assert.Equal(expectedIron, iron1 * 2);
+    }
+
+    [Fact]
+    public void PercentageIncreaseGoodsFloat()
+    {
+        Iron iron1 = new(10);
+
+        var expectedIron = new Iron(12);
+        Assert.Equal(expectedIron, iron1 * 1.2f);
+    }
+
+    [Fact]
+    public void PercentageIncreaseGoodsDouble()
+    {
+        Iron iron1 = new(10);
+
+        var expectedIron = new Iron(12);
+        Assert.Equal(expectedIron, iron1 * 1.2);
+    }
+
+    [Fact]
+    public void PercentageDecreaseGoodsFloat()
+    {
+        Iron iron1 = new(10);
+
+        var expectedIron = new Iron(8);
+        Assert.Equal(expectedIron, iron1 * 0.8f);
+    }
+
+    [Fact]
+    public void PercentageDecreaseGoodsDouble()
+    {
+        Iron iron1 = new(10);
+
+        var expectedIron = new Iron(8);
+        Assert.Equal(expectedIron, iron1 * 0.8);
+    }
+
+    [Fact]
+    public void DivideOperatorGoods()
+    {
+        Iron iron1 = new(10);
+
+        var expectedIron = new Iron(5);
+        Assert.Equal(expectedIron, iron1 / 2);
+    }
+
+    [Fact]
     public void GreaterOperatorGoods()
     {
         Iron iron1 = new(20);
