@@ -20,10 +20,10 @@ public class BuildingUnitTest
         var building = world.Entity("ClothingFactory-BUILDING")
             .Add<Building>()
             .Set<Inventory, GoodsList>([
-                new Iron(0)
+                new Iron(1)
             ])
             .Set<Input, GoodsList>([
-                new Iron(0)
+                new Iron(1)
             ])
             .Set<Output, GoodsList>([
                 new Iron(5)
@@ -35,10 +35,13 @@ public class BuildingUnitTest
             .TermAt(0).First<Inventory>().Second<GoodsList>()
             .TermAt(1).First<Input>().Second<GoodsList>()
             .TermAt(2).First<Output>().Second<GoodsList>()
-            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outPutGoodsList) =>
+            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList) =>
             {
                 if (inventory >= inputGoodsList)
-                    inventory += outPutGoodsList;
+                {
+                    inventory -= inputGoodsList;
+                    inventory += outputGoodsList;
+                }
             });
 
         world.Progress();
