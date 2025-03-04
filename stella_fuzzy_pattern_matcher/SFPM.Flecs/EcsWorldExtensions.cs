@@ -172,6 +172,11 @@ public static class EcsWorldExtensions
         world.Get<List<Rule>>().Match(queryData: queryData);
     }
 
+    // TODO:
+    // It seems its really possible to create a rule order system 
+    // see: "https://github.com/BeanCheeseBurrito/Flecs.NET/blob/main/src/Flecs.NET.Examples/Queries/Sorting.cs"
+    // So we could define rules on entities and the system would correctly order them no need to define a singleton.
+
     /// <summary>
     /// Optimizes the evaluation order of rules in the world by sorting them based on their criteria count.
     /// Rules with more criteria are evaluated first to potentially reduce the number of evaluations needed.
