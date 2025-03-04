@@ -15,9 +15,11 @@ namespace StellaInvicta.Test;
 public class ProvinceUnitTest
 {
     [Fact]
-    public void Test1()
+    public void DefineAProvince()
     {
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
+
+        Assert.True(false);
     }
 }
