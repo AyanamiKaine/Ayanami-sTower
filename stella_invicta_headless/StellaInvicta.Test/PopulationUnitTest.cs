@@ -89,10 +89,10 @@ public class PopulationUnitTest
             .Set<Expected, Credits>(new Credits(200))
             // The question is what should 1 quantity of pop represent 10000k people?
             .Set<Quantity>(new(2000))
-            .Set<Literacy>(Literacy.FromPercentage(5.5f))
-            .Set<Militancy>(Militancy.FromPercentage(2.5f))
-            .Set<Consciousness>(Consciousness.FromPercentage(1.5f))
-            .Set<Happiness>(Happiness.FromPercentage(80));
+            .Set<Literacy>(Literacy.FromPercentage(5.5f))           // 5.5%
+            .Set<Militancy>(Militancy.FromPercentage(2.5f))         // 2.5%
+            .Set<Consciousness>(Consciousness.FromPercentage(1.5f)) // 1.5%
+            .Set<Happiness>(Happiness.FromPercentage(80));          // 80%
     }
 
     /// <summary>
