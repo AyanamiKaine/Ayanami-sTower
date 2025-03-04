@@ -179,6 +179,8 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.Identifiers.Died>("Died");
 
 
+        world.RegisterTag<Building>("Building");
+
         // You can have only one bank
         world.RegisterTag<Tags.Identifiers.Bank>("Bank")
             .Add(Ecs.Exclusive);
