@@ -9,6 +9,30 @@ namespace StellaInvicta.Test;
 /// </summary>
 public class GoodsListUnitTest
 {
+
+    /// <summary>
+    /// We want to be able to write
+    /// 
+    /// Coal coal = new(5);
+    /// GoodsList inventory = [
+    ///     new Coal(5);
+    /// ]
+    /// inventory == coal;
+    /// To check if currently coal with the quantity of five is in the inventory.
+    /// </summary>
+    [Fact]
+    public void GoodIsEqualInTheList()
+    {
+        GoodsList inventory =
+        [
+            new Iron(15)
+        ];
+
+        Iron iron = new(15);
+
+        Assert.True(inventory == iron);
+    }
+
     [Fact]
     public void GreaterThen()
     {
