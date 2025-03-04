@@ -6,6 +6,14 @@ using StellaInvicta.Tags.Identifiers;
 
 namespace StellaInvicta.Systems;
 
+/*
+TODO:
+We should probably add something like a locatedAt Relationship to buildings, 
+where we then can query the entity that represents the location and find its
+infrastructure value. We can use this value to either increase or decrease 
+the productivity of the building.
+*/
+
 /// <summary>
 /// System responsible for handling production processes in the game.
 /// Manages the conversion of input goods to output goods based on workforce and building levels.
@@ -46,10 +54,7 @@ public class ProductionSystem() : ISystem
             .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList, ref WorkForce expectedWorkForce, ref Level lvl) =>
             {
                 var employedWorkForce = 0;
-                e.Each<WorkForce>(e =>
-                {
-                    employedWorkForce += e.Get<Quantity>().Value;
-                });
+                e.Each<WorkForce>(e => employedWorkForce += e.Get<Quantity>().Value);
                 var employmentRatio = Math.Clamp((double)employedWorkForce / (expectedWorkForce.Value * lvl.Value), 0, 1);
 
                 // Calculate maximum possible levels based on available input goods
