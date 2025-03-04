@@ -57,4 +57,123 @@ public abstract class Good(string goodId, int quantity) : IGood
 
         return (Good)a.WithQuantity(a.Quantity + b.Quantity);
     }
+    /// <summary>
+    /// - operator for subtracting quantities of the same good type
+    /// </summary>
+    /// <param name="a">The good to subtract from</param>
+    /// <param name="b">The good to subtract</param>
+    /// <returns>A new good with the resulting quantity</returns>
+    /// <exception cref="InvalidOperationException">Thrown when goods have different IDs</exception>
+    public static Good operator -(Good a, Good b)
+    {
+        if (a.GoodId != b.GoodId)
+            throw new InvalidOperationException($"Cannot subtract goods of different types: {a.GoodId} and {b.GoodId}");
+
+        return (Good)a.WithQuantity(Math.Max(0, a.Quantity - b.Quantity));
+    }
+
+    /// <summary>
+    /// == operator for comparing equality of goods
+    /// </summary>
+    /// <param name="a">First good</param>
+    /// <param name="b">Second good</param>
+    /// <returns>True if goods have the same ID and quantity</returns>
+    public static bool operator ==(Good a, Good b)
+    {
+        if (ReferenceEquals(a, b)) return true;
+        if (a is null || b is null) return false;
+
+        return a.GoodId == b.GoodId && a.Quantity == b.Quantity;
+    }
+
+    /// <summary>
+    /// != operator for comparing inequality of goods
+    /// </summary>
+    /// <param name="a">First good</param>
+    /// <param name="b">Second good</param>
+    /// <returns>True if goods have different ID or quantity</returns>
+    public static bool operator !=(Good a, Good b) => !(a == b);
+
+    /// <summary>
+    /// > operator for comparing quantities of goods
+    /// </summary>
+    /// <param name="a">First good</param>
+    /// <param name="b">Second good</param>
+    /// <returns>True if the first good has a greater quantity than the second</returns>
+    /// <exception cref="InvalidOperationException">Thrown when goods have different IDs</exception>
+    public static bool operator >(Good a, Good b)
+    {
+        if (a.GoodId != b.GoodId)
+            throw new InvalidOperationException($"Cannot compare goods of different types: {a.GoodId} and {b.GoodId}");
+
+        return a.Quantity > b.Quantity;
+    }
+
+    /// <summary>
+    /// operator for comparing quantities of goods
+    /// </summary>
+    /// <param name="a">First good</param>
+    /// <param name="b">Second good</param>
+    /// <returns>True if the first good has a lesser quantity than the second</returns>
+    /// <exception cref="InvalidOperationException">Thrown when goods have different IDs</exception>
+    public static bool operator <(Good a, Good b)
+    {
+        if (a.GoodId != b.GoodId)
+            throw new InvalidOperationException($"Cannot compare goods of different types: {a.GoodId} and {b.GoodId}");
+
+        return a.Quantity < b.Quantity;
+    }
+
+    /// <summary>
+    /// >= operator for comparing quantities of goods
+    /// </summary>
+    /// <param name="a">First good</param>
+    /// <param name="b">Second good</param>
+    /// <returns>True if the first good has a greater or equal quantity than the second</returns>
+    /// <exception cref="InvalidOperationException">Thrown when goods have different IDs</exception>
+    public static bool operator >=(Good a, Good b)
+    {
+        if (a.GoodId != b.GoodId)
+            throw new InvalidOperationException($"Cannot compare goods of different types: {a.GoodId} and {b.GoodId}");
+
+        return a.Quantity >= b.Quantity;
+    }
+
+    /// <summary>
+    /// lesser or equal operator for comparing quantities of goods
+    /// </summary>
+    /// <param name="a">First good</param>
+    /// <param name="b">Second good</param>
+    /// <returns>True if the first good has a lesser or equal quantity than the second</returns>
+    /// <exception cref="InvalidOperationException">Thrown when goods have different IDs</exception>
+    public static bool operator <=(Good a, Good b)
+    {
+        if (a.GoodId != b.GoodId)
+            throw new InvalidOperationException($"Cannot compare goods of different types: {a.GoodId} and {b.GoodId}");
+
+        return a.Quantity <= b.Quantity;
+    }
+
+    /// <summary>
+    /// Override Equals to be consistent with == operator
+    /// </summary>
+    /// <param name="obj">Object to compare</param>
+    /// <returns>True if objects are equal</returns>
+    public override bool Equals(object? obj)
+    {
+        if (obj is Good other)
+        {
+            return this == other;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Override GetHashCode to be consistent with Equals
+    /// </summary>
+    /// <returns>Hash code for the good</returns>
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(GoodId, Quantity);
+    }
 }
