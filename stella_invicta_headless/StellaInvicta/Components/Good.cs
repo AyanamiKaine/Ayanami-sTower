@@ -26,6 +26,13 @@ public interface IGood
     IGood WithQuantity(int newQuantity);
 }
 
+/*NOTE:
+This was once implemented as an immutable type, sadly the performance hit in various critical loops
+simply resulted in too many allocations, such much that most time was spend collecting and allocating.
+
+While I really like immutable types in this case they where problamatic
+*/
+
 /// <summary>
 /// Abstract base class for all goods
 /// </summary>
