@@ -54,12 +54,13 @@ public class BuildingUnitTest
     }
 
     /// <summary>
-    /// We could add various tags for buildings so we can improve performance.
-    /// For example a mine with no input besides its workers does not need to check
-    /// the inventory.
+    /// Buildings needs worker to work in, should the number 
+    /// be less than expected it should decrease production.
+    /// Only 50% the worker pops, then the production is only
+    /// 50%
     /// </summary>
     [Fact]
-    public void BuildingWithTags()
+    public void BuildingWorkerShortageShouldDecreaseOutput()
     {
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
@@ -72,7 +73,7 @@ public class BuildingUnitTest
             .Set<Input, GoodsList>([
             ])
             .Set<Output, GoodsList>([
-                new Iron(5)
+                new Iron(10)
             ]);
 
 
@@ -92,6 +93,10 @@ public class BuildingUnitTest
 
         buildingSimulation.Run();
 
+
+        // Because the worker staff is halved we expect to only
+        // produce half the amount of output iron. 
+        // In this case: 10 / 2 = 5
         GoodsList expectedInventory = [
             new Iron(5)
         ];
