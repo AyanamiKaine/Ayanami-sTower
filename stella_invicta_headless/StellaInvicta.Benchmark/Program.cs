@@ -65,13 +65,13 @@ public class StellaInvictaBenchmarks
         world = World.Create();
         world.Import<StellaInvictaECSModule>();
 
-        inventory = new GoodsList();
+        inventory = [];
         inventory += new Coal(20);
         inventory += new Coal(20);
         inventory += new ModGood("unobtainium", 5); // Custom modded good
 
         // Create input requirements
-        inputRequirements = new GoodsList();
+        inputRequirements = [];
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
     }
