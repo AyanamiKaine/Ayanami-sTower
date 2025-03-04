@@ -73,6 +73,77 @@ public abstract class Good(string goodId, int quantity) : IGood
         a.Quantity += b.Quantity;
         return a;
     }
+
+    /// <summary>
+    /// Multiplies the quantities of one good.
+    /// </summary>
+    /// <param name="a">The Good object to multiply.</param>
+    /// <param name="b">the value to multiply to.</param>
+    /// <returns>the Good object with the multiplied quantity.</returns>
+    public static Good operator *(Good a, int b)
+    {
+        a.Quantity *= b;
+        return a;
+    }
+
+    /// <summary>
+    /// Divides the quantities of one good.
+    /// </summary>
+    /// <param name="a">The Good object to divide.</param>
+    /// <param name="b">the value to divide to.</param>
+    /// <returns>the Good object with the divideded quantity.</returns>
+    public static Good operator /(Good a, int b)
+    {
+        a.Quantity /= b;
+        return a;
+    }
+
+    /// <summary>
+    /// Multiplies the quantities of one good by a float factor.
+    /// </summary>
+    /// <param name="a">The Good object to multiply.</param>
+    /// <param name="factor">The float value to multiply by (e.g., 1.2 for 20% increase).</param>
+    /// <returns>The Good object with the multiplied quantity.</returns>
+    public static Good operator *(Good a, float factor)
+    {
+        a.Quantity = (int)Math.Round(a.Quantity * factor);
+        return a;
+    }
+
+    /// <summary>
+    /// Multiplies the quantities of one good by a float factor.
+    /// </summary>
+    /// <param name="factor">The float value to multiply by.</param>
+    /// <param name="a">The Good object to multiply.</param>
+    /// <returns>The Good object with the multiplied quantity.</returns>
+    public static Good operator *(float factor, Good a)
+    {
+        return a * factor;
+    }
+
+    /// <summary>
+    /// Multiplies the quantities of one good by a double factor.
+    /// </summary>
+    /// <param name="a">The Good object to multiply.</param>
+    /// <param name="factor">The double value to multiply by (e.g., 1.2 for 20% increase).</param>
+    /// <returns>The Good object with the multiplied quantity.</returns>
+    public static Good operator *(Good a, double factor)
+    {
+        a.Quantity = (int)Math.Round(a.Quantity * factor);
+        return a;
+    }
+
+    /// <summary>
+    /// Multiplies the quantities of one good by a double factor.
+    /// </summary>
+    /// <param name="factor">The double value to multiply by.</param>
+    /// <param name="a">The Good object to multiply.</param>
+    /// <returns>The Good object with the multiplied quantity.</returns>
+    public static Good operator *(double factor, Good a)
+    {
+        return a * factor;
+    }
+
     /// <summary>
     /// - operator for subtracting quantities of the same good type
     /// </summary>
