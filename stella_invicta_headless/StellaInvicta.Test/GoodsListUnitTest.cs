@@ -223,4 +223,34 @@ public class GoodsListUnitTest
 
         Assert.Equal(expectedInventory, actualInventory);
     }
+
+    [Fact]
+    public void PercentageIncreaseGoodsList()
+    {
+        GoodsList inventory =
+        [
+            new Iron(10)
+        ];
+
+        GoodsList expectedInventory = [
+            new Iron(12)
+        ];
+
+        Assert.Equal(expectedInventory, inventory *= 1.2);
+    }
+
+    [Fact]
+    public void PercentageDecreaseGoodsList()
+    {
+        GoodsList inventory =
+        [
+            new Iron(10)
+        ];
+
+        GoodsList expectedInventory = [
+            new Iron(8)
+        ];
+
+        Assert.Equal(expectedInventory, inventory *= 0.8);
+    }
 }

@@ -514,4 +514,56 @@ public class GoodsList : IEnumerable<IGood>
     {
         return list >= good;
     }
+
+    /// <summary>
+    /// Multiplies all good quantities in the list by a float factor.
+    /// </summary>
+    /// <param name="list">The GoodsList whose quantities will be modified.</param>
+    /// <param name="factor">The float value to multiply by (e.g., 1.2 for 20% increase).</param>
+    /// <returns>The modified GoodsList.</returns>
+    public static GoodsList operator *(GoodsList list, float factor)
+    {
+        foreach (var good in list._goods.Values)
+        {
+            good.Quantity = (int)Math.Round(good.Quantity * factor);
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Multiplies all good quantities in the list by a float factor.
+    /// </summary>
+    /// <param name="factor">The float value to multiply by.</param>
+    /// <param name="list">The GoodsList whose quantities will be modified.</param>
+    /// <returns>The modified GoodsList.</returns>
+    public static GoodsList operator *(float factor, GoodsList list)
+    {
+        return list * factor;
+    }
+
+    /// <summary>
+    /// Multiplies all good quantities in the list by a double factor.
+    /// </summary>
+    /// <param name="list">The GoodsList whose quantities will be modified.</param>
+    /// <param name="factor">The double value to multiply by (e.g., 1.2 for 20% increase).</param>
+    /// <returns>The modified GoodsList.</returns>
+    public static GoodsList operator *(GoodsList list, double factor)
+    {
+        foreach (var good in list._goods.Values)
+        {
+            good.Quantity = (int)Math.Round(good.Quantity * factor);
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// Multiplies all good quantities in the list by a double factor.
+    /// </summary>
+    /// <param name="factor">The double value to multiply by.</param>
+    /// <param name="list">The GoodsList whose quantities will be modified.</param>
+    /// <returns>The modified GoodsList.</returns>
+    public static GoodsList operator *(double factor, GoodsList list)
+    {
+        return list * factor;
+    }
 }
