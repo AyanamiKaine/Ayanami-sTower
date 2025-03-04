@@ -212,4 +212,138 @@ public class GoodsList : IEnumerable<IGood>
     {
         return inventory >= input;
     }
+
+    /// <summary>
+    /// Determines whether two GoodsList instances are equal.
+    /// </summary>
+    /// <param name="a">The first GoodsList to compare.</param>
+    /// <param name="b">The second GoodsList to compare.</param>
+    /// <returns>true if both lists contain the same goods with the same quantities; otherwise, false.</returns>
+    public static bool operator ==(GoodsList? a, GoodsList? b)
+    {
+        // If both are null or the same instance, they're equal
+        if (ReferenceEquals(a, b))
+            return true;
+
+        // If only one is null, they're not equal
+        if (a is null || b is null)
+            return false;
+
+        // Check if they have the same number of goods
+        if (a._goods.Count != b._goods.Count)
+            return false;
+
+        // Check if all goods in a exist in b with the same quantity
+        foreach (var pair in a._goods)
+        {
+            string goodId = pair.Key;
+            IGood goodA = pair.Value;
+
+            // If the good doesn't exist in b or has a different quantity, lists are not equal
+            if (!b._goods.TryGetValue(goodId, out IGood? goodB) || goodA.Quantity != goodB.Quantity)
+                return false;
+        }
+
+        // All checks passed, lists are equal
+        return true;
+    }
+
+    /// <summary>
+    /// Determines whether two GoodsList instances are not equal.
+    /// </summary>
+    /// <param name="a">The first GoodsList to compare.</param>
+    /// <param name="b">The second GoodsList to compare.</param>
+    /// <returns>true if the lists differ in goods or quantities; otherwise, false.</returns>
+    public static bool operator !=(GoodsList? a, GoodsList? b)
+    {
+        return !(a == b);
+    }
+
+    /// <summary>
+    /// Determines whether this GoodsList is equal to another object.
+    /// </summary>
+    /// <param name="obj">The object to compare with the current GoodsList.</param>
+    /// <returns>true if obj is a GoodsList with the same goods and quantities; otherwise, false.</returns>
+    public override bool Equals(object? obj)
+    {
+        if (obj is null)
+            return false;
+
+        if (ReferenceEquals(this, obj))
+            return true;
+
+        return obj is GoodsList other && this == other;
+    }
+
+    /// <summary>
+    /// Returns a hash code for this GoodsList.
+    /// </summary>
+    /// <returns>A hash code that represents the current GoodsList.</returns>
+    public override int GetHashCode()
+    {
+        int hashCode = 0;
+
+        // Compute hash based on all goods and their quantities
+        foreach (var pair in _goods)
+        {
+            hashCode ^= pair.Key.GetHashCode() ^ pair.Value.Quantity.GetHashCode();
+        }
+
+        return hashCode;
+    }
+
+    /// <summary>
+    /// Determines whether the first GoodsList has strictly greater quantities than the second GoodsList.
+    /// </summary>
+    /// <param name="a">The first GoodsList to compare.</param>
+    /// <param name="b">The second GoodsList to compare.</param>
+    /// <returns>
+    /// true if all quantities in a are greater than or equal to their counterparts in b, 
+    /// and at least one quantity in a is strictly greater than its counterpart in b;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator >(GoodsList a, GoodsList b)
+    {
+        bool hasStrictlyGreater = false;
+
+        // First check that all goods in b exist in a with at least equal quantities
+        foreach (var good in b._goods.Values)
+        {
+            int quantityA = a.GetQuantity(good.GoodId);
+            int quantityB = good.Quantity;
+
+            // If any quantity in a is less than in b, a is not greater than b
+            if (quantityA < quantityB)
+                return false;
+
+            // Track if we found at least one strictly greater quantity
+            if (quantityA > quantityB)
+                hasStrictlyGreater = true;
+        }
+
+        // Also check if a has any goods that b doesn't have
+        foreach (var good in a._goods.Values)
+        {
+            if (!b._goods.ContainsKey(good.GoodId) && good.Quantity > 0)
+                hasStrictlyGreater = true;
+        }
+
+        // a > b if all quantities in a are >= their counterparts in b
+        // AND at least one quantity is strictly greater
+        return hasStrictlyGreater;
+    }
+
+    /// <summary>
+    /// Determines whether the first GoodsList has strictly lesser quantities than the second GoodsList.
+    /// </summary>
+    /// <param name="a">The first GoodsList to compare.</param>
+    /// <param name="b">The second GoodsList to compare.</param>
+    /// <returns>
+    /// true if b has strictly greater quantities than a;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator <(GoodsList a, GoodsList b)
+    {
+        return b > a; // Reuse the greater-than implementation with operands swapped
+    }
 }
