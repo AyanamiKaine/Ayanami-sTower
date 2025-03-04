@@ -2,7 +2,7 @@ using Flecs.NET.Core;
 
 namespace StellaInvicta.Test;
 
-public class FactoryUnitTest
+public class BuildingUnitTest
 {
     [Fact]
     public void Test1()
