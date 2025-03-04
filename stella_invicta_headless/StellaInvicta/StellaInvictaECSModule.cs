@@ -163,6 +163,9 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.Relationships.OwnedBy>("OwnedBy")
                         .Entity.Add(Ecs.Exclusive);
 
+        world.RegisterTag<Tags.Relationships.EmployedAt>("OwnedBy")
+                        .Entity.Add(Ecs.Exclusive);
+                        
         world.RegisterTag<Tags.Relationships.ConnectedTo>("ConnectedTo")
             .Entity.Add(Ecs.Symmetric);
 
