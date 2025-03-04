@@ -27,27 +27,15 @@ public record struct Position(int X, int Y);
 // Example implementations
 public class Coal(int quantity) : Good("coal", quantity)
 {
-    public override IGood WithQuantity(int newQuantity)
-    {
-        return new Coal(newQuantity);
-    }
 }
 
 public class Iron(int quantity) : Good("iron", quantity)
 {
-    public override IGood WithQuantity(int newQuantity)
-    {
-        return new Iron(newQuantity);
-    }
 }
 
 // Custom mod goods can be created easily
 public class ModGood(string goodId, int quantity) : Good(goodId, quantity)
 {
-    public override IGood WithQuantity(int newQuantity)
-    {
-        return new ModGood(GoodId, newQuantity);
-    }
 }
 
 [SimpleJob(runtimeMoniker: RuntimeMoniker.Net90)]
@@ -79,7 +67,7 @@ public class StellaInvictaBenchmarks
         inputRequirements += new ModGood("unobtainium", 3);
 
         // Here we are creating 10000 buildings that will be simulated
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 100000; i++)
         {
             world.Entity()
             .Add<Building>()
@@ -93,7 +81,7 @@ public class StellaInvictaBenchmarks
         }
 
         buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>()
-            .MultiThreaded()
+            //.MultiThreaded()
             .With<Building>()
             .TermAt(0).First<Inventory>().Second<GoodsList>()
             .TermAt(1).First<Input>().Second<GoodsList>()
