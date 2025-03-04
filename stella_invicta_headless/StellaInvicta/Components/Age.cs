@@ -1,5 +1,9 @@
 namespace StellaInvicta.Components;
 
+// TODO: Often times we simply define a value object, but would like to add various more things 
+// like operators. Maybe a look into https://github.com/SteveDunn/Vogen is worth. 
+// It Source generates Value Objects.
+
 /// <summary>
 /// Represents a value type that stores an age value.
 /// </summary>
