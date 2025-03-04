@@ -8,9 +8,11 @@ namespace StellaInvicta.Test;
 public class PlanetUnitTest
 {
     [Fact]
-    public void Test1()
+    public void DefineAPlanet()
     {
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
+
+        Assert.Fail();
     }
 }
