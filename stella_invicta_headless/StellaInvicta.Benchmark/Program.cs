@@ -66,8 +66,8 @@ public class StellaInvictaBenchmarks
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
 
-        // Here we are creating 1.000.000 buildings that will be simulated
-        for (int i = 0; i < 1000000; i++)
+        // Here we are creating 100.000 buildings that will be simulated
+        for (int i = 0; i < 100000; i++)
         {
             world.Entity()
             .Add<Building>()
@@ -91,9 +91,15 @@ public class StellaInvictaBenchmarks
             .TermAt(2).First<Output>().Second<GoodsList>()
             .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList) =>
             {
+                /*
+                Here we check if the inventory has enough 
+                input goods to produce the output
+                */
                 if (inventory >= inputGoodsList)
                 {
+                    // We subtract the input goods from the inventory.
                     inventory -= inputGoodsList;
+                    // New produced goods will be added to the inventory.
                     inventory += outputGoodsList;
                 }
             });
