@@ -81,13 +81,13 @@ public class BuildingUnitTest
         var workerPops = world.Entity()
             .Add<PopType, Worker>()
             .Add<EmployedAt>(building)
-            // Here is workerpops expect to have around 200 credits in the bank
+            // Here the workerpops expect to have around 200 credits in the bank
             .Set<Expected, Credits>(new Credits(200))
             // The question is what should 1 quantity of pop represent 10000k people?
             .Set<Quantity>(new(2000))
             .Set(Literacy.FromPercentage(5.5f))           // 5.5%
             .Set(Militancy.FromPercentage(2.5f))         // 2.5%
-            .Set(Consciousness.FromPercentage(1.5f)) // 1.5%
+            .Set(Consciousness.FromPercentage(1.5f))    // 1.5%
             .Set(Happiness.FromPercentage(80));          // 80%
 
         building.Add<WorkForce>(workerPops);
