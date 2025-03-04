@@ -8,6 +8,7 @@ using Perfolizer.Horology;
 using Flecs.NET.Core;
 using StellaInvicta;
 using StellaInvicta.Components;
+using StellaInvicta.Tags.Identifiers;
 
 namespace StellaInvicta.Benchmark;
 public record struct Name(string Value) : IComparable<Name>
@@ -58,12 +59,16 @@ public class StellaInvictaBenchmarks
     World world;
     GoodsList inventory = [];
     GoodsList inputRequirements = [];
+    Entity building;
+    System<GoodsList, GoodsList, GoodsList> buildingSimulation;
 
     [IterationSetup]
     public void Setup()
     {
         world = World.Create();
         world.Import<StellaInvictaECSModule>();
+        world.SetTaskThreads(32);
+        world.SetThreads(32);
 
         inventory += new Coal(20);
         inventory += new Coal(20);
@@ -72,6 +77,32 @@ public class StellaInvictaBenchmarks
         // Create input requirements
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
+
+        building = world.Entity("IronMine-BUILDING")
+        .Add<Building>()
+        .Set<Inventory, GoodsList>([
+        ])
+        .Set<Input, GoodsList>([
+        ])
+        .Set<Output, GoodsList>([
+            new Iron(5)
+        ]);
+
+
+        buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>()
+            .MultiThreaded()
+            .With<Building>()
+            .TermAt(0).First<Inventory>().Second<GoodsList>()
+            .TermAt(1).First<Input>().Second<GoodsList>()
+            .TermAt(2).First<Output>().Second<GoodsList>()
+            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList) =>
+            {
+                if (inventory >= inputGoodsList)
+                {
+                    inventory -= inputGoodsList;
+                    inventory += outputGoodsList;
+                }
+            });
     }
 
 
@@ -103,6 +134,15 @@ public class StellaInvictaBenchmarks
         for (int i = 0; i < 100000; i++)
         {
             var newInventory = inventory + inputRequirements;
+        }
+    }
+
+    [Benchmark]
+    public void BuildingSimulation()
+    {
+        for (int i = 0; i < 100000; i++)
+        {
+            buildingSimulation.Run();
         }
     }
 
