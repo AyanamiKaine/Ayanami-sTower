@@ -410,4 +410,121 @@ public class GoodsList : IEnumerable<IGood>
     {
         return !(good == list);
     }
+    /// <summary>
+    /// Determines whether a GoodsList contains the specified good with a greater quantity.
+    /// </summary>
+    /// <param name="list">The GoodsList to check.</param>
+    /// <param name="good">The good to compare against.</param>
+    /// <returns>
+    /// true if the list contains the good with a greater quantity;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator >(GoodsList? list, IGood? good)
+    {
+        if (list is null || good is null)
+            return false;
+
+        return list.GetQuantity(good.GoodId) > good.Quantity;
+    }
+
+    /// <summary>
+    /// Determines whether a GoodsList contains the specified good with a lesser quantity.
+    /// </summary>
+    /// <param name="list">The GoodsList to check.</param>
+    /// <param name="good">The good to compare against.</param>
+    /// <returns>
+    /// true if the list contains the good with a lesser quantity;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator <(GoodsList? list, IGood? good)
+    {
+        if (list is null || good is null)
+            return false;
+
+        return list.GetQuantity(good.GoodId) < good.Quantity;
+    }
+
+    /// <summary>
+    /// Determines whether a GoodsList contains the specified good with a greater or equal quantity.
+    /// </summary>
+    /// <param name="list">The GoodsList to check.</param>
+    /// <param name="good">The good to compare against.</param>
+    /// <returns>
+    /// true if the list contains the good with a greater or equal quantity;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator >=(GoodsList? list, IGood? good)
+    {
+        if (list is null)
+            return good is null;
+
+        if (good is null)
+            return true;
+
+        return list.GetQuantity(good.GoodId) >= good.Quantity;
+    }
+
+    /// <summary>
+    /// Determines whether a GoodsList contains the specified good with a lesser or equal quantity.
+    /// </summary>
+    /// <param name="list">The GoodsList to check.</param>
+    /// <param name="good">The good to compare against.</param>
+    /// <returns>
+    /// true if the list contains the good with a lesser or equal quantity;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator <=(GoodsList? list, IGood? good)
+    {
+        if (list is null)
+            return good is null;
+
+        if (good is null)
+            return true;
+
+        return list.GetQuantity(good.GoodId) <= good.Quantity;
+    }
+
+    /// <summary>
+    /// Determines whether a good has a greater quantity than what's in the GoodsList.
+    /// </summary>
+    /// <param name="good">The good to compare.</param>
+    /// <param name="list">The GoodsList to compare against.</param>
+    /// <returns>true if the good's quantity is greater than in the list; otherwise, false.</returns>
+    public static bool operator >(IGood? good, GoodsList? list)
+    {
+        return list < good;
+    }
+
+    /// <summary>
+    /// Determines whether a good has a lesser quantity than what's in the GoodsList.
+    /// </summary>
+    /// <param name="good">The good to compare.</param>
+    /// <param name="list">The GoodsList to compare against.</param>
+    /// <returns>true if the good's quantity is lesser than in the list; otherwise, false.</returns>
+    public static bool operator <(IGood? good, GoodsList? list)
+    {
+        return list > good;
+    }
+
+    /// <summary>
+    /// Determines whether a good has a greater or equal quantity to what's in the GoodsList.
+    /// </summary>
+    /// <param name="good">The good to compare.</param>
+    /// <param name="list">The GoodsList to compare against.</param>
+    /// <returns>true if the good's quantity is greater or equal to the list; otherwise, false.</returns>
+    public static bool operator >=(IGood? good, GoodsList? list)
+    {
+        return list <= good;
+    }
+
+    /// <summary>
+    /// Determines whether a good has a lesser or equal quantity to what's in the GoodsList.
+    /// </summary>
+    /// <param name="good">The good to compare.</param>
+    /// <param name="list">The GoodsList to compare against.</param>
+    /// <returns>true if the good's quantity is lesser or equal to the list; otherwise, false.</returns>
+    public static bool operator <=(IGood? good, GoodsList? list)
+    {
+        return list >= good;
+    }
 }
