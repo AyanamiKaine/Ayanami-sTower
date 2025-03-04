@@ -34,6 +34,57 @@ public class GoodsListUnitTest
     }
 
     [Fact]
+    public void GoodIsGreaterInTheList()
+    {
+        GoodsList inventory =
+        [
+            new Iron(25)
+        ];
+
+        Iron iron = new(15);
+
+        Assert.True(inventory > iron);
+    }
+
+    [Fact]
+    public void GoodIsLessInTheList()
+    {
+        GoodsList inventory =
+        [
+            new Iron(5)
+        ];
+
+        Iron iron = new(15);
+
+        Assert.True(inventory < iron);
+    }
+
+    [Fact]
+    public void GoodIsLessOrEqualInTheList()
+    {
+        GoodsList inventory =
+        [
+            new Iron(15)
+        ];
+
+        Iron iron = new(15);
+
+        Assert.True(inventory <= iron);
+    }
+    [Fact]
+    public void GoodIsGreaterOrEqualInTheList()
+    {
+        GoodsList inventory =
+        [
+            new Iron(15)
+        ];
+
+        Iron iron = new(15);
+
+        Assert.True(inventory >= iron);
+    }
+
+    [Fact]
     public void GreaterThen()
     {
         GoodsList inventory =
