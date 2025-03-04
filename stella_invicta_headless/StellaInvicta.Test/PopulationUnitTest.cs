@@ -258,6 +258,6 @@ public class PopulationUnitTest
     [Fact]
     public void PopulationsShouldExpandAndContract()
     {
-        Assert.False(true);
+        Assert.Fail();
     }
 }
