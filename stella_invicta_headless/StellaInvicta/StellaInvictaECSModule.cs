@@ -152,6 +152,19 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.CelestialBodies.Star>("Star");
 
 
+        // Defining Pop Tags
+        world.RegisterTag<Tags.Identifiers.Worker>("Worker");
+
+        // Slaves can also be used in places where workers are expected.
+        world.RegisterTag<Tags.Identifiers.Slave>("Slave")
+            .IsA<Worker>();
+
+        world.RegisterTag<Tags.Identifiers.Scholar>("Scholar");
+        world.RegisterTag<Tags.Identifiers.Soldier>("Soldier");
+        world.RegisterTag<Tags.Identifiers.Capitalist>("Capitalist");
+        world.RegisterTag<Tags.Identifiers.Aristocrat>("Aristocrat");
+
+
         world.RegisterTag<Tags.Relationships.Orbits>("Orbits")
             .Entity.Add(Ecs.Exclusive);
         world.RegisterTag<Tags.Relationships.DockedAt>("DockedAt")
@@ -165,7 +178,7 @@ public class StellaInvictaECSModule : IFlecsModule
 
         world.RegisterTag<Tags.Relationships.EmployedAt>("OwnedBy")
                         .Entity.Add(Ecs.Exclusive);
-                        
+
         world.RegisterTag<Tags.Relationships.ConnectedTo>("ConnectedTo")
             .Entity.Add(Ecs.Symmetric);
 
