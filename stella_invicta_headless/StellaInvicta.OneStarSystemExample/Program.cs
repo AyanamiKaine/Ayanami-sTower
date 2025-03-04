@@ -140,7 +140,58 @@ var workerPops = world.Entity("workerPopsOfAurelianReach-POPULATION")
     .Set<Consciousness>(new(0.0f))
     .Set<Happiness>(new(0.0f));
 
+Random rand = new();
 
+// Here we are creating 100.000 buildings that will be simulated
+for (int i = 0; i < 100000; i++)
+{
+    var building = world.Entity()
+    .Add<Building>()
+    .Set<Expected, WorkForce>(new WorkForce(4000))
+    .Set<Actual, WorkForce>(new WorkForce(2000))
+    .Set<Inventory, GoodsList>([
+        new Iron(rand.Next(0,2000))
+    ])
+    .Set<Input, GoodsList>([
+        new Iron(rand.Next(0,20))
+    ])
+    .Set<Output, GoodsList>([
+        new Iron(rand.Next(0,7))
+    ]);
+
+    var workerPops2 = world.Entity()
+        .Add<PopType, Worker>()
+        .Add<EmployedAt>(building)
+        // Here is workerpops expect to have around 200 credits in the bank
+        .Set<Expected, Credits>(new Credits(200))
+        // The question is what should 1 quantity of pop represent 10000k people?
+        .Set<Quantity>(new(2000))
+        .Set(Literacy.FromPercentage(5.5f))           // 5.5%
+        .Set(Militancy.FromPercentage(2.5f))         // 2.5%
+        .Set(Consciousness.FromPercentage(1.5f)) // 1.5%
+        .Set(Happiness.FromPercentage(80));          // 80%
+
+    building.Add<WorkForce>(workerPops);
+
+}
+
+var buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>("Building Simulation")
+    // When defined as multithreaded its execution will be split based on the set threads
+    // so lets say we have 100.000 entities this system matches and 32 threads.
+    // then one thread will iterate over (100.000 / 32) entities. 
+    .MultiThreaded()
+    .With<Building>()
+    .TermAt(0).First<Inventory>().Second<GoodsList>()
+    .TermAt(1).First<Input>().Second<GoodsList>()
+    .TermAt(2).First<Output>().Second<GoodsList>()
+    .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList) =>
+    {
+        if (inventory >= inputGoodsList)
+        {
+            inventory -= inputGoodsList;
+            inventory += outputGoodsList *= 0.5;
+        }
+    });
 
 var marina = EntityCreator.CreateCharacter(
     world: world,
@@ -152,4 +203,5 @@ var marina = EntityCreator.CreateCharacter(
     characterName: "Marina",
     age: 29);
 
+world.SetTargetFps(120);
 world.App().EnableRest().EnableStats().Run();
