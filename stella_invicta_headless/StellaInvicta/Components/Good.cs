@@ -8,7 +8,7 @@ public interface IGood
     /// Gets the quantity of the good.
     /// </summary>
     /// <value>The current quantity of the good.</value>
-    int Quantity { get; }
+    int Quantity { get; set; }
     /// <summary>
     /// Gets the unique identifier for the good.
     /// </summary>
@@ -34,42 +34,48 @@ public interface IGood
 public abstract class Good(string goodId, int quantity) : IGood
 {
     /// <inheritdoc/>
-    public int Quantity { get; } = Math.Max(0, quantity);
+    public int Quantity { get; set; } = Math.Max(0, quantity);
     /// <inheritdoc/>
     public string GoodId { get; } = goodId;
     /// <inheritdoc/>
     public virtual bool IsDefined => true;
 
-    /// <inheritdoc/>
-    public abstract IGood WithQuantity(int newQuantity);
+    /// <summary>
+    /// Sets a new quantity and returns this instance for method chaining
+    /// </summary>
+    public virtual IGood WithQuantity(int newQuantity)
+    {
+        Quantity = Math.Max(0, newQuantity);
+        return this;
+    }
 
     /// <summary>
     /// + operator for adding quantities of the same good type
     /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
+    /// <param name="a">First good (will be modified)</param>
+    /// <param name="b">Second good</param>
+    /// <returns>The modified first good</returns>
     public static Good operator +(Good a, Good b)
     {
         if (a.GoodId != b.GoodId)
             throw new InvalidOperationException($"Cannot add goods of different types: {a.GoodId} and {b.GoodId}");
 
-        return (Good)a.WithQuantity(a.Quantity + b.Quantity);
+        a.Quantity += b.Quantity;
+        return a;
     }
     /// <summary>
     /// - operator for subtracting quantities of the same good type
     /// </summary>
-    /// <param name="a">The good to subtract from</param>
+    /// <param name="a">The good to subtract from (will be modified)</param>
     /// <param name="b">The good to subtract</param>
-    /// <returns>A new good with the resulting quantity</returns>
-    /// <exception cref="InvalidOperationException">Thrown when goods have different IDs</exception>
+    /// <returns>The modified first good</returns>
     public static Good operator -(Good a, Good b)
     {
         if (a.GoodId != b.GoodId)
             throw new InvalidOperationException($"Cannot subtract goods of different types: {a.GoodId} and {b.GoodId}");
 
-        return (Good)a.WithQuantity(Math.Max(0, a.Quantity - b.Quantity));
+        a.Quantity = Math.Max(0, a.Quantity - b.Quantity);
+        return a;
     }
 
     /// <summary>
