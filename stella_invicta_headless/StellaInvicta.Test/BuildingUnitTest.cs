@@ -17,13 +17,11 @@ public class BuildingUnitTest
         world.Import<StellaInvictaECSModule>();
 
 
-        var building = world.Entity("ClothingFactory-BUILDING")
+        var building = world.Entity("IronMine-BUILDING")
             .Add<Building>()
             .Set<Inventory, GoodsList>([
-                new Iron(1)
             ])
             .Set<Input, GoodsList>([
-                new Iron(1)
             ])
             .Set<Output, GoodsList>([
                 new Iron(5)
@@ -44,7 +42,7 @@ public class BuildingUnitTest
                 }
             });
 
-        world.Progress();
+        buildingSimulation.Run();
 
         GoodsList expectedInventory = [
             new Iron(5)
