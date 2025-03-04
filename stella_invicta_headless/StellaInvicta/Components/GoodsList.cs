@@ -346,4 +346,68 @@ public class GoodsList : IEnumerable<IGood>
     {
         return b > a; // Reuse the greater-than implementation with operands swapped
     }
+    /// <summary>
+    /// Determines whether a GoodsList contains exactly the specified good with the same quantity.
+    /// </summary>
+    /// <param name="list">The GoodsList to check.</param>
+    /// <param name="good">The good to compare against.</param>
+    /// <returns>
+    /// true if the list contains the good with the exact same quantity and no other goods;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator ==(GoodsList? list, IGood? good)
+    {
+        if (list is null)
+            return good is null;
+
+        if (good is null)
+            return false;
+
+        // List has exactly one good with the same ID and quantity
+        return list._goods.Count == 1 &&
+            list._goods.TryGetValue(good.GoodId, out IGood? listGood) &&
+            listGood.Quantity == good.Quantity;
+    }
+
+    /// <summary>
+    /// Determines whether a GoodsList does not contain exactly the specified good.
+    /// </summary>
+    /// <param name="list">The GoodsList to check.</param>
+    /// <param name="good">The good to compare against.</param>
+    /// <returns>
+    /// true if the list does not contain exactly the good with the same quantity or contains other goods;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator !=(GoodsList? list, IGood? good)
+    {
+        return !(list == good);
+    }
+
+    /// <summary>
+    /// Determines whether a good is equal to a GoodsList.
+    /// </summary>
+    /// <param name="good">The good to compare.</param>
+    /// <param name="list">The GoodsList to compare against.</param>
+    /// <returns>
+    /// true if the list contains exactly the good with the same quantity and no other goods;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator ==(IGood? good, GoodsList? list)
+    {
+        return list == good;
+    }
+
+    /// <summary>
+    /// Determines whether a good is not equal to a GoodsList.
+    /// </summary>
+    /// <param name="good">The good to compare.</param>
+    /// <param name="list">The GoodsList to compare against.</param>
+    /// <returns>
+    /// true if the list does not contain exactly the good with the same quantity or contains other goods;
+    /// otherwise, false.
+    /// </returns>
+    public static bool operator !=(IGood? good, GoodsList? list)
+    {
+        return !(good == list);
+    }
 }
