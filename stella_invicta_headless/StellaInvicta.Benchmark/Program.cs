@@ -66,17 +66,21 @@ public class StellaInvictaBenchmarks
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
 
+        Random rand = new();
+
         // Here we are creating 100.000 buildings that will be simulated
         for (int i = 0; i < 100000; i++)
         {
             world.Entity()
             .Add<Building>()
             .Set<Inventory, GoodsList>([
+                new Coal(rand.Next(0,2000))
             ])
             .Set<Input, GoodsList>([
+                new Coal(rand.Next(0,20))
             ])
             .Set<Output, GoodsList>([
-                new Iron(5)
+                new Iron(rand.Next(0,7))
             ]);
         }
 
