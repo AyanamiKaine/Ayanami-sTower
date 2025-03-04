@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace StellaInvicta.Components;
 /// <summary>
 /// Represents a collection of goods with efficient lookup and quantity management capabilities.
@@ -14,10 +16,30 @@ namespace StellaInvicta.Components;
 /// var woodQuantity = goodsList.GetQuantity("wood"); // Returns 8
 /// </code>
 /// </example>
-public class GoodsList
+public class GoodsList : IEnumerable<IGood>
 {
     // Using a dictionary for O(1) lookups
     private readonly Dictionary<string, IGood> _goods = [];
+
+    /// <summary>
+    /// Empty default constructor
+    /// </summary>
+    public GoodsList() { }
+
+    /// <summary>
+    /// Constructor that accepts IEnumerable IGood for collection expressions
+    /// </summary>
+    /// <param name="goods"></param>
+    public GoodsList(IEnumerable<IGood> goods)
+    {
+        if (goods != null)
+        {
+            foreach (var good in goods)
+            {
+                Add(good);
+            }
+        }
+    }
 
     /// <summary>
     /// Adds a good to the goods list. If the good already exists, its quantity is increased.
@@ -82,6 +104,17 @@ public class GoodsList
         return _goods.Values;
     }
 
+    /// <inheritdoc/>
+    public IEnumerator<IGood> GetEnumerator()
+    {
+        return _goods.Values.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
     /// <summary>
     /// + operator to combine two GoodsLists
     /// </summary>
@@ -90,15 +123,12 @@ public class GoodsList
     /// <returns></returns>
     public static GoodsList operator +(GoodsList a, GoodsList b)
     {
-        GoodsList result = new();
-
-        // Add all goods from first list
-        result.AddRange(a._goods.Values);
-
-        // Add all goods from second list
-        result.AddRange(b._goods.Values);
-
-        return result;
+        return [
+            // Add all goods from first list
+            .. a._goods.Values,
+            // Add all goods from second list
+            .. b._goods.Values,
+        ];
     }
     /// <summary>
     /// Add operator overloads for GoodsList + IGood
