@@ -56,8 +56,8 @@ public class ModGood(string goodId, int quantity) : Good(goodId, quantity)
 public class StellaInvictaBenchmarks
 {
     World world;
-    GoodsList inventory;
-    GoodsList inputRequirements;
+    GoodsList inventory = [];
+    GoodsList inputRequirements = [];
 
     [IterationSetup]
     public void Setup()
@@ -65,13 +65,11 @@ public class StellaInvictaBenchmarks
         world = World.Create();
         world.Import<StellaInvictaECSModule>();
 
-        inventory = [];
         inventory += new Coal(20);
         inventory += new Coal(20);
         inventory += new ModGood("unobtainium", 5); // Custom modded good
 
         // Create input requirements
-        inputRequirements = [];
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
     }
