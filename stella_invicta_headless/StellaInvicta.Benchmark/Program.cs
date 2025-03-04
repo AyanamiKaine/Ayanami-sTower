@@ -7,6 +7,7 @@ using BenchmarkDotNet.Reports;
 using Perfolizer.Horology;
 using Flecs.NET.Core;
 using StellaInvicta;
+using StellaInvicta.Components;
 
 namespace StellaInvicta.Benchmark;
 public record struct Name(string Value) : IComparable<Name>
@@ -21,73 +22,30 @@ public record struct Map(string Name) : IComparable<Map>
 public record struct Health(int Value);
 public record struct Position(int X, int Y);
 
-// Base interface for goods
-public interface IGood
-{
-    int Quantity { get; }
-    string GoodId { get; } // String identifier instead of Type
-}
 
-// Example concrete implementations
+// Example implementations
 public class Coal(int quantity) : Good("coal", quantity)
 {
+    public override IGood WithQuantity(int newQuantity)
+    {
+        return new Coal(newQuantity);
+    }
 }
 
 public class Iron(int quantity) : Good("iron", quantity)
 {
+    public override IGood WithQuantity(int newQuantity)
+    {
+        return new Iron(newQuantity);
+    }
 }
 
 // Custom mod goods can be created easily
 public class ModGood(string goodId, int quantity) : Good(goodId, quantity)
 {
-}
-
-// Abstract base class for all goods
-public abstract class Good(string goodId, int quantity) : IGood
-{
-    public int Quantity { get; } = Math.Max(0, quantity);
-    public string GoodId { get; } = goodId;
-}
-
-public class GoodsList
-{
-    // Using a dictionary for O(1) lookups instead of lists and grouping
-    private readonly Dictionary<string, int> _goods = new Dictionary<string, int>();
-
-    public void Add(IGood good)
+    public override IGood WithQuantity(int newQuantity)
     {
-        if (_goods.ContainsKey(good.GoodId))
-            _goods[good.GoodId] += good.Quantity;
-        else
-            _goods[good.GoodId] = good.Quantity;
-    }
-
-    public void AddRange(IEnumerable<IGood> goods)
-    {
-        foreach (var good in goods)
-            Add(good);
-    }
-
-    public int GetQuantity(string goodId)
-    {
-        return _goods.TryGetValue(goodId, out int quantity) ? quantity : 0;
-    }
-
-    // Optimized operator for fast comparison
-    public static bool operator >=(GoodsList inventory, GoodsList input)
-    {
-        // Only check required input goods (subset check)
-        foreach (var kvp in input._goods)
-        {
-            if (inventory.GetQuantity(kvp.Key) < kvp.Value)
-                return false;
-        }
-        return true;
-    }
-
-    public static bool operator <=(GoodsList input, GoodsList inventory)
-    {
-        return inventory >= input;
+        return new ModGood(GoodId, newQuantity);
     }
 }
 
@@ -108,14 +66,14 @@ public class StellaInvictaBenchmarks
         world.Import<StellaInvictaECSModule>();
 
         inventory = new GoodsList();
-        inventory.Add(new Coal(20));
-        inventory.Add(new Iron(15));
-        inventory.Add(new ModGood("unobtainium", 5)); // Custom modded good
+        inventory += new Coal(20);
+        inventory += new Coal(20);
+        inventory += new ModGood("unobtainium", 5); // Custom modded good
 
         // Create input requirements
         inputRequirements = new GoodsList();
-        inputRequirements.Add(new Coal(5));
-        inputRequirements.Add(new ModGood("unobtainium", 3));
+        inputRequirements += new Coal(5);
+        inputRequirements += new ModGood("unobtainium", 3);
     }
 
 
@@ -123,10 +81,14 @@ public class StellaInvictaBenchmarks
     /// This should simulate the building logic that runs
     /// when a building wants to produce something, it always
     /// first checks if he has enough inventory for the desired 
-    ///  output
+    /// output
+    /// <remarks>
+    /// Here we bechnmark an object based goods type. Instead of 
+    /// defining goods as entities.
+    /// </remarks>
     /// </summary>
     [Benchmark]
-    public void CheckIfInventoryHasEnoughGoods()
+    public void CheckIfInventoryHasEnoughGoodsObjectBased100000Times()
     {
         for (int i = 0; i < 100000; i++)
         {
@@ -134,6 +96,15 @@ public class StellaInvictaBenchmarks
             {
                 // Do some work
             }
+        }
+    }
+
+    [Benchmark]
+    public void AddingInventoriesTogether100000Times()
+    {
+        for (int i = 0; i < 100000; i++)
+        {
+            var newInventory = inventory + inputRequirements;
         }
     }
 
