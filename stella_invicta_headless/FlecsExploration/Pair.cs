@@ -59,7 +59,7 @@ public class Pair
         // When querying for a relationship component, add the pair type as template
         // argument to the builder:
         using Query<Requires> q = world.QueryBuilder<Requires>()
-            .TermAt(0).First<Gigawatts>() // Set first part of pair for second term
+            .TermAt(0).First<Gigawatts>().Second<Requires>() // Set first part of pair for second term
             .Build();
 
         // When iterating, always use the pair type:
@@ -69,7 +69,29 @@ public class Pair
         });
 
         ref readonly Requires r = ref e1.GetSecond<Gigawatts, Requires>();
-        Assert.Equal(1.21f, r.Amount);
+        Assert.Equal(2.21f, r.Amount);
+    }
+
+    [Fact]
+    public void SystemThatWorksWithPairs()
+    {
+        using World world = World.Create();
+
+        // When one element of a pair is a component and the other element is a tag,
+        // the pair assumes the type of the component.
+        Entity e1 = world.Entity().Set<Gigawatts, Requires>(new Requires(1.21f));
+
+        var system = world.System<Requires>()
+            .TermAt(0).First<Gigawatts>().Second<Requires>()
+            .Each((ref Requires rq) =>
+            {
+                rq.Amount += 1f;
+            });
+
+        system.Run();
+
+        ref readonly Requires r = ref e1.GetSecond<Gigawatts, Requires>();
+        Assert.Equal(2.21f, r.Amount);
     }
 
     [Fact]
