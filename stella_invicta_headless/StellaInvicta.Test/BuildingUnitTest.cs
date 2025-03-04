@@ -1,5 +1,6 @@
 using Flecs.NET.Core;
 using StellaInvicta.Components;
+using StellaInvicta.Systems;
 using StellaInvicta.Tags.Identifiers;
 using StellaInvicta.Tags.Relationships;
 
@@ -15,11 +16,17 @@ public class BuildingUnitTest
     public void BuildingProduceOutput()
     {
         World world = World.Create();
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
         world.Import<StellaInvictaECSModule>();
+        world.AddSystem(new ProductionSystem(), simulationSpeed);
+
 
 
         var building = world.Entity("IronMine-BUILDING")
             .Add<Building>()
+            .Set<Level>(new(1))
+            .Set<Expected, WorkForce>(new WorkForce(4000))
             .Set<Inventory, GoodsList>([
             ])
             .Set<Input, GoodsList>([
@@ -28,22 +35,16 @@ public class BuildingUnitTest
                 new Iron(5)
             ]);
 
+        var workerPops = world.Entity()
+            .Add<PopType, Worker>()
+            .Add<EmployedAt>(building)
+            // Here the workerpops expect to have around 200 credits in the bank
+            .Set<Expected, Credits>(new Credits(200))
+            // The question is what should 1 quantity of pop represent 10000k people?
+            .Set<Quantity>(new(4000));
 
-        var buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>()
-            .With<Building>()
-            .TermAt(0).First<Inventory>().Second<GoodsList>()
-            .TermAt(1).First<Input>().Second<GoodsList>()
-            .TermAt(2).First<Output>().Second<GoodsList>()
-            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList) =>
-            {
-                if (inventory >= inputGoodsList)
-                {
-                    inventory -= inputGoodsList;
-                    inventory += outputGoodsList;
-                }
-            });
-
-        buildingSimulation.Run();
+        building.Add<WorkForce>(workerPops);
+        world.Progress();
 
         GoodsList expectedInventory = [
             new Iron(5)
@@ -64,11 +65,14 @@ public class BuildingUnitTest
     public void BuildingWorkerShortageShouldDecreaseOutput()
     {
         World world = World.Create();
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
         world.Import<StellaInvictaECSModule>();
-
+        world.AddSystem(new ProductionSystem(), simulationSpeed);
 
         var building = world.Entity("IronMine-BUILDING")
             .Add<Building>()
+            .Set<Level>(new(1))
             .Set<Expected, WorkForce>(new WorkForce(4000))
             .Set<Inventory, GoodsList>([
             ])
@@ -92,31 +96,9 @@ public class BuildingUnitTest
 
         building.Add<WorkForce>(workerPops);
 
-        var buildingSimulation = world.System<GoodsList, GoodsList, GoodsList, WorkForce>()
-            .With<Building>()
-            .TermAt(0).First<Inventory>().Second<GoodsList>()
-            .TermAt(1).First<Input>().Second<GoodsList>()
-            .TermAt(2).First<Output>().Second<GoodsList>()
-            .TermAt(3).First<Expected>().Second<WorkForce>()
-            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList, ref WorkForce expectedWorkForce) =>
-            {
-                var employedWorkForce = 0;
-                e.Each<WorkForce>(e =>
-                {
-                    employedWorkForce += e.Get<Quantity>().Value;
-                });
 
-                var employmentRatio = Math.Clamp((double)employedWorkForce / expectedWorkForce.Value, 0, 1);
 
-                if (inventory >= inputGoodsList)
-                {
-                    inventory -= inputGoodsList;
-                    inventory += outputGoodsList *= employmentRatio;
-                }
-            });
-
-        buildingSimulation.Run();
-
+        world.Progress();
 
         // Because the worker staff is halved we expect to only
         // produce half the amount of output iron. 
@@ -139,11 +121,14 @@ public class BuildingUnitTest
     public void BuildingWorkerSlavesCouldBeUsedInPlaceOfWorkers()
     {
         World world = World.Create();
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
         world.Import<StellaInvictaECSModule>();
-
+        world.AddSystem(new ProductionSystem(), simulationSpeed);
 
         var building = world.Entity("IronMine-BUILDING")
             .Add<Building>()
+            .Set<Level>(new(10))
             .Set<Expected, WorkForce>(new WorkForce(4000))
             .Set<Inventory, GoodsList>([
             ])
@@ -160,37 +145,14 @@ public class BuildingUnitTest
             .Set<Expected, Credits>(new Credits(200))
             // The question is what should 1 quantity of pop represent 10000k people?
             .Set<Quantity>(new(2000))
-            .Set(Literacy.FromPercentage(5.5f))           // 5.5%
-            .Set(Militancy.FromPercentage(2.5f))         // 2.5%
+            .Set(Literacy.FromPercentage(10))           // 5.5%
+            .Set(Militancy.FromPercentage(25))         // 2.5%
             .Set(Consciousness.FromPercentage(1.5f))    // 1.5%
-            .Set(Happiness.FromPercentage(80));          // 80%
+            .Set(Happiness.FromPercentage(40));          // 80%
 
         building.Add<WorkForce>(slavePops);
 
-        var buildingSimulation = world.System<GoodsList, GoodsList, GoodsList, WorkForce>()
-            .With<Building>()
-            .TermAt(0).First<Inventory>().Second<GoodsList>()
-            .TermAt(1).First<Input>().Second<GoodsList>()
-            .TermAt(2).First<Output>().Second<GoodsList>()
-            .TermAt(3).First<Expected>().Second<WorkForce>()
-            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList, ref WorkForce expectedWorkForce) =>
-            {
-                var employedWorkForce = 0;
-                e.Each<WorkForce>(e =>
-                {
-                    employedWorkForce += e.Get<Quantity>().Value;
-                });
-
-                var employmentRatio = Math.Clamp((double)employedWorkForce / expectedWorkForce.Value, 0, 1);
-
-                if (inventory >= inputGoodsList)
-                {
-                    inventory -= inputGoodsList;
-                    inventory += outputGoodsList *= employmentRatio;
-                }
-            });
-
-        buildingSimulation.Run();
+        world.Progress();
 
 
         // Because the worker staff is halved we expect to only
