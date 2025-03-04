@@ -19,6 +19,6 @@ public class MiningUnitTest
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
 
-        Assert.True(false);
+        Assert.Fail();
     }
 }
