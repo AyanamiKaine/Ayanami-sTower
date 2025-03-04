@@ -14,6 +14,13 @@ namespace StellaInvicta.Test;
 /// </summary>
 public class GoodUnitTest
 {
+    class ModGood(int quantity) : Good("ModdedGood", quantity)
+    {
+        public override IGood WithQuantity(int newQuantity)
+        {
+            return new ModGood(newQuantity);
+        }
+    }
 
     /// We need a working nice way of defining goods, the question
     /// is should we define goods as entities or as objects?
@@ -30,6 +37,9 @@ public class GoodUnitTest
 
         GoodsList inventory =
         [
+            // We can easily define new goods by 
+            // simply extending the base type.
+            new ModGood(5),
             new Iron(15)
         ];
 
