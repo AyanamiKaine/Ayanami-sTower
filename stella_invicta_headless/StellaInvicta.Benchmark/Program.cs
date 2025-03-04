@@ -9,6 +9,7 @@ using Flecs.NET.Core;
 using StellaInvicta;
 using StellaInvicta.Components;
 using StellaInvicta.Tags.Identifiers;
+using StellaInvicta.Tags.Relationships;
 
 namespace StellaInvicta.Benchmark;
 public record struct Name(string Value) : IComparable<Name>
@@ -44,20 +45,12 @@ public class ModGood(string goodId, int quantity) : Good(goodId, quantity)
 [RankColumn]
 public class StellaInvictaBenchmarks
 {
-    World world;
     GoodsList inventory = [];
     GoodsList inputRequirements = [];
-    System<GoodsList, GoodsList, GoodsList> buildingSimulation;
-
     // Runs ONCE
     [GlobalSetup]
     public void Setup()
     {
-        world = World.Create();
-        world.Import<StellaInvictaECSModule>();
-        world.SetTaskThreads(32);
-        world.SetThreads(32);
-
         inventory += new Coal(20);
         inventory += new Coal(20);
         inventory += new ModGood("unobtainium", 5); // Custom modded good
@@ -65,48 +58,6 @@ public class StellaInvictaBenchmarks
         // Create input requirements
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
-
-        Random rand = new();
-
-        // Here we are creating 100.000 buildings that will be simulated
-        for (int i = 0; i < 100000; i++)
-        {
-            world.Entity()
-            .Add<Building>()
-            .Set<Inventory, GoodsList>([
-                new Coal(rand.Next(0,2000))
-            ])
-            .Set<Input, GoodsList>([
-                new Coal(rand.Next(0,20))
-            ])
-            .Set<Output, GoodsList>([
-                new Iron(rand.Next(0,7))
-            ]);
-        }
-
-        buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>()
-            // When defined as multithreaded its execution will be split based on the set threads
-            // so lets say we have 100.000 entities this system matches and 32 threads.
-            // then one thread will iterate over (100.000 / 32) entities. 
-            .MultiThreaded()
-            .With<Building>()
-            .TermAt(0).First<Inventory>().Second<GoodsList>()
-            .TermAt(1).First<Input>().Second<GoodsList>()
-            .TermAt(2).First<Output>().Second<GoodsList>()
-            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList) =>
-            {
-                /*
-                Here we check if the inventory has enough 
-                input goods to produce the output
-                */
-                if (inventory >= inputGoodsList)
-                {
-                    // We subtract the input goods from the inventory.
-                    inventory -= inputGoodsList;
-                    // New produced goods will be added to the inventory.
-                    inventory += outputGoodsList;
-                }
-            });
     }
 
 
@@ -141,12 +92,17 @@ public class StellaInvictaBenchmarks
         }
     }
 
-    [Benchmark]
-    public void BuildingSimulation()
-    {
-        buildingSimulation.Run();
-    }
 
+    /* On benchmarking flecs.net systems
+    Its quite hard to get the actual performance charateristics of flecs because
+    its not good micro benchable. For know be aware not to micro benchmark anything
+    related to Flecs. Good benchmarking targets are algorithms that are part of systems
+    and components.
+    [Benchmark]
+    public void BenchmarkingSystems()
+    {
+    }
+    */
     public class Program
     {
         public static void Main(string[] args)
