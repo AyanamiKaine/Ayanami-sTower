@@ -61,6 +61,16 @@ public class GoodUnitTest
     }
 
     [Fact]
+    public void NotEqualOperatorGoods()
+    {
+        Iron iron1 = new(5);
+        Iron iron2 = new(10);
+
+        Assert.True(iron1 != iron2);
+    }
+
+
+    [Fact]
     public void SubtractOperatorGoods()
     {
         Iron iron1 = new(10);
