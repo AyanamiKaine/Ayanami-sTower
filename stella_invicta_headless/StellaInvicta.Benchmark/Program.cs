@@ -59,10 +59,10 @@ public class StellaInvictaBenchmarks
     World world;
     GoodsList inventory = [];
     GoodsList inputRequirements = [];
-    Entity building;
     System<GoodsList, GoodsList, GoodsList> buildingSimulation;
 
-    [IterationSetup]
+    // Runs ONCE
+    [GlobalSetup]
     public void Setup()
     {
         world = World.Create();
@@ -78,16 +78,19 @@ public class StellaInvictaBenchmarks
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
 
-        building = world.Entity("IronMine-BUILDING")
-        .Add<Building>()
-        .Set<Inventory, GoodsList>([
-        ])
-        .Set<Input, GoodsList>([
-        ])
-        .Set<Output, GoodsList>([
-            new Iron(5)
-        ]);
-
+        // Here we are creating 10000 buildings that will be simulated
+        for (int i = 0; i < 10000; i++)
+        {
+            world.Entity()
+            .Add<Building>()
+            .Set<Inventory, GoodsList>([
+            ])
+            .Set<Input, GoodsList>([
+            ])
+            .Set<Output, GoodsList>([
+                new Iron(5)
+            ]);
+        }
 
         buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>()
             .MultiThreaded()
@@ -140,10 +143,7 @@ public class StellaInvictaBenchmarks
     [Benchmark]
     public void BuildingSimulation()
     {
-        for (int i = 0; i < 100000; i++)
-        {
-            buildingSimulation.Run();
-        }
+        buildingSimulation.Run();
     }
 
     public class Program
