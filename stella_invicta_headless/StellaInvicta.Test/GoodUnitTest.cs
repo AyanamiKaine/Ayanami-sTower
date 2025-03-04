@@ -4,66 +4,6 @@ using StellaInvicta.Tags.Identifiers;
 
 namespace StellaInvicta.Test;
 
-
-// Base interface for all goods
-public interface IGood
-{
-    int Quantity { get; }
-    Type GoodType { get; } // Used to identify the type of good
-}
-
-// Abstract base class implementing IGood
-public abstract class Good(int quantity) : IGood
-{
-    public int Quantity { get; } = Math.Max(0, quantity);
-    public Type GoodType => GetType();
-}
-
-// Concrete implementation for Coal
-public class Coal(int quantity) : Good(quantity)
-{
-}
-
-// Concrete implementation for Iron
-public class Iron(int quantity) : Good(quantity)
-{
-}
-
-// Custom collection class that inherits from List<IGood> and adds operator overloading
-public class GoodsList : List<IGood>
-{
-    public GoodsList() { }
-
-    public GoodsList(IEnumerable<IGood> collection) : base(collection) { }
-
-    // Operator to check if inventory has enough goods for input
-    public static bool operator >=(GoodsList inventory, GoodsList input)
-    {
-        // Group inventory by type and sum quantities
-        var inventoryDict = inventory.GroupBy(i => i.GoodType)
-                                   .ToDictionary(g => g.Key, g => g.Sum(i => i.Quantity));
-
-        // Check each input item against inventory
-        foreach (var inputItem in input)
-        {
-            // If type not found in inventory or not enough quantity, return false
-            if (!inventoryDict.TryGetValue(inputItem.GoodType, out int availableQuantity) ||
-                availableQuantity < inputItem.Quantity)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // Reversed operator for convenience
-    public static bool operator <=(GoodsList input, GoodsList inventory)
-    {
-        return inventory >= input;
-    }
-}
-
 /// <summary>
 /// Goods are the underlying material in the econemy,
 /// they should not be hard coded, but also efficient to work
