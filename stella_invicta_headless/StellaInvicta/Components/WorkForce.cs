@@ -8,4 +8,13 @@ namespace StellaInvicta.Components;
 /// WorkForce is implemented as a record struct for efficient handling of workforce-related calculations.
 /// </remarks>
 /// <param name="Value">The numerical value representing the workforce capacity. Defaults to 0 if not specified.</param>
-public record struct WorkForce(int Value = 0);
+public class WorkForce(int Value = 0)
+{
+    /// <summary>
+    /// Gets or sets the current workforce value indicating the number of available workers.
+    /// </summary>
+    /// <value>
+    /// An integer representing the workforce capacity.
+    /// </value>
+    public int Value { get; set; } = Value;
+};
