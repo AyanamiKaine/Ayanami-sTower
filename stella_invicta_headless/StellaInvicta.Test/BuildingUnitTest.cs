@@ -16,44 +16,39 @@ public class BuildingUnitTest
         World world = World.Create();
         world.Import<StellaInvictaECSModule>();
 
-        var input = world.Entity("WoolClothingFactory-INPUT")
-            // TODO: Maybe its maybe its better to say .IsA<Input>() 
-            // Instead of saying .Add<Input>().
-            .Add<Input>()
-            .Set<Name>(new("Wool"))
-            .Set<Quantity>(new(20));
-
-        var output = world.Entity("ClothingClothingFactory-OUTPUT")
-            .Add<Output>()
-            .Set<Name>(new("Clothing"))
-            .Set<Quantity>(new(5));
-
-
 
         var building = world.Entity("ClothingFactory-BUILDING")
             .Add<Building>()
-            .Add<Inventory>()
-            .Add<Input>(input)
-            .Add<Output>(output);
+            .Set<Inventory, GoodsList>([
+                new Iron(0)
+            ])
+            .Set<Input, GoodsList>([
+                new Iron(0)
+            ])
+            .Set<Output, GoodsList>([
+                new Iron(5)
+            ]);
 
-        // TODO: before we can really work on the buildings we need to create a working underlying goods system.
-        var buildingSimulation = () =>
-        {
-            building.Each<Input>((e) =>
+
+        var buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>()
+            .With<Building>()
+            .TermAt(0).First<Inventory>().Second<GoodsList>()
+            .TermAt(1).First<Input>().Second<GoodsList>()
+            .TermAt(2).First<Output>().Second<GoodsList>()
+            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outPutGoodsList) =>
             {
-                // It would be really cool when we could write something like
-                // This would ensure we always have the right amount of input
-                // stored in the inventory
-                /*
-                if (inventory > input)
-                    subtractInputFromInventory()
-                    createOutput();
-                */
-
+                if (inventory >= inputGoodsList)
+                    inventory += outPutGoodsList;
             });
 
-        };
-        buildingSimulation();
-        Assert.True(false);
+        world.Progress();
+
+        GoodsList expectedInventory = [
+            new Iron(5)
+        ];
+
+        var actualInventory = building.GetSecond<Inventory, GoodsList>();
+
+        Assert.Equal(expectedInventory, actualInventory);
     }
 }
