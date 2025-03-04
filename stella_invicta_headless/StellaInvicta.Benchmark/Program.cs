@@ -66,8 +66,8 @@ public class StellaInvictaBenchmarks
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
 
-        // Here we are creating 10000 buildings that will be simulated
-        for (int i = 0; i < 100000; i++)
+        // Here we are creating 1.000.000 buildings that will be simulated
+        for (int i = 0; i < 1000000; i++)
         {
             world.Entity()
             .Add<Building>()
@@ -81,7 +81,10 @@ public class StellaInvictaBenchmarks
         }
 
         buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>()
-            //.MultiThreaded()
+            // When defined as multithreaded its execution will be split based on the set threads
+            // so lets say we have 100.000 entities this system matches and 32 threads.
+            // then one thread will iterate over (100.000 / 32) entities. 
+            .MultiThreaded()
             .With<Building>()
             .TermAt(0).First<Inventory>().Second<GoodsList>()
             .TermAt(1).First<Input>().Second<GoodsList>()
