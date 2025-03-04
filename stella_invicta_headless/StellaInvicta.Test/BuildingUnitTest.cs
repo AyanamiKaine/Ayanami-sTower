@@ -1,6 +1,7 @@
 using Flecs.NET.Core;
 using StellaInvicta.Components;
 using StellaInvicta.Tags.Identifiers;
+using StellaInvicta.Tags.Relationships;
 
 namespace StellaInvicta.Test;
 
@@ -68,6 +69,7 @@ public class BuildingUnitTest
 
         var building = world.Entity("IronMine-BUILDING")
             .Add<Building>()
+            .Set<Expected, WorkForce>(new WorkForce(4000))
             .Set<Inventory, GoodsList>([
             ])
             .Set<Input, GoodsList>([
@@ -76,18 +78,40 @@ public class BuildingUnitTest
                 new Iron(10)
             ]);
 
+        var workerPops = world.Entity()
+            .Add<PopType, Worker>()
+            .Add<EmployedAt>(building)
+            // Here is workerpops expect to have around 200 credits in the bank
+            .Set<Expected, Credits>(new Credits(200))
+            // The question is what should 1 quantity of pop represent 10000k people?
+            .Set<Quantity>(new(2000))
+            .Set(Literacy.FromPercentage(5.5f))           // 5.5%
+            .Set(Militancy.FromPercentage(2.5f))         // 2.5%
+            .Set(Consciousness.FromPercentage(1.5f)) // 1.5%
+            .Set(Happiness.FromPercentage(80));          // 80%
 
-        var buildingSimulation = world.System<GoodsList, GoodsList, GoodsList>()
+        building.Add<WorkForce>(workerPops);
+
+        var buildingSimulation = world.System<GoodsList, GoodsList, GoodsList, WorkForce>()
             .With<Building>()
             .TermAt(0).First<Inventory>().Second<GoodsList>()
             .TermAt(1).First<Input>().Second<GoodsList>()
             .TermAt(2).First<Output>().Second<GoodsList>()
-            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList) =>
+            .TermAt(3).First<Expected>().Second<WorkForce>()
+            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList, ref WorkForce expectedWorkForce) =>
             {
+                var employedWorkForce = 0;
+                e.Each<WorkForce>(e =>
+                {
+                    employedWorkForce += e.Get<Quantity>().Value;
+                });
+
+                var employmentRatio = Math.Clamp((double)employedWorkForce / expectedWorkForce.Value, 0, 1);
+
                 if (inventory >= inputGoodsList)
                 {
                     inventory -= inputGoodsList;
-                    inventory += outputGoodsList;
+                    inventory += outputGoodsList *= employmentRatio;
                 }
             });
 
