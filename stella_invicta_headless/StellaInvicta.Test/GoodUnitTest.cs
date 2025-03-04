@@ -50,4 +50,88 @@ public class GoodUnitTest
 
         Assert.True(inventory >= input);
     }
+
+    [Fact]
+    public void EqualOperatorGoods()
+    {
+        Iron iron1 = new(10);
+        Iron iron2 = new(10);
+
+        Assert.True(iron1 == iron2);
+    }
+
+    [Fact]
+    public void SubtractOperatorGoods()
+    {
+        Iron iron1 = new(10);
+        Iron iron2 = new(10);
+
+        var expectedIron = new Iron(0);
+        Assert.Equal(expectedIron, iron1 - iron2);
+    }
+
+    [Fact]
+    public void AddOperatorGoods()
+    {
+        Iron iron1 = new(10);
+        Iron iron2 = new(10);
+
+        var expectedIron = new Iron(20);
+        Assert.Equal(expectedIron, iron1 + iron2);
+    }
+
+    [Fact]
+    public void GreaterOperatorGoods()
+    {
+        Iron iron1 = new(20);
+        Iron iron2 = new(10);
+
+        Assert.True(iron1 > iron2);
+    }
+
+    [Fact]
+    public void GreaterOrEqualOperatorGoodsUnitTest1()
+    {
+        Iron iron1 = new(10);
+        Iron iron2 = new(10);
+
+        Assert.True(iron1 >= iron2);
+    }
+
+
+    [Fact]
+    public void GreaterOrEqualOperatorGoodsUnitTest2()
+    {
+        Iron iron1 = new(20);
+        Iron iron2 = new(10);
+
+        Assert.True(iron1 >= iron2);
+    }
+
+    [Fact]
+    public void LessOperatorGoodsUnitTest()
+    {
+        Iron iron1 = new(5);
+        Iron iron2 = new(10);
+
+        Assert.True(iron1 < iron2);
+    }
+
+    [Fact]
+    public void LessOrEqualOperatorGoodsUnitTest1()
+    {
+        Iron iron1 = new(10);
+        Iron iron2 = new(10);
+
+        Assert.True(iron1 <= iron2);
+    }
+
+    [Fact]
+    public void LessOrEqualOperatorGoodsUnitTest2()
+    {
+        Iron iron1 = new(5);
+        Iron iron2 = new(10);
+
+        Assert.True(iron1 <= iron2);
+    }
 }
