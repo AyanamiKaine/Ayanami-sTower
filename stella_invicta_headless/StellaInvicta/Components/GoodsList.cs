@@ -166,27 +166,26 @@ public class GoodsList : IEnumerable<IGood>
     public static GoodsList operator -(GoodsList a, GoodsList b)
     {
         GoodsList result = [];
-        
+
         // Process each good in the first list
         foreach (var good in a._goods.Values)
         {
             string goodId = good.GoodId;
             int quantityA = good.Quantity;
             int quantityB = b.GetQuantity(goodId);
-            
+
             // Calculate remaining quantity after subtraction
             int remainingQuantity = Math.Max(0, quantityA - quantityB);
-            
+
             // Only add to result if there's something left
             if (remainingQuantity > 0)
             {
                 result.Add(good.WithQuantity(remainingQuantity));
             }
         }
-        
+
         return result;
     }
-    
 
     /// <summary>
     /// Comparison operators
