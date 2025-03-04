@@ -178,8 +178,10 @@ public class StellaInvictaECSModule : IFlecsModule
         world.RegisterTag<Tags.Identifiers.Alive>("Alive");
         world.RegisterTag<Tags.Identifiers.Died>("Died");
 
-
+        world.RegisterTag<Input>("Input");
+        world.RegisterTag<Output>("Output");
         world.RegisterTag<Building>("Building");
+        world.RegisterTag<Inventory>("Inventory");
 
         // You can have only one bank
         world.RegisterTag<Tags.Identifiers.Bank>("Bank")
