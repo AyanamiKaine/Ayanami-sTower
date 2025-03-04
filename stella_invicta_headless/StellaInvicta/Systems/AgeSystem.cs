@@ -23,14 +23,12 @@ public class AgeSystem() : ISystem
     /// <returns>The system entity that was enabled.</returns>
     public Entity Enable(World world, TimerEntity simulationSpeed)
     {
-        return systemEntity = world.System<Age>("AgeSystem")
-            .With<Birthday, GameDate>() // Look for Birthday relationship to GameDate
+        return systemEntity = world.System<Age, GameDate, GameDate>("AgeSystem")
+            .TermAt(1).First<Birthday>().Second<GameDate>()
+            .TermAt<GameDate>(2).Singleton()
             .TickSource(simulationSpeed)
-            .Each((Entity e, ref Age age) =>
+            .Each((Entity e, ref Age age, ref GameDate birthday, ref GameDate gameDate) =>
             {
-                var gameDate = world.Get<GameDate>();
-                var birthday = e.GetSecond<Birthday, GameDate>();
-
                 // Calculate age based on years difference
                 int calculatedAge = gameDate.Year - birthday.Year;
 
