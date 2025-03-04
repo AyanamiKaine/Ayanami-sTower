@@ -30,13 +30,11 @@ public class GoodUnitTest
 
         GoodsList inventory =
         [
-            new Coal(20),
             new Iron(15)
         ];
 
         GoodsList input =
         [
-            new Coal(5),
             new Iron(10)
         ];
 
