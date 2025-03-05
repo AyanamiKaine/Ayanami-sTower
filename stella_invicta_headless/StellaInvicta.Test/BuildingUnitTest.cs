@@ -181,7 +181,7 @@ public class BuildingUnitTest
 
         var bank = world.Entity("BANK")
             .Add<Bank>()
-            .Set<InterestRate>(new(0.25))
+            .Set<DepositInterestRate>(new(0.25))
             .Set<Credits>(new(0))
             .Set<Name>(new("Bank Of Solari"));
 
