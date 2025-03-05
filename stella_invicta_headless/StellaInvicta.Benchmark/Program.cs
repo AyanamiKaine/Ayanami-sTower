@@ -3,26 +3,12 @@ using BenchmarkDotNet.Order;
 using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Configs;
-using BenchmarkDotNet.Reports;
-using Perfolizer.Horology;
-using Flecs.NET.Core;
-using StellaInvicta;
+
 using StellaInvicta.Components;
-using StellaInvicta.Tags.Identifiers;
-using StellaInvicta.Tags.Relationships;
+using Flecs.NET.Core;
+
 
 namespace StellaInvicta.Benchmark;
-public record struct Name(string Value) : IComparable<Name>
-{
-    public readonly int CompareTo(Name other) => Value.CompareTo(strB: other.Value);
-}
-public record struct Map(string Name) : IComparable<Map>
-{
-    public readonly int CompareTo(Map other) => Name.CompareTo(strB: other.Name);
-}
-
-public record struct Health(int Value);
-public record struct Position(int X, int Y);
 
 
 // Example implementations
@@ -39,6 +25,14 @@ public class ModGood(string goodId, int quantity) : Good(goodId, quantity)
 {
 }
 
+public class Character(string name, double health, int age)
+{
+    public string Name { get; set; } = name;
+    public double Health { get; set; } = health;
+    public int Age { get; set; } = age;
+
+}
+
 [SimpleJob(runtimeMoniker: RuntimeMoniker.Net90)]
 [MemoryDiagnoser]
 [Orderer(summaryOrderPolicy: SummaryOrderPolicy.FastestToSlowest)]
@@ -47,17 +41,32 @@ public class StellaInvictaBenchmarks
 {
     GoodsList inventory = [];
     GoodsList inputRequirements = [];
+    Entity entity;
+    Character character;
+    World world;
     // Runs ONCE
-    [GlobalSetup]
+    [IterationSetup]
     public void Setup()
     {
+        world = World.Create();
+
+        entity = world.Entity()
+            .Set<Name>(new("DEFAULTNAME"))
+            .Set<Health>(new(20))
+            .Set<Age>(new(20));
+
+        character = new Character("DEFAULTNAME", 20, 20);
+        inventory = [];
         inventory += new Coal(20);
         inventory += new Coal(20);
         inventory += new ModGood("unobtainium", 5); // Custom modded good
 
         // Create input requirements
+        inputRequirements = [];
         inputRequirements += new Coal(5);
         inputRequirements += new ModGood("unobtainium", 3);
+
+
     }
 
 
@@ -90,6 +99,33 @@ public class StellaInvictaBenchmarks
         {
             var newInventory = inventory + inputRequirements;
         }
+    }
+
+    [Benchmark]
+    public void ConstructingAnEntity()
+    {
+        world.Entity()
+            .Set<Name>(new("DEFAULTNAME"))
+            .Set<Health>(new(20))
+            .Set<Age>(new(20));
+    }
+
+    [Benchmark]
+    public void ConstructingAnObject()
+    {
+        var entity = new Character("DEFAULTNAME", 20, 20);
+    }
+
+    [Benchmark]
+    public void MutatingAnEntity()
+    {
+        entity.GetMut<Name>().Value = "NewName";
+    }
+
+    [Benchmark]
+    public void MutatingAnObject()
+    {
+        character.Name = "NewName";
     }
 
 
