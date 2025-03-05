@@ -53,6 +53,7 @@ public class ProductionSystem() : ISystem
             .TermAt(3).First<Expected>().Second<WorkForce>()
             .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList, ref WorkForce expectedWorkForce, ref Level lvl) =>
             {
+                // TODO: ADD LOGGING
                 var employedWorkForce = 0;
                 e.Each<WorkForce>(e => employedWorkForce += e.Get<Quantity>().Value);
                 var employmentRatio = Math.Clamp((double)employedWorkForce / (expectedWorkForce.Value * lvl.Value), 0, 1);
