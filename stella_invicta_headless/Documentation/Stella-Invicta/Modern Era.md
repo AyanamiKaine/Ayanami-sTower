@@ -1,4 +1,9 @@
 ## Modern Era
+
+## Limiting Resources
+
+The current raw resources are being stretch tin. Economic growth slowed down dramatically. The galaxy is rather static. All cards have been dealt eons ago, the deck never shuffled. But now with the unknown reaches being ripe for colonization and exploitation. All existing factions must cope with the fact that if they dont fight for their existence they might become obsolete or left behind. 
+
 ### The Breaking of Isolation
 
 Twenty years ago, the cosmic storms that had isolated the [[Firstborn-houses]] finally dissipated, allowing them to discover they were not alone in the universe. This revelation shattered their worldview but strengthened their resolve to claim what they saw as their rightful place as the galaxy's rulers. They began a rapid campaign of modernization and expansion.
