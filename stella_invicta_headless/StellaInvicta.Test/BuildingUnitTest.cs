@@ -166,4 +166,71 @@ public class BuildingUnitTest
 
         Assert.Equal(expectedInventory, actualInventory);
     }
+
+    /// <summary>
+    /// Worker pops that are not slaves should be payed their wages
+    /// </summary>
+    [Fact]
+    public void WorkerPopsGetPayed()
+    {
+        World world = World.Create();
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
+        world.Import<StellaInvictaECSModule>();
+        world.AddSystem(new ProductionSystem(), simulationSpeed);
+
+        var bank = world.Entity("BANK")
+            .Add<Bank>()
+            .Set<InterestRate>(new(0.25))
+            .Set<Credits>(new(0))
+            .Set<Name>(new("Bank Of Solari"));
+
+        var building = world.Entity("IronMine-BUILDING")
+            .Add<Building>()
+            .Set<Level>(new(10))
+            .Set<Wages>(new(1))
+            .Set<Expected, WorkForce>(new WorkForce(4000))
+            .Set<Inventory, GoodsList>([
+            ])
+            .Set<Input, GoodsList>([
+            ])
+            .Set<Output, GoodsList>([
+                new Iron(10)
+            ]);
+
+        var workerPops = world.Entity()
+            .Add<PopType, Worker>()
+            .Add<Bank>(bank)
+            .Add<EmployedAt>(building)
+            .Set<Expected, Credits>(new Credits(0))
+            .Set<Quantity>(new(2000));
+
+        building.Add<WorkForce>(workerPops);
+
+        // They should only get payed monthly.
+        world.System<Wages>("PayingWages-System")
+            .Each((Entity e, ref Wages wages) =>
+            {
+                var wage = wages.Value;
+                e.Each<WorkForce>((e) =>
+                {
+                    // Wages are transfered to the pops bank,
+                    // the pops will keep in mind how much money they should have
+                    // but this amount might diverge from the amount the bank has
+                    // because the bank may lend their money to others
+                    // generating interest rates.
+                    var calculatedWage = wage * e.Get<Quantity>().Value;
+                    e.Target<Bank>(0).GetMut<Credits>().Ammount += calculatedWage;
+                    e.GetMutSecond<Expected, Credits>().Ammount += calculatedWage;
+                });
+            }).Run();
+
+
+        var expectedCredits = 2000;
+        var actualCredits = workerPops.GetSecond<Expected, Credits>().Ammount;
+
+        Assert.Equal(expectedCredits, actualCredits);
+        Assert.Equal(expectedCredits, bank.Get<Credits>().Ammount);
+
+    }
 }
