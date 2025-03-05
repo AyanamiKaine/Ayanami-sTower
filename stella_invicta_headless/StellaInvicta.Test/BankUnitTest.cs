@@ -5,8 +5,16 @@ using StellaInvicta.Tags.Identifiers;
 namespace StellaInvicta.Test;
 
 
+// TODO: Think about implementing Account System
+/*
+I feel it in my finger tips to also implement an account system, this would add some
+complexity, the question is if the trade-off is worth?
+*/
+
 public class BankUnitTest
 {
+
+
 
     private static bool CreateLoan(World world, Entity bank, Entity borrower, double amount, int term)
     {
