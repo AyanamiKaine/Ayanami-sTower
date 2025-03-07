@@ -41,7 +41,7 @@ public class EventSystem
         /// <param name="day">The day of the month (1-31).</param>
         /// <param name="month">The month of the year (1-12).</param>
         /// <param name="year">The year.</param>
-        public Date(int day = 1, int month = 1, int year = 0)
+        public Date(int day = 1, int month = 1, int year = 1)
         {
             _dateTime = new DateTime(year, month, day);
             Day = _dateTime.Day;
