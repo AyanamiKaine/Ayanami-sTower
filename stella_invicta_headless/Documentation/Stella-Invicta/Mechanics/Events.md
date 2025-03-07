@@ -7,3 +7,6 @@ Imagine you best friend character congratulating you on becoming the president.
 ## Reasons why I dislike the popup events in paradox games
 
 I GET **SPAMMED** WITH NOTIFICATIONS and EVENTS, I simply pick the option with the green numbers.
+
+## Good Examples
+- Rimworld, rim world has many many events, but gives the player meaningful choices. When in Rimworld an event spawns you cant simply click anything, you must read it, and must pounder on your possible choices. This is how it should be done!
