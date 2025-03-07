@@ -12,7 +12,7 @@ public static class EntityExtensions
     {
         if (!entity.Has<Health>()) return;
 
-        ref var health = ref entity.GetMutOrSet<Health>();
+        ref var health = ref entity.Ensure<Health>();
         health.Value -= damageAmount;
         if (health.Value < 0) health.Value = 0;
     }
@@ -21,8 +21,8 @@ public static class EntityExtensions
     {
         if (!entity.Has<Position>() || !entity.Has<MovementSpeed>()) return;
 
-        ref var position = ref entity.GetMutOrSet<Position>();
-        var speed = entity.GetOrSet<MovementSpeed>().Value;
+        ref var position = ref entity.Ensure<Position>();
+        var speed = entity.Ensure<MovementSpeed>().Value;
         position.Value += direction * speed;
     }
 
@@ -37,11 +37,11 @@ public static class EntityExtensions
 
 
         // Start or continue breaking block
-        ref var blockBreaking = ref entity.GetMutOrSet<BlockBreaking>();
+        ref var blockBreaking = ref entity.Ensure<BlockBreaking>();
         blockBreaking.InProgress = true;
 
         // Calculate progress
-        float miningSpeed = entity.GetOrSet<Mining>().Speed;
+        float miningSpeed = entity.Ensure<Mining>().Speed;
         blockBreaking.Progress += miningSpeed * deltaTime;
 
         // Check if block is broken
