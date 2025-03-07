@@ -38,4 +38,15 @@ public class CharacterUnitTest
 
         Assert.Equal(expectedAge, Marina.Get<Age>().Value);
     }
+
+    /// <summary>
+    /// Characters should seek out marriages and birth new childs
+    /// (DESIGN NOTE: maybe we could add a way for species to mix and match
+    /// similar to how its done in Rimworld, using genes, extracting and injecting them)
+    /// </summary>
+    [Fact]
+    public void CharactersShouldSeekOutMarriages()
+    {
+        Assert.Fail();
+    }
 }
