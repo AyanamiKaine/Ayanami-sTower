@@ -14,13 +14,7 @@ namespace StellaInvicta.Test;
 /// </summary>
 public class GoodUnitTest
 {
-    class ModGood(int quantity) : Good("ModdedGood", quantity)
-    {
-        public override IGood WithQuantity(int newQuantity)
-        {
-            return new ModGood(newQuantity);
-        }
-    }
+    class ModGood(int quantity) : Good("ModdedGood", quantity);
 
     /// We need a working nice way of defining goods, the question
     /// is should we define goods as entities or as objects?
