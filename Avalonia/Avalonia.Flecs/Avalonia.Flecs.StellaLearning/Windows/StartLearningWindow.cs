@@ -288,130 +288,40 @@ public static class StartLearningWindow
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center);
 
-        var anwser1Button = entities.GetEntityCreateIfNotExist("anwser1Button")
-            .ChildOf(anwserButtonGrid)
-            .Set(new Button())
-            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetContent(new TextBlock()
-            { Text = quiz.Answers[0], TextWrapping = TextWrapping.Wrap }
-            )
-            .SetMargin(10, 10)
-            .SetColumn(0)
-            .SetRow(0)
-            .OnClick(async (sender, args) =>
-            {
-                if (sender is Button button)
+        // Create buttons dynamically in a loop
+        for (int i = 0; i < quiz.Answers.Count; i++)
+        {
+            int index = i; // Capture the index for the lambda
+            var answerButton = entities.GetEntityCreateIfNotExist($"answerButton{index}")
+                .ChildOf(anwserButtonGrid)
+                .Set(new Button())
+                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                .SetContent(new TextBlock()
                 {
-
-                    if (quiz.CorrectAnswerIndex == 0)
-                    {
-
-                        button.Background = Brushes.LightGreen;
-                        await Task.Delay(1000);
-                        quiz.GoodReview();
-                    }
-                    else
-                    {
-                        button.Background = Brushes.Red;
-                        await Task.Delay(1000);
-                        quiz.AgainReview();
-                    }
-                }
-            });
-
-        var anwser2Button = entities.GetEntityCreateIfNotExist("anwser2Button")
-            .ChildOf(anwserButtonGrid)
-            .Set(new Button())
-            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetContent(new TextBlock()
-            { Text = quiz.Answers[0], TextWrapping = TextWrapping.Wrap }
-            )
-            .SetMargin(10, 10)
-            .SetColumn(1)
-            .SetRow(0)
-            .OnClick(async (sender, args) =>
-            {
-                if (sender is Button button)
+                    Text = quiz.Answers[index],
+                    TextWrapping = TextWrapping.Wrap
+                })
+                .SetMargin(10, 10)
+                .OnClick(async (sender, args) =>
                 {
-
-                    if (quiz.CorrectAnswerIndex == 1)
+                    if (sender is Button button)
                     {
-                        button.Background = Brushes.LightGreen;
-                        await Task.Delay(1000);
-                        quiz.GoodReview();
+                        if (quiz.CorrectAnswerIndex == index)
+                        {
+                            button.Background = Brushes.LightGreen;
+                            await Task.Delay(1000);
+                            quiz.GoodReview();
+                        }
+                        else
+                        {
+                            button.Background = Brushes.Red;
+                            await Task.Delay(1000);
+                            quiz.AgainReview();
+                        }
                     }
-                    else
-                    {
-                        button.Background = Brushes.Red;
-                        await Task.Delay(1000);
-                        quiz.AgainReview();
-                    }
-                }
-            });
-
-        var anwser3Button = entities.GetEntityCreateIfNotExist("anwser3Button")
-            .ChildOf(anwserButtonGrid)
-            .Set(new Button())
-            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetContent(new TextBlock()
-            { Text = quiz.Answers[0], TextWrapping = TextWrapping.Wrap }
-            )
-            .SetMargin(10, 10)
-            .SetColumn(0)
-            .SetRow(1)
-            .OnClick(async (sender, args) =>
-            {
-                if (sender is Button button)
-                {
-
-                    if (quiz.CorrectAnswerIndex == 2)
-                    {
-                        button.Background = Brushes.LightGreen;
-                        await Task.Delay(1000);
-                        quiz.GoodReview();
-                    }
-                    else
-                    {
-                        button.Background = Brushes.Red;
-                        await Task.Delay(1000);
-                        quiz.AgainReview();
-                    }
-                }
-            });
-
-        var anwser4Button = entities.GetEntityCreateIfNotExist("anwser4Button")
-            .ChildOf(anwserButtonGrid)
-            .Set(new Button())
-            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetContent(new TextBlock()
-            { Text = quiz.Answers[0], TextWrapping = TextWrapping.Wrap }
-            )
-            .SetMargin(10, 10)
-            .SetColumn(1)
-            .SetRow(1)
-            .OnClick(async (sender, args) =>
-            {
-                if (sender is Button button)
-                {
-
-                    if (quiz.CorrectAnswerIndex == 3)
-                    {
-                        button.Background = Brushes.LightGreen;
-                        await Task.Delay(1000);
-                        quiz.GoodReview();
-                    }
-                    else
-                    {
-                        button.Background = Brushes.Red;
-                        await Task.Delay(1000);
-                        quiz.AgainReview();
-                    }
-                }
-            });
+                });
+        }
 
         return layout;
     }
