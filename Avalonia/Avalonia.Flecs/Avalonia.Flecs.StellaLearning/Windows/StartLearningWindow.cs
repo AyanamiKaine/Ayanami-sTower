@@ -283,19 +283,19 @@ public static class StartLearningWindow
             .SetText(quiz.Question);
 
         var anwserButtonGrid = entities.GetEntityCreateIfNotExist("AnwserButtonGrid")
-            .Set(new Grid())
+            .Set(new WrapPanel())
             .ChildOf(layout)
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetColumnDefinitions("auto,auto")
-            .SetRowDefinitions("*,*");
+            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center);
 
         var anwser1Button = entities.GetEntityCreateIfNotExist("anwser1Button")
             .ChildOf(anwserButtonGrid)
             .Set(new Button())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetContent(quiz.Answers[0])
+            .SetContent(new TextBlock()
+            { Text = quiz.Answers[0], TextWrapping = TextWrapping.Wrap }
+            )
             .SetMargin(10, 10)
             .SetColumn(0)
             .SetRow(0)
@@ -325,7 +325,9 @@ public static class StartLearningWindow
             .Set(new Button())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetContent(quiz.Answers[1])
+            .SetContent(new TextBlock()
+            { Text = quiz.Answers[0], TextWrapping = TextWrapping.Wrap }
+            )
             .SetMargin(10, 10)
             .SetColumn(1)
             .SetRow(0)
@@ -354,7 +356,9 @@ public static class StartLearningWindow
             .Set(new Button())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetContent(quiz.Answers[2])
+            .SetContent(new TextBlock()
+            { Text = quiz.Answers[0], TextWrapping = TextWrapping.Wrap }
+            )
             .SetMargin(10, 10)
             .SetColumn(0)
             .SetRow(1)
@@ -383,7 +387,9 @@ public static class StartLearningWindow
             .Set(new Button())
             .SetVerticalAlignment(Layout.VerticalAlignment.Center)
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-            .SetContent(quiz.Answers[3])
+            .SetContent(new TextBlock()
+            { Text = quiz.Answers[0], TextWrapping = TextWrapping.Wrap }
+            )
             .SetMargin(10, 10)
             .SetColumn(1)
             .SetRow(1)
