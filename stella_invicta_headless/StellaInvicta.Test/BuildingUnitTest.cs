@@ -25,7 +25,6 @@ public class BuildingUnitTest
 
         var building = world.Entity("IronMine-BUILDING")
             .Add<Building>()
-            .Set<Level>(new(1))
             .Set<Expected, WorkForce>(new WorkForce(4000))
             .Set<Inventory, GoodsList>([
             ])
@@ -72,7 +71,6 @@ public class BuildingUnitTest
 
         var building = world.Entity("IronMine-BUILDING")
             .Add<Building>()
-            .Set<Level>(new(1))
             .Set<Expected, WorkForce>(new WorkForce(4000))
             .Set<Inventory, GoodsList>([
             ])
@@ -187,7 +185,6 @@ public class BuildingUnitTest
 
         var building = world.Entity("IronMine-BUILDING")
             .Add<Building>()
-            .Set<Level>(new(10))
             .Set<Wages>(new(1))
             .Set<Expected, WorkForce>(new WorkForce(4000))
             .Set<Inventory, GoodsList>([
@@ -232,5 +229,82 @@ public class BuildingUnitTest
         Assert.Equal(expectedCredits, actualCredits);
         Assert.Equal(expectedCredits, bank.Get<Credits>().Ammount);
 
+    }
+
+    /// <summary>
+    /// How can we expand and scale our economy? Simply building more buildings!
+    /// </summary>
+    [Fact]
+    public void MultipleBuildingsOnOneProvince()
+    {
+        World world = World.Create();
+        var simulationSpeed = world.Timer("SimulationSpeed")
+            .Interval(SimulationSpeed.Unlocked);
+        world.Import<StellaInvictaECSModule>();
+        world.AddSystem(new ProductionSystem(), simulationSpeed);
+
+        var building1 = world.Entity("IronMine-BUILDING1")
+            .Add<Building>()
+            .Set<Expected, WorkForce>(new WorkForce(4000))
+            .Set<Inventory, GoodsList>([
+            ])
+            .Set<Input, GoodsList>([
+            ])
+            .Set<Output, GoodsList>([
+                new Iron(10)
+            ]);
+
+        var building2 = world.Entity("IronMine-BUILDING2")
+            .Add<Building>()
+            .Set<Expected, WorkForce>(new WorkForce(4000))
+            .Set<Inventory, GoodsList>([
+            ])
+            .Set<Input, GoodsList>([
+            ])
+            .Set<Output, GoodsList>([
+                new Iron(10)
+            ]);
+
+        var workerPops1 = world.Entity()
+            .Add<PopType, Worker>()
+            .Add<EmployedAt>(building1)
+            // Here the workerpops expect to have around 200 credits in the bank
+            .Set<Expected, Credits>(new Credits(200))
+            // The question is what should 1 quantity of pop represent 10000k people?
+            .Set<Quantity>(new(2000))
+            .Set(Literacy.FromPercentage(5.5f))           // 5.5%
+            .Set(Militancy.FromPercentage(2.5f))         // 2.5%
+            .Set(Consciousness.FromPercentage(1.5f))    // 1.5%
+            .Set(Happiness.FromPercentage(80));          // 80%
+
+        var workerPops2 = world.Entity()
+            .Add<PopType, Worker>()
+            .Add<EmployedAt>(building1)
+            // Here the workerpops expect to have around 200 credits in the bank
+            .Set<Expected, Credits>(new Credits(200))
+            // The question is what should 1 quantity of pop represent 10000k people?
+            .Set<Quantity>(new(2000))
+            .Set(Literacy.FromPercentage(5.5f))           // 5.5%
+            .Set(Militancy.FromPercentage(2.5f))         // 2.5%
+            .Set(Consciousness.FromPercentage(1.5f))    // 1.5%
+            .Set(Happiness.FromPercentage(80));          // 80%
+
+        building1.Add<WorkForce>(workerPops1);
+        building2.Add<WorkForce>(workerPops2);
+
+
+
+        world.Progress();
+
+        // Because the worker staff is halved we expect to only
+        // produce half the amount of output iron. 
+        // In this case: 10 / 2 = 5
+        GoodsList expectedInventory = [
+            new Iron(10)
+        ];
+
+        var actualInventory = building1.GetSecond<Inventory, GoodsList>();
+        actualInventory += building2.GetSecond<Inventory, GoodsList>();
+        Assert.Equal(expectedInventory, actualInventory);
     }
 }
