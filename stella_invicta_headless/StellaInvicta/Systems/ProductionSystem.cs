@@ -45,32 +45,21 @@ public class ProductionSystem() : ISystem
     /// </remarks>
     public Entity Enable(World world, TimerEntity simulationSpeed)
     {
-        return systemEntity = world.System<GoodsList, GoodsList, GoodsList, WorkForce, Level>()
+        return systemEntity = world.System<GoodsList, GoodsList, GoodsList, WorkForce>()
             .With<Building>()
             .TermAt(0).First<Inventory>().Second<GoodsList>()
             .TermAt(1).First<Input>().Second<GoodsList>()
             .TermAt(2).First<Output>().Second<GoodsList>()
             .TermAt(3).First<Expected>().Second<WorkForce>()
-            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList, ref WorkForce expectedWorkForce, ref Level lvl) =>
+            .Each((Entity e, ref GoodsList inventory, ref GoodsList inputGoodsList, ref GoodsList outputGoodsList, ref WorkForce expectedWorkForce) =>
             {
                 // TODO: ADD LOGGING
                 var employedWorkForce = 0;
                 e.Each<WorkForce>(e => employedWorkForce += e.Get<Quantity>().Value);
-                var employmentRatio = Math.Clamp((double)employedWorkForce / (expectedWorkForce.Value * lvl.Value), 0, 1);
+                var employmentRatio = Math.Clamp((double)employedWorkForce / expectedWorkForce.Value , 0, 1);
 
-                // Calculate maximum possible levels based on available input goods
-                int effectiveLevels = lvl.Value;
-                while (effectiveLevels > 0 && !(inventory >= inputGoodsList * effectiveLevels))
-                {
-                    effectiveLevels--;
-                }
-
-                // Produce goods for the maximum possible levels
-                if (effectiveLevels > 0)
-                {
-                    inventory -= inputGoodsList * effectiveLevels;
-                    inventory += outputGoodsList * effectiveLevels * employmentRatio;
-                }
+                inventory -= inputGoodsList ;
+                inventory += outputGoodsList  * employmentRatio;
             });
     }
     /// <summary>
