@@ -10,8 +10,6 @@ public static class EntityExtensions
 {
     public static void TakeDamage(this Entity entity, float damageAmount)
     {
-        if (!entity.Has<Health>()) return;
-
         ref var health = ref entity.Ensure<Health>();
         health.Value -= damageAmount;
         if (health.Value < 0) health.Value = 0;
@@ -19,8 +17,6 @@ public static class EntityExtensions
 
     public static void Move(this Entity entity, Vector3 direction)
     {
-        if (!entity.Has<Position>() || !entity.Has<MovementSpeed>()) return;
-
         ref var position = ref entity.Ensure<Position>();
         var speed = entity.Ensure<MovementSpeed>().Value;
         position.Value += direction * speed;
