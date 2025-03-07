@@ -2,7 +2,7 @@ namespace StellaInvicta.Components;
 /// <summary>
 /// Singleton UndefinedGood implementation
 /// </summary>
-public sealed class UndefinedGood : Good
+public sealed class UndefinedGood : Good, IGood
 {
     /// <summary>
     /// Gets the singleton instance of the UndefinedGood class.
@@ -21,7 +21,7 @@ public sealed class UndefinedGood : Good
     private UndefinedGood() : base("undefined", 0) { }
 
     /// <inheritdoc/>
-    public override IGood WithQuantity(int newQuantity)
+    IGood IGood.WithQuantity(int newQuantity)
     {
         // UndefinedGood always has quantity 0, regardless of attempts to change it
         return Instance;
