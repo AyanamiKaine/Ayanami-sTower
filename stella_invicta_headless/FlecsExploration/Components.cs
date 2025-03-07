@@ -90,6 +90,43 @@ public class Components
 
     }
 
+    /// <summary>
+    /// Sometimes we want to ensure an entity has a component attached to it,
+    /// when we say Get component. Imagine using first has component and then get component,
+    /// we can bundle this using e.Ensure component
+    /// </summary>
+    [Fact]
+    public void EnsuringAnEntityHasAComponent()
+    {
+        World world = World.Create();
+        var entity = world.Entity();
+
+        // Here we get a mutable refrence, should the component not be a part of the entity it will be
+        // first created and then returned.
+        entity.Ensure<Position2D>().X = 2;
+
+
+        Assert.True(entity.Has<Position2D>());
+        // Using ensure again when the component exists simply returns a mut ref.
+        Assert.Equal(2, entity.Ensure<Position2D>().X);
+    }
+
+    [Fact]
+    public void EnsuringAnEntityHasAComponentReadonly()
+    {
+        World world = World.Create();
+        var entity = world.Entity();
+
+        entity.Ensure<Position2D>().X = 2;
+
+        // Even though we return a mut ref by default does not mean we cannot create a immutable refrence
+        ref readonly var positionOfEntity = ref entity.Ensure<Position2D>();
+
+        Assert.True(entity.Has<Position2D>());
+        // Using ensure again when the component exists simply returns a mut ref.
+        Assert.Equal(2, positionOfEntity.X);
+    }
+
     [Fact]
     public void ReadingComponentData()
     {
