@@ -70,6 +70,7 @@ public static class ECSEntityExtensions
     /// </summary>
     /// <param name="e"></param>
     /// <returns></returns>
+    [Obsolete("Use e.Ensure<T> instead")]
     public static T GetOrSet<T>(this Entity e) where T : new()
     {
         if (e.Has<T>())
@@ -89,6 +90,7 @@ public static class ECSEntityExtensions
     /// </summary>
     /// <param name="e"></param>
     /// <returns></returns>
+    [Obsolete("Use e.Ensure<T> instead")]
     public static ref T GetMutOrSet<T>(this Entity e) where T : new()
     {
         if (e.Has<T>())
