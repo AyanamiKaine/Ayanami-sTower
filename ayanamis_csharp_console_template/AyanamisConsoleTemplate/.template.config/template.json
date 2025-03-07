@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Ayanami Kaine",
+  "classifications": [ "Common", "Console", "Best Practices" ],
+  "identity": "Ayanami.BestPractices.Console",
+  "name": "Ayanami's Best Practices Console App",
+  "shortName": "ayanamisConsoleTemplate",
+  "description": "A console application template with best practices including NLog, Roslynator, and warning as errors.",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "AyanamiBestPracticesAppTemplate",
+  "preferNameDirectory": true
+}
