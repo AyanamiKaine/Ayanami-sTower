@@ -23,7 +23,11 @@ public interface IGood
     /// </summary>
     /// <param name="newQuantity"></param>
     /// <returns></returns>
-    IGood WithQuantity(int newQuantity);
+    virtual IGood WithQuantity(int newQuantity)
+    {
+        Quantity = Math.Max(0, newQuantity);
+        return this;
+    }
 }
 
 /*NOTE:
@@ -46,18 +50,6 @@ public abstract class Good(string goodId, int quantity) : IGood
     public string GoodId { get; } = goodId;
     /// <inheritdoc/>
     public virtual bool IsDefined => true;
-
-    /// <summary>
-    /// Sets a new quantity and returns this instance for method chaining
-    /// </summary>
-    public virtual IGood WithQuantity(int newQuantity)
-    {
-        //TODO: To further improve the performance we could put this runtime contrained
-        // in a roslyn analyser that warns about ignoring the constrained. Benchmarks
-        // showed that it gives an around 5-10% performance increase.
-        Quantity = Math.Max(0, newQuantity);
-        return this;
-    }
 
     /// <summary>
     /// + operator for adding quantities of the same good type
