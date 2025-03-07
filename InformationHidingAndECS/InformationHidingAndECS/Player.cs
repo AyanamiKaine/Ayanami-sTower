@@ -18,7 +18,28 @@ public interface IAttack
 
 /*
 Shared fields between different game entities is decomposed into small hierarchies, this is similar to 
-how its done in minecraft
+how its done in minecraft.
+
+
+For example here is a abstracted view how the inheritance hierarchy looks like in minecraft:
+Entity (base class)
+  ├── LivingEntity
+  │     ├── Player
+  │     └── Mob
+  │           ├── PathfinderMob
+  │           │     ├── Animal
+  │           │     │     ├── Cow
+  │           │     │     ├── Sheep
+  │           │     │     ├── Chicken
+  │           │     │     └── ...
+  │           │     ├── Monster
+  │           │     │     ├── Zombie
+  │           │     │     ├── Skeleton
+  │           │     │     ├── Creeper
+  │           │     │     └── ...
+  │           │     └── Villager
+  │           └── Flying Mobs (like Phantom)
+  └── ItemEntity (dropped items)
 */
 
 public class BaseEntity()
@@ -42,6 +63,7 @@ public class LivingEntity(double health = 10) : BaseEntity()
 /// </summary>
 public class Player(double health = 10, double attackPower = 1.0, float jumpStrength = 1.0f) : LivingEntity(health), IJump, IAttack
 {
+    public string PlayerName { get; init; } = string.Empty;
     public double AttackPower { get; set; } = attackPower;
     public float JumpStrength { get; set; } = jumpStrength;
 
