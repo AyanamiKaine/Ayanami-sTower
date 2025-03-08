@@ -8,6 +8,8 @@ using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
 using Avalonia.Flecs.Util;
 using Avalonia.Flecs.StellaLearning.Pages;
+using DesktopNotifications;
+using System;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -25,6 +27,7 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
 

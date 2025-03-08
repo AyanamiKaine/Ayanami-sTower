@@ -13,6 +13,7 @@ using Avalonia.Flecs.StellaLearning.Util;
 using Avalonia.Flecs.Util;
 using Avalonia.Media;
 using Avalonia.Threading;
+using DesktopNotifications;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
@@ -22,6 +23,10 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public static class StartLearningWindow
 {
+
+    private static readonly INotificationManager _iNotificationManager = Program.NotificationManager ??
+                           throw new InvalidOperationException("Missing notification manager");
+    private static bool _previouslyHadItemToReview = false;
 
     /// <summary>
     /// Create the Add File Window
@@ -138,6 +143,41 @@ public static class StartLearningWindow
         {
             Dispatcher.UIThread.Post(() =>
                         {
+                            var nextItem = GetNextItemToBeReviewed(entities, spacedRepetitionItems);
+                            bool hasItemToReview = nextItem != null;
+                            if (hasItemToReview && !_previouslyHadItemToReview && !entities.GetEntityCreateIfNotExist("StartLearningWindow").Get<Window>().IsActive)
+                            {
+                                _iNotificationManager.NotificationActivated += (sender, e) =>
+                                {
+                                    if (e.ActionId == "startLearning")
+                                    {
+                                        Dispatcher.UIThread.Post(() =>
+                                            {
+                                                entities.GetEntityCreateIfNotExist("StartLearningWindow").ShowWindow();
+                                                entities.GetEntityCreateIfNotExist("StartLearningWindow").Get<Window>().Focus();
+                                            });
+                                    }
+                                };
+                                _iNotificationManager.NotificationDismissed += (sender, e) =>
+                                {
+
+                                };
+
+                                var nf = new Notification
+                                {
+                                    Title = "New item can be learned",
+                                    Body = "",
+                                    Buttons =
+                                {
+                                    ("Start Learning", "startLearning"),
+                                    ("Dismiss", "dismiss")
+                                }
+                                };
+
+                                _iNotificationManager.ShowNotification(nf);
+                            }
+                            _previouslyHadItemToReview = hasItemToReview;
+
                             DisplayRightItem(entities, spacedRepetitionItems).ChildOf(entities["StartLearningMainContentDisplay"]);
                         });
         });
@@ -145,7 +185,7 @@ public static class StartLearningWindow
 
     private static Entity LearnFileContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        var file = (SpacedRepetitionFile)GetNextItemToBeReviewed(spacedRepetitionItems)!;
+        var file = (SpacedRepetitionFile)GetNextItemToBeReviewed(entities, spacedRepetitionItems)!;
 
         var layout = entities.GetEntityCreateIfNotExist("LearnFileLayout")
             .Set(new StackPanel())
@@ -243,7 +283,7 @@ public static class StartLearningWindow
 
     private static Entity LearnVideoContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        var video = (SpacedRepetitionVideo)GetNextItemToBeReviewed(spacedRepetitionItems)!;
+        var video = (SpacedRepetitionVideo)GetNextItemToBeReviewed(entities, spacedRepetitionItems)!;
 
         return entities.GetEntityCreateIfNotExist("LearnVideoContent")
             .Set(new TextBlock())
@@ -252,7 +292,7 @@ public static class StartLearningWindow
 
     private static Entity LearnExerciseContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        var exercise = (SpacedRepetitionExercise)GetNextItemToBeReviewed(spacedRepetitionItems)!;
+        var exercise = (SpacedRepetitionExercise)GetNextItemToBeReviewed(entities, spacedRepetitionItems)!;
 
         return entities.GetEntityCreateIfNotExist("LearnExerciseContent")
             .Set(new TextBlock())
@@ -269,7 +309,7 @@ public static class StartLearningWindow
             .SetSpacing(10)
             .SetMargin(20);
 
-        var quiz = (SpacedRepetitionQuiz)GetNextItemToBeReviewed(spacedRepetitionItems)!;
+        var quiz = (SpacedRepetitionQuiz)GetNextItemToBeReviewed(entities, spacedRepetitionItems)!;
 
         entities.GetEntityCreateIfNotExist("LearnQuizContent")
             .ChildOf(layout)
@@ -328,7 +368,7 @@ public static class StartLearningWindow
 
     private static Entity LearnFlashcardContent(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        var flashcard = (SpacedRepetitionFlashcard)GetNextItemToBeReviewed(spacedRepetitionItems)!;
+        var flashcard = (SpacedRepetitionFlashcard)GetNextItemToBeReviewed(entities, spacedRepetitionItems)!;
 
 
         var layout = entities.GetEntityCreateIfNotExist("LearnFlashcardLayout")
@@ -447,7 +487,7 @@ public static class StartLearningWindow
             .SetSpacing(10)
             .SetMargin(20);
 
-        var cloze = (SpacedRepetitionCloze)GetNextItemToBeReviewed(spacedRepetitionItems)!;
+        var cloze = (SpacedRepetitionCloze)GetNextItemToBeReviewed(entities, spacedRepetitionItems)!;
 
         StringBuilder sb = new(cloze.FullText);
         foreach (string word in cloze.ClozeWords)
@@ -540,7 +580,7 @@ public static class StartLearningWindow
     private static Entity DisplayRightItem(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
 
-        return GetNextItemToBeReviewed(spacedRepetitionItems) switch
+        return GetNextItemToBeReviewed(entities, spacedRepetitionItems) switch
         {
             SpacedRepetitionFile => LearnFileContent(entities, spacedRepetitionItems),
             SpacedRepetitionCloze => LearnClozeContent(entities, spacedRepetitionItems),
@@ -577,12 +617,14 @@ public static class StartLearningWindow
             .SetText(text);
     }
 
-    private static SpacedRepetitionItem? GetNextItemToBeReviewed(ObservableCollection<SpacedRepetitionItem> items)
+    private static SpacedRepetitionItem? GetNextItemToBeReviewed(NamedEntities entities, ObservableCollection<SpacedRepetitionItem> items)
     {
         if (items == null || !items.Any())
         {
             return null; // Return null if the collection is empty or null
         }
+
+
 
         DateTime now = DateTime.Now;
 
