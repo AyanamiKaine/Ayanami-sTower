@@ -31,8 +31,4 @@
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\Avalonia.Flecs.Util\Avalonia.Flecs.Util.csproj" />
-  </ItemGroup>
 </Project>
