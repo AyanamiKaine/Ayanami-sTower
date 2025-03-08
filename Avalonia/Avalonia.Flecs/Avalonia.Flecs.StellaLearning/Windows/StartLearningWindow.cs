@@ -166,7 +166,7 @@ public static class StartLearningWindow
                                 var nf = new Notification
                                 {
                                     Title = "New item can be learned",
-                                    Body = "",
+                                    Body = nextItem!.Name,
                                     Buttons =
                                 {
                                     ("Start Learning", "startLearning"),
