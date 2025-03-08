@@ -1,4 +1,8 @@
 ﻿using System;
+using System.IO;
+using System.IO.Pipes;
+using System.Threading;
+using System.Threading.Tasks;
 using DesktopNotifications;
 using DesktopNotifications.Avalonia;
 
@@ -6,15 +10,35 @@ namespace Avalonia.Flecs.StellaLearning;
 
 static class Program
 {
-
+    private const string AppMutexId = "StellaLearning-F86E70DA-7DF5-4B0A-9511-7C8151EFF94B";
+    private const string PipeName = "StellaLearningPipe";
+    private static Mutex? _mutex;
+    private static Task? _pipeServerTask;
     public static INotificationManager NotificationManager = null!;
 
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args) => BuildAvaloniaApp()
-        .StartWithClassicDesktopLifetime(args);
+    public static void Main(string[] args)
+    {
+        // Try to create a new mutex with our unique ID
+        _mutex = new Mutex(true, AppMutexId, out bool isNewInstance);
 
+        if (!isNewInstance)
+        {
+            // If we're not the first instance, signal the existing instance to show its window
+            SignalExistingInstance();
+            return; // Exit this instance
+        }
+
+        // We are the first instance, so start the pipe server to listen for signals
+        _pipeServerTask = Task.Run(StartPipeServer);
+
+        BuildAvaloniaApp()
+        .StartWithClassicDesktopLifetime(args);
+        // Clean up when application exits
+        _mutex!.ReleaseMutex();
+    }
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
@@ -23,5 +47,54 @@ static class Program
                 .SetupDesktopNotifications(out NotificationManager!)
                 .WithInterFont()
                 .LogToTrace();
+    }
+
+    private static void SignalExistingInstance()
+    {
+        try
+        {
+            using var pipeClient = new NamedPipeClientStream(".", PipeName, PipeDirection.Out);
+            pipeClient.Connect(1000); // Wait up to 1 second
+
+            using var writer = new StreamWriter(pipeClient);
+            writer.WriteLine("show");
+            writer.Flush();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to signal existing instance: {ex.Message}");
+        }
+    }
+
+    private static async Task StartPipeServer()
+    {
+        while (true)
+        {
+            try
+            {
+                using var pipeServer = new NamedPipeServerStream(PipeName, PipeDirection.In);
+                await pipeServer.WaitForConnectionAsync();
+
+                using var reader = new StreamReader(pipeServer);
+                string? message = await reader.ReadLineAsync();
+
+                if (message == "show")
+                {
+                    // Signal the UI thread to show/activate the main window
+                    await Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (App.Current is App app)
+                        {
+                            app.ShowMainWindow();
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Pipe server error: {ex.Message}");
+                await Task.Delay(1000); // Wait before retrying
+            }
+        }
     }
 }
