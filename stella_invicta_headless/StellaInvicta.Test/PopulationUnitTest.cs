@@ -260,4 +260,14 @@ public class PopulationUnitTest
     {
         Assert.Fail();
     }
+
+    /// <summary>
+    /// Populations should seek work, trying their best
+    /// at earning money to survive.
+    /// </summary>
+    [Fact]
+    public void PopulationsShouldSeekWork()
+    {
+        Assert.Fail();
+    }
 }
