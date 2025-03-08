@@ -9,6 +9,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>preview</AnalysisLevel>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <ApplicationIcon>Assets\stella-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
 
