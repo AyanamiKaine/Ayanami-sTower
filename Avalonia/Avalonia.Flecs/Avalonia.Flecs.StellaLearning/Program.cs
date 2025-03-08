@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.IO.Pipes;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DesktopNotifications;
@@ -21,19 +22,27 @@ static class Program
     private static Mutex? _mutex;
     private static Task? _pipeServerTask;
     public static INotificationManager NotificationManager = null!;
+    public static bool StartHidden { get; private set; }
 
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized yet and stuff might break.
     [STAThread]
     public static void Main(string[] args)
     {
+        // Parse command line arguments
+        ParseCommandLineArgs(args);
         // Try to create a new mutex with our unique ID
         _mutex = new Mutex(true, AppMutexId, out bool isNewInstance);
 
         if (!isNewInstance)
         {
             // If we're not the first instance, signal the existing instance to show its window
-            SignalExistingInstance();
+            // Only show the window if not in hidden mode
+            if (!StartHidden)
+            {
+                // If we're not the first instance, signal the existing instance to show its window
+                SignalExistingInstance();
+            }
             return; // Exit this instance
         }
 
@@ -53,6 +62,14 @@ static class Program
                 .SetupDesktopNotifications(out NotificationManager!)
                 .WithInterFont()
                 .LogToTrace();
+    }
+
+    private static void ParseCommandLineArgs(string[] args)
+    {
+        // Check if --hidden flag is present
+        StartHidden = args.Any(arg =>
+            arg.Equals("--hidden", StringComparison.OrdinalIgnoreCase) ||
+            arg.Equals("-h", StringComparison.OrdinalIgnoreCase));
     }
 
     private static void SignalExistingInstance()

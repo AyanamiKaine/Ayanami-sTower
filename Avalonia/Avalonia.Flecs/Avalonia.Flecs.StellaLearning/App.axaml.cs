@@ -259,6 +259,15 @@ public partial class App : Application
             desktop.MainWindow = _entities["MainWindow"].Get<Window>();
         }
 
+        // If started with hidden flag, don't show the window initially
+        if (Program.StartHidden)
+        {
+            _entities!["MainWindow"].Get<Window>().Hide();
+        }
+        else
+        {
+            _entities!["MainWindow"].Get<Window>().Show();
+        }
         base.OnFrameworkInitializationCompleted();
 #if DEBUG
         this.AttachDevTools();
@@ -277,7 +286,10 @@ public partial class App : Application
         }
     }
 
-    private void ShutdownApplication()
+    /// <summary>
+    /// Shutsdown the the entire app.
+    /// </summary>
+    public void ShutdownApplication()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

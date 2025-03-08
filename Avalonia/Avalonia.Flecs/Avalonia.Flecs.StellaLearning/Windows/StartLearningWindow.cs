@@ -56,13 +56,8 @@ public static class StartLearningWindow
 
         startLearningWindow.OnClosing((s, e) =>
         {
-            // As long as the main window is visible dont 
-            // close the window but hide it instead
-            if (entities["MainWindow"].Get<Window>().IsVisible)
-            {
                 ((Window)s!).Hide();
                 e.Cancel = true;
-            }
         });
 
         DefineWindowContents(entities);
@@ -154,13 +149,8 @@ public static class StartLearningWindow
                                         Dispatcher.UIThread.Post(() =>
                                             {
                                                 entities.GetEntityCreateIfNotExist("StartLearningWindow").ShowWindow();
-                                                entities.GetEntityCreateIfNotExist("StartLearningWindow").Get<Window>().Focus();
                                             });
                                     }
-                                };
-                                _iNotificationManager.NotificationDismissed += (sender, e) =>
-                                {
-
                                 };
 
                                 var nf = new Notification
