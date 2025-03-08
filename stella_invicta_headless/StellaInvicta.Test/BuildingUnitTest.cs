@@ -162,7 +162,7 @@ public class BuildingUnitTest
 
         var actualInventory = building.GetSecond<Inventory, GoodsList>();
 
-        Assert.Equal(expectedInventory, actualInventory);
+         Assert.Equal(expectedInventory, actualInventory);
     }
 
     /// <summary>
