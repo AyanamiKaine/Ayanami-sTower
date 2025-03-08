@@ -40,7 +40,10 @@ public partial class App : Application
         //_entities.OnEntityAdded += debugWindow.AddEntity;
 
         var window = _entities.Create("MainWindow")
-            .Set(new Window())
+            .Set(new Window()
+            {
+                ShowActivated = false,
+            })
             .SetWindowTitle("Stella Learning")
             .SetHeight(400)
             .SetWidth(400)
@@ -256,22 +259,12 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
             && _entities is not null)
         {
+            
             desktop.MainWindow = _entities["MainWindow"].Get<Window>();
-        }
-
-        // If started with hidden flag, don't show the window initially
-        if (Program.StartHidden)
-        {
-            _entities!["MainWindow"].Get<Window>().Hide();
-        }
-        else
-        {
-            _entities!["MainWindow"].Get<Window>().Show();
+            desktop.MainWindow.Hide();
         }
         base.OnFrameworkInitializationCompleted();
-#if DEBUG
-        this.AttachDevTools();
-#endif
+
     }
 
     /// <summary>
