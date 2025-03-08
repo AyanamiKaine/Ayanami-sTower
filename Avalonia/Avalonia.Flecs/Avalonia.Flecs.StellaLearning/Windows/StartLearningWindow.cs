@@ -449,7 +449,7 @@ public static class StartLearningWindow
 
         var cloze = (SpacedRepetitionCloze)GetNextItemToBeReviewed(spacedRepetitionItems)!;
 
-        StringBuilder sb = new StringBuilder(cloze.FullText);
+        StringBuilder sb = new(cloze.FullText);
         foreach (string word in cloze.ClozeWords)
         {
             sb.Replace(word, "[...]");
