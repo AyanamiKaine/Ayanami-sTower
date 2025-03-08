@@ -271,7 +271,6 @@ public partial class App : Application
         {
             var mainWindow = _entities["MainWindow"].Get<Window>();
             mainWindow.Show();
-            mainWindow.Activate();
         }
     }
 
