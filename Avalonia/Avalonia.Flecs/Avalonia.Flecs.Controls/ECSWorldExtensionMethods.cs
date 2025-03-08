@@ -1,4 +1,3 @@
-using Avalonia.Flecs.Util;
 using Avalonia.Threading;
 using Flecs.NET.Bindings;
 using Flecs.NET.Core;
