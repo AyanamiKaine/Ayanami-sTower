@@ -1,6 +1,5 @@
 namespace StellaInvicta.Tags.Identifiers;
-
 /// <summary>
-/// Officers rule over armies
+/// Represents a craftsmen
 /// </summary>
-public struct Officer;
+public struct Craftsmen;

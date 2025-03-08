@@ -1,6 +1,7 @@
 namespace StellaInvicta.Tags.Identifiers;
 
 /// <summary>
-/// Officers rule over armies
+/// Represents a higher form of
+/// nobility.
 /// </summary>
-public struct Officer;
+public struct Noble;
