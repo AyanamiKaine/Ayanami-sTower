@@ -10,6 +10,8 @@ using Avalonia.Flecs.Util;
 using Avalonia.Flecs.StellaLearning.Pages;
 using DesktopNotifications;
 using System;
+using CommunityToolkit.Mvvm.Input;
+using Avalonia.Platform;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -20,6 +22,7 @@ public partial class App : Application
 {
     private World _world = World.Create();
     private NamedEntities? _entities;
+    private TrayIcon? _trayIcon;
 
     /// <summary>
     /// Initializes the application.
@@ -40,7 +43,18 @@ public partial class App : Application
             .Set(new Window())
             .SetWindowTitle("Stella Learning")
             .SetHeight(400)
-            .SetWidth(400);
+            .SetWidth(400)
+            .OnClosing((sender, args) =>
+            {
+                args.Cancel = true;
+
+                if (sender is Window win)
+                {
+                    // We dont close the main window but instead hide it,
+                    // because we have a tray icon that is still active.
+                    win.Hide();
+                }
+            });
 
         ContentQueuePage.Create(_entities);
         KnowledgeVaultPage.Create(_entities);
@@ -230,6 +244,8 @@ public partial class App : Application
                     _entities["ContentQueuePage"].Get<Control>().Margin = new Thickness(20, 10, 20, 20);
             }
         });
+
+        InitializeTrayIcon();
     }
 
     /// <summary>
@@ -247,5 +263,64 @@ public partial class App : Application
 #if DEBUG
         this.AttachDevTools();
 #endif
+    }
+
+    private void ShowMainWindow()
+    {
+        if (_entities != null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
+        {
+            var mainWindow = _entities["MainWindow"].Get<Window>();
+            mainWindow.Show();
+            mainWindow.Activate();
+        }
+    }
+
+    private void ShutdownApplication()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
+    }
+
+    private void InitializeTrayIcon()
+    {
+        if (_entities == null) return;
+
+        try
+        {
+            // Load icon from resources
+            var iconStream = AssetLoader.Open(new Uri("avares://Avalonia.Flecs.StellaLearning/Assets/stella-icon.ico"));
+
+            // Create the tray icon
+            _trayIcon = new TrayIcon
+            {
+                Icon = new WindowIcon(iconStream),
+                ToolTipText = "Stella Learning",
+                IsVisible = true,
+                Menu = new NativeMenu
+                {
+                    Items =
+                    {
+                        new NativeMenuItem("Open")
+                        {
+                            Command = new RelayCommand(() => ShowMainWindow())
+                        },
+                        new NativeMenuItemSeparator(),
+                        new NativeMenuItem("Exit")
+                        {
+                            Command = new RelayCommand(() => ShutdownApplication())
+                        }
+                    }
+                }
+            };
+
+            // Handle click on the tray icon
+            _trayIcon.Clicked += (sender, args) => ShowMainWindow();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to initialize tray icon: {ex.Message}");
+        }
     }
 }
