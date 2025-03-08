@@ -11,7 +11,19 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup>
+
+	<PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+		<TargetFramework>net9.0</TargetFramework>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+		<TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+		<Compile Remove="NullImpl_WindowsNotificationManager.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Avalonia" Version="11.2.3" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
@@ -43,5 +55,6 @@
     <ProjectReference Include="..\Avalonia.Flecs.FluentUI.Controls\Avalonia.Flecs.FluentUI.Controls.csproj" />
     <ProjectReference Include="..\..\..\FSRSPythonCSharpBridge\FSRSPythonBridge\FSRSPythonBridge.csproj" />
     <ProjectReference Include="..\Avalonia.Flecs.Util\Avalonia.Flecs.Util.csproj" />
+    <ProjectReference Include="..\DesktopNotifications\DesktopNotifications.Avalonia\DesktopNotifications.Avalonia.csproj" />
   </ItemGroup>
 </Project>
