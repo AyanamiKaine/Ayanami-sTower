@@ -8,6 +8,12 @@ using DesktopNotifications.Avalonia;
 
 namespace Avalonia.Flecs.StellaLearning;
 
+
+/*
+We implement stella learning as a single app, you cannot run more than one instance of the same app.
+Because we want to run stella learning in the background. And instead of opening a new instance 
+of the app we check if it already runs and show its window instead.
+*/
 static class Program
 {
     private const string AppMutexId = "StellaLearning-F86E70DA-7DF5-4B0A-9511-7C8151EFF94B";
