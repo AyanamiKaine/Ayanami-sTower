@@ -265,7 +265,10 @@ public partial class App : Application
 #endif
     }
 
-    private void ShowMainWindow()
+    /// <summary>
+    /// Shows the main window.
+    /// </summary>
+    public void ShowMainWindow()
     {
         if (_entities != null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
         {
