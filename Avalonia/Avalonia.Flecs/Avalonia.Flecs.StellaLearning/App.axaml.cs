@@ -60,7 +60,7 @@ public partial class App : Application
                 }
             });
 
-        ContentQueuePage.Create(_entities);
+        ContentQueuePage contentQueuePage = new(_world);
         KnowledgeVaultPage.Create(_entities);
         SettingsPage.Create(_entities);
         HomePage homePage = new(_world);
@@ -238,12 +238,12 @@ public partial class App : Application
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Content Queue")
             {
-                _entities["ContentQueuePage"].ChildOf(navigationView);
+                contentQueuePage.Attach(navigationView);
 
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    _entities["ContentQueuePage"].Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                    contentQueuePage.SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    _entities["ContentQueuePage"].Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+                    contentQueuePage.SetMargin(new Thickness(20, 10, 20, 20));
             }
         });
 
