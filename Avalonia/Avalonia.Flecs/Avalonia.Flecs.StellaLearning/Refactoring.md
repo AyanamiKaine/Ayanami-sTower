@@ -63,3 +63,20 @@ public class SpacedRepetitionPage : IUIComponent
     }
 }
 ```
+
+### Status
+
+- Turn pages into UI-Components (DONE)
+- Turn windows into UI-Components (PROCESS)
+
+## [] Remove named entities as a global refrence from the app class
+
+### Problem
+
+Because of the ongoing refactoring of the ui-components into classes, we temporarily substituted the used named entities in said components with a global refrence that was before passed as an argument instead.
+
+Exposing such a global is not a good idea. It exposes way too much of the entire structure of the app. Should other components start to depend on the existins of specific entities created by other components tight coupling will occur and overtime will bring down the code flexability dramatically.
+
+### Solution
+
+Slowely but shurly remove all refrences to the named entities field in the app class and at last delete it completly.
