@@ -10,6 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NLog" Version="5.4.0" />
+
     <PackageReference Include="pythonnet" Version="3.0.5" />
   
     <PackageReference Include="Roslynator.Analyzers" Version="4.12.9">
