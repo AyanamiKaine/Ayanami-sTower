@@ -4,6 +4,13 @@ using Avalonia.Flecs.Controls.ECS;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
+
+/*
+TODO: Highly Experimental, the goal of this module is to improve the way
+we create a UI in code. Its all about making it more obvious how the UI is 
+structured. We take insperation how its done in Flutter.
+*/
+
 /// <summary>
 /// Extension methods that enable fluent UI building with a hierarchical syntax for Flecs entities.
 /// </summary>
@@ -109,3 +116,49 @@ public class UIBuilder<T> where T : Control
         return this;
     }
 }
+
+/* EXAMPLE USAGE
+
+private Entity CreateUILayout()
+{
+    ContentQueuePage contentQueuePage = new(_world);
+    KnowledgeVaultPage knowledgeVaultPage = new(_world);
+    SettingsPage settingsPage = new(_world);
+    HomePage homePage = new(_world);
+    LiteraturePage literaturePage = new(_world);
+    SpacedRepetitionPage spacedRepetitionPage = new(_world);
+
+    return _world.UI<NavigationView>(nav => {
+        nav.Property("PaneTitle", "Stella Learning")
+           .Column(0);
+        
+        // Child elements are nested in the lambda, showing hierarchy
+        nav.Child<ScrollViewer>(scroll => {
+            scroll.Child<StackPanel>(stack => {
+                stack.Child<Grid>(grid => {
+                    grid.Property("ColumnDefinitions", "2,*,*")
+                       .Property("RowDefinitions", "Auto");
+                });
+            });
+        });
+        
+        // Attach pages
+        ((IUIComponent)spacedRepetitionPage).Attach(_entity);
+        
+        // Navigation items are clearly children of nav
+        nav.Child<NavigationViewItem>(item => {
+            item.Property("Content", "Home");
+        });
+        
+        nav.Child<NavigationViewItem>(item => {
+            item.Property("Content", "Knowledge Vault");
+        });
+        
+        nav.Child<NavigationViewItem>(item => {
+            item.Property("Content", "Content Queue");
+        });
+        
+        // ... other navigation items and event handlers
+    });
+}
+*/
