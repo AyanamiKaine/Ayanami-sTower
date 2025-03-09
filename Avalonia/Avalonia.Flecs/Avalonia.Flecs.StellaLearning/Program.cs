@@ -32,7 +32,7 @@ static class Program
         I simply copied it into my own repo for better maintainablility.
         */
         SingleInstance.Attach();  // will auto-exit for second instance
-        SingleInstance.NewInstanceDetected += SingleInstance_NewInstanceDetected;
+        SingleInstance.NewInstanceDetected += OnNewInstanceDetected;
 
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
@@ -47,7 +47,7 @@ static class Program
                 .LogToTrace();
     }
 
-    private static void SingleInstance_NewInstanceDetected(object? sender, NewInstanceEventArgs e)
+    private static void OnNewInstanceDetected(object? sender, NewInstanceEventArgs e)
     {
         // Signal the UI thread to show/activate the main window
         Threading.Dispatcher.UIThread.InvokeAsync(() =>
