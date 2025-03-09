@@ -1,5 +1,7 @@
 # Refactoring (Things I want to change and why)
 
+The refactors here are part of strategic programming. From time to time, attend to this refactors implementing them will improve the design.
+
 ## [] Cleaning up unused created UI-Components
 
 ### Problem
