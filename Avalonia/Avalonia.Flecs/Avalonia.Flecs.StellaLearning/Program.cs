@@ -16,6 +16,10 @@ Because we want to run stella learning in the background. And instead of opening
 of the app we check if it already runs and show its window instead. This works without any problems on windows.
 TODO: On Linux on the otherhand it seems to not work. I know that under the hood linux/macos would use
 websockets as a fallback when named pipes are used, but I wouldnt see why this is a problem, maybe because of the naming?
+
+This seems to be the real problem:
+On Windows, system-wide named mutexes work reliably across processes. On Linux, .NET's Mutex implementation uses file-based locks that have different semantics and may have permission issues depending on where the lock files are create
+
 */
 static class Program
 {
