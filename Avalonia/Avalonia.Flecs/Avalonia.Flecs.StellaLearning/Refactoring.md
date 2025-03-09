@@ -6,6 +6,8 @@
 
 Right now all UI components are like the SpaceRepetitionPage are implemented as one create function that returns the highest entity in the UI-TREE. The way I did it creates way to much exposure of the entites. You can accidentally create an AddItem button that is already created elsewhere. Entities that are part of a ui tree should be encapsulated in it. So its simply not possible to get the entity accidentally and mutating it.
 
+Basically all UI-Components are globals, this is terrible.
+
 While at first I thought doing it like react and many JS frameworks that simply return a UI-Component via a function is a good choice. Doing this with the ECS system exposes way to many globals and does way too little information hiding. An alternative approach is needed.
 
 ### Solution
