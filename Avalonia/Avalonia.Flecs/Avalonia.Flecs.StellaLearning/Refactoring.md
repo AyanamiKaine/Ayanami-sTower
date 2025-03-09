@@ -1,5 +1,15 @@
 # Refactoring (Things I want to change and why)
 
+## [] Cleaning up unused created UI-Components
+
+### Problem
+
+When we create an UI-Component we create a set of entities with the appropriate avalonia control classes. Now when we swap out a attached component for another. What happens with the first ui-component entities? They still exist, the never get destroyed. This is a simple memory leak we should fix.
+
+### Solution
+
+When a UI-Component root entity has no parent anymore, destroy it and all of its children. Maybe we can implement a simply timer that periodically checks if they dont have any root elements anymore and destroy them. Or implement a callback for when an entites parent gets removed (Probably the better choice, its simpler.)
+
 ## [] Implementing UI Components as Classes
 
 ### Problem
@@ -33,10 +43,11 @@ public class SpacedRepetitionPage : IUIComponent
 {
     private readonly Entity root;
 
-    public SpacedRepetitionPage(World world)
+    public SpacedRepetitionPage(World world, entityToAttachTo)
     {
         root = world.Entity()
-            .Add<Page>();
+            .Add<Page>()
+            .ChildOf(entityToAttachTo);
         //Create a UI-Component out of entities.
         //...
     }
