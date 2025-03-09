@@ -66,7 +66,12 @@ public partial class App : Application
                     win.Hide();
                 }
             });
+        CreateUILayout().ChildOf(window);
+        InitializeTrayIcon();
+    }
 
+    private Entity CreateUILayout()
+    {
         ContentQueuePage contentQueuePage = new(_world);
         KnowledgeVaultPage knowledgeVaultPage = new(_world);
         SettingsPage settingsPage = new(_world);
@@ -77,7 +82,6 @@ public partial class App : Application
         var navigationView = _world.Entity()
             .Set(new NavigationView())
             .SetPaneTitle("Stella Learning")
-            .ChildOf(window)
             .SetColumn(0);
 
         var scrollViewer = _world.Entity()
@@ -244,8 +248,7 @@ public partial class App : Application
                     ((IUIComponent)contentQueuePage).SetMargin(new Thickness(20, 10, 20, 20));
             }
         });
-
-        InitializeTrayIcon();
+        return navigationView;
     }
 
     /// <summary>
