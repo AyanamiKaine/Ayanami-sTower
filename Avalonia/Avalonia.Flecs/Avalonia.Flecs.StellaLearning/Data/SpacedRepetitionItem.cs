@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using FSRSPythonBridge;
 using CommunityToolkit.Mvvm.ComponentModel;
+using NLog;
 
 /// <summary>
 /// Represents the type of the spaced repetition item
@@ -79,6 +80,8 @@ public enum SpacedRepetitionState
 ///</summary>
 public partial class SpacedRepetitionItem : ObservableObject
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// The unique identifier of the item
     /// </summary>
@@ -125,17 +128,29 @@ public partial class SpacedRepetitionItem : ObservableObject
     {
         get
         {
+            Logger.Trace("Getting Card reference");
             return _card!;
         }
         set
         {
-            _card = value;
-            Stability = Card.Stability;
-            Difficulty = Card.Difficulty;
-            SpacedRepetitionState = (SpacedRepetitionState)Card.State;
-            LastReview = Card.LastReview;
-            NextReview = Card.Due;
-            Step = Card.Step;
+            try
+            {
+                Logger.Debug("Setting Card reference and updating properties from it. Card ID: {CardID}", value.ID);
+                _card = value;
+                Stability = Card.Stability;
+                Difficulty = Card.Difficulty;
+                SpacedRepetitionState = (SpacedRepetitionState)Card.State;
+                LastReview = Card.LastReview;
+                NextReview = Card.Due;
+                Step = Card.Step;
+                Logger.Debug("Updated properties from Card: State={State}, Stability={Stability}, Difficulty={Difficulty}",
+                    SpacedRepetitionState, Stability, Difficulty);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error setting Card reference and updating properties");
+                throw;
+            }
         }
     }
     /// <summary>
@@ -192,8 +207,19 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// </summary>
     public void GoodReview()
     {
-        Card = FSRS.RateCard(Card, Rating.Good);
-        NumberOfTimesSeen++;
+        try
+        {
+            Logger.Info("Rating card as Good for item: {ItemName} (ID: {Uid})", Name, Uid);
+            Card = FSRS.RateCard(Card, Rating.Good);
+            NumberOfTimesSeen++;
+            Logger.Debug("Card rated as Good. New state: {State}, Next review: {NextReview}",
+                SpacedRepetitionState, NextReview);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error rating card as Good");
+            throw;
+        }
     }
 
     /// <summary>
@@ -201,8 +227,19 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// </summary>
     public void AgainReview()
     {
-        Card = FSRS.RateCard(Card, Rating.Again);
-        NumberOfTimesSeen++;
+        try
+        {
+            Logger.Info("Rating card as Again for item: {ItemName} (ID: {Uid})", Name, Uid);
+            Card = FSRS.RateCard(Card, Rating.Again);
+            NumberOfTimesSeen++;
+            Logger.Debug("Card rated as Again. New state: {State}, Next review: {NextReview}",
+                SpacedRepetitionState, NextReview);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error rating card as Again");
+            throw;
+        }
     }
 
     /// <summary>
@@ -210,8 +247,19 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// </summary>
     public void EasyReview()
     {
-        Card = FSRS.RateCard(Card, Rating.Easy);
-        NumberOfTimesSeen++;
+        try
+        {
+            Logger.Info("Rating card as Easy for item: {ItemName} (ID: {Uid})", Name, Uid);
+            Card = FSRS.RateCard(Card, Rating.Easy);
+            NumberOfTimesSeen++;
+            Logger.Debug("Card rated as Easy. New state: {State}, Next review: {NextReview}",
+                SpacedRepetitionState, NextReview);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error rating card as Easy");
+            throw;
+        }
     }
 
     /// <summary>
@@ -219,8 +267,19 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// </summary>
     public void HardReview()
     {
-        Card = FSRS.RateCard(Card, Rating.Hard);
-        NumberOfTimesSeen++;
+        try
+        {
+            Logger.Info("Rating card as Hard for item: {ItemName} (ID: {Uid})", Name, Uid);
+            Card = FSRS.RateCard(Card, Rating.Hard);
+            NumberOfTimesSeen++;
+            Logger.Debug("Card rated as Hard. New state: {State}, Next review: {NextReview}",
+                SpacedRepetitionState, NextReview);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error rating card as Hard");
+            throw;
+        }
     }
 }
 
