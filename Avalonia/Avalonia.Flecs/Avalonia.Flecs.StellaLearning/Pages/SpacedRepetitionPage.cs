@@ -20,26 +20,31 @@ using System.Text.Json;
 using System.Threading;
 using Avalonia.Flecs.StellaLearning.Converters;
 using NLog;
+using Avalonia.Flecs.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
 /// <summary>
 /// This class represents the Spaced Repetition Page
 /// </summary>
-public static class SpacedRepetitionPage
+public class SpacedRepetitionPage : IUIComponent
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+    private Entity _root;
+    /// <inheritdoc/>
+    public Entity Root => _root;
 
     /// <summary>
     /// Creates the Spaced Repetition Page
     /// </summary>
-    /// <param name="entities"></param>
+    /// <param name="world"></param>
     /// <returns></returns>
-    public static Entity Create(NamedEntities entities)
+    public SpacedRepetitionPage(World world)
     {
         ObservableCollection<SpacedRepetitionItem> dummyItems = LoadSpaceRepetitionItemsFromDisk(); ;
 
-        var spacedRepetitionPage = entities.GetEntityCreateIfNotExist("SpacedRepetitionPage")
+        _root = world.Entity()
         .Add<Page>()
         .Set(new Grid())
         /*
@@ -56,7 +61,7 @@ public static class SpacedRepetitionPage
         .SetColumnDefinitions("*, Auto, Auto")
         .SetRowDefinitions("Auto, *, Auto");
 
-        spacedRepetitionPage.AddDefaultStyling((spacedRepetitionPage) =>
+        _root.AddDefaultStyling((spacedRepetitionPage) =>
         {
             if (spacedRepetitionPage.Parent() != 0 &&
                 spacedRepetitionPage.Parent().Has<NavigationView>())
@@ -73,14 +78,14 @@ public static class SpacedRepetitionPage
             }
         });
 
-        var listSearchSpacedRepetition = entities.GetEntityCreateIfNotExist("ListSearchSpacedRepetition")
-            .ChildOf(spacedRepetitionPage)
+        var listSearchSpacedRepetition = world.Entity()
+            .ChildOf(_root)
             .Set(new TextBox())
             .SetColumn(0)
             .SetWatermark("Search Entries");
 
-        var totalItems = entities.GetEntityCreateIfNotExist("TotalSpacedRepetitionItems")
-            .ChildOf(spacedRepetitionPage)
+        var totalItems = world.Entity()
+            .ChildOf(_root)
             .Set(new TextBlock())
             .SetVerticalAlignment(VerticalAlignment.Center)
             .SetMargin(new Thickness(10, 0))
@@ -97,8 +102,8 @@ public static class SpacedRepetitionPage
             ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
         };
 
-        var sortItemsButton = entities.GetEntityCreateIfNotExist("SpacedRepetitionSortItemsButton")
-            .ChildOf(spacedRepetitionPage)
+        var sortItemsButton = world.Entity()
+            .ChildOf(_root)
             .Set(new ComboBox())
             .SetPlaceholderText("Sort Items")
             .SetColumn(2)
@@ -118,87 +123,87 @@ public static class SpacedRepetitionPage
 
         List<string> itemTypes = ["File", "Quiz", "Cloze"];
 
-        var stackPanel = entities.GetEntityCreateIfNotExist("AddSpacedRepetitionItemStackPanel")
+        var stackPanel = world.Entity()
             .Set(new StackPanel())
             .SetOrientation(Orientation.Vertical)
             .SetSpacing(5);
 
-        var addFileButton = entities.GetEntityCreateIfNotExist("AddFileButton")
+        var addFileButton = world.Entity()
             .ChildOf(stackPanel)
             .Set(new Button())
             .SetContent("File")
             .SetFontWeight(FontWeight.Normal)
             .OnClick((sender, args) =>
             {
-                if (entities.Contains("AddFileWindow"))
-                    entities["AddFileWindow"].ShowWindow();
+                if (App.Entities!.Contains("AddFileWindow"))
+                    App.Entities!["AddFileWindow"].ShowWindow();
                 else
-                    AddFile.Create(entities).ShowWindow();
+                    AddFile.Create(App.Entities!).ShowWindow();
             });
 
-        var addClozeButton = entities.GetEntityCreateIfNotExist("AddClozeButton")
+        var addClozeButton = world.Entity()
                .ChildOf(stackPanel)
                .Set(new Button())
                .SetContent("Cloze")
                .SetFontWeight(FontWeight.Normal)
                .OnClick((_, _) =>
                {
-                   if (entities.Contains("AddClozeWindow"))
-                       entities["AddClozeWindow"].ShowWindow();
+                   if (App.Entities!.Contains("AddClozeWindow"))
+                       App.Entities!["AddClozeWindow"].ShowWindow();
                    else
-                       AddCloze.Create(entities).ShowWindow();
+                       AddCloze.Create(App.Entities!).ShowWindow();
                });
 
-        var addQuizButton = entities.GetEntityCreateIfNotExist("AddQuizButton")
+        var addQuizButton = world.Entity()
             .ChildOf(stackPanel)
             .Set(new Button())
             .SetContent("Quiz")
             .SetFontWeight(FontWeight.Normal)
             .OnClick((_, _) =>
             {
-                if (entities.Contains("AddQuizWindow"))
-                    entities["AddQuizWindow"].ShowWindow();
+                if (App.Entities!.Contains("AddQuizWindow"))
+                    App.Entities!["AddQuizWindow"].ShowWindow();
                 else
-                    AddQuiz.Create(entities).ShowWindow();
+                    AddQuiz.Create(App.Entities!).ShowWindow();
             });
 
-        var addFlashcardButton = entities.Create()
+        var addFlashcardButton = world.Entity()
             .ChildOf(stackPanel)
             .Set(new Button())
             .SetContent("Flashcard")
             .SetFontWeight(FontWeight.Normal)
             .OnClick((_, _) =>
             {
-                if (entities.Contains("AddFlashcardWindow"))
-                    entities["AddFlashcardWindow"].ShowWindow();
+                if (App.Entities!.Contains("AddFlashcardWindow"))
+                    App.Entities!["AddFlashcardWindow"].ShowWindow();
                 else
-                    AddFlashcard.Create(entities).ShowWindow();
+                    AddFlashcard.Create(App.Entities!).ShowWindow();
             });
 
-        var addAudioButton = entities.GetEntityCreateIfNotExist("AddAudioButton")
+        var addAudioButton = world.Entity()
            .ChildOf(stackPanel)
            .Set(new Button())
            .SetContent("Audio")
            .SetFontWeight(FontWeight.Normal)
             .OnClick((_, _) =>
             {
-                if (entities.Contains("AddAudioWindow"))
-                    entities["AddAudioWindow"].ShowWindow();
+                if (App.Entities!.Contains("AddAudioWindow"))
+                    App.Entities!["AddAudioWindow"].ShowWindow();
                 else
-                    AddAudio.Create(entities).ShowWindow();
+                    AddAudio.Create(App.Entities!).ShowWindow();
             });
 
-        var addVideoButton = entities.GetEntityCreateIfNotExist("AddVideoButton")
+        var addVideoButton = world.Entity()
            .ChildOf(stackPanel)
            .Set(new Button())
            .SetContent("Video")
            .SetFontWeight(FontWeight.Normal)
            .OnClick((_, _) =>
            {
-               if (entities.Contains("AddVideoWindow"))
-                   entities["AddVideoWindow"].ShowWindow();
+               if (App.Entities!.Contains("AddVideoWindow"))
+                   App.Entities!["AddVideoWindow"].ShowWindow();
                else
-                   AddVideo.Create(entities).ShowWindow();
+                   AddVideo.Create(App.Entities!).ShowWindow();
            });
         var addItemsFlyout = new Flyout()
         {
@@ -206,8 +211,8 @@ public static class SpacedRepetitionPage
             ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
         };
 
-        var startLearningButton = entities.Create()
-            .ChildOf(spacedRepetitionPage)
+        var startLearningButton = world.Entity()
+            .ChildOf(_root)
             .Set(new Button())
             .SetContent("Start Learning")
             .SetMargin(0, 20, 0, 0)
@@ -216,14 +221,14 @@ public static class SpacedRepetitionPage
             .SetRow(2)
             .OnClick((_, _) =>
             {
-                if (entities.Contains("StartLearningWindow"))
-                    entities["StartLearningWindow"].ShowWindow();
+                if (App.Entities!.Contains("StartLearningWindow"))
+                    App.Entities!["StartLearningWindow"].ShowWindow();
                 else
-                    StartLearningWindow.Create(entities).ShowWindow();
+                    StartLearningWindow.Create(App.Entities!).ShowWindow();
             });
 
-        var addItemButton = entities.GetEntityCreateIfNotExist("AddSpacedRepetitionItemButton")
-            .ChildOf(spacedRepetitionPage)
+        var addItemButton = world.Entity()
+            .ChildOf(_root)
             .Set(new Button() { Flyout = addItemsFlyout })
             .SetMargin(0, 20, 0, 0)
             .SetHorizontalAlignment(HorizontalAlignment.Right)
@@ -231,19 +236,19 @@ public static class SpacedRepetitionPage
             .SetColumn(2)
             .SetRow(2);
 
-        var scrollViewer = entities.GetEntityCreateIfNotExist("SpacedRepetitionScrollViewer")
-            .ChildOf(spacedRepetitionPage)
+        var scrollViewer = world.Entity()
+            .ChildOf(_root)
             .Set(new ScrollViewer())
             .SetRow(1)
             .SetColumnSpan(3);
 
-        var spacedRepetitionItems = entities.GetEntityCreateIfNotExist("SpacedRepetitionItems")
+        App.Entities!["SpacedRepetitionItems"] = world.Entity()
             .Set(dummyItems);
 
-        var timerEntity = entities.GetEntityCreateIfNotExist("AutoSave")
+        var timerEntity = world.Entity()
             .Set(CreateAutoSaveTimer(dummyItems));
 
-        var srItems = entities.GetEntityCreateIfNotExist("SpaceRepetitionList")
+        var srItems = world.Entity()
             .ChildOf(scrollViewer)
             .Set(new ListBox())
             .SetItemsSource(dummyItems)
@@ -260,7 +265,7 @@ public static class SpacedRepetitionPage
 
         //Use MenuFlyout to create a context menu
         //contextMenu is used for legacy WPF apps
-        var contextFlyout = entities.GetEntityCreateIfNotExist("SpacedRepetitionContextFlyout")
+        var contextFlyout = world.Entity()
             .ChildOf(srItems)
             .Set(new MenuFlyout());
 
@@ -272,13 +277,13 @@ public static class SpacedRepetitionPage
             }
         };
 
-        var editMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionEditMenuItem")
+        var editMenuItem = world.Entity()
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Edit")
             .OnClick((sender, args) => Console.WriteLine("Edit Clicked"));
 
-        var deleteMenuItem = entities.GetEntityCreateIfNotExist("SpacedRepetitionDeleteMenuItem")
+        var deleteMenuItem = world.Entity()
             .ChildOf(contextFlyout)
             .Set(new MenuItem())
             .SetHeader("Delete")
@@ -345,9 +350,7 @@ public static class SpacedRepetitionPage
             srItems.SetItemsSource(itemsSource);
         });
 
-        entities["MainWindow"].OnClosed((_, _) => SaveSpaceRepetitionItemsToDisk(dummyItems));
-
-        return spacedRepetitionPage;
+        App.Entities!["MainWindow"].OnClosed((_, _) => SaveSpaceRepetitionItemsToDisk(dummyItems));
     }
 
     /// <summary>

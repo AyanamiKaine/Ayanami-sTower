@@ -69,7 +69,7 @@ public partial class App : Application
         SettingsPage settingsPage = new(_world);
         HomePage homePage = new(_world);
         LiteraturePage literaturePage = new(_world);
-        SpacedRepetitionPage.Create(Entities);
+        SpacedRepetitionPage spacedRepetitionPage = new(_world);
 
         var navigationView = Entities.Create("NavigationView")
             .Set(new NavigationView())
@@ -91,8 +91,7 @@ public partial class App : Application
             .SetColumnDefinitions("2,*,*")
             .SetRowDefinitions("Auto");
 
-        var spacedRepetitionPage = Entities.GetEntityCreateIfNotExist("SpacedRepetitionPage")
-            .ChildOf(navigationView);
+        ((IUIComponent)spacedRepetitionPage).Attach(navigationView);
 
         Entities.Create("HomeNavigationViewItem")
             .ChildOf(navigationView)
@@ -207,11 +206,12 @@ public partial class App : Application
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Spaced Repetition")
             {
-                spacedRepetitionPage.ChildOf(navigationView);
+                ((IUIComponent)spacedRepetitionPage).Attach(navigationView);
+
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    spacedRepetitionPage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                    ((IUIComponent)spacedRepetitionPage).SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    spacedRepetitionPage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+                    ((IUIComponent)spacedRepetitionPage).SetMargin(new Thickness(20, 10, 20, 20));
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
             {
