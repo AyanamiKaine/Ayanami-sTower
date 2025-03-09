@@ -36,13 +36,14 @@ public static class UIBuilderExtensions
     /// </summary>
     /// <typeparam name="T">The type of Avalonia control to create.</typeparam>
     /// <param name="parent">The parent entity.</param>
+    /// <param name="configure">Action to configure the entity and its children.</param>
     /// <returns>The created child entity.</returns>
-    public static Entity UI<T>(this Entity parent) where T : Control, new()
+    public static Entity UI<T>(this Entity parent, Action<UIBuilder<T>> configure) where T : Control, new()
     {
         var world = parent.CsWorld();
         var entity = world.Entity().Set(new T()).ChildOf(parent);
         var builder = new UIBuilder<T>(world, entity);
-
+        configure(builder);
         return entity;
     }
 }
@@ -88,9 +89,9 @@ public class UIBuilder<T> where T : Control
     /// </summary>
     /// <typeparam name="TChild">The type of child control to create.</typeparam>
     /// <returns>The builder for the newly created child entity.</returns>
-    public UIBuilder<TChild> Child<TChild>() where TChild : Control, new()
+    public UIBuilder<TChild> Child<TChild>(Action<UIBuilder<TChild>> configure) where TChild : Control, new()
     {
-        var child = _entity.UI<TChild>();
+        var child = _entity.UI(configure);
         return new UIBuilder<TChild>(_world, child);
     }
 
