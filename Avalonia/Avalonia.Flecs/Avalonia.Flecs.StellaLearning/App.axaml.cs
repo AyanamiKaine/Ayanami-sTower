@@ -61,7 +61,7 @@ public partial class App : Application
             });
 
         ContentQueuePage contentQueuePage = new(_world);
-        KnowledgeVaultPage.Create(_entities);
+        KnowledgeVaultPage knowledgeVaultPage = new(_world);
         SettingsPage.Create(_entities);
         HomePage homePage = new(_world);
         LiteraturePage.Create(_entities);
@@ -229,12 +229,12 @@ public partial class App : Application
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Knowledge Vault")
             {
-                _entities["KnowledgeVaultPage"].ChildOf(navigationView);
+                knowledgeVaultPage.Attach(navigationView);
 
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    _entities["KnowledgeVaultPage"].Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                    knowledgeVaultPage.SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    _entities["KnowledgeVaultPage"].Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+                    knowledgeVaultPage.SetMargin(new Thickness(20, 10, 20, 20));
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Content Queue")
             {

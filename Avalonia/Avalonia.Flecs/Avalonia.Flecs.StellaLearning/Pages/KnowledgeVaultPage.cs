@@ -10,24 +10,26 @@ using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using NLog;
+using Avalonia.Flecs.Controls;
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
 
 /// <summary>
 /// Knowledge Vault Page
 /// </summary>
-public static class KnowledgeVaultPage
+public class KnowledgeVaultPage : IUIComponent
 {
+    private Entity _root;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Create the Knowledge Vault Page
     /// </summary>
-    /// <param name="entities"></param>
+    /// <param name="world"></param>
     /// <returns></returns>
-    public static Entity Create(NamedEntities entities)
+    public KnowledgeVaultPage(World world)
     {
-        var vaultPage = entities.GetEntityCreateIfNotExist("KnowledgeVaultPage")
+        _root = world.Entity()
             .Add<Page>()
             .Set(new Grid())
             .SetColumnDefinitions("*, Auto, Auto")
@@ -43,7 +45,7 @@ public static class KnowledgeVaultPage
         an lambda function that defines the styling for it?
         */
 
-        vaultPage.AddDefaultStyling((vaultPage) =>
+        _root.AddDefaultStyling((vaultPage) =>
         {
             // Here we are adding default styling when the page is a child of a NavigationView 
             if (vaultPage.Parent() != 0 &&
@@ -63,15 +65,15 @@ public static class KnowledgeVaultPage
 
 
 
-        var vaultContent = entities.GetEntityCreateIfNotExist("VaultContent")
-            .ChildOf(vaultPage)
+        var vaultContent = world.Entity()
+            .ChildOf(_root)
             .Set(new TextBlock())
             .SetText("VaultContent")
             .SetRow(0)
             .SetColumn(0);
 
-        var scrollViewer = entities.GetEntityCreateIfNotExist("VaultScrollViewer")
-            .ChildOf(vaultPage)
+        var scrollViewer = world.Entity()
+            .ChildOf(_root)
             .Set(new ScrollViewer())
             .SetRow(1)
             .SetColumnSpan(3);
@@ -186,14 +188,36 @@ public static class KnowledgeVaultPage
         //var filteredItems = new ObservableCollection<Content>(dummyItems.Where(x => x.NumberOfTimesSeen == 0));
 
 
-        var vaultItems = entities.GetEntityCreateIfNotExist("VaultListBox")
+        var vaultItems = world.Entity()
             .ChildOf(scrollViewer)
             .Set(new ListBox())
             .SetItemsSource(dummyItems)
             .SetItemTemplate(contentTemplate)
             .SetSelectionMode(SelectionMode.Single);
+    }
 
-        return vaultPage;
+    /// <inheritdoc/>
+    public void Attach(Entity parent)
+    {
+        _root.ChildOf(parent);
+    }
+
+    /// <inheritdoc/>
+    public void Detach()
+    {
+        _root.Remove(Ecs.ChildOf);
+    }
+
+    /// <inheritdoc/>
+    public Thickness GetMargin()
+    {
+        return _root.GetMargin();
+    }
+
+    /// <inheritdoc/>
+    public void SetMargin(Thickness margin)
+    {
+        _root.SetMargin(margin);
     }
 }
 
