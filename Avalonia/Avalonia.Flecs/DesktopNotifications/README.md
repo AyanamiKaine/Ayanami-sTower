@@ -1,4 +1,4 @@
-# DesktopNotifications
+# DesktopNotifications (Forked, so I can maintain an up-to-date version)
 
 A cross-platform C# library for native desktop "toast" notifications. Updated for Net9.0
 
