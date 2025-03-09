@@ -19,7 +19,6 @@ of the app we check if it already runs and show its window instead.
 static class Program
 {
     public static INotificationManager NotificationManager = null!;
-    public static bool StartHidden { get; private set; }
 
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized yet and stuff might break.
