@@ -64,6 +64,8 @@ public class SpacedRepetitionPage : IUIComponent
 }
 ```
 
+This should also result in better testability of components. As their global dependencies are eliminated and their information hiding increased.
+
 ### Status
 
 - Turn pages into UI-Components (DONE)
