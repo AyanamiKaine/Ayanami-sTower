@@ -1,3 +1,4 @@
+using Avalonia.Flecs.Controls.ECS;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
@@ -7,24 +8,43 @@ namespace Avalonia.Flecs.Controls;
 public interface IUIComponent
 {
     /// <summary>
+    /// Root Entity of the component.
+    /// You can use this to get access to the entire ui
+    /// entity tree handle with great care.
+    /// </summary>
+    Entity Root { get; }
+
+    /// <summary>
     /// Attaches the UI Component to another entity using the childOf relationship.
     /// In turn creating a UI-TREE out of entities.
     /// </summary>
-    /// <param name="entity"></param>
-    public void Attach(Entity entity);
+    /// <param name="parent"></param>
+    void Attach(Entity parent)
+    {
+        Root.ChildOf(parent);
+    }
 
     /// <summary>
     /// Removes ui component from the UI tree;
     /// </summary>
-    public void Detach();
+    void Detach()
+    {
+        Root.Remove(Ecs.ChildOf);
+    }
 
     /// <summary>
     /// Sets the margin of the underlying control element
     /// </summary>
     /// <param name="margin">New Margin</param>
-    public void SetMargin(Thickness margin);
+    void SetMargin(Thickness margin)
+    {
+        Root.SetMargin(margin);
+    }
     /// <summary>
     /// Gets the margin of the underlying control element
     /// </summary>
-    public Thickness GetMargin();
+    Thickness GetMargin()
+    {
+        return Root.GetMargin();
+    }
 }

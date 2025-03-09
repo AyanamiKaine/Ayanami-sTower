@@ -16,7 +16,8 @@ public class HomePage : IUIComponent
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private Entity _root;
-
+    /// <inheritdoc/>
+    public Entity Root => _root;
     /// <summary>
     /// Creates a home page.
     /// </summary>
@@ -41,29 +42,5 @@ public class HomePage : IUIComponent
                     .Set(new TextBlock())
                     .SetText("Home")
                     .ChildOf(parent);
-    }
-
-    /// <inheritdoc/>
-    public void Attach(Entity parent)
-    {
-        _root.ChildOf(parent);
-    }
-
-    /// <inheritdoc/>
-    public void Detach()
-    {
-        _root.Remove(Ecs.ChildOf);
-    }
-
-    /// <inheritdoc/>
-    public Thickness GetMargin()
-    {
-        return _root.GetMargin();
-    }
-
-    /// <inheritdoc/>
-    public void SetMargin(Thickness margin)
-    {
-        _root.SetMargin(margin);
     }
 }

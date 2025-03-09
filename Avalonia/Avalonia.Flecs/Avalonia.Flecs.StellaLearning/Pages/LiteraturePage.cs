@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
@@ -11,25 +12,27 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 /// <summary>
 /// Literature Page
 /// </summary>
-public static class LiteraturePage
+public class LiteraturePage : IUIComponent
 {
+    private Entity _root;
+    /// <inheritdoc/>
+    public Entity Root => _root;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
 
     /// <summary>
     /// Create the Literature Page
     /// </summary>
-    /// <param name="entities"></param>
+    /// <param name="world"></param>
     /// <returns></returns>
-    public static Entity Create(NamedEntities entities)
+    public LiteraturePage(World world)
     {
-        var literaturePage = entities.GetEntityCreateIfNotExist("LiteraturePage")
+        _root = world.Entity()
             .Add<Page>()
             .Set(new Grid())
             .SetColumnDefinitions("*, Auto, Auto")
             .SetRowDefinitions("Auto, *, Auto");
 
-        literaturePage.AddDefaultStyling((literaturePage) =>
+        _root.AddDefaultStyling((literaturePage) =>
         {
             if (literaturePage.Parent() != 0 &&
                 literaturePage.Parent().Has<NavigationView>())
@@ -46,10 +49,9 @@ public static class LiteraturePage
             }
         });
 
-        var text = entities.GetEntityCreateIfNotExist("LiteratureText")
+        var text = world.Entity()
             .Set(new TextBlock())
             .SetText("Literature")
-            .ChildOf(literaturePage);
-        return literaturePage;
+            .ChildOf(_root);
     }
 }

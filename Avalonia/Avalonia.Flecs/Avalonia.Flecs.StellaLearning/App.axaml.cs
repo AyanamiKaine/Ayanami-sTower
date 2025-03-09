@@ -13,6 +13,7 @@ using System;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Platform;
 using NLog;
+using Avalonia.Flecs.Controls;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -64,7 +65,7 @@ public partial class App : Application
         KnowledgeVaultPage knowledgeVaultPage = new(_world);
         SettingsPage.Create(_entities);
         HomePage homePage = new(_world);
-        LiteraturePage.Create(_entities);
+        LiteraturePage literaturePage = new(_world);
         SpacedRepetitionPage.Create(_entities);
 
         var navigationView = _entities.Create("NavigationView")
@@ -88,8 +89,6 @@ public partial class App : Application
             .SetRowDefinitions("Auto");
 
         var settingPage = _entities.GetEntityCreateIfNotExist("SettingsPage");
-
-        var literaturePage = _entities.GetEntityCreateIfNotExist("LiteraturePage");
 
         var spacedRepetitionPage = _entities.GetEntityCreateIfNotExist("SpacedRepetitionPage")
             .ChildOf(navigationView);
@@ -188,29 +187,25 @@ public partial class App : Application
             var selectedItem = args.SelectedItem as NavigationViewItem;
             if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Home")
             {
-                //navigationView.Get<NavigationView>().Content = homePage.Get<TextBlock>();
-                homePage.Attach(navigationView);
+                ((IUIComponent)homePage).Attach(navigationView);
 
                 //Maybe we could implement an event for the navigation view entity that says
                 //something like new page added and than changes the margin of the page
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    homePage.SetMargin(new Thickness(50, 10, 20, 20));
+                    ((IUIComponent)homePage).SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    homePage.SetMargin(new Thickness(20, 10, 20, 20));
+                    ((IUIComponent)homePage).SetMargin(new Thickness(20, 10, 20, 20));
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Literature")
             {
-                //Console.WriteLine("Selection Changed To Literature");
-                //navigationView.Get<NavigationView>().Content = literaturePage.Get<TextBlock>();
-                literaturePage.ChildOf(navigationView);
+                ((IUIComponent)literaturePage).Attach(navigationView);
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    literaturePage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                    ((IUIComponent)literaturePage).SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    literaturePage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+                    ((IUIComponent)literaturePage).SetMargin(new Thickness(20, 10, 20, 20));
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Spaced Repetition")
             {
-                //navigationView.Get<NavigationView>().Content = spacedRepetitionPage.Get<Panel>();
                 spacedRepetitionPage.ChildOf(navigationView);
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
                     spacedRepetitionPage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
@@ -219,8 +214,6 @@ public partial class App : Application
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
             {
-                //Console.WriteLine("Selection Changed To Settings");
-                //navigationView.Get<NavigationView>().Content = settingPage.Get<TextBlock>();
                 settingPage.ChildOf(navigationView);
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
                     settingPage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
@@ -229,12 +222,12 @@ public partial class App : Application
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Knowledge Vault")
             {
-                knowledgeVaultPage.Attach(navigationView);
+                ((IUIComponent)knowledgeVaultPage).Attach(navigationView);
 
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    knowledgeVaultPage.SetMargin(new Thickness(50, 10, 20, 20));
+                    ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    knowledgeVaultPage.SetMargin(new Thickness(20, 10, 20, 20));
+                    ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(20, 10, 20, 20));
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Content Queue")
             {

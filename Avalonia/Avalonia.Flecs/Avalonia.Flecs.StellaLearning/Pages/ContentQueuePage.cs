@@ -16,6 +16,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 public class ContentQueuePage : IUIComponent
 {
     private Entity _root;
+    /// <inheritdoc/>
+    public Entity Root => _root;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>

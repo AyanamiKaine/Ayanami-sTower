@@ -20,6 +20,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 public class KnowledgeVaultPage : IUIComponent
 {
     private Entity _root;
+    /// <inheritdoc/>
+    public Entity Root => _root;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
@@ -194,30 +196,6 @@ public class KnowledgeVaultPage : IUIComponent
             .SetItemsSource(dummyItems)
             .SetItemTemplate(contentTemplate)
             .SetSelectionMode(SelectionMode.Single);
-    }
-
-    /// <inheritdoc/>
-    public void Attach(Entity parent)
-    {
-        _root.ChildOf(parent);
-    }
-
-    /// <inheritdoc/>
-    public void Detach()
-    {
-        _root.Remove(Ecs.ChildOf);
-    }
-
-    /// <inheritdoc/>
-    public Thickness GetMargin()
-    {
-        return _root.GetMargin();
-    }
-
-    /// <inheritdoc/>
-    public void SetMargin(Thickness margin)
-    {
-        _root.SetMargin(margin);
     }
 }
 
