@@ -63,7 +63,7 @@ public partial class App : Application
         ContentQueuePage.Create(_entities);
         KnowledgeVaultPage.Create(_entities);
         SettingsPage.Create(_entities);
-        HomePage.Create(_entities);
+        HomePage homePage = new(_world);
         LiteraturePage.Create(_entities);
         SpacedRepetitionPage.Create(_entities);
 
@@ -88,8 +88,6 @@ public partial class App : Application
             .SetRowDefinitions("Auto");
 
         var settingPage = _entities.GetEntityCreateIfNotExist("SettingsPage");
-
-        var homePage = _entities.GetEntityCreateIfNotExist("HomePage");
 
         var literaturePage = _entities.GetEntityCreateIfNotExist("LiteraturePage");
 
@@ -191,14 +189,14 @@ public partial class App : Application
             if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Home")
             {
                 //navigationView.Get<NavigationView>().Content = homePage.Get<TextBlock>();
-                homePage.ChildOf(navigationView);
+                homePage.Attach(navigationView);
 
                 //Maybe we could implement an event for the navigation view entity that says
                 //something like new page added and than changes the margin of the page
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    homePage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                    homePage.SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    homePage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+                    homePage.SetMargin(new Thickness(20, 10, 20, 20));
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Literature")
             {
