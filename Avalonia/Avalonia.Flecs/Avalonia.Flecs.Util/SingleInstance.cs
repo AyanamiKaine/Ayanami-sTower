@@ -29,6 +29,9 @@ using System.Threading;
 /// <summary>
 /// Handles detection and communication of programs multiple instances.
 /// This class is thread safe.
+/// <remarks>
+/// Created by Medo64 "https://github.com/medo64/Medo"
+/// </remarks>
 /// </summary>
 public static class SingleInstance
 {
