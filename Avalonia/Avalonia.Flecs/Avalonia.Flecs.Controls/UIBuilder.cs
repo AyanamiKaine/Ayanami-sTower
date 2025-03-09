@@ -57,7 +57,10 @@ public static class UIBuilderExtensions
 public class UIBuilder<T> where T : Control
 {
     private readonly World _world;
-    private readonly Entity _entity;
+    /// <summary>
+    /// Underlying entity
+    /// </summary>
+    public Entity Entity { get; }
     private readonly T _control;
 
     /// <summary>
@@ -68,7 +71,7 @@ public class UIBuilder<T> where T : Control
     public UIBuilder(World world, Entity entity)
     {
         _world = world;
-        _entity = entity;
+        Entity = entity;
         _control = entity.Get<T>();
     }
 
@@ -80,7 +83,7 @@ public class UIBuilder<T> where T : Control
     /// <returns>This builder instance for method chaining.</returns>
     public UIBuilder<T> Property(string name, object value)
     {
-        _entity.SetProperty(name, value);
+        Entity.SetProperty(name, value);
         return this;
     }
 
@@ -91,7 +94,7 @@ public class UIBuilder<T> where T : Control
     /// <returns>The builder for the newly created child entity.</returns>
     public UIBuilder<TChild> Child<TChild>(Action<UIBuilder<TChild>> configure) where TChild : Control, new()
     {
-        var child = _entity.UI(configure);
+        var child = Entity.UI(configure);
         return new UIBuilder<TChild>(_world, child);
     }
 
@@ -102,7 +105,7 @@ public class UIBuilder<T> where T : Control
     /// <returns>This builder instance for method chaining.</returns>
     public UIBuilder<T> SetMargin(Thickness margin)
     {
-        _entity.SetMargin(margin);
+        Entity.SetMargin(margin);
         return this;
     }
 
@@ -113,7 +116,7 @@ public class UIBuilder<T> where T : Control
     /// <returns>This builder instance for method chaining.</returns>
     public UIBuilder<T> Column(int column)
     {
-        _entity.SetColumn(column);
+        Entity.SetColumn(column);
         return this;
     }
 }
