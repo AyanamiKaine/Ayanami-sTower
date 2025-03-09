@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Python.Runtime;
+using NLog;
 namespace FSRSPythonBridge;
 
 /// <summary>
@@ -31,6 +32,8 @@ public enum Rating
 /// </summary>
 public static class FSRS
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// All python objects should be declared as dynamic type.
     /// </summary>
@@ -39,12 +42,19 @@ public static class FSRS
 
     static FSRS()
     {
+        Logger.Info("Initializing FSRS Python Bridge");
         try
         {
+            Logger.Debug("Setting up Python runtime DLL");
             SettingUpRuntimePythonDLL();
+
+            Logger.Debug("Initializing Python engine");
             PythonEngine.Initialize();
             PythonEngine.BeginAllowThreads();
+
+            Logger.Debug("Setting up Python module path");
             SettingUpModulePath();
+
             /*
             All calls to python should be inside a 
             using (Py.GIL()) 
@@ -53,25 +63,33 @@ public static class FSRS
 
             using (Py.GIL())
             {
+                Logger.Debug("Importing FSRS Python module");
                 _fsrsModule = Py.Import("fsrs");
-                _scheduler = _fsrsModule.Scheduler() ?? throw new Exception("Could not create scheduler object");
+
                 if (_fsrsModule == null)
                 {
                     dynamic sys = Py.Import("sys");
-                    Console.WriteLine("Python sys.path:");
+                    Logger.Error("Failed to import FSRS module");
 
                     string checkedPathsForModules = string.Empty;
+                    Logger.Debug("Listing Python sys.path for troubleshooting");
 
                     foreach (var path in sys.path)
                     {
                         checkedPathsForModules += path.ToString() + Environment.NewLine;
+                        Logger.Debug("Python path: {PythonPath}", path.ToString());
                     }
                     throw new Exception("Could not import fsrs module in the following paths:" + Environment.NewLine + checkedPathsForModules);
                 }
+
+                Logger.Debug("Creating FSRS Scheduler");
+                _scheduler = _fsrsModule.Scheduler() ?? throw new Exception("Could not create scheduler object");
+                Logger.Info("FSRS Python Bridge initialized successfully");
             }
         }
         catch (Exception e)
         {
+            Logger.Error(e, "Error initializing FSRS Python Bridge");
             Console.WriteLine("Error initializing Python engine");
             Console.WriteLine(e.Message);
             throw;
@@ -88,11 +106,13 @@ public static class FSRS
         string pythonPath = Path.Combine(appDir, "python");
 
         string newPythonPath = $"{pythonPath}";
+        Logger.Debug("Adding Python module path: {PythonPath}", newPythonPath);
 
         using (Py.GIL())
         {
             dynamic sys = Py.Import("sys");
             sys.path.append(newPythonPath);
+            Logger.Debug("Python module path added successfully");
         }
     }
 
@@ -102,19 +122,35 @@ public static class FSRS
         // as we expect the user to have python installed.
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
+            Logger.Debug("Running on Linux, searching for system Python library");
             if (File.Exists(@"/lib64/libpython3.so"))
+            {
                 Runtime.PythonDLL = @"/lib64/libpython3.so";
-            else throw new DllNotFoundException("Could not find libpython3.so at /lib64/libpython3.so");
+                Logger.Debug("Set PythonDLL to: /lib64/libpython3.so");
+            }
+            else
+            {
+                Logger.Error("Could not find libpython3.so at /lib64/libpython3.so");
+                throw new DllNotFoundException("Could not find libpython3.so at /lib64/libpython3.so");
+            }
         }
         // For Windows we ship the python313.dll with the application. 
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
+            Logger.Debug("Running on Windows, using bundled Python DLL");
             string appDir = AppDomain.CurrentDomain.BaseDirectory;
             string pythonPath = Path.Combine(appDir, "python", "windows");
             Runtime.PythonDLL = Path.Combine(pythonPath, "python313.dll");
+            Logger.Debug("Set PythonDLL to: {PythonDLL}", Runtime.PythonDLL);
+
+            if (!File.Exists(Runtime.PythonDLL))
+            {
+                Logger.Error("Python DLL not found at expected location: {PythonDLL}", Runtime.PythonDLL);
+            }
         }
         else
         {
+            Logger.Error("Unsupported operating system");
             throw new PlatformNotSupportedException("OS not supported");
         }
     }
@@ -125,9 +161,20 @@ public static class FSRS
     /// <returns></returns>
     public static Card CreateCard()
     {
-        using (Py.GIL())
+        Logger.Debug("Creating new FSRS card");
+        try
         {
-            return new Card(_fsrsModule.Card());
+            using (Py.GIL())
+            {
+                var card = new Card(_fsrsModule.Card());
+                Logger.Debug("Card created successfully");
+                return card;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error creating FSRS card");
+            throw;
         }
     }
 
@@ -140,14 +187,24 @@ public static class FSRS
     /// <returns></returns>
     public static Card RateCard(Card card, Rating rating)
     {
-        using (Py.GIL())
+        Logger.Debug("Rating card with rating: {Rating}", rating);
+        try
         {
-            // review_card returns a tuple see: "https://github.com/open-spaced-repetition/py-fsrs" for more information.
-            dynamic tuple = _scheduler.review_card(card.PyObject, (int)rating);
-            dynamic updatedCard = tuple[0];
-            dynamic reviewLog = tuple[1];
+            using (Py.GIL())
+            {
+                // review_card returns a tuple see: "https://github.com/open-spaced-repetition/py-fsrs" for more information.
+                dynamic tuple = _scheduler.review_card(card.PyObject, (int)rating);
+                dynamic updatedCard = tuple[0];
+                dynamic reviewLog = tuple[1];
 
-            return new(updatedCard);
+                Logger.Debug("Card rated successfully, new due date: {DueDate}", updatedCard.due.ToString());
+                return new(updatedCard);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error rating card with rating: {Rating}", rating);
+            throw;
         }
     }
 }
