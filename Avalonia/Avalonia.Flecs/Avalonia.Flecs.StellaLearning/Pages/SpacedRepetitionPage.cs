@@ -360,7 +360,7 @@ public static class SpacedRepetitionPage
         // Create a Timer object
         var autoSaveTimer = new Timer(state =>
         {
-            Console.WriteLine($"{DateTime.Now}: Auto-saving data..."); // Debug output
+            Logger.Info($"{DateTime.Now}: Auto-saving data..."); // Debug output
             try
             {
                 SaveSpaceRepetitionItemsToDisk((ObservableCollection<SpacedRepetitionItem>)state!);
@@ -369,7 +369,7 @@ public static class SpacedRepetitionPage
             {
                 // Handle any exceptions that might occur during saving
                 // Log the error, display an error message to the user, etc.
-                Console.WriteLine($"Error during auto-save: {ex.Message}");
+                Logger.Warn($"Error during auto-save: {ex.Message}");
             }
         }, spacedRepetitionItems, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)); // Pass spacedRepetitionItems as state
 
