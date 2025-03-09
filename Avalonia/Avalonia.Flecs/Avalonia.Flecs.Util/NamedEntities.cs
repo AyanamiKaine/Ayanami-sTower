@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Reflection;
 using Flecs.NET.Core;
+using NLog;
 
 namespace Avalonia.Flecs.Util;
 
@@ -51,6 +52,8 @@ Entities should be so much more, for example adding a description component woul
 /// <param name="world"></param>
 public class NamedEntities(World world) : IEnumerable<Entity>
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     private Dictionary<string, Entity> _entities = [];
     private World _world = world;
 
@@ -71,21 +74,25 @@ public class NamedEntities(World world) : IEnumerable<Entity>
         {
             try
             {
+                Logger.Debug("Getting entity with name: {EntityName}", name);
                 return _entities[name];
             }
             catch (KeyNotFoundException)
             {
+                Logger.Error("Entity with name: {EntityName} not found", name);
                 throw new EntityNotFoundException($"Entity with the name:{name} was not found in the named entities dictonary. If you didnt care if the entity was created here you can use the GetEntityCreateIfNotExist method instead. If you expected that the entity was created here you should check if the entity was created before trying to access it.");
             }
         }
         set
         {
-            if (_entities.TryGetValue(name, out _))
+            if (_entities.TryGetValue(name, out var existingEntity))
             {
+                Logger.Info("Replacing existing entity with name: {EntityName}, ID: {EntityId}", name, existingEntity.ToString());
                 _entities[name] = value;
             }
             else
             {
+                Logger.Info("Creating new entity with name: {EntityName}", name);
                 _entities.Add(name, _world.Entity(name));
                 OnEntityAdded?.Invoke(value, name); // Invoke the event when a new entity is added
             }
@@ -99,10 +106,12 @@ public class NamedEntities(World world) : IEnumerable<Entity>
     /// <param name="name"></param>
     public void Remove(string name)
     {
-        if (!_entities.TryGetValue(name, out var _))
+        if (!_entities.TryGetValue(name, out var entity))
         {
+            Logger.Debug("Attempted to remove non-existent entity: {EntityName}", name);
             return;
         }
+        Logger.Info("Removing entity: {EntityName}, ID: {EntityId}", name, entity.ToString());
         _entities[name].Destruct();
         _entities.Remove(name);
     }
@@ -112,8 +121,10 @@ public class NamedEntities(World world) : IEnumerable<Entity>
     /// </summary>
     public void Clear()
     {
+        Logger.Info("Clearing all entities. Count: {EntityCount}", _entities.Count);
         foreach (var entity in _entities)
         {
+            Logger.Debug("Destructing entity: {EntityName}, ID: {EntityId}", entity.Key, entity.Value.ToString());
             entity.Value.Destruct();
         }
         _entities.Clear();
@@ -129,10 +140,12 @@ public class NamedEntities(World world) : IEnumerable<Entity>
     {
         if (_entities.TryGetValue(name, out var entity))
         {
+            Logger.Debug("Retrieved existing entity: {EntityName}, ID: {EntityId}", name, entity.ToString());
             return entity;
         }
         else
         {
+            Logger.Info("Entity not found, creating new entity with name: {EntityName}", name);
             return Create(name);
         }
     }
@@ -145,6 +158,7 @@ public class NamedEntities(World world) : IEnumerable<Entity>
     public Entity Create(string name)
     {
         var entity = _world.Entity(name);
+        Logger.Info("Created new entity: {EntityName}, ID: {EntityId}", name, entity.ToString());
         _entities.Add(name, entity);
         OnEntityAdded?.Invoke(entity, name); // Invoke the event when a new entity is added
         return entity;
@@ -160,8 +174,10 @@ public class NamedEntities(World world) : IEnumerable<Entity>
     public Entity Create()
     {
         var entity = _world.Entity();
-        _entities.Add(entity.ToString(), entity);
-        OnEntityAdded?.Invoke(entity, entity.ToString()); // Invoke the event when a new entity is added
+        var entityId = entity.ToString();
+        Logger.Info("Created new unnamed entity, ID: {EntityId}", entityId);
+        _entities.Add(entityId, entity);
+        OnEntityAdded?.Invoke(entity, entityId); // Invoke the event when a new entity is added
         return entity;
     }
 
@@ -172,11 +188,14 @@ public class NamedEntities(World world) : IEnumerable<Entity>
     /// <returns></returns>
     public bool Contains(string name)
     {
-        return _entities.ContainsKey(name);
+        var exists = _entities.ContainsKey(name);
+        Logger.Debug("Checking if entity exists: {EntityName}, Result: {Exists}", name, exists);
+        return exists;
     }
 
     public IEnumerator<Entity> GetEnumerator()
     {
+        Logger.Debug("Enumerating {EntityCount} entities", _entities.Count);
         return _entities.Values.GetEnumerator();
     }
 
