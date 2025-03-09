@@ -79,71 +79,52 @@ public partial class App : Application
         LiteraturePage literaturePage = new(_world);
         SpacedRepetitionPage spacedRepetitionPage = new(_world);
 
-        var navigationView = _world.Entity()
-            .Set(new NavigationView())
-            .SetPaneTitle("Stella Learning")
-            .SetColumn(0);
+        var navigationView = _world.UI<NavigationView>(nav =>
+        {
+            nav.Property("PaneTitle", "Stella Learning")
+               .Column(0);
 
-        var scrollViewer = _world.Entity()
-            .ChildOf(navigationView)
-            .Set(new ScrollViewer());
+            // Child elements are nested in the lambda, showing hierarchy
+            nav.Child<ScrollViewer>(scroll =>
+            {
+                scroll.Child<StackPanel>(stack =>
+                {
+                    stack.Child<Grid>(grid =>
+                    {
+                        grid.Property("ColumnDefinitions", new ColumnDefinitions("2,*,*"))
+                           .Property("RowDefinitions", new RowDefinitions("Auto"));
+                    });
+                });
+            });
 
-        var stackPanel = _world.Entity()
-            .ChildOf(scrollViewer)
-            .Set(new StackPanel());
+            nav.Child<NavigationViewItem>(item => item.Property("Content", "Home"));
 
-        var grid = _world.Entity()
-            .ChildOf(stackPanel)
-            .Set(new Grid())
-            .SetColumnDefinitions("2,*,*")
-            .SetRowDefinitions("Auto");
+            nav.Child<NavigationViewItem>(item => item.Property("Content", "Knowledge Vault"));
+
+            nav.Child<NavigationViewItem>(item => item.Property("Content", "Literature"));
+
+            /*
+             The study page will be something more complex
+             it will represent various topics and different 
+             study methods specifically made for the topic.
+
+             For example for the Painting topic we could have
+             speed drawing in various times, refrence studies,
+             color studies, master studies. 
+
+             While for programming we could have code challenges,
+             and adding specific themes and quizes for the topic.
+
+             For example for garbage collection, generic programming,
+             object oriented programming, functional programming, etc.
+             */
+
+            nav.Child<NavigationViewItem>(item => item.Property("Content", "Study"));
+            nav.Child<NavigationViewItem>(item => item.Property("Content", "Spaced Repetition"));
+
+        });
 
         ((IUIComponent)spacedRepetitionPage).Attach(navigationView);
-
-        _world.Entity()
-            .ChildOf(navigationView)
-            .Set(new NavigationViewItem())
-            .SetProperty("Content", "Home");
-
-        _world.Entity()
-            .ChildOf(navigationView)
-            .Set(new NavigationViewItem())
-            .SetProperty("Content", "Knowledge Vault");
-
-        _world.Entity()
-            .ChildOf(navigationView)
-            .Set(new NavigationViewItem())
-            .SetProperty("Content", "Content Queue");
-
-        _world.Entity()
-            .ChildOf(navigationView)
-            .Set(new NavigationViewItem())
-            .SetProperty("Content", "Literature");
-
-        /*
-        The study page will be something more complex
-        it will represent various topics and different 
-        study methods specifically made for the topic.
-
-        For example for the Painting topic we could have
-        speed drawing in various times, refrence studies,
-        color studies, master studies. 
-
-        While for programming we could have code challenges,
-        and adding specific themes and quizes for the topic.
-
-        For example for garbage collection, generic programming,
-        object oriented programming, functional programming, etc.
-        */
-        _world.Entity()
-            .ChildOf(navigationView)
-            .Set(new NavigationViewItem())
-            .SetProperty("Content", "Study");
-
-        _world.Entity()
-            .ChildOf(navigationView)
-            .Set(new NavigationViewItem())
-            .SetProperty("Content", "Spaced Repetition");
 
         navigationView.OnDisplayModeChanged((sender, args) =>
         {
