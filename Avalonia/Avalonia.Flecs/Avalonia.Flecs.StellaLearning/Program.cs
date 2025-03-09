@@ -14,7 +14,8 @@ namespace Avalonia.Flecs.StellaLearning;
 We implement stella learning as a single app, you cannot run more than one instance of the same app.
 Because we want to run stella learning in the background. And instead of opening a new instance 
 of the app we check if it already runs and show its window instead. This works without any problems on windows.
-TODO: On Linux on the otherhand it seems to not work.
+TODO: On Linux on the otherhand it seems to not work. I know that under the hood linux/macos would use
+websockets as a fallback when named pipes are used, but I wouldnt see why this is a problem, maybe because of the naming?
 */
 static class Program
 {
