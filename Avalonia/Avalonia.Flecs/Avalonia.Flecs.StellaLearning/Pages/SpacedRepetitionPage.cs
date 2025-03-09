@@ -382,7 +382,7 @@ public static class SpacedRepetitionPage
     /// <param name="spacedRepetitionItems"></param>
     public static void SaveSpaceRepetitionItemsToDisk(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        string directoryPath = "./save";
+        const string directoryPath = "./save";
         Directory.CreateDirectory(directoryPath);
         string filePath = Path.Combine(directoryPath, "space_repetition_items.json");
 
