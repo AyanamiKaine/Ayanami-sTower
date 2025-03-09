@@ -100,9 +100,9 @@ public class UIBuilder<T> where T : Control
     /// </summary>
     /// <param name="margin">The margin to set.</param>
     /// <returns>This builder instance for method chaining.</returns>
-    public UIBuilder<T> Margin(Thickness margin)
+    public UIBuilder<T> SetMargin(Thickness margin)
     {
-        _control.Margin = margin;
+        _entity.SetMargin(margin);
         return this;
     }
 
