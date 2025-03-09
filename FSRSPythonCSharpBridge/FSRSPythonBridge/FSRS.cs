@@ -196,8 +196,6 @@ public static class FSRS
                 dynamic tuple = _scheduler.review_card(card.PyObject, (int)rating);
                 dynamic updatedCard = tuple[0];
                 dynamic reviewLog = tuple[1];
-
-                Logger.Debug("Card rated successfully, new due date: {DueDate}", updatedCard.due.ToString());
                 return new(updatedCard);
             }
         }
