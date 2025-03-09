@@ -82,3 +82,15 @@ Exposing such a global is not a good idea. It exposes way too much of the entire
 ### Solution
 
 Slowely but shurly remove all refrences to the named entities field in the app class and at last delete it completly.
+
+## [] Make UI-Components better testable
+
+### Problem
+
+Right now now UI-Component can't be really tested. In combination with the (Implementing UI Components as Classes) refactor we should gradually improve the testability of UI-Components.
+
+### Solution
+
+1. [] Finish the UI-Components as classes refactor
+2. [] Create a testing project
+3. [] Create UI-Component Tests
