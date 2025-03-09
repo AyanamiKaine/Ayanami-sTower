@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Avalonia.Flecs.Scripting\Avalonia.Flecs.Scripting.csproj" />
+  
   </ItemGroup>
 
   <ItemGroup>

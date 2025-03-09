@@ -9,6 +9,7 @@ using Avalonia.Data;
 using Avalonia.Data.Converters;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Scripting;
+using Avalonia.Flecs.Util;
 using Avalonia.Layout;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;

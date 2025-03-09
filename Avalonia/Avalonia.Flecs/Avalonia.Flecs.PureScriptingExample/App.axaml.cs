@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Scripting;
+using Avalonia.Flecs.Util;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;

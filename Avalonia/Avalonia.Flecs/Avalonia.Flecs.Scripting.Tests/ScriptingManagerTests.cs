@@ -1,5 +1,6 @@
 ﻿
 using Avalonia.Controls;
+using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Scripting.Tests;

@@ -64,6 +64,11 @@ static class Program
                 .LogToTrace();
     }
 
+    //TODO: The hidden feature flag does not work, 
+    // Because we have to differently configure the app
+    // as .StartWithClassicDesktopLifetime(args) automatically shows the window
+    // we would have to say something like SetupWithoutStarting. 
+    // But currently I dont know how exaclty this should look like
     private static void ParseCommandLineArgs(string[] args)
     {
         // Check if --hidden flag is present
