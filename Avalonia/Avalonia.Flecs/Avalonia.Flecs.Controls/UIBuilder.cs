@@ -16,6 +16,11 @@ structured. We take insperation how its done in Flutter.
 /// </summary>
 public static class UIBuilderExtensions
 {
+
+    /*
+    TODO: I think instead of returning the UI builder t in the action we instead return the entity
+    */
+
     /// <summary>
     /// Creates a new entity with the specified control component and configures it using a builder pattern.
     /// </summary>
