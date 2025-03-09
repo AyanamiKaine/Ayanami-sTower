@@ -7,38 +7,40 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Flecs.Util;
 using NLog;
+using Avalonia.Flecs.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 /// <summary>
 /// Content Queue Page
 /// </summary>
-public static class ContentQueuePage
+public class ContentQueuePage : IUIComponent
 {
+    private Entity _root;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Create the Content Queue Page
     /// </summary>
-    /// <param name="entities"></param>
+    /// <param name="world"></param>
     /// <returns></returns>
-    public static Entity Create(NamedEntities entities)
+    public ContentQueuePage(World world)
     {
-        var contentQueuePage = entities.GetEntityCreateIfNotExist("ContentQueuePage")
+        _root = world.Entity()
             .Add<Page>()
             .Set(new Grid())
             .SetColumnDefinitions("*, Auto, Auto")
             .SetRowDefinitions("Auto, *, Auto");
 
 
-        var listSearch = entities.GetEntityCreateIfNotExist("ListSearchContentQueue")
-            .ChildOf(contentQueuePage)
+        var listSearch = world.Entity()
+            .ChildOf(_root)
             .Set(new TextBox())
             .SetColumn(0)
             .SetRow(0)
             .SetWatermark("Search Entries");
 
-        var totalItems = entities.GetEntityCreateIfNotExist("TotalItems")
-            .ChildOf(contentQueuePage)
+        var totalItems = world.Entity()
+            .ChildOf(_root)
             .Set(new TextBlock())
             .SetVerticalAlignment(VerticalAlignment.Center)
             .SetMargin(new Thickness(10, 0))
@@ -53,28 +55,50 @@ public static class ContentQueuePage
             ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
         };
 
-        var sortItemsButton = entities.GetEntityCreateIfNotExist("SortItemsButton")
-            .ChildOf(contentQueuePage)
+        var sortItemsButton = world.Entity()
+            .ChildOf(_root)
             .Set(new ComboBox())
             .SetPlaceholderText("Sort Items")
             .SetColumn(2)
             .SetItemsSource(sortItems)
             .SetContextFlyout(myFlyout);
 
-        var scrollViewer = entities.GetEntityCreateIfNotExist("ContentQueueScrollViewer")
-            .ChildOf(contentQueuePage)
+        var scrollViewer = world.Entity()
+            .ChildOf(_root)
             .Set(new ScrollViewer())
             .SetRow(1)
             .SetColumnSpan(3);
 
         ObservableCollection<string> contentQueueItems = [];
 
-        var contentQueueList = entities.GetEntityCreateIfNotExist("ContentQueueList")
+        var contentQueueList = world.Entity()
             .ChildOf(scrollViewer)
             .Set(new ListBox())
             .SetItemsSource(contentQueueItems)
             .SetSelectionMode(SelectionMode.Multiple);
+    }
 
-        return contentQueuePage;
+    /// <inheritdoc/>
+    public void Attach(Entity entity)
+    {
+        _root.ChildOf(entity);
+    }
+
+    /// <inheritdoc/>
+    public void Detach()
+    {
+        _root.Remove(Ecs.ChildOf);
+    }
+
+    /// <inheritdoc/>
+    public Thickness GetMargin()
+    {
+        return _root.GetMargin();
+    }
+
+    /// <inheritdoc/>
+    public void SetMargin(Thickness margin)
+    {
+        _root.SetMargin(margin);
     }
 }
