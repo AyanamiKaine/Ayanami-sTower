@@ -3,6 +3,7 @@ using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
+using NLog;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
@@ -12,6 +13,9 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 /// </summary>
 public static class LiteraturePage
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+
     /// <summary>
     /// Create the Literature Page
     /// </summary>

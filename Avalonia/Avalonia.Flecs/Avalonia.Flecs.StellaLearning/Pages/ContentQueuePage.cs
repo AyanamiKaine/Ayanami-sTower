@@ -6,6 +6,7 @@ using static Avalonia.Flecs.Controls.ECS.Module;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Flecs.Util;
+using NLog;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 /// <summary>
@@ -13,6 +14,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 /// </summary>
 public static class ContentQueuePage
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// Create the Content Queue Page
     /// </summary>

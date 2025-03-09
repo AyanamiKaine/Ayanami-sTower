@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
+using NLog;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
@@ -10,6 +11,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 /// </summary>
 public static class HomePage
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// Create the Home Page
     /// </summary>

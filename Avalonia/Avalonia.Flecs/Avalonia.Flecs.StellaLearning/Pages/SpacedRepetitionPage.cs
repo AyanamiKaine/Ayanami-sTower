@@ -19,6 +19,7 @@ using Avalonia.Flecs.StellaLearning.Windows;
 using System.Text.Json;
 using System.Threading;
 using Avalonia.Flecs.StellaLearning.Converters;
+using NLog;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -27,6 +28,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 /// </summary>
 public static class SpacedRepetitionPage
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// Creates the Spaced Repetition Page
     /// </summary>

@@ -12,6 +12,7 @@ using DesktopNotifications;
 using System;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Platform;
+using NLog;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -23,7 +24,7 @@ public partial class App : Application
     private World _world = World.Create();
     private NamedEntities? _entities;
     private TrayIcon? _trayIcon;
-
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     /// <summary>
     /// Initializes the application.
     /// </summary>
@@ -259,7 +260,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
             && _entities is not null)
         {
-            
+
             desktop.MainWindow = _entities["MainWindow"].Get<Window>();
             desktop.MainWindow.Hide();
         }

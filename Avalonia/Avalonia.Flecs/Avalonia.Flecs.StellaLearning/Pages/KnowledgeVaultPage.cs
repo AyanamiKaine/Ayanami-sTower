@@ -9,6 +9,7 @@ using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
+using NLog;
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
 
@@ -17,6 +18,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 /// </summary>
 public static class KnowledgeVaultPage
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// Create the Knowledge Vault Page
     /// </summary>

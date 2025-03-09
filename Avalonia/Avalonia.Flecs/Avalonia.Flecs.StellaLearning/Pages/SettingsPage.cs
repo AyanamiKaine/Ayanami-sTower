@@ -9,6 +9,7 @@ using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
+using NLog;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -17,6 +18,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages;
 /// </summary>
 public static class SettingsPage
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// Create the settings page
     /// </summary>

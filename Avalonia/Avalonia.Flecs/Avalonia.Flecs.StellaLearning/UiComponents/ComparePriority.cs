@@ -6,6 +6,7 @@ using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
+using NLog;
 
 namespace Avalonia.Flecs.StellaLearning.UiComponents;
 
@@ -14,6 +15,8 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents;
 /// </summary>
 public static class ComparePriority
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// Creates A ComparePriority component
     /// </summary>
