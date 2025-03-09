@@ -10,97 +10,126 @@ using static Avalonia.Flecs.Controls.ECS.Module;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using NLog;
+using Avalonia.Flecs.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
 /// <summary>
 /// Settings Page
 /// </summary>
-public static class SettingsPage
+public class SettingsPage : IUIComponent
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
+    private Entity _root;
+    /// <inheritdoc/>
+    public Entity Root => _root;
     /// <summary>
     /// Create the settings page
     /// </summary>
-    /// <param name="entities"></param>
+    /// <param name="world"></param>
     /// <returns></returns>
-    public static Entity Create(NamedEntities entities)
+    public SettingsPage(World world)
     {
-        var settingsProvider = entities.GetEntityCreateIfNotExist("SettingsProvider")
-            .Set(new Settings());
-
-        var settingsPage = entities.GetEntityCreateIfNotExist("SettingsPage")
+        _root = world.Entity()
             .Add<Page>()
             .Set(new StackPanel());
 
-        ThemeToggleSwitch(settingsPage, entities);
-        ObsidianPath(settingsPage, entities, settingsProvider);
-        return settingsPage;
-    }
-    private static Entity ThemeToggleSwitch(Entity childOfEntity, NamedEntities entities)
-    {
-        var themeToggleSwitch = entities.GetEntityCreateIfNotExist("ThemeToggleSwitch")
-            .ChildOf(childOfEntity)
-            .Set(new ToggleSwitch())
-            .SetContent("Dark Mode")
-            .OnIsCheckedChanged((sender, args) =>
-            {
-                var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
-                if (Application.Current is not null)
-                    SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
-            });
-
-        return themeToggleSwitch;
+        _ = new ThemeToggleSwitch(world, _root);
+        var obsidianPath = new ObsidianPath(world);
+        ((IUIComponent)obsidianPath).Attach(_root);
     }
 
-    private static Entity ObsidianPath(Entity childOfEntity, NamedEntities entities, Entity settingsProvider)
+    private class ThemeToggleSwitch : IUIComponent
     {
-        var browseForObsidianButton = entities.GetEntityCreateIfNotExist("BrowseForObsidianButton")
-            .Set(new Button());
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
 
-        var browseForObsidianButtonContent = entities.GetEntityCreateIfNotExist("BrowseForObsidianButtonContent")
-            .ChildOf(browseForObsidianButton)
-            .Set(new TextBlock())
-            .SetText("Browse");
+        public ThemeToggleSwitch(World world)
+        {
+            _root = world.Entity()
+                .Set(new ToggleSwitch())
+                .SetContent("Dark Mode")
+                .OnIsCheckedChanged((sender, args) =>
+                {
+                    var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
+                    if (Application.Current is not null)
+                        SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
+                });
+        }
+
+        public ThemeToggleSwitch(World world, Entity parent)
+        {
+            _root = world.Entity()
+                .ChildOf(parent)
+                .Set(new ToggleSwitch())
+                .SetContent("Dark Mode")
+                .OnIsCheckedChanged((sender, args) =>
+                {
+                    var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
+                    if (Application.Current is not null)
+                        SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
+                });
+        }
+    }
+
+    private class ObsidianPath : IUIComponent
+    {
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
+        public Entity _settingsProvider;
+
+        public ObsidianPath(World world)
+        {
+            _settingsProvider = world.Entity()
+                .Set(new Settings());
+
+            App.Entities!["SettingsProvider"] = _settingsProvider;
+
+            var browseForObsidianButton = world.Entity()
+                .Set(new Button());
+
+            var browseForObsidianButtonContent = world.Entity()
+                .ChildOf(browseForObsidianButton)
+                .Set(new TextBlock())
+                .SetText("Browse");
 
 
-        var toolTipTextBlock = entities.GetEntityCreateIfNotExist("ToolTipTextBlock")
-            .Set(new TextBlock())
-            .SetText(
-                """
+            var toolTipTextBlock = world.Entity()
+                .Set(new TextBlock())
+                .SetText(
+                    """
                 When a obsidian path is set, the application 
                 will be able to open the obsidian vault when a
                 markdown file is part of an obsidian vault.
                 """);
 
-        var obsidianPathTooltip = entities.GetEntityCreateIfNotExist("ObsidianPathTooltip")
-            .Set(new ToolTip())
-            .SetContent(toolTipTextBlock);
+            var obsidianPathTooltip = world.Entity()
+                .Set(new ToolTip())
+                .SetContent(toolTipTextBlock);
 
-        var obsidianPath = entities.GetEntityCreateIfNotExist("ObsidianPath")
-            .ChildOf(childOfEntity)
-            .Set(new TextBox())
-            .SetText(settingsProvider.Get<Settings>().ObsidianPath)
-            .SetWatermark("Path to Obsidian")
-            .SetInnerRightContent(browseForObsidianButton)
-            .AttachToolTip(obsidianPathTooltip);
+            _root = world.Entity()
+                .Set(new TextBox())
+                .SetText(_settingsProvider.Get<Settings>().ObsidianPath)
+                .SetWatermark("Path to Obsidian")
+                .SetInnerRightContent(browseForObsidianButton)
+                .AttachToolTip(obsidianPathTooltip);
 
-        browseForObsidianButton
-            .ChildOf(obsidianPath)
-            .OnClick(async (e, args) =>
-            {
-                string newObsidanPath = await ObsidianFilePickerAsync(entities);
-                if (newObsidanPath != "" && obsidianPath.GetText() == "")
-                    obsidianPath.SetText(newObsidanPath);
-                settingsProvider.Get<Settings>().ObsidianPath = obsidianPath.GetText();
-                Console.WriteLine("New Obsidian Path:" + settingsProvider.Get<Settings>().ObsidianPath);
-            });
-
-        return obsidianPath;
+            browseForObsidianButton
+                .ChildOf(_root)
+                .OnClick(async (e, args) =>
+                {
+                    string newObsidanPath = await ObsidianFilePickerAsync();
+                    if (newObsidanPath != "" && _settingsProvider.GetText()?.Length == 0)
+                        _root.SetText(newObsidanPath);
+                    _settingsProvider.Get<Settings>().ObsidianPath = _root.GetText();
+                    Console.WriteLine("New Obsidian Path:" + _settingsProvider.Get<Settings>().ObsidianPath);
+                });
+        }
     }
 
-    private static async Task<string> ObsidianFilePickerAsync(NamedEntities entities)
+    private static async Task<string> ObsidianFilePickerAsync()
     {
         // Create and configure the file picker options
         var options = new FilePickerOpenOptions
@@ -110,7 +139,7 @@ public static class SettingsPage
         };
 
         // Create an OpenFileDialog instance
-        IReadOnlyList<IStorageFile> result = await entities["MainWindow"].Get<Window>().StorageProvider.OpenFilePickerAsync(options);
+        IReadOnlyList<IStorageFile> result = await App.Entities!["MainWindow"].Get<Window>().StorageProvider.OpenFilePickerAsync(options);
 
         if (result != null && result?.Count > 0)
         {

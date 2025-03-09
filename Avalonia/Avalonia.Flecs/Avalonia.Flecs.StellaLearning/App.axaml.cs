@@ -23,7 +23,10 @@ namespace Avalonia.Flecs.StellaLearning;
 public partial class App : Application
 {
     private World _world = World.Create();
-    private NamedEntities? _entities;
+    /// <summary>
+    /// Named global app entities
+    /// </summary>
+    public static NamedEntities? Entities = null;
     private TrayIcon? _trayIcon;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     /// <summary>
@@ -36,12 +39,12 @@ public partial class App : Application
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
 
-        _entities = new NamedEntities(_world);
+        Entities = new NamedEntities(_world);
 
         //var debugWindow = new Debug.Window.Window(_world);
-        //_entities.OnEntityAdded += debugWindow.AddEntity;
+        //Entities.OnEntityAdded += debugWindow.AddEntity;
 
-        var window = _entities.Create("MainWindow")
+        var window = Entities.Create("MainWindow")
             .Set(new Window()
             {
                 ShowActivated = false,
@@ -63,52 +66,50 @@ public partial class App : Application
 
         ContentQueuePage contentQueuePage = new(_world);
         KnowledgeVaultPage knowledgeVaultPage = new(_world);
-        SettingsPage.Create(_entities);
+        SettingsPage settingsPage = new(_world);
         HomePage homePage = new(_world);
         LiteraturePage literaturePage = new(_world);
-        SpacedRepetitionPage.Create(_entities);
+        SpacedRepetitionPage.Create(Entities);
 
-        var navigationView = _entities.Create("NavigationView")
+        var navigationView = Entities.Create("NavigationView")
             .Set(new NavigationView())
             .SetPaneTitle("Stella Learning")
             .ChildOf(window)
             .SetColumn(0);
 
-        var scrollViewer = _entities.Create("ScrollViewer")
+        var scrollViewer = Entities.Create("ScrollViewer")
             .ChildOf(navigationView)
             .Set(new ScrollViewer());
 
-        var stackPanel = _entities.Create("StackPanel")
+        var stackPanel = Entities.Create("StackPanel")
             .ChildOf(scrollViewer)
             .Set(new StackPanel());
 
-        var grid = _entities.Create("MainContentDisplay")
+        var grid = Entities.Create("MainContentDisplay")
             .ChildOf(stackPanel)
             .Set(new Grid())
             .SetColumnDefinitions("2,*,*")
             .SetRowDefinitions("Auto");
 
-        var settingPage = _entities.GetEntityCreateIfNotExist("SettingsPage");
-
-        var spacedRepetitionPage = _entities.GetEntityCreateIfNotExist("SpacedRepetitionPage")
+        var spacedRepetitionPage = Entities.GetEntityCreateIfNotExist("SpacedRepetitionPage")
             .ChildOf(navigationView);
 
-        _entities.Create("HomeNavigationViewItem")
+        Entities.Create("HomeNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Home");
 
-        _entities.Create("KnowledgeVaultNavigationViewItem")
+        Entities.Create("KnowledgeVaultNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Knowledge Vault");
 
-        _entities.Create("ContentQueueNavigationViewItem")
+        Entities.Create("ContentQueueNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Content Queue");
 
-        _entities.Create("LiteratureNavigationViewItem")
+        Entities.Create("LiteratureNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Literature");
@@ -128,12 +129,12 @@ public partial class App : Application
         For example for garbage collection, generic programming,
         object oriented programming, functional programming, etc.
         */
-        _entities.Create("StudyNavigationViewItem")
+        Entities.Create("StudyNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Study");
 
-        _entities.Create("SpacedRepetitionNavigationViewItem")
+        Entities.Create("SpacedRepetitionNavigationViewItem")
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Spaced Repetition");
@@ -214,11 +215,12 @@ public partial class App : Application
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
             {
-                settingPage.ChildOf(navigationView);
+                ((IUIComponent)settingsPage).Attach(navigationView);
+
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    settingPage.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                    ((IUIComponent)settingsPage).SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    settingPage.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+                    ((IUIComponent)settingsPage).SetMargin(new Thickness(20, 10, 20, 20));
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Knowledge Vault")
             {
@@ -231,12 +233,12 @@ public partial class App : Application
             }
             else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Content Queue")
             {
-                contentQueuePage.Attach(navigationView);
+                ((IUIComponent)contentQueuePage).Attach(navigationView);
 
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    contentQueuePage.SetMargin(new Thickness(50, 10, 20, 20));
+                    ((IUIComponent)contentQueuePage).SetMargin(new Thickness(50, 10, 20, 20));
                 else
-                    contentQueuePage.SetMargin(new Thickness(20, 10, 20, 20));
+                    ((IUIComponent)contentQueuePage).SetMargin(new Thickness(20, 10, 20, 20));
             }
         });
 
@@ -249,10 +251,10 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-            && _entities is not null)
+            && Entities is not null)
         {
 
-            desktop.MainWindow = _entities["MainWindow"].Get<Window>();
+            desktop.MainWindow = Entities["MainWindow"].Get<Window>();
             desktop.MainWindow.Hide();
         }
         base.OnFrameworkInitializationCompleted();
@@ -264,9 +266,9 @@ public partial class App : Application
     /// </summary>
     public void ShowMainWindow()
     {
-        if (_entities != null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
+        if (Entities != null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
         {
-            var mainWindow = _entities["MainWindow"].Get<Window>();
+            var mainWindow = Entities["MainWindow"].Get<Window>();
             mainWindow.Show();
         }
     }
@@ -284,7 +286,7 @@ public partial class App : Application
 
     private void InitializeTrayIcon()
     {
-        if (_entities == null) return;
+        if (Entities == null) return;
 
         try
         {
