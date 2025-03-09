@@ -1,30 +1,69 @@
 using Avalonia.Controls;
+using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
 using NLog;
+using Windows.UI.Popups;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 /// <summary>
 /// Home Page
 /// </summary>
-public static class HomePage
+public class HomePage : IUIComponent
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    private Entity _root;
+
     /// <summary>
-    /// Create the Home Page
+    /// Creates a home page.
     /// </summary>
-    /// <param name="entities"></param>
-    /// <returns></returns>
-    public static Entity Create(NamedEntities entities)
+    /// <param name="world"></param>
+    public HomePage(World world)
     {
-        var homePage = entities.GetEntityCreateIfNotExist("HomePage")
+        _root = world.Entity()
                     .Add<Page>()
                     .Set(new TextBlock())
                     .SetText("Home");
+    }
 
-        return homePage;
+    /// <summary>
+    /// Create a home page and attaches it to a parent
+    /// </summary>
+    /// <param name="world"></param>
+    /// <param name="parent"></param>
+    public HomePage(World world, Entity parent)
+    {
+        _root = world.Entity()
+                    .Add<Page>()
+                    .Set(new TextBlock())
+                    .SetText("Home")
+                    .ChildOf(parent);
+    }
+
+    /// <inheritdoc/>
+    public void Attach(Entity parent)
+    {
+        _root.ChildOf(parent);
+    }
+
+    /// <inheritdoc/>
+    public void Detach()
+    {
+        _root.Remove(Ecs.ChildOf);
+    }
+
+    /// <inheritdoc/>
+    public Thickness GetMargin()
+    {
+        return _root.GetMargin();
+    }
+
+    /// <inheritdoc/>
+    public void SetMargin(Thickness margin)
+    {
+        _root.SetMargin(margin);
     }
 }
