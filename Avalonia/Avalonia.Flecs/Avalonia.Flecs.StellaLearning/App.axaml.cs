@@ -91,8 +91,9 @@ public partial class App : Application
                 {
                     stack.Child<Grid>(grid =>
                     {
-                        grid.Property("ColumnDefinitions", new ColumnDefinitions("2,*,*"))
-                           .Property("RowDefinitions", new RowDefinitions("Auto"));
+                        grid.Entity
+                            .SetColumnDefinitions("2,*,*")
+                            .SetRowDefinitions("Auto");
                     });
                 });
             });
