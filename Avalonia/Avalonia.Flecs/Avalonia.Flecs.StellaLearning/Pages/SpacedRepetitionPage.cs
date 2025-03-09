@@ -382,20 +382,29 @@ public static class SpacedRepetitionPage
     /// <param name="spacedRepetitionItems"></param>
     public static void SaveSpaceRepetitionItemsToDisk(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        const string directoryPath = "./save";
-        Directory.CreateDirectory(directoryPath);
-        string filePath = Path.Combine(directoryPath, "space_repetition_items.json");
+        Logger.Info("Trying to save space repetition data."); // Debug output
 
-        // Create JsonSerializerOptions and register the converter
-        var options = new JsonSerializerOptions
+        try
         {
-            WriteIndented = true, // For pretty-printing the JSON
-            Converters = { new SpacedRepetitionItemConverter() } // Register the custom converter
-        };
+            const string directoryPath = "./save";
+            Directory.CreateDirectory(directoryPath);
+            string filePath = Path.Combine(directoryPath, "space_repetition_items.json");
 
-        string jsonString = JsonSerializer.Serialize(spacedRepetitionItems, options);
+            // Create JsonSerializerOptions and register the converter
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true, // For pretty-printing the JSON
+                Converters = { new SpacedRepetitionItemConverter() } // Register the custom converter
+            };
 
-        File.WriteAllText(filePath, jsonString);
+            string jsonString = JsonSerializer.Serialize(spacedRepetitionItems, options);
+
+            File.WriteAllText(filePath, jsonString);
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"Error during auto-save: {ex.Message}");
+        }
     }
 
     /// <summary>
