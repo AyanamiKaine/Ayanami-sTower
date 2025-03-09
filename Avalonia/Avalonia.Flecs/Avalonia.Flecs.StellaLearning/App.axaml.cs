@@ -23,6 +23,9 @@ namespace Avalonia.Flecs.StellaLearning;
 public partial class App : Application
 {
     private World _world = World.Create();
+
+    // TODO: Remove all refrences to name entities,
+    // its a global that will cause many problems when grown too big.
     /// <summary>
     /// Named global app entities
     /// </summary>
