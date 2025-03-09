@@ -71,21 +71,21 @@ public partial class App : Application
         LiteraturePage literaturePage = new(_world);
         SpacedRepetitionPage spacedRepetitionPage = new(_world);
 
-        var navigationView = Entities.Create("NavigationView")
+        var navigationView = _world.Entity()
             .Set(new NavigationView())
             .SetPaneTitle("Stella Learning")
             .ChildOf(window)
             .SetColumn(0);
 
-        var scrollViewer = Entities.Create("ScrollViewer")
+        var scrollViewer = _world.Entity()
             .ChildOf(navigationView)
             .Set(new ScrollViewer());
 
-        var stackPanel = Entities.Create("StackPanel")
+        var stackPanel = _world.Entity()
             .ChildOf(scrollViewer)
             .Set(new StackPanel());
 
-        var grid = Entities.Create("MainContentDisplay")
+        var grid = _world.Entity()
             .ChildOf(stackPanel)
             .Set(new Grid())
             .SetColumnDefinitions("2,*,*")
@@ -93,22 +93,22 @@ public partial class App : Application
 
         ((IUIComponent)spacedRepetitionPage).Attach(navigationView);
 
-        Entities.Create("HomeNavigationViewItem")
+        _world.Entity()
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Home");
 
-        Entities.Create("KnowledgeVaultNavigationViewItem")
+        _world.Entity()
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Knowledge Vault");
 
-        Entities.Create("ContentQueueNavigationViewItem")
+        _world.Entity()
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Content Queue");
 
-        Entities.Create("LiteratureNavigationViewItem")
+        _world.Entity()
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Literature");
@@ -128,12 +128,12 @@ public partial class App : Application
         For example for garbage collection, generic programming,
         object oriented programming, functional programming, etc.
         */
-        Entities.Create("StudyNavigationViewItem")
+        _world.Entity()
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Study");
 
-        Entities.Create("SpacedRepetitionNavigationViewItem")
+        _world.Entity()
             .ChildOf(navigationView)
             .Set(new NavigationViewItem())
             .SetProperty("Content", "Spaced Repetition");
