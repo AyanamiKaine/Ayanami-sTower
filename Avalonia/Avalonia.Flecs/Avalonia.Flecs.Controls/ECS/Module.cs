@@ -2,6 +2,7 @@ using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Controls.Primitives;
+using NLog;
 namespace Avalonia.Flecs.Controls.ECS
 {
     // Modules need to implement the IFlecsModule interface
@@ -10,6 +11,8 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public struct Module : IFlecsModule
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         ////RELATIONSHIPS
         /// <summary>
         /// Entity tag showing that the entity is a content control.
@@ -125,10 +128,12 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="world"></param>
         public static void AddUIComponentTags(World world)
         {
+            Logger.Debug("Adding UI component tags to world");
             world.Component<Page>("Page");
             world.Component<CurrentPage>("CurrentPage")
                 .Add(Ecs.Exclusive)
                 .Add(Ecs.Relationship);
+            Logger.Debug("UI component tags added successfully");
         }
 
         /// <summary>
@@ -139,6 +144,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="world"></param>
         public static void AddFlyoutToControlObserver(World world)
         {
+            Logger.Debug("Registering FlyoutToControl observer");
             world.Observer("FlyoutToControl")
                 .Event(Ecs.OnAdd)
                 .Event(Ecs.OnSet)
@@ -150,10 +156,14 @@ namespace Avalonia.Flecs.Controls.ECS
                         var parent = child.Parent();
                         if (parent.Has<Control>())
                         {
+                            Logger.Debug("Adding flyout from child {ChildEntity} to parent control {ParentEntity}",
+                                child.Name() ?? child.ToString(),
+                                parent.Name() ?? parent.ToString());
                             parent.Get<Control>().ContextFlyout = child.Get<FlyoutBase>();
                         }
                     }
                 });
+            Logger.Debug("FlyoutToControl observer registered successfully");
         }
 
         /// <summary>
@@ -162,6 +172,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="world"></param>
         public static void AddControlToParentAdderObserver(World world)
         {
+            Logger.Debug("Registering ControlToParentAdder observer");
             //This Observer handles the functionality adding entity as children of other
             //and correctly adding the control element to the parent event if the parent
             //child relation was created later than the component control where attached.
@@ -182,21 +193,33 @@ namespace Avalonia.Flecs.Controls.ECS
                             //This otherwise throws an exception
                             if (parent.Get<Panel>().Children.Contains(control))
                             {
+                                Logger.Debug("Control {ControlEntity} already exists in parent panel {PanelEntity}, skipping addition",
+                                    child.Name() ?? child.ToString(),
+                                    parent.Name() ?? parent.ToString());
                                 return;
                             }
+                            Logger.Debug("Adding control {ControlEntity} to parent panel {PanelEntity}",
+                                child.Name() ?? child.ToString(),
+                                parent.Name() ?? parent.ToString());
                             parent.Get<Panel>().Children.Add(control);
                         }
                         else if (parent.Has<ContentControl>())
                         {
                             if (parent.Get<ContentControl>().Content == control)
                             {
+                                Logger.Debug("Control {ControlEntity} already set as content for parent {ContentControlEntity}, skipping",
+                                    child.Name() ?? child.ToString(),
+                                    parent.Name() ?? parent.ToString());
                                 return;
                             }
+                            Logger.Debug("Setting control {ControlEntity} as content for parent {ContentControlEntity}",
+                                child.Name() ?? child.ToString(),
+                                parent.Name() ?? parent.ToString());
                             parent.Get<ContentControl>().Content = control;
                         }
                     }
-                    //Console.WriteLine($"Added child: {child.Name()} to parent: {child.Parent().Name()}");
                 });
+            Logger.Debug("ControlToParentAdder observer registered successfully");
         }
 
         /*
@@ -215,6 +238,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="world"></param>
         public static void AddPageObserver(World world)
         {
+            Logger.Debug("Registering EnsureEntityHasOnlyOnePageChild observer");
             /*
             We use this system to ensure that a parent has only one child that is a page.
             This is useful when we want to change the page displayed in a control.
@@ -237,20 +261,31 @@ namespace Avalonia.Flecs.Controls.ECS
 
                     if (parent == 0)
                     {
+                        Logger.Debug("Page {PageEntity} has no parent, skipping page check",
+                            child.Name() ?? child.ToString());
                         return;
                     }
 
                     if (child.Has<Page>())
                     {
+                        Logger.Debug("Found Page {PageEntity} attached to parent {ParentEntity}, checking for other pages",
+                            child.Name() ?? child.ToString(),
+                            parent.Name() ?? parent.ToString());
+
                         List<Entity> pages = [];
                         parent.Children((Entity child) =>
                         {
                             if (child.Has<Page>())
                             {
                                 pages.Add(child);
+                                Logger.Debug("Found additional page {PageEntity} under parent {ParentEntity}",
+                                    child.Name() ?? child.ToString(),
+                                    parent.Name() ?? parent.ToString());
                             }
                             if (pages.Count > 1)
                             {
+                                Logger.Warn("Multiple pages found under parent {ParentEntity}, but unable to remove due to ordering issue",
+                                    parent.Name() ?? parent.ToString());
                                 // This does not work because we cannot count on the order
                                 // of the entities in the list. Sometimes the first page added 
                                 // is not the first child ecounterd with the page tag !
@@ -259,6 +294,7 @@ namespace Avalonia.Flecs.Controls.ECS
                         });
                     }
                 });
+            Logger.Debug("EnsureEntityHasOnlyOnePageChild observer registered successfully");
         }
         /// <summary>
         /// Registers the event data components.
