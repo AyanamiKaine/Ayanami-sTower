@@ -259,6 +259,26 @@ public class UIBuilder<T> where T : Control
         Entity.Set(component);
         return this;
     }
+
+    /// <summary>
+    /// Observe an event on the entity.
+    /// </summary>
+    /// <typeparam name="EventTypeToObserve"></typeparam>
+    /// <param name="callback"></param>
+    /// <returns></returns>
+    public UIBuilder<T> Observe<EventTypeToObserve>(Ecs.ObserveEntityCallback callback)
+    {
+        Entity.Observe<EventTypeToObserve>(callback);
+        return this;
+    }
+    /// <summary>
+    /// Iterate children for ui element.
+    /// </summary>
+    /// <param name="callback"></param>
+    public void Children(Ecs.EachEntityCallback callback)
+    {
+        Entity.Children(callback);
+    }
 }
 
 /* EXAMPLE USAGE
