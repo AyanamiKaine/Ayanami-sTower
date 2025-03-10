@@ -79,6 +79,9 @@ public partial class App : Application
         LiteraturePage literaturePage = new(_world);
         SpacedRepetitionPage spacedRepetitionPage = new(_world);
 
+        // Using the UI Builder is part of an effort to make it much more obvious how the UI is structured.
+        // While you might say just use XAML, the whole point was not to use it in the firstplace.
+
         var navigationView = _world.UI<NavigationView>(nav =>
         {
             nav.Property("PaneTitle", "Stella Learning")
