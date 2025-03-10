@@ -2,6 +2,55 @@
 
 The refactors here are part of strategic programming. From time to time, attend to this refactors implementing them will improve the design and the software in general.
 
+## [] Implementing a UI Builder
+
+### Problem
+
+Its quite unergonomic and unobvious how a UI will look like, because the diconnect between how the UI is written in code to the tree structure it will assume in the background.
+
+```C#
+_root = world.Entity()
+    .Add<Page>()
+    .Set(new Grid())
+
+
+var listSearch = world.Entity()
+    .ChildOf(_root)
+    .Set(new TextBox())
+    .SetWatermark("Search Entries");
+
+var totalItems = world.Entity()
+    .ChildOf(_root)
+    .Set(new TextBlock())
+    .SetText("Total Items: 0")
+```
+
+Its written top down, and in reality its a nested structure, this should be reflected in the way we declare the UI.
+
+### Solution
+
+Creating a UI Builder.
+
+```C#
+var _root = _world.UI<Grid>(nav =>
+{
+    nav.AddComponent<Page>();
+
+    nav.Child<TextBox>(textBox =>
+    {
+        textBox.Child<TextBlock>(textBlock =>
+        {
+            textBlock.SetText("Total Items: 0")
+        });
+    });
+}
+```
+
+This makes the structure of the UI much more obvious.
+
+- It will reduce errors in complex UI structures.
+- It will enable type safe methods.
+
 ## [] Cleaning up unused created UI-Components
 
 ### Problem
