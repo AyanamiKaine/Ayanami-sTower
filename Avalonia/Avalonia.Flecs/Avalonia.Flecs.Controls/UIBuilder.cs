@@ -84,7 +84,7 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the margin of a control.
     /// </summary>
-    public static UIBuilder<Control> SetMargin(this UIBuilder<Control> builder, Thickness margin)
+    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, Thickness margin) where T : Control, new()
     {
         builder.Entity.SetMargin(margin);
         return builder;
@@ -93,7 +93,7 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the margin of a control.
     /// </summary>
-    public static UIBuilder<Control> SetMargin(this UIBuilder<Control> builder, double margin)
+    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double margin) where T : Control, new()
     {
         builder.Entity.SetMargin(margin);
         return builder;
@@ -102,7 +102,7 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the horizontal and vertial margin of a control.
     /// </summary>
-    public static UIBuilder<Control> SetMargin(this UIBuilder<Control> builder, double hMargin, double vMargin)
+    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double hMargin, double vMargin) where T : Control, new()
     {
         builder.Entity.SetMargin(
             horizontalMargin: hMargin,
@@ -113,7 +113,7 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the left, top, right, bottom margin of a control.
     /// </summary>
-    public static UIBuilder<Control> SetMargin(this UIBuilder<Control> builder, double lMargin, double tMargin, double rMargin, double bMargin)
+    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double lMargin, double tMargin, double rMargin, double bMargin) where T : Control, new()
     {
         builder.Entity.SetMargin(
             leftMargin: lMargin,
