@@ -220,6 +220,15 @@ public static class UIBuilderExtensions
         builder.Entity.OnClosing(handler);
         return builder;
     }
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when the OnClick event happens
+    /// </summary>
+    public static UIBuilder<Window> OnClick(this UIBuilder<Window> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
+    {
+        builder.Entity.OnClick(handler);
+        return builder;
+    }
 }
 
 /// <summary>
