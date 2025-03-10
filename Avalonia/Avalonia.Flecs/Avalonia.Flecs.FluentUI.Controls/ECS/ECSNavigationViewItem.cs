@@ -25,6 +25,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                                 {
                                     parent.Get<NavigationView>().MenuItems.Add(navigationViewItem);
                                 }
+                                e.Set<ContentControl>(navigationViewItem);
                             }).OnRemove((Entity e, ref NavigationViewItem navigationViewItem) =>
                             {
                                 var parent = e.Parent();
