@@ -99,20 +99,11 @@ public partial class App : Application
                 });
             });
 
-            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
-            {
-                textblock.SetText("Home");
-            }));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Home")));
 
-            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
-            {
-                textblock.SetText("Knowledge Vault");
-            }));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Knowledge Vault")));
 
-            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
-            {
-                textblock.SetText("Literature");
-            }));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Literature")));
 
             /*
              The study page will be something more complex
@@ -130,15 +121,9 @@ public partial class App : Application
              object oriented programming, functional programming, etc.
              */
 
-            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
-            {
-                textblock.SetText("Study");
-            }));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Study")));
 
-            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
-            {
-                textblock.SetText("Spaced Repetition");
-            }));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Spaced Repetition")));
 
             nav.Child(spacedRepetitionPage);
 
@@ -243,7 +228,6 @@ public partial class App : Application
                         ((IUIComponent)contentQueuePage).SetMargin(new Thickness(20, 10, 20, 20));
                 }
             });
-
         });
 
         return navigationView;
@@ -257,12 +241,10 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
             && Entities is not null)
         {
-
             desktop.MainWindow = Entities["MainWindow"].Get<Window>();
             desktop.MainWindow.Hide();
         }
         base.OnFrameworkInitializationCompleted();
-
     }
 
     /// <summary>
