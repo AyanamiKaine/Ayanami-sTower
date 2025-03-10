@@ -2,7 +2,7 @@
 
 The refactors here are part of strategic programming. From time to time, attend to this refactors implementing them will improve the design and the software in general.
 
-## [] Implementing a UI Builder
+## [PROGRESS] Implementing a UI Builder
 
 ### Problem
 
