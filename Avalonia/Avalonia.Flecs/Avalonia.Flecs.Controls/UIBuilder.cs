@@ -272,6 +272,17 @@ public class UIBuilder<T> where T : Control
         return this;
     }
     /// <summary>
+    /// Emits an event.
+    /// </summary>
+    /// <typeparam name="Event"></typeparam>
+    /// <returns></returns>
+    public UIBuilder<T> Emit<Event>()
+    {
+        Entity.Emit<Event>();
+        return this;
+    }
+
+    /// <summary>
     /// Iterate children for ui element.
     /// </summary>
     /// <param name="callback"></param>
