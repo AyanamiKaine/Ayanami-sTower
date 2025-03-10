@@ -123,6 +123,40 @@ public static class UIBuilderExtensions
         builder.Entity.SetPlaceholderText(text);
         return builder;
     }
+    /// <summary>
+    /// Helper function to set the title of a window
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="title"></param>
+    /// <returns></returns>
+    public static UIBuilder<Window> SetTitle(this UIBuilder<Window> builder, string title)
+    {
+        builder.Entity.SetWindowTitle(title);
+        return builder;
+    }
+
+    /// <summary>
+    /// Set the width
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="width"></param>
+    /// <returns></returns>
+    public static UIBuilder<Window> SetWidth(this UIBuilder<Window> builder, double width)
+    {
+        builder.Entity.SetWidth(width);
+        return builder;
+    }
+    /// <summary>
+    /// Set the height
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="height"></param>
+    /// <returns></returns>
+    public static UIBuilder<Window> SetHeight(this UIBuilder<Window> builder, double height)
+    {
+        builder.Entity.SetHeight(height);
+        return builder;
+    }
 
 
     /// <summary>
@@ -174,6 +208,16 @@ public static class UIBuilderExtensions
     public static UIBuilder<Grid> SetRowDefinitions(this UIBuilder<Grid> builder, string rowDefinitions)
     {
         builder.Entity.SetRowDefinitions(rowDefinitions);
+        return builder;
+    }
+
+
+    /// <summary>
+    /// Sets the row definitions of a Grid control.
+    /// </summary>
+    public static UIBuilder<Window> OnWindowClosing(this UIBuilder<Window> builder, Action<object?, WindowClosingEventArgs> handler)
+    {
+        builder.Entity.OnClosing(handler);
         return builder;
     }
 }
