@@ -81,6 +81,14 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+    /*
+    DESIGN HINT:
+    When a control element shares a common interface like margin here, we should create a generic. 
+    Why? This ensure that automatically any type that uses Control as a base type works without any
+    needed special code. When no common interface exists we can simply write the special code like 
+    with SetText.
+    */
+
     /// <summary>
     /// Sets the margin of a control.
     /// </summary>
