@@ -99,6 +99,17 @@ public class UIBuilder<T> where T : Control
     }
 
     /// <summary>
+    /// Attaches an ui component as a child.
+    /// </summary>
+    /// <param name="uIComponent"></param>
+    /// <returns></returns>
+    public UIBuilder<T> Child(IUIComponent uIComponent)
+    {
+        uIComponent.Attach(_entity);
+        return this;
+    }
+
+    /// <summary>
     /// Sets the margin on the control.
     /// </summary>
     /// <param name="margin">The margin to set.</param>
