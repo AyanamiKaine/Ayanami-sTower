@@ -112,6 +112,20 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the placeholder text of a ComboBox component
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="text"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetPlaceholderText<T>(this UIBuilder<T> builder, string text) where T : ComboBox, new()
+    {
+        builder.Entity.SetPlaceholderText(text);
+        return builder;
+    }
+
+
+    /// <summary>
     /// Sets the margin of a control.
     /// </summary>
     public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double margin) where T : Control, new()
