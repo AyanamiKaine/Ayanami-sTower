@@ -214,7 +214,7 @@ public class UIBuilder<T> where T : Control
     /// Sets a property on the control by name.
     /// <remarks>
     /// The check if the object implement the property is done at runtime.
-    /// Beaware of that. You can use this method, where we didnt already 
+    /// Be aware of that. You can use this method, where we didnt already 
     /// implement a type safe way of modifying a property.
     /// </remarks>
     /// </summary>
