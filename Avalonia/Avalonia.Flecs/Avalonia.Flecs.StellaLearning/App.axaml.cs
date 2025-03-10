@@ -14,6 +14,7 @@ using CommunityToolkit.Mvvm.Input;
 using Avalonia.Platform;
 using NLog;
 using Avalonia.Flecs.Controls;
+using Avalonia.Threading;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -250,7 +251,12 @@ public partial class App : Application
         if (Entities != null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
         {
             var mainWindow = Entities["MainWindow"].Get<Window>();
-            mainWindow.Show();
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                mainWindow.Show();
+                mainWindow.Activate();
+            });
         }
     }
 
