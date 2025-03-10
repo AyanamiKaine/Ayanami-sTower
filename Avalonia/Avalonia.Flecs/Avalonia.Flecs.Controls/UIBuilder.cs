@@ -212,11 +212,16 @@ public class UIBuilder<T> where T : Control
 
     /// <summary>
     /// Sets a property on the control by name.
+    /// <remarks>
+    /// The check if the object implement the property is done at runtime.
+    /// Beaware of that. You can use this method, where we didnt already 
+    /// implement a type safe way of modifying a property.
+    /// </remarks>
     /// </summary>
     /// <param name="name">The name of the property to set.</param>
     /// <param name="value">The value to set the property to.</param>
     /// <returns>This builder instance for method chaining.</returns>
-    public UIBuilder<T> Property(string name, object value)
+    public UIBuilder<T> SetProperty(string name, object value)
     {
         _entity.SetProperty(name, value);
         return this;
@@ -241,6 +246,17 @@ public class UIBuilder<T> where T : Control
     public UIBuilder<T> Child(IUIComponent uIComponent)
     {
         uIComponent.Attach(_entity);
+        return this;
+    }
+
+    /// <summary>
+    /// Attaches an ui component as a child.
+    /// </summary>
+    /// <param name="component"></param>
+    /// <returns></returns>
+    public UIBuilder<T> SetComponent<ComponentType>(ComponentType component) where ComponentType : new()
+    {
+        Entity.Set(component);
         return this;
     }
 }
