@@ -64,6 +64,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Helper function to set the row property of a control component;
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="row"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetRow<T>(this UIBuilder<T> builder, int row) where T : Control, new()
+    {
+        builder.Entity.SetRow(row);
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the text of a TextBlock control.
     /// </summary>
     public static UIBuilder<TextBlock> SetText(this UIBuilder<TextBlock> builder, string text)
