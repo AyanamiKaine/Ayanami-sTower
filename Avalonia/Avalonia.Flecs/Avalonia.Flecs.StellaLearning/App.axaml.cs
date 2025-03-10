@@ -47,27 +47,7 @@ public partial class App : Application
         //var debugWindow = new Debug.Window.Window(_world);
         //Entities.OnEntityAdded += debugWindow.AddEntity;
 
-        var window = Entities.Create("MainWindow")
-            .Set(new Window()
-            {
-                ShowActivated = false,
-            })
-            .SetWindowTitle("Stella Learning")
-            .SetHeight(400)
-            .SetWidth(400)
-            .OnClosing((sender, args) =>
-            {
-                args.Cancel = true;
-
-                if (sender is Window win)
-                {
-                    // We dont close the main window but instead hide it,
-                    // because we have a tray icon that is still active.
-                    win.Hide();
-                }
-            });
-
-        _world.UI<Window>((window) =>
+        Entities["MainWindow"] = _world.UI<Window>((window) =>
         {
             window.SetTitle("Stella Learning")
                   .SetHeight(400)
@@ -85,7 +65,7 @@ public partial class App : Application
                     });
         });
 
-        CreateUILayout().ChildOf(window);
+        CreateUILayout().ChildOf(Entities["MainWindow"]);
         InitializeTrayIcon();
     }
 
