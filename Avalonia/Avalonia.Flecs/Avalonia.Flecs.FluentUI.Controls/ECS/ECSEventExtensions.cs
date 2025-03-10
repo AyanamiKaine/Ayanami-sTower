@@ -15,7 +15,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Click event");
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a BackRequested event");
             }
 
             return entity;
@@ -31,7 +31,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Click event");
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a ItemCollapsed event");
             }
 
             return entity;
@@ -47,7 +47,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Click event");
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a ItemExpanding event");
             }
 
             return entity;
@@ -63,7 +63,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Click event");
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a ItemInvoked event");
             }
 
             return entity;
@@ -79,7 +79,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Click event");
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a DisplayModeChanged event");
             }
 
             return entity;
@@ -95,7 +95,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Click event");
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a PaneClosing event");
             }
 
             return entity;
@@ -111,7 +111,7 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a Click event");
+                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a SelectionChanged event");
             }
 
             return entity;
