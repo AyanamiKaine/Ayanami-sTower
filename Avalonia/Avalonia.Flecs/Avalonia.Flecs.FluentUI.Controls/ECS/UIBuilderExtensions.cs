@@ -12,4 +12,9 @@ public static class UIBuilderExtensions
         builder.Entity.OnDisplayModeChanged(handler);
         return builder;
     }
+    public static UIBuilder<NavigationView> OnNavViewSelectionChanged(this UIBuilder<NavigationView> builder, Action<object?, NavigationViewSelectionChangedEventArgs> handler)
+    {
+        builder.Entity.OnNavViewSelectionChanged(handler);
+        return builder;
+    }
 }
