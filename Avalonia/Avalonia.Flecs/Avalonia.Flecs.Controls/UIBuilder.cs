@@ -11,6 +11,10 @@ we create a UI in code. Its all about making it more obvious how the UI is
 structured. We take insperation how its done in Flutter.
 */
 
+
+
+// DESING HINT: These extension methods are super important because they enable us type safe exposure
+// of various methods on control elements. So you can use the SetText method on only types that actual have the text property
 /// <summary>
 /// Extension methods that enable fluent UI building with a hierarchical syntax for Flecs entities.
 /// </summary>
@@ -46,6 +50,54 @@ public static class UIBuilderExtensions
         configure(builder);
         return entity;
     }
+
+    /// <summary>
+    /// Helper function to set the Column property of a control component;
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="column"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetColumn<T>(this UIBuilder<T> builder, int column) where T : Control, new()
+    {
+        builder.Entity.SetColumn(column);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the text of a TextBlock control.
+    /// </summary>
+    public static UIBuilder<TextBlock> SetText(this UIBuilder<TextBlock> builder, string text)
+    {
+        builder.Entity.SetText(text);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the text of a TextBox control.
+    /// </summary>
+    public static UIBuilder<TextBox> SetText(this UIBuilder<TextBox> builder, string text)
+    {
+        builder.Entity.SetText(text);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the column definitions of a Grid control.
+    /// </summary>
+    public static UIBuilder<Grid> SetColumnDefinitions(this UIBuilder<Grid> builder, string columnDefinitions)
+    {
+        builder.Entity.SetColumnDefinitions(columnDefinitions);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the row definitions of a Grid control.
+    /// </summary>
+    public static UIBuilder<Grid> SetRowDefinitions(this UIBuilder<Grid> builder, string rowDefinitions)
+    {
+        builder.Entity.SetRowDefinitions(rowDefinitions);
+        return builder;
+    }
 }
 
 /// <summary>
@@ -62,6 +114,11 @@ public class UIBuilder<T> where T : Control
     /// </summary>
     private readonly Entity _entity;
     private readonly T _control;
+
+    /// <summary>
+    /// Gets the entity being configured.
+    /// </summary>
+    public Entity Entity => _entity;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UIBuilder{T}"/> class.
@@ -106,61 +163,6 @@ public class UIBuilder<T> where T : Control
     public UIBuilder<T> Child(IUIComponent uIComponent)
     {
         uIComponent.Attach(_entity);
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the margin on the control.
-    /// </summary>
-    /// <param name="margin">The margin to set.</param>
-    /// <returns>This builder instance for method chaining.</returns>
-    public UIBuilder<T> SetMargin(Thickness margin)
-    {
-        _entity.SetMargin(margin);
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the column for this control in a Grid.
-    /// </summary>
-    /// <param name="column">The zero-based column index.</param>
-    /// <returns>This builder instance for method chaining.</returns>
-    public UIBuilder<T> SetColumn(int column)
-    {
-        _entity.SetColumn(column);
-        return this;
-    }
-
-    /// <summary>
-    /// Given a string creates a column definition and sets it for the ui-element if it has a grid component.
-    /// </summary>
-    /// <param name="columnDefinitions"></param>
-    /// <returns></returns>
-    public UIBuilder<T> SetColumnDefinitions(string columnDefinitions)
-    {
-        _entity.SetColumnDefinitions(columnDefinitions);
-        return this;
-    }
-
-    /// <summary>
-    /// Given a string creates a row definition and sets it for the ui-element if it has a grid component.
-    /// </summary>
-    /// <param name="rowDefinitions"></param>
-    /// <returns></returns>
-    public UIBuilder<T> SetRowDefinitions(string rowDefinitions)
-    {
-        _entity.SetRowDefinitions(rowDefinitions);
-        return this;
-    }
-
-    /// <summary>
-    /// Sets the text of a TextBox or TextBlock control component of an entity
-    /// </summary>
-    /// <param name="text"></param>
-    /// <returns></returns>
-    public UIBuilder<T> SetText(string text)
-    {
-        _entity.SetText(text);
         return this;
     }
 }
