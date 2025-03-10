@@ -66,6 +66,25 @@ public partial class App : Application
                     win.Hide();
                 }
             });
+
+        _world.UI<Window>((window) =>
+        {
+            window.SetTitle("Stella Learning")
+                  .SetHeight(400)
+                  .SetWidth(400)
+                  .OnWindowClosing((sender, args) =>
+                    {
+                        args.Cancel = true;
+
+                        if (sender is Window win)
+                        {
+                            // We dont close the main window but instead hide it,
+                            // because we have a tray icon that is still active.
+                            win.Hide();
+                        }
+                    });
+        });
+
         CreateUILayout().ChildOf(window);
         InitializeTrayIcon();
     }
@@ -82,7 +101,7 @@ public partial class App : Application
         // Using the UI Builder is part of an effort to make it much more obvious how the UI is structured.
         // While you might say just use XAML, the whole point was not to use it in the firstplace.
 
-        var navigationView = _world.UI<NavigationView>(nav =>
+        return _world.UI<NavigationView>(nav =>
         {
             nav.SetProperty("PaneTitle", "Stella Learning")
                .SetColumn(0);
@@ -229,8 +248,6 @@ public partial class App : Application
                 }
             });
         });
-
-        return navigationView;
     }
 
     /// <summary>
