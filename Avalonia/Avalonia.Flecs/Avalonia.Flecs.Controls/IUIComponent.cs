@@ -2,6 +2,10 @@ using Avalonia.Flecs.Controls.ECS;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
+
+
+// TODO: Think about removing the interface in favor of the UIBuilder.
+
 /// <summary>
 /// Defines an interface for UI Components that are made out of entities.
 /// </summary>
