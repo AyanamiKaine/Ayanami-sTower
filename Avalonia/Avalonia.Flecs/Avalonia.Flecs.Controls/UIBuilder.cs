@@ -82,6 +82,49 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the margin of a control.
+    /// </summary>
+    public static UIBuilder<Control> SetMargin(this UIBuilder<Control> builder, Thickness margin)
+    {
+        builder.Entity.SetMargin(margin);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the margin of a control.
+    /// </summary>
+    public static UIBuilder<Control> SetMargin(this UIBuilder<Control> builder, double margin)
+    {
+        builder.Entity.SetMargin(margin);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the horizontal and vertial margin of a control.
+    /// </summary>
+    public static UIBuilder<Control> SetMargin(this UIBuilder<Control> builder, double hMargin, double vMargin)
+    {
+        builder.Entity.SetMargin(
+            horizontalMargin: hMargin,
+            verticalMargin: vMargin);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the left, top, right, bottom margin of a control.
+    /// </summary>
+    public static UIBuilder<Control> SetMargin(this UIBuilder<Control> builder, double lMargin, double tMargin, double rMargin, double bMargin)
+    {
+        builder.Entity.SetMargin(
+            leftMargin: lMargin,
+            topMargin: tMargin,
+            rightMargin: rMargin,
+            bottomMargin: bMargin
+            );
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the column definitions of a Grid control.
     /// </summary>
     public static UIBuilder<Grid> SetColumnDefinitions(this UIBuilder<Grid> builder, string columnDefinitions)
