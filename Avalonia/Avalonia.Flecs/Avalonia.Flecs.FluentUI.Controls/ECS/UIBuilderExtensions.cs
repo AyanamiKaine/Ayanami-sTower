@@ -12,6 +12,12 @@ public static class UIBuilderExtensions
         builder.Entity.OnDisplayModeChanged(handler);
         return builder;
     }
+    /// <summary>
+    /// Sets an event callback for when the selection in a navigation view changes.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="handler"></param>
+    /// <returns></returns>
     public static UIBuilder<NavigationView> OnNavViewSelectionChanged(this UIBuilder<NavigationView> builder, Action<object?, NavigationViewSelectionChangedEventArgs> handler)
     {
         builder.Entity.OnNavViewSelectionChanged(handler);
