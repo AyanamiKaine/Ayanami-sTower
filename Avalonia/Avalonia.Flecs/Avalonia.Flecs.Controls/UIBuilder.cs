@@ -16,11 +16,6 @@ structured. We take insperation how its done in Flutter.
 /// </summary>
 public static class UIBuilderExtensions
 {
-
-    /*
-    TODO: I think instead of returning the UI builder t in the action we instead return the entity
-    */
-
     /// <summary>
     /// Creates a new entity with the specified control component and configures it using a builder pattern.
     /// </summary>
@@ -46,7 +41,7 @@ public static class UIBuilderExtensions
     public static Entity UI<T>(this Entity parent, Action<UIBuilder<T>> configure) where T : Control, new()
     {
         var world = parent.CsWorld();
-        var entity = world.Entity().Set(new T()).ChildOf(parent);
+        var entity = world.Entity().ChildOf(parent).Set(new T());
         var builder = new UIBuilder<T>(world, entity);
         configure(builder);
         return entity;
@@ -65,7 +60,7 @@ public class UIBuilder<T> where T : Control
     /// <summary>
     /// Underlying entity
     /// </summary>
-    public Entity Entity { get; }
+    private readonly Entity _entity;
     private readonly T _control;
 
     /// <summary>
@@ -76,7 +71,7 @@ public class UIBuilder<T> where T : Control
     public UIBuilder(World world, Entity entity)
     {
         _world = world;
-        Entity = entity;
+        _entity = entity;
         _control = entity.Get<T>();
     }
 
@@ -88,7 +83,7 @@ public class UIBuilder<T> where T : Control
     /// <returns>This builder instance for method chaining.</returns>
     public UIBuilder<T> Property(string name, object value)
     {
-        Entity.SetProperty(name, value);
+        _entity.SetProperty(name, value);
         return this;
     }
 
@@ -99,7 +94,7 @@ public class UIBuilder<T> where T : Control
     /// <returns>The builder for the newly created child entity.</returns>
     public UIBuilder<TChild> Child<TChild>(Action<UIBuilder<TChild>> configure) where TChild : Control, new()
     {
-        var child = Entity.UI(configure);
+        var child = _entity.UI(configure);
         return new UIBuilder<TChild>(_world, child);
     }
 
@@ -110,7 +105,7 @@ public class UIBuilder<T> where T : Control
     /// <returns>This builder instance for method chaining.</returns>
     public UIBuilder<T> SetMargin(Thickness margin)
     {
-        Entity.SetMargin(margin);
+        _entity.SetMargin(margin);
         return this;
     }
 
@@ -119,9 +114,42 @@ public class UIBuilder<T> where T : Control
     /// </summary>
     /// <param name="column">The zero-based column index.</param>
     /// <returns>This builder instance for method chaining.</returns>
-    public UIBuilder<T> Column(int column)
+    public UIBuilder<T> SetColumn(int column)
     {
-        Entity.SetColumn(column);
+        _entity.SetColumn(column);
+        return this;
+    }
+
+    /// <summary>
+    /// Given a string creates a column definition and sets it for the ui-element if it has a grid component.
+    /// </summary>
+    /// <param name="columnDefinitions"></param>
+    /// <returns></returns>
+    public UIBuilder<T> SetColumnDefinitions(string columnDefinitions)
+    {
+        _entity.SetColumnDefinitions(columnDefinitions);
+        return this;
+    }
+
+    /// <summary>
+    /// Given a string creates a row definition and sets it for the ui-element if it has a grid component.
+    /// </summary>
+    /// <param name="rowDefinitions"></param>
+    /// <returns></returns>
+    public UIBuilder<T> SetRowDefinitions(string rowDefinitions)
+    {
+        _entity.SetRowDefinitions(rowDefinitions);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the text of a TextBox or TextBlock control component of an entity
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns></returns>
+    public UIBuilder<T> SetText(string text)
+    {
+        _entity.SetText(text);
         return this;
     }
 }
