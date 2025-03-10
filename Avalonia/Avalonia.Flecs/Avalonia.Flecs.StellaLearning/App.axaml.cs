@@ -99,9 +99,7 @@ public partial class App : Application
             });
 
             nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Home")));
-
             nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Knowledge Vault")));
-
             nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Literature")));
 
             /*
@@ -121,9 +119,7 @@ public partial class App : Application
              */
 
             nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Study")));
-
             nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Spaced Repetition")));
-
             nav.Child(spacedRepetitionPage);
 
             nav.OnDisplayModeChanged((sender, args) =>
@@ -149,7 +145,8 @@ public partial class App : Application
                     });
                 }
             });
-
+            // This observer runs its callback when 
+            // nav.Emit<OnSelectionChanged>() is called.
             nav.Observe<OnSelectionChanged>((Entity _) =>
                     {
                         // We first remove any other page ensuring 
@@ -163,6 +160,7 @@ public partial class App : Application
                             });
                     });
 
+            // TODO: they way we use a chain if statement is rather ugly, and need improvment.
             nav.OnNavViewSelectionChanged(async (sender, args) =>
             {
                 await Threading.Dispatcher.UIThread.InvokeAsync(() => nav.Emit<OnSelectionChanged>());
