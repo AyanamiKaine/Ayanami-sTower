@@ -87,7 +87,6 @@ public partial class App : Application
             nav.Property("PaneTitle", "Stella Learning")
                .SetColumn(0);
 
-            // Child elements are nested in the lambda, showing hierarchy
             nav.Child<ScrollViewer>(scroll =>
             {
                 scroll.Child<StackPanel>(stack =>
@@ -140,9 +139,9 @@ public partial class App : Application
             {
                 textblock.SetText("Spaced Repetition");
             }));
-        });
 
-        ((IUIComponent)spacedRepetitionPage).Attach(navigationView);
+            nav.Child(spacedRepetitionPage);
+        });
 
         navigationView.OnDisplayModeChanged((sender, args) =>
         {
@@ -191,7 +190,7 @@ public partial class App : Application
                 return;
 
             var selectedItem = args.SelectedItem as NavigationViewItem;
-            if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Home")
+            if (selectedItem?.Content is TextBlock homeTextBlock && homeTextBlock.Text == "Home")
             {
                 ((IUIComponent)homePage).Attach(navigationView);
 
@@ -202,7 +201,7 @@ public partial class App : Application
                 else
                     ((IUIComponent)homePage).SetMargin(new Thickness(20, 10, 20, 20));
             }
-            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Literature")
+            else if (selectedItem?.Content is TextBlock LiteratureTextBlock && LiteratureTextBlock.Text == "Literature")
             {
                 ((IUIComponent)literaturePage).Attach(navigationView);
                 if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
@@ -210,7 +209,7 @@ public partial class App : Application
                 else
                     ((IUIComponent)literaturePage).SetMargin(new Thickness(20, 10, 20, 20));
             }
-            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Spaced Repetition")
+            else if (selectedItem?.Content is TextBlock SRtextBlock && SRtextBlock.Text == "Spaced Repetition")
             {
                 ((IUIComponent)spacedRepetitionPage).Attach(navigationView);
 
@@ -228,7 +227,7 @@ public partial class App : Application
                 else
                     ((IUIComponent)settingsPage).SetMargin(new Thickness(20, 10, 20, 20));
             }
-            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Knowledge Vault")
+            else if (selectedItem?.Content is TextBlock KVtextBlock && KVtextBlock.Text == "Knowledge Vault")
             {
                 ((IUIComponent)knowledgeVaultPage).Attach(navigationView);
 
@@ -237,7 +236,7 @@ public partial class App : Application
                 else
                     ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(20, 10, 20, 20));
             }
-            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Content Queue")
+            else if (selectedItem?.Content is TextBlock CQtextBlock && CQtextBlock.Text == "Content Queue")
             {
                 ((IUIComponent)contentQueuePage).Attach(navigationView);
 
