@@ -178,74 +178,74 @@ public partial class App : Application
                                 }
                             });
                     });
+
+            nav.OnNavViewSelectionChanged(async (sender, args) =>
+            {
+                await Threading.Dispatcher.UIThread.InvokeAsync(() => nav.Emit<OnSelectionChanged>());
+
+                if (sender is not NavigationView e)
+                    return;
+
+                var selectedItem = args.SelectedItem as NavigationViewItem;
+                if (selectedItem?.Content is TextBlock homeTextBlock && homeTextBlock.Text == "Home")
+                {
+                    nav.Child(homePage);
+
+                    //Maybe we could implement an event for the navigation view entity that says
+                    //something like new page added and than changes the margin of the page
+                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                        ((IUIComponent)homePage).SetMargin(new Thickness(50, 10, 20, 20));
+                    else
+                        ((IUIComponent)homePage).SetMargin(new Thickness(20, 10, 20, 20));
+                }
+                else if (selectedItem?.Content is TextBlock LiteratureTextBlock && LiteratureTextBlock.Text == "Literature")
+                {
+                    nav.Child(literaturePage);
+                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                        ((IUIComponent)literaturePage).SetMargin(new Thickness(50, 10, 20, 20));
+                    else
+                        ((IUIComponent)literaturePage).SetMargin(new Thickness(20, 10, 20, 20));
+                }
+                else if (selectedItem?.Content is TextBlock SRtextBlock && SRtextBlock.Text == "Spaced Repetition")
+                {
+                    nav.Child(spacedRepetitionPage);
+
+                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                        ((IUIComponent)spacedRepetitionPage).SetMargin(new Thickness(50, 10, 20, 20));
+                    else
+                        ((IUIComponent)spacedRepetitionPage).SetMargin(new Thickness(20, 10, 20, 20));
+                }
+                else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
+                {
+                    nav.Child(settingsPage);
+
+                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                        ((IUIComponent)settingsPage).SetMargin(new Thickness(50, 10, 20, 20));
+                    else
+                        ((IUIComponent)settingsPage).SetMargin(new Thickness(20, 10, 20, 20));
+                }
+                else if (selectedItem?.Content is TextBlock KVtextBlock && KVtextBlock.Text == "Knowledge Vault")
+                {
+                    nav.Child(knowledgeVaultPage);
+
+                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                        ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(50, 10, 20, 20));
+                    else
+                        ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(20, 10, 20, 20));
+                }
+                else if (selectedItem?.Content is TextBlock CQtextBlock && CQtextBlock.Text == "Content Queue")
+                {
+                    nav.Child(contentQueuePage);
+
+                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                        ((IUIComponent)contentQueuePage).SetMargin(new Thickness(50, 10, 20, 20));
+                    else
+                        ((IUIComponent)contentQueuePage).SetMargin(new Thickness(20, 10, 20, 20));
+                }
+            });
+
         });
 
-
-
-        navigationView.OnNavViewSelectionChanged(async (sender, args) =>
-        {
-            await Threading.Dispatcher.UIThread.InvokeAsync(() => navigationView.Emit<OnSelectionChanged>());
-
-            if (sender is not NavigationView e)
-                return;
-
-            var selectedItem = args.SelectedItem as NavigationViewItem;
-            if (selectedItem?.Content is TextBlock homeTextBlock && homeTextBlock.Text == "Home")
-            {
-                ((IUIComponent)homePage).Attach(navigationView);
-
-                //Maybe we could implement an event for the navigation view entity that says
-                //something like new page added and than changes the margin of the page
-                if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    ((IUIComponent)homePage).SetMargin(new Thickness(50, 10, 20, 20));
-                else
-                    ((IUIComponent)homePage).SetMargin(new Thickness(20, 10, 20, 20));
-            }
-            else if (selectedItem?.Content is TextBlock LiteratureTextBlock && LiteratureTextBlock.Text == "Literature")
-            {
-                ((IUIComponent)literaturePage).Attach(navigationView);
-                if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    ((IUIComponent)literaturePage).SetMargin(new Thickness(50, 10, 20, 20));
-                else
-                    ((IUIComponent)literaturePage).SetMargin(new Thickness(20, 10, 20, 20));
-            }
-            else if (selectedItem?.Content is TextBlock SRtextBlock && SRtextBlock.Text == "Spaced Repetition")
-            {
-                ((IUIComponent)spacedRepetitionPage).Attach(navigationView);
-
-                if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    ((IUIComponent)spacedRepetitionPage).SetMargin(new Thickness(50, 10, 20, 20));
-                else
-                    ((IUIComponent)spacedRepetitionPage).SetMargin(new Thickness(20, 10, 20, 20));
-            }
-            else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
-            {
-                ((IUIComponent)settingsPage).Attach(navigationView);
-
-                if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    ((IUIComponent)settingsPage).SetMargin(new Thickness(50, 10, 20, 20));
-                else
-                    ((IUIComponent)settingsPage).SetMargin(new Thickness(20, 10, 20, 20));
-            }
-            else if (selectedItem?.Content is TextBlock KVtextBlock && KVtextBlock.Text == "Knowledge Vault")
-            {
-                ((IUIComponent)knowledgeVaultPage).Attach(navigationView);
-
-                if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(50, 10, 20, 20));
-                else
-                    ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(20, 10, 20, 20));
-            }
-            else if (selectedItem?.Content is TextBlock CQtextBlock && CQtextBlock.Text == "Content Queue")
-            {
-                ((IUIComponent)contentQueuePage).Attach(navigationView);
-
-                if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                    ((IUIComponent)contentQueuePage).SetMargin(new Thickness(50, 10, 20, 20));
-                else
-                    ((IUIComponent)contentQueuePage).SetMargin(new Thickness(20, 10, 20, 20));
-            }
-        });
         return navigationView;
     }
 
