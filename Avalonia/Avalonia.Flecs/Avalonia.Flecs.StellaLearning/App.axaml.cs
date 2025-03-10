@@ -82,7 +82,7 @@ public partial class App : Application
         var navigationView = _world.UI<NavigationView>(nav =>
         {
             nav.Property("PaneTitle", "Stella Learning")
-               .Column(0);
+               .SetColumn(0);
 
             // Child elements are nested in the lambda, showing hierarchy
             nav.Child<ScrollViewer>(scroll =>
@@ -91,18 +91,26 @@ public partial class App : Application
                 {
                     stack.Child<Grid>(grid =>
                     {
-                        grid.Entity
-                            .SetColumnDefinitions("2,*,*")
+                        grid.SetColumnDefinitions("2,*,*")
                             .SetRowDefinitions("Auto");
                     });
                 });
             });
 
-            nav.Child<NavigationViewItem>(item => item.Property("Content", "Home"));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
+            {
+                textblock.SetText("Home");
+            }));
 
-            nav.Child<NavigationViewItem>(item => item.Property("Content", "Knowledge Vault"));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
+            {
+                textblock.SetText("Knowledge Vault");
+            }));
 
-            nav.Child<NavigationViewItem>(item => item.Property("Content", "Literature"));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
+            {
+                textblock.SetText("Literature");
+            }));
 
             /*
              The study page will be something more complex
@@ -120,9 +128,15 @@ public partial class App : Application
              object oriented programming, functional programming, etc.
              */
 
-            nav.Child<NavigationViewItem>(item => item.Property("Content", "Study"));
-            nav.Child<NavigationViewItem>(item => item.Property("Content", "Spaced Repetition"));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
+            {
+                textblock.SetText("Study");
+            }));
 
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(textblock =>
+            {
+                textblock.SetText("Spaced Repetition");
+            }));
         });
 
         ((IUIComponent)spacedRepetitionPage).Attach(navigationView);
