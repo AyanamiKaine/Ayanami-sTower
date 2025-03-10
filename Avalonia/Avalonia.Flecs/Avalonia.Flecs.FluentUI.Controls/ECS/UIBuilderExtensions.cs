@@ -1,7 +1,7 @@
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.FluentUI.Controls.ECS;
 using FluentAvalonia.UI.Controls;
-
+namespace Avalonia.Flecs.FluentUI.Controls;
 public static class UIBuilderExtensions
 {
     /// <summary>
