@@ -294,6 +294,16 @@ public class UIBuilder<T> where T : Control
     }
 
     /// <summary>
+    /// Attaches an entity as a child
+    /// </summary>
+    /// <param name="child"></param>
+    /// <returns></returns>
+    public UIBuilder<T> Child(Entity child)
+    {
+        child.ChildOf(Entity);
+        return this;
+    }
+    /// <summary>
     /// Attaches an ui component as a child.
     /// </summary>
     /// <param name="component"></param>
