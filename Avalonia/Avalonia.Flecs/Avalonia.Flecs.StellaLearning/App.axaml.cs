@@ -84,7 +84,7 @@ public partial class App : Application
 
         var navigationView = _world.UI<NavigationView>(nav =>
         {
-            nav.Property("PaneTitle", "Stella Learning")
+            nav.SetProperty("PaneTitle", "Stella Learning")
                .SetColumn(0);
 
             nav.Child<ScrollViewer>(scroll =>
