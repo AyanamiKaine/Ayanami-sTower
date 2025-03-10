@@ -141,46 +141,46 @@ public partial class App : Application
             }));
 
             nav.Child(spacedRepetitionPage);
-        });
 
-        navigationView.OnDisplayModeChanged((sender, args) =>
-        {
-            var e = navigationView;
-
-            if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
+            nav.OnDisplayModeChanged((sender, args) =>
             {
-                e.Children((Entity child) =>
+                if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
                 {
-                    if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
+                    nav.Children((Entity child) =>
                     {
-                        child.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
-                    }
-                });
-            }
-            else if (args.DisplayMode == NavigationViewDisplayMode.Compact)
-            {
-                e.Children((Entity child) =>
+                        if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
+                        {
+                            child.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
+                        }
+                    });
+                }
+                else if (args.DisplayMode == NavigationViewDisplayMode.Compact)
                 {
-                    if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
+                    nav.Children((Entity child) =>
                     {
-                        child.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
-                    }
-                });
-            }
+                        if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
+                        {
+                            child.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
+                        }
+                    });
+                }
+            });
+
+            nav.Observe<OnSelectionChanged>((Entity _) =>
+                    {
+                        // We first remove any other page ensuring 
+                        // that only the selected page is displayed
+                        nav.Children((Entity child) =>
+                            {
+                                if (child.Has<Controls.ECS.Module.Page>())
+                                {
+                                    child.Remove(Ecs.ChildOf, Ecs.Wildcard);
+                                }
+                            });
+                    });
         });
 
-        navigationView.Observe<OnSelectionChanged>((Entity _) =>
-        {
-            // We first remove any other page ensuring 
-            // that only the selected page is displayed
-            navigationView.Children((Entity child) =>
-                {
-                    if (child.Has<Controls.ECS.Module.Page>())
-                    {
-                        child.Remove(Ecs.ChildOf, Ecs.Wildcard);
-                    }
-                });
-        });
+
 
         navigationView.OnNavViewSelectionChanged(async (sender, args) =>
         {
@@ -295,7 +295,7 @@ public partial class App : Application
         try
         {
             // Load icon from resources
-            var iconStream = AssetLoader.Open(new Uri("avares://Avalonia.Flecs.StellaLearning/Assets/stella-icon.ico"));
+            var iconStream = AssetLoader.Open(new Uri("avares://Stella Learning/Assets/stella-icon.ico"));
 
             // Create the tray icon
             _trayIcon = new TrayIcon
