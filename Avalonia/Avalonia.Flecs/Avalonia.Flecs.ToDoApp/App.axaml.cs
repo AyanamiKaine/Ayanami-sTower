@@ -43,6 +43,16 @@ public partial class App : Application
         AvaloniaXamlLoader.Load(this);
         _world.Import<Avalonia.Flecs.Controls.ECS.Module>();
 
+
+        _world.UI<Window>((window) =>
+        {
+            window.Child<Grid>((grid) =>
+            {
+                grid.Child<TextBlock>((textBlock) => textBlock.SetText("My ToDo-List"));
+                grid.Child<ScrollViewer>(_ => { });
+            });
+        });
+
         //First Defining Entities
         var window = _world.Entity("MainWindow");
         var grid = _world.Entity("Grid");
