@@ -280,6 +280,10 @@ public class UIBuilder<T> where T : Control
         return this;
     }
 
+    //TODO: We probably want a way to add childrens without the need
+    // to first configure them, this is especially helpful when 
+    // we defined our own components.
+
     /// <summary>
     /// Creates a child control entity and returns its builder.
     /// </summary>
