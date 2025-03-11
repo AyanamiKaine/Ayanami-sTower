@@ -32,11 +32,11 @@ Its written top down, and in reality its a nested structure, this should be refl
 Creating a UI Builder.
 
 ```C#
-var _root = _world.UI<Grid>(nav =>
+var _root = _world.UI<Grid>(grid =>
 {
-    nav.AddComponent<Page>();
+    grid.AddComponent<Page>();
 
-    nav.Child<TextBox>(textBox =>
+    grid.Child<TextBox>(textBox =>
     {
         textBox.Child<TextBlock>(textBlock =>
         {
