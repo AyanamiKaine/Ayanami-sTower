@@ -64,20 +64,16 @@ public class SettingsPage : IUIComponent
         private Entity _root;
         /// <inheritdoc/>
         public Entity Root => _root;
-        public Entity _settingsProvider;
 
         public ObsidianPath(World world)
         {
             _root = world.UI<TextBox>((textBox) =>
             {
-                _settingsProvider = world.Entity()
-                    .Set(new Settings());
-
-                App.Entities!["SettingsProvider"] = _settingsProvider;
+                world.Set(new Settings());
 
                 textBox
                 .SetWatermark("Path to Obsidian")
-                .SetText(_settingsProvider.Get<Settings>().ObsidianPath)
+                .SetText(world.Get<Settings>().ObsidianPath)
                 .SetInnerRightContent(world.UI<Button>((button) =>
                 {
                     button.Child<TextBlock>((textBlock) => textBlock.SetText("Browse"));
@@ -98,10 +94,11 @@ public class SettingsPage : IUIComponent
                     button.OnClick(async (e, args) =>
                     {
                         string newObsidanPath = await ObsidianFilePickerAsync();
-                        if (newObsidanPath != "" && _settingsProvider.GetText()?.Length == 0)
+                        if (newObsidanPath != "")
+                        {
                             _root.SetText(newObsidanPath);
-                        _settingsProvider.Get<Settings>().ObsidianPath = _root.GetText();
-                        Console.WriteLine("New Obsidian Path:" + _settingsProvider.Get<Settings>().ObsidianPath);
+                            world.Get<Settings>().ObsidianPath = newObsidanPath;
+                        }
                     });
                 }));
             });
