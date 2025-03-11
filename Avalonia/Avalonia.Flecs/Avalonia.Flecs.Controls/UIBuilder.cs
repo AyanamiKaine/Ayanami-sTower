@@ -99,6 +99,18 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Gets the current column span of an control component
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="columnSpan"></param>
+    /// <returns></returns>
+    public static int GetColumnSpan<T>(this UIBuilder<T> builder, int columnSpan) where T : Control, new()
+    {
+        return builder.Entity.GetColumnSpan();
+    }
+
+    /// <summary>
     /// Helper function to set the rowSpan property
     /// on a Control component that is attach to an entitiy.
     /// </summary>
