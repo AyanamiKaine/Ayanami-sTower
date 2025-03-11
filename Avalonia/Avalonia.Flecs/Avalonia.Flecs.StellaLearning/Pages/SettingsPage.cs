@@ -68,50 +68,43 @@ public class SettingsPage : IUIComponent
 
         public ObsidianPath(World world)
         {
-            _settingsProvider = world.Entity()
-                .Set(new Settings());
+            _root = world.UI<TextBox>((textBox) =>
+            {
+                _settingsProvider = world.Entity()
+                    .Set(new Settings());
 
-            App.Entities!["SettingsProvider"] = _settingsProvider;
+                App.Entities!["SettingsProvider"] = _settingsProvider;
 
-            var browseForObsidianButton = world.Entity()
-                .Set(new Button());
-
-            var browseForObsidianButtonContent = world.Entity()
-                .ChildOf(browseForObsidianButton)
-                .Set(new TextBlock())
-                .SetText("Browse");
-
-
-            var toolTipTextBlock = world.Entity()
-                .Set(new TextBlock())
-                .SetText(
-                    """
-                When a obsidian path is set, the application 
-                will be able to open the obsidian vault when a
-                markdown file is part of an obsidian vault.
-                """);
-
-            var obsidianPathTooltip = world.Entity()
-                .Set(new ToolTip())
-                .SetContent(toolTipTextBlock);
-
-            _root = world.Entity()
-                .Set(new TextBox())
-                .SetText(_settingsProvider.Get<Settings>().ObsidianPath)
+                textBox
                 .SetWatermark("Path to Obsidian")
-                .SetInnerRightContent(browseForObsidianButton)
-                .AttachToolTip(obsidianPathTooltip);
-
-            browseForObsidianButton
-                .ChildOf(_root)
-                .OnClick(async (e, args) =>
+                .SetText(_settingsProvider.Get<Settings>().ObsidianPath)
+                .SetInnerRightContent(world.UI<Button>((button) =>
                 {
-                    string newObsidanPath = await ObsidianFilePickerAsync();
-                    if (newObsidanPath != "" && _settingsProvider.GetText()?.Length == 0)
-                        _root.SetText(newObsidanPath);
-                    _settingsProvider.Get<Settings>().ObsidianPath = _root.GetText();
-                    Console.WriteLine("New Obsidian Path:" + _settingsProvider.Get<Settings>().ObsidianPath);
-                });
+                    button.Child<TextBlock>((textBlock) => textBlock.SetText("Browse"));
+
+                    button.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                    {
+                        toolTip.Child<TextBlock>((textBlock) =>
+                        {
+                            textBlock.SetText(
+                            """
+                            When a obsidian path is set, the application 
+                            will be able to open the obsidian vault when a
+                            markdown file is part of an obsidian vault.
+                            """);
+                        });
+                    }));
+
+                    button.OnClick(async (e, args) =>
+                    {
+                        string newObsidanPath = await ObsidianFilePickerAsync();
+                        if (newObsidanPath != "" && _settingsProvider.GetText()?.Length == 0)
+                            _root.SetText(newObsidanPath);
+                        _settingsProvider.Get<Settings>().ObsidianPath = _root.GetText();
+                        Console.WriteLine("New Obsidian Path:" + _settingsProvider.Get<Settings>().ObsidianPath);
+                    });
+                }));
+            });
         }
     }
 
