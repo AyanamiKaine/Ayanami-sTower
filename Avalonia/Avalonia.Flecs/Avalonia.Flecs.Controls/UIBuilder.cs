@@ -113,6 +113,18 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Gets the current row span of an control component
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="rowSpan"></param>
+    /// <returns></returns>
+    public static int GetRowSpan<T>(this UIBuilder<T> builder, int rowSpan) where T : Control, new()
+    {
+        return builder.Entity.GetRowSpan();
+    }
+
+    /// <summary>
     /// Sets the text of a TextBlock control.
     /// </summary>
     public static UIBuilder<TextBlock> SetText(this UIBuilder<TextBlock> builder, string text)
