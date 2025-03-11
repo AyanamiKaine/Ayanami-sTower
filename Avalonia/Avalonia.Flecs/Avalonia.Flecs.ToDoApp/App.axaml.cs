@@ -37,22 +37,97 @@ public partial class App : Application
     }
 
     World _world = World.Create();
-
+    Entity _mainWindow;
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
         _world.Import<Avalonia.Flecs.Controls.ECS.Module>();
 
-
-        _world.UI<Window>((window) =>
+        _mainWindow = _world.UI<Window>((window) =>
         {
-            window.Child<Grid>((grid) =>
-            {
-                grid.Child<TextBlock>((textBlock) => textBlock.SetText("My ToDo-List"));
-                grid.Child<ScrollViewer>(_ => { });
-            });
-        });
+            UIBuilder<ItemsControl>? itemsController = null;
 
+            window.SetTitle("Avalonia.Flecs.ToDoAapp")
+                  .SetHeight(300)
+                  .SetWidth(500)
+                  .SetPadding(new Thickness(4))
+                  .Child<Grid>((grid) =>
+                    {
+                        grid.SetRowDefinitions("Auto, *, Auto");
+                        grid.Child<TextBlock>((textBlock) => textBlock.SetText("My ToDo-List"));
+                        grid.Child<ScrollViewer>(scrollViewer =>
+                        {
+                            scrollViewer.SetRow(1);
+                            scrollViewer.Child<ItemsControl>((itemsControl) =>
+                            {
+                                var template = new FuncDataTemplate<TodoItem>((value, namescope) =>
+                                {
+                                    var grid = new Grid();
+                                    /*
+
+                                    *: This represents a "star" column. It means this column will take up as much available space as possible after any fixed-size or Auto columns have been accounted for. Think of it as flexible or "greedy". In this case, the first column will grab most of the grid's width.
+
+                                    Auto: This means the column's width will adjust automatically to fit the content within it. If you place a button in this column, the column will be just wide enough to accommodate the button's size.
+
+                                    */
+                                    grid.ColumnDefinitions = new ColumnDefinitions("*, Auto");
+                                    var checkBox = new CheckBox()
+                                    {
+                                        [!CheckBox.ContentProperty] = new Binding("Text"),
+                                    };
+                                    checkBox.IsChecked = value.IsDone;
+
+                                    var button = new Button()
+                                    {
+                                        Content = "Delete",
+                                    };
+
+                                    button.Click += (sender, e) =>
+                                    {
+                                        itemsControl.Entity.Get<ItemsControl>().Items.Remove(value);
+                                        var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
+                                        if (titleEntityFound)
+                                        {
+                                            title.SetText($"My ToDo-List ({itemsControl.Entity.Get<ItemsControl>().Items.Count})");
+                                        }
+                                    };
+                                    Grid.SetColumn(button, 1);
+                                    grid.Children.Add(checkBox);
+                                    grid.Children.Add(button);
+
+                                    return grid;
+                                });
+
+                                itemsControl.SetItemTemplate(template);
+                                itemsController = itemsControl;
+                            });
+                        });
+                        grid.Child<TextBox>((textBox) =>
+                        {
+                            textBox.SetInnerRightContent(new Button()
+                            {
+                                Content = "Add",
+                            });
+                            textBox.SetRow(2);
+                            textBox.SetText("");
+                            textBox.SetWatermark("Add a new Item");
+                            textBox.OnKeyDown((sender, args) =>
+                            {
+                                // This is quite combersome to do.
+                                // In our hierarchy the needed ui entity that has 
+                                // the items controller is in another node of the UI tree. 
+                                // For now we can simply store a refrence to the UI builder
+                                // itemsControl
+                                if (args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
+                                {
+                                    itemsController!.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
+                                    textBox.SetText("");
+                                }
+                            });
+                        });
+                    });
+        });
+        /*
         //First Defining Entities
         var window = _world.Entity("MainWindow");
         var grid = _world.Entity("Grid");
@@ -83,10 +158,10 @@ public partial class App : Application
             .ChildOf(grid)
             .Set(new ScrollViewer());
 
-        /*
-        This creates a template for the TodoItem class.
-        It defines how this class should be displayed in the ItemsControl.
-        */
+        
+        //This creates a template for the TodoItem class.
+        //It defines how this class should be displayed in the ItemsControl.
+        
         var template = new FuncDataTemplate<TodoItem>((value, namescope) =>
         {
             var grid = new Grid();
@@ -97,86 +172,88 @@ public partial class App : Application
             Auto: This means the column's width will adjust automatically to fit the content within it. If you place a button in this column, the column will be just wide enough to accommodate the button's size.
 
             */
-            grid.ColumnDefinitions = new ColumnDefinitions("*, Auto");
-            var checkBox = new CheckBox()
-            {
-                [!CheckBox.ContentProperty] = new Binding("Text"),
-            };
-            checkBox.IsChecked = value.IsDone;
+        /*
+    grid.ColumnDefinitions = new ColumnDefinitions("*, Auto");
+    var checkBox = new CheckBox()
+    {
+        [!CheckBox.ContentProperty] = new Binding("Text"),
+    };
+    checkBox.IsChecked = value.IsDone;
 
-            var button = new Button()
-            {
-                Content = "Delete",
-            };
+    var button = new Button()
+    {
+        Content = "Delete",
+    };
 
-            button.Click += (sender, e) =>
-            {
-                itemsController.Get<ItemsControl>().Items.Remove(value);
-                var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
-                if (titleEntityFound)
-                {
-                    title.SetText($"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})");
-                }
-            };
-            Grid.SetColumn(button, 1);
-            grid.Children.Add(checkBox);
-            grid.Children.Add(button);
-
-            return grid;
-        });
-
-        itemsController
-            .ChildOf(scrollViewer)
-            .Set(new ItemsControl()
-            {
-                ItemTemplate = template
-            });
-
-        Grid.SetRow(scrollViewer.Get<ScrollViewer>(), 1);
-
-        addButton
-            .Set(new Button())
-            .SetContent("Add");
-
-        textBox
-            .ChildOf(grid)
-            .Set(new TextBox())
-            .SetInnerRightContent(addButton.Get<Button>())
-            .SetText("")
-            .SetWatermark("Add a new Item")
-            .OnKeyDown((sender, args) =>
-            {
-                if (args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
-                {
-                    itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
-                    textBox.SetText("");
-                }
-            });
-
-        addButton.OnClick((sender, args) =>
+    button.Click += (sender, e) =>
+    {
+        itemsController.Get<ItemsControl>().Items.Remove(value);
+        var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
+        if (titleEntityFound)
         {
-            Console.WriteLine(title.Path());
-            if (textBox.GetText() != "")
-            {
-                itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.GetText()));
-                textBox.SetText("");
+            title.SetText($"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})");
+        }
+    };
+    Grid.SetColumn(button, 1);
+    grid.Children.Add(checkBox);
+    grid.Children.Add(button);
 
-                var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
-                if (titleEntityFound)
-                {
-                    title.Get<TextBlock>().Text = $"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})";
-                }
-            }
+    return grid;
+});
+
+    itemsController
+        .ChildOf(scrollViewer)
+        .Set(new ItemsControl()
+{
+    ItemTemplate = template
         });
 
-        textBox.SetRow(2);
+    Grid.SetRow(scrollViewer.Get<ScrollViewer>(), 1);
+
+    addButton
+        .Set(new Button())
+        .SetContent("Add");
+
+textBox
+    .ChildOf(grid)
+        .Set(new TextBox())
+        .SetInnerRightContent(addButton.Get<Button>())
+        .SetText("")
+        .SetWatermark("Add a new Item")
+        .OnKeyDown((sender, args) =>
+        {
+    if (args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
+    {
+        itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
+        textBox.SetText("");
+    }
+});
+
+    addButton.OnClick((sender, args) =>
+    {
+        Console.WriteLine(title.Path());
+        if (textBox.GetText() != "")
+        {
+            itemsController.Get<ItemsControl>().Items.Add(new TodoItem(textBox.GetText()));
+            textBox.SetText("");
+
+            var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
+            if (titleEntityFound)
+            {
+                title.Get<TextBlock>().Text = $"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})";
+            }
+        }
+    });
+
+textBox.SetRow(2);
+*/
     }
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = _world.Lookup("MainWindow").Get<Window>();
+            desktop.MainWindow = _mainWindow.Get<Window>();
         }
         base.OnFrameworkInitializationCompleted();
 #if DEBUG
