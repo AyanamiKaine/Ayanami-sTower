@@ -61,46 +61,47 @@ public partial class App : Application
                         });
                         grid.Child<ScrollViewer>(scrollViewer =>
                         {
-                            scrollViewer.SetRow(1);
-                            scrollViewer.Child<ItemsControl>((itemsControl) =>
-                            {
-                                var template = new FuncDataTemplate<TodoItem>((value, namescope) =>
+                            scrollViewer
+                                .SetRow(1)
+                                .Child<ItemsControl>((itemsControl) =>
                                 {
-                                    var grid = new Grid();
-                                    /*
-
-                                    *: This represents a "star" column. It means this column will take up as much available space as possible after any fixed-size or Auto columns have been accounted for. Think of it as flexible or "greedy". In this case, the first column will grab most of the grid's width.
-
-                                    Auto: This means the column's width will adjust automatically to fit the content within it. If you place a button in this column, the column will be just wide enough to accommodate the button's size.
-
-                                    */
-                                    grid.ColumnDefinitions = new ColumnDefinitions("*, Auto");
-                                    var checkBox = new CheckBox()
+                                    var template = new FuncDataTemplate<TodoItem>((value, namescope) =>
                                     {
-                                        [!CheckBox.ContentProperty] = new Binding("Text"),
-                                    };
-                                    checkBox.IsChecked = value.IsDone;
+                                        var grid = new Grid();
+                                        /*
 
-                                    var button = new Button()
-                                    {
-                                        Content = "Delete",
-                                    };
+                                        *: This represents a "star" column. It means this column will take up as much available space as possible after any fixed-size or Auto columns have been accounted for. Think of it as flexible or "greedy". In this case, the first column will grab most of the grid's width.
 
-                                    button.Click += (sender, e) =>
-                                    {
-                                        itemsControl.Entity.Get<ItemsControl>().Items.Remove(value);
-                                        title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
-                                    };
-                                    Grid.SetColumn(button, 1);
-                                    grid.Children.Add(checkBox);
-                                    grid.Children.Add(button);
+                                        Auto: This means the column's width will adjust automatically to fit the content within it. If you place a button in this column, the column will be just wide enough to accommodate the button's size.
 
-                                    return grid;
+                                        */
+                                        grid.ColumnDefinitions = new ColumnDefinitions("*, Auto");
+                                        var checkBox = new CheckBox()
+                                        {
+                                            [!CheckBox.ContentProperty] = new Binding("Text"),
+                                        };
+                                        checkBox.IsChecked = value.IsDone;
+
+                                        var button = new Button()
+                                        {
+                                            Content = "Delete",
+                                        };
+
+                                        button.Click += (sender, e) =>
+                                        {
+                                            itemsControl.Entity.Get<ItemsControl>().Items.Remove(value);
+                                            title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
+                                        };
+                                        Grid.SetColumn(button, 1);
+                                        grid.Children.Add(checkBox);
+                                        grid.Children.Add(button);
+
+                                        return grid;
+                                    });
+
+                                    itemsControl.SetItemTemplate(template);
+                                    itemsController = itemsControl;
                                 });
-
-                                itemsControl.SetItemTemplate(template);
-                                itemsController = itemsControl;
-                            });
                         });
                         grid.Child<TextBox>((textBox) =>
                         {
@@ -118,24 +119,25 @@ public partial class App : Application
                                     });
                             });
 
-                            textBox.SetInnerRightContent(addButton);
-                            textBox.SetRow(2);
-                            textBox.SetText("");
-                            textBox.SetWatermark("Add a new Item");
-                            textBox.OnKeyDown((sender, args) =>
-                            {
-                                // This is quite combersome to do.
-                                // In our hierarchy the needed ui entity that has 
-                                // the items controller is in another node of the UI tree. 
-                                // For now we can simply store a refrence to the UI builder
-                                // itemsControl
-                                if (args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
+                            textBox
+                                .SetInnerRightContent(addButton)
+                                .SetRow(2)
+                                .SetText("")
+                                .SetWatermark("Add a new Item")
+                                .OnKeyDown((sender, args) =>
                                 {
-                                    itemsController!.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
-                                    textBox.SetText("");
-                                    title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
-                                }
-                            });
+                                    // This is quite combersome to do.
+                                    // In our hierarchy the needed ui entity that has 
+                                    // the items controller is in another node of the UI tree. 
+                                    // For now we can simply store a refrence to the UI builder
+                                    // itemsControl
+                                    if (args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
+                                    {
+                                        itemsController!.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
+                                        textBox.SetText("");
+                                        title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
+                                    }
+                                });
                         });
                     });
         });
