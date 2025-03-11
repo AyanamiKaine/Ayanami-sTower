@@ -56,8 +56,8 @@ public static class StartLearningWindow
 
         startLearningWindow.OnClosing((s, e) =>
         {
-                ((Window)s!).Hide();
-                e.Cancel = true;
+            ((Window)s!).Hide();
+            e.Cancel = true;
         });
 
         DefineWindowContents(entities);
@@ -211,9 +211,10 @@ public static class StartLearningWindow
             .ChildOf(layout)
             .OnClick((sender, e) =>
             {
-                Console.WriteLine("Open Clicked");
                 try
                 {
+                    //TODO: This will crash, because the settings provider entity doesnt exist, we refactor it 
+                    // into a global component for the world. world.Get<Settings>() would be correct 
                     if (entities["SettingsProvider"].Has<Settings>())
                     {
                         string ObsidianPath = entities["SettingsProvider"].Get<Settings>().ObsidianPath;
