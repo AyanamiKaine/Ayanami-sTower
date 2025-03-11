@@ -27,57 +27,58 @@ public class ContentQueuePage : IUIComponent
     /// <returns></returns>
     public ContentQueuePage(World world)
     {
-        _root = world.Entity()
-            .Add<Page>()
-            .Set(new Grid())
+        _root = world.UI<Grid>((grid) =>
+        {
+            grid
             .SetColumnDefinitions("*, Auto, Auto")
             .SetRowDefinitions("Auto, *, Auto");
 
+            grid.Child<TextBox>((textBox) =>
+            {
+                textBox
+                .SetColumn(0)
+                .SetRow(0)
+                .SetWatermark("Search Entries");
+            });
 
-        var listSearch = world.Entity()
-            .ChildOf(_root)
-            .Set(new TextBox())
-            .SetColumn(0)
-            .SetRow(0)
-            .SetWatermark("Search Entries");
+            grid.Child<TextBlock>((textBlock) =>
+            {
+                textBlock
+                .SetVerticalAlignment(VerticalAlignment.Center)
+                .SetMargin(10, 0)
+                .SetText("Total Items: 0")
+                .SetRow(0)
+                .SetColumn(1);
+            });
 
-        var totalItems = world.Entity()
-            .ChildOf(_root)
-            .Set(new TextBlock())
-            .SetVerticalAlignment(VerticalAlignment.Center)
-            .SetMargin(new Thickness(10, 0))
-            .SetText("Total Items: 0")
-            .SetColumn(1);
+            grid.Child<ComboBox>((comboBox) =>
+            {
+                List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
+                var myFlyout = new Flyout()
+                {
+                    Content = new TextBlock() { Text = "Hello World" },
+                    ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+                };
+                comboBox
+                    .SetColumn(2)
+                    .SetPlaceholderText("Sort Items")
+                    .SetItemsSource(sortItems)
+                    .SetContextFlyout(myFlyout);
+            });
 
-        List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
+            grid.Child<ScrollViewer>((scrollViewer) =>
+            {
+                scrollViewer.SetRow(1).SetColumnSpan(3);
+                scrollViewer.Child<ListBox>((listBox) =>
+                {
+                    ObservableCollection<string> contentQueueItems = [];
+                    listBox
+                        .SetItemsSource(contentQueueItems)
+                        .SetSelectionMode(SelectionMode.Multiple);
 
-        var myFlyout = new Flyout()
-        {
-            Content = new TextBlock() { Text = "Hello World" },
-            ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
-        };
-
-        var sortItemsButton = world.Entity()
-            .ChildOf(_root)
-            .Set(new ComboBox())
-            .SetPlaceholderText("Sort Items")
-            .SetColumn(2)
-            .SetItemsSource(sortItems)
-            .SetContextFlyout(myFlyout);
-
-        var scrollViewer = world.Entity()
-            .ChildOf(_root)
-            .Set(new ScrollViewer())
-            .SetRow(1)
-            .SetColumnSpan(3);
-
-        ObservableCollection<string> contentQueueItems = [];
-
-        var contentQueueList = world.Entity()
-            .ChildOf(scrollViewer)
-            .Set(new ListBox())
-            .SetItemsSource(contentQueueItems)
-            .SetSelectionMode(SelectionMode.Multiple);
+                });
+            });
+        }).Add<Page>();
     }
 
     /// <inheritdoc/>
