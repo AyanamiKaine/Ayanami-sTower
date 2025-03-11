@@ -131,9 +131,9 @@ public partial class App : Application
                                     // the items controller is in another node of the UI tree. 
                                     // For now we can simply store a refrence to the UI builder
                                     // itemsControl
-                                    if (args.Key == Key.Enter && textBox.Get<TextBox>().Text != "")
+                                    if (args.Key == Key.Enter && textBox.GetText() != "")
                                     {
-                                        itemsController!.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
+                                        itemsController!.GetItems().Add(new TodoItem(textBox.Get<TextBox>().Text!));
                                         textBox.SetText("");
                                         title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
                                     }
