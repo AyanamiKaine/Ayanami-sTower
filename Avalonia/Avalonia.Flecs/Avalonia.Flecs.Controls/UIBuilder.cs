@@ -84,6 +84,33 @@ public static class UIBuilderExtensions
         builder.Entity.SetRow(row);
         return builder;
     }
+    /// <summary>
+    /// Helper function to set the ColumnSpan property
+    /// on a Control component that is attach to an entitiy.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="columnSpan"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetColumnSpan<T>(this UIBuilder<T> builder, int columnSpan) where T : Control, new()
+    {
+        builder.Entity.SetColumnSpan(columnSpan);
+        return builder;
+    }
+
+    /// <summary>
+    /// Helper function to set the rowSpan property
+    /// on a Control component that is attach to an entitiy.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="rowSpan"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetRowSpan<T>(this UIBuilder<T> builder, int rowSpan) where T : Control, new()
+    {
+        builder.Entity.SetRowSpan(rowSpan);
+        return builder;
+    }
 
     /// <summary>
     /// Sets the text of a TextBlock control.
