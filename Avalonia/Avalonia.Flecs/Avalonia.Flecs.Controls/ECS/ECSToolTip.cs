@@ -14,7 +14,7 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSToolTip>();
-            world.Component<ToolTip>("Visual")
+            world.Component<ToolTip>("ToolTip")
                 .OnSet((Entity e, ref ToolTip toolTip) =>
                 {
                     if (!e.Has<object>())
@@ -25,6 +25,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         e.Set<object>(toolTip);
                     }
+                    e.Set<ContentControl>(toolTip);
                 })
                 .OnRemove((Entity e, ref ToolTip _) => e.Remove<object>());
         }
