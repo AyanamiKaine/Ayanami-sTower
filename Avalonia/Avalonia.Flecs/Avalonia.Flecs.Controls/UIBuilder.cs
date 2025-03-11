@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Input;
+using Avalonia.Layout;
 using Avalonia.Threading;
 using Flecs.NET.Core;
 
@@ -386,6 +387,19 @@ public static class UIBuilderExtensions
     public static ItemCollection GetItems<T>(this UIBuilder<T> builder) where T : ItemsControl, new()
     {
         return builder.Get<ItemsControl>().Items;
+    }
+
+    /// <summary>
+    /// Set the min verticalAlignment of the Layoutable component.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="verticalAlignment"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetVerticalAlignment<T>(this UIBuilder<T> builder, VerticalAlignment verticalAlignment) where T : Control, new()
+    {
+        builder.Entity.SetVerticalAlignment(verticalAlignment);
+        return builder;
     }
 }
 
