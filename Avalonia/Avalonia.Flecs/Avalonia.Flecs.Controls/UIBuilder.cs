@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
+using Avalonia.Input;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
@@ -91,6 +93,30 @@ public static class UIBuilderExtensions
     public static UIBuilder<TextBox> SetText(this UIBuilder<TextBox> builder, string text)
     {
         builder.Entity.SetText(text);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the placeholder text for a textbox
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="placeholderText"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> SetWatermark(this UIBuilder<TextBox> builder, string placeholderText)
+    {
+        builder.Entity.SetPlaceholderText(placeholderText);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the placeholder text for a combobox
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="placeholderText"></param>
+    /// <returns></returns>
+    public static UIBuilder<ComboBox> SetWatermark(this UIBuilder<ComboBox> builder, string placeholderText)
+    {
+        builder.Entity.SetPlaceholderText(placeholderText);
         return builder;
     }
 
@@ -224,9 +250,68 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Adds an event handler that gets invoked when the OnClick event happens
     /// </summary>
-    public static UIBuilder<Window> OnClick(this UIBuilder<Window> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
+    public static UIBuilder<Button> OnClick(this UIBuilder<Button> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
     {
         builder.Entity.OnClick(handler);
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when the OnClick event happens
+    /// </summary>
+    public static UIBuilder<T> OnKeyDown<T>(this UIBuilder<T> builder, Action<object?, KeyEventArgs> handler) where T : Control, new()
+    {
+        builder.Entity.OnKeyDown(handler);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the data template used to display the items in the ItemsControl.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="template"></param>
+    /// <returns></returns>
+    public static UIBuilder<ItemsControl> SetItemTemplate(this UIBuilder<ItemsControl> builder, IDataTemplate template)
+    {
+        builder.Entity.SetItemTemplate(template);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the inner right content of a TextBox control with 
+    /// a control element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="content"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> SetInnerRightContent<T>(this UIBuilder<TextBox> builder, T content) where T : Control, new()
+    {
+        builder.Entity.SetInnerRightContent(content);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the inner right content of a TextBox control
+    /// with an object
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="content"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> SetInnerRightContent(this UIBuilder<TextBox> builder, object content)
+    {
+        builder.Entity.SetInnerRightContent(content);
+        return builder;
+    }
+
+    /// <summary>
+    /// Removes the inner right content of a text box
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> RemoveInnerRightContent(this UIBuilder<TextBox> builder)
+    {
+        builder.Entity.SetInnerRightContent(null);
         return builder;
     }
 }
@@ -356,6 +441,16 @@ public class UIBuilder<T> where T : Control
     public void Children(Ecs.EachEntityCallback callback)
     {
         Entity.Children(callback);
+    }
+
+    /// <summary>
+    /// Get managed reference to component value.
+    /// </summary>
+    /// <typeparam name="ComponentType"></typeparam>
+    /// <returns></returns>
+    public ref readonly ComponentType Get<ComponentType>()
+    {
+        return ref Entity.Get<ComponentType>();
     }
 }
 
