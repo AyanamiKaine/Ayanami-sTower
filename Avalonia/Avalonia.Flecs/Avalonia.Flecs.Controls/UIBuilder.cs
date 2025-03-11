@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Input;
+using Avalonia.Threading;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
@@ -481,14 +482,15 @@ public class UIBuilder<T> where T : Control
         return this;
     }
     /// <summary>
-    /// Emits an event.
+    /// Emits an event asynchrounsly on the UIThread.
+    /// By default you should run events on the UI thread otherwise 
+    /// strange behavior may occur.
     /// </summary>
     /// <typeparam name="Event"></typeparam>
     /// <returns></returns>
-    public UIBuilder<T> Emit<Event>()
+    public async void EmitAsync<Event>()
     {
-        Entity.Emit<Event>();
-        return this;
+        await Dispatcher.UIThread.InvokeAsync(() => Entity.Emit<Event>());
     }
 
     /// <summary>
