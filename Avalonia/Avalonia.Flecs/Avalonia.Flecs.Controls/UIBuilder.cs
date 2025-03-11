@@ -490,6 +490,21 @@ public class UIBuilder<T> where T : Control
         return this;
     }
 
+    /// <summary>
+    /// Gets a property on the control by name.
+    /// <remarks>
+    /// The check if the object implement the property is done at runtime.
+    /// Be aware of that. You can use this method, where we didnt already 
+    /// implement a type safe way of getting a property.
+    /// </remarks>
+    /// </summary>
+    /// <param name="propertyName">The name of the property to set.</param>
+    /// <returns>Returns the property</returns>
+    public PropertyType GetProperty<PropertyType>(string propertyName)
+    {
+        return _entity.GetProperty<PropertyType>(propertyName);
+    }
+
     //TODO: We probably want a way to add childrens without the need
     // to first configure them, this is especially helpful when 
     // we defined our own components.
