@@ -372,6 +372,16 @@ public static class UIBuilderExtensions
         builder.Entity.SetInnerRightContent(null);
         return builder;
     }
+
+    /// <summary>
+    /// Gets the items of an ItemsControl
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static ItemCollection GetItems<T>(this UIBuilder<T> builder) where T : ItemsControl, new()
+    {
+        return builder.Get<ItemsControl>().Items;
+    }
 }
 
 /// <summary>
