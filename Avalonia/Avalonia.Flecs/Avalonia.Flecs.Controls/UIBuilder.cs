@@ -148,6 +148,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Attaches an tooltip to an control
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="toolTipEntity"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, Entity toolTipEntity) where T : Control, new()
+    {
+        builder.Entity.AttachToolTip(toolTipEntity);
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the text of a TextBox control.
     /// </summary>
     public static UIBuilder<TextBox> SetText(this UIBuilder<TextBox> builder, string text)
