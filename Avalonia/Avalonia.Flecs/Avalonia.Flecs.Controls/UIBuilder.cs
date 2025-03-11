@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Input;
@@ -171,18 +172,6 @@ public static class UIBuilderExtensions
     public static UIBuilder<TextBox> SetWatermark(this UIBuilder<TextBox> builder, string placeholderText)
     {
         builder.Entity.SetWatermark(placeholderText);
-        return builder;
-    }
-
-    /// <summary>
-    /// Sets the placeholder text for a combobox
-    /// </summary>
-    /// <param name="builder"></param>
-    /// <param name="placeholderText"></param>
-    /// <returns></returns>
-    public static UIBuilder<ComboBox> SetPlaceholder(this UIBuilder<ComboBox> builder, string placeholderText)
-    {
-        builder.Entity.SetPlaceholderText(placeholderText);
         return builder;
     }
 
@@ -495,9 +484,47 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="verticalAlignment"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetVerticalAlignment<T>(this UIBuilder<T> builder, VerticalAlignment verticalAlignment) where T : Control, new()
+    public static UIBuilder<T> SetVerticalAlignment<T>(this UIBuilder<T> builder, VerticalAlignment verticalAlignment) where T : Layoutable, new()
     {
         builder.Entity.SetVerticalAlignment(verticalAlignment);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the item source for a type that is based on the ItemsControl type
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="collection"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetItemsSource<T>(this UIBuilder<T> builder, System.Collections.IEnumerable collection) where T : ItemsControl
+    {
+        builder.Entity.SetItemsSource(collection);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the selection mode for types that implement SelectingItemsControl
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="mode"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetSelectionMode<T>(this UIBuilder<T> builder, SelectionMode mode) where T : SelectingItemsControl
+    {
+        builder.Entity.SetSelectionMode(mode);
+        return builder;
+    }
+    /// <summary>
+    /// Sets the context flyout of a control component
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="content"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetContextFlyout<T>(this UIBuilder<T> builder, FlyoutBase content) where T : Control, new()
+    {
+        builder.Entity.SetContextFlyout(content);
         return builder;
     }
 }
@@ -508,7 +535,7 @@ public static class UIBuilderExtensions
 /// </summary>
 /// <typeparam name="T">The type of Avalonia control this builder is configuring.</typeparam>
 [Experimental("UIBuilder")]
-public class UIBuilder<T> where T : Control
+public class UIBuilder<T> where T : AvaloniaObject
 {
     private readonly World _world;
     /// <summary>
