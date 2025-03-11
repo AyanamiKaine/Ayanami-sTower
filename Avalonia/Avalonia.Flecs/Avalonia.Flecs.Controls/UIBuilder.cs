@@ -483,7 +483,7 @@ public class UIBuilder<T> where T : Control
     }
     /// <summary>
     /// Emits an event asynchrounsly on the UIThread.
-    /// By default you should run events on the UI thread otherwise 
+    /// By default it runs events on the UI thread otherwise 
     /// strange behavior may occur.
     /// </summary>
     /// <typeparam name="Event"></typeparam>
