@@ -67,7 +67,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="entity">Entity with an ItemsControl Component</param>
         /// <param name="template"></param>
         /// <returns></returns>
-        public static Entity SetItemTemplate<T>(this Entity entity, FuncDataTemplate<T>? template)
+        public static Entity SetItemTemplate(this Entity entity, IDataTemplate template)
         {
             if (entity.Has<ItemsControl>())
             {
@@ -82,6 +82,31 @@ namespace Avalonia.Flecs.Controls.ECS
             else if (entity.Has<object>())
             {
                 return entity.SetProperty("ItemTemplate", template);
+            }
+
+            throw new ComponentNotFoundException("Component ItemsControl or Component MenuFlyout NOT FOUND", typeof(ItemsControl), entity);
+        }
+
+        /// <summary>
+        /// Removes the data template used to display the items in the ItemsControl.
+        /// </summary>
+        /// <param name="entity">Entity with an ItemsControl Component</param>
+        /// <returns></returns>
+        public static Entity RemoveItemTemplate(this Entity entity)
+        {
+            if (entity.Has<ItemsControl>())
+            {
+                entity.Get<ItemsControl>().ItemTemplate = null;
+                return entity;
+            }
+            else if (entity.Has<MenuFlyout>())
+            {
+                entity.Get<MenuFlyout>().ItemTemplate = null;
+                return entity;
+            }
+            else if (entity.Has<object>())
+            {
+                return entity.SetProperty("ItemTemplate", null);
             }
 
             throw new ComponentNotFoundException("Component ItemsControl or Component MenuFlyout NOT FOUND", typeof(ItemsControl), entity);
