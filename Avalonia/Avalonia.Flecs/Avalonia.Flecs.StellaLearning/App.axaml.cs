@@ -24,7 +24,10 @@ namespace Avalonia.Flecs.StellaLearning;
 public partial class App : Application
 {
     private World _world = World.Create();
-
+    /// <summary>
+    /// Entity that holds the window component for the main window
+    /// </summary>
+    public Entity MainWindow;
     // TODO: Remove all refrences to name entities,
     // its a global that will cause many problems when grown too big.
     /// <summary>
@@ -65,8 +68,8 @@ public partial class App : Application
                         }
                     });
         });
-
-        CreateUILayout().ChildOf(Entities["MainWindow"]);
+        MainWindow = Entities["MainWindow"];
+        CreateUILayout().ChildOf(MainWindow);
         InitializeTrayIcon();
     }
 
@@ -238,7 +241,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
             && Entities is not null)
         {
-            desktop.MainWindow = Entities["MainWindow"].Get<Window>();
+            desktop.MainWindow = MainWindow.Get<Window>();
             desktop.MainWindow.Hide();
         }
         base.OnFrameworkInitializationCompleted();
@@ -251,7 +254,7 @@ public partial class App : Application
     {
         if (Entities != null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
         {
-            var mainWindow = Entities["MainWindow"].Get<Window>();
+            var mainWindow = MainWindow.Get<Window>();
 
             Dispatcher.UIThread.Post(() =>
             {
