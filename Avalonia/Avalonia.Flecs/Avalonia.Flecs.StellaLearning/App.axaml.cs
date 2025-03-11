@@ -102,6 +102,7 @@ public partial class App : Application
             nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Home")));
             nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Knowledge Vault")));
             nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Literature")));
+            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Content Queue")));
 
             /*
              The study page will be something more complex
