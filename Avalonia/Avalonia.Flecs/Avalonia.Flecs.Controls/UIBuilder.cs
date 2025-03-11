@@ -14,7 +14,11 @@ we create a UI in code. Its all about making it more obvious how the UI is
 structured. We take insperation how its done in Flutter.
 */
 
-
+/*
+Also this UI Builder class should become a really deep class with a rather small interface.
+One way we reduce the interface is by putting many methods related to specific avalonia classes
+to generic with their type. So they are only exposed when working with the type itself.
+*/
 
 // DESING HINT: These extension methods are super important because they enable us type safe exposure
 // of various methods on control elements. So you can use the SetText method on only types that actual have the text property
