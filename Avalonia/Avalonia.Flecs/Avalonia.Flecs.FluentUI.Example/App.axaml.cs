@@ -41,8 +41,6 @@ public partial class App : Application
             .Set(new TextBlock())
             .SetText("Settings");
 
-
-
         navigationView.SetColumn(0);
 
         // We should probably put the event classes into an event class
