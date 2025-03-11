@@ -97,6 +97,14 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Gets the text of a TextBox control.
+    /// </summary>
+    public static string GetText(this UIBuilder<TextBox> builder)
+    {
+        return builder.Entity.GetText();
+    }
+
+    /// <summary>
     /// Sets the placeholder text for a textbox
     /// </summary>
     /// <param name="builder"></param>
@@ -323,6 +331,20 @@ public static class UIBuilderExtensions
     public static UIBuilder<TextBox> SetInnerRightContent<T>(this UIBuilder<TextBox> builder, T content) where T : Control, new()
     {
         builder.Entity.SetInnerRightContent(content);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the inner right content using an entity.
+    /// It uses the object component of an entity as
+    /// the content.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="content">The object component found in the entity</param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> SetInnerRightContent(this UIBuilder<TextBox> builder, Entity content)
+    {
+        builder.Entity.SetInnerRightContent(content.Ensure<object>());
         return builder;
     }
 
