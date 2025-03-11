@@ -57,20 +57,6 @@ public class SettingsPage : IUIComponent
                 });
             });
         }
-
-        public ThemeToggleSwitch(World world, Entity parent)
-        {
-            _root = world.Entity()
-                .ChildOf(parent)
-                .Set(new ToggleSwitch())
-                .SetContent("Dark Mode")
-                .OnIsCheckedChanged((sender, args) =>
-                {
-                    var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
-                    if (Application.Current is not null)
-                        SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
-                });
-        }
     }
 
     private class ObsidianPath : IUIComponent
