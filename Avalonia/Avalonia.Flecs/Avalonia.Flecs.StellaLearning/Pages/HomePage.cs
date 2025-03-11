@@ -24,10 +24,8 @@ public class HomePage : IUIComponent
     /// <param name="world"></param>
     public HomePage(World world)
     {
-        _root = world.Entity()
-                    .Add<Page>()
-                    .Set(new TextBlock())
-                    .SetText("Home");
+        _root = world.UI<TextBlock>((t) => t.SetText("Home"))
+            .Add<Page>();
     }
 
     /// <summary>
@@ -37,10 +35,8 @@ public class HomePage : IUIComponent
     /// <param name="parent"></param>
     public HomePage(World world, Entity parent)
     {
-        _root = world.Entity()
-                    .Add<Page>()
-                    .Set(new TextBlock())
-                    .SetText("Home")
-                    .ChildOf(parent);
+        _root = world.UI<TextBlock>((t) => t.SetText("Home"))
+            .Add<Page>()
+            .ChildOf(parent);
     }
 }
