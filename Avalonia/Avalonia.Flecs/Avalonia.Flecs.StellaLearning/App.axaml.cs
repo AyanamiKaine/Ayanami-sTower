@@ -87,7 +87,7 @@ public partial class App : Application
 
         return _world.UI<NavigationView>(nav =>
         {
-            nav.SetProperty("PaneTitle", "Stella Learning")
+            nav.SetPaneTitle("Stella Learning")
                .SetColumn(0);
 
             nav.Child<ScrollViewer>(scroll =>
