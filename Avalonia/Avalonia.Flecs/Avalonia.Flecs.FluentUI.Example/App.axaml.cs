@@ -26,25 +26,22 @@ public partial class App : Application
                 .SetHeight(400)
                 .SetWidth(400);
 
-        var navigationView = _world.Entity("NavigationView")
+        var navigationView = _world.Entity()
             .ChildOf(window)
             .Set(new NavigationView())
             .SetPaneTitle("Avalonia + Flecs = ❤️");
 
-        var homePage = _world.Entity("HomePage")
+        var homePage = _world.Entity()
             .ChildOf(navigationView)
             .Set(new TextBlock())
             .SetText("Home");
 
-        var settingPage = _world.Entity("SettingPage")
+        var settingPage = _world.Entity()
             .ChildOf(navigationView)
             .Set(new TextBlock())
             .SetText("Settings");
 
-        var navigationViewItem = _world.Entity("NavigationViewItem")
-            .ChildOf(navigationView)
-            .Set(new NavigationViewItem())
-            .SetContent("Home");
+
 
         navigationView.SetColumn(0);
 
