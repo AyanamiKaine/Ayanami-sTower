@@ -46,7 +46,7 @@ public partial class App : Application
         _mainWindow = _world.UI<Window>((window) =>
         {
             UIBuilder<ItemsControl>? itemsController = null;
-
+            UIBuilder<TextBlock>? title = null;
             window.SetTitle("Avalonia.Flecs.ToDoAapp")
                   .SetHeight(300)
                   .SetWidth(500)
@@ -54,7 +54,11 @@ public partial class App : Application
                   .Child<Grid>((grid) =>
                     {
                         grid.SetRowDefinitions("Auto, *, Auto");
-                        grid.Child<TextBlock>((textBlock) => textBlock.SetText("My ToDo-List"));
+                        grid.Child<TextBlock>((textBlock) =>
+                        {
+                            title = textBlock;
+                            textBlock.SetText("My ToDo-List (0)");
+                        });
                         grid.Child<ScrollViewer>(scrollViewer =>
                         {
                             scrollViewer.SetRow(1);
@@ -85,11 +89,7 @@ public partial class App : Application
                                     button.Click += (sender, e) =>
                                     {
                                         itemsControl.Entity.Get<ItemsControl>().Items.Remove(value);
-                                        var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
-                                        if (titleEntityFound)
-                                        {
-                                            title.SetText($"My ToDo-List ({itemsControl.Entity.Get<ItemsControl>().Items.Count})");
-                                        }
+                                        title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
                                     };
                                     Grid.SetColumn(button, 1);
                                     grid.Children.Add(checkBox);
@@ -111,14 +111,9 @@ public partial class App : Application
                                     {
                                         if (textBox.GetText() != "")
                                         {
-                                            itemsController!.Get<ItemsControl>().Items.Add(new TodoItem(textBox.GetText()));
+                                            itemsController!.GetItems().Add(new TodoItem(textBox.GetText()));
                                             textBox.SetText("");
-
-                                            var titleEntityFound = _world.TryLookup(".MainWindow.Grid.TODO-ListTitle", out Entity title);
-                                            if (titleEntityFound)
-                                            {
-                                                title.Get<TextBlock>().Text = $"My ToDo-List ({itemsController.Get<ItemsControl>().Items.Count})";
-                                            }
+                                            title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
                                         }
                                     });
                             });
@@ -138,6 +133,7 @@ public partial class App : Application
                                 {
                                     itemsController!.Get<ItemsControl>().Items.Add(new TodoItem(textBox.Get<TextBox>().Text!));
                                     textBox.SetText("");
+                                    title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
                                 }
                             });
                         });
