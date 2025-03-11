@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Threading;
 using Flecs.NET.Core;
@@ -362,6 +363,19 @@ public static class UIBuilderExtensions
     public static UIBuilder<T> OnKeyDown<T>(this UIBuilder<T> builder, Action<object?, KeyEventArgs> handler) where T : Control, new()
     {
         builder.Entity.OnKeyDown(handler);
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds an event for IsCheckedChanged for types that implement the ToggleButton
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="handler"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnIsCheckedChanged<T>(this UIBuilder<T> builder, Action<object?, RoutedEventArgs> handler) where T : ToggleButton, new()
+    {
+        builder.Entity.OnIsCheckedChanged(handler);
         return builder;
     }
 
