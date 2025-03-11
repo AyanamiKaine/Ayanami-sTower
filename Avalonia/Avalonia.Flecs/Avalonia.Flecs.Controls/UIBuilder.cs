@@ -104,7 +104,7 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> SetWatermark(this UIBuilder<TextBox> builder, string placeholderText)
     {
-        builder.Entity.SetPlaceholderText(placeholderText);
+        builder.Entity.SetWatermark(placeholderText);
         return builder;
     }
 
@@ -158,6 +158,41 @@ public static class UIBuilderExtensions
     public static UIBuilder<Window> SetTitle(this UIBuilder<Window> builder, string title)
     {
         builder.Entity.SetWindowTitle(title);
+        return builder;
+    }
+
+    /// <summary>
+    /// Set padding
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="padding"></param>
+    /// <returns></returns>
+    public static UIBuilder<Window> SetPadding(this UIBuilder<Window> builder, double padding)
+    {
+        builder.Entity.SetPadding(padding);
+        return builder;
+    }
+    /// <summary>
+    /// Set padding
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="padding"></param>
+    /// <returns></returns>
+    public static UIBuilder<Window> SetPadding(this UIBuilder<Window> builder, Thickness padding)
+    {
+        builder.Entity.SetPadding(padding);
+        return builder;
+    }
+
+    /// <summary>
+    /// Set padding
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="padding"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double padding) where T : Control, new()
+    {
+        builder.Entity.SetPadding(padding);
         return builder;
     }
 
