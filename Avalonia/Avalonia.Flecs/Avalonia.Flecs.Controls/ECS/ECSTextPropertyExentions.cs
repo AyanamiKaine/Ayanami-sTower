@@ -23,7 +23,7 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <param name="content"></param>
         /// <returns></returns>
         /// <exception cref="ComponentNotFoundException"></exception>
-        public static Entity SetInnerLeftContent(this Entity entity, object content)
+        public static Entity SetInnerLeftContent(this Entity entity, object? content)
         {
             if (entity.Has<TextBox>())
             {
