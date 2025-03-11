@@ -76,11 +76,11 @@ public partial class App : Application
 
                                         */
                                         grid.ColumnDefinitions = new ColumnDefinitions("*, Auto");
-                                        var checkBox = new CheckBox()
+                                        var checkBox = new CheckBox
                                         {
                                             [!CheckBox.ContentProperty] = new Binding("Text"),
+                                            IsChecked = value.IsDone
                                         };
-                                        checkBox.IsChecked = value.IsDone;
 
                                         var button = new Button()
                                         {
@@ -89,7 +89,7 @@ public partial class App : Application
 
                                         button.Click += (sender, e) =>
                                         {
-                                            itemsControl.Entity.Get<ItemsControl>().Items.Remove(value);
+                                            itemsControl.GetItems().Remove(value);
                                             title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
                                         };
                                         Grid.SetColumn(button, 1);
@@ -133,7 +133,7 @@ public partial class App : Application
                                     // itemsControl
                                     if (args.Key == Key.Enter && textBox.GetText() != "")
                                     {
-                                        itemsController!.GetItems().Add(new TodoItem(textBox.Get<TextBox>().Text!));
+                                        itemsController!.GetItems().Add(new TodoItem(textBox.GetText()));
                                         textBox.SetText("");
                                         title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
                                     }
