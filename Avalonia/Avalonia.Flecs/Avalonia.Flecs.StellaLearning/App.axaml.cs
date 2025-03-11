@@ -164,7 +164,7 @@ public partial class App : Application
             // TODO: they way we use a chain if statement is rather ugly, and need improvment.
             nav.OnNavViewSelectionChanged(async (sender, args) =>
             {
-                await Threading.Dispatcher.UIThread.InvokeAsync(() => nav.Emit<OnSelectionChanged>());
+                await Dispatcher.UIThread.InvokeAsync(() => nav.EmitAsync<OnSelectionChanged>());
 
                 if (sender is not NavigationView e)
                     return;
