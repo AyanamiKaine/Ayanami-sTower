@@ -69,7 +69,7 @@ public partial class App : Application
 
         // We remove the datatemplate from 
         // the listbox as we dont need it anymore.
-        listBox.SetItemTemplate<MyItem>(null);
+        listBox.RemoveItemTemplate();
         //ChangingTheSourceItems(listBox);
     }
 
