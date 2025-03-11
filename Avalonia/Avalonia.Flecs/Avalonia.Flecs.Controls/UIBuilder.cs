@@ -369,6 +369,33 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the inner left content using an entity.
+    /// It uses the object component of an entity as
+    /// the content.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="content">The object component found in the entity</param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> SetInnerLeftContent(this UIBuilder<TextBox> builder, Entity content)
+    {
+        builder.Entity.SetInnerLeftContent(content.Ensure<object>());
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the inner left content of a TextBox control
+    /// with an object
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="content"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> SetInnerLeftContent(this UIBuilder<TextBox> builder, object content)
+    {
+        builder.Entity.SetInnerLeftContent(content);
+        return builder;
+    }
+
+    /// <summary>
     /// Removes the inner right content of a text box
     /// </summary>
     /// <param name="builder"></param>
@@ -376,6 +403,17 @@ public static class UIBuilderExtensions
     public static UIBuilder<TextBox> RemoveInnerRightContent(this UIBuilder<TextBox> builder)
     {
         builder.Entity.SetInnerRightContent(null);
+        return builder;
+    }
+
+    /// <summary>
+    /// Removes the inner left content of a text box
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> RemoveInnerLeftContent(this UIBuilder<TextBox> builder)
+    {
+        builder.Entity.SetInnerLeftContent(null);
         return builder;
     }
 
