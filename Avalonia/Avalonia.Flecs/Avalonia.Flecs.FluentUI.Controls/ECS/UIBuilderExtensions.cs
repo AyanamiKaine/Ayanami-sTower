@@ -4,6 +4,12 @@ using FluentAvalonia.UI.Controls;
 namespace Avalonia.Flecs.FluentUI.Controls;
 public static class UIBuilderExtensions
 {
+    public static UIBuilder<NavigationView> SetPaneTitle(this UIBuilder<NavigationView> builder, string PaneTitle)
+    {
+        builder.Entity.SetPaneTitle(PaneTitle);
+        return builder;
+    }
+
     /// <summary>
     /// Sets an event callback for when the display mode of a navigation view changes.
     /// </summary>
