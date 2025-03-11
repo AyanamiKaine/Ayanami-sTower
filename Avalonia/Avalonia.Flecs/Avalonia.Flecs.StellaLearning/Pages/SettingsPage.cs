@@ -30,13 +30,12 @@ public class SettingsPage : IUIComponent
     /// <returns></returns>
     public SettingsPage(World world)
     {
-        _root = world.Entity()
-            .Add<Page>()
-            .Set(new StackPanel());
-
-        _ = new ThemeToggleSwitch(world, _root);
-        var obsidianPath = new ObsidianPath(world);
-        ((IUIComponent)obsidianPath).Attach(_root);
+        _root = world.UI<StackPanel>((stackPanel) =>
+        {
+            stackPanel.Child(new ThemeToggleSwitch(world));
+            stackPanel.Child(new ObsidianPath(world));
+        })
+            .Add<Page>();
     }
 
     private class ThemeToggleSwitch : IUIComponent
@@ -47,15 +46,16 @@ public class SettingsPage : IUIComponent
 
         public ThemeToggleSwitch(World world)
         {
-            _root = world.Entity()
-                .Set(new ToggleSwitch())
-                .SetContent("Dark Mode")
-                .OnIsCheckedChanged((sender, args) =>
+            _root = world.UI<ToggleSwitch>((toggleSwitch) =>
+            {
+                toggleSwitch.Child<TextBlock>((textBlock) => textBlock.SetText("Dark Mode"));
+                toggleSwitch.OnIsCheckedChanged((sender, args) =>
                 {
                     var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
                     if (Application.Current is not null)
                         SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
                 });
+            });
         }
 
         public ThemeToggleSwitch(World world, Entity parent)
