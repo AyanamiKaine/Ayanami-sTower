@@ -57,16 +57,16 @@ public partial class App : Application
                   .SetHeight(400)
                   .SetWidth(400)
                   .OnWindowClosing((sender, args) =>
-                    {
-                        args.Cancel = true;
+                  {
+                      args.Cancel = true;
 
-                        if (sender is Window win)
-                        {
-                            // We dont close the main window but instead hide it,
-                            // because we have a tray icon that is still active.
-                            win.Hide();
-                        }
-                    });
+                      if (sender is Window win)
+                      {
+                          // We dont close the main window but instead hide it,
+                          // because we have a tray icon that is still active.
+                          win.Hide();
+                      }
+                  });
         });
         MainWindow = Entities["MainWindow"];
         CreateUILayout().ChildOf(MainWindow);
