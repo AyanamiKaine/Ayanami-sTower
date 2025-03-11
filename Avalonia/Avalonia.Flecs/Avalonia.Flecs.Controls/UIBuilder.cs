@@ -112,7 +112,7 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Sets the placeholder text for a textbox
+    /// Sets the watermark text for a textbox
     /// </summary>
     /// <param name="builder"></param>
     /// <param name="placeholderText"></param>
@@ -129,10 +129,20 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="placeholderText"></param>
     /// <returns></returns>
-    public static UIBuilder<ComboBox> SetWatermark(this UIBuilder<ComboBox> builder, string placeholderText)
+    public static UIBuilder<ComboBox> SetPlaceholder(this UIBuilder<ComboBox> builder, string placeholderText)
     {
         builder.Entity.SetPlaceholderText(placeholderText);
         return builder;
+    }
+
+    /// <summary>
+    /// Gets the placeholder text for a combobox
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static string GetPlaceholderText(this UIBuilder<ComboBox> builder)
+    {
+        return builder.Entity.GetPlaceholderText() ?? "";
     }
 
     /*
