@@ -132,8 +132,8 @@ public static class AddQuiz
             .Set(new Button())
             .SetContent("Create Quiz");
 
-        (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createQuizButton);
-        priorityCompareComponent.ChildOf(layout);
+        //(Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createQuizButton);
+        //priorityCompareComponent.ChildOf(layout);
 
         createQuizButton
         .ChildOf(layout)
@@ -155,7 +155,7 @@ public static class AddQuiz
                     Name = nameTextBox.GetText(),
                     Question = quizQuestionTextBox.GetText(),
 
-                    Priority = calculatedPriority.Get<int>(),
+                    //Priority = calculatedPriority.Get<int>(),
 
                     CorrectAnswerIndex = findAnwserIndex(),
                     Answers = gatherAllAnwsers(),
@@ -164,7 +164,7 @@ public static class AddQuiz
 
                 nameTextBox.SetText("");
                 quizQuestionTextBox.SetText("");
-                calculatedPriority.Set(500000000);
+                //calculatedPriority.Set(500000000);
 
                 FindControl<TextBox>(quizAnswers.Get<Grid>(), 0, 1)!.Text = "";
                 FindControl<TextBox>(quizAnswers.Get<Grid>(), 1, 1)!.Text = "";

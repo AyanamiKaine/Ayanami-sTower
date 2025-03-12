@@ -1,3 +1,4 @@
+using Avalonia.Input;
 using Flecs.NET.Core;
 namespace Avalonia.Flecs.Controls.ECS
 {
@@ -6,6 +7,38 @@ namespace Avalonia.Flecs.Controls.ECS
     /// </summary>
     public static class EntityExtensions
     {
+        /// <summary>
+        /// Enables the control element
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity EnableInputElement(this Entity entity)
+        {
+            if (entity.Has<InputElement>())
+            {
+                entity.Get<InputElement>().IsEnabled = true;
+                return entity;
+            }
+            throw new ComponentNotFoundException(entity, typeof(InputElement), nameof(EnableInputElement));
+        }
+
+        /// <summary>
+        /// Disables the control element
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        /// <exception cref="ComponentNotFoundException"></exception>
+        public static Entity DisableInputElement(this Entity entity)
+        {
+            if (entity.Has<InputElement>())
+            {
+                entity.Get<InputElement>().IsEnabled = false;
+                return entity;
+            }
+            throw new ComponentNotFoundException(entity, typeof(InputElement), nameof(EnableInputElement));
+        }
+
         /// <summary>
         /// Adds an animation to a control component of an entity.
         /// </summary>

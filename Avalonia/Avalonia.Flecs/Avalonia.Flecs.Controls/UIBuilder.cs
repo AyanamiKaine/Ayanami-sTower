@@ -6,6 +6,7 @@ using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Flecs.NET.Core;
 
@@ -38,7 +39,7 @@ public static class UIBuilderExtensions
     /// <param name="world">The Flecs world.</param>
     /// <param name="configure">Action to configure the entity and its children.</param>
     /// <returns>The created entity.</returns>
-    public static Entity UI<T>(this World world, Action<UIBuilder<T>> configure) where T : Control, new()
+    public static Entity UI<T>(this World world, Action<UIBuilder<T>> configure) where T : AvaloniaObject, new()
     {
         var entity = world.Entity().Set(new T());
         var builder = new UIBuilder<T>(world, entity);
@@ -86,6 +87,20 @@ public static class UIBuilderExtensions
         builder.Entity.SetRow(row);
         return builder;
     }
+
+    /// <summary>
+    /// Sets the flyout for a button
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="flyout"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, FlyoutBase flyout) where T : Button
+    {
+        builder.Entity.Get<Button>().Flyout = flyout;
+        return builder;
+    }
+
     /// <summary>
     /// Helper function to set the ColumnSpan property
     /// on a Control component that is attach to an entitiy.
@@ -178,6 +193,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the showmode of a flyout
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="flyoutShowMode"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetShowMode<T>(this UIBuilder<T> builder, FlyoutShowMode flyoutShowMode) where T : FlyoutBase
+    {
+        builder.Entity.SetProperty("ShowMode", flyoutShowMode);
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the watermark text for a textbox
     /// </summary>
     /// <param name="builder"></param>
@@ -186,6 +214,82 @@ public static class UIBuilderExtensions
     public static UIBuilder<TextBox> SetWatermark(this UIBuilder<TextBox> builder, string placeholderText)
     {
         builder.Entity.SetWatermark(placeholderText);
+        return builder;
+    }
+
+    /// <summary>
+    /// Helper function to set the orientation of a StackPanel.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="orientation"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetOrientation<T>(this UIBuilder<T> builder, Layout.Orientation orientation) where T : StackPanel
+    {
+        builder.Entity.SetOrientation(orientation);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the spacing of the children in a stackpanel
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="spacing"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetSpacing<T>(this UIBuilder<T> builder, double spacing) where T : StackPanel
+    {
+        builder.Entity.SetSpacing(spacing);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the TextWrapping for an textblock
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="textWrapping"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetTextWrapping<T>(this UIBuilder<T> builder, TextWrapping textWrapping) where T : TextBlock
+    {
+        builder.Entity.SetTextWrapping(textWrapping);
+        return builder;
+    }
+
+    /// <summary>
+    /// Enables the control element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> Enable<T>(this UIBuilder<T> builder) where T : InputElement
+    {
+        builder.Entity.EnableInputElement();
+        return builder;
+    }
+
+    /// <summary>
+    /// Disables the control element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> Disable<T>(this UIBuilder<T> builder) where T : InputElement
+    {
+        builder.Entity.DisableInputElement();
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the fontweight of an textblock
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="fontWeight"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetFontWeight<T>(this UIBuilder<T> builder, FontWeight fontWeight) where T : TextBlock
+    {
+        builder.Entity.SetFontWeight(fontWeight);
         return builder;
     }
 
@@ -373,9 +477,105 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Adds an event handler that gets invoked when the OnClick event happens
     /// </summary>
+    public static UIBuilder<MenuItem> OnClick(this UIBuilder<MenuItem> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
+    {
+        builder.Entity.OnClick(handler);
+        return builder;
+    }
+
+    /// <summary>
+    /// When the selection of a combo box changes is the handler executed.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="handler"></param>
+    /// <returns></returns>
+    public static UIBuilder<ComboBox> OnSelectionChanged(this UIBuilder<ComboBox> builder, Action<object?, SelectionChangedEventArgs> handler)
+    {
+        builder.Entity.OnSelectionChanged(handler);
+        return builder;
+    }
+
+    /// <summary>
+    /// add an callback for the on opened event for a flyout. 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="handler"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnOpened<T>(this UIBuilder<T> builder, Action<object?, EventArgs> handler) where T : FlyoutBase
+    {
+        builder.Entity.Get<FlyoutBase>().Opened += (sender, e) => handler(sender, e);
+        return builder;
+    }
+
+    /// <summary>
+    /// Hides the flyout
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> Hide<T>(this UIBuilder<T> builder) where T : FlyoutBase
+    {
+        builder.Entity.Get<FlyoutBase>().Hide();
+        return builder;
+    }
+
+    /// <summary>
+    /// Returns the selected item in a listbox
+    /// </summary>
+    /// <typeparam name="ItemType"></typeparam>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static ItemType GetSelectedItem<ItemType>(this UIBuilder<ListBox> builder)
+    {
+        return builder.Entity.GetSelectedItem<ItemType>();
+    }
+
+    /// <summary>
+    /// Sets the header
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="header"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetHeader<T>(this UIBuilder<T> builder, string header) where T : MenuItem
+    {
+        builder.Entity.SetHeader(header);
+        return builder;
+    }
+
+
+    /// <summary>
+    /// Checks if a item list with the selectedItem property has an item selected, if so returns true otherwise false
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static bool HasItemSelected<T>(this UIBuilder<T> builder) where T : ListBox
+    {
+        return builder.Entity.HasItemSelected();
+    }
+
+
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when the OnKeyDown event happens
+    /// </summary>
     public static UIBuilder<T> OnKeyDown<T>(this UIBuilder<T> builder, Action<object?, KeyEventArgs> handler) where T : Control, new()
     {
         builder.Entity.OnKeyDown(handler);
+        return builder;
+    }
+    /// <summary>
+    /// Occurs asynchronously after text changes and the new text is rendered.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="handler"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnTextChanged<T>(this UIBuilder<T> builder, Action<object?, TextChangedEventArgs> handler) where T : Control, new()
+    {
+        builder.Entity.OnTextChanged(handler);
         return builder;
     }
 
@@ -398,7 +598,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="template"></param>
     /// <returns></returns>
-    public static UIBuilder<ItemsControl> SetItemTemplate(this UIBuilder<ItemsControl> builder, IDataTemplate template)
+    public static UIBuilder<T> SetItemTemplate<T>(this UIBuilder<T> builder, IDataTemplate template) where T : ItemsControl
     {
         builder.Entity.SetItemTemplate(template);
         return builder;
@@ -518,6 +718,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Set the min horizontalAlignment of the Layoutable component.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="horizontalAlignment"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetHorizontalAlignment<T>(this UIBuilder<T> builder, HorizontalAlignment horizontalAlignment) where T : Layoutable, new()
+    {
+        builder.Entity.SetHorizontalAlignment(horizontalAlignment);
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the item source for a type that is based on the ItemsControl type
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -528,6 +741,17 @@ public static class UIBuilderExtensions
     {
         builder.Entity.SetItemsSource(collection);
         return builder;
+    }
+
+    /// <summary>
+    /// Returns the itemsource
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static System.Collections.IEnumerable GetItemsSource<T>(this UIBuilder<T> builder) where T : ItemsControl
+    {
+        return builder.Entity.GetItemsSource()!;
     }
 
     /// <summary>
@@ -550,6 +774,18 @@ public static class UIBuilderExtensions
     /// <param name="content"></param>
     /// <returns></returns>
     public static UIBuilder<T> SetContextFlyout<T>(this UIBuilder<T> builder, FlyoutBase content) where T : Control, new()
+    {
+        builder.Entity.SetContextFlyout(content);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the context flyout for a listbox
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="content"></param>
+    /// <returns></returns>
+    public static UIBuilder<ListBox> SetContextFlyout(this UIBuilder<ListBox> builder, FlyoutBase content)
     {
         builder.Entity.SetContextFlyout(content);
         return builder;

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
@@ -24,153 +25,150 @@ public static class AddFile
     /// <summary>
     /// Create the Add File Window
     /// </summary>
-    /// <param name="entities"></param>
     /// <returns></returns>
-    public static Entity Create(NamedEntities entities)
+    public static Entity Create(World world)
     {
-        var addFileWindow = entities.GetEntityCreateIfNotExist("AddFileWindow")
-            .Set(new Window())
-            .SetWindowTitle("Add File")
+
+
+        //DefineWindowContents(world).ChildOf(scrollViewer);
+
+        return world.UI<Window>((window) =>
+        {
+            window
+            .SetTitle("Add File")
             .SetWidth(400)
-            .SetHeight(400);
-
-
-        var scrollViewer = entities.GetEntityCreateIfNotExist("AddFileScrollViewer")
-            .ChildOf(addFileWindow)
-            .Set(new ScrollViewer())
-            .SetRow(1)
-            .SetColumnSpan(3);
-
-        entities["MainWindow"].OnClosed((_, _) =>
-        {
-            //When the main window is closed close the add file window as well
-            addFileWindow.CloseWindow();
-        });
-
-        addFileWindow.OnClosing((s, e) =>
-        {
-
-            if (entities["MainWindow"].Get<Window>().IsVisible)
+            .SetHeight(400)
+            .Child<ScrollViewer>((scrollViwer) =>
             {
-                ((Window)s!).Hide();
-                e.Cancel = true;
-            }
+                scrollViwer
+                .SetRow(1)
+                .SetColumnSpan(3)
+                .Child(DefineWindowContents(world));
+            });
         });
-
-        DefineWindowContents(entities).ChildOf(scrollViewer);
-
-        return addFileWindow;
     }
 
-    private static Entity DefineWindowContents(NamedEntities entities)
+    private static Entity DefineWindowContents(World world)
     {
-        var layout = entities.GetEntityCreateIfNotExist("AddFileLayout")
-            .Set(new StackPanel())
+        ObservableCollection<Tag> tags = [];
+
+        var layout = world.UI<StackPanel>((stackPanel) =>
+        {
+            UIBuilder<TextBox>? nameTextBox = null;
+            UIBuilder<TextBox>? filePath = null;
+            UIBuilder<TextBox>? questionTextBox = null;
+            Entity calculatedPriority;
+            stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
             .SetSpacing(10)
             .SetMargin(20);
 
-        var nameTextBox = entities.GetEntityCreateIfNotExist("nameTextBox")
-            .ChildOf(layout)
-            .Set(new TextBox())
-            .SetWatermark("Name");
-
-        var questionTextBox = entities.GetEntityCreateIfNotExist("questionTextBox")
-            .ChildOf(layout)
-            .Set(new TextBox())
-            .SetWatermark("Question");
-
-        var filePickerButton = FilePickerButton(entities);
-
-        var filePath = entities.GetEntityCreateIfNotExist("filePathTextBox")
-            .ChildOf(layout)
-            .Set(new TextBox())
-            .SetWatermark("FilePath")
-            .SetInnerRightContent(filePickerButton);
-
-        filePickerButton.OnClick(async (e, args) => filePath.SetText(await FilePickerAsync(entities)));
-
-        ObservableCollection<Tag> tags = [];
-
-        var tagsTextBox = entities.GetEntityCreateIfNotExist("tagsTextBox")
-            .ChildOf(layout)
-            .Set(new TextBox())
-            .SetWatermark("Tags");
-
-        tagsTextBox.OnKeyDown((sender, args) =>
-        {
-            if (args.Key == Key.Enter)
+            stackPanel.Child<TextBox>((textBox) =>
             {
-                if (string.IsNullOrEmpty(tagsTextBox.GetText()))
-                {
-                    return;
-                }
-
-                tags.Add(new(tagsTextBox.GetText()));
-                tagsTextBox.SetText("");
-            }
-        });
-
-        var tagsList = entities.GetEntityCreateIfNotExist("tagsList")
-            .ChildOf(layout)
-            .Set(new ItemsControl())
-            .Set(tags)
-            .SetItemTemplate(DefineTagTemplate(entities))
-            .SetItemsSource(tags);
-
-        var createFileButton = entities.GetEntityCreateIfNotExist("createFileButton")
-            .Set(new Button())
-            .SetContent("Create Item");
-
-        (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createFileButton);
-        priorityCompareComponent.ChildOf(layout);
-
-        createFileButton.ChildOf(layout);
-
-        createFileButton.OnClick((sender, args) =>
-            {
-                if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()))
-                {
-                    nameTextBox.SetWatermark("Name is required");
-                    filePath.SetWatermark("FilePath is required");
-                    return;
-                }
-
-                entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
-                {
-                    Name = nameTextBox.GetText(),
-                    Priority = calculatedPriority.Get<int>(),
-                    Question = questionTextBox.GetText(),
-                    FilePath = filePath.GetText(),
-                    SpacedRepetitionItemType = SpacedRepetitionItemType.File
-                });
-
-                calculatedPriority.Set(500000000);
-                nameTextBox.SetText("");
-                questionTextBox.SetText("");
-                filePath.SetText("");
-                tags.Clear();
+                nameTextBox = textBox;
+                textBox.SetWatermark("Name");
             });
 
+            stackPanel.Child<TextBox>((textBox) =>
+            {
+                questionTextBox = textBox;
+                textBox.SetWatermark("Question");
+            });
 
-        entities["AddFileWindow"].OnClosing((_, _) =>
-        {
-            calculatedPriority.Set(500000000);
-            nameTextBox.SetText("");
-            questionTextBox.SetText("");
-            filePath.SetText("");
-            tags.Clear();
+            stackPanel.Child<TextBox>((textBox) =>
+            {
+                filePath = textBox;
+                textBox
+                .SetWatermark("FilePath")
+                .SetInnerRightContent(FilePickerButton(world).OnClick(async (e, args) => textBox.SetText(await FilePickerAsync())));
+            });
+
+            stackPanel.Child<TextBox>((textBox) =>
+            {
+                textBox.SetWatermark("Tags")
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        if (string.IsNullOrEmpty(textBox.GetText()))
+                        {
+                            return;
+                        }
+
+                        tags.Add(new(textBox.GetText()));
+                        textBox.SetText("");
+                    }
+                });
+            });
+
+            stackPanel.Child<ItemsControl>((itemsControl) =>
+            {
+                itemsControl
+                    .SetItemsSource(tags)
+                    .SetItemTemplate(DefineTagTemplate());
+            });
+
+            var comparePriority = new ComparePriority(world);
+            calculatedPriority = comparePriority.CalculatedPriorityEntity;
+            stackPanel.Child(comparePriority);
+
+            stackPanel.Child<Button>((button) =>
+            {
+                button.Child<TextBlock>((textBlock) =>
+                {
+                    textBlock.SetText("Create Item");
+                });
+
+                button.OnClick((sender, args) =>
+                    {
+                        if (nameTextBox is null ||
+                            questionTextBox is null ||
+                            filePath is null)
+                        {
+                            return;
+                        }
+
+                        if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()) || string.IsNullOrEmpty(questionTextBox.GetText()))
+                        {
+                            nameTextBox!.SetWatermark("Name is required");
+                            questionTextBox!.SetWatermark("Question is required");
+                            filePath!.SetWatermark("File path is required");
+                            return;
+                        }
+
+                        world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
+                        {
+                            Name = nameTextBox.GetText(),
+                            Priority = calculatedPriority.Get<int>(),
+                            Question = questionTextBox.GetText(),
+                            FilePath = filePath.GetText(),
+                            SpacedRepetitionItemType = SpacedRepetitionItemType.File
+                        });
+
+                        calculatedPriority.Set(500000000);
+                        nameTextBox.SetText("");
+                        questionTextBox.SetText("");
+                        filePath.SetText("");
+                        tags.Clear();
+                        comparePriority.Reset();
+                    });
+
+            });
         });
 
+        /*
+        (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(layout, createFileButton);
+        priorityCompareComponent.ChildOf(layout);
+        */
         return layout;
     }
 
-    private static Entity FilePickerButton(NamedEntities entities)
+    private static Entity FilePickerButton(World world)
     {
-        var browseForFileButton = entities.GetEntityCreateIfNotExist("BrowseForFileButton")
+        var browseForFileButton = world.Entity()
             .Set(new Button());
 
-        var browseForFileButtonContent = entities.GetEntityCreateIfNotExist("BrowseForFileButtonContent")
+        var browseForFileButtonContent = world.Entity()
             .ChildOf(browseForFileButton)
             .Set(new TextBlock())
             .SetText("Browse");
@@ -178,7 +176,7 @@ public static class AddFile
         return browseForFileButton;
     }
 
-    private static async Task<string> FilePickerAsync(NamedEntities entities)
+    private static async Task<string> FilePickerAsync()
     {
         // Create and configure the file picker options
         var options = new FilePickerOpenOptions
@@ -188,7 +186,7 @@ public static class AddFile
         };
 
         // Create an OpenFileDialog instance
-        IReadOnlyList<IStorageFile> result = await entities["MainWindow"].Get<Window>().StorageProvider.OpenFilePickerAsync(options);
+        IReadOnlyList<IStorageFile> result = await App.GetMainWindow().StorageProvider.OpenFilePickerAsync(options);
 
         if (result != null && result.Count > 0)
         {
@@ -200,7 +198,7 @@ public static class AddFile
         return string.Empty;
     }
 
-    private static FuncDataTemplate<Tag> DefineTagTemplate(NamedEntities entities)
+    private static FuncDataTemplate<Tag> DefineTagTemplate()
     {
         return new FuncDataTemplate<Tag>((tag, _) =>
         {
@@ -222,15 +220,8 @@ public static class AddFile
 
             removeButton.Click += ((sender, args) =>
             {
-                entities["tagsList"].Get<ObservableCollection<Tag>>().Remove(tag);
+                //entities["tagsList"].Get<ObservableCollection<Tag>>().Remove(tag);
             });
-            /*
-            removeButton.OnClick((sender, args) =>
-            {
-                entities["Tags"].Get<ObservableCollection<Tag>>().Remove(tag);
-            });
-            */
-
             stackPanel.Children.Add(nameText);
             stackPanel.Children.Add(removeButton);
             return stackPanel;

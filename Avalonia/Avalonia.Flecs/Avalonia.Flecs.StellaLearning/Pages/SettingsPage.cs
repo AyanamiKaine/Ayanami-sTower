@@ -115,7 +115,7 @@ public class SettingsPage : IUIComponent
         };
 
         // Create an OpenFileDialog instance
-        IReadOnlyList<IStorageFile> result = await App.Entities!["MainWindow"].Get<Window>().StorageProvider.OpenFilePickerAsync(options);
+        IReadOnlyList<IStorageFile> result = await App.GetMainWindow().StorageProvider.OpenFilePickerAsync(options);
 
         if (result != null && result?.Count > 0)
         {

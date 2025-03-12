@@ -123,8 +123,7 @@ public static class AddFlashcard
             .Set(new Button())
             .SetContent("Create Item");
 
-        (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createFlashcardButton);
-        priorityCompareComponent.ChildOf(layout);
+        //(Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createFlashcardButton);
 
 
         createFlashcardButton
@@ -142,10 +141,10 @@ public static class AddFlashcard
                         Name = nameTextBox.GetText(),
                         Front = frontText.GetText(),
                         Back = backText.GetText(),
-                        Priority = calculatedPriority.Get<int>(),
+                        //Priority = calculatedPriority.Get<int>(),
                         SpacedRepetitionItemType = SpacedRepetitionItemType.Flashcard
                     });
-                    calculatedPriority.Set(500000000);
+                    //calculatedPriority.Set(500000000);
                     nameTextBox.SetText("");
                     frontText.SetText("");
                     backText.SetText("");

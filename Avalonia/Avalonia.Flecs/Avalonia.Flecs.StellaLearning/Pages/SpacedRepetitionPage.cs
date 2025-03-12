@@ -35,6 +35,11 @@ public class SpacedRepetitionPage : IUIComponent
     /// <inheritdoc/>
     public Entity Root => _root;
 
+    private readonly List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
+
+    private readonly List<string> itemTypes = ["File", "Quiz", "Cloze"];
+    private UIBuilder<ListBox>? srItems;
+    private UIBuilder<ComboBox>? sortItemButton;
     /// <summary>
     /// Creates the Spaced Repetition Page
     /// </summary>
@@ -42,12 +47,12 @@ public class SpacedRepetitionPage : IUIComponent
     /// <returns></returns>
     public SpacedRepetitionPage(World world)
     {
-        ObservableCollection<SpacedRepetitionItem> dummyItems = LoadSpaceRepetitionItemsFromDisk(); ;
+        ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems = LoadSpaceRepetitionItemsFromDisk();
+        world.Set(spacedRepetitionItems);
 
-        _root = world.Entity()
-        .Add<Page>()
-        .Set(new Grid())
-        /*
+        _root = world.UI<Grid>((grid) =>
+        {
+            /*
         *: This represents a "star" column. 
         It means this column will take up as much available space as 
         possible after any fixed-size or Auto columns have been accounted for. 
@@ -58,8 +63,201 @@ public class SpacedRepetitionPage : IUIComponent
         fit the content within it. If you place a button in this column, 
         the column will be just wide enough to accommodate the button's size.
         */
-        .SetColumnDefinitions("*, Auto, Auto")
-        .SetRowDefinitions("Auto, *, Auto");
+            grid
+            .SetColumnDefinitions("*, Auto, Auto")
+            .SetRowDefinitions("Auto, *, Auto");
+
+            grid.Child<TextBox>((textBox) =>
+            {
+                textBox
+                .SetColumn(0)
+                .SetWatermark("Search Entries")
+                .OnTextChanged((sender, args) =>
+                {
+                    string searchText = textBox.GetText().ToLower();
+                    var filteredItems = spacedRepetitionItems.Where(item => item.Name.ToLower().Contains(searchText));
+                    srItems!.SetItemsSource(new ObservableCollection<SpacedRepetitionItem>(filteredItems)); ;
+                });
+            });
+
+            grid.Child<TextBlock>((textBlock) =>
+            {
+                textBlock
+                .SetVerticalAlignment(VerticalAlignment.Center)
+                .SetMargin(new Thickness(10, 0))
+                .SetText($"Total Items: {spacedRepetitionItems.Count}")
+                .SetColumn(1);
+
+                spacedRepetitionItems.CollectionChanged += (sender, args) => textBlock.SetText($"Total Items: {spacedRepetitionItems.Count}");
+            });
+
+            grid.Child<ComboBox>((comboBox) =>
+            {
+                var myFlyout = new Flyout()
+                {
+                    Content = new TextBlock() { Text = "Hello World" },
+                    ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+                };
+
+                sortItemButton = comboBox;
+
+                comboBox
+                .SetPlaceholderText("Sort Items")
+                .SetColumn(2)
+                .SetItemsSource(sortItems)
+                .SetContextFlyout(myFlyout);
+
+                comboBox.OnSelectionChanged((sender, args) =>
+                {
+                    if (args.AddedItems.Count == 0)
+                    {
+                        return;
+                    }
+                    var selectedItem = args.AddedItems[0]!.ToString();
+                    var itemsSource = (ObservableCollection<SpacedRepetitionItem>)srItems!.GetItemsSource();
+
+                    if (selectedItem == "Sort By Date")
+                    {
+                        // Sort by NextReview date (ascending - soonest due date first)
+                        itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
+                    }
+                    else if (selectedItem == "Sort By Priority")
+                    {
+                        // Sort by Priority (descending - highest priority first)
+                        itemsSource = [.. itemsSource.OrderByDescending(s => s.Priority)];
+                    }
+                    else if (selectedItem == "Sort By Name")
+                    {
+                        // Sort by Name (ascending - alphabetical order)
+                        itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
+                    }
+                    // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
+
+                    srItems!.SetItemsSource(itemsSource);
+                });
+
+            });
+
+            grid.Child<ScrollViewer>((scrollViewer) =>
+            {
+                scrollViewer
+                    .SetRow(1)
+                    .SetColumnSpan(3);
+
+                scrollViewer.Child<ListBox>((listBox) =>
+                {
+                    srItems = listBox;
+
+                    var contextFlyout = world.UI<MenuFlyout>((menuFlyout) =>
+                    {
+                        menuFlyout.OnOpened((object? sender, EventArgs e) =>
+                        {
+                            if (!listBox.HasItemSelected())
+                            {
+                                menuFlyout.Hide();
+                            }
+                        });
+
+                        menuFlyout.Child<MenuItem>((item) =>
+                        {
+
+                            item.SetHeader("Delete")
+                            .OnClick((sender, args) =>
+                            {
+                                var item = listBox.GetSelectedItem<SpacedRepetitionItem>();
+                                spacedRepetitionItems.Remove(item);
+                            });
+
+                        });
+                    });
+
+                    srItems
+                    .SetItemsSource(spacedRepetitionItems)
+                    .SetItemTemplate(DefineSpacedRepetitionItemTemplate())
+                    .SetSelectionMode(SelectionMode.Single)
+                    .SetContextFlyout(contextFlyout.Get<MenuFlyout>());
+                });
+            });
+
+            grid.Child<Button>((startLearningButton) =>
+            {
+                startLearningButton
+                .SetMargin(0, 20, 0, 0)
+                .SetColumn(0)
+                .SetColumnSpan(2)
+                .SetRow(2)
+                .Child<TextBlock>(t => t.SetText("Start Learning"));
+            });
+
+            grid.Child<Button>((addItemButton) =>
+            {
+                var stackPanel = world.UI<StackPanel>((stackPanel) =>
+                {
+                    stackPanel
+                    .SetOrientation(Orientation.Vertical)
+                    .SetSpacing(5);
+
+                    stackPanel.Child<Button>((addFileButton) =>
+                    {
+                        addFileButton
+                        .OnClick((sender, args) => AddFile.Create(world).ShowWindow())
+                        .Child<TextBlock>(t =>
+                            t.SetText("File")
+                            .SetFontWeight(FontWeight.Normal)
+                        );
+                    });
+
+                    stackPanel.Child<Button>((addClozeButton) =>
+                    {
+                        addClozeButton
+                        .OnClick((sender, args) => AddFile.Create(world).ShowWindow())
+                        .Child<TextBlock>(t =>
+                            t.SetText("Cloze")
+                            .SetFontWeight(FontWeight.Normal)
+                        );
+                    });
+
+                    stackPanel.Child<Button>((addQuizButton) =>
+                    {
+                        addQuizButton
+                        .OnClick((sender, args) => AddFile.Create(world).ShowWindow())
+                        .Child<TextBlock>(t =>
+                            t.SetText("Quiz")
+                            .SetFontWeight(FontWeight.Normal)
+                        );
+                    });
+
+                    stackPanel.Child<Button>((addFlashcardButton) =>
+                    {
+                        addFlashcardButton
+                        .OnClick((sender, args) => AddFile.Create(world).ShowWindow())
+                        .Child<TextBlock>(t =>
+                            t.SetText("Flashcard")
+                            .SetFontWeight(FontWeight.Normal)
+                        );
+                    });
+                });
+
+                var addItemsFlyout = new Flyout()
+                {
+                    Content = stackPanel.Get<object>(),
+                    ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+                };
+
+                addItemButton
+                .SetMargin(0, 20, 0, 0)
+                .SetHorizontalAlignment(HorizontalAlignment.Right)
+                .SetColumn(2)
+                .SetRow(2)
+                .SetFlyout(addItemsFlyout)
+                .Child<TextBlock>((textBlock) =>
+                {
+                    textBlock.SetText("Add Item");
+                });
+            });
+
+        })
+        .Add<Page>();
 
         _root.AddDefaultStyling((spacedRepetitionPage) =>
         {
@@ -78,38 +276,6 @@ public class SpacedRepetitionPage : IUIComponent
             }
         });
 
-        var listSearchSpacedRepetition = world.Entity()
-            .ChildOf(_root)
-            .Set(new TextBox())
-            .SetColumn(0)
-            .SetWatermark("Search Entries");
-
-        var totalItems = world.Entity()
-            .ChildOf(_root)
-            .Set(new TextBlock())
-            .SetVerticalAlignment(VerticalAlignment.Center)
-            .SetMargin(new Thickness(10, 0))
-            .SetText($"Total Items: {dummyItems.Count}")
-            .SetColumn(1);
-
-        dummyItems.CollectionChanged += (sender, args) => totalItems.SetText($"Total Items: {dummyItems.Count}");
-
-        List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
-
-        var myFlyout = new Flyout()
-        {
-            Content = new TextBlock() { Text = "Hello World" },
-            ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
-        };
-
-        var sortItemsButton = world.Entity()
-            .ChildOf(_root)
-            .Set(new ComboBox())
-            .SetPlaceholderText("Sort Items")
-            .SetColumn(2)
-            .SetItemsSource(sortItems)
-            .SetContextFlyout(myFlyout);
-
         //ToolTip.SetTip(sortItemsButton.Get<ComboBox>(), myToolTip);
 
         /*
@@ -121,236 +287,46 @@ public class SpacedRepetitionPage : IUIComponent
         No need to depend on things that we dont care for 
         */
 
-        List<string> itemTypes = ["File", "Quiz", "Cloze"];
-
-        var stackPanel = world.Entity()
-            .Set(new StackPanel())
-            .SetOrientation(Orientation.Vertical)
-            .SetSpacing(5);
-
-        var addFileButton = world.Entity()
-            .ChildOf(stackPanel)
-            .Set(new Button())
-            .SetContent("File")
-            .SetFontWeight(FontWeight.Normal)
-            .OnClick((sender, args) =>
-            {
-                if (App.Entities!.Contains("AddFileWindow"))
-                    App.Entities!["AddFileWindow"].ShowWindow();
-                else
-                    AddFile.Create(App.Entities!).ShowWindow();
-            });
-
-        var addClozeButton = world.Entity()
-               .ChildOf(stackPanel)
-               .Set(new Button())
-               .SetContent("Cloze")
-               .SetFontWeight(FontWeight.Normal)
-               .OnClick((_, _) =>
-               {
-                   if (App.Entities!.Contains("AddClozeWindow"))
-                       App.Entities!["AddClozeWindow"].ShowWindow();
-                   else
-                       AddCloze.Create(App.Entities!).ShowWindow();
-               });
-
-        var addQuizButton = world.Entity()
-            .ChildOf(stackPanel)
-            .Set(new Button())
-            .SetContent("Quiz")
-            .SetFontWeight(FontWeight.Normal)
-            .OnClick((_, _) =>
-            {
-                if (App.Entities!.Contains("AddQuizWindow"))
-                    App.Entities!["AddQuizWindow"].ShowWindow();
-                else
-                    AddQuiz.Create(App.Entities!).ShowWindow();
-            });
-
-        var addFlashcardButton = world.Entity()
-            .ChildOf(stackPanel)
-            .Set(new Button())
-            .SetContent("Flashcard")
-            .SetFontWeight(FontWeight.Normal)
-            .OnClick((_, _) =>
-            {
-                if (App.Entities!.Contains("AddFlashcardWindow"))
-                    App.Entities!["AddFlashcardWindow"].ShowWindow();
-                else
-                    AddFlashcard.Create(App.Entities!).ShowWindow();
-            });
-
-        var addAudioButton = world.Entity()
-           .ChildOf(stackPanel)
-           .Set(new Button())
-           .SetContent("Audio")
-           .SetFontWeight(FontWeight.Normal)
-            .OnClick((_, _) =>
-            {
-                if (App.Entities!.Contains("AddAudioWindow"))
-                    App.Entities!["AddAudioWindow"].ShowWindow();
-                else
-                    AddAudio.Create(App.Entities!).ShowWindow();
-            });
-
-        var addVideoButton = world.Entity()
-           .ChildOf(stackPanel)
-           .Set(new Button())
-           .SetContent("Video")
-           .SetFontWeight(FontWeight.Normal)
-           .OnClick((_, _) =>
-           {
-               if (App.Entities!.Contains("AddVideoWindow"))
-                   App.Entities!["AddVideoWindow"].ShowWindow();
-               else
-                   AddVideo.Create(App.Entities!).ShowWindow();
-           });
-        var addItemsFlyout = new Flyout()
-        {
-            Content = stackPanel.Get<object>(),
-            ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
-        };
-
-        var startLearningButton = world.Entity()
-            .ChildOf(_root)
-            .Set(new Button())
-            .SetContent("Start Learning")
-            .SetMargin(0, 20, 0, 0)
-            .SetColumn(0)
-            .SetColumnSpan(2)
-            .SetRow(2)
-            .OnClick((_, _) =>
-            {
-                if (App.Entities!.Contains("StartLearningWindow"))
-                    App.Entities!["StartLearningWindow"].ShowWindow();
-                else
-                    StartLearningWindow.Create(App.Entities!).ShowWindow();
-            });
-
-        var addItemButton = world.Entity()
-            .ChildOf(_root)
-            .Set(new Button() { Flyout = addItemsFlyout })
-            .SetMargin(0, 20, 0, 0)
-            .SetHorizontalAlignment(HorizontalAlignment.Right)
-            .SetContent(new TextBlock() { Text = "+", FontWeight = FontWeight.Bold, FontSize = 16 })
-            .SetColumn(2)
-            .SetRow(2);
-
-        var scrollViewer = world.Entity()
-            .ChildOf(_root)
-            .Set(new ScrollViewer())
-            .SetRow(1)
-            .SetColumnSpan(3);
-
-        App.Entities!["SpacedRepetitionItems"] = world.Entity()
-            .Set(dummyItems);
+        //App.Entities!["SpacedRepetitionItems"] = world.Entity()
+        //    .Set(dummyItems);
 
         var timerEntity = world.Entity()
-            .Set(CreateAutoSaveTimer(dummyItems));
+            .Set(CreateAutoSaveTimer(spacedRepetitionItems));
 
-        var srItems = world.Entity()
-            .ChildOf(scrollViewer)
-            .Set(new ListBox())
-            .SetItemsSource(dummyItems)
-            .SetItemTemplate(DefineSpacedRepetitionItemTemplate())
-            .SetSelectionMode(SelectionMode.Single);
 
-        listSearchSpacedRepetition.OnTextChanged((sender, args) =>
-        {
-            string searchText = listSearchSpacedRepetition.Get<TextBox>().Text!.ToLower();
-            var filteredItems = dummyItems.Where(item => item.Name.ToLower().Contains(searchText));
-            srItems.Get<ListBox>().ItemsSource = new ObservableCollection<SpacedRepetitionItem>(filteredItems);
-            srItems.SetItemsSource(new ObservableCollection<SpacedRepetitionItem>(filteredItems));
-        });
+        /*
+        When the spaced reptition items change we want to refresh the shown list, this mostly occurs when new items are added, updated or removed.
+        */
+        spacedRepetitionItems.CollectionChanged += ((_, _) =>
+                {
+                    if (sortItemButton!.Get<ComboBox>().SelectedItem is null)
+                    {
+                        return;
+                    }
+                    var selectedItem = sortItemButton.Get<ComboBox>().SelectedItem!.ToString();
+                    var itemsSource = spacedRepetitionItems;
 
-        //Use MenuFlyout to create a context menu
-        //contextMenu is used for legacy WPF apps
-        var contextFlyout = world.Entity()
-            .ChildOf(srItems)
-            .Set(new MenuFlyout());
+                    if (selectedItem == "Sort By Date")
+                    {
+                        // Sort by NextReview date (ascending - soonest due date first)
+                        itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
+                    }
+                    else if (selectedItem == "Sort By Priority")
+                    {
+                        // Sort by Priority (descending - highest priority first)
+                        itemsSource = [.. itemsSource.OrderByDescending(s => s.Priority)];
+                    }
+                    else if (selectedItem == "Sort By Name")
+                    {
+                        // Sort by Name (ascending - alphabetical order)
+                        itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
+                    }
+                    // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
 
-        contextFlyout.Get<MenuFlyout>().Opened += (object? sender, EventArgs e) =>
-        {
-            if (!srItems.HasItemSelected())
-            {
-                contextFlyout.Get<MenuFlyout>().Hide();
-            }
-        };
+                    srItems!.SetItemsSource(itemsSource);
+                });
 
-        var editMenuItem = world.Entity()
-            .ChildOf(contextFlyout)
-            .Set(new MenuItem())
-            .SetHeader("Edit")
-            .OnClick((sender, args) => Console.WriteLine("Edit Clicked"));
-
-        var deleteMenuItem = world.Entity()
-            .ChildOf(contextFlyout)
-            .Set(new MenuItem())
-            .SetHeader("Delete")
-            .OnClick((sender, args) =>
-            {
-                var item = srItems.GetSelectedItem<SpacedRepetitionItem>();
-                dummyItems.Remove(item);
-            });
-        _ = sortItemsButton.OnSelectionChanged((sender, args) =>
-        {
-            if (args.AddedItems.Count == 0)
-            {
-                return;
-            }
-            var selectedItem = args.AddedItems[0]!.ToString();
-            var itemsSource = (ObservableCollection<SpacedRepetitionItem>)srItems.GetItemsSource()!;
-
-            if (selectedItem == "Sort By Date")
-            {
-                // Sort by NextReview date (ascending - soonest due date first)
-                itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
-            }
-            else if (selectedItem == "Sort By Priority")
-            {
-                // Sort by Priority (descending - highest priority first)
-                itemsSource = [.. itemsSource.OrderByDescending(s => s.Priority)];
-            }
-            else if (selectedItem == "Sort By Name")
-            {
-                // Sort by Name (ascending - alphabetical order)
-                itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
-            }
-            // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
-
-            srItems.SetItemsSource(itemsSource);
-        });
-
-        dummyItems.CollectionChanged += ((_, _) =>
-        {
-            if (sortItemsButton.Get<ComboBox>().SelectedItem is null)
-            {
-                return;
-            }
-            var selectedItem = sortItemsButton.Get<ComboBox>().SelectedItem!.ToString();
-            var itemsSource = dummyItems;
-
-            if (selectedItem == "Sort By Date")
-            {
-                // Sort by NextReview date (ascending - soonest due date first)
-                itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
-            }
-            else if (selectedItem == "Sort By Priority")
-            {
-                // Sort by Priority (descending - highest priority first)
-                itemsSource = [.. itemsSource.OrderByDescending(s => s.Priority)];
-            }
-            else if (selectedItem == "Sort By Name")
-            {
-                // Sort by Name (ascending - alphabetical order)
-                itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
-            }
-            // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
-
-            srItems.SetItemsSource(itemsSource);
-        });
-
-        App.Entities!["MainWindow"].OnClosed((_, _) => SaveSpaceRepetitionItemsToDisk(dummyItems));
+        App.GetMainWindow().Closing += (_, _) => SaveSpaceRepetitionItemsToDisk(spacedRepetitionItems);
     }
 
     /// <summary>

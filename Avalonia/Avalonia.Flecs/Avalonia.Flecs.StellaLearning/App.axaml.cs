@@ -15,6 +15,8 @@ using Avalonia.Platform;
 using NLog;
 using Avalonia.Flecs.Controls;
 using Avalonia.Threading;
+using Avalonia.Flecs.StellaLearning.Data;
+using System.Collections.ObjectModel;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -23,6 +25,12 @@ namespace Avalonia.Flecs.StellaLearning;
 /// </summary>
 public partial class App : Application
 {
+    private static Window? _mainWindow;
+    /// <summary>
+    /// Returns the MainWindow
+    /// </summary>
+    /// <returns></returns>
+    public static Window GetMainWindow() => _mainWindow!;
     private World _world = World.Create();
     /// <summary>
     /// Entity that holds the window component for the main window
@@ -33,7 +41,6 @@ public partial class App : Application
     /// <summary>
     /// Named global app entities
     /// </summary>
-    public static NamedEntities? Entities = null;
     private TrayIcon? _trayIcon;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     /// <summary>
@@ -46,12 +53,11 @@ public partial class App : Application
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
 
-        Entities = new NamedEntities(_world);
-
+        _world.Set<ObservableCollection<SpacedRepetitionItem>>([]);
         //var debugWindow = new Debug.Window.Window(_world);
         //Entities.OnEntityAdded += debugWindow.AddEntity;
 
-        Entities["MainWindow"] = _world.UI<Window>((window) =>
+        MainWindow = _world.UI<Window>((window) =>
         {
             window.SetTitle("Stella Learning")
                   .SetHeight(400)
@@ -68,7 +74,7 @@ public partial class App : Application
                       }
                   });
         });
-        MainWindow = Entities["MainWindow"];
+        _mainWindow = MainWindow.Get<Window>();
         CreateUILayout().ChildOf(MainWindow);
         InitializeTrayIcon();
     }
@@ -238,13 +244,16 @@ public partial class App : Application
     /// </summary>
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-            && Entities is not null)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            _mainWindow = MainWindow.Get<Window>();
             desktop.MainWindow = MainWindow.Get<Window>();
             desktop.MainWindow.Hide();
         }
         base.OnFrameworkInitializationCompleted();
+#if DEBUG
+        this.AttachDevTools();
+#endif
     }
 
     /// <summary>
@@ -252,7 +261,7 @@ public partial class App : Application
     /// </summary>
     public void ShowMainWindow()
     {
-        if (Entities != null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
         {
             var mainWindow = MainWindow.Get<Window>();
 
@@ -277,8 +286,6 @@ public partial class App : Application
 
     private void InitializeTrayIcon()
     {
-        if (Entities == null) return;
-
         try
         {
             // Load icon from resources
