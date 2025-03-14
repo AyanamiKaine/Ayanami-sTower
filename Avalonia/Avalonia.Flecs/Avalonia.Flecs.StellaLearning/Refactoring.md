@@ -120,6 +120,16 @@ This should also result in better testability of components. As their global dep
 - Turn pages into UI-Components (DONE)
 - Turn windows into UI-Components (PROCESS)
 
+## [] Making it AOT-Compatible
+
+### Problem
+
+The current use of many reflection features in the way we access specific avalonia properties in avalonia objects is quite unnessary. There are AOT compatible ways of doing the same.
+
+### Solution
+
+Simply rewrite all reflection usages to functions that do not need them.
+
 ## [] Remove named entities as a global refrence from the app class
 
 ### Problem
