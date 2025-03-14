@@ -858,6 +858,19 @@ public class UIBuilder<T> where T : AvaloniaObject
         _control = entity.Get<T>();
     }
 
+
+    /// <summary>
+    /// Provides direct access to the underlying control to configure its properties and methods,
+    /// then returns the builder for continued method chaining.
+    /// </summary>
+    /// <param name="configure">Action to configure the control directly.</param>
+    /// <returns>This builder instance for method chaining.</returns>
+    public UIBuilder<T> With(Action<T> configure)
+    {
+        configure(_control);
+        return this;
+    }
+
     /// <summary>
     /// Sets a property on the control by name.
     /// <remarks>
