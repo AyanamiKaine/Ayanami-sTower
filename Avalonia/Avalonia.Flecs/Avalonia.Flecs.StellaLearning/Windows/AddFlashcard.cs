@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
@@ -18,128 +19,124 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type file
 /// </summary>
-public static class AddFlashcard
+public class AddFlashcard : IUIComponent
 {
+
+    private Entity _root;
+    /// <inheritdoc/>
+    public Entity Root => _root;
+
     /// <summary>
     /// Create the Add File Window
     /// </summary>
-    /// <param name="entities"></param>
+    /// <param name="world"></param>
     /// <returns></returns>
-    public static Entity Create(NamedEntities entities)
+    public AddFlashcard(World world)
     {
-        var addFlashcardWindow = entities.GetEntityCreateIfNotExist("AddFlashcardWindow")
-            .Set(new Window())
-            .SetWindowTitle("Add Flashcard")
-            .SetWidth(400)
-            .SetHeight(400);
+        _root = world.UI<Window>((window) =>
+                {
+                    window
+                    .SetTitle("Add Flashcard")
+                    .SetWidth(400)
+                    .SetHeight(400)
+                    .Child<ScrollViewer>((scrollViewer) =>
+                    {
+                        scrollViewer
+                        .SetRow(1)
+                        .SetColumnSpan(3)
+                        .Child(DefineWindowContents(world));
+                    });
+                    window.OnClosed((sender, args) => _root.Destruct());
 
-
-        var scrollViewer = entities.Create()
-            .ChildOf(addFlashcardWindow)
-            .Set(new ScrollViewer())
-            .SetRow(1)
-            .SetColumnSpan(3);
-
-        entities["MainWindow"].OnClosed((_, _) =>
-        {
-            //When the main window is closed close the add file window as well
-            addFlashcardWindow.CloseWindow();
-        });
-
-        addFlashcardWindow.OnClosing((s, e) =>
-        {
-            // As long as the main window is visible dont 
-            // close the window but hide it instead
-            if (entities["MainWindow"].Get<Window>().IsVisible)
-            {
-                ((Window)s!).Hide();
-                e.Cancel = true;
-            }
-        });
-
-        DefineWindowContents(entities).ChildOf(scrollViewer);
-
-        return addFlashcardWindow;
+                    window.Show();
+                });
     }
 
-    private static Entity DefineWindowContents(NamedEntities entities)
+    private static Entity DefineWindowContents(World world)
     {
-        var layout = entities.Create()
-            .Set(new StackPanel())
+        ObservableCollection<Tag> tags = [];
+
+        return world.UI<StackPanel>((stackPanel) =>
+        {
+            Entity calculatedPriority;
+            UIBuilder<TextBox>? nameTextBox = null;
+            UIBuilder<TextBox>? frontText = null;
+            UIBuilder<TextBox>? backText = null;
+
+            stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
             .SetSpacing(10)
             .SetMargin(20);
 
-        var nameTextBox = entities.Create()
-            .ChildOf(layout)
-            .Set(new TextBox())
-            .SetWatermark("Name");
-
-        var frontText = entities.Create()
-            .ChildOf(layout)
-            .Set(new TextBox() { AcceptsReturn = true })
-            .SetTextWrapping(TextWrapping.Wrap)
-            .SetWatermark("Front Text");
-
-        var backText = entities.Create()
-            .ChildOf(layout)
-            .Set(new TextBox() { AcceptsReturn = true })
-            .SetTextWrapping(TextWrapping.Wrap)
-            .SetWatermark("Back Text");
-
-
-        ObservableCollection<Tag> tags = [];
-
-
-        var tagsTextBox = entities.Create()
-            .ChildOf(layout)
-            .Set(new TextBox())
-            .SetWatermark("Tags");
-
-        tagsTextBox.OnKeyDown((sender, args) =>
-        {
-            if (args.Key == Key.Enter)
+            stackPanel.Child<TextBox>((textBox) =>
             {
-                if (string.IsNullOrEmpty(tagsTextBox.GetText()))
+                nameTextBox = textBox;
+                textBox.SetWatermark("Name");
+            });
+
+            stackPanel.Child<TextBox>((textBox) =>
+            {
+                frontText = textBox;
+                textBox
+                .SetWatermark("Front Text")
+                .SetTextWrapping(TextWrapping.Wrap);
+
+                textBox.Get<TextBox>().AcceptsReturn = true;
+            });
+
+            stackPanel.Child<TextBox>((textBox) =>
+            {
+                backText = textBox;
+                textBox
+                .SetWatermark("Back Text")
+                .SetTextWrapping(TextWrapping.Wrap);
+
+                textBox.Get<TextBox>().AcceptsReturn = true;
+            });
+
+            var comparePriority = new ComparePriority(world);
+            calculatedPriority = comparePriority.CalculatedPriorityEntity;
+            stackPanel.Child(comparePriority);
+
+            stackPanel.Child<Button>((button) =>
+            {
+                button.Child<TextBlock>((textBlock) =>
                 {
-                    return;
-                }
+                    textBlock.SetText("Create Item");
+                });
 
-                tags.Add(new(tagsTextBox.GetText()));
-                tagsTextBox.SetText("");
-            }
-        });
-
-        var createFlashcardButton = entities.Create()
-            .Set(new Button())
-            .SetContent("Create Item");
-
-
-        createFlashcardButton
-            .ChildOf(layout)
-            .OnClick((sender, args) =>
+                button.OnClick((sender, args) =>
                 {
-                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                    if (nameTextBox is null ||
+                        frontText is null ||
+                        backText is null)
                     {
-                        nameTextBox.SetWatermark("Name is required");
                         return;
                     }
 
-                    entities["SpacedRepetitionItems"].Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFlashcard()
+                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                    {
+                        nameTextBox!.SetWatermark("Name is required");
+                        return;
+                    }
+
+                    world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFlashcard()
                     {
                         Name = nameTextBox.GetText(),
                         Front = frontText.GetText(),
                         Back = backText.GetText(),
-                        //Priority = calculatedPriority.Get<int>(),
+                        Priority = calculatedPriority.Get<int>(),
                         SpacedRepetitionItemType = SpacedRepetitionItemType.Flashcard
                     });
-                    //calculatedPriority.Set(500000000);
+
+                    calculatedPriority.Set(500000000);
                     nameTextBox.SetText("");
                     frontText.SetText("");
                     backText.SetText("");
                     tags.Clear();
+                    comparePriority.Reset();
                 });
-
-        return layout;
+            });
+        });
     }
 }
