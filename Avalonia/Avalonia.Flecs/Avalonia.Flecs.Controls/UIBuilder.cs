@@ -229,6 +229,30 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Set the wrapping of the text
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="textWrapping"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBlock> SetTextWrapping(this UIBuilder<TextBlock> builder, TextWrapping textWrapping)
+    {
+        builder.Entity.SetTextWrapping(textWrapping);
+        return builder;
+    }
+
+    /// <summary>
+    /// Set the wrapping of the text
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="textWrapping"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBox> SetTextWrapping(this UIBuilder<TextBox> builder, TextWrapping textWrapping)
+    {
+        builder.Entity.SetTextWrapping(textWrapping);
+        return builder;
+    }
+
+    /// <summary>
     /// Helper function to set the orientation of a StackPanel.
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -254,18 +278,6 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-    /// <summary>
-    /// Sets the TextWrapping for an textblock
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="builder"></param>
-    /// <param name="textWrapping"></param>
-    /// <returns></returns>
-    public static UIBuilder<T> SetTextWrapping<T>(this UIBuilder<T> builder, TextWrapping textWrapping) where T : TextBlock
-    {
-        builder.Entity.SetTextWrapping(textWrapping);
-        return builder;
-    }
 
     /// <summary>
     /// Enables the control element
