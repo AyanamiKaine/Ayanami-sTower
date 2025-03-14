@@ -105,7 +105,7 @@ public static class AddCloze
             .ChildOf(layout)
             .Set(new ItemsControl())
             .Set(clozes)
-            .SetItemTemplate(DefineClozeTemplate(entities))
+            .SetItemTemplate(DefineTagTemplate(entities))
             .SetItemsSource(clozes);
 
         entities.Create()
@@ -135,7 +135,7 @@ public static class AddCloze
         return layout;
     }
 
-    private static FuncDataTemplate<string> DefineClozeTemplate(NamedEntities entities)
+    private static FuncDataTemplate<string> DefineTagTemplate(NamedEntities entities)
     {
         return new FuncDataTemplate<string>((tag, _) =>
         {
