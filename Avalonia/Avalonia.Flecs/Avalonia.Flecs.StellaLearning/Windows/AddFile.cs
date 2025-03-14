@@ -19,20 +19,22 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type file
 /// </summary>
-public static class AddFile
+public class AddFile : IUIComponent
 {
+    private Entity _root;
+    /// <inheritdoc/>
+    public Entity Root => _root;
 
     /// <summary>
     /// Create the Add File Window
     /// </summary>
     /// <returns></returns>
-    public static Entity Create(World world)
+    public AddFile(World world)
     {
-
 
         //DefineWindowContents(world).ChildOf(scrollViewer);
 
-        return world.UI<Window>((window) =>
+        _root = world.UI<Window>((window) =>
         {
             window
             .SetTitle("Add File")
@@ -45,6 +47,10 @@ public static class AddFile
                 .SetColumnSpan(3)
                 .Child(DefineWindowContents(world));
             });
+
+            window.OnClosed((sender, args) => _root.Destruct());
+
+            window.Show();
         });
     }
 
@@ -52,7 +58,7 @@ public static class AddFile
     {
         ObservableCollection<Tag> tags = [];
 
-        var layout = world.UI<StackPanel>((stackPanel) =>
+        return world.UI<StackPanel>((stackPanel) =>
         {
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? filePath = null;
@@ -155,12 +161,6 @@ public static class AddFile
 
             });
         });
-
-        /*
-        (Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(layout, createFileButton);
-        priorityCompareComponent.ChildOf(layout);
-        */
-        return layout;
     }
 
     private static Entity FilePickerButton(World world)
