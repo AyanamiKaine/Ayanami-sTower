@@ -160,7 +160,6 @@ public class SpacedRepetitionPage : IUIComponent
 
                         menuFlyout.Child<MenuItem>((item) =>
                         {
-
                             item.SetHeader("Delete")
                             .OnClick((sender, args) =>
                             {
@@ -200,7 +199,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addFileButton) =>
                     {
                         addFileButton
-                        .OnClick((sender, args) => new AddFile(world))
+                        .OnClick((sender, args) => _ = new AddFile(world))
                         .Child<TextBlock>(t =>
                             t.SetText("File")
                             .SetFontWeight(FontWeight.Normal)
@@ -210,7 +209,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addClozeButton) =>
                     {
                         addClozeButton
-                        .OnClick((sender, args) => new AddFile(world))
+                        .OnClick((sender, args) => _ = new AddCloze(world))
                         .Child<TextBlock>(t =>
                             t.SetText("Cloze")
                             .SetFontWeight(FontWeight.Normal)
@@ -220,7 +219,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addQuizButton) =>
                     {
                         addQuizButton
-                        .OnClick((sender, args) => _ = new AddFile(world))
+                        .OnClick((sender, args) => _ = new AddQuiz(world))
                         .Child<TextBlock>(t =>
                             t.SetText("Quiz")
                             .SetFontWeight(FontWeight.Normal)
