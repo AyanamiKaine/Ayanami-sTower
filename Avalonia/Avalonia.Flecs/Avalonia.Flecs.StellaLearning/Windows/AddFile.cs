@@ -48,6 +48,12 @@ public class AddFile : IUIComponent
                 .Child(DefineWindowContents(world));
             });
 
+            /* NOTE:
+            You might see high memory usage and no memory reclaim when the window closes and the entity is destroyed.
+            Why might that be? Because the GC didnt run yet, the GC reclaims the memory only when it thinks its a
+            good moment to do so.
+            */
+
             window.OnClosed((sender, args) => _root.Destruct());
 
             window.Show();
