@@ -220,7 +220,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addQuizButton) =>
                     {
                         addQuizButton
-                        .OnClick((sender, args) => new AddFile(world))
+                        .OnClick((sender, args) => _ = new AddFile(world))
                         .Child<TextBlock>(t =>
                             t.SetText("Quiz")
                             .SetFontWeight(FontWeight.Normal)
@@ -230,7 +230,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addFlashcardButton) =>
                     {
                         addFlashcardButton
-                        .OnClick((sender, args) => new AddFile(world))
+                        .OnClick((sender, args) => _ = new AddFlashcard(world))
                         .Child<TextBlock>(t =>
                             t.SetText("Flashcard")
                             .SetFontWeight(FontWeight.Normal)
