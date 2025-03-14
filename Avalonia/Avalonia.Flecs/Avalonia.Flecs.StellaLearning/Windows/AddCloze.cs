@@ -76,15 +76,16 @@ public class AddCloze : IUIComponent
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
-                textBox.SetWatermark("Name");
+                textBox.With(t => t.Watermark = "Name");
             });
 
             stackPanel.Child<TextBox>((textBox) =>
             {
                 clozeBox = textBox;
-                textBox.SetWatermark("Cloze Text")
-                .SetTextWrapping(TextWrapping.Wrap);
-                textBox.Get<TextBox>().AcceptsReturn = true;
+                textBox
+                .SetWatermark("Cloze Text")
+                .SetTextWrapping(TextWrapping.Wrap)
+                .With((textBox) => textBox.AcceptsReturn = true);
 
                 // Create the mark as cloze button for the context flyout
                 var markAsClozeButton = world.UI<Button>((button) =>
@@ -98,7 +99,9 @@ public class AddCloze : IUIComponent
                 });
 
                 // Set up the context flyout
-                textBox.Get<TextBox>().ContextFlyout = new Flyout() { Content = markAsClozeButton.Get<Button>() };
+                textBox.With((textBox)
+                => textBox.ContextFlyout =
+                new Flyout() { Content = markAsClozeButton.Get<Button>() });
             });
 
             // Create cloze list with items control
