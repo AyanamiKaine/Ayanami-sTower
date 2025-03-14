@@ -62,7 +62,7 @@ public partial class App : Application
             window.SetTitle("Stella Learning")
                   .SetHeight(400)
                   .SetWidth(400)
-                  .OnWindowClosing((sender, args) =>
+                  .OnClosing((sender, args) =>
                   {
                       args.Cancel = true;
 
