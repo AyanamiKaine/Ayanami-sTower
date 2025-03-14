@@ -110,20 +110,9 @@ public static class AddFlashcard
             }
         });
 
-        var flashCardTagsList = entities.GetEntityCreateIfNotExist("FlashCardTagsList")
-            .ChildOf(layout)
-            .Set(new ItemsControl())
-            .Set(tags)
-            .SetItemTemplate(DefineTagTemplate(entities))
-            .SetItemsSource(tags);
-
-
-
         var createFlashcardButton = entities.Create()
             .Set(new Button())
             .SetContent("Create Item");
-
-        //(Entity priorityCompareComponent, Entity calculatedPriority) = ComparePriority.Create(entities, layout, createFlashcardButton);
 
 
         createFlashcardButton
@@ -152,42 +141,5 @@ public static class AddFlashcard
                 });
 
         return layout;
-    }
-
-    private static FuncDataTemplate<Tag> DefineTagTemplate(NamedEntities entities)
-    {
-        return new FuncDataTemplate<Tag>((tag, _) =>
-        {
-            var stackPanel = new StackPanel()
-            {
-                Orientation = Layout.Orientation.Horizontal,
-                Spacing = 5
-            };
-
-            var nameText = new TextBlock()
-            {
-                Text = tag.Name
-            };
-
-            var removeButton = new Button()
-            {
-                Content = "X"
-            };
-
-            removeButton.Click += ((sender, args) =>
-            {
-                entities["FlashCardTagsList"].Get<ObservableCollection<Tag>>().Remove(tag);
-            });
-            /*
-            removeButton.OnClick((sender, args) =>
-            {
-                entities["Tags"].Get<ObservableCollection<Tag>>().Remove(tag);
-            });
-            */
-
-            stackPanel.Children.Add(nameText);
-            stackPanel.Children.Add(removeButton);
-            return stackPanel;
-        });
     }
 }

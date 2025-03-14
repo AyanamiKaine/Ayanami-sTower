@@ -95,31 +95,6 @@ public class AddFile : IUIComponent
                 .SetInnerRightContent(FilePickerButton(world).OnClick(async (e, args) => textBox.SetText(await FilePickerAsync())));
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
-            {
-                textBox.SetWatermark("Tags")
-                .OnKeyDown((sender, args) =>
-                {
-                    if (args.Key == Key.Enter)
-                    {
-                        if (string.IsNullOrEmpty(textBox.GetText()))
-                        {
-                            return;
-                        }
-
-                        tags.Add(new(textBox.GetText()));
-                        textBox.SetText("");
-                    }
-                });
-            });
-
-            stackPanel.Child<ItemsControl>((itemsControl) =>
-            {
-                itemsControl
-                    .SetItemsSource(tags)
-                    .SetItemTemplate(DefineTagTemplate());
-            });
-
             var comparePriority = new ComparePriority(world);
             calculatedPriority = comparePriority.CalculatedPriorityEntity;
             stackPanel.Child(comparePriority);
@@ -202,35 +177,5 @@ public class AddFile : IUIComponent
             return file.TryGetLocalPath()!;
         }
         return string.Empty;
-    }
-
-    private static FuncDataTemplate<Tag> DefineTagTemplate()
-    {
-        return new FuncDataTemplate<Tag>((tag, _) =>
-        {
-            var stackPanel = new StackPanel()
-            {
-                Orientation = Layout.Orientation.Horizontal,
-                Spacing = 5
-            };
-
-            var nameText = new TextBlock()
-            {
-                Text = tag.Name
-            };
-
-            var removeButton = new Button()
-            {
-                Content = "X"
-            };
-
-            removeButton.Click += ((sender, args) =>
-            {
-                //entities["tagsList"].Get<ObservableCollection<Tag>>().Remove(tag);
-            });
-            stackPanel.Children.Add(nameText);
-            stackPanel.Children.Add(removeButton);
-            return stackPanel;
-        });
     }
 }
