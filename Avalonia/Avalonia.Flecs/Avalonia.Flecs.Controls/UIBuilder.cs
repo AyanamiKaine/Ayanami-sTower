@@ -116,6 +116,17 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Shows a window
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static UIBuilder<Window> Show(this UIBuilder<Window> builder)
+    {
+        builder.Entity.ShowWindow();
+        return builder;
+    }
+
+    /// <summary>
     /// Gets the current column span of an control component
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -457,16 +468,27 @@ public static class UIBuilderExtensions
 
 
     /// <summary>
-    /// Sets the row definitions of a Grid control.
+    /// Adds an event handler that gets invoked when the Closing event happens. For Windows this happens
+    /// BEFORE the window is fully closed but AFTER the window tries to close.
     /// </summary>
-    public static UIBuilder<Window> OnWindowClosing(this UIBuilder<Window> builder, Action<object?, WindowClosingEventArgs> handler)
+    public static UIBuilder<Window> OnClosing(this UIBuilder<Window> builder, Action<object?, WindowClosingEventArgs> handler)
     {
         builder.Entity.OnClosing(handler);
         return builder;
     }
 
     /// <summary>
-    /// Adds an event handler that gets invoked when the OnClick event happens
+    /// Adds an event handler that gets invoked when the Closed event happens. For Windows this happens
+    /// AFTER the window is fully closed.
+    /// </summary>
+    public static UIBuilder<Window> OnClosed(this UIBuilder<Window> builder, EventHandler handler)
+    {
+        builder.Entity.OnClosed(handler);
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when the Click event happens
     /// </summary>
     public static UIBuilder<Button> OnClick(this UIBuilder<Button> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
     {
