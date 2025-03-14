@@ -200,7 +200,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addFileButton) =>
                     {
                         addFileButton
-                        .OnClick((sender, args) => AddFile.Create(world).ShowWindow())
+                        .OnClick((sender, args) => new AddFile(world))
                         .Child<TextBlock>(t =>
                             t.SetText("File")
                             .SetFontWeight(FontWeight.Normal)
@@ -210,7 +210,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addClozeButton) =>
                     {
                         addClozeButton
-                        .OnClick((sender, args) => AddFile.Create(world).ShowWindow())
+                        .OnClick((sender, args) => new AddFile(world))
                         .Child<TextBlock>(t =>
                             t.SetText("Cloze")
                             .SetFontWeight(FontWeight.Normal)
@@ -220,7 +220,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addQuizButton) =>
                     {
                         addQuizButton
-                        .OnClick((sender, args) => AddFile.Create(world).ShowWindow())
+                        .OnClick((sender, args) => new AddFile(world))
                         .Child<TextBlock>(t =>
                             t.SetText("Quiz")
                             .SetFontWeight(FontWeight.Normal)
@@ -230,7 +230,7 @@ public class SpacedRepetitionPage : IUIComponent
                     stackPanel.Child<Button>((addFlashcardButton) =>
                     {
                         addFlashcardButton
-                        .OnClick((sender, args) => AddFile.Create(world).ShowWindow())
+                        .OnClick((sender, args) => new AddFile(world))
                         .Child<TextBlock>(t =>
                             t.SetText("Flashcard")
                             .SetFontWeight(FontWeight.Normal)
