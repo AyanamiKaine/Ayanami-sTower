@@ -17,6 +17,7 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Threading;
 using Avalonia.Flecs.StellaLearning.Data;
 using System.Collections.ObjectModel;
+using System.Timers;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -42,6 +43,7 @@ public partial class App : Application
     /// Named global app entities
     /// </summary>
     private TrayIcon? _trayIcon;
+
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     /// <summary>
     /// Initializes the application.
@@ -78,6 +80,8 @@ public partial class App : Application
         CreateUILayout().ChildOf(MainWindow);
         InitializeTrayIcon();
     }
+
+   
 
     private Entity CreateUILayout()
     {

@@ -33,6 +33,26 @@ shows information where its needed and hides it where it doesnt.
 public static class UIBuilderExtensions
 {
     /// <summary>
+    /// Creates a template for a type with a specific root control type.
+    /// </summary>
+    /// <typeparam name="TData">Type of data to template</typeparam>
+    /// <typeparam name="TControl">Type of root control for the template</typeparam>
+    /// <param name="world">The Flecs world</param>
+    /// <param name="configure">Action to configure the control</param>
+    /// <returns>A data template that uses the UIBuilder pattern</returns>
+    public static FuncDataTemplate<TData> CreateTemplate<TData, TControl>(
+        this World world,
+        Action<UIBuilder<TControl>, TData> configure)
+        where TControl : Control, new()
+    {
+        return new FuncDataTemplate<TData>((item, _) =>
+        {
+            var entity = world.UI<TControl>(builder => configure(builder, item));
+            return entity.Get<TControl>();
+        });
+    }
+
+    /// <summary>
     /// Creates a new entity with the specified control component and configures it using a builder pattern.
     /// </summary>
     /// <typeparam name="T">The type of Avalonia control to create.</typeparam>
@@ -173,6 +193,7 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+
     /// <summary>
     /// Attaches an tooltip to an control
     /// </summary>
@@ -183,6 +204,19 @@ public static class UIBuilderExtensions
     public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, Entity toolTipEntity) where T : Control, new()
     {
         builder.Entity.AttachToolTip(toolTipEntity);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the visibility of a Visual control.
+    /// </summary>
+    /// <typeparam name="T">The type of Visual control</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="isVisible">Whether the control should be visible (default: true)</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> Visible<T>(this UIBuilder<T> builder, bool isVisible = true) where T : Visual, new()
+    {
+        builder.Entity.Get<T>().IsVisible = isVisible;
         return builder;
     }
 
@@ -590,7 +624,31 @@ public static class UIBuilderExtensions
         return builder.Entity.HasItemSelected();
     }
 
+    /// <summary>
+    /// Sets the border thickness of a TemplatedControl.
+    /// </summary>
+    /// <typeparam name="T">The type of TemplatedControl</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="borderThickness">The thickness to set for the border</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetBorderThickness<T>(this UIBuilder<T> builder, Thickness borderThickness) where T : TemplatedControl
+    {
+        builder.Entity.Get<T>().BorderThickness = borderThickness;
+        return builder;
+    }
 
+    /// <summary>
+    /// Sets the border brush of a TemplatedControl.
+    /// </summary>
+    /// <typeparam name="T">The type of TemplatedControl</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="brush">The brush to set as the border</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetBorderBrush<T>(this UIBuilder<T> builder, IBrush brush) where T : TemplatedControl
+    {
+        builder.Entity.Get<T>().BorderBrush = brush;
+        return builder;
+    }
 
     /// <summary>
     /// Adds an event handler that gets invoked when the OnKeyDown event happens

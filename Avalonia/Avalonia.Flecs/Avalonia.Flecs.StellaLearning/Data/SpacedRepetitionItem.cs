@@ -5,6 +5,51 @@ using System.Collections.Generic;
 using FSRSPythonBridge;
 using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
+using System.Collections.ObjectModel;
+using System.Linq;
+
+/// <summary>
+/// Provides extension methods for ObservableCollection of SpacedRepetitionItem objects.
+/// </summary>
+public static class SpacedRepetitionObservableCollectionExtensions
+{
+    /// <summary>
+    /// Returns the next spaced repetition item that is due for review, ordered by priority.
+    /// </summary>
+    /// <param name="spacedRepetitionItems">The collection of spaced repetition items to search through.</param>
+    /// <returns>The next item due for review, or null if no items are due or the collection is empty.</returns>
+    public static SpacedRepetitionItem? GetNextItemToBeReviewed(this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    {
+        if (spacedRepetitionItems?.Any() != true)
+        {
+            return null; // Return null if the collection is empty or null
+        }
+
+        DateTime now = DateTime.Now;
+
+        return spacedRepetitionItems
+                .Where(item => item.NextReview <= now) // Filter for items that are due
+                .OrderBy(item => item.Priority)     // Order by the next review date (ascending)
+                .FirstOrDefault();                  // Take the first item (the nearest due date)
+    }
+
+
+    /// <summary>
+    /// Returns the next item to be reviewed that has its due date in the future.
+    /// </summary>
+    /// <returns></returns>
+    public static SpacedRepetitionItem? NextItemToBeReviewedInFuture(this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    {
+        if (spacedRepetitionItems?.Any() != true)
+        {
+            return null;
+        }
+
+        return spacedRepetitionItems
+                .OrderBy(item => item.NextReview)
+                .FirstOrDefault();
+    }
+}
 
 /// <summary>
 /// Represents the type of the spaced repetition item

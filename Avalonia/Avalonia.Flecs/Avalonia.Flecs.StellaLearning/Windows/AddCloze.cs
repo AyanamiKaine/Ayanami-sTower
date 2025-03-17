@@ -108,9 +108,20 @@ public class AddCloze : IUIComponent
             stackPanel.Child<ItemsControl>((itemsControl) =>
             {
                 clozeList = itemsControl
-                .SetItemTemplate(DefineTagTemplate(world, clozes))
-                .SetItemsSource(clozes);
-            });
+                .SetItemTemplate(
+                    world.CreateTemplate<string, StackPanel>(
+                    (sp, tag) => sp
+                        .SetOrientation(Layout.Orientation.Horizontal)
+                        .SetSpacing(5)
+                        .Child<TextBlock>(tb => tb.SetText(tag))
+                        .Child<Button>((btn) =>
+                        {
+                            btn.Child<TextBlock>(textBlock => textBlock.SetText("X"));
+                            btn.OnClick((_, _) => clozes.Remove(tag));
+                        })
+                    )
+                );
+            }).SetItemsSource(clozes);
 
             // Create button
             stackPanel.Child<Button>((button) =>
@@ -146,36 +157,6 @@ public class AddCloze : IUIComponent
                     clozes.Clear();
                 });
             });
-        });
-    }
-    private static FuncDataTemplate<string> DefineTagTemplate(World world, ObservableCollection<string> clozes)
-    {
-        return new FuncDataTemplate<string>((tag, _) =>
-        {
-            var stackPanel = new StackPanel()
-            {
-                Orientation = Layout.Orientation.Horizontal,
-                Spacing = 5
-            };
-
-            var nameText = new TextBlock()
-            {
-                Text = tag
-            };
-
-            var removeButton = new Button()
-            {
-                Content = "X"
-            };
-
-            removeButton.Click += ((sender, args) =>
-            {
-                clozes.Remove(tag);
-            });
-
-            stackPanel.Children.Add(nameText);
-            stackPanel.Children.Add(removeButton);
-            return stackPanel;
         });
     }
 }

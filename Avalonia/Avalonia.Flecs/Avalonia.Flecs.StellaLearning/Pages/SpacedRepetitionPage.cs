@@ -17,10 +17,12 @@ using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using Avalonia.Flecs.StellaLearning.Windows;
 using System.Text.Json;
-using System.Threading;
 using Avalonia.Flecs.StellaLearning.Converters;
 using NLog;
 using Avalonia.Flecs.Controls;
+using System.Timers;
+using Avalonia.Threading;
+using DesktopNotifications;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -36,10 +38,13 @@ public class SpacedRepetitionPage : IUIComponent
     public Entity Root => _root;
 
     private readonly List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
-
+    private static readonly INotificationManager _iNotificationManager = Program.NotificationManager ??
+                           throw new InvalidOperationException("Missing notification manager");
     private readonly List<string> itemTypes = ["File", "Quiz", "Cloze"];
     private UIBuilder<ListBox>? srItems;
     private UIBuilder<ComboBox>? sortItemButton;
+    private static bool _previouslyHadItemToReview = false;
+    private ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems;
     /// <summary>
     /// Creates the Spaced Repetition Page
     /// </summary>
@@ -48,6 +53,7 @@ public class SpacedRepetitionPage : IUIComponent
     public SpacedRepetitionPage(World world)
     {
         ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems = LoadSpaceRepetitionItemsFromDisk();
+        _spacedRepetitionItems = spacedRepetitionItems;
         world.Set(spacedRepetitionItems);
 
         _root = world.UI<Grid>((grid) =>
@@ -186,6 +192,11 @@ public class SpacedRepetitionPage : IUIComponent
                 .SetColumnSpan(2)
                 .SetRow(2)
                 .Child<TextBlock>(t => t.SetText("Start Learning"));
+
+                startLearningButton.OnClick((btns, _) =>
+                {
+                    new StartLearningWindow(world);
+                });
             });
 
             grid.Child<Button>((addItemButton) =>
@@ -292,6 +303,8 @@ public class SpacedRepetitionPage : IUIComponent
         var timerEntity = world.Entity()
             .Set(CreateAutoSaveTimer(spacedRepetitionItems));
 
+        var notificationTimer = world.Entity()
+            .Set(CreateNotificationTimer());
 
         /*
         When the spaced reptition items change we want to refresh the shown list, this mostly occurs when new items are added, updated or removed.
@@ -326,6 +339,7 @@ public class SpacedRepetitionPage : IUIComponent
                 });
 
         App.GetMainWindow().Closing += (_, _) => SaveSpaceRepetitionItemsToDisk(spacedRepetitionItems);
+
     }
 
     /// <summary>
@@ -335,23 +349,73 @@ public class SpacedRepetitionPage : IUIComponent
     /// <returns></returns>
     public static Timer CreateAutoSaveTimer(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        // Create a Timer object
-        var autoSaveTimer = new Timer(state =>
+        // Create a System.Timers.Timer for auto-saving
+        var autoSaveTimer = new Timer(300000) // 5 minutes in milliseconds
+        {
+            AutoReset = true, // Make the timer repeat
+            Enabled = true,   // Start the timer immediately
+        };
+
+        autoSaveTimer.Elapsed += (sender, e) =>
         {
             Logger.Info($"{DateTime.Now}: Auto-saving data..."); // Debug output
             try
             {
-                SaveSpaceRepetitionItemsToDisk((ObservableCollection<SpacedRepetitionItem>)state!);
+                SaveSpaceRepetitionItemsToDisk(spacedRepetitionItems);
             }
             catch (Exception ex)
             {
                 // Handle any exceptions that might occur during saving
-                // Log the error, display an error message to the user, etc.
                 Logger.Warn($"Error during auto-save: {ex.Message}");
             }
-        }, spacedRepetitionItems, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5)); // Pass spacedRepetitionItems as state
+        };
 
         return autoSaveTimer;
+    }
+
+    private Timer CreateNotificationTimer()
+    {
+        var notificationTimer = new Timer(60000)
+        {
+            AutoReset = true,
+            Enabled = true,
+        };
+
+        notificationTimer.Elapsed += (sender, e) =>
+        {
+            Dispatcher.UIThread.Post(() =>
+                        {
+                            var _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                            bool hasItemToReview = _ItemToBeLearned != null;
+                            if (hasItemToReview && !_previouslyHadItemToReview && !App.GetMainWindow().IsActive)
+                            {
+
+                                _iNotificationManager.NotificationActivated += (_, e) =>
+                                {
+                                    if (e.ActionId == "startLearning")
+                                    {
+                                        Dispatcher.UIThread.Post(() => new StartLearningWindow(_root.CsWorld()));
+                                    }
+                                };
+
+                                var nf = new Notification
+                                {
+                                    Title = "New item can be learned",
+                                    Body = _ItemToBeLearned!.Name,
+                                    Buttons =
+                                {
+                                    ("Start Learning", "startLearning"),
+                                    ("Dismiss", "dismiss")
+                                }
+                                };
+
+                                _iNotificationManager.ShowNotification(nf);
+                            }
+                            _previouslyHadItemToReview = hasItemToReview;
+                        });
+        };
+
+        return notificationTimer;
     }
 
     /// <summary>
