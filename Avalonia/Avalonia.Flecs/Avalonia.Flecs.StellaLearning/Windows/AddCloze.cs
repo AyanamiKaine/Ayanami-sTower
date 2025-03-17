@@ -7,6 +7,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Flecs.Util;
 using Avalonia.Media;
 using Flecs.NET.Core;
@@ -64,6 +65,7 @@ public class AddCloze : IUIComponent
 
         return world.UI<StackPanel>((stackPanel) =>
         {
+            Entity calculatedPriority;
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? clozeBox = null;
             UIBuilder<ItemsControl>? clozeList = null;
@@ -123,6 +125,10 @@ public class AddCloze : IUIComponent
                 );
             }).SetItemsSource(clozes);
 
+            var comparePriority = new ComparePriority(world);
+            calculatedPriority = comparePriority.CalculatedPriorityEntity;
+            stackPanel.Child(comparePriority);
+
             // Create button
             stackPanel.Child<Button>((button) =>
             {
@@ -147,6 +153,7 @@ public class AddCloze : IUIComponent
                     world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionCloze()
                     {
                         Name = nameTextBox.GetText(),
+                        Priority = calculatedPriority.Get<int>(),
                         FullText = clozeBox.GetText(),
                         ClozeWords = [.. clozes],
                         SpacedRepetitionItemType = SpacedRepetitionItemType.Cloze
@@ -155,6 +162,8 @@ public class AddCloze : IUIComponent
                     nameTextBox.SetText("");
                     clozeBox.SetText("");
                     clozes.Clear();
+                    calculatedPriority.Set(500000000);
+                    comparePriority.Reset();
                 });
             });
         });
