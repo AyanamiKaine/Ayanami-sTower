@@ -61,7 +61,7 @@ When we create an UI-Component we create a set of entities with the appropriate 
 
 When a UI-Component root entity has no parent anymore, destroy it and all of its children. Maybe we can implement a simply timer that periodically checks if they dont have any root elements anymore and destroy them. Or implement a callback for when an entites parent gets removed (Probably the better choice, its simpler.)
 
-## [] Implementing UI Components as Classes
+## [X] Implementing UI Components as Classes
 
 ### Problem
 
@@ -130,7 +130,7 @@ The current use of many reflection features in the way we access specific avalon
 
 Simply rewrite all reflection usages to functions that do not need them.
 
-## [] Remove named entities as a global refrence from the app class
+## [X] Remove named entities as a global refrence from the app class
 
 ### Problem
 
