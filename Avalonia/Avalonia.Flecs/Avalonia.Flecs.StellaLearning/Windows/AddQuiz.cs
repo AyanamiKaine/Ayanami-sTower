@@ -108,7 +108,15 @@ public class AddQuiz : IUIComponent
                     });
                 }
             });
-
+            /*
+            //TODO: Implement a textblock that shows when the user didnt select an option as anwser
+            stackPanel.Child<TextBlock>((textBlock) =>
+            {
+                textBlock.SetText("You must select at least one answer");
+                textBlock.SetFontSize(12);
+                textBlock.SetMargin(new Thickness(0, -5, 0, 0));
+            });
+            */
             var comparePriority = new ComparePriority(world);
             calculatedPriority = comparePriority.CalculatedPriorityEntity;
             stackPanel.Child(comparePriority);
