@@ -199,15 +199,10 @@ public class AddFile : IUIComponent
 
     private static Entity FilePickerButton(World world)
     {
-        var browseForFileButton = world.Entity()
-            .Set(new Button());
-
-        var browseForFileButtonContent = world.Entity()
-            .ChildOf(browseForFileButton)
-            .Set(new TextBlock())
-            .SetText("Browse");
-
-        return browseForFileButton;
+        return world.UI<Button>((button) =>
+        {
+            button.Child<TextBlock>((t) => t.SetText("Browse"));
+        });
     }
 
     private static async Task<string> FilePickerAsync()
