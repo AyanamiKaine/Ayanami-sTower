@@ -217,7 +217,7 @@ public class AddFile : IUIComponent
         // Create an OpenFileDialog instance
         IReadOnlyList<IStorageFile> result = await App.GetMainWindow().StorageProvider.OpenFilePickerAsync(options);
 
-        if (result != null && result.Count > 0)
+        if (result?.Count > 0)
         {
             // Get the selected file
             IStorageFile file = result[0];
