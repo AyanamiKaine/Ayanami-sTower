@@ -193,6 +193,29 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+    /// <summary>
+    /// Sets the foreground brush of a TemplatedControl.
+    /// </summary>
+    /// <typeparam name="T">The type of TemplatedControl</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="brush">The brush to set as the foreground</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetForeground<T>(this UIBuilder<T> builder, IBrush brush) where T : TemplatedControl
+    {
+        builder.Entity.Get<T>().Foreground = brush;
+        return builder;
+    }
+    /// <summary>
+    /// Sets the foreground brush of a TextBlock.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="brush">The brush to set as the foreground</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<TextBlock> SetForeground(this UIBuilder<TextBlock> builder, IBrush brush)
+    {
+        builder.Entity.Get<TextBlock>().Foreground = brush;
+        return builder;
+    }
 
     /// <summary>
     /// Attaches an tooltip to an control
@@ -347,6 +370,19 @@ public static class UIBuilderExtensions
     public static UIBuilder<T> SetFontWeight<T>(this UIBuilder<T> builder, FontWeight fontWeight) where T : TextBlock
     {
         builder.Entity.SetFontWeight(fontWeight);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the font size of a TextBlock.
+    /// </summary>
+    /// <typeparam name="T">The type of TextBlock</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="fontSize">The size to set for the font</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetFontSize<T>(this UIBuilder<T> builder, double fontSize) where T : TextBlock
+    {
+        builder.Entity.Get<T>().FontSize = fontSize;
         return builder;
     }
 

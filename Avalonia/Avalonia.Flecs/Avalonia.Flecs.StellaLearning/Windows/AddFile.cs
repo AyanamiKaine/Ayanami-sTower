@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -11,6 +12,7 @@ using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Flecs.Util;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Flecs.NET.Core;
 
@@ -62,14 +64,41 @@ public class AddFile : IUIComponent
 
     private static Entity DefineWindowContents(World world)
     {
+
         ObservableCollection<Tag> tags = [];
 
         return world.UI<StackPanel>((stackPanel) =>
         {
+            UIBuilder<TextBlock>? validationTextBlock = null;
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? filePath = null;
             UIBuilder<TextBox>? questionTextBox = null;
             Entity calculatedPriority;
+
+
+            void ValidateFilePath(string path)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    validationTextBlock!.SetText("You must define a file path");
+                    validationTextBlock!.SetForeground(new SolidColorBrush(Colors.Red));
+                    return;
+                }
+
+                bool isValid = System.IO.File.Exists(path);
+
+                if (isValid)
+                {
+                    validationTextBlock!.SetText("✓ File exists");
+                    validationTextBlock!.SetForeground(new SolidColorBrush(Colors.Green));
+                }
+                else
+                {
+                    validationTextBlock!.SetText("✗ File doesn't exist");
+                    validationTextBlock!.SetForeground(new SolidColorBrush(Colors.Red));
+                }
+            }
+
             stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
             .SetSpacing(10)
@@ -92,7 +121,23 @@ public class AddFile : IUIComponent
                 filePath = textBox;
                 textBox
                 .SetWatermark("FilePath")
-                .SetInnerRightContent(FilePickerButton(world).OnClick(async (e, args) => textBox.SetText(await FilePickerAsync())));
+                .SetInnerRightContent(FilePickerButton(world).OnClick(async (e, args) =>
+                {
+                    var path = await FilePickerAsync();
+                    textBox.SetText(path);
+                    ValidateFilePath(path);
+                }));
+
+                textBox.With((textBox) => textBox.TextChanged += (sender, args) => ValidateFilePath(textBox.Text!));
+
+            });
+
+            stackPanel.Child<TextBlock>((textBlock) =>
+            {
+                validationTextBlock = textBlock;
+                textBlock.SetText("");
+                textBlock.SetFontSize(12);
+                textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
             });
 
             var comparePriority = new ComparePriority(world);
@@ -123,6 +168,12 @@ public class AddFile : IUIComponent
                             return;
                         }
 
+                        if (!System.IO.File.Exists(filePath!.GetText()))
+                        {
+                            filePath!.SetWatermark("File at defined path does not exist");
+                            return;
+                        }
+
                         world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                         {
                             Name = nameTextBox.GetText(),
@@ -143,6 +194,8 @@ public class AddFile : IUIComponent
             });
         });
     }
+
+
 
     private static Entity FilePickerButton(World world)
     {
