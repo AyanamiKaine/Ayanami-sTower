@@ -125,6 +125,13 @@ public class AddCloze : IUIComponent
                 );
             }).SetItemsSource(clozes);
 
+            stackPanel.Child<TextBlock>((textBlock) =>
+            {
+                textBlock.SetText("Select a word and right click to mark it as a cloze");
+                textBlock.SetFontSize(12);
+                textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
+            });
+
             var comparePriority = new ComparePriority(world);
             calculatedPriority = comparePriority.CalculatedPriorityEntity;
             stackPanel.Child(comparePriority);
