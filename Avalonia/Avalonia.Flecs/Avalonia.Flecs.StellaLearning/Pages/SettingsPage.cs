@@ -41,22 +41,26 @@ public class SettingsPage : IUIComponent
 
         world.Set(Settings.LoadFromDisk());
 
-        _root = world.UI<StackPanel>((stackPanel) =>
+        _root = world.UI<ScrollViewer>((scrollViewer) =>
         {
-            stackPanel.Child(new ThemeToggleSwitch(world));
-            stackPanel.Child(new AppToTray(world));
-            stackPanel.Child(new EnableNotificationsToggleSwitch(world));
-            stackPanel.Child<Separator>((Separator) =>
+            scrollViewer.Child<StackPanel>((stackPanel) =>
             {
-                Separator
-                .SetMargin(0, 0, 0, 10)
-                .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                .SetBorderBrush(Brushes.Black);
-            });
-            stackPanel.Child(new ObsidianPath(world));
+                stackPanel.Child(new ThemeToggleSwitch(world));
+                stackPanel.Child(new AppToTray(world));
+                stackPanel.Child(new EnableNotificationsToggleSwitch(world));
+                stackPanel.Child<Separator>((Separator) =>
+                {
+                    Separator
+                    .SetMargin(0, 0, 0, 10)
+                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                    .SetBorderBrush(Brushes.Black);
+                });
+                stackPanel.Child(new ObsidianPath(world));
 
-        })
-            .Add<Page>();
+            });
+
+        }).Add<Page>();
+
     }
 
     private class EnableNotificationsToggleSwitch : IUIComponent
@@ -68,7 +72,6 @@ public class SettingsPage : IUIComponent
         public EnableNotificationsToggleSwitch(World world)
         {
             _root =
-
             world.UI<DockPanel>((dockPanel) =>
             {
                 dockPanel.Child<TextBlock>((textBlock) =>
