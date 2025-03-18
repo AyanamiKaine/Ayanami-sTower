@@ -30,6 +30,16 @@ public class SettingsPage : IUIComponent
     /// <returns></returns>
     public SettingsPage(World world)
     {
+        world.Component<Settings>("Settings").OnSet((Entity e, ref Settings settings) =>
+        {
+            if (Application.Current is not null)
+                SetTheme(Application.Current, settings.isDarkMode ? "Dark" : "Light");
+
+            Settings.SaveToDisk(settings);
+        });
+
+        world.Set(Settings.LoadFromDisk());
+
         _root = world.UI<StackPanel>((stackPanel) =>
         {
             stackPanel.Child(new ThemeToggleSwitch(world));
@@ -48,12 +58,17 @@ public class SettingsPage : IUIComponent
         {
             _root = world.UI<ToggleSwitch>((toggleSwitch) =>
             {
+                toggleSwitch.With((toggleSwitch) =>
+                {
+                    toggleSwitch.IsChecked = world.Get<Settings>().isDarkMode;
+                });
+
                 toggleSwitch.Child<TextBlock>((textBlock) => textBlock.SetText("Dark Mode"));
                 toggleSwitch.OnIsCheckedChanged((sender, args) =>
                 {
                     var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
-                    if (Application.Current is not null)
-                        SetTheme(Application.Current, isDarkMode ? "Dark" : "Light");
+                    var currentSettings = world.Get<Settings>();
+                    world.Set<Settings>(new(isDarkMode, currentSettings.ObsidianPath));
                 });
             });
         }
@@ -69,8 +84,6 @@ public class SettingsPage : IUIComponent
         {
             _root = world.UI<TextBox>((textBox) =>
             {
-                world.Set(new Settings());
-
                 textBox
                 .SetWatermark("Path to Obsidian")
                 .SetText(world.Get<Settings>().ObsidianPath)
@@ -97,7 +110,8 @@ public class SettingsPage : IUIComponent
                         if (newObsidanPath != "")
                         {
                             _root.SetText(newObsidanPath);
-                            world.Get<Settings>().ObsidianPath = newObsidanPath;
+                            var currentSettings = world.Get<Settings>();
+                            world.Set<Settings>(new(currentSettings.isDarkMode, newObsidanPath));
                         }
                     });
                 }));
