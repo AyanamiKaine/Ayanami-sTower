@@ -11,6 +11,7 @@ using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.Util;
 using NLog;
 using Avalonia.Flecs.Controls;
+using Avalonia.Media;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -44,9 +45,76 @@ public class SettingsPage : IUIComponent
         {
             stackPanel.Child(new ThemeToggleSwitch(world));
             stackPanel.Child(new AppToTray(world));
+            stackPanel.Child(new EnableNotificationsToggleSwitch(world));
+            stackPanel.Child<Separator>((Separator) =>
+            {
+                Separator
+                .SetMargin(0, 0, 0, 10)
+                .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                .SetBorderBrush(Brushes.Black);
+            });
             stackPanel.Child(new ObsidianPath(world));
+
         })
             .Add<Page>();
+    }
+
+    private class EnableNotificationsToggleSwitch : IUIComponent
+    {
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
+
+        public EnableNotificationsToggleSwitch(World world)
+        {
+            _root =
+
+            world.UI<DockPanel>((dockPanel) =>
+            {
+                dockPanel.Child<TextBlock>((textBlock) =>
+                {
+
+                    textBlock.SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                    .SetText("Enable Notifications")
+                    .SetTextWrapping(Media.TextWrapping.Wrap);
+                });
+
+                dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
+                {
+                    toggleSwitch
+                    .SetDock(Dock.Right)
+                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Right);
+
+                    toggleSwitch.With((toggleSwitch) =>
+                    {
+                        toggleSwitch.IsChecked = world.Get<Settings>().enableNotifications;
+                    });
+
+                    toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                    {
+                        var enableNotifications = ((ToggleSwitch)sender!).IsChecked ?? false;
+                        var currentSettings = world.Get<Settings>();
+                        world.Set<Settings>(new(
+                            isDarkMode: currentSettings.isDarkMode,
+                            ObsidianPath: currentSettings.ObsidianPath,
+                            closeToTray: currentSettings.closeToTray,
+                            enableNotifications: enableNotifications));
+                    });
+                });
+
+
+                dockPanel.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                {
+                    toolTip.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText(
+                        """
+                        When enabled the app will send desktop notifications where appropriate.
+                        """);
+                    });
+                }));
+            });
+        }
     }
 
     private class ThemeToggleSwitch : IUIComponent
@@ -63,15 +131,17 @@ public class SettingsPage : IUIComponent
             {
                 dockPanel.Child<TextBlock>((textBlock) =>
                 {
-                    textBlock.SetVerticalAlignment(Layout.VerticalAlignment.Center);
-                    textBlock.SetText("Dark Mode");
-                    textBlock.SetTextWrapping(Media.TextWrapping.Wrap);
+                    textBlock
+                    .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                    .SetText("Dark Mode")
+                    .SetTextWrapping(Media.TextWrapping.Wrap);
                 });
 
                 dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
                 {
-                    toggleSwitch.SetDock(Dock.Right);
-                    toggleSwitch.SetHorizontalAlignment(Layout.HorizontalAlignment.Right);
+                    toggleSwitch
+                    .SetDock(Dock.Right)
+                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Right);
 
                     toggleSwitch.With((toggleSwitch) =>
                     {
@@ -82,12 +152,14 @@ public class SettingsPage : IUIComponent
                     {
                         var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
                         var currentSettings = world.Get<Settings>();
-                        world.Set<Settings>(new(isDarkMode, currentSettings.ObsidianPath));
+                        world.Set<Settings>(new(
+                            isDarkMode: isDarkMode,
+                            ObsidianPath: currentSettings.ObsidianPath,
+                            closeToTray: currentSettings.closeToTray,
+                            enableNotifications: currentSettings.enableNotifications));
                     });
                 });
             });
-
-
         }
     }
 
@@ -105,15 +177,16 @@ public class SettingsPage : IUIComponent
             {
                 dockPanel.Child<TextBlock>((textBlock) =>
                 {
-                    textBlock.SetVerticalAlignment(Layout.VerticalAlignment.Center);
-                    textBlock.SetText("Close to tray");
-                    textBlock.SetTextWrapping(Media.TextWrapping.Wrap);
+                    textBlock.SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                    .SetText("Close to tray")
+                    .SetTextWrapping(Media.TextWrapping.Wrap);
                 });
 
                 dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
                 {
-                    toggleSwitch.SetDock(Dock.Right);
-                    toggleSwitch.SetHorizontalAlignment(Layout.HorizontalAlignment.Right);
+                    toggleSwitch
+                    .SetDock(Dock.Right)
+                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Right);
 
                     toggleSwitch.With((toggleSwitch) =>
                     {
@@ -124,23 +197,26 @@ public class SettingsPage : IUIComponent
                     {
                         var closeToTray = ((ToggleSwitch)sender!).IsChecked ?? false;
                         var currentSettings = world.Get<Settings>();
-                        world.Set<Settings>(new(currentSettings.isDarkMode, currentSettings.ObsidianPath, closeToTray));
+                        world.Set<Settings>(new(
+                            isDarkMode: currentSettings.isDarkMode,
+                            ObsidianPath: currentSettings.ObsidianPath,
+                            closeToTray: closeToTray,
+                            enableNotifications: currentSettings.enableNotifications));
                     });
-
-
-                    toggleSwitch.AttachToolTip(world.UI<ToolTip>((toolTip) =>
-                    {
-                        toolTip.Child<TextBlock>((textBlock) =>
-                        {
-                            textBlock.SetText(
-                            """
-                            When toggled on, the app instead of closing will minimize into a tray icon.
-                            
-                            The app will run in the background, so you can desktop notifications for example when a new item can be learned.
-                            """);
-                        });
-                    }));
                 });
+
+                dockPanel.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                {
+                    toolTip.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText(
+                        """
+                        When toggled on, the app instead of closing will minimize into a tray icon.
+                                            
+                        The app will run in the background, so you can desktop notifications for example when a new item can be learned.
+                        """);
+                    });
+                }));
             });
 
 
@@ -155,37 +231,49 @@ public class SettingsPage : IUIComponent
 
         public ObsidianPath(World world)
         {
-            _root = world.UI<TextBox>((textBox) =>
+            _root = world.UI<StackPanel>((stackPanel) =>
             {
-                textBox
-                .SetWatermark("Path to Obsidian")
-                .SetText(world.Get<Settings>().ObsidianPath)
-                .SetInnerRightContent(world.UI<Button>((button) =>
+                stackPanel.Child<TextBlock>((textBlock) =>
                 {
-                    button.Child<TextBlock>((textBlock) => textBlock.SetText("Browse"));
+                    textBlock.SetText("Obsidian Path:");
+                    textBlock.SetMargin(0, 0, 0, 10);
+                });
+                stackPanel.Child<TextBox>((textBox) =>
+                   {
+                       textBox
+                       .SetWatermark("Path to Obsidian")
+                       .SetText(world.Get<Settings>().ObsidianPath)
+                       .SetInnerRightContent(world.UI<Button>((button) =>
+                       {
+                           button.Child<TextBlock>((textBlock) => textBlock.SetText("Browse"));
 
-                    button.AttachToolTip(world.UI<ToolTip>((toolTip) =>
-                    {
-                        toolTip.Child<TextBlock>((textBlock) =>
-                        {
-                            textBlock.SetText(
-                            """
-                            When a obsidian path is set, the application 
-                            will be able to open the obsidian vault when a
-                            markdown file is part of an obsidian vault.
-                            """);
-                        });
-                    }));
+                           button.OnClick(async (e, args) =>
+                           {
+                               string newObsidanPath = await ObsidianFilePickerAsync();
+                               if (newObsidanPath != "")
+                               {
+                                   _root.SetText(newObsidanPath);
+                                   var currentSettings = world.Get<Settings>();
+                                   world.Set<Settings>(new(
+                                       isDarkMode: currentSettings.isDarkMode,
+                                       ObsidianPath: newObsidanPath,
+                                       closeToTray: currentSettings.closeToTray,
+                                       enableNotifications: currentSettings.enableNotifications));
+                               }
+                           });
+                       }));
+                   });
 
-                    button.OnClick(async (e, args) =>
+                stackPanel.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                {
+                    toolTip.Child<TextBlock>((textBlock) =>
                     {
-                        string newObsidanPath = await ObsidianFilePickerAsync();
-                        if (newObsidanPath != "")
-                        {
-                            _root.SetText(newObsidanPath);
-                            var currentSettings = world.Get<Settings>();
-                            world.Set<Settings>(new(currentSettings.isDarkMode, newObsidanPath));
-                        }
+                        textBlock.SetText(
+                                            """
+                                            When a obsidian path is set, the application 
+                                            will be able to open the obsidian vault when a
+                                            markdown file is part of an obsidian vault.
+                                            """);
                     });
                 }));
             });

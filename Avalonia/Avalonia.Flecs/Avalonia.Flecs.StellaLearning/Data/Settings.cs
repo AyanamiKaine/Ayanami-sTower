@@ -11,6 +11,10 @@ namespace Avalonia.Flecs.StellaLearning.Data;
 public class Settings
 {
     /// <summary>
+    /// Whether the application is allowed to send notifcations
+    /// </summary>
+    public bool enableNotifications = true;
+    /// <summary>
     /// Whether the application is in dark mode
     /// </summary>
     public bool isDarkMode = false;
@@ -37,7 +41,8 @@ public class Settings
     /// <param name="isDarkMode"></param>
     /// <param name="ObsidianPath"></param>
     /// <param name="closeToTray"></param>
-    public Settings(bool isDarkMode = false, string ObsidianPath = "", bool closeToTray = true)
+    /// <param name="enableNotifications"></param>
+    public Settings(bool isDarkMode = false, string ObsidianPath = "", bool closeToTray = true, bool enableNotifications = true)
     {
         if (ObsidianPath.Length == 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             ObsidianPath = GetWindowsDefaultObsidianFolderPath();
@@ -45,6 +50,7 @@ public class Settings
         this.closeToTray = closeToTray;
         this.isDarkMode = isDarkMode;
         this.ObsidianPath = ObsidianPath;
+        this.enableNotifications = enableNotifications;
     }
 
     private static string GetWindowsDefaultObsidianFolderPath()
