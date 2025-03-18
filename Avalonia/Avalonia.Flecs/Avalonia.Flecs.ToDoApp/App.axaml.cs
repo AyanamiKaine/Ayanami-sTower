@@ -126,11 +126,6 @@ public partial class App : Application
                                 .SetWatermark("Add a new Item")
                                 .OnKeyDown((sender, args) =>
                                 {
-                                    // This is quite combersome to do.
-                                    // In our hierarchy the needed ui entity that has 
-                                    // the items controller is in another node of the UI tree. 
-                                    // For now we can simply store a refrence to the UI builder
-                                    // itemsControl
                                     if (args.Key == Key.Enter && textBox.GetText() != "")
                                     {
                                         itemsController!.GetItems().Add(new TodoItem(textBox.GetText()));
