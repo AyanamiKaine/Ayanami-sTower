@@ -45,7 +45,7 @@ public class AddCloze : IUIComponent
         });
     }
 
-    private static Entity DefineWindowContents(World world)
+    private Entity DefineWindowContents(World world)
     {
         static void AddCloze(string item, ObservableCollection<string> clozes)
         {

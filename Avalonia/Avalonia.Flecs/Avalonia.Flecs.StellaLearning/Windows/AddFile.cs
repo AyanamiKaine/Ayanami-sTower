@@ -62,7 +62,7 @@ public class AddFile : IUIComponent
         });
     }
 
-    private static Entity DefineWindowContents(World world)
+    private Entity DefineWindowContents(World world)
     {
 
         ObservableCollection<Tag> tags = [];
@@ -197,7 +197,7 @@ public class AddFile : IUIComponent
 
 
 
-    private static Entity FilePickerButton(World world)
+    private Entity FilePickerButton(World world)
     {
         return world.UI<Button>((button) =>
         {
@@ -205,7 +205,7 @@ public class AddFile : IUIComponent
         });
     }
 
-    private static async Task<string> FilePickerAsync()
+    private async Task<string> FilePickerAsync()
     {
         // Create and configure the file picker options
         var options = new FilePickerOpenOptions

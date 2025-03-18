@@ -49,7 +49,7 @@ public class AddQuiz : IUIComponent
         });
     }
 
-    private static Entity DefineWindowContents(World world)
+    private Entity DefineWindowContents(World world)
     {
         return world.UI<StackPanel>((stackPanel) =>
         {
