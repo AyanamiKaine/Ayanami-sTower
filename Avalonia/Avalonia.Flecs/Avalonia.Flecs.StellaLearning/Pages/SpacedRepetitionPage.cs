@@ -174,6 +174,20 @@ public class SpacedRepetitionPage : IUIComponent
                             });
 
                         });
+                        menuFlyout.Child<MenuItem>((item) =>
+                        {
+                            item.SetHeader("Edit")
+                            .OnClick((sender, args) =>
+                            {
+                                var item = listBox.GetSelectedItem<SpacedRepetitionItem>();
+
+                                _ = item switch
+                                {
+                                    SpacedRepetitionCloze => new EditCloze(world, (SpacedRepetitionCloze)item),
+                                    _ => throw new NotImplementedException(),
+                                };
+                            });
+                        });
                     });
 
                     srItems
@@ -385,9 +399,18 @@ public class SpacedRepetitionPage : IUIComponent
         {
             Dispatcher.UIThread.Post(() =>
                         {
+                            if (_root == 0)
+                            {
+                                return;
+                            }
+                            if (!_root.CsWorld().Has<Settings>())
+                            {
+                                return;
+                            }
+
                             var _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                             bool hasItemToReview = _ItemToBeLearned != null;
-                            if (hasItemToReview && !_previouslyHadItemToReview && !App.GetMainWindow().IsActive)
+                            if (hasItemToReview && !_previouslyHadItemToReview && !App.GetMainWindow().IsActive && _root.CsWorld().Get<Settings>().enableNotifications)
                             {
 
                                 _iNotificationManager.NotificationActivated += (_, e) =>
