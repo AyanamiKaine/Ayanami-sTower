@@ -46,7 +46,8 @@ public class AddFlashcard : IUIComponent
                         .SetColumnSpan(3)
                         .Child(DefineWindowContents(world));
                     });
-                    window.OnClosed((sender, args) => _root.Destruct());
+                    //TODO: This is the wrong way of doing it and will result in invalid memory somewhere.
+                    //window.OnClosed((sender, args) => _root.Destruct());
 
                     window.Show();
                 });
