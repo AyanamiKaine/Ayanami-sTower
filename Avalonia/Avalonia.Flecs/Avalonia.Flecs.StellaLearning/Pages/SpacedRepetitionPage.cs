@@ -159,6 +159,22 @@ public class SpacedRepetitionPage : IUIComponent
 
                         menuFlyout.Child<MenuItem>((item) =>
                         {
+                            item.SetHeader("Edit")
+                            .OnClick((sender, args) =>
+                            {
+                                var item = listBox.GetSelectedItem<SpacedRepetitionItem>();
+
+                                object _ = item switch
+                                {
+                                    SpacedRepetitionCloze => new EditCloze(world, (SpacedRepetitionCloze)item),
+                                    SpacedRepetitionFlashcard => new EditFlashcard(world, (SpacedRepetitionFlashcard)item),
+                                    _ => throw new NotImplementedException(),
+                                };
+                            });
+                        });
+
+                        menuFlyout.Child<MenuItem>((item) =>
+                        {
                             item.SetHeader("Delete")
                             .OnClick((sender, args) =>
                             {
@@ -167,20 +183,7 @@ public class SpacedRepetitionPage : IUIComponent
                             });
 
                         });
-                        menuFlyout.Child<MenuItem>((item) =>
-                        {
-                            item.SetHeader("Edit")
-                            .OnClick((sender, args) =>
-                            {
-                                var item = listBox.GetSelectedItem<SpacedRepetitionItem>();
 
-                                _ = item switch
-                                {
-                                    SpacedRepetitionCloze => new EditCloze(world, (SpacedRepetitionCloze)item),
-                                    _ => throw new NotImplementedException(),
-                                };
-                            });
-                        });
                     });
 
                     srItems
