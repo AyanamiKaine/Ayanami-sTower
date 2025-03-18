@@ -9,3 +9,13 @@ Currently items cannot be edited onces created, being able to change wrong infor
 ### Solution
 
 Should be straight forward, creat edit windows. And a way to easily change priority using drag and drop logic in a list.
+
+## Tag System
+
+### Problem
+
+Currently spaced repetition items have the ability to holds tags. But there is no way to query items after defined tag.
+
+### Solution
+
+Either show tags in the spaced repetition list, simply make it possible to search by them in the search bar or something else I dont know yet.
