@@ -166,7 +166,7 @@ public partial class App : Application
                         }
                     });
                 }
-                else if (args.DisplayMode == NavigationViewDisplayMode.Compact)
+                else 
                 {
                     nav.Children((Entity child) =>
                     {
