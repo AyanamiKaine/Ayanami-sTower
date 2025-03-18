@@ -114,15 +114,49 @@ public class AddCloze : IUIComponent
                         .SetOrientation(Layout.Orientation.Horizontal)
                         .SetSpacing(5);
 
-                        sp.Child<TextBlock>(tb => tb.SetText(tag));
+                        sp.Child<TextBlock>((tb) =>
+                        {
+                            tb
+                            .SetText(tag)
+                            .SetVerticalAlignment(Layout.VerticalAlignment.Center);
+                        });
                         sp.Child<Button>((btn) =>
                         {
                             btn.Child<TextBlock>(textBlock => textBlock.SetText("X"));
-                            btn.OnClick((_, _) => clozes.Remove(tag));
-                        });
+                            btn
+                            .SetPadding(6, 2, 6, 2)
+                            .OnClick((_, _) => clozes.Remove(tag));
 
+
+                            btn.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                            {
+                                toolTip.Child<TextBlock>((textBlock) =>
+                                {
+                                    textBlock.SetText("Removes the cloze word");
+                                });
+                            }));
+
+                        });
                     }));
             }).SetItemsSource(clozes);
+
+            var warningText = stackPanel.Child<TextBlock>((textBlock) =>
+            {
+                textBlock.SetText("Please create at least one cloze word")
+                    .SetForeground(Brushes.Red)
+                    .SetFontWeight(FontWeight.Bold)
+                    .SetFontSize(12)
+                    .SetMargin(new Thickness(0, 5, 0, 5));
+
+                // Set initial visibility based on collection status
+                textBlock.Visible(clozes.Count == 0);
+            });
+
+            // Subscribe to collection changes to toggle warning visibility
+            clozes.CollectionChanged += (_, _) =>
+            {
+                warningText.Get<TextBlock>().IsVisible = clozes.Count == 0;
+            };
 
             stackPanel.Child<TextBlock>((textBlock) =>
             {
