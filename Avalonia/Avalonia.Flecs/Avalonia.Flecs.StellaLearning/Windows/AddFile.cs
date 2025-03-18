@@ -57,8 +57,14 @@ public class AddFile : IUIComponent
             */
             //TODO: This is the wrong way of doing it and will result in invalid memory somewhere.
             //window.OnClosed((sender, args) => _root.Destruct());
-
-            window.Show();
+            window.OnClosing((sender, args) =>
+                  {
+                      if (sender is Window win)
+                      {
+                          args.Cancel = true;
+                          win.Hide();
+                      }
+                  });
         });
     }
 
