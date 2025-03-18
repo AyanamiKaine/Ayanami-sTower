@@ -18,6 +18,7 @@ using Avalonia.Threading;
 using Avalonia.Flecs.StellaLearning.Data;
 using System.Collections.ObjectModel;
 using System.Timers;
+using Avalonia.Media.Imaging;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -140,7 +141,17 @@ public partial class App : Application
              */
 
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Study")));
-            nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Spaced Repetition")));
+            nav.Child<NavigationViewItem>((item) =>
+            {
+                item.With((item) =>
+                {
+                    item.IconSource = new SymbolIconSource()
+                    {
+                        Symbol = Symbol.RepeatAll
+                    };
+                });
+                item.Child<TextBlock>(t => t.SetText("Spaced Repetition"));
+            });
             nav.Child(spacedRepetitionPage);
 
             nav.OnDisplayModeChanged((sender, args) =>
