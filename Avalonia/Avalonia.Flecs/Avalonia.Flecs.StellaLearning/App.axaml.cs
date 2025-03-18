@@ -66,13 +66,19 @@ public partial class App : Application
                   .SetWidth(400)
                   .OnClosing((sender, args) =>
                   {
-                      args.Cancel = true;
-
                       if (sender is Window win)
                       {
                           // We dont close the main window but instead hide it,
                           // because we have a tray icon that is still active.
-                          win.Hide();
+                          if (_world.Get<Settings>().closeToTray)
+                          {
+                              args.Cancel = true;
+                              win.Hide();
+                          }
+                          else
+                          {
+                              args.Cancel = false;
+                          }
                       }
                   });
         });
@@ -81,7 +87,7 @@ public partial class App : Application
         InitializeTrayIcon();
     }
 
-   
+
 
     private Entity CreateUILayout()
     {

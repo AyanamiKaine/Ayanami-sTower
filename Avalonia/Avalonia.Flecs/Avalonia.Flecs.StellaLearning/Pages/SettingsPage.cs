@@ -43,6 +43,7 @@ public class SettingsPage : IUIComponent
         _root = world.UI<StackPanel>((stackPanel) =>
         {
             stackPanel.Child(new ThemeToggleSwitch(world));
+            stackPanel.Child(new AppToTray(world));
             stackPanel.Child(new ObsidianPath(world));
         })
             .Add<Page>();
@@ -134,8 +135,8 @@ public class SettingsPage : IUIComponent
                             textBlock.SetText(
                             """
                             When toggled on, the app instead of closing will minimize into a tray icon.
-                            The app will run in the background, so you can desktop notifications
-                            for example when a new item can be learned.
+                            
+                            The app will run in the background, so you can desktop notifications for example when a new item can be learned.
                             """);
                         });
                     }));
