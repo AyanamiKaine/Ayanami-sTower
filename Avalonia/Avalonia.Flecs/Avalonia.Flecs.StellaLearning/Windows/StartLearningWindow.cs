@@ -110,6 +110,13 @@ public class StartLearningWindow : IUIComponent
 
         return _world.UI<StackPanel>((layout) =>
         {
+
+            UIBuilder<Button>? easyButton = null;
+            UIBuilder<Button>? goodButton = null;
+            UIBuilder<Button>? hardButton = null;
+            UIBuilder<Button>? againButton = null;
+
+
             layout
                 .SetOrientation(Layout.Orientation.Vertical)
                 .SetVerticalAlignment(Layout.VerticalAlignment.Center)
@@ -148,6 +155,11 @@ public class StartLearningWindow : IUIComponent
                     {
                         try
                         {
+                            easyButton!.Enable();
+                            hardButton!.Enable();
+                            againButton!.Enable();
+                            goodButton!.Enable();
+
                             if (_world.Has<Settings>() && file.FilePath.EndsWith(".md"))
                             {
                                 string ObsidianPath = _world.Get<Settings>().ObsidianPath;
@@ -178,6 +190,7 @@ public class StartLearningWindow : IUIComponent
 
                 grid.Child<Button>((button) =>
                 {
+                    easyButton = button;
                     button
                         .SetMargin(10, 0)
                         .SetColumn(0)
@@ -187,10 +200,14 @@ public class StartLearningWindow : IUIComponent
                             _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                         })
                         .Child<TextBlock>(textBlock => { textBlock.SetText("Easy"); });
+
+
+                    button.Disable();
                 });
 
                 grid.Child<Button>((button) =>
                 {
+                    goodButton = button;
                     button
                         .SetMargin(10, 0)
                         .SetColumn(1)
@@ -200,11 +217,15 @@ public class StartLearningWindow : IUIComponent
                             _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
 
                         })
-                        .Child<TextBlock>(textBlock => { textBlock.SetText("Good"); }); ;
+                        .Child<TextBlock>(textBlock => { textBlock.SetText("Good"); });
+
+
+                    button.Disable();
                 });
 
                 grid.Child<Button>((button) =>
                 {
+                    hardButton = button;
                     button
                         .SetMargin(10, 0)
                         .SetColumn(2)
@@ -214,11 +235,15 @@ public class StartLearningWindow : IUIComponent
                             _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
 
                         })
-                        .Child<TextBlock>(textBlock => { textBlock.SetText("Hard"); }); ;
+                        .Child<TextBlock>(textBlock => { textBlock.SetText("Hard"); });
+
+
+                    button.Disable();
                 });
 
                 grid.Child<Button>((button) =>
                 {
+                    againButton = button;
                     button
                         .SetMargin(10, 0)
                         .SetColumn(3)
@@ -229,6 +254,9 @@ public class StartLearningWindow : IUIComponent
 
                         })
                         .Child<TextBlock>(textBlock => { textBlock.SetText("Again"); });
+
+
+                    button.Disable();
                 });
             });
         });
