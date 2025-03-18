@@ -134,6 +134,14 @@ public class EditCloze : IUIComponent
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
             });
 
+            stackPanel.Child<Separator>((separator) =>
+            {
+                separator
+                    .SetMargin(0, 0, 0, 10)
+                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                    .SetBorderBrush(Brushes.Black);
+            });
+
             // Create button
             stackPanel.Child<Button>((button) =>
             {
