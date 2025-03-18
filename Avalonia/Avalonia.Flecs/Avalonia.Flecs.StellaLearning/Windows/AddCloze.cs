@@ -107,17 +107,20 @@ public class AddCloze : IUIComponent
                 clozeList = itemsControl
                 .SetItemTemplate(
                     world.CreateTemplate<string, StackPanel>(
-                    (sp, tag) => sp
+                    (sp, tag) =>
+                    {
+                        sp
                         .SetOrientation(Layout.Orientation.Horizontal)
-                        .SetSpacing(5)
-                        .Child<TextBlock>(tb => tb.SetText(tag))
-                        .Child<Button>((btn) =>
+                        .SetSpacing(5);
+
+                        sp.Child<TextBlock>(tb => tb.SetText(tag));
+                        sp.Child<Button>((btn) =>
                         {
                             btn.Child<TextBlock>(textBlock => textBlock.SetText("X"));
                             btn.OnClick((_, _) => clozes.Remove(tag));
-                        })
-                    )
-                );
+                        });
+
+                    }));
             }).SetItemsSource(clozes);
 
             stackPanel.Child<TextBlock>((textBlock) =>
