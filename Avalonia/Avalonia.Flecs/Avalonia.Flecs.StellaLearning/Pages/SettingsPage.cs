@@ -64,6 +64,7 @@ public class SettingsPage : IUIComponent
                 {
                     textBlock.SetVerticalAlignment(Layout.VerticalAlignment.Center);
                     textBlock.SetText("Dark Mode");
+                    textBlock.SetTextWrapping(Media.TextWrapping.Wrap);
                 });
 
                 dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
@@ -82,6 +83,62 @@ public class SettingsPage : IUIComponent
                         var currentSettings = world.Get<Settings>();
                         world.Set<Settings>(new(isDarkMode, currentSettings.ObsidianPath));
                     });
+                });
+            });
+
+
+        }
+    }
+
+    private class AppToTray : IUIComponent
+    {
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
+
+        public AppToTray(World world)
+        {
+            _root =
+
+            world.UI<DockPanel>((dockPanel) =>
+            {
+                dockPanel.Child<TextBlock>((textBlock) =>
+                {
+                    textBlock.SetVerticalAlignment(Layout.VerticalAlignment.Center);
+                    textBlock.SetText("Close to tray");
+                    textBlock.SetTextWrapping(Media.TextWrapping.Wrap);
+                });
+
+                dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
+                {
+                    toggleSwitch.SetDock(Dock.Right);
+                    toggleSwitch.SetHorizontalAlignment(Layout.HorizontalAlignment.Right);
+
+                    toggleSwitch.With((toggleSwitch) =>
+                    {
+                        toggleSwitch.IsChecked = world.Get<Settings>().closeToTray;
+                    });
+
+                    toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                    {
+                        var closeToTray = ((ToggleSwitch)sender!).IsChecked ?? false;
+                        var currentSettings = world.Get<Settings>();
+                        world.Set<Settings>(new(currentSettings.isDarkMode, currentSettings.ObsidianPath, closeToTray));
+                    });
+
+
+                    toggleSwitch.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                    {
+                        toolTip.Child<TextBlock>((textBlock) =>
+                        {
+                            textBlock.SetText(
+                            """
+                            When toggled on, the app instead of closing will minimize into a tray icon.
+                            The app will run in the background, so you can desktop notifications
+                            for example when a new item can be learned.
+                            """);
+                        });
+                    }));
                 });
             });
 

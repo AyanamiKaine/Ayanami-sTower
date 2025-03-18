@@ -15,6 +15,11 @@ public class Settings
     /// </summary>
     public bool isDarkMode = false;
     /// <summary>
+    /// Whether the application closes to a small tray icon instead. Leaving
+    /// the app running in the background.
+    /// </summary>
+    public bool closeToTray = true;
+    /// <summary>
     /// The path to the Obsidian executable
     /// </summary>
     public string ObsidianPath = string.Empty;
@@ -31,11 +36,13 @@ public class Settings
     /// </summary>
     /// <param name="isDarkMode"></param>
     /// <param name="ObsidianPath"></param>
-    public Settings(bool isDarkMode = false, string ObsidianPath = "")
+    /// <param name="closeToTray"></param>
+    public Settings(bool isDarkMode = false, string ObsidianPath = "", bool closeToTray = true)
     {
         if (ObsidianPath.Length == 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             ObsidianPath = GetWindowsDefaultObsidianFolderPath();
 
+        this.closeToTray = closeToTray;
         this.isDarkMode = isDarkMode;
         this.ObsidianPath = ObsidianPath;
     }
