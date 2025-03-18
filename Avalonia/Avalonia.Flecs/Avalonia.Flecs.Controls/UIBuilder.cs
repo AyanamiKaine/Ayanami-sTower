@@ -486,6 +486,22 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Set padding
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="leftPadding"></param>
+    /// <param name="topPadding"></param>
+    /// <param name="rightPadding"></param>
+    /// <param name="bottomPadding"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double leftPadding, double topPadding, double rightPadding, double bottomPadding) where T : Control, new()
+    {
+        builder.Entity.SetPadding(leftPadding, topPadding, rightPadding, bottomPadding);
+        return builder;
+    }
+
+    /// <summary>
     /// Set the width
     /// </summary>
     /// <param name="builder"></param>
