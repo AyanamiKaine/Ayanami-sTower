@@ -87,21 +87,22 @@ public class EditCloze : IUIComponent
                 .With((textBox) => textBox.AcceptsReturn = true)
                 .SetText(cloze.FullText);
 
-                // Create the mark as cloze button for the context flyout
-                var markAsClozeButton = world.UI<Button>((button) =>
-                {
-                    button.Child<TextBlock>((textBlock) => textBlock.SetText("Mark as Cloze"));
-                    button.OnClick((_, _) =>
-                    {
-                        var cloze = textBox.Get<TextBox>().SelectedText;
-                        AddCloze(cloze, clozes);
-                    });
-                });
+                var menu = world.UI<MenuFlyout>((menu) =>
+                      {
+                          menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
+                          menu.Child<MenuItem>((menuItem) =>
+                          {
+                              menuItem
+                              .SetHeader("Mark as Cloze")
+                              .OnClick((_, _) =>
+                              {
+                                  var cloze = textBox.Get<TextBox>().SelectedText;
+                                  AddCloze(cloze, clozes);
+                              });
+                          });
+                      });
 
-                // Set up the context flyout
-                textBox.With((textBox)
-                => textBox.ContextFlyout =
-                new Flyout() { Content = markAsClozeButton.Get<Button>() });
+                textBox.SetContextFlyout(menu);
             });
 
             // Create cloze list with items control
