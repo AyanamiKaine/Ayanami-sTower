@@ -37,14 +37,6 @@ public class SpacedRepetitionPage : IUIComponent
     /// <inheritdoc/>
     public Entity Root => _root;
 
-    /// <summary>
-    /// We are caching the pages, so we dont need to create them over and over again
-    /// </summary>
-
-    private readonly AddCloze addClozePage;
-    private readonly AddQuiz addQuizPage;
-    private readonly AddFlashcard addFlashcardPage;
-    private readonly AddFile addFilePage;
     private readonly List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
     private static readonly INotificationManager _iNotificationManager = Program.NotificationManager ??
                            throw new InvalidOperationException("Missing notification manager");
@@ -63,11 +55,6 @@ public class SpacedRepetitionPage : IUIComponent
         ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems = LoadSpaceRepetitionItemsFromDisk();
         _spacedRepetitionItems = spacedRepetitionItems;
         world.Set(spacedRepetitionItems);
-
-        addClozePage = new AddCloze(world);
-        addFilePage = new AddFile(world);
-        addFlashcardPage = new AddFlashcard(world);
-        addQuizPage = new AddQuiz(world);
 
         _root = world.UI<Grid>((grid) =>
         {
@@ -228,28 +215,28 @@ public class SpacedRepetitionPage : IUIComponent
                     {
                         menuItem
                         .SetHeader("File")
-                        .OnClick((_, _) => addFilePage.Root.ShowWindow());
+                        .OnClick((_, _) => new AddFile(world));
                     });
 
                     menu.Child<MenuItem>((menuItem) =>
                     {
                         menuItem
                         .SetHeader("Cloze")
-                        .OnClick((_, _) => addClozePage.Root.ShowWindow());
+                        .OnClick((_, _) => new AddCloze(world));
                     });
 
                     menu.Child<MenuItem>((menuItem) =>
                     {
                         menuItem
                         .SetHeader("Flashcard")
-                        .OnClick((_, _) => addFlashcardPage.Root.ShowWindow());
+                        .OnClick((_, _) => new AddFlashcard(world));
                     });
 
                     menu.Child<MenuItem>((menuItem) =>
                     {
                         menuItem
                         .SetHeader("Quiz")
-                        .OnClick((_, _) => addQuizPage.Root.ShowWindow());
+                        .OnClick((_, _) => new AddQuiz(world));
                     });
                 });
 
