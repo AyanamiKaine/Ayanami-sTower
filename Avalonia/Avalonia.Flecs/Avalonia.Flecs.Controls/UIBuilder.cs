@@ -846,6 +846,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the dock property of a control when it's placed in a DockPanel.
+    /// </summary>
+    /// <typeparam name="T">The type of Control</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="dock">The dock position (Top, Left, Right, Bottom)</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetDock<T>(this UIBuilder<T> builder, Dock dock) where T : Control, new()
+    {
+        DockPanel.SetDock(builder.Entity.Get<T>(), dock);
+        return builder;
+    }
+
+    /// <summary>
     /// Set the min horizontalAlignment of the Layoutable component.
     /// </summary>
     /// <typeparam name="T"></typeparam>

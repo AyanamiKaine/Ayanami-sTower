@@ -56,21 +56,36 @@ public class SettingsPage : IUIComponent
 
         public ThemeToggleSwitch(World world)
         {
-            _root = world.UI<ToggleSwitch>((toggleSwitch) =>
+            _root =
+
+            world.UI<DockPanel>((dockPanel) =>
             {
-                toggleSwitch.With((toggleSwitch) =>
+                dockPanel.Child<TextBlock>((textBlock) =>
                 {
-                    toggleSwitch.IsChecked = world.Get<Settings>().isDarkMode;
+                    textBlock.SetVerticalAlignment(Layout.VerticalAlignment.Center);
+                    textBlock.SetText("Dark Mode");
                 });
 
-                toggleSwitch.Child<TextBlock>((textBlock) => textBlock.SetText("Dark Mode"));
-                toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
                 {
-                    var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
-                    var currentSettings = world.Get<Settings>();
-                    world.Set<Settings>(new(isDarkMode, currentSettings.ObsidianPath));
+                    toggleSwitch.SetDock(Dock.Right);
+                    toggleSwitch.SetHorizontalAlignment(Layout.HorizontalAlignment.Right);
+
+                    toggleSwitch.With((toggleSwitch) =>
+                    {
+                        toggleSwitch.IsChecked = world.Get<Settings>().isDarkMode;
+                    });
+
+                    toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                    {
+                        var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
+                        var currentSettings = world.Get<Settings>();
+                        world.Set<Settings>(new(isDarkMode, currentSettings.ObsidianPath));
+                    });
                 });
             });
+
+
         }
     }
 
