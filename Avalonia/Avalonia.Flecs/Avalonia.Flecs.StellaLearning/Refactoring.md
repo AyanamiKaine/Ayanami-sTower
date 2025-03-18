@@ -51,7 +51,7 @@ This makes the structure of the UI much more obvious.
 - It will reduce errors in complex UI structures.
 - It will enable type safe methods.
 
-## [] Cleaning up unused created UI-Components
+## [] Cleaning up unused created UI-Components (FIX THE MEMORY LEAK)
 
 ### Problem
 
