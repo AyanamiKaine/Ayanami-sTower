@@ -62,8 +62,8 @@ public class StartLearningWindow : IUIComponent
         _spacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
         _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
         _root = world.UI<Window>((window) =>
-         {
-             window
+        {
+            window
                  .SetTitle("Start Learning")
                  .SetWidth(400)
                  .SetHeight(400)
@@ -74,8 +74,13 @@ public class StartLearningWindow : IUIComponent
                          .SetColumnSpan(3)
                          .Child(CreateWindowContents());
                  });
-             window.Show();
-         });
+
+            window.OnClosing((_, _) =>
+            {
+                Cleanup();
+            });
+            window.Show();
+        });
 
     }
     private Entity CreateWindowContents()
@@ -86,57 +91,15 @@ public class StartLearningWindow : IUIComponent
                      .SetHorizontalAlignment(Layout.HorizontalAlignment.Stretch);
         });
 
+        // Single event handler per item that handles all property change needs
         foreach (var item in _spacedRepetitionItems)
         {
-            item.PropertyChanged += (sender, e) =>
-            {
-                if (e.PropertyName == nameof(SpacedRepetitionItem.NextReview))
-                {
-                    // Update the container content
-                    UpdateContentDisplay();
-                }
-            };
+            AttachItemEventHandler(item);
         }
 
-        /*
-        Here we describe the logic, what should happen when an spaced repetition item changes?
-        We want to recalculate what item should be displayed. 
+        // Only attach collection changed event handler once
+        _spacedRepetitionItems.CollectionChanged += OnSpacedRepetitionItemsChanged;
 
-        We also use this when the underlying item changes, but the same item would be shown,
-        for example because you changed the name of it.
-        */
-
-        _spacedRepetitionItems.CollectionChanged += (sender, e) =>
-            {
-
-                if (e.Action == NotifyCollectionChangedAction.Add)
-                {
-                    foreach (SpacedRepetitionItem newItem in e.NewItems!)
-                    {
-                        newItem.PropertyChanged += (sender, e) =>
-                        {
-                            if (e.PropertyName == nameof(SpacedRepetitionItem.NextReview))
-                            {
-                                _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                            }
-                        };
-                    }
-                }
-                else if (e.Action == NotifyCollectionChangedAction.Remove)
-                {
-                    foreach (SpacedRepetitionItem oldItem in e.OldItems!)
-                    {
-                        oldItem.PropertyChanged += (sender, e) =>
-                        {
-                            if (e.PropertyName == nameof(SpacedRepetitionItem.NextReview))
-                            {
-                                _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                            }
-                        };
-                    }
-                }
-                _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-            };
         UpdateContentDisplay();
         return _contentContainer;
     }
@@ -675,6 +638,57 @@ public class StartLearningWindow : IUIComponent
 
         // Set it as the content of our container
         _contentContainer.Get<ContentControl>().Content = _currentContent.Get<object>();
+    }
+
+    // Centralized method to attach event handler
+    private void AttachItemEventHandler(SpacedRepetitionItem item)
+    {
+        item.PropertyChanged += OnItemPropertyChanged;
+    }
+
+    // Centralized method to detach event handler
+    private void DetachItemEventHandler(SpacedRepetitionItem item)
+    {
+        item.PropertyChanged -= OnItemPropertyChanged;
+    }
+
+    // Event handler for item property changes
+    private void OnItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SpacedRepetitionItem.NextReview) || e == null)
+        {
+            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+        }
+    }
+
+    // Event handler for collection changes
+    private void OnSpacedRepetitionItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action == NotifyCollectionChangedAction.Add)
+        {
+            foreach (SpacedRepetitionItem newItem in e.NewItems!)
+            {
+                AttachItemEventHandler(newItem);
+            }
+        }
+        else if (e.Action == NotifyCollectionChangedAction.Remove)
+        {
+            foreach (SpacedRepetitionItem oldItem in e.OldItems!)
+            {
+                DetachItemEventHandler(oldItem);
+            }
+        }
+        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+    }
+
+    // Cleanup method to remove all event handlers
+    private void Cleanup()
+    {
+        foreach (var item in _spacedRepetitionItems)
+        {
+            DetachItemEventHandler(item);
+        }
+        _spacedRepetitionItems.CollectionChanged -= OnSpacedRepetitionItemsChanged;
     }
 
     private Entity DisplayRightItem()
