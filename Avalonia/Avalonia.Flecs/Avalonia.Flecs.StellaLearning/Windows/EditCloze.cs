@@ -109,22 +109,20 @@ public class EditCloze : IUIComponent
             {
                 clozeList = itemsControl
                 .SetItemTemplate(
-                    world.CreateTemplate<ObservableCollection<string>, StackPanel>(
+                    world.CreateTemplate<string, StackPanel>(
                     (sp, tag) =>
                     {
                         sp
                         .SetOrientation(Layout.Orientation.Horizontal)
                         .SetSpacing(5);
 
-                        foreach (var item in tag)
+                        sp.Child<TextBlock>(tb => tb.SetText(tag));
+                        sp.Child<Button>((btn) =>
                         {
-                            sp.Child<TextBlock>(tb => tb.SetText(item));
-                            sp.Child<Button>((btn) =>
-                            {
-                                btn.Child<TextBlock>(textBlock => textBlock.SetText("X"));
-                                btn.OnClick((_, _) => clozes.Remove(item));
-                            });
-                        }
+                            btn.Child<TextBlock>(textBlock => textBlock.SetText("X"));
+                            btn.OnClick((_, _) => clozes.Remove(tag));
+                        });
+
                     })
                     );
             }).SetItemsSource(clozes);
