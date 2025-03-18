@@ -99,19 +99,12 @@ public class SpacedRepetitionPage : IUIComponent
 
             grid.Child<ComboBox>((comboBox) =>
             {
-                var myFlyout = new Flyout()
-                {
-                    Content = new TextBlock() { Text = "Hello World" },
-                    ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
-                };
-
                 sortItemButton = comboBox;
 
                 comboBox
                 .SetPlaceholderText("Sort Items")
                 .SetColumn(2)
-                .SetItemsSource(sortItems)
-                .SetContextFlyout(myFlyout);
+                .SetItemsSource(sortItems);
 
                 comboBox.OnSelectionChanged((sender, args) =>
                 {
@@ -215,65 +208,44 @@ public class SpacedRepetitionPage : IUIComponent
 
             grid.Child<Button>((addItemButton) =>
             {
-                var stackPanel = world.UI<StackPanel>((stackPanel) =>
+                var menu = world.UI<MenuFlyout>((menu) =>
                 {
-                    stackPanel
-                    .SetOrientation(Orientation.Vertical)
-                    .SetSpacing(5);
-
-                    stackPanel.Child<Button>((addFileButton) =>
+                    menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
+                    menu.Child<MenuItem>((menuItem) =>
                     {
-                        addFileButton
-                        .OnClick((sender, args) => _ = new AddFile(world))
-                        .Child<TextBlock>(t =>
-                            t.SetText("File")
-                            .SetFontWeight(FontWeight.Normal)
-                        );
+                        menuItem
+                        .SetHeader("File")
+                        .OnClick((_, _) => new AddFile(world));
                     });
 
-                    stackPanel.Child<Button>((addClozeButton) =>
+                    menu.Child<MenuItem>((menuItem) =>
                     {
-                        addClozeButton
-                        .OnClick((sender, args) => _ = new AddCloze(world))
-                        .Child<TextBlock>(t =>
-                            t.SetText("Cloze")
-                            .SetFontWeight(FontWeight.Normal)
-                        );
+                        menuItem
+                        .SetHeader("Cloze")
+                        .OnClick((_, _) => new AddCloze(world));
                     });
 
-                    stackPanel.Child<Button>((addQuizButton) =>
+                    menu.Child<MenuItem>((menuItem) =>
                     {
-                        addQuizButton
-                        .OnClick((sender, args) => _ = new AddQuiz(world))
-                        .Child<TextBlock>(t =>
-                            t.SetText("Quiz")
-                            .SetFontWeight(FontWeight.Normal)
-                        );
+                        menuItem
+                        .SetHeader("Flashcard")
+                        .OnClick((_, _) => new AddFlashcard(world));
                     });
 
-                    stackPanel.Child<Button>((addFlashcardButton) =>
+                    menu.Child<MenuItem>((menuItem) =>
                     {
-                        addFlashcardButton
-                        .OnClick((sender, args) => _ = new AddFlashcard(world))
-                        .Child<TextBlock>(t =>
-                            t.SetText("Flashcard")
-                            .SetFontWeight(FontWeight.Normal)
-                        );
+                        menuItem
+                        .SetHeader("Quiz")
+                        .OnClick((_, _) => new AddQuiz(world));
                     });
                 });
-
-                var addItemsFlyout = new Flyout()
-                {
-                    Content = stackPanel.Get<object>(),
-                    ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
-                };
 
                 addItemButton
                 .SetMargin(0, 20, 0, 0)
                 .SetHorizontalAlignment(HorizontalAlignment.Right)
                 .SetColumn(2)
                 .SetRow(2)
-                .SetFlyout(addItemsFlyout)
+                .SetFlyout(menu)
                 .Child<TextBlock>((textBlock) =>
                 {
                     textBlock.SetText("Add Item");

@@ -122,6 +122,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the flyout for a button
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="entityFlyout">The entity with a flyoutbase component</param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, Entity entityFlyout) where T : Button
+    {
+        builder.Entity.Get<Button>().Flyout = entityFlyout.Get<FlyoutBase>();
+        return builder;
+    }
+
+    /// <summary>
     /// Helper function to set the ColumnSpan property
     /// on a Control component that is attach to an entitiy.
     /// </summary>
