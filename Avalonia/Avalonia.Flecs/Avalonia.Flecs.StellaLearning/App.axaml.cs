@@ -151,9 +151,9 @@ public partial class App : Application
                     };
                 });
                 item.Child<TextBlock>(t => t.SetText("Spaced Repetition"));
+
             });
             nav.Child(spacedRepetitionPage);
-
             nav.OnDisplayModeChanged((sender, args) =>
             {
                 if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
@@ -166,7 +166,7 @@ public partial class App : Application
                         }
                     });
                 }
-                else 
+                else
                 {
                     nav.Children((Entity child) =>
                     {
