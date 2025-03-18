@@ -932,6 +932,17 @@ public static class UIBuilderExtensions
         builder.Entity.SetContextFlyout(content);
         return builder;
     }
+    /// <summary>
+    /// Sets the context flyout of a control component
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="contextFlyoutEntity"></param>
+    public static UIBuilder<T> SetContextFlyout<T>(this UIBuilder<T> builder, Entity contextFlyoutEntity) where T : Control, new()
+    {
+        builder.Entity.SetContextFlyout(contextFlyoutEntity.Get<FlyoutBase>());
+        return builder;
+    }
 
     /// <summary>
     /// Sets the context flyout for a listbox
