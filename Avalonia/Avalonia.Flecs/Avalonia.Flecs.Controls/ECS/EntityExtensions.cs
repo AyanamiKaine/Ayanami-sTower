@@ -88,20 +88,5 @@ namespace Avalonia.Flecs.Controls.ECS
             action(entity);
             return entity;
         }
-
-        /// <summary>
-        /// Destructs a hierarchy of entities, it will destruct all children
-        /// entities, as well as their children and then the root entity.
-        /// </summary>
-        /// <param name="rootEntity"></param>
-        /// <returns></returns>
-        public static void DeleteHierarchyOfEntities(this Entity rootEntity)
-        {
-            rootEntity.Children((e) =>
-            {
-                Console.WriteLine(e);
-                DeleteHierarchyOfEntities(e);
-            });
-        }
     }
 }
