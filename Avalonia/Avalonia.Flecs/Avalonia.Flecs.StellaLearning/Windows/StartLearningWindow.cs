@@ -16,6 +16,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using DesktopNotifications;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
 
@@ -160,7 +161,28 @@ public class StartLearningWindow : IUIComponent
                             againButton!.Enable();
                             goodButton!.Enable();
 
-                            if (_world.Has<Settings>() && file.FilePath.EndsWith(".md"))
+                            /*
+                            When the user tries to open an executable file instead of data that gets openend with
+                            a program like a .png. We want to warn
+                            him that he is currently tries to execute
+                            a program.
+                            */
+                            if (ExecutableDetector.IsExecutable(file.FilePath))
+                            {
+                                var cd = new ContentDialog()
+                                {
+                                    Title = "Opening an Executable?",
+                                    Content = "You are currently trying to run an executable program. Do you wish to continue?",
+                                    PrimaryButtonText = "Confirm",
+                                    SecondaryButtonText = "Deny",
+                                    IsPrimaryButtonEnabled = true,
+                                    IsSecondaryButtonEnabled = true,
+                                };
+                                cd.PrimaryButtonClick += (_, _) => FileOpener.OpenFileWithDefaultProgram(file.FilePath);
+
+                                cd.ShowAsync();
+                            }
+                            else if (_world.Has<Settings>() && file.FilePath.EndsWith(".md"))
                             {
                                 string ObsidianPath = _world.Get<Settings>().ObsidianPath;
                                 FileOpener.OpenMarkdownFileWithObsidian(file.FilePath, ObsidianPath);
@@ -178,7 +200,7 @@ public class StartLearningWindow : IUIComponent
 
                 button.Child<TextBlock>((textBloc) =>
                 {
-                    textBloc.SetText("Browse File");
+                    textBloc.SetText("Open File");
                 });
             });
 
