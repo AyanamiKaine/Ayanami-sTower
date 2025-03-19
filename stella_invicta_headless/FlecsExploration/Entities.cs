@@ -25,6 +25,27 @@ public class Entities
     }
 
 
+    private record struct TAG;
+
+    [Fact]
+    public void ClearEntities()
+    {
+        World world = World.Create();
+        var entity = world.Entity().Add<TAG>();
+        var child = world.Entity();
+
+        child.ChildOf(entity);
+
+        Assert.True(entity.Has<TAG>()); // Now IsAlive should return false
+        Assert.True(child.IsChildOf(entity));
+
+        entity.Clear();
+        child.Clear(); // This will remove the relationship (childOf | entity)
+
+        Assert.False(child.IsChildOf(entity));
+        Assert.False(entity.Has<TAG>()); // Now IsAlive should return false
+    }
+
 
     /// <summary>
     /// Entities can be created by name, when we define a string name
