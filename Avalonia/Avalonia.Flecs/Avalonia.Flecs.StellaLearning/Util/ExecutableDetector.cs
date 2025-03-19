@@ -7,6 +7,13 @@ namespace Avalonia.Flecs.Util;
 /// </summary>
 public static class ExecutableDetector
 {
+
+    /*
+    Design Note:
+    This was created because of the need to distinguish files that are to be read like data (for example a png)
+    and files that are programs and can be executed.
+    */
+
     /// <summary>
     /// Determines whether the specified file is executable.
     /// </summary>
