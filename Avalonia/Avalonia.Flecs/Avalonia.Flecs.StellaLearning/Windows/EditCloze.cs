@@ -167,6 +167,11 @@ public class EditCloze : IUIComponent
                     cloze.Name = nameTextBox.GetText();
                     cloze.FullText = clozeBox.GetText();
                     cloze.ClozeWords = [.. clozes];
+
+                    // Clearing an entity results in all components, relationships etc to be removed.
+                    // this also results in invoking the remove hooks that are used on components for 
+                    // cleanup. For example removing a window component results in closing it.
+                    _root.Clear();
                 });
             });
         });
