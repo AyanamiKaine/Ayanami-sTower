@@ -48,6 +48,7 @@ public class AddFlashcard : IUIComponent
                     });
                     //TODO: This is the wrong way of doing it and will result in invalid memory somewhere.
                     //window.OnClosed((sender, args) => _root.Destruct());
+                    window.OnClosed((sender, args) => _root.Clear());
 
                     window.Show();
                 });
