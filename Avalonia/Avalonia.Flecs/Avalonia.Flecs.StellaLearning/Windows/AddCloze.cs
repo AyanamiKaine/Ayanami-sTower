@@ -14,6 +14,7 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public class AddCloze : IUIComponent
 {
+    private Entity calculatedPriority;
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
@@ -38,10 +39,11 @@ public class AddCloze : IUIComponent
                 .SetColumnSpan(3)
                 .Child(DefineWindowContents(world));
             });
-            
+
             window.OnClosed((sender, args) => _root.Clear());
             window.Show();
         });
+        calculatedPriority.ChildOf(_root);
     }
 
     private Entity DefineWindowContents(World world)
@@ -59,7 +61,6 @@ public class AddCloze : IUIComponent
 
         return world.UI<StackPanel>((stackPanel) =>
         {
-            Entity calculatedPriority;
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? clozeBox = null;
             UIBuilder<ItemsControl>? clozeList = null;
@@ -97,6 +98,8 @@ public class AddCloze : IUIComponent
                               });
                           });
                       });
+
+                menu.ChildOf(textBox.Entity);
 
                 textBox.SetContextFlyout(menu);
             });
