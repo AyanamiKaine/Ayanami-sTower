@@ -207,6 +207,28 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the IsChecked property of a ToggleButton to false.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<ToggleButton> UnCheck(this UIBuilder<ToggleButton> builder)
+    {
+        builder.Entity.Get<ToggleButton>().IsChecked = false;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the IsChecked property of a ToggleButton to true.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<ToggleButton> Check(this UIBuilder<ToggleButton> builder)
+    {
+        builder.Entity.Get<ToggleButton>().IsChecked = true;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the foreground brush of a TemplatedControl.
     /// </summary>
     /// <typeparam name="T">The type of TemplatedControl</typeparam>
