@@ -272,6 +272,7 @@ public partial class App : Application
             desktop.MainWindow.Hide();
         }
         base.OnFrameworkInitializationCompleted();
+        //_world.RunRESTAPI();
 #if DEBUG
         this.AttachDevTools();
 #endif
