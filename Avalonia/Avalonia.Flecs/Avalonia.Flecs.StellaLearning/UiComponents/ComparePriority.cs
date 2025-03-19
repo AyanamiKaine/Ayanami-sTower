@@ -218,6 +218,7 @@ public class ComparePriority : IUIComponent
 
         });
         _calculatedPriorityEntity = CalculatedPriorityEntity;
+        _root.SetName($"COMPAREPRIORITY-{_rng.Next()}");
     }
 
     /// <summary>
