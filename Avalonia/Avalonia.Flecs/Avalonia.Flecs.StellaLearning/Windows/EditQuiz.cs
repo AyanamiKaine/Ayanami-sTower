@@ -34,7 +34,7 @@ public class EditQuiz : IUIComponent
         _root = world.UI<Window>((window) =>
         {
             window
-            .SetTitle("Add Quiz")
+            .SetTitle($"Edit Quiz: {_spacedRepetitionQuiz.Name}")
             .SetWidth(400)
             .SetHeight(400)
             .Child<ScrollViewer>((scrollViewer) =>
@@ -55,7 +55,6 @@ public class EditQuiz : IUIComponent
     {
         return world.UI<StackPanel>((stackPanel) =>
         {
-            Entity calculatedPriority;
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? quizQuestionTextBox = null;
             UIBuilder<Grid>? quizAnswers = null;
@@ -68,14 +67,19 @@ public class EditQuiz : IUIComponent
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
-                textBox.SetWatermark("Name");
+                textBox.SetWatermark("Name")
+                .SetText(_spacedRepetitionQuiz.Name);
             });
 
             stackPanel.Child<TextBox>((textBox) =>
             {
                 quizQuestionTextBox = textBox;
-                textBox.SetWatermark("Quiz Question")
-                .SetTextWrapping(TextWrapping.Wrap);
+
+                textBox
+                .SetWatermark("Quiz Question")
+                .SetTextWrapping(TextWrapping.Wrap)
+                .SetText(_spacedRepetitionQuiz.Question);
+
                 textBox.Get<TextBox>().AcceptsReturn = true;
             });
 
@@ -99,6 +103,11 @@ public class EditQuiz : IUIComponent
                         {
                             textBock.SetText("Correct");
                         });
+
+                        if (_spacedRepetitionQuiz.CorrectAnswerIndex == number)
+                        {
+                            toggleButton.Check();
+                        }
                     });
 
                     grid.Child<TextBox>((textBox) =>
@@ -106,7 +115,8 @@ public class EditQuiz : IUIComponent
                         textBox.SetWatermark("Answer")
                         .SetColumn(1)
                         .SetRow(row)
-                        .SetMargin(5);
+                        .SetMargin(5)
+                        .SetText(_spacedRepetitionQuiz.Answers[number]);
                     });
                 }
             });
@@ -119,15 +129,12 @@ public class EditQuiz : IUIComponent
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0));
             });
             */
-            var comparePriority = new ComparePriority(world);
-            calculatedPriority = comparePriority.CalculatedPriorityEntity;
-            stackPanel.Child(comparePriority);
 
             stackPanel.Child<Button>((button) =>
             {
                 button.Child<TextBlock>((textBlock) =>
                 {
-                    textBlock.SetText("Create Quiz");
+                    textBlock.SetText("Save");
                 });
 
                 button.OnClick((_, _) =>
@@ -147,7 +154,7 @@ public class EditQuiz : IUIComponent
 
                     Grid grid = quizAnswers.Get<Grid>();
 
-                    var isAnswerCheck = () =>
+                    bool isAnswerCheck()
                     {
                         for (int i = 0; i < 4; i++)
                         {
@@ -155,7 +162,7 @@ public class EditQuiz : IUIComponent
                                 return true;
                         }
                         return false;
-                    };
+                    }
 
                     if (!isAnswerCheck())
                     {
@@ -172,7 +179,7 @@ public class EditQuiz : IUIComponent
                         throw new Exception("An Answer must be checked!");
                     };
 
-                    var gatherAllAnswers = () =>
+                    List<string> gatherAllAnswers()
                     {
                         var answers = new List<string>();
                         for (int i = 0; i < 4; i++)
@@ -180,30 +187,13 @@ public class EditQuiz : IUIComponent
                             answers.Add(FindControl<TextBox>(grid, i, 1)?.Text ?? $"Answer{i + 1}");
                         }
                         return answers;
-                    };
-
-                    world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionQuiz()
-                    {
-                        Name = nameTextBox.GetText(),
-                        Question = quizQuestionTextBox.GetText(),
-                        Priority = calculatedPriority.Get<int>(),
-                        CorrectAnswerIndex = findAnswerIndex(),
-                        Answers = gatherAllAnswers(),
-                        SpacedRepetitionItemType = SpacedRepetitionItemType.Quiz
-                    });
-
-                    // Reset form
-                    nameTextBox.SetText("");
-                    quizQuestionTextBox.SetText("");
-                    calculatedPriority.Set(500000000);
-                    comparePriority.Reset();
-
-                    // Clear answer text boxes and toggle buttons
-                    for (int i = 0; i < 4; i++)
-                    {
-                        FindControl<TextBox>(grid, i, 1)!.Text = "";
-                        FindControl<ToggleButton>(grid, i, 0)!.IsChecked = false;
                     }
+
+
+                    _spacedRepetitionQuiz.Name = nameTextBox.GetText();
+                    _spacedRepetitionQuiz.Question = quizQuestionTextBox.GetText();
+                    _spacedRepetitionQuiz.CorrectAnswerIndex = findAnswerIndex();
+                    _spacedRepetitionQuiz.Answers = gatherAllAnswers();
                 });
             });
         });
