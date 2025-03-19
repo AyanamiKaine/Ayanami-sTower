@@ -169,6 +169,7 @@ public class SpacedRepetitionPage : IUIComponent
                                     SpacedRepetitionCloze => new EditCloze(world, (SpacedRepetitionCloze)item),
                                     SpacedRepetitionFlashcard => new EditFlashcard(world, (SpacedRepetitionFlashcard)item),
                                     SpacedRepetitionFile => new EditFile(world, (SpacedRepetitionFile)item),
+                                    SpacedRepetitionQuiz => new EditQuiz(world, (SpacedRepetitionQuiz)item),
                                     _ => throw new NotImplementedException(),
                                 };
                             });
