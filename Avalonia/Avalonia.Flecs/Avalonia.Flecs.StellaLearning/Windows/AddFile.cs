@@ -21,12 +21,20 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type file
 /// </summary>
-public class AddFile : IUIComponent
+public class AddFile : IUIComponent, IDisposable
 {
+
+
+    private UIBuilder<TextBlock>? validationTextBlock = null;
+    private UIBuilder<TextBox>? nameTextBox = null;
+    private UIBuilder<TextBox>? filePath = null;
+    private UIBuilder<TextBox>? questionTextBox = null;
+    private Entity calculatedPriority;
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
-
+    private bool isDisposed = false;
+    private EventHandler<TextChangedEventArgs>? filePathHasChangedHandler;
     /// <summary>
     /// Create the Add File Window
     /// </summary>
@@ -55,7 +63,7 @@ public class AddFile : IUIComponent
             Why might that be? Because the GC didnt run yet, the GC reclaims the memory only when it thinks its a
             good moment to do so.
             */
-            window.OnClosed((sender, args) => _root.Destruct());
+            window.OnClosed((sender, args) => Dispose());
 
             window.Show();
         });
@@ -68,12 +76,6 @@ public class AddFile : IUIComponent
 
         return world.UI<StackPanel>((stackPanel) =>
         {
-            UIBuilder<TextBlock>? validationTextBlock = null;
-            UIBuilder<TextBox>? nameTextBox = null;
-            UIBuilder<TextBox>? filePath = null;
-            UIBuilder<TextBox>? questionTextBox = null;
-            Entity calculatedPriority;
-
 
             void ValidateFilePath(string path)
             {
@@ -127,8 +129,9 @@ public class AddFile : IUIComponent
                     ValidateFilePath(path);
                 }));
 
-                textBox.With((textBox) => textBox.TextChanged += (sender, args) => ValidateFilePath(textBox.Text!));
+                filePathHasChangedHandler = (_, _) => ValidateFilePath(textBox.GetText());
 
+                textBox.With((textBox) => textBox.TextChanged += filePathHasChangedHandler);
             });
 
             stackPanel.Child<TextBlock>((textBlock) =>
@@ -224,5 +227,46 @@ public class AddFile : IUIComponent
             return file.TryGetLocalPath()!;
         }
         return string.Empty;
+    }
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources.
+    /// </summary>
+    /// <param name="disposing">
+    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>false</c> to release only unmanaged resources.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!isDisposed)
+        {
+            if (disposing)
+            {
+                // Unsubscribe from events
+
+                if (filePath is not null && filePathHasChangedHandler is not null)
+                {
+                    filePath.With((textbox) => textbox.TextChanged -= filePathHasChangedHandler);
+                }
+
+                // Clean up other resources
+                // Consider calling destruct if needed
+                if (_root.IsValid())
+                {
+                    _root.Destruct();
+                }
+            }
+
+            isDisposed = true;
+        }
     }
 }
