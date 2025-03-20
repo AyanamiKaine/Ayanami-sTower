@@ -63,7 +63,7 @@ When a UI-Component root entity has no parent anymore, destroy it and all of its
 
 When a componen is removed it should remove all the event handlers it possible has. So for example when we remove the button component we want to remove all OnClick handlers that are currently attached to it. 
 
-Example:
+#### Example Solution:
 
 We implement the IDisposable interface and call dispose when the window closes. To dispose all related handlers. 
 
