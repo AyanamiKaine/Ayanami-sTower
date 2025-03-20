@@ -166,6 +166,7 @@ public class AddCloze : IUIComponent, IDisposable
             {
                 warningText.Get<TextBlock>().IsVisible = clozes.Count == 0;
             };
+            
             clozes.CollectionChanged += collectionChangedHandler;
 
             stackPanel.Child<TextBlock>((textBlock) =>
