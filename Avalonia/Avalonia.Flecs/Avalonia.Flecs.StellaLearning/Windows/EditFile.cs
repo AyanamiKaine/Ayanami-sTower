@@ -55,8 +55,7 @@ public class EditFile : IUIComponent
             Why might that be? Because the GC didnt run yet, the GC reclaims the memory only when it thinks its a
             good moment to do so.
             */
-            //TODO: This is the wrong way of doing it and will result in invalid memory somewhere.
-            //window.OnClosed((sender, args) => _root.Destruct());
+            window.OnClosed((sender, args) => _root.Destruct());
 
             window.Show();
         });
