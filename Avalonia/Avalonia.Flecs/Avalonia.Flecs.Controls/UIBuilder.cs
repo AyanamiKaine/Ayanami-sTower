@@ -8,6 +8,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.Utilities;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
@@ -202,6 +203,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<TextBlock> SetText(this UIBuilder<TextBlock> builder, string text)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetText(text);
         return builder;
     }
@@ -213,6 +217,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<ToggleButton> UnCheck(this UIBuilder<ToggleButton> builder)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<ToggleButton>().IsChecked = false;
         return builder;
     }
@@ -224,6 +231,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<ToggleButton> Check(this UIBuilder<ToggleButton> builder)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<ToggleButton>().IsChecked = true;
         return builder;
     }
@@ -237,6 +247,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<T> SetForeground<T>(this UIBuilder<T> builder, IBrush brush) where T : TemplatedControl
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<T>().Foreground = brush;
         return builder;
     }
@@ -248,6 +261,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<TextBlock> SetForeground(this UIBuilder<TextBlock> builder, IBrush brush)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<TextBlock>().Foreground = brush;
         return builder;
     }
@@ -261,6 +277,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, Entity toolTipEntity) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.AttachToolTip(toolTipEntity);
         return builder;
     }
@@ -274,6 +293,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<T> Visible<T>(this UIBuilder<T> builder, bool isVisible = true) where T : Visual, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<T>().IsVisible = isVisible;
         return builder;
     }
@@ -283,6 +305,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<TextBox> SetText(this UIBuilder<TextBox> builder, string text)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetText(text);
         return builder;
     }
@@ -292,6 +317,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static string GetText(this UIBuilder<TextBox> builder)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return "";
+
         return builder.Entity.GetText();
     }
 
@@ -304,6 +332,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetShowMode<T>(this UIBuilder<T> builder, FlyoutShowMode flyoutShowMode) where T : FlyoutBase
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetProperty("ShowMode", flyoutShowMode);
         return builder;
     }
@@ -316,6 +347,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> SetWatermark(this UIBuilder<TextBox> builder, string placeholderText)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetWatermark(placeholderText);
         return builder;
     }
@@ -328,6 +362,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBlock> SetTextWrapping(this UIBuilder<TextBlock> builder, TextWrapping textWrapping)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetTextWrapping(textWrapping);
         return builder;
     }
@@ -340,6 +377,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> SetTextWrapping(this UIBuilder<TextBox> builder, TextWrapping textWrapping)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetTextWrapping(textWrapping);
         return builder;
     }
@@ -353,6 +393,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetOrientation<T>(this UIBuilder<T> builder, Layout.Orientation orientation) where T : StackPanel
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetOrientation(orientation);
         return builder;
     }
@@ -366,6 +409,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetSpacing<T>(this UIBuilder<T> builder, double spacing) where T : StackPanel
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetSpacing(spacing);
         return builder;
     }
@@ -379,6 +425,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> Enable<T>(this UIBuilder<T> builder) where T : InputElement
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.EnableInputElement();
         return builder;
     }
@@ -391,6 +440,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> Disable<T>(this UIBuilder<T> builder) where T : InputElement
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.DisableInputElement();
         return builder;
     }
@@ -404,6 +456,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetFontWeight<T>(this UIBuilder<T> builder, FontWeight fontWeight) where T : TextBlock
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetFontWeight(fontWeight);
         return builder;
     }
@@ -417,6 +472,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<T> SetFontSize<T>(this UIBuilder<T> builder, double fontSize) where T : TextBlock
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<T>().FontSize = fontSize;
         return builder;
     }
@@ -444,6 +502,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, Thickness margin) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetMargin(margin);
         return builder;
     }
@@ -457,6 +518,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetPlaceholderText<T>(this UIBuilder<T> builder, string text) where T : ComboBox, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetPlaceholderText(text);
         return builder;
     }
@@ -468,6 +532,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<Window> SetTitle(this UIBuilder<Window> builder, string title)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetWindowTitle(title);
         return builder;
     }
@@ -480,6 +547,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<Window> SetPadding(this UIBuilder<Window> builder, double padding)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetPadding(padding);
         return builder;
     }
@@ -491,6 +561,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<Window> SetPadding(this UIBuilder<Window> builder, Thickness padding)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetPadding(padding);
         return builder;
     }
@@ -503,6 +576,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double padding) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetPadding(padding);
         return builder;
     }
@@ -531,6 +607,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<Window> SetWidth(this UIBuilder<Window> builder, double width)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetWidth(width);
         return builder;
     }
@@ -552,6 +631,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double margin) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetMargin(margin);
         return builder;
     }
@@ -561,6 +643,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double hMargin, double vMargin) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetMargin(
             horizontalMargin: hMargin,
             verticalMargin: vMargin);
@@ -572,6 +657,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double lMargin, double tMargin, double rMargin, double bMargin) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetMargin(
             leftMargin: lMargin,
             topMargin: tMargin,
@@ -586,6 +674,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<Grid> SetColumnDefinitions(this UIBuilder<Grid> builder, string columnDefinitions)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetColumnDefinitions(columnDefinitions);
         return builder;
     }
@@ -595,6 +686,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<Grid> SetRowDefinitions(this UIBuilder<Grid> builder, string rowDefinitions)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetRowDefinitions(rowDefinitions);
         return builder;
     }
@@ -606,6 +700,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<Window> OnClosing(this UIBuilder<Window> builder, Action<object?, WindowClosingEventArgs> handler)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.OnClosing(handler);
         return builder;
     }
@@ -616,6 +713,8 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<Window> OnClosed(this UIBuilder<Window> builder, EventHandler handler)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
         builder.Entity.OnClosed(handler);
         return builder;
     }
@@ -625,6 +724,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<Button> OnClick(this UIBuilder<Button> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.OnClick(handler);
         return builder;
     }
@@ -634,6 +736,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<MenuItem> OnClick(this UIBuilder<MenuItem> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.OnClick(handler);
         return builder;
     }
@@ -646,6 +751,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<ComboBox> OnSelectionChanged(this UIBuilder<ComboBox> builder, Action<object?, SelectionChangedEventArgs> handler)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.OnSelectionChanged(handler);
         return builder;
     }
@@ -659,6 +767,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> OnOpened<T>(this UIBuilder<T> builder, Action<object?, EventArgs> handler) where T : FlyoutBase
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<FlyoutBase>().Opened += (sender, e) => handler(sender, e);
         return builder;
     }
@@ -671,6 +782,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> Hide<T>(this UIBuilder<T> builder) where T : FlyoutBase
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<FlyoutBase>().Hide();
         return builder;
     }
@@ -695,6 +809,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetHeader<T>(this UIBuilder<T> builder, string header) where T : MenuItem
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetHeader(header);
         return builder;
     }
@@ -720,6 +837,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<T> SetBorderThickness<T>(this UIBuilder<T> builder, Thickness borderThickness) where T : TemplatedControl
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<T>().BorderThickness = borderThickness;
         return builder;
     }
@@ -733,6 +853,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<T> SetBorderBrush<T>(this UIBuilder<T> builder, IBrush brush) where T : TemplatedControl
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<T>().BorderBrush = brush;
         return builder;
     }
@@ -742,6 +865,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<T> OnKeyDown<T>(this UIBuilder<T> builder, Action<object?, KeyEventArgs> handler) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.OnKeyDown(handler);
         return builder;
     }
@@ -754,6 +880,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> OnTextChanged<T>(this UIBuilder<T> builder, Action<object?, TextChangedEventArgs> handler) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.OnTextChanged(handler);
         return builder;
     }
@@ -767,6 +896,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> OnIsCheckedChanged<T>(this UIBuilder<T> builder, Action<object?, RoutedEventArgs> handler) where T : ToggleButton, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.OnIsCheckedChanged(handler);
         return builder;
     }
@@ -779,6 +911,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetItemTemplate<T>(this UIBuilder<T> builder, IDataTemplate template) where T : ItemsControl
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetItemTemplate(template);
         return builder;
     }
@@ -793,6 +928,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> SetInnerRightContent<T>(this UIBuilder<TextBox> builder, T content) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetInnerRightContent(content);
         return builder;
     }
@@ -807,6 +945,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> SetInnerRightContent(this UIBuilder<TextBox> builder, Entity content)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetInnerRightContent(content.Ensure<object>());
         return builder;
     }
@@ -820,6 +961,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> SetInnerRightContent(this UIBuilder<TextBox> builder, object content)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetInnerRightContent(content);
         return builder;
     }
@@ -834,6 +978,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> SetInnerLeftContent(this UIBuilder<TextBox> builder, Entity content)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetInnerLeftContent(content.Ensure<object>());
         return builder;
     }
@@ -847,6 +994,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> SetInnerLeftContent(this UIBuilder<TextBox> builder, object content)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetInnerLeftContent(content);
         return builder;
     }
@@ -869,6 +1019,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<TextBox> RemoveInnerLeftContent(this UIBuilder<TextBox> builder)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetInnerLeftContent(null);
         return builder;
     }
@@ -892,6 +1045,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetVerticalAlignment<T>(this UIBuilder<T> builder, VerticalAlignment verticalAlignment) where T : Layoutable, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetVerticalAlignment(verticalAlignment);
         return builder;
     }
@@ -918,6 +1074,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetHorizontalAlignment<T>(this UIBuilder<T> builder, HorizontalAlignment horizontalAlignment) where T : Layoutable, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetHorizontalAlignment(horizontalAlignment);
         return builder;
     }
@@ -931,6 +1090,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetItemsSource<T>(this UIBuilder<T> builder, System.Collections.IEnumerable collection) where T : ItemsControl
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetItemsSource(collection);
         return builder;
     }
@@ -955,6 +1117,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetSelectionMode<T>(this UIBuilder<T> builder, SelectionMode mode) where T : SelectingItemsControl
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetSelectionMode(mode);
         return builder;
     }
@@ -967,6 +1132,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetContextFlyout<T>(this UIBuilder<T> builder, FlyoutBase content) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetContextFlyout(content);
         return builder;
     }
@@ -978,6 +1146,9 @@ public static class UIBuilderExtensions
     /// <param name="contextFlyoutEntity"></param>
     public static UIBuilder<T> SetContextFlyout<T>(this UIBuilder<T> builder, Entity contextFlyoutEntity) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.SetContextFlyout(contextFlyoutEntity.Get<FlyoutBase>());
         return builder;
     }

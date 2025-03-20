@@ -61,6 +61,12 @@ When we create an UI-Component we create a set of entities with the appropriate 
 
 When a UI-Component root entity has no parent anymore, destroy it and all of its children. Maybe we can implement a simply timer that periodically checks if they dont have any root elements anymore and destroy them. Or implement a callback for when an entites parent gets removed (Probably the better choice, its simpler.)
 
+When a componen is removed it should remove all the event handlers it possible has. So for example when we remove the button component we want to remove all OnClick handlers that are currently attached to it. 
+
+#### Example Solution:
+
+We implement the IDisposable interface and call dispose when the window closes. To dispose all related handlers. 
+
 ## [X] Implementing UI Components as Classes
 
 ### Problem

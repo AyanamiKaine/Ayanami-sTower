@@ -28,9 +28,9 @@ public static class SpacedRepetitionObservableCollectionExtensions
         DateTime now = DateTime.Now;
 
         return spacedRepetitionItems
-                .Where(item => item.NextReview <= now) // Filter for items that are due
-                .OrderBy(item => item.Priority)     // Order by the next review date (ascending)
-                .FirstOrDefault();                  // Take the first item (the nearest due date)
+                .Where(item => item.NextReview <= now)      // Filter for items that are due
+                .OrderByDescending(item => item.Priority)   // The items with the highest priority should be at the front   
+                .FirstOrDefault();
     }
 
 

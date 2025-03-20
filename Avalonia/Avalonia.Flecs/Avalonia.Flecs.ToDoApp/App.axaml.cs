@@ -87,11 +87,13 @@ public partial class App : Application
                                             Content = "Delete",
                                         };
 
-                                        button.Click += (sender, e) =>
+
+                                        button.Click += (_, _) =>
                                         {
                                             itemsControl.GetItems().Remove(value);
                                             title!.SetText($"My ToDo-List ({itemsController!.GetItems().Count})");
                                         };
+
                                         Grid.SetColumn(button, 1);
                                         grid.Children.Add(checkBox);
                                         grid.Children.Add(button);

@@ -42,9 +42,7 @@ public class AddQuiz : IUIComponent
                 .SetColumnSpan(3)
                 .Child(DefineWindowContents(world));
             });
-            //TODO: This is the wrong way of doing it and will result in invalid memory somewhere.
-            //window.OnClosed((sender, args) => _root.Destruct());
-            window.OnClosed((sender, args) => _root.Clear());
+            window.OnClosed((sender, args) => _root.Destruct());
 
             window.Show();
         });
@@ -124,6 +122,9 @@ public class AddQuiz : IUIComponent
 
             stackPanel.Child<Button>((button) =>
             {
+                // We only want to enable the button when a anwser is selected.
+                button.Disable();
+
                 button.Child<TextBlock>((textBlock) =>
                 {
                     textBlock.SetText("Create Quiz");

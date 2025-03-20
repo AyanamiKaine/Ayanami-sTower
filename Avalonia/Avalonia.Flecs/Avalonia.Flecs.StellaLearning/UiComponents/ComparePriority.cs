@@ -193,9 +193,16 @@ public class ComparePriority : IUIComponent
                 .SetFontWeight(Media.FontWeight.Bold);
             });
 
-
-            _spacedRepetitionItems!.CollectionChanged += ((sender, e) =>
+            //TODO: MAJOR PROBLEM, EVENT DELEGATES AND ENTITIES
+            //When delegates exist they always expect the refrence to be alive
+            //When you destroy an entity and the event handler expect it to be there
+            //all hell breaks lose and you will have an memory exception.
+            _spacedRepetitionItems!.CollectionChanged += ((_, _) =>
             {
+                //Defensive programming can help medicating the problem.
+                if (!_root.IsValid() || !_root.IsAlive() || _root == 0)
+                    return;
+
                 if (_spacedRepetitionItems?.Count != 0 && _spacedRepetitionItems is not null)
                 {
                     var randomIndex = _rng.Next(_spacedRepetitionItems.Count);
