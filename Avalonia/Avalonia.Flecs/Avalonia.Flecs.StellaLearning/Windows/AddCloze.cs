@@ -1,4 +1,6 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
@@ -12,12 +14,19 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type cloze
 /// </summary>
-public class AddCloze : IUIComponent
+public class AddCloze : IUIComponent, IDisposable
 {
     private Entity calculatedPriority;
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
+    private readonly ObservableCollection<string> clozes = [];
+    private bool isDisposed = false;
+
+    // When a new cloze gets added we can remove the warning text
+    // if a cloze gets removed and no clozes exist anymore we will show
+    // it again
+    private NotifyCollectionChangedEventHandler? collectionChangedHandler;
 
     /// <summary>
     /// Create the Add Cloze Window
@@ -40,7 +49,7 @@ public class AddCloze : IUIComponent
                 .Child(DefineWindowContents(world));
             });
 
-            window.OnClosed((sender, args) => _root.Destruct());
+            window.OnClosed((sender, args) => Dispose());
             window.Show();
         });
         calculatedPriority.ChildOf(_root);
@@ -56,8 +65,6 @@ public class AddCloze : IUIComponent
                 clozes.Add(trimmedItem);
             }
         }
-
-        ObservableCollection<string> clozes = [];
 
         return world.UI<StackPanel>((stackPanel) =>
         {
@@ -155,10 +162,11 @@ public class AddCloze : IUIComponent
             });
 
             // Subscribe to collection changes to toggle warning visibility
-            clozes.CollectionChanged += (_, _) =>
+            collectionChangedHandler = (_, _) =>
             {
                 warningText.Get<TextBlock>().IsVisible = clozes.Count == 0;
             };
+            clozes.CollectionChanged += collectionChangedHandler;
 
             stackPanel.Child<TextBlock>((textBlock) =>
             {
@@ -219,5 +227,45 @@ public class AddCloze : IUIComponent
                 });
             });
         });
+    }
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources.
+    /// </summary>
+    /// <param name="disposing">
+    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>false</c> to release only unmanaged resources.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!isDisposed)
+        {
+            if (disposing)
+            {
+                // Unsubscribe from events
+                if (clozes != null && collectionChangedHandler != null)
+                {
+                    clozes.CollectionChanged -= collectionChangedHandler;
+                }
+
+                // Clean up other resources
+                // Consider calling destruct if needed
+                if (_root.IsValid())
+                {
+                    _root.Destruct();
+                }
+            }
+
+            isDisposed = true;
+        }
     }
 }
