@@ -8,6 +8,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.Utilities;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
@@ -714,7 +715,6 @@ public static class UIBuilderExtensions
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
-
         builder.Entity.OnClosed(handler);
         return builder;
     }
