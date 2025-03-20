@@ -40,7 +40,7 @@ public class AddCloze : IUIComponent
                 .Child(DefineWindowContents(world));
             });
 
-            window.OnClosed((sender, args) => _root.Clear());
+            window.OnClosed((sender, args) => _root.Destruct());
             window.Show();
         });
         calculatedPriority.ChildOf(_root);
@@ -199,21 +199,23 @@ public class AddCloze : IUIComponent
                         nameTextBox!.SetWatermark("Name is required");
                         return;
                     }
-
-                    world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionCloze()
+                    if (_root.IsValid())
                     {
-                        Name = nameTextBox.GetText(),
-                        Priority = calculatedPriority.Get<int>(),
-                        FullText = clozeBox.GetText(),
-                        ClozeWords = [.. clozes],
-                        SpacedRepetitionItemType = SpacedRepetitionItemType.Cloze
-                    });
+                        world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionCloze()
+                        {
+                            Name = nameTextBox.GetText(),
+                            Priority = calculatedPriority.Get<int>(),
+                            FullText = clozeBox.GetText(),
+                            ClozeWords = [.. clozes],
+                            SpacedRepetitionItemType = SpacedRepetitionItemType.Cloze
+                        });
 
-                    nameTextBox.SetText("");
-                    clozeBox.SetText("");
-                    clozes.Clear();
-                    calculatedPriority.Set(500000000);
-                    comparePriority.Reset();
+                        nameTextBox.SetText("");
+                        clozeBox.SetText("");
+                        clozes.Clear();
+                        calculatedPriority.Set(500000000);
+                        comparePriority.Reset();
+                    }
                 });
             });
         });
