@@ -65,4 +65,26 @@ public class Entities
         Assert.Equal(shouldBePlayer, player);
         Assert.Equal(shouldAlsoBePlayer, player);
     }
+
+
+    private class DelegateComponent(DelegateComponent.Test handler)
+    {
+        public delegate void Test();
+        public Test TestHandler = handler;
+    }
+
+    /// <summary>
+    /// There is a big question what happens when we use
+    /// a class as a component that has delegates attached to it
+    /// and then try to destruct the entity.
+    /// </summary>
+    [Fact]
+    public void DelegatesAndComponents()
+    {
+        World world = World.Create();
+        var entity = world.Entity()
+            .Set<DelegateComponent>(new(() => { }));
+
+        entity.Destruct();
+    }
 }
