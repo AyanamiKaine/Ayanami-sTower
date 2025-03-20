@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using Avalonia.Markup.Xaml.Templates;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS

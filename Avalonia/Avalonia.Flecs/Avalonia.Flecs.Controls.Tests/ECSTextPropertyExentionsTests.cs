@@ -1,4 +1,3 @@
-using System.Dynamic;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Flecs.NET.Core;

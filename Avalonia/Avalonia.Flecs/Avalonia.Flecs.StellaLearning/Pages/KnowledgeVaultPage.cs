@@ -6,7 +6,6 @@ using System.Collections.ObjectModel;
 using Avalonia.Controls.Templates;
 using Avalonia.Media;
 using Avalonia.Flecs.StellaLearning.Data;
-using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using NLog;

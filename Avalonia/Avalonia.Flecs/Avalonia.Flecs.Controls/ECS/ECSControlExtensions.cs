@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Input;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls.ECS

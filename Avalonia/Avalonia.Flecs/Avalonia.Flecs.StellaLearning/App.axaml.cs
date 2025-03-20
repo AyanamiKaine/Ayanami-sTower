@@ -7,7 +7,6 @@ using FluentAvalonia.UI.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
 using Avalonia.Flecs.FluentUI.Controls;
-using Avalonia.Flecs.Util;
 using Avalonia.Flecs.StellaLearning.Pages;
 using System;
 using CommunityToolkit.Mvvm.Input;
@@ -17,8 +16,6 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Threading;
 using Avalonia.Flecs.StellaLearning.Data;
 using System.Collections.ObjectModel;
-using System.Timers;
-using Avalonia.Media.Imaging;
 
 namespace Avalonia.Flecs.StellaLearning;
 

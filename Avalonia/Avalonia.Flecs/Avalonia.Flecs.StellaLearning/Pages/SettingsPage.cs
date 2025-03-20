@@ -8,7 +8,6 @@ using Avalonia.Styling;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module;
 using Avalonia.Flecs.StellaLearning.Data;
-using Avalonia.Flecs.Util;
 using NLog;
 using Avalonia.Flecs.Controls;
 using Avalonia.Media;

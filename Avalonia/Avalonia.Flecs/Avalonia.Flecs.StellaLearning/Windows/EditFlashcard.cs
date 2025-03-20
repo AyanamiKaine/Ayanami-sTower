@@ -1,17 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
-using Avalonia.Flecs.StellaLearning.UiComponents;
-using Avalonia.Flecs.Util;
 using Avalonia.Input;
 using Avalonia.Media;
-using Avalonia.Platform.Storage;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;

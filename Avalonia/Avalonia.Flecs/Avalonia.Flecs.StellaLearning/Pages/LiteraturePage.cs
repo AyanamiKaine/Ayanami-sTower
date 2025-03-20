@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
-using Avalonia.Flecs.Util;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using NLog;

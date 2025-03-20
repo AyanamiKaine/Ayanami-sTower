@@ -1,14 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
-using Avalonia.Flecs.StellaLearning.UiComponents;
-using Avalonia.Flecs.Util;
 using Avalonia.Media;
 using Flecs.NET.Core;
 

@@ -8,7 +8,6 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
-using Avalonia.Utilities;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;

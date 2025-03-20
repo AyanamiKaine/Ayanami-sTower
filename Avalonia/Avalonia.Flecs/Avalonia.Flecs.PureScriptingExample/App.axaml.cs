@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Flecs.Controls;
@@ -9,7 +8,6 @@ using Avalonia.Flecs.Util;
 using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
-using Flecs.NET.Bindings;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.PureScriptingExample;

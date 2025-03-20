@@ -5,7 +5,6 @@ using Avalonia.Flecs.Controls.ECS;
 using static Avalonia.Flecs.Controls.ECS.Module;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Flecs.Util;
 using NLog;
 using Avalonia.Flecs.Controls;
 

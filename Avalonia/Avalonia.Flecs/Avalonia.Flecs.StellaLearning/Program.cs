@@ -1,9 +1,4 @@
 ﻿using System;
-using System.IO;
-using System.IO.Pipes;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia.Flecs.Util;
 using DesktopNotifications;
 using DesktopNotifications.Avalonia;
