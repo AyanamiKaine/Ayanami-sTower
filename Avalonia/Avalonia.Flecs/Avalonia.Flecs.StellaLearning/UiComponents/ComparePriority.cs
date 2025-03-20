@@ -199,6 +199,7 @@ public class ComparePriority : IUIComponent
             //all hell breaks lose and you will have an memory exception.
             _spacedRepetitionItems!.CollectionChanged += ((_, _) =>
             {
+                //Defensive programming can help medicating the problem.
                 if (!_root.IsValid() || !_root.IsAlive() || _root == 0)
                     return;
 
