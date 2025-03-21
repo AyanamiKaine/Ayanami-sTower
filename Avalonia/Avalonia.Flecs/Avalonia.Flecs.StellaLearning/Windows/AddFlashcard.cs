@@ -1,17 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
-using Avalonia.Flecs.Util;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Platform.Storage;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
@@ -19,8 +15,16 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type file
 /// </summary>
-public class AddFlashcard : IUIComponent
+public class AddFlashcard : IUIComponent, IDisposable
 {
+    private UIBuilder<Button>? createButton = null;
+
+    private Entity calculatedPriority;
+    private UIBuilder<TextBox>? nameTextBox = null;
+    private UIBuilder<TextBox>? frontText = null;
+    private UIBuilder<TextBox>? backText = null;
+    private bool isDisposed = false;
+    private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
 
     private Entity _root;
     /// <inheritdoc/>
@@ -58,11 +62,6 @@ public class AddFlashcard : IUIComponent
 
         return world.UI<StackPanel>((stackPanel) =>
         {
-            Entity calculatedPriority;
-            UIBuilder<TextBox>? nameTextBox = null;
-            UIBuilder<TextBox>? frontText = null;
-            UIBuilder<TextBox>? backText = null;
-
             stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
             .SetSpacing(10)
@@ -100,12 +99,14 @@ public class AddFlashcard : IUIComponent
 
             stackPanel.Child<Button>((button) =>
             {
+                createButton = button;
+
                 button.Child<TextBlock>((textBlock) =>
                 {
                     textBlock.SetText("Create Item");
                 });
 
-                button.OnClick((sender, args) =>
+                createButtonClickedHandler = (sender, args) =>
                 {
                     if (nameTextBox is null ||
                         frontText is null ||
@@ -135,8 +136,49 @@ public class AddFlashcard : IUIComponent
                     backText.SetText("");
                     tags.Clear();
                     comparePriority.Reset();
-                });
+                };
+                button.With((b) => b.Click += createButtonClickedHandler);
             });
         });
+    }
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources.
+    /// </summary>
+    /// <param name="disposing">
+    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>false</c> to release only unmanaged resources.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!isDisposed)
+        {
+            if (disposing)
+            {
+
+                if (createButton is not null && createButtonClickedHandler is not null)
+                {
+                    createButton.With((b) => b.Click -= createButtonClickedHandler);
+                }
+
+                // Clean up other resources
+                // Consider calling destruct if needed
+                if (_root.IsValid())
+                {
+                    _root.Destruct();
+                }
+            }
+
+            isDisposed = true;
+        }
     }
 }
