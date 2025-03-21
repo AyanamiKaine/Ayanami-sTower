@@ -118,7 +118,10 @@ namespace Avalonia.Flecs.Controls.ECS
             AddUIComponentTags(world);
             AddControlToParentAdderObserver(world);
             AddFlyoutToControlObserver(world);
+            RemoveControlFromParentObserver(world);
+            RemoveControlComponentObserver(world);
             //AddPageObserver(world);
+
 
         }
 
@@ -220,6 +223,92 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                 });
             Logger.Debug("ControlToParentAdder observer registered successfully");
+        }
+
+        /// <summary>
+        /// Removes the control from parent when the Control component is removed from an entity.
+        /// </summary>
+        /// <param name="world"></param>
+        public static void RemoveControlComponentObserver(World world)
+        {
+            Logger.Debug("Registering ControlComponentRemover observer");
+            world.Observer<Control>("ControlComponentRemover")
+                .Event(Ecs.OnRemove)
+                .Each((Entity entity, ref Control control) =>
+                {
+                    // The control is already being removed, but we need to clean up parent references
+                    if (entity.Has(Ecs.ChildOf, Ecs.Wildcard))
+                    {
+                        var parent = entity.Parent();
+
+                        if (parent.Has<Panel>())
+                        {
+                            var panel = parent.Get<Panel>();
+                            if (panel.Children.Contains(control))
+                            {
+                                Logger.Debug("Removing control from panel due to Control component removal on entity {EntityId}",
+                                    entity.Name() ?? entity.ToString());
+                                panel.Children.Remove(control);
+                            }
+                        }
+                        else if (parent.Has<ContentControl>())
+                        {
+                            var contentControl = parent.Get<ContentControl>();
+                            if (contentControl.Content == control)
+                            {
+                                Logger.Debug("Clearing control from content control due to Control component removal on entity {EntityId}",
+                                    entity.Name() ?? entity.ToString());
+                                contentControl.Content = null;
+                            }
+                        }
+                    }
+                });
+            Logger.Debug("ControlComponentRemover observer registered successfully");
+        }
+
+        /// <summary>
+        /// Removes the control from parent when the child-parent relationship is removed.
+        /// </summary>
+        /// <param name="world"></param>
+        public static void RemoveControlFromParentObserver(World world)
+        {
+            Logger.Debug("Registering ControlFromParentRemover observer");
+            world.Observer("ControlFromParentRemover")
+                .Event(Ecs.OnRemove)
+                .With(Ecs.ChildOf, Ecs.Wildcard)
+                .Each((child) =>
+                {
+                    // When the ChildOf relationship is removed, the second entity is the parent
+                    var parent = child.Parent();
+
+                    if (child.Has<Control>())
+                    {
+                        var control = child.Get<Control>();
+                        if (parent.Has<Panel>())
+                        {
+                            var panel = parent.Get<Panel>();
+                            if (panel.Children.Contains(control))
+                            {
+                                Logger.Debug("Removing control {ControlEntity} from parent panel {PanelEntity}",
+                                    child.Name() ?? child.ToString(),
+                                    parent.Name() ?? parent.ToString());
+                                panel.Children.Remove(control);
+                            }
+                        }
+                        else if (parent.Has<ContentControl>())
+                        {
+                            var contentControl = parent.Get<ContentControl>();
+                            if (contentControl.Content == control)
+                            {
+                                Logger.Debug("Clearing control {ControlEntity} from parent content control {ContentControlEntity}",
+                                    child.Name() ?? child.ToString(),
+                                    parent.Name() ?? parent.ToString());
+                                contentControl.Content = null;
+                            }
+                        }
+                    }
+                });
+            Logger.Debug("ControlFromParentRemover observer registered successfully");
         }
 
         /*
