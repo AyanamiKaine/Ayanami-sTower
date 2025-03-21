@@ -127,7 +127,7 @@ public class AddQuiz : IUIComponent, IDisposable
             stackPanel.Child<Button>((button) =>
             {
                 // We only want to enable the button when a anwser is selected.
-                button.Disable();
+                //button.Disable();
 
                 button.Child<TextBlock>((textBlock) =>
                 {
