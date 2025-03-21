@@ -8,7 +8,7 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
-using Avalonia.Flecs.Util;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Flecs.NET.Core;
 
@@ -16,8 +16,12 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type quiz
 /// </summary>
-public class AddQuiz : IUIComponent
+public class AddQuiz : IUIComponent, IDisposable
 {
+
+    private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
+    private bool isDisposed = false;
+    private UIBuilder<Button>? createButton = null;
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
@@ -130,7 +134,7 @@ public class AddQuiz : IUIComponent
                     textBlock.SetText("Create Quiz");
                 });
 
-                button.OnClick((_, _) =>
+                createButtonClickedHandler = (_, _) =>
                 {
                     if (nameTextBox is null ||
                         quizQuestionTextBox is null ||
@@ -204,7 +208,10 @@ public class AddQuiz : IUIComponent
                         FindControl<TextBox>(grid, i, 1)!.Text = "";
                         FindControl<ToggleButton>(grid, i, 0)!.IsChecked = false;
                     }
-                });
+                };
+
+                button.With((b) => b.Click += createButtonClickedHandler);
+
             });
         });
     }
@@ -214,5 +221,43 @@ public class AddQuiz : IUIComponent
         return grid.Children
                    .OfType<T>()
                    .FirstOrDefault(control => Grid.GetRow(control) == row && Grid.GetColumn(control) == column);
+    }
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources.
+    /// </summary>
+    /// <param name="disposing">
+    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>false</c> to release only unmanaged resources.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!isDisposed)
+        {
+            if (disposing)
+            {
+                if (createButton is not null && createButtonClickedHandler is not null)
+                {
+                    createButton.With((b) => b.Click -= createButtonClickedHandler);
+                }
+
+                // Clean up other resources
+                // Consider calling destruct if needed
+                if (_root.IsValid())
+                {
+                    _root.Destruct();
+                }
+            }
+
+            isDisposed = true;
+        }
     }
 }
