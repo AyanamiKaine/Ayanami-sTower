@@ -53,15 +53,23 @@ This makes the structure of the UI much more obvious.
 
 ## [IN-PROGRESS] Cleaning up unused created UI-Components (FIX THE MEMORY LEAK)
 
-### Problem
+### Problem (FIXED)
 
 When we create an UI-Component we create a set of entities with the appropriate avalonia control classes. Now when we swap out a attached component for another. What happens with the first ui-component entities? They still exist, the never get destroyed. This is a simple memory leak we should fix.
 
-#### Another Problem
+### Another Problem (FIXED)
 
 While the entity problem is mostly fixed, the avalonia problem isnt.
 
 What is the problem? When we create for example a stack panel and add a child to it. They will never garbage collect.
+
+We have fixed this problem. Using the flecs observer when a parent child relationship is removed removes the parent child relation in avalonia classes, setting the needed properties null.
+
+### Another Problem : Not removing event handlers
+
+Event handlers are hard refrences, so when a button has a click event. The added handler makes it impossible for the button to be collected because of the refrence they now share. We want weak refrences to handlers so even if an object has many handlers attached if there is no other refrence to it. It still can be collected.
+
+The rule of thumb should be if avalonia object is not part of an component anymore its invalid and should be able to be garbage collected.
 
 ### Solution
 
