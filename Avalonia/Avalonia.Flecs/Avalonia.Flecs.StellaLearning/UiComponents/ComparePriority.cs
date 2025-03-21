@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
@@ -13,10 +14,11 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents;
 /// <summary>
 /// Ui component
 /// </summary>
-public class ComparePriority : IUIComponent
+public class ComparePriority : IUIComponent, IDisposable
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems = [];
+    private NotifyCollectionChangedEventHandler? collectionChangedHandler;
     private Entity _root;
     private Entity _calculatedPriorityEntity;
     /// <summary>
@@ -28,6 +30,7 @@ public class ComparePriority : IUIComponent
     private SpacedRepetitionItem? _currentItemToCompare = null;
     private string? _currentItemName = "";
     private Random _rng = new();
+    private bool isDisposed = false;
 
     /// <summary>
     /// We want that the user can only compare two times, no need to compare to all items
@@ -196,7 +199,8 @@ public class ComparePriority : IUIComponent
             //When delegates exist they always expect the refrence to be alive
             //When you destroy an entity and the event handler expect it to be there
             //all hell breaks lose and you will have an memory exception.
-            _spacedRepetitionItems!.CollectionChanged += ((_, _) =>
+
+            collectionChangedHandler = ((_, _) =>
             {
                 //Defensive programming can help medicating the problem.
                 if (!_root.IsValid() || !_root.IsAlive() || _root == 0)
@@ -222,6 +226,7 @@ public class ComparePriority : IUIComponent
                 }
             });
 
+            _spacedRepetitionItems!.CollectionChanged += collectionChangedHandler;
         });
         _calculatedPriorityEntity = CalculatedPriorityEntity;
         _root.SetName($"COMPAREPRIORITY-{_rng.Next()}");
@@ -237,5 +242,48 @@ public class ComparePriority : IUIComponent
         morePriorityButton!.Enable();
         lessPriorityButton!.Enable();
         _timesCompared = 0;
+    }
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources.
+    /// </summary>
+    /// <param name="disposing">
+    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>false</c> to release only unmanaged resources.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!isDisposed)
+        {
+            if (disposing)
+            {
+                // Unsubscribe from events
+                // Unsubscribe from events
+                if (_spacedRepetitionItems is not null && collectionChangedHandler is not null)
+                {
+                    _spacedRepetitionItems!.CollectionChanged -= collectionChangedHandler;
+                }
+
+
+
+                // Clean up other resources
+                // Consider calling destruct if needed
+                if (_root.IsValid())
+                {
+                    _root.Destruct();
+                }
+            }
+
+            isDisposed = true;
+        }
     }
 }
