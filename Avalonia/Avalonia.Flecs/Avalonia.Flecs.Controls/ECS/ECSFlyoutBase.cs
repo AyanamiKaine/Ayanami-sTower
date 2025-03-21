@@ -38,7 +38,21 @@ namespace Avalonia.Flecs.Controls.ECS
                         parent.Get<Control>().ContextFlyout = flyoutBase;
                     }
                 })
-                .OnRemove((Entity e, ref FlyoutBase _) => e.Remove<AvaloniaObject>());
+                .OnRemove((Entity e, ref FlyoutBase _) =>
+                {
+                    e.Remove<AvaloniaObject>();
+
+                    var parent = e.Parent();
+                    if (parent == 0)
+                    {
+                        return;
+                    }
+                    if (parent.Has<Control>())
+                    {
+                        parent.Get<Control>().ContextFlyout = null;
+                    }
+
+                });
         }
     }
 }
