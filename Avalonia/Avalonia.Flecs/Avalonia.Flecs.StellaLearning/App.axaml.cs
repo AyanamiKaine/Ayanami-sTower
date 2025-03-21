@@ -31,6 +31,14 @@ public partial class App : Application
     /// <returns></returns>
     public static Window GetMainWindow() => _mainWindow!;
     private World _world = World.Create();
+
+    private ContentQueuePage? contentQueuePage;
+    private KnowledgeVaultPage? knowledgeVaultPage;
+    private SettingsPage? settingsPage;
+    private HomePage? homePage;
+    private LiteraturePage? literaturePage;
+    private SpacedRepetitionPage? spacedRepetitionPage;
+
     /// <summary>
     /// Entity that holds the window component for the main window
     /// </summary>
@@ -58,28 +66,28 @@ public partial class App : Application
         //Entities.OnEntityAdded += debugWindow.AddEntity;
 
         MainWindow = _world.UI<Window>((window) =>
-        {
-            window.SetTitle("Stella Learning")
-                  .SetHeight(400)
-                  .SetWidth(400)
-                  .OnClosing((sender, args) =>
-                  {
-                      if (sender is Window win)
+            {
+                window.SetTitle("Stella Learning")
+                      .SetHeight(400)
+                      .SetWidth(400)
+                      .OnClosing((sender, args) =>
                       {
-                          // We dont close the main window but instead hide it,
-                          // because we have a tray icon that is still active.
-                          if (_world.Get<Settings>().closeToTray)
+                          if (sender is Window win)
                           {
-                              args.Cancel = true;
-                              win.Hide();
+                              // We dont close the main window but instead hide it,
+                              // because we have a tray icon that is still active.
+                              if (_world.Get<Settings>().closeToTray)
+                              {
+                                  args.Cancel = true;
+                                  win.Hide();
+                              }
+                              else
+                              {
+                                  args.Cancel = false;
+                              }
                           }
-                          else
-                          {
-                              args.Cancel = false;
-                          }
-                      }
-                  });
-        });
+                      });
+            });
         _mainWindow = MainWindow.Get<Window>();
         CreateUILayout().ChildOf(MainWindow);
         InitializeTrayIcon();
@@ -89,12 +97,14 @@ public partial class App : Application
 
     private Entity CreateUILayout()
     {
-        ContentQueuePage contentQueuePage = new(_world);
-        KnowledgeVaultPage knowledgeVaultPage = new(_world);
-        SettingsPage settingsPage = new(_world);
-        HomePage homePage = new(_world);
-        LiteraturePage literaturePage = new(_world);
-        SpacedRepetitionPage spacedRepetitionPage = new(_world);
+
+
+        contentQueuePage = new(_world);
+        knowledgeVaultPage = new(_world);
+        settingsPage = new(_world);
+        homePage = new(_world);
+        literaturePage = new(_world);
+        spacedRepetitionPage = new(_world);
 
         // Using the UI Builder is part of an effort to make it much more obvious how the UI is structured.
         // While you might say just use XAML, the whole point was not to use it in the firstplace.
@@ -150,7 +160,7 @@ public partial class App : Application
                 item.Child<TextBlock>(t => t.SetText("Spaced Repetition"));
 
             });
-            nav.Child(spacedRepetitionPage);
+            nav.Child(spacedRepetitionPage!);
             nav.OnDisplayModeChanged((sender, args) =>
             {
                 if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
@@ -200,58 +210,58 @@ public partial class App : Application
                 var selectedItem = args.SelectedItem as NavigationViewItem;
                 if (selectedItem?.Content is TextBlock homeTextBlock && homeTextBlock.Text == "Home")
                 {
-                    nav.Child(homePage);
+                    nav.Child(homePage!);
 
                     //Maybe we could implement an event for the navigation view entity that says
                     //something like new page added and than changes the margin of the page
                     if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)homePage).SetMargin(new Thickness(50, 10, 20, 20));
+                        ((IUIComponent)homePage!).SetMargin(new Thickness(50, 10, 20, 20));
                     else
-                        ((IUIComponent)homePage).SetMargin(new Thickness(20, 10, 20, 20));
+                        ((IUIComponent)homePage!).SetMargin(new Thickness(20, 10, 20, 20));
                 }
                 else if (selectedItem?.Content is TextBlock LiteratureTextBlock && LiteratureTextBlock.Text == "Literature")
                 {
-                    nav.Child(literaturePage);
+                    nav.Child(literaturePage!);
                     if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)literaturePage).SetMargin(new Thickness(50, 10, 20, 20));
+                        ((IUIComponent)literaturePage!).SetMargin(new Thickness(50, 10, 20, 20));
                     else
-                        ((IUIComponent)literaturePage).SetMargin(new Thickness(20, 10, 20, 20));
+                        ((IUIComponent)literaturePage!).SetMargin(new Thickness(20, 10, 20, 20));
                 }
                 else if (selectedItem?.Content is TextBlock SRtextBlock && SRtextBlock.Text == "Spaced Repetition")
                 {
-                    nav.Child(spacedRepetitionPage);
+                    nav.Child(spacedRepetitionPage!);
 
                     if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)spacedRepetitionPage).SetMargin(new Thickness(50, 10, 20, 20));
+                        ((IUIComponent)spacedRepetitionPage!).SetMargin(new Thickness(50, 10, 20, 20));
                     else
-                        ((IUIComponent)spacedRepetitionPage).SetMargin(new Thickness(20, 10, 20, 20));
+                        ((IUIComponent)spacedRepetitionPage!).SetMargin(new Thickness(20, 10, 20, 20));
                 }
                 else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
                 {
-                    nav.Child(settingsPage);
+                    nav.Child(settingsPage!);
 
                     if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)settingsPage).SetMargin(new Thickness(50, 10, 20, 20));
+                        ((IUIComponent)settingsPage!).SetMargin(new Thickness(50, 10, 20, 20));
                     else
-                        ((IUIComponent)settingsPage).SetMargin(new Thickness(20, 10, 20, 20));
+                        ((IUIComponent)settingsPage!).SetMargin(new Thickness(20, 10, 20, 20));
                 }
                 else if (selectedItem?.Content is TextBlock KVtextBlock && KVtextBlock.Text == "Knowledge Vault")
                 {
-                    nav.Child(knowledgeVaultPage);
+                    nav.Child(knowledgeVaultPage!);
 
                     if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(50, 10, 20, 20));
+                        ((IUIComponent)knowledgeVaultPage!).SetMargin(new Thickness(50, 10, 20, 20));
                     else
-                        ((IUIComponent)knowledgeVaultPage).SetMargin(new Thickness(20, 10, 20, 20));
+                        ((IUIComponent)knowledgeVaultPage!).SetMargin(new Thickness(20, 10, 20, 20));
                 }
                 else if (selectedItem?.Content is TextBlock CQtextBlock && CQtextBlock.Text == "Content Queue")
                 {
-                    nav.Child(contentQueuePage);
+                    nav.Child(contentQueuePage!);
 
                     if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)contentQueuePage).SetMargin(new Thickness(50, 10, 20, 20));
+                        ((IUIComponent)contentQueuePage!).SetMargin(new Thickness(50, 10, 20, 20));
                     else
-                        ((IUIComponent)contentQueuePage).SetMargin(new Thickness(20, 10, 20, 20));
+                        ((IUIComponent)contentQueuePage!).SetMargin(new Thickness(20, 10, 20, 20));
                 }
             });
         });
