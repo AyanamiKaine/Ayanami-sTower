@@ -6,6 +6,7 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Flecs.NET.Core;
 
@@ -16,6 +17,10 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public class AddCloze : IUIComponent, IDisposable
 {
+    private UIBuilder<Button>? createButton = null;
+    private UIBuilder<TextBox>? nameTextBox = null;
+    private UIBuilder<TextBox>? clozeBox = null;
+    private UIBuilder<ItemsControl>? clozeList = null;
     private Entity calculatedPriority;
     private Entity _root;
     /// <inheritdoc/>
@@ -27,7 +32,7 @@ public class AddCloze : IUIComponent, IDisposable
     // if a cloze gets removed and no clozes exist anymore we will show
     // it again
     private NotifyCollectionChangedEventHandler? collectionChangedHandler;
-
+    private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
     /// <summary>
     /// Create the Add Cloze Window
     /// </summary>
@@ -68,9 +73,6 @@ public class AddCloze : IUIComponent, IDisposable
 
         return world.UI<StackPanel>((stackPanel) =>
         {
-            UIBuilder<TextBox>? nameTextBox = null;
-            UIBuilder<TextBox>? clozeBox = null;
-            UIBuilder<ItemsControl>? clozeList = null;
 
             stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
@@ -166,7 +168,7 @@ public class AddCloze : IUIComponent, IDisposable
             {
                 warningText.Get<TextBlock>().IsVisible = clozes.Count == 0;
             };
-            
+
             clozes.CollectionChanged += collectionChangedHandler;
 
             stackPanel.Child<TextBlock>((textBlock) =>
@@ -191,12 +193,14 @@ public class AddCloze : IUIComponent, IDisposable
             // Create button
             stackPanel.Child<Button>((button) =>
             {
+                createButton = button;
+
                 button.Child<TextBlock>((textBlock) =>
                 {
                     textBlock.SetText("Create Cloze");
                 });
 
-                button.OnClick((sender, args) =>
+                createButtonClickedHandler = (sender, args) =>
                 {
                     if (nameTextBox is null || clozeBox is null)
                     {
@@ -225,7 +229,9 @@ public class AddCloze : IUIComponent, IDisposable
                         calculatedPriority.Set(500000000);
                         comparePriority.Reset();
                     }
-                });
+                };
+
+                button.With((b) => b.Click += createButtonClickedHandler);
             });
         });
     }
@@ -256,6 +262,11 @@ public class AddCloze : IUIComponent, IDisposable
                 if (clozes != null && collectionChangedHandler != null)
                 {
                     clozes.CollectionChanged -= collectionChangedHandler;
+                }
+
+                if (createButton is not null && createButtonClickedHandler is not null)
+                {
+                    createButton.With((b) => b.Click -= createButtonClickedHandler);
                 }
 
                 // Clean up other resources
