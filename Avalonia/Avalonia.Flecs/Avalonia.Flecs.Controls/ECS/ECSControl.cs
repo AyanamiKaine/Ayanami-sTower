@@ -49,6 +49,17 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                 }).OnRemove((Entity e, ref Control control) =>
                 {
+                    /*
+                    We are mostly settings some properties null
+                    so we dont acidentially refrence objects 
+                    that then wont get collected.
+                    */
+                    control.FocusAdorner = null;
+                    control.Cursor = null;
+                    control.Tag = null;
+                    control.ContextFlyout = null;
+                    control.ContextMenu = null;
+
                     var parent = e.Parent();
                     if (parent == 0)
                     {
