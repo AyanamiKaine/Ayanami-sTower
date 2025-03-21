@@ -32,6 +32,8 @@ namespace Avalonia.Flecs.Controls.ECS
         /// a root component in the UI hierarchy.
         /// Only one page entity can be a child of a parent.
         /// If you add a new page to a parent othe page of the parent is removed.
+        /// An entity marked with a page tag wont get automatically destroyed when 
+        /// its parent child relationship is removed.
         /// </summary>
         public struct Page
         {
@@ -275,6 +277,9 @@ namespace Avalonia.Flecs.Controls.ECS
             Logger.Debug("Registering ControlFromParentRemover observer");
             world.Observer("ControlFromParentRemover")
                 .Event(Ecs.OnRemove)
+                // Why without page?, Because sometimes we want to keep pages cached so we dont create them everytime, we switch to them
+                // and instead have only one instance that is swapped with other pages.
+                .Without<Page>()
                 .With(Ecs.ChildOf, Ecs.Wildcard)
                 .Each((child) =>
                 {
