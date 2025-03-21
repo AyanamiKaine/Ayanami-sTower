@@ -214,7 +214,7 @@ public class AddCloze : IUIComponent, IDisposable
 
                     if (clozes.Count == 0 || string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
-                        nameTextBox.SetWatermark("Name is required");
+                        nameTextBox!.SetWatermark("Name is required");
                         return;
                     }
                     if (_root.IsValid())
@@ -235,9 +235,8 @@ public class AddCloze : IUIComponent, IDisposable
                         comparePriority.Reset();
                     }
                 };
-                // I have no glue if this really works as I expect. 
-                // TOOD: Implement tests to confirm this works as intended.
-                button.With((b) => b.Click += new WeakEventHandler<RoutedEventArgs>(createButtonClickedHandler).Handler);
+
+                button.With((b) => b.Click += createButtonClickedHandler);
             });
         });
     }
@@ -289,4 +288,3 @@ public class AddCloze : IUIComponent, IDisposable
         }
     }
 }
-
