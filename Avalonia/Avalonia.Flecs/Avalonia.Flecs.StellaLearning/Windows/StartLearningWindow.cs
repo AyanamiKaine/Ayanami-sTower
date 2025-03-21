@@ -19,8 +19,9 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to learn spaced repetition items
 /// </summary>
-public class StartLearningWindow : IUIComponent
+public class StartLearningWindow : IUIComponent, IDisposable
 {
+    private bool isDisposed = false;
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
@@ -74,7 +75,7 @@ public class StartLearningWindow : IUIComponent
 
             window.OnClosing((_, _) =>
             {
-                Cleanup();
+                Dispose();
             });
             window.Show();
         });
@@ -727,16 +728,6 @@ public class StartLearningWindow : IUIComponent
         _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
     }
 
-    // Cleanup method to remove all event handlers
-    private void Cleanup()
-    {
-        foreach (var item in _spacedRepetitionItems)
-        {
-            DetachItemEventHandler(item);
-        }
-        _spacedRepetitionItems.CollectionChanged -= OnSpacedRepetitionItemsChanged;
-    }
-
     private Entity DisplayRightItem()
     {
         try
@@ -780,5 +771,51 @@ public class StartLearningWindow : IUIComponent
             .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
             .SetMargin(20)
             .SetText(text);
+    }
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Releases unmanaged and - optionally - managed resources.
+    /// </summary>
+    /// <param name="disposing">
+    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>false</c> to release only unmanaged resources.
+    /// </param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!isDisposed)
+        {
+            if (disposing)
+            {
+                // Clean up events
+
+                if (_spacedRepetitionItems is not null)
+                {
+                    foreach (var item in _spacedRepetitionItems)
+                    {
+                        DetachItemEventHandler(item);
+                    }
+                    _spacedRepetitionItems.CollectionChanged -= OnSpacedRepetitionItemsChanged;
+                }
+
+                // Clean up other resources
+                // Consider calling destruct if needed
+                if (_root.IsValid())
+                {
+                    _root.Get<Window>().Content = null;
+                    _root.Destruct();
+                }
+            }
+
+            isDisposed = true;
+        }
     }
 }
