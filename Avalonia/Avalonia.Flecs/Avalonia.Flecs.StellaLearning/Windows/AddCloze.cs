@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
@@ -8,6 +9,7 @@ using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Utilities;
 using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
@@ -202,6 +204,7 @@ public class AddCloze : IUIComponent, IDisposable
                     textBlock.SetText("Create Cloze");
                 });
 
+
                 createButtonClickedHandler = (sender, args) =>
                 {
                     if (nameTextBox is null || clozeBox is null)
@@ -211,7 +214,7 @@ public class AddCloze : IUIComponent, IDisposable
 
                     if (clozes.Count == 0 || string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
-                        nameTextBox!.SetWatermark("Name is required");
+                        nameTextBox.SetWatermark("Name is required");
                         return;
                     }
                     if (_root.IsValid())
@@ -232,8 +235,9 @@ public class AddCloze : IUIComponent, IDisposable
                         comparePriority.Reset();
                     }
                 };
-
-                button.With((b) => b.Click += createButtonClickedHandler);
+                // I have no glue if this really works as I expect. 
+                // TOOD: Implement tests to confirm this works as intended.
+                button.With((b) => b.Click += new WeakEventHandler<RoutedEventArgs>(createButtonClickedHandler).Handler);
             });
         });
     }
@@ -285,3 +289,4 @@ public class AddCloze : IUIComponent, IDisposable
         }
     }
 }
+
