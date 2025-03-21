@@ -17,6 +17,7 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public class AddCloze : IUIComponent, IDisposable
 {
+    private ComparePriority comparePriority;
     private UIBuilder<Button>? createButton = null;
     private UIBuilder<TextBox>? nameTextBox = null;
     private UIBuilder<TextBox>? clozeBox = null;
@@ -40,6 +41,9 @@ public class AddCloze : IUIComponent, IDisposable
     /// <returns></returns>
     public AddCloze(World world)
     {
+        comparePriority = new ComparePriority(world);
+        calculatedPriority = comparePriority.CalculatedPriorityEntity;
+
         _root = world.UI<Window>((window) =>
         {
             window
@@ -186,8 +190,6 @@ public class AddCloze : IUIComponent, IDisposable
                     .SetBorderBrush(Brushes.Black);
             });
 
-            var comparePriority = new ComparePriority(world);
-            calculatedPriority = comparePriority.CalculatedPriorityEntity;
             stackPanel.Child(comparePriority);
 
             // Create button
@@ -258,6 +260,8 @@ public class AddCloze : IUIComponent, IDisposable
         {
             if (disposing)
             {
+                comparePriority?.Dispose();
+
                 // Unsubscribe from events
                 if (clozes != null && collectionChangedHandler != null)
                 {
