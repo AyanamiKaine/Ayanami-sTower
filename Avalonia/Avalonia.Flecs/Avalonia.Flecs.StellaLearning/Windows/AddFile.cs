@@ -1,17 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
-using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
-using Avalonia.Flecs.Util;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Flecs.NET.Core;
@@ -24,7 +21,8 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 public class AddFile : IUIComponent, IDisposable
 {
 
-
+    private UIBuilder<Button>? createButton = null;
+    private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
     private UIBuilder<TextBlock>? validationTextBlock = null;
     private UIBuilder<TextBox>? nameTextBox = null;
     private UIBuilder<TextBox>? filePath = null;
@@ -148,51 +146,52 @@ public class AddFile : IUIComponent, IDisposable
 
             stackPanel.Child<Button>((button) =>
             {
+                createButton = button;
                 button.Child<TextBlock>((textBlock) =>
                 {
                     textBlock.SetText("Create Item");
                 });
 
-                button.OnClick((sender, args) =>
+                createButtonClickedHandler = (sender, args) =>
+                {
+                    if (nameTextBox is null ||
+                        questionTextBox is null ||
+                        filePath is null)
                     {
-                        if (nameTextBox is null ||
-                            questionTextBox is null ||
-                            filePath is null)
-                        {
-                            return;
-                        }
+                        return;
+                    }
 
-                        if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()) || string.IsNullOrEmpty(questionTextBox.GetText()))
-                        {
-                            nameTextBox!.SetWatermark("Name is required");
-                            questionTextBox!.SetWatermark("Question is required");
-                            filePath!.SetWatermark("File path is required");
-                            return;
-                        }
+                    if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()) || string.IsNullOrEmpty(questionTextBox.GetText()))
+                    {
+                        nameTextBox!.SetWatermark("Name is required");
+                        questionTextBox!.SetWatermark("Question is required");
+                        filePath!.SetWatermark("File path is required");
+                        return;
+                    }
 
-                        if (!System.IO.File.Exists(filePath!.GetText()))
-                        {
-                            filePath!.SetWatermark("File at defined path does not exist");
-                            return;
-                        }
+                    if (!System.IO.File.Exists(filePath!.GetText()))
+                    {
+                        filePath!.SetWatermark("File at defined path does not exist");
+                        return;
+                    }
 
-                        world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
-                        {
-                            Name = nameTextBox.GetText(),
-                            Priority = calculatedPriority.Get<int>(),
-                            Question = questionTextBox.GetText(),
-                            FilePath = filePath.GetText(),
-                            SpacedRepetitionItemType = SpacedRepetitionItemType.File
-                        });
-
-                        calculatedPriority.Set(500000000);
-                        nameTextBox.SetText("");
-                        questionTextBox.SetText("");
-                        filePath.SetText("");
-                        tags.Clear();
-                        comparePriority.Reset();
+                    world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
+                    {
+                        Name = nameTextBox.GetText(),
+                        Priority = calculatedPriority.Get<int>(),
+                        Question = questionTextBox.GetText(),
+                        FilePath = filePath.GetText(),
+                        SpacedRepetitionItemType = SpacedRepetitionItemType.File
                     });
 
+                    calculatedPriority.Set(500000000);
+                    nameTextBox.SetText("");
+                    questionTextBox.SetText("");
+                    filePath.SetText("");
+                    tags.Clear();
+                    comparePriority.Reset();
+                };
+                button.With((b) => b.Click += createButtonClickedHandler);
             });
         });
     }
@@ -256,6 +255,11 @@ public class AddFile : IUIComponent, IDisposable
                 if (filePath is not null && filePathHasChangedHandler is not null)
                 {
                     filePath.With((textbox) => textbox.TextChanged -= filePathHasChangedHandler);
+                }
+
+                if (createButton is not null && createButtonClickedHandler is not null)
+                {
+                    createButton.With((b) => b.Click -= createButtonClickedHandler);
                 }
 
                 // Clean up other resources
