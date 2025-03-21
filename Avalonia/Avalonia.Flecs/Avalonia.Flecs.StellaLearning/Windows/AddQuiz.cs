@@ -253,6 +253,7 @@ public class AddQuiz : IUIComponent, IDisposable
                 // Consider calling destruct if needed
                 if (_root.IsValid())
                 {
+                    _root.Get<Window>().Content = null;
                     _root.Destruct();
                 }
             }
