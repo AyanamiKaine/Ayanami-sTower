@@ -94,11 +94,8 @@ public partial class App : Application
     }
 
 
-
     private Entity CreateUILayout()
     {
-
-
         contentQueuePage = new(_world);
         knowledgeVaultPage = new(_world);
         settingsPage = new(_world);
