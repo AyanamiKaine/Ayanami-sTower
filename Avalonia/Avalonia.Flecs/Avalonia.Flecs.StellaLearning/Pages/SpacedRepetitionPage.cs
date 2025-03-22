@@ -54,6 +54,11 @@ public class SpacedRepetitionPage : IUIComponent
         _spacedRepetitionItems = spacedRepetitionItems;
         world.Set(spacedRepetitionItems);
 
+        /*
+        We only add the handler once. 
+        */
+        _iNotificationManager.NotificationActivated += OnNotificationActivated;
+
         _root = world.UI<Grid>((grid) =>
         {
             /*
@@ -387,15 +392,6 @@ public class SpacedRepetitionPage : IUIComponent
                             bool hasItemToReview = _ItemToBeLearned != null;
                             if (hasItemToReview && !_previouslyHadItemToReview && !App.GetMainWindow().IsActive && _root.CsWorld().Get<Settings>().enableNotifications)
                             {
-
-                                _iNotificationManager.NotificationActivated += (_, e) =>
-                                {
-                                    if (e.ActionId == "startLearning")
-                                    {
-                                        Dispatcher.UIThread.Post(() => new StartLearningWindow(_root.CsWorld()));
-                                    }
-                                };
-
                                 var nf = new Notification
                                 {
                                     Title = "New item can be learned",
@@ -577,5 +573,13 @@ public class SpacedRepetitionPage : IUIComponent
             */
             return grid;
         });
+    }
+
+    private void OnNotificationActivated(object? sender, NotificationActivatedEventArgs e)
+    {
+        if (e.ActionId == "startLearning")
+        {
+            Dispatcher.UIThread.Post(() => new StartLearningWindow(_root.CsWorld()));
+        }
     }
 }
