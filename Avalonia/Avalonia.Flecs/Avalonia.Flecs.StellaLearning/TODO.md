@@ -1,6 +1,6 @@
 # TODO (Things that must be done)
 
-## Enable a way to edit items
+## Enable a way to edit items (DONE!)
 
 ### Problem
 
