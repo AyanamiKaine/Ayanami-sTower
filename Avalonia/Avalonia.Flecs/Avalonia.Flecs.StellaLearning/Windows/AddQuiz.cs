@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reactive.Disposables;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls;
@@ -18,7 +19,10 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public class AddQuiz : IUIComponent, IDisposable
 {
-
+    /// <summary>
+    /// Collection to track all disposables
+    /// </summary>
+    private readonly CompositeDisposable _disposables = [];
     private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
     private bool isDisposed = false;
     private UIBuilder<Button>? createButton = null;
@@ -265,6 +269,8 @@ public class AddQuiz : IUIComponent, IDisposable
                     _root.Get<Window>().Content = null;
                     _root.Destruct();
                 }
+                // Dispose all tracked disposables
+                _disposables.Dispose();
             }
 
             isDisposed = true;
