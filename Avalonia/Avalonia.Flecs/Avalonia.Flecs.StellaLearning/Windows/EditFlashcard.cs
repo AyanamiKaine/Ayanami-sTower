@@ -63,11 +63,22 @@ public class EditFlashcard : IUIComponent
             .SetSpacing(10)
             .SetMargin(20);
 
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Name");
+            });
+
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
                 textBox.SetWatermark("Name").SetText(flashcard.Name);
             });
+
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Front Text");
+            });
+
 
             stackPanel.Child<TextBox>((textBox) =>
             {
@@ -77,6 +88,11 @@ public class EditFlashcard : IUIComponent
                 .SetTextWrapping(TextWrapping.Wrap).SetText(flashcard.Front);
 
                 textBox.Get<TextBox>().AcceptsReturn = true;
+            });
+
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Back Text");
             });
 
             stackPanel.Child<TextBox>((textBox) =>
