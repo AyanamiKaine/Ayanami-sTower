@@ -53,10 +53,6 @@ public class ComparePriority : IUIComponent, IDisposable
     /// <returns></returns>
     public ComparePriority(World world)
     {
-
-
-
-
         // We want that the user can only compare two times, no need to compare to all items
 
         _spacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
@@ -200,22 +196,22 @@ public class ComparePriority : IUIComponent, IDisposable
                 .SetTextWrapping(Media.TextWrapping.Wrap)
                 .SetFontWeight(Media.FontWeight.Bold);
             });
-
-            /*
-            Here we define the things we want to dispose when the window closes,
-            we mostly want to removed event handlers and destroy the entity
-            */
-
-            _spacedRepetitionItems!.CollectionChanged += OnCollectionChanged;
-            _disposables.Add(Disposable.Create(() =>
-                _spacedRepetitionItems!.CollectionChanged -= OnCollectionChanged));
-
-            _disposables.Add(Disposable.Create(() =>
-            {
-                if (_root.IsValid()) _root.Destruct();
-            }));
-
         });
+
+        /*
+          Here we define the things we want to dispose when the window closes,
+          we mostly want to removed event handlers and destroy the entity
+          */
+
+        _spacedRepetitionItems!.CollectionChanged += OnCollectionChanged;
+        _disposables.Add(Disposable.Create(() =>
+            _spacedRepetitionItems!.CollectionChanged -= OnCollectionChanged));
+
+        _disposables.Add(Disposable.Create(() =>
+        {
+            if (_root.IsValid()) _root.Destruct();
+        }));
+
         _calculatedPriorityEntity = CalculatedPriorityEntity;
         _root.SetName($"COMPAREPRIORITY-{_rng.Next()}");
     }
