@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Reactive.Disposables;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
@@ -19,11 +20,15 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public class AddCloze : IUIComponent, IDisposable
 {
-    private ComparePriority comparePriority;
+    /// <summary>
+    /// Collection to track all disposables
+    /// </summary>
+    private readonly CompositeDisposable _disposables = [];
+
+    private readonly ComparePriority comparePriority;
     private UIBuilder<Button>? createButton = null;
     private UIBuilder<TextBox>? nameTextBox = null;
     private UIBuilder<TextBox>? clozeBox = null;
-    private UIBuilder<ItemsControl>? clozeList = null;
     private Entity calculatedPriority;
     private Entity _root;
     /// <inheritdoc/>
@@ -122,7 +127,7 @@ public class AddCloze : IUIComponent, IDisposable
             // Create cloze list with items control
             stackPanel.Child<ItemsControl>((itemsControl) =>
             {
-                clozeList = itemsControl
+                itemsControl
                 .SetItemTemplate(
                     world.CreateTemplate<string, StackPanel>(
                     (sp, tag) =>
@@ -283,6 +288,9 @@ public class AddCloze : IUIComponent, IDisposable
                     _root.Get<Window>().Content = null;
                     _root.Destruct();
                 }
+
+                // Dispose all tracked disposables
+                _disposables.Dispose();
             }
 
             isDisposed = true;
