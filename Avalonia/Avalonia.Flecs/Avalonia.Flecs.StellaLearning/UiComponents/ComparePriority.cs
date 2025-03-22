@@ -19,7 +19,6 @@ public class ComparePriority : IUIComponent, IDisposable
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems = [];
-    private NotifyCollectionChangedEventHandler? collectionChangedHandler;
     private Entity _root;
     private Entity _calculatedPriorityEntity;
     /// <summary>
@@ -202,40 +201,14 @@ public class ComparePriority : IUIComponent, IDisposable
                 .SetFontWeight(Media.FontWeight.Bold);
             });
 
-            //TODO: MAJOR PROBLEM, EVENT DELEGATES AND ENTITIES
-            //When delegates exist they always expect the refrence to be alive
-            //When you destroy an entity and the event handler expect it to be there
-            //all hell breaks lose and you will have an memory exception.
+            /*
+            Here we define the things we want to dispose when the window closes,
+            we mostly want to removed event handlers and destroy the entity
+            */
 
-            collectionChangedHandler = ((_, _) =>
-            {
-                //Defensive programming can help medicating the problem.
-                if (!_root.IsValid() || !_root.IsAlive() || _root == 0)
-                    return;
-
-                if (_spacedRepetitionItems?.Count != 0 && _spacedRepetitionItems is not null)
-                {
-                    var randomIndex = _rng.Next(_spacedRepetitionItems.Count);
-                    _currentItemToCompare = _spacedRepetitionItems[randomIndex];
-
-                    if (_currentItemToCompare is not null)
-                        _currentItemName = _currentItemToCompare.Name;
-                    else
-                        _currentItemName = "No Items to compare to";
-
-                    itemToCompareToTextBlock!.SetText(_currentItemName);
-                }
-                else
-                {
-                    _currentItemToCompare = null;
-                    _currentItemName = "No Items to compare to";
-                    itemToCompareToTextBlock!.SetText(_currentItemName);
-                }
-            });
-
-            _spacedRepetitionItems!.CollectionChanged += collectionChangedHandler;
+            _spacedRepetitionItems!.CollectionChanged += OnCollectionChanged;
             _disposables.Add(Disposable.Create(() =>
-                _spacedRepetitionItems!.CollectionChanged -= collectionChangedHandler));
+                _spacedRepetitionItems!.CollectionChanged -= OnCollectionChanged));
 
             _disposables.Add(Disposable.Create(() =>
             {
@@ -286,6 +259,32 @@ public class ComparePriority : IUIComponent, IDisposable
             }
 
             isDisposed = true;
+        }
+    }
+
+    private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        //Defensive programming can help medicating the problem.
+        if (!_root.IsValid() || !_root.IsAlive() || _root == 0)
+            return;
+
+        if (_spacedRepetitionItems?.Count != 0 && _spacedRepetitionItems is not null)
+        {
+            var randomIndex = _rng.Next(_spacedRepetitionItems.Count);
+            _currentItemToCompare = _spacedRepetitionItems[randomIndex];
+
+            if (_currentItemToCompare is not null)
+                _currentItemName = _currentItemToCompare.Name;
+            else
+                _currentItemName = "No Items to compare to";
+
+            itemToCompareToTextBlock!.SetText(_currentItemName);
+        }
+        else
+        {
+            _currentItemToCompare = null;
+            _currentItemName = "No Items to compare to";
+            itemToCompareToTextBlock!.SetText(_currentItemName);
         }
     }
 }
