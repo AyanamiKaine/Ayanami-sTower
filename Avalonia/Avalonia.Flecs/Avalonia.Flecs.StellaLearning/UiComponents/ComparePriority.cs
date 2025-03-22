@@ -7,6 +7,7 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Flecs.NET.Core;
+using System.Reactive.Disposables;
 using NLog;
 
 namespace Avalonia.Flecs.StellaLearning.UiComponents;
@@ -43,6 +44,8 @@ public class ComparePriority : IUIComponent, IDisposable
     private UIBuilder<Button>? morePriorityButton;
     private UIBuilder<Button>? lessPriorityButton;
     private UIBuilder<TextBlock>? itemToCompareToTextBlock;
+    // Collection to track all disposables
+    private readonly CompositeDisposable _disposables = [];
 
     /// <summary>
     /// Creates A ComparePriority component
@@ -51,6 +54,10 @@ public class ComparePriority : IUIComponent, IDisposable
     /// <returns></returns>
     public ComparePriority(World world)
     {
+
+
+
+
         // We want that the user can only compare two times, no need to compare to all items
 
         _spacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
@@ -227,6 +234,14 @@ public class ComparePriority : IUIComponent, IDisposable
             });
 
             _spacedRepetitionItems!.CollectionChanged += collectionChangedHandler;
+            _disposables.Add(Disposable.Create(() =>
+                _spacedRepetitionItems!.CollectionChanged -= collectionChangedHandler));
+
+            _disposables.Add(Disposable.Create(() =>
+            {
+                if (_root.IsValid()) _root.Destruct();
+            }));
+
         });
         _calculatedPriorityEntity = CalculatedPriorityEntity;
         _root.SetName($"COMPAREPRIORITY-{_rng.Next()}");
@@ -266,21 +281,8 @@ public class ComparePriority : IUIComponent, IDisposable
         {
             if (disposing)
             {
-                // Unsubscribe from events
-                // Unsubscribe from events
-                if (_spacedRepetitionItems is not null && collectionChangedHandler is not null)
-                {
-                    _spacedRepetitionItems!.CollectionChanged -= collectionChangedHandler;
-                }
-
-
-
-                // Clean up other resources
-                // Consider calling destruct if needed
-                if (_root.IsValid())
-                {
-                    _root.Destruct();
-                }
+                // Dispose all tracked disposables
+                _disposables.Dispose();
             }
 
             isDisposed = true;
