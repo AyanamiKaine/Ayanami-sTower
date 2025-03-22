@@ -97,6 +97,11 @@ public class EditFile : IUIComponent
             .SetSpacing(10)
             .SetMargin(20);
 
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Name");
+            });
+
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
@@ -104,11 +109,21 @@ public class EditFile : IUIComponent
                 .SetText(spacedRepetitionFile.Name);
             });
 
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Question");
+            });
+
             stackPanel.Child<TextBox>((textBox) =>
             {
                 questionTextBox = textBox;
                 textBox.SetWatermark("Question")
                 .SetText(spacedRepetitionFile.Question);
+            });
+
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("FilePath");
             });
 
             stackPanel.Child<TextBox>((textBox) =>
