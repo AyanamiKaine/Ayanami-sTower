@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Reactive.Disposables;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
@@ -20,7 +21,10 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public class AddFile : IUIComponent, IDisposable
 {
-
+    /// <summary>
+    /// Collection to track all disposables
+    /// </summary>
+    private readonly CompositeDisposable _disposables = [];
     private UIBuilder<Button>? createButton = null;
     private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
     private UIBuilder<TextBlock>? validationTextBlock = null;
@@ -39,9 +43,6 @@ public class AddFile : IUIComponent, IDisposable
     /// <returns></returns>
     public AddFile(World world)
     {
-
-        //DefineWindowContents(world).ChildOf(scrollViewer);
-
         _root = world.UI<Window>((window) =>
         {
             window
@@ -58,8 +59,7 @@ public class AddFile : IUIComponent, IDisposable
 
             /* NOTE:
             You might see high memory usage and no memory reclaim when the window closes and the entity is destroyed.
-            Why might that be? Because the GC didnt run yet, the GC reclaims the memory only when it thinks its a
-            good moment to do so.
+            Why might that be? Because the GC didnt run yet, the GC reclaims the memory only when it thinks its a good moment to do so.
             */
             window.OnClosed((sender, args) => Dispose());
 
@@ -277,6 +277,8 @@ public class AddFile : IUIComponent, IDisposable
                     _root.Get<Window>().Content = null;
                     _root.Destruct();
                 }
+                // Dispose all tracked disposables
+                _disposables.Dispose();
             }
 
             isDisposed = true;
