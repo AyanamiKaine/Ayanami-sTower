@@ -12,12 +12,35 @@ Classes:
     Scheduler: The FSRS spaced-repetition scheduler.
 """
 
+from __future__ import annotations
 import math
 from datetime import datetime, timezone, timedelta
-from copy import deepcopy
-from typing import Any
+from copy import copy
 from enum import IntEnum
-import random
+from random import random
+import time
+
+DEFAULT_PARAMETERS = (
+    0.40255,
+    1.18385,
+    3.173,
+    15.69105,
+    7.1949,
+    0.5345,
+    1.4604,
+    0.0046,
+    1.54575,
+    0.1192,
+    1.01925,
+    1.9395,
+    0.11,
+    0.29605,
+    2.2698,
+    0.2315,
+    2.9898,
+    0.51655,
+    0.6621,
+)
 
 DECAY = -0.5
 FACTOR = 0.9 ** (1 / DECAY) - 1
@@ -67,7 +90,7 @@ class Card:
     Represents a flashcard in the FSRS system.
 
     Attributes:
-        card_id (int): The id of the card. Defaults to the epoch miliseconds of when the card was created.
+        card_id (int): The id of the card. Defaults to the epoch milliseconds of when the card was created.
         state (State): The card's current learning state.
         step (int | None): The card's current learning or relearning step or None if the card is in the Review state.
         stability (float | None): Core mathematical parameter used for future scheduling.
@@ -95,8 +118,10 @@ class Card:
         last_review: datetime | None = None,
     ) -> None:
         if card_id is None:
-            # epoch miliseconds of when the card was created
+            # epoch milliseconds of when the card was created
             card_id = int(datetime.now(timezone.utc).timestamp() * 1000)
+            # wait 1ms to prevent potential card_id collision on next Card creation
+            time.sleep(0.001)
         self.card_id = card_id
 
         self.state = state
@@ -113,6 +138,18 @@ class Card:
         self.due = due
 
         self.last_review = last_review
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"card_id={self.card_id}, "
+            f"state={self.state}, "
+            f"step={self.step}, "
+            f"stability={self.stability}, "
+            f"difficulty={self.difficulty}, "
+            f"due={self.due}, "
+            f"last_review={self.last_review})"
+        )
 
     def to_dict(self) -> dict[str, int | float | str | None]:
         """
@@ -137,12 +174,12 @@ class Card:
         return return_dict
 
     @staticmethod
-    def from_dict(source_dict: dict[str, Any]) -> "Card":
+    def from_dict(source_dict: dict[str, int | float | str | None]) -> Card:
         """
         Creates a Card object from an existing dictionary.
 
         Args:
-            source_dict (dict[str, Any]): A dictionary representing an existing Card object.
+            source_dict (dict[str, int | float | str | None]): A dictionary representing an existing Card object.
 
         Returns:
             Card: A Card object created from the provided dictionary.
@@ -193,11 +230,9 @@ class Card:
         if current_datetime is None:
             current_datetime = datetime.now(timezone.utc)
 
-        if self.state in (State.Learning, State.Review, State.Relearning):
-            elapsed_days = max(0, (current_datetime - self.last_review).days)
-            return (1 + FACTOR * elapsed_days / self.stability) ** DECAY
-        else:
-            return 0
+        elapsed_days = max(0, (current_datetime - self.last_review).days)
+
+        return (1 + FACTOR * elapsed_days / self.stability) ** DECAY
 
 
 class ReviewLog:
@@ -205,41 +240,52 @@ class ReviewLog:
     Represents the log entry of a Card object that has been reviewed.
 
     Attributes:
-        card (Card): Copy of the card object that was reviewed.
+        card_id (int): The id of the card being reviewed.
         rating (Rating): The rating given to the card during the review.
         review_datetime (datetime): The date and time of the review.
         review_duration (int | None): The number of miliseconds it took to review the card or None if unspecified.
     """
 
-    card: Card
+    card_id: int
     rating: Rating
     review_datetime: datetime
     review_duration: int | None
 
     def __init__(
         self,
-        card: Card,
+        card_id: int,
         rating: Rating,
         review_datetime: datetime,
         review_duration: int | None = None,
     ) -> None:
-        self.card = deepcopy(card)
+        self.card_id = card_id
         self.rating = rating
         self.review_datetime = review_datetime
         self.review_duration = review_duration
 
-    def to_dict(self) -> dict[str, dict[str, Any] | int | str | None]:
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"card_id={self.card_id}, "
+            f"rating={self.rating}, "
+            f"review_datetime={self.review_datetime}, "
+            f"review_duration={self.review_duration})"
+        )
+
+    def to_dict(
+        self,
+    ) -> dict[str, dict | int | str | None]:
         """
         Returns a JSON-serializable dictionary representation of the ReviewLog object.
 
         This method is specifically useful for storing ReviewLog objects in a database.
 
         Returns:
-            dict: A dictionary representation of the Card object.
+            dict: A dictionary representation of the ReviewLog object.
         """
 
         return_dict = {
-            "card": self.card.to_dict(),
+            "card_id": self.card_id,
             "rating": self.rating.value,
             "review_datetime": self.review_datetime.isoformat(),
             "review_duration": self.review_duration,
@@ -248,24 +294,26 @@ class ReviewLog:
         return return_dict
 
     @staticmethod
-    def from_dict(source_dict: dict[str, Any]) -> "ReviewLog":
+    def from_dict(
+        source_dict: dict[str, dict | int | str | None],
+    ) -> ReviewLog:
         """
         Creates a ReviewLog object from an existing dictionary.
 
         Args:
-            source_dict (dict[str, Any]): A dictionary representing an existing ReviewLog object.
+            source_dict (dict[str, dict | int | str | None]): A dictionary representing an existing ReviewLog object.
 
         Returns:
             ReviewLog: A ReviewLog object created from the provided dictionary.
         """
 
-        card = Card.from_dict(source_dict["card"])
+        card_id = source_dict["card_id"]
         rating = Rating(int(source_dict["rating"]))
         review_datetime = datetime.fromisoformat(source_dict["review_datetime"])
         review_duration = source_dict["review_duration"]
 
         return ReviewLog(
-            card=card,
+            card_id=card_id,
             rating=rating,
             review_datetime=review_datetime,
             review_duration=review_duration,
@@ -281,8 +329,8 @@ class Scheduler:
     Attributes:
         parameters (tuple[float, ...]): The 19 model weights of the FSRS scheduler.
         desired_retention (float): The desired retention rate of cards scheduled with the scheduler.
-        learning_steps (list[timedelta]): Small time intervals that schedule cards in the Learning state.
-        relearning_steps (list[timedelta]): Small time intervals that schedule cards in the Relearning state.
+        learning_steps (tuple[timedelta, ...]): Small time intervals that schedule cards in the Learning state.
+        relearning_steps (tuple[timedelta, ...]): Small time intervals that schedule cards in the Relearning state.
         maximum_interval (int): The maximum number of days a Review-state card can be scheduled into the future.
         enable_fuzzing (bool): Whether to apply a small amount of random 'fuzz' to calculated intervals.
     """
@@ -296,27 +344,7 @@ class Scheduler:
 
     def __init__(
         self,
-        parameters: tuple[float, ...] | list[float] = (
-            0.40255,
-            1.18385,
-            3.173,
-            15.69105,
-            7.1949,
-            0.5345,
-            1.4604,
-            0.0046,
-            1.54575,
-            0.1192,
-            1.01925,
-            1.9395,
-            0.11,
-            0.29605,
-            2.2698,
-            0.2315,
-            2.9898,
-            0.51655,
-            0.6621,
-        ),
+        parameters: tuple[float, ...] | list[float] = DEFAULT_PARAMETERS,
         desired_retention: float = 0.9,
         learning_steps: tuple[timedelta, ...] | list[timedelta] = (
             timedelta(minutes=1),
@@ -334,6 +362,17 @@ class Scheduler:
         self.relearning_steps = tuple(relearning_steps)
         self.maximum_interval = maximum_interval
         self.enable_fuzzing = enable_fuzzing
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"parameters={self.parameters}, "
+            f"desired_retention={self.desired_retention}, "
+            f"learning_steps={self.learning_steps}, "
+            f"relearning_steps={self.relearning_steps}, "
+            f"maximum_interval={self.maximum_interval}, "
+            f"enable_fuzzing={self.enable_fuzzing})"
+        )
 
     def review_card(
         self,
@@ -363,7 +402,7 @@ class Scheduler:
         ):
             raise ValueError("datetime must be timezone-aware and set to UTC")
 
-        card = deepcopy(card)
+        card = copy(card)
 
         if review_datetime is None:
             review_datetime = datetime.now(timezone.utc)
@@ -373,23 +412,19 @@ class Scheduler:
         )
 
         review_log = ReviewLog(
-            card=card,
+            card_id=card.card_id,
             rating=rating,
             review_datetime=review_datetime,
             review_duration=review_duration,
         )
 
         if card.state == State.Learning:
-            assert type(card.step) == int
-
             # update the card's stability and difficulty
             if card.stability is None and card.difficulty is None:
                 card.stability = self._initial_stability(rating)
                 card.difficulty = self._initial_difficulty(rating)
 
             elif days_since_last_review is not None and days_since_last_review < 1:
-                assert type(card.stability) == float  # mypy
-                assert type(card.difficulty) == float  # mypy
                 card.stability = self._short_term_stability(
                     stability=card.stability, rating=rating
                 )
@@ -398,8 +433,6 @@ class Scheduler:
                 )
 
             else:
-                assert type(card.stability) == float  # mypy
-                assert type(card.difficulty) == float  # mypy
                 card.stability = self._next_stability(
                     difficulty=card.difficulty,
                     stability=card.stability,
@@ -413,10 +446,12 @@ class Scheduler:
                 )
 
             # calculate the card's next interval
-            # len(self.learning_steps) == 0: no learning steps defined so move card to Review state
-            # card.step > len(self.learning_steps): handles the edge-case when a card was originally scheduled with a scheduler with more
-            # learning steps than the current scheduler
-            if len(self.learning_steps) == 0 or card.step > len(self.learning_steps):
+            ## first if-clause handles edge case where the Card in the Learning state was previously
+            ## scheduled with a Scheduler with more learning_steps than the current Scheduler
+            if len(self.learning_steps) == 0 or (
+                card.step >= len(self.learning_steps)
+                and rating in (Rating.Hard, Rating.Good, Rating.Easy)
+            ):
                 card.state = State.Review
                 card.step = None
 
@@ -462,9 +497,6 @@ class Scheduler:
                     next_interval = timedelta(days=next_interval_days)
 
         elif card.state == State.Review:
-            assert type(card.stability) == float  # mypy
-            assert type(card.difficulty) == float  # mypy
-
             # update the card's stability and difficulty
             if days_since_last_review is not None and days_since_last_review < 1:
                 card.stability = self._short_term_stability(
@@ -505,10 +537,6 @@ class Scheduler:
                 next_interval = timedelta(days=next_interval_days)
 
         elif card.state == State.Relearning:
-            assert type(card.step) == int
-            assert type(card.stability) == float  # mypy
-            assert type(card.difficulty) == float  # mypy
-
             # update the card's stability and difficulty
             if days_since_last_review is not None and days_since_last_review < 1:
                 card.stability = self._short_term_stability(
@@ -532,11 +560,11 @@ class Scheduler:
                 )
 
             # calculate the card's next interval
-            # len(self.relearning_steps) == 0: no relearning steps defined so move card to Review state
-            # card.step > len(self.relearning_steps): handles the edge-case when a card was originally scheduled with a scheduler with more
-            # relearning steps than the current scheduler
-            if len(self.relearning_steps) == 0 or card.step > len(
-                self.relearning_steps
+            ## first if-clause handles edge case where the Card in the Relearning state was previously
+            ## scheduled with a Scheduler with more relearning_steps than the current Scheduler
+            if len(self.relearning_steps) == 0 or (
+                card.step >= len(self.relearning_steps)
+                and rating in (Rating.Hard, Rating.Good, Rating.Easy)
             ):
                 card.state = State.Review
                 card.step = None
@@ -590,7 +618,9 @@ class Scheduler:
 
         return card, review_log
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(
+        self,
+    ) -> dict[str, list | float | int | bool]:
         """
         Returns a JSON-serializable dictionary representation of the Scheduler object.
 
@@ -601,7 +631,7 @@ class Scheduler:
         """
 
         return_dict = {
-            "parameters": self.parameters,
+            "parameters": list(self.parameters),
             "desired_retention": self.desired_retention,
             "learning_steps": [
                 int(learning_step.total_seconds())
@@ -618,12 +648,12 @@ class Scheduler:
         return return_dict
 
     @staticmethod
-    def from_dict(source_dict: dict[str, Any]) -> "Scheduler":
+    def from_dict(source_dict: dict[str, list | float | int | bool]) -> Scheduler:
         """
         Creates a Scheduler object from an existing dictionary.
 
         Args:
-            source_dict (dict[str, Any]): A dictionary representing an existing Scheduler object.
+            source_dict (dict[str, list | float | int | bool]): A dictionary representing an existing Scheduler object.
 
         Returns:
             Scheduler: A Scheduler object created from the provided dictionary.
@@ -661,11 +691,11 @@ class Scheduler:
 
     def _initial_difficulty(self, rating: Rating) -> float:
         initial_difficulty = (
-            self.parameters[4] - math.exp(self.parameters[5] * (rating - 1)) + 1
+            self.parameters[4] - (math.e ** (self.parameters[5] * (rating - 1))) + 1
         )
 
         # bound initial_difficulty between 1 and 10
-        initial_difficulty = min(max(initial_difficulty, 1), 10)
+        initial_difficulty = min(max(initial_difficulty, 1.0), 10.0)
 
         return initial_difficulty
 
@@ -674,7 +704,7 @@ class Scheduler:
             (self.desired_retention ** (1 / DECAY)) - 1
         )
 
-        next_interval = round(next_interval)  # intervals are full days
+        next_interval = round(float(next_interval))  # intervals are full days
 
         # must be at least 1 day long
         next_interval = max(next_interval, 1)
@@ -685,8 +715,8 @@ class Scheduler:
         return next_interval
 
     def _short_term_stability(self, stability: float, rating: Rating) -> float:
-        return stability * math.exp(
-            self.parameters[17] * (rating - 3 + self.parameters[18])
+        return stability * (
+            math.e ** (self.parameters[17] * (rating - 3 + self.parameters[18]))
         )
 
     def _next_difficulty(self, difficulty: float, rating: Rating) -> float:
@@ -706,7 +736,7 @@ class Scheduler:
         next_difficulty = _mean_reversion(arg_1=arg_1, arg_2=arg_2)
 
         # bound next_difficulty between 1 and 10
-        next_difficulty = min(max(next_difficulty, 1), 10)
+        next_difficulty = min(max(next_difficulty, 1.0), 10.0)
 
         return next_difficulty
 
@@ -733,11 +763,20 @@ class Scheduler:
     def _next_forget_stability(
         self, difficulty: float, stability: float, retrievability: float
     ) -> float:
-        return (
+        next_forget_stability_long_term_params = (
             self.parameters[11]
-            * math.pow(difficulty, -self.parameters[12])
-            * (math.pow(stability + 1, self.parameters[13]) - 1)
-            * math.exp((1 - retrievability) * self.parameters[14])
+            * (difficulty ** -self.parameters[12])
+            * (((stability + 1) ** (self.parameters[13])) - 1)
+            * (math.e ** ((1 - retrievability) * self.parameters[14]))
+        )
+
+        next_forget_stability_short_term_params = stability / (
+            math.e ** (self.parameters[17] * self.parameters[18])
+        )
+
+        return min(
+            next_forget_stability_long_term_params,
+            next_forget_stability_short_term_params,
         )
 
     def _next_recall_stability(
@@ -748,10 +787,10 @@ class Scheduler:
 
         return stability * (
             1
-            + math.exp(self.parameters[8])
+            + (math.e ** (self.parameters[8]))
             * (11 - difficulty)
-            * math.pow(stability, -self.parameters[9])
-            * (math.exp((1 - retrievability) * self.parameters[10]) - 1)
+            * (stability ** -self.parameters[9])
+            * ((math.e ** ((1 - retrievability) * self.parameters[10])) - 1)
             * hard_penalty
             * easy_bonus
         )
@@ -797,7 +836,7 @@ class Scheduler:
         min_ivl, max_ivl = _get_fuzz_range(interval_days)
 
         fuzzed_interval_days = (
-            random.random() * (max_ivl - min_ivl + 1)
+            random() * (max_ivl - min_ivl + 1)
         ) + min_ivl  # the next interval is a random value between min_ivl and max_ivl
 
         fuzzed_interval_days = min(round(fuzzed_interval_days), self.maximum_interval)
