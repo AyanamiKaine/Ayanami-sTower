@@ -120,6 +120,15 @@ public class AddQuiz : IUIComponent, IDisposable
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0));
             });
             */
+
+            stackPanel.Child<Separator>((separator) =>
+            {
+                separator
+                    .SetMargin(0, 0, 0, 10)
+                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                    .SetBorderBrush(Brushes.Black);
+            });
+
             var comparePriority = new ComparePriority(world);
             calculatedPriority = comparePriority.CalculatedPriorityEntity;
             stackPanel.Child(comparePriority);
