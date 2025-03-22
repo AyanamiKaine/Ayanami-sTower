@@ -71,12 +71,23 @@ public class EditCloze : IUIComponent
             .SetSpacing(10)
             .SetMargin(20);
 
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Name");
+            });
+
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
                 textBox.SetWatermark("Name");
                 textBox.SetText(cloze.Name);
             });
+
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Cloze Text");
+            });
+
 
             stackPanel.Child<TextBox>((textBox) =>
             {
@@ -103,6 +114,11 @@ public class EditCloze : IUIComponent
                       });
 
                 textBox.SetContextFlyout(menu);
+            });
+
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Clozes");
             });
 
             // Create cloze list with items control
