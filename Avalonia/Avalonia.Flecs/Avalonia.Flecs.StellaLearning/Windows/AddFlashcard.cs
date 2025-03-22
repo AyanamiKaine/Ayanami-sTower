@@ -22,6 +22,7 @@ public class AddFlashcard : IUIComponent, IDisposable
     /// Collection to track all disposables
     /// </summary>
     private readonly CompositeDisposable _disposables = [];
+    private ComparePriority comparePriority;
     private UIBuilder<Button>? createButton = null;
     private Entity calculatedPriority;
     private UIBuilder<TextBox>? nameTextBox = null;
@@ -41,6 +42,10 @@ public class AddFlashcard : IUIComponent, IDisposable
     /// <returns></returns>
     public AddFlashcard(World world)
     {
+        comparePriority = new ComparePriority(world);
+        calculatedPriority = comparePriority.CalculatedPriorityEntity;
+
+
         _root = world.UI<Window>((window) =>
                 {
                     window
@@ -58,6 +63,18 @@ public class AddFlashcard : IUIComponent, IDisposable
 
                     window.Show();
                 });
+
+        _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
+        _disposables.Add(Disposable.Create(() => createButton?.With((b) => b.Click -= createButtonClickedHandler)));
+        _disposables.Add(Disposable.Create(() =>
+        {
+            if (_root.IsValid())
+            {
+                _root.Get<Window>().Content = null;
+                _root.Destruct();
+            }
+        }));
+
     }
 
     private Entity DefineWindowContents(World world)
@@ -105,8 +122,6 @@ public class AddFlashcard : IUIComponent, IDisposable
                     .SetBorderBrush(Brushes.Black);
             });
 
-            var comparePriority = new ComparePriority(world);
-            calculatedPriority = comparePriority.CalculatedPriorityEntity;
             stackPanel.Child(comparePriority);
 
             stackPanel.Child<Button>((button) =>
@@ -176,18 +191,6 @@ public class AddFlashcard : IUIComponent, IDisposable
         {
             if (disposing)
             {
-                if (createButton is not null && createButtonClickedHandler is not null)
-                {
-                    createButton.With((b) => b.Click -= createButtonClickedHandler);
-                }
-
-                // Clean up other resources
-                // Consider calling destruct if needed
-                if (_root.IsValid())
-                {
-                    _root.Get<Window>().Content = null;
-                    _root.Destruct();
-                }
                 // Dispose all tracked disposables
                 _disposables.Dispose();
             }
