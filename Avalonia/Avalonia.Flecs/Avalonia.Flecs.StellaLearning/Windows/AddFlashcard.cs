@@ -176,7 +176,6 @@ public class AddFlashcard : IUIComponent, IDisposable
         {
             if (disposing)
             {
-
                 if (createButton is not null && createButtonClickedHandler is not null)
                 {
                     createButton.With((b) => b.Click -= createButtonClickedHandler);
