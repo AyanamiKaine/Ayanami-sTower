@@ -42,7 +42,19 @@ public class AddFlashcard : IUIComponent, IDisposable
     /// <returns></returns>
     public AddFlashcard(World world)
     {
+
+
         comparePriority = new ComparePriority(world);
+        /*
+        Disposables should be there defined where we inital created
+        the object that should get disposed.
+        1. Creation Logic
+        2. Dispose Logic
+
+        Its better to have them together so we know when we forget 
+        to create the dispose logic. It will be immediatly clear to 
+        us.
+        */
         _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
         calculatedPriority = comparePriority.CalculatedPriorityEntity;
 
