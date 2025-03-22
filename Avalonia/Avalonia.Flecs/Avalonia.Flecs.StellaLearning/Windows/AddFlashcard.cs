@@ -22,7 +22,7 @@ public class AddFlashcard : IUIComponent, IDisposable
     /// Collection to track all disposables
     /// </summary>
     private readonly CompositeDisposable _disposables = [];
-    private ComparePriority comparePriority;
+    private readonly ComparePriority comparePriority;
     private UIBuilder<Button>? createButton = null;
     private Entity calculatedPriority;
     private UIBuilder<TextBox>? nameTextBox = null;
