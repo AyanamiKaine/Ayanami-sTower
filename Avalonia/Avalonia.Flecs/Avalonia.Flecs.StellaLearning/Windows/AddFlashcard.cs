@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Reactive.Disposables;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
@@ -17,8 +18,11 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// </summary>
 public class AddFlashcard : IUIComponent, IDisposable
 {
+    /// <summary>
+    /// Collection to track all disposables
+    /// </summary>
+    private readonly CompositeDisposable _disposables = [];
     private UIBuilder<Button>? createButton = null;
-
     private Entity calculatedPriority;
     private UIBuilder<TextBox>? nameTextBox = null;
     private UIBuilder<TextBox>? frontText = null;
@@ -185,6 +189,8 @@ public class AddFlashcard : IUIComponent, IDisposable
                     _root.Get<Window>().Content = null;
                     _root.Destruct();
                 }
+                // Dispose all tracked disposables
+                _disposables.Dispose();
             }
 
             isDisposed = true;
