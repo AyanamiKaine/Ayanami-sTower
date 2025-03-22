@@ -60,11 +60,21 @@ public class EditQuiz : IUIComponent
             .SetSpacing(10)
             .SetMargin(20);
 
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Name");
+            });
+
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
                 textBox.SetWatermark("Name")
                 .SetText(_spacedRepetitionQuiz.Name);
+            });
+
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Quiz Question");
             });
 
             stackPanel.Child<TextBox>((textBox) =>
