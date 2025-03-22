@@ -43,8 +43,8 @@ public class AddFlashcard : IUIComponent, IDisposable
     public AddFlashcard(World world)
     {
         comparePriority = new ComparePriority(world);
+        _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
         calculatedPriority = comparePriority.CalculatedPriorityEntity;
-
 
         _root = world.UI<Window>((window) =>
                 {
@@ -64,8 +64,6 @@ public class AddFlashcard : IUIComponent, IDisposable
                     window.Show();
                 });
 
-        _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
-        _disposables.Add(Disposable.Create(() => createButton?.With((b) => b.Click -= createButtonClickedHandler)));
         _disposables.Add(Disposable.Create(() =>
         {
             if (_root.IsValid())
@@ -74,7 +72,6 @@ public class AddFlashcard : IUIComponent, IDisposable
                 _root.Destruct();
             }
         }));
-
     }
 
     private Entity DefineWindowContents(World world)
@@ -165,6 +162,7 @@ public class AddFlashcard : IUIComponent, IDisposable
                     comparePriority.Reset();
                 };
                 button.With((b) => b.Click += createButtonClickedHandler);
+                _disposables.Add(Disposable.Create(() => createButton?.With((b) => b.Click -= createButtonClickedHandler)));
             });
         });
     }
