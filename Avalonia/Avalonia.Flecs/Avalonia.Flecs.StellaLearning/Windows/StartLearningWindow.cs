@@ -208,6 +208,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
             layout.Child<Grid>((grid) =>
             {
                 grid
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
                     .SetColumnDefinitions("*, *, *, *")
                     .SetRowDefinitions("auto");
 
@@ -324,6 +326,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
             layout.Child<WrapPanel>((wrapPanel) =>
             {
                 wrapPanel
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                .SetVerticalAlignment(VerticalAlignment.Center)
                 .SetVerticalAlignment(Layout.VerticalAlignment.Center)
                 .SetHorizontalAlignment(Layout.HorizontalAlignment.Center);
 
@@ -583,6 +587,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
             stackPanel.Child<Grid>((grid) =>
             {
                 grid
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                .SetVerticalAlignment(VerticalAlignment.Center)
                 .SetColumnDefinitions("*, *, *, *")
                 .SetRowDefinitions("auto");
 
@@ -776,6 +782,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
             stackPanel.Child<Grid>((grid) =>
             {
                 grid
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
                     .SetColumnDefinitions("*, *, *, *")
                     .SetRowDefinitions("auto");
 
