@@ -14,6 +14,22 @@ using Avalonia.Media;
 /// </summary>
 public static class SpacedRepetitionObservableCollectionExtensions
 {
+
+    /*
+    Why are the first most priority items randomized? 
+
+    To avoid the creation of patterns. Sometimes a pattern of 
+    items can emerge that a closely together. Where you can anticipate
+    the next item. 
+    
+    Why is that bad?
+
+    What can happen is that you associate the anwswer of spaced repetition items
+    based on what items came before, making it harder or easier to do active recall. 
+    This is a real thing that can happen.
+    That is why we need to add some randomize.
+    */
+
     /// <summary>
     /// Returns the next spaced repetition item that is due for review, with randomization among top priority items.
     /// </summary>
@@ -28,12 +44,12 @@ public static class SpacedRepetitionObservableCollectionExtensions
 
         DateTime now = DateTime.Now;
         var random = new Random();
-        
+
         // Get all due items, take top 5 by priority, then randomize their order
         return spacedRepetitionItems
                 .Where(item => item.NextReview <= now)      // Filter for items that are due
                 .OrderByDescending(item => item.Priority)   // Order by priority
-                .Take(5)                                    // Take top 5 priority items
+                .Take(25)                                    // Take top 5 priority items
                 .OrderBy(item => random.Next())             // Randomize these top 5
                 .FirstOrDefault();                          // Return the first (random) item
     }
