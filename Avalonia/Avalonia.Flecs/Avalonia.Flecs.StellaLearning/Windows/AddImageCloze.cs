@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
@@ -528,6 +529,10 @@ public class AddImageCloze : IUIComponent, IDisposable
     {
         var clipboard = TopLevel.GetTopLevel(_root.Get<Window>())?.Clipboard;
         if (clipboard == null)
+            return;
+
+        // This functionality only works on Windows
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             return;
 
         // Get clipboard content
