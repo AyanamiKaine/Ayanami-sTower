@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Avalonia.Media;
 
 /// <summary>
 /// Provides extension methods for ObservableCollection of SpacedRepetitionItem objects.
@@ -65,6 +66,10 @@ public enum SpacedRepetitionItemType
     /// The item is an image
     /// </summary>
     Image,
+    /// <summary>
+    /// The item is an image cloze
+    /// </summary>
+    ImageCloze,
     /// <summary>
     /// The item is a video
     /// </summary>
@@ -416,4 +421,60 @@ public class SpacedRepetitionExercise : SpacedRepetitionItem
     /// The exercise solution
     /// </summary>
     public string Solution { get; set; } = "Lorem Ipsum";
+}
+
+/// <summary>
+/// Represents an image cloze item for spaced repetition where specific areas of an image need to be identified
+/// </summary>
+public class SpacedRepetitionImageCloze : SpacedRepetitionItem
+{
+    /// <summary>
+    /// Path to the image file
+    /// </summary>
+    public string ImagePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Collection of cloze areas on the image
+    /// </summary>
+    public List<ImageClozeArea> ClozeAreas { get; set; } = [];
+}
+
+/// <summary>
+/// Represents a specific area on an image that needs to be identified
+/// </summary>
+public class ImageClozeArea
+{
+    /// <summary>
+    /// X-coordinate of the cloze area (left position)
+    /// </summary>
+    public double X { get; set; }
+
+    /// <summary>
+    /// Y-coordinate of the cloze area (top position)
+    /// </summary>
+    public double Y { get; set; }
+
+    /// <summary>
+    /// Width of the cloze area
+    /// </summary>
+    public double Width { get; set; }
+
+    /// <summary>
+    /// Height of the cloze area
+    /// </summary>
+    public double Height { get; set; }
+
+    /// <summary>
+    /// Text associated with this cloze area
+    /// </summary>
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The color used to fill the cloze area when displayed
+    /// </summary>
+    public SolidColorBrush FillColor { get; set; } = new SolidColorBrush(Color.FromArgb(
+            a: 255,
+            r: 221,
+            g: 176,
+            b: 55));
 }
