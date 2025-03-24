@@ -291,10 +291,11 @@ public partial class App : Application
         {
             var mainWindow = MainWindow.Get<Window>();
 
-            Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(async () =>
             {
                 mainWindow.Show();
                 mainWindow.Activate();
+                await StatsTracker.Instance.InitializeAsync();
             });
         }
     }
