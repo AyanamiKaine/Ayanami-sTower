@@ -45,12 +45,12 @@ public static class SpacedRepetitionObservableCollectionExtensions
         DateTime now = DateTime.Now;
         var random = new Random();
 
-        // Get all due items, take top 5 by priority, then randomize their order
+        // Get all due items, take top 25 by priority, then randomize their order
         return spacedRepetitionItems
                 .Where(item => item.NextReview <= now)      // Filter for items that are due
                 .OrderByDescending(item => item.Priority)   // Order by priority
-                .Take(25)                                    // Take top 5 priority items
-                .OrderBy(item => random.Next())             // Randomize these top 5
+                .Take(25)                                    // Take top 25 priority items
+                .OrderBy(item => random.Next())             // Randomize these top 25
                 .FirstOrDefault();                          // Return the first (random) item
     }
 
