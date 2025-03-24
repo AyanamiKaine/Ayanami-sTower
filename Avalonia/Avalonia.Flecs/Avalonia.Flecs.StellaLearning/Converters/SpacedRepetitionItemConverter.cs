@@ -19,7 +19,9 @@ namespace Avalonia.Flecs.StellaLearning.Converters
             SpacedRepetitionFlashcard = 3,
             SpacedRepetitionVideo = 4,
             SpacedRepetitionFile = 5,
-            SpacedRepetitionExercise = 6
+            SpacedRepetitionExercise = 6,
+            SpacedRepetitionImageCloze = 7
+
         }
 
         /// <summary>
@@ -71,6 +73,7 @@ namespace Avalonia.Flecs.StellaLearning.Converters
                 TypeDiscriminator.SpacedRepetitionVideo => new SpacedRepetitionVideo(),
                 TypeDiscriminator.SpacedRepetitionFile => new SpacedRepetitionFile(),
                 TypeDiscriminator.SpacedRepetitionExercise => new SpacedRepetitionExercise(),
+                TypeDiscriminator.SpacedRepetitionImageCloze => new SpacedRepetitionImageCloze(),
                 _ => throw new JsonException("Type Discriminator not found")
             };
 
@@ -165,6 +168,12 @@ namespace Avalonia.Flecs.StellaLearning.Converters
                         case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.SpacedRepetitionItemType):
                             baseItem.SpacedRepetitionItemType = Enum.Parse<SpacedRepetitionItemType>(reader.GetString()!);
                             break;
+                        case SpacedRepetitionImageCloze imageCloze when propertyName == nameof(SpacedRepetitionImageCloze.ImagePath):
+                            imageCloze.ImagePath = reader.GetString()!;
+                            break;
+                        case SpacedRepetitionImageCloze imageCloze when propertyName == nameof(SpacedRepetitionImageCloze.ClozeAreas):
+                            imageCloze.ClozeAreas = JsonSerializer.Deserialize<List<ImageClozeArea>>(ref reader, optionsWithoutConverter)!;
+                            break;
                         default:
                             reader.Skip(); // Skip unknown properties
                             break;
@@ -222,6 +231,12 @@ namespace Avalonia.Flecs.StellaLearning.Converters
                     writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionExercise);
                     writer.WriteString(nameof(SpacedRepetitionExercise.Problem), exercise.Problem);
                     writer.WriteString(nameof(SpacedRepetitionExercise.Solution), exercise.Solution);
+                    break;
+                case SpacedRepetitionImageCloze imageCloze:
+                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionImageCloze);
+                    writer.WriteString(nameof(SpacedRepetitionImageCloze.ImagePath), imageCloze.ImagePath);
+                    writer.WritePropertyName(nameof(SpacedRepetitionImageCloze.ClozeAreas));
+                    JsonSerializer.Serialize(writer, imageCloze.ClozeAreas, optionsWithoutConverter);
                     break;
                 default:
                     writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionItem);
