@@ -77,13 +77,18 @@ public class StartLearningWindow : IUIComponent, IDisposable
                          .Child(CreateWindowContents());
                  });
 
-            window.OnClosing((_, _) =>
+            window.OnOpened(async (_, _) =>
+            {
+                await StatsTracker.Instance.StartStudySession();
+            });
+
+            window.OnClosing(async (_, _) =>
             {
                 Dispose();
+                await StatsTracker.Instance.EndStudySession();
             });
             window.Show();
         });
-
     }
     private Entity CreateWindowContents()
     {
