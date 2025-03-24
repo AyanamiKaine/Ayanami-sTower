@@ -15,7 +15,7 @@ using Avalonia.Media;
 public static class SpacedRepetitionObservableCollectionExtensions
 {
     /// <summary>
-    /// Returns the next spaced repetition item that is due for review, ordered by priority.
+    /// Returns the next spaced repetition item that is due for review, with randomization among top priority items.
     /// </summary>
     /// <param name="spacedRepetitionItems">The collection of spaced repetition items to search through.</param>
     /// <returns>The next item due for review, or null if no items are due or the collection is empty.</returns>
@@ -27,11 +27,15 @@ public static class SpacedRepetitionObservableCollectionExtensions
         }
 
         DateTime now = DateTime.Now;
-
+        var random = new Random();
+        
+        // Get all due items, take top 5 by priority, then randomize their order
         return spacedRepetitionItems
                 .Where(item => item.NextReview <= now)      // Filter for items that are due
-                .OrderByDescending(item => item.Priority)   // The items with the highest priority should be at the front   
-                .FirstOrDefault();
+                .OrderByDescending(item => item.Priority)   // Order by priority
+                .Take(5)                                    // Take top 5 priority items
+                .OrderBy(item => random.Next())             // Randomize these top 5
+                .FirstOrDefault();                          // Return the first (random) item
     }
 
 
