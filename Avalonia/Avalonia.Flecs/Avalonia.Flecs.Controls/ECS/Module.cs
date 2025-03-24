@@ -116,6 +116,11 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSWindow>();
             world.Import<ECSSelectingItemsControl>();
             world.Import<ECSListBox>();
+            world.Import<ECSCanvas>();
+            world.Import<ECSImage>();
+            world.Import<ECSShape>();
+            world.Import<ECSRectangle>();
+            world.Import<ECSViewbox>();
 
             AddUIComponentTags(world);
             AddControlToParentAdderObserver(world);
@@ -221,6 +226,10 @@ namespace Avalonia.Flecs.Controls.ECS
                                 child.Name() ?? child.ToString(),
                                 parent.Name() ?? parent.ToString());
                             parent.Get<ContentControl>().Content = control;
+                        }
+                        else if (parent.Has<Viewbox>())
+                        {
+                            parent.Get<Viewbox>().Child = control;
                         }
                     }
                 });
