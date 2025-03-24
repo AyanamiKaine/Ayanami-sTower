@@ -29,6 +29,8 @@ public class AddQuiz : IUIComponent, IDisposable
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
+    private Entity calculatedPriority;
+    private readonly ComparePriority comparePriority;
 
     /// <summary>
     /// Create the Add Quiz Window
@@ -37,6 +39,20 @@ public class AddQuiz : IUIComponent, IDisposable
     /// <returns></returns>
     public AddQuiz(World world)
     {
+        comparePriority = new ComparePriority(world);
+        /*
+        Disposables should be there defined where we inital created
+        the object that should get disposed.
+        1. Creation Logic
+        2. Dispose Logic
+
+        Its better to have them together so we know when we forget 
+        to create the dispose logic. It will be immediatly clear to 
+        us.
+        */
+        _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
+        calculatedPriority = comparePriority.CalculatedPriorityEntity;
+
         _root = world.UI<Window>((window) =>
         {
             window
@@ -60,7 +76,6 @@ public class AddQuiz : IUIComponent, IDisposable
     {
         return world.UI<StackPanel>((stackPanel) =>
         {
-            Entity calculatedPriority;
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? quizQuestionTextBox = null;
             UIBuilder<Grid>? quizAnswers = null;
@@ -133,8 +148,6 @@ public class AddQuiz : IUIComponent, IDisposable
                     .SetBorderBrush(Brushes.Black);
             });
 
-            var comparePriority = new ComparePriority(world);
-            calculatedPriority = comparePriority.CalculatedPriorityEntity;
             stackPanel.Child(comparePriority);
 
             stackPanel.Child<Button>((button) =>
