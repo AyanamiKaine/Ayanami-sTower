@@ -93,7 +93,7 @@ public class AddCloze : IUIComponent, IDisposable
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
-                textBox.With(t => t.Watermark = "Name");
+                textBox.SetWatermark("Name");
             });
 
             stackPanel.Child<TextBox>((textBox) =>
