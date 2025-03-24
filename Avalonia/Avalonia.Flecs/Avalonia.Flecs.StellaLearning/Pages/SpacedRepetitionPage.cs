@@ -229,8 +229,15 @@ public class SpacedRepetitionPage : IUIComponent
                     menu.Child<MenuItem>((menuItem) =>
                     {
                         menuItem
-                        .SetHeader("Cloze")
+                        .SetHeader("Cloze Text")
                         .OnClick((_, _) => new AddCloze(world));
+                    });
+
+                    menu.Child<MenuItem>((menuItem) =>
+                    {
+                        menuItem
+                        .SetHeader("Image Cloze")
+                        .OnClick((_, _) => new AddImageCloze(world));
                     });
 
                     menu.Child<MenuItem>((menuItem) =>

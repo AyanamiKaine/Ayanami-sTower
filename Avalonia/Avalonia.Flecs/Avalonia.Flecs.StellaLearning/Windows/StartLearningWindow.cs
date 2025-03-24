@@ -5,12 +5,16 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.Util;
 using Avalonia.Flecs.Util;
+using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 
@@ -523,11 +527,9 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
     private Entity LearnClozeContent()
     {
-
         var cloze = (SpacedRepetitionCloze)_ItemToBeLearned!;
         return _world.UI<StackPanel>((stackPanel) =>
         {
-
             UIBuilder<TextBlock>? clozeText = null;
             UIBuilder<Button>? easyButton = null;
             UIBuilder<Button>? goodButton = null;
@@ -552,7 +554,9 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
                 string clozeRemovedText = sb.ToString();
 
-                textBlock.SetText(clozeRemovedText);
+                textBlock
+                .SetText(clozeRemovedText)
+                .SetTextWrapping(TextWrapping.Wrap);
             });
 
             stackPanel.Child<Button>((button) =>
@@ -661,6 +665,195 @@ public class StartLearningWindow : IUIComponent, IDisposable
         });
     }
 
+    private Entity LearnImageClozeContent()
+    {
+        var imageCloze = (SpacedRepetitionImageCloze)_ItemToBeLearned!;
+
+        return _world.UI<StackPanel>((stackPanel) =>
+        {
+            UIBuilder<Button>? easyButton = null;
+            UIBuilder<Button>? goodButton = null;
+            UIBuilder<Button>? hardButton = null;
+            UIBuilder<Button>? againButton = null;
+
+            stackPanel
+                .SetOrientation(Layout.Orientation.Vertical)
+                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                .SetSpacing(10)
+                .SetMargin(20);
+
+            stackPanel.Child<TextBlock>((textBlock) =>
+            {
+                textBlock
+                    .SetText(imageCloze.Name)
+                    .SetTextWrapping(TextWrapping.Wrap)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetFontWeight(FontWeight.Bold)
+                    .SetMargin(0, 0, 0, 10);
+            });
+
+            // Container for the image and cloze areas
+            stackPanel.Child<Grid>((grid) =>
+            {
+                grid.SetHorizontalAlignment(HorizontalAlignment.Stretch);
+                grid.SetVerticalAlignment(VerticalAlignment.Stretch);
+                // Set a reasonable size constraint
+                //grid.SetMaxWidth(600);
+                //grid.SetMaxHeight(400);
+
+
+                // Add a Viewbox to contain and scale the image properly
+                grid.Child<Viewbox>((viewbox) =>
+                {
+                    //viewbox.SetStretch(Stretch.Uniform);
+                    viewbox.SetHorizontalAlignment(HorizontalAlignment.Stretch);
+                    viewbox.SetVerticalAlignment(VerticalAlignment.Stretch);
+
+                    // Add a Canvas inside the Viewbox for positioning elements
+                    viewbox.Child<Canvas>((canvas) =>
+                    {
+                        //viewbox.With((w) => { w.Child = canvas.Get<Canvas>(); });
+                        // Add the image to the canvas
+                        canvas.Child<Image>((image) =>
+                        {
+
+                            if (imageCloze.ImagePath.Length != 0)
+                            {
+
+                                var bitmap = new Bitmap(File.OpenRead(imageCloze.ImagePath));
+                                image.SetSource(bitmap);
+
+                                // Set the canvas size to match the image's natural size
+                                canvas.SetWidth(bitmap.Size.Width);
+                                canvas.SetHeight(bitmap.Size.Height);
+                            }
+                        });
+
+                        // Create rectangles for each cloze area
+                        foreach (var area in imageCloze.ClozeAreas)
+                        {
+                            canvas.Child<Rectangle>((rect) =>
+                            {
+                                rect.SetWidth(area.Width);
+                                rect.SetHeight(area.Height);
+                                rect.SetFill(new SolidColorBrush(Color.FromArgb(
+                                    a: 255,
+                                    r: 221,
+                                    g: 176,
+                                    b: 55)));
+
+                                // Set the position
+                                Canvas.SetLeft(rect.Get<Rectangle>(), area.X);
+                                Canvas.SetTop(rect.Get<Rectangle>(), area.Y);
+
+                                var menu = _world.UI<MenuFlyout>((menu) =>
+                                    {
+                                        menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
+                                        menu.Child<MenuItem>((menuItem) =>
+                                        {
+                                            menuItem
+                                            .SetHeader("Reveal")
+                                            .OnClick((_, _) =>
+                                            {
+                                                rect.SetFill(new SolidColorBrush(Color.FromArgb(
+                                                  a: 55,
+                                                  r: 221,
+                                                  g: 176,
+                                                  b: 55)));
+                                            });
+                                        });
+                                    });
+
+                                rect.SetContextFlyout(menu);
+                            });
+                        }
+                    });
+                });
+            });
+
+            // Rating buttons
+            stackPanel.Child<Grid>((grid) =>
+            {
+                grid
+                    .SetColumnDefinitions("*, *, *, *")
+                    .SetRowDefinitions("auto");
+
+                grid.Child<Button>((button) =>
+                {
+                    easyButton = button;
+                    button
+                        .SetMargin(10, 0)
+                        .SetColumn(0)
+                        .OnClick((_, _) =>
+                        {
+                            imageCloze.EasyReview();
+                            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        });
+
+                    button.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText("Easy");
+                    });
+                });
+
+                grid.Child<Button>((button) =>
+                {
+                    goodButton = button;
+                    button
+                        .SetMargin(10, 0)
+                        .SetColumn(1)
+                        .OnClick((_, _) =>
+                        {
+                            imageCloze.GoodReview();
+                            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        });
+
+                    button.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText("Good");
+                    });
+                });
+
+                grid.Child<Button>((button) =>
+                {
+                    hardButton = button;
+                    button
+                        .SetMargin(10, 0)
+                        .SetColumn(2)
+                        .OnClick((_, _) =>
+                        {
+                            imageCloze.HardReview();
+                            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        });
+
+                    button.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText("Hard");
+                    });
+                });
+
+                grid.Child<Button>((button) =>
+                {
+                    againButton = button;
+                    button
+                        .SetMargin(10, 0)
+                        .SetColumn(3)
+                        .OnClick((_, _) =>
+                        {
+                            imageCloze.AgainReview();
+                            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        });
+
+                    button.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText("Again");
+                    });
+                });
+            });
+        });
+    }
+
     private void UpdateContentDisplay()
     {
         // If we already have content, destroy it
@@ -738,6 +931,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 SpacedRepetitionFlashcard => LearnFlashcardContent(),
                 SpacedRepetitionFile => LearnFileContent(),
                 SpacedRepetitionCloze => LearnClozeContent(),
+                SpacedRepetitionImageCloze => LearnImageClozeContent(),
                 _ => NoMoreItemToBeReviewedContent(),
             };
         }
@@ -767,8 +961,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
             {
                 TextWrapping = TextWrapping.Wrap
             })
-            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetVerticalAlignment(VerticalAlignment.Center)
+            .SetHorizontalAlignment(HorizontalAlignment.Center)
             .SetMargin(20)
             .SetText(text);
     }
