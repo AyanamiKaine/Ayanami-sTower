@@ -1064,6 +1064,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Adds an event handler that gets invoked when the Openend event happens. For Windows this happens
+    /// After the window is fully opened.
+    /// </summary>
+    public static UIBuilder<Window> OnOpened(this UIBuilder<Window> builder, EventHandler handler)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Window>().Opened += handler;
+        return builder;
+    }
+
+    /// <summary>
     /// Adds an event handler that gets invoked when the Closed event happens. For Windows this happens
     /// AFTER the window is fully closed.
     /// </summary>
