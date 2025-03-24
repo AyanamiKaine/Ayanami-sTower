@@ -102,7 +102,7 @@ public class AddCloze : IUIComponent, IDisposable
                 textBox
                 .SetWatermark("Cloze Text")
                 .SetTextWrapping(TextWrapping.Wrap)
-                .With((textBox) => textBox.AcceptsReturn = true);
+                .AcceptsReturn();
 
                 var menu = world.UI<MenuFlyout>((menu) =>
                       {
