@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Input;
@@ -384,6 +385,52 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Set the fill of a shape
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="fill"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetFill<T>(this UIBuilder<T> builder, IBrush fill) where T : Shape
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Shape>().Fill = fill;
+        return builder;
+    }
+
+    /// <summary>
+    /// Set the Stroke of a shape
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="stroke"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetStroke<T>(this UIBuilder<T> builder, IBrush stroke) where T : Shape
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Shape>().Stroke = stroke;
+        return builder;
+    }
+
+    /// <summary>
+    /// Set the stroke thickness of a shape
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="strokeThickness"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetStrokeThickness<T>(this UIBuilder<T> builder, double strokeThickness) where T : Shape
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Shape>().StrokeThickness = strokeThickness;
+        return builder;
+    }
+
+
+    /// <summary>
     /// Helper function to set the orientation of a StackPanel.
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -396,6 +443,83 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Entity.SetOrientation(orientation);
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the height of a Layoutable control.
+    /// </summary>
+    /// <typeparam name="T">The type of Layoutable</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="height">The height value to set</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetHeight<T>(this UIBuilder<T> builder, double height) where T : Layoutable
+    {
+        builder.Get<T>().Height = height;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the minimum height of a Layoutable control.
+    /// </summary>
+    /// <typeparam name="T">The type of Layoutable</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="minHeight">The minimum height value to set</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetMinHeight<T>(this UIBuilder<T> builder, double minHeight) where T : Layoutable
+    {
+        builder.Get<T>().MinHeight = minHeight;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the minimum width of a Layoutable control.
+    /// </summary>
+    /// <typeparam name="T">The type of Layoutable</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="minWidth">The minimum width value to set</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetMinWidth<T>(this UIBuilder<T> builder, double minWidth) where T : Layoutable
+    {
+        builder.Get<T>().MinWidth = minWidth;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the width of a Layoutable control.
+    /// </summary>
+    /// <typeparam name="T">The type of Layoutable</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="width">The width value to set</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetWidth<T>(this UIBuilder<T> builder, double width) where T : Layoutable
+    {
+        builder.Get<T>().Width = width;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the background brush of a Panel control.
+    /// </summary>
+    /// <typeparam name="T">The type of Panel</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="background">The brush to set as the background</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetBackground<T>(this UIBuilder<T> builder, IBrush background) where T : Panel
+    {
+        builder.Get<T>().Background = background;
+        return builder;
+    }
+
+    /// <summary>
+    /// Removes the background brush of a Panel control by setting it to null.
+    /// </summary>
+    /// <typeparam name="T">The type of Panel</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> RemoveBackground<T>(this UIBuilder<T> builder) where T : Panel
+    {
+        builder.Get<T>().Background = null;
         return builder;
     }
 
@@ -447,6 +571,209 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the image that will be displayed.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="source"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetSource<T>(this UIBuilder<T> builder, IImage? source) where T : Image
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Image>().Source = source;
+        return builder;
+    }
+
+    /// <summary>
+    /// Removes the image that will be displayed.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> RemoveSource<T>(this UIBuilder<T> builder) where T : Image
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Image>().Source = null;
+        return builder;
+    }
+
+    /// <summary>
+    /// Gets the image that will be displayed.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static IImage? GetSource<T>(this UIBuilder<T> builder) where T : Image
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return null;
+
+        return builder.Get<Image>().Source ?? null;
+    }
+
+    /// <summary>
+    /// Adds an on pointer pressed event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerPressed"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnPointerPressed<T>(this UIBuilder<T> builder, EventHandler<Input.PointerPressedEventArgs>? onPointerPressed) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerPressed += onPointerPressed;
+        return builder;
+    }
+    /// <summary>
+    /// Removes an on pointer pressed event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerPressed"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> RemoveOnPointerPressed<T>(this UIBuilder<T> builder, EventHandler<Input.PointerPressedEventArgs>? onPointerPressed) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerPressed -= onPointerPressed;
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds an on pointer moved event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerMoved"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnPointerMoved<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPointerMoved) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerMoved += onPointerMoved;
+        return builder;
+    }
+    /// <summary>
+    /// Adds an on pointer moved event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerMoved"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> RemoveOnPointerMoved<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPointerMoved) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerMoved += onPointerMoved;
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds an on pointer released event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerRelease"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnPointerReleased<T>(this UIBuilder<T> builder, EventHandler<Input.PointerReleasedEventArgs>? onPointerRelease) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerReleased += onPointerRelease;
+        return builder;
+    }
+
+    /// <summary>
+    /// Remove an on pointer released event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerRelease"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> RemoveOnPointerReleased<T>(this UIBuilder<T> builder, EventHandler<Input.PointerReleasedEventArgs>? onPointerRelease) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerReleased -= onPointerRelease;
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds an on pointer entered event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerEntered"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnPointerEntered<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPointerEntered) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerEntered += onPointerEntered;
+        return builder;
+    }
+
+    /// <summary>
+    /// Remove an on pointer entered event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerEntered"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> RemoveOnPointerEntered<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPointerEntered) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerEntered -= onPointerEntered;
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds an on pointer capture lost event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerCaptureLost"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnPointerCaptureLost<T>(this UIBuilder<T> builder, EventHandler<Input.PointerCaptureLostEventArgs>? onPointerCaptureLost) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerCaptureLost += onPointerCaptureLost;
+        return builder;
+    }
+
+    /// <summary>
+    /// Remove an on pointer capture lost event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPointerCaptureLost"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> RemoveOnPointerCaptureLost<T>(this UIBuilder<T> builder, EventHandler<Input.PointerCaptureLostEventArgs>? onPointerCaptureLost) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerCaptureLost -= onPointerCaptureLost;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the fontweight of an textblock
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -475,6 +802,36 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Entity.Get<T>().FontSize = fontSize;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the font size of a TextBox.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="fontSize">The size to set for the font</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<TextBox> SetFontSize(this UIBuilder<TextBox> builder, double fontSize)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<TextBox>().FontSize = fontSize;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets a value that determines whether the TextBox allows and displays newline or return characters
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="acceptsReturn"></param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<TextBox> AcceptsReturn(this UIBuilder<TextBox> builder, bool acceptsReturn = true)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<TextBox>().AcceptsReturn = acceptsReturn;
         return builder;
     }
 
