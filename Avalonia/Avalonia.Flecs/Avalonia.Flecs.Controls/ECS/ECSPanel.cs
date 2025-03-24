@@ -46,6 +46,10 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         parent.Get<ContentControl>().Content = panel;
                     }
+                    else if (parent.Has<Viewbox>())
+                    {
+                        parent.Get<Viewbox>().Child = panel;
+                    }
                 }).OnRemove((Entity e, ref Panel panel) =>
                 {
                     var parent = e.Parent();
