@@ -155,8 +155,17 @@ public class EditQuiz : IUIComponent
 
                     if (string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
-                        nameTextBox!.SetWatermark("Name is required");
+                        nameTextBox.SetWatermark("Name is required");
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Name",
+                            Content = "You must define a name",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
+
                     }
 
                     Grid grid = quizAnswers.Get<Grid>();
