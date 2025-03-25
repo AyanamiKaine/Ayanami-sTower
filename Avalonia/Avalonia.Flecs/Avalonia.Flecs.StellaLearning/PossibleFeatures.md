@@ -18,6 +18,15 @@ Videos, Blog posts, pictures, comments, content in general floods everything in 
 
 It would be quite nice if the user can customize their theme, this would include acent colors, as well as some default color schemes. So for example you can have the Catppuccin color theme.
 
+## [IMPLEMENTED] Spaced-Repetition
+
+Anki is not the best learning tool because it ignores important aspects of learning. You cant easily create quizes or image occlusions. Also Anki does not nativly intergrate with existing learning apps like obsidian (We need a way to be able to write notes that are to be learned in obsidian and being able to open them with obsidian).
+
+Anki does not have a priority queue. A priority queue is highly important because we dont want decks with specific topics instead we want one huge deck that mixes topics because block learning is inefficient. Learning Math, Math, Math, Math, History, History, History, History. is less efficient than learning Math, History, Math, History, Math, History ...
+
+- [Why do people overestimate the effectiveness of blocked learning?](https://link.springer.com/article/10.3758/s13423-022-02225-7)
+- [The Interleaving Effect: Mixing It Up Boosts Learning](https://www.scientificamerican.com/article/the-interleaving-effect-mixing-it-up-boosts-learning/#:~:text=With%20blocking%2C%20a%20single%20strategy,them%20into%20short%2Dterm%20memory.)
+
 ## [PROGESS] Stat Tracking
 
 Tracking statistics is not only something needed to keep track of things but also because its simply loved by many. There should be a way to keep track of important stats and also an easy way to export them.
