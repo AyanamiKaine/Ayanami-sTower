@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
 using System.Collections.ObjectModel;
+using FSRSPythonBridge;
 
 namespace Avalonia.Flecs.StellaLearning.Data
 {
@@ -186,7 +187,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
         /// </summary>
         /// <param name="item">The item being reviewed</param>
         /// <param name="rating">The rating given (1=Again, 2=Hard, 3=Good, 4=Easy)</param>
-        public async Task RecordReview(SpacedRepetitionItem item, int rating)
+        public async Task RecordReview(SpacedRepetitionItem item, Rating rating)
         {
             try
             {
@@ -202,7 +203,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
                     ItemId = item.Uid,
                     ItemName = item.Name,
                     ReviewTime = DateTime.Now,
-                    Rating = rating,
+                    Rating = (int)rating,
                     State = item.SpacedRepetitionState,
                     ItemType = item.SpacedRepetitionItemType
                 };
@@ -221,7 +222,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
 
                 var typeStats = ItemTypeStats[item.SpacedRepetitionItemType];
                 typeStats.TotalReviews++;
-                if (rating >= 3) // Good or Easy
+                if ((int)rating >= 3) // Good or Easy
                 {
                     typeStats.CorrectReviews++;
                 }
@@ -236,7 +237,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
 
                     var tagStat = TagStats[tag];
                     tagStat.TotalReviews++;
-                    if (rating >= 3) // Good or Easy
+                    if ((int)rating >= 3) // Good or Easy
                     {
                         tagStat.CorrectReviews++;
                     }
