@@ -6,7 +6,11 @@ I use the app on windows and linux it would be quite nice if we could painlessly
 
 Keep it simply and just create a key value store. Where the key is the USER_ID and the value the path to the json file. Read the file and send it to the client.
 
-## [] Stat Tracking
+## [] Theme Customization
+
+It would be quite nice if the user can customize their theme, this would include acent colors, as well as some default color schemes. So for example you can have the Catppuccin color theme.
+
+## [PROGESS] Stat Tracking
 
 Tracking statistics is not only something needed to keep track of things but also because its simply loved by many. There should be a way to keep track of important stats and also an easy way to export them.
 
