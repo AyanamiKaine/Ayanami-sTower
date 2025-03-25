@@ -80,7 +80,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
             window.OnOpened(async (_, _) =>
             {
-                await StatsTracker.Instance.StartStudySession();
+                if (_ItemToBeLearned is not null)
+                    await StatsTracker.Instance.StartStudySession();
             });
 
             window.OnClosing(async (_, _) =>
