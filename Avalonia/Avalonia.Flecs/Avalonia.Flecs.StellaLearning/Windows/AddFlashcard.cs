@@ -10,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
 
@@ -153,7 +154,43 @@ public class AddFlashcard : IUIComponent, IDisposable
 
                     if (string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
-                        nameTextBox!.SetWatermark("Name is required");
+                        nameTextBox.SetWatermark("Name is required");
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Name",
+                            Content = "You must define a name",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
+                        return;
+                    }
+
+                    if (string.IsNullOrEmpty(frontText.GetText()))
+                    {
+                        frontText.SetWatermark("A front text is required");
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Front Text",
+                            Content = "You must define a front text",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
+                        return;
+                    }
+
+                    if (string.IsNullOrEmpty(backText.GetText()))
+                    {
+                        backText.SetWatermark("A back text is required");
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Back Text",
+                            Content = "You must define a back text",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
                     }
 

@@ -8,6 +8,7 @@ using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Media;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
@@ -172,7 +173,17 @@ public class EditQuiz : IUIComponent
 
                     if (!isAnswerCheck())
                     {
+
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Answer",
+                            Content = "Now anwser for your quiz was selected please select at least one",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
+
                     }
 
                     var findAnswerIndex = () =>

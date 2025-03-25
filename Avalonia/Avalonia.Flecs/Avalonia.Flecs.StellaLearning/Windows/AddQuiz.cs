@@ -12,6 +12,7 @@ using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
@@ -171,8 +172,17 @@ public class AddQuiz : IUIComponent, IDisposable
 
                     if (string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
-                        nameTextBox!.SetWatermark("Name is required");
+
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Name",
+                            Content = "You must define a name",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
+
                     }
 
                     Grid grid = quizAnswers.Get<Grid>();
@@ -189,6 +199,15 @@ public class AddQuiz : IUIComponent, IDisposable
 
                     if (!isAnswerCheck())
                     {
+
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Answer",
+                            Content = "Now anwser for your quiz was selected please select at least one",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
                     }
 

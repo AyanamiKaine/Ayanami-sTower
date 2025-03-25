@@ -10,6 +10,7 @@ using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
 
@@ -168,11 +169,52 @@ public class EditFile : IUIComponent
                             return;
                         }
 
-                        if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(filePath.GetText()) || string.IsNullOrEmpty(questionTextBox.GetText()))
+                        if (string.IsNullOrEmpty(nameTextBox.GetText()))
                         {
-                            nameTextBox!.SetWatermark("Name is required");
-                            questionTextBox!.SetWatermark("Question is required");
-                            filePath!.SetWatermark("File path is required");
+                            nameTextBox.SetWatermark("Name is required");
+                            var cd = new ContentDialog()
+                            {
+                                Title = "Missing Name",
+                                Content = "You must define a name",
+                                PrimaryButtonText = "Ok",
+                                IsSecondaryButtonEnabled = true,
+                            };
+                            cd.ShowAsync();
+                            return;
+                        }
+
+
+
+
+                        if (string.IsNullOrEmpty(filePath.GetText()))
+                        {
+                            filePath.SetWatermark("File path is required");
+
+                            var cd = new ContentDialog()
+                            {
+                                Title = "Missing Filepath",
+                                Content = "You must define a valid filepath",
+                                PrimaryButtonText = "Ok",
+                                IsSecondaryButtonEnabled = true,
+                            };
+                            cd.ShowAsync();
+                            return;
+                        }
+
+
+
+                        if (string.IsNullOrEmpty(questionTextBox.GetText()))
+                        {
+                            questionTextBox.SetWatermark("Question is required");
+
+                            var cd = new ContentDialog()
+                            {
+                                Title = "Missing Question",
+                                Content = "You must define a question",
+                                PrimaryButtonText = "Ok",
+                                IsSecondaryButtonEnabled = true,
+                            };
+                            cd.ShowAsync();
                             return;
                         }
 

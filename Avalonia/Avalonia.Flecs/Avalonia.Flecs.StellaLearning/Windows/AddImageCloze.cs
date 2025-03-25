@@ -23,6 +23,7 @@ using Avalonia.Platform;
 using Avalonia.Platform.Storage;
 using Clowd.Clipboard;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 using Path = System.IO.Path;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
@@ -230,9 +231,22 @@ public class AddImageCloze : IUIComponent, IDisposable
                         return;
                     }
 
-                    if (clozeAreas.Count == 0 || string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(ImagePath))
+                    if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(ImagePath))
                     {
                         nameTextBox!.SetWatermark("Name and image with cloze areas are required");
+                        return;
+                    }
+
+                    if (clozeAreas.Count == 0)
+                    {
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Areas",
+                            Content = "Your image does not currently have hidding any areas defined, they are required",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
                     }
 

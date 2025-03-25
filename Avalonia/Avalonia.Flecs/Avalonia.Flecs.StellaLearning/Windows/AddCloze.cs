@@ -12,6 +12,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Utilities;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
 
@@ -217,11 +218,32 @@ public class AddCloze : IUIComponent, IDisposable
                         return;
                     }
 
-                    if (clozes.Count == 0 || string.IsNullOrEmpty(nameTextBox.GetText()))
+                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
-                        nameTextBox!.SetWatermark("Name is required");
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Name",
+                            Content = "You must define a name",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
                     }
+
+                    if (clozes.Count == 0)
+                    {
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Clozes Missing",
+                            Content = "Your test currently has not cloze words defined you must atleast define one",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
+                        return;
+                    }
+
                     if (_root.IsValid())
                     {
                         world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionCloze()

@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Utilities;
 using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
 
@@ -174,9 +175,23 @@ public class EditCloze : IUIComponent
                         return;
                     }
 
-                    if (clozes.Count == 0 || string.IsNullOrEmpty(nameTextBox.GetText()))
+                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
                         nameTextBox!.SetWatermark("Name is required");
+                        return;
+                    }
+
+
+                    if (clozes.Count == 0)
+                    {
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Clozes Missing",
+                            Content = "Your test currently has not cloze words defined you must atleast define one",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
                     }
 
