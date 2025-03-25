@@ -6,6 +6,10 @@ I use the app on windows and linux it would be quite nice if we could painlessly
 
 Keep it simply and just create a key value store. Where the key is the USER_ID and the value the path to the json file. Read the file and send it to the client.
 
+## [] Reading List
+
+Sometimes my adhd brain cant read a book well because I am being distracted by other books. It would be nice if I could create a list of reading materials and creating an list of chapters I can marked as finished reading and being able to set some reminders. Something like reading chapters so and so is due.
+
 ## [] Theme Customization
 
 It would be quite nice if the user can customize their theme, this would include acent colors, as well as some default color schemes. So for example you can have the Catppuccin color theme.
