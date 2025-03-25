@@ -12,7 +12,7 @@ Sometimes my adhd brain cant read a book well because I am being distracted by o
 
 ## [] Content Queue
 
-Videos, Blog posts, pictures, comments, content in general floods everything in my life. It would be desirable to have list of curated content that I can consume. Also it would be nice to have the distinguish between consumed content and to be consumed ones.
+Videos, Blog posts, pictures, comments, content in general floods everything in my life. It would be desirable to have list of curated content that I can consume. Also it would be nice to have the distinguish between consumed content and to be consumed ones. This was inspired by a comment I read on hackernews (PS: I have to find that comment again).
 
 ## [] Theme Customization
 
