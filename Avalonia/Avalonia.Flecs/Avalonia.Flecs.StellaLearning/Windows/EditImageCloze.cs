@@ -82,7 +82,7 @@ public class EditImageCloze : IUIComponent, IDisposable
     /// <param name="world"></param>
     /// <param name="spacedRepetitionImageCloze"></param>
     /// <returns></returns>
-    public EditImageClose(World world, SpacedRepetitionImageCloze spacedRepetitionImageCloze)
+    public EditImageCloze(World world, SpacedRepetitionImageCloze spacedRepetitionImageCloze)
     {
         _spacedRepetitionImageCloze = spacedRepetitionImageCloze;
 
