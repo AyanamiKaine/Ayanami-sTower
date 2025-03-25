@@ -179,6 +179,7 @@ public class AddFile : IUIComponent, IDisposable
                             Title = "Missing Name",
                             Content = "You must define a name",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();
@@ -197,6 +198,7 @@ public class AddFile : IUIComponent, IDisposable
                             Title = "Missing Filepath",
                             Content = "You must define a valid filepath",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();
@@ -214,6 +216,7 @@ public class AddFile : IUIComponent, IDisposable
                             Title = "Missing Question",
                             Content = "You must define a question",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();

@@ -182,6 +182,7 @@ public class EditCloze : IUIComponent
                             Title = "Missing Name",
                             Content = "You must define a name",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();
@@ -196,6 +197,7 @@ public class EditCloze : IUIComponent
                             Title = "Clozes Missing",
                             Content = "Your test currently has not cloze words defined you must atleast define one",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();

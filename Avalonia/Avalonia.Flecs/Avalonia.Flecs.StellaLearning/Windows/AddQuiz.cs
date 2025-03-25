@@ -178,6 +178,7 @@ public class AddQuiz : IUIComponent, IDisposable
                             Title = "Missing Name",
                             Content = "You must define a name",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();
@@ -205,6 +206,7 @@ public class AddQuiz : IUIComponent, IDisposable
                             Title = "Missing Answer",
                             Content = "Now anwser for your quiz was selected please select at least one",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();

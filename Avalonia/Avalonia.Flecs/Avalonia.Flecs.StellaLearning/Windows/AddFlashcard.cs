@@ -160,6 +160,7 @@ public class AddFlashcard : IUIComponent, IDisposable
                             Title = "Missing Name",
                             Content = "You must define a name",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();
@@ -174,6 +175,7 @@ public class AddFlashcard : IUIComponent, IDisposable
                             Title = "Missing Front Text",
                             Content = "You must define a front text",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();
@@ -188,6 +190,7 @@ public class AddFlashcard : IUIComponent, IDisposable
                             Title = "Missing Back Text",
                             Content = "You must define a back text",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();

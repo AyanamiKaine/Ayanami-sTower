@@ -244,6 +244,7 @@ public class AddImageCloze : IUIComponent, IDisposable
                             Title = "Missing Areas",
                             Content = "Your image does not currently have hidding any areas defined, they are required",
                             PrimaryButtonText = "Ok",
+                            DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
                         };
                         cd.ShowAsync();
