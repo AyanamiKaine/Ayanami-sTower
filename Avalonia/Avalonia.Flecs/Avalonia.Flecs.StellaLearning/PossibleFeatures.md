@@ -10,6 +10,10 @@ Keep it simply and just create a key value store. Where the key is the USER_ID a
 
 Sometimes my adhd brain cant read a book well because I am being distracted by other books. It would be nice if I could create a list of reading materials and creating an list of chapters I can marked as finished reading and being able to set some reminders. Something like reading chapters so and so is due.
 
+## [] Cram Mode
+
+While trusting the spaced repetition algorithm is nice and perfect for long term learning (Months-Years-Centuries) and all having a cram mode might be a better choice for short term learning(Weeks-Months). Giving us the ability to cram if wished.
+
 ## [] Content Queue
 
 Videos, Blog posts, pictures, comments, content in general floods everything in my life. It would be desirable to have list of curated content that I can consume. Also it would be nice to have the distinguish between consumed content and to be consumed ones. This was inspired by a comment I read on hackernews (PS: I have to find that comment again).
