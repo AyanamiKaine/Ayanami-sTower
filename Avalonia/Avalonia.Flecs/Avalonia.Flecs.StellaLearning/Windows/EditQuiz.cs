@@ -195,7 +195,7 @@ public class EditQuiz : IUIComponent
 
                     }
 
-                    var findAnswerIndex = () =>
+                    int findAnswerIndex()
                     {
                         for (int i = 0; i < 4; i++)
                         {
@@ -203,7 +203,7 @@ public class EditQuiz : IUIComponent
                                 return i;
                         }
                         throw new Exception("An Answer must be checked!");
-                    };
+                    }
 
                     List<string> gatherAllAnswers()
                     {
