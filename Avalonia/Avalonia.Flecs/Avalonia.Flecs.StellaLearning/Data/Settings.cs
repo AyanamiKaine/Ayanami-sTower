@@ -39,9 +39,9 @@ public class Settings
     /// Create a new settings object
     /// </summary>
     /// <param name="isDarkMode"></param>
-    /// <param name="ObsidianPath"></param>
-    /// <param name="closeToTray"></param>
-    /// <param name="enableNotifications"></param>
+    /// <param name="ObsidianPath">The obsidian path is used for markdown files, if set we will try to open the markdown file with obsidian.</param>
+    /// <param name="closeToTray">When set to true, the app will close to tray instead of exiting completly.</param>
+    /// <param name="enableNotifications">Notifications are used to show that new spaced repetition items can be learned or other important user notifications.</param>
     public Settings(bool isDarkMode = false, string ObsidianPath = "", bool closeToTray = true, bool enableNotifications = true)
     {
         if (ObsidianPath.Length == 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
