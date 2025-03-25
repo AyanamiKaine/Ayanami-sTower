@@ -177,7 +177,14 @@ public class EditCloze : IUIComponent
 
                     if (string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
-                        nameTextBox!.SetWatermark("Name is required");
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Missing Name",
+                            Content = "You must define a name",
+                            PrimaryButtonText = "Ok",
+                            IsSecondaryButtonEnabled = true,
+                        };
+                        cd.ShowAsync();
                         return;
                     }
 
