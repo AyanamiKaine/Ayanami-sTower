@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Disposables;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls;
@@ -15,12 +16,14 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type quiz
 /// </summary>
-public class EditQuiz : IUIComponent
+public class EditQuiz : IUIComponent, IDisposable
 {
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
     private SpacedRepetitionQuiz _spacedRepetitionQuiz;
+    private readonly CompositeDisposable _disposables = new(); // For managing disposables
+    private bool _isDisposed = false; // For IDisposable pattern
     /// <summary>
     /// Create the Add Quiz Window
     /// </summary>
@@ -140,6 +143,7 @@ public class EditQuiz : IUIComponent
 
             var tagManager = new TagComponent(world, _spacedRepetitionQuiz.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
+            _disposables.Add(tagManager); // Add tagManager to window's disposables
 
             stackPanel.Child<Button>((button) =>
             {
@@ -243,4 +247,43 @@ public class EditQuiz : IUIComponent
                    .OfType<T>()
                    .FirstOrDefault(control => Grid.GetRow(control) == row && Grid.GetColumn(control) == column);
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Disposes entities and event handlers
+    /// </summary>
+    /// <param name="disposing"></param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_isDisposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed state (like TagComponent instance in _disposables)
+                _disposables.Dispose(); // Disposes tagManager
+
+                // Destroy the root entity *last*
+                if (_root.IsValid() && _root.IsAlive())
+                {
+                    // Clearing triggers component remove hooks (like Window Closing)
+                    // _root.Clear();
+                    // Explicit destruction might be needed if Clear doesn't close window
+                    _root.Destruct();
+                }
+            }
+            _isDisposed = true;
+        }
+    }
+
+    /// <summary>
+    /// Destructor
+    /// </summary>
+    ~EditQuiz() { Dispose(disposing: false); }
+
 }
