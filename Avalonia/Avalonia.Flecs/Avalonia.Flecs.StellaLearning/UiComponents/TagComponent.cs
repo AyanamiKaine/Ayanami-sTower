@@ -28,7 +28,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly CompositeDisposable _disposables = [];
         private bool _isDisposed = false;
-        private readonly Entity _root;
         private UIBuilder<AutoCompleteBox>? _tagInputAutoCompleteBox; // Changed from TextBox
         /// <summary>
         /// The underlying collection of tags *for this specific instance* managed by this component.
@@ -44,7 +43,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         /// </summary>
         private readonly ObservableCollection<SpacedRepetitionItem>? _allItems; // Make nullable
         /// <inheritdoc/>
-        public Entity Root => _root;
+        public Entity Root { get; }
         /// <summary>
         /// Creates a new Tag Management UI Component with auto-completion.
         /// </summary>
@@ -109,7 +108,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
 
 
             // --- Build the main component UI ---
-            _root = world.UI<StackPanel>(rootPanel =>
+            Root = world.UI<StackPanel>(rootPanel =>
             {
                 rootPanel
                     .SetOrientation(Orientation.Vertical)
@@ -205,10 +204,10 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             // --- Disposables & Setup ---
             _disposables.Add(Disposable.Create(() =>
             {
-                if (_root.IsValid() && _root.IsAlive())
+                if (Root.IsValid() && Root.IsAlive())
                 {
-                    Logger.Debug($"Disposing TagComponent Root Entity: {_root.Id}");
-                    _root.Destruct();
+                    Logger.Debug($"Disposing TagComponent Root Entity: {Root.Id}");
+                    Root.Destruct();
                 }
                 else
                 {
@@ -216,8 +215,8 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                 }
             }));
 
-            _root.SetName($"TAGCOMPONENT_AC-{new Random().Next()}");
-            Logger.Info($"TagComponent (AutoComplete Corrected) created with Root Entity: {_root.Id}");
+            Root.SetName($"TAGCOMPONENT_AC-{new Random().Next()}");
+            Logger.Info($"TagComponent (AutoComplete Corrected) created with Root Entity: {Root.Id}");
         }
 
 
@@ -374,7 +373,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             {
                 if (disposing)
                 {
-                    Logger.Debug($"Disposing TagComponent (AutoComplete Corrected) (Root: {_root.Id})...");
+                    Logger.Debug($"Disposing TagComponent (AutoComplete Corrected) (Root: {Root.Id})...");
                     // Unsubscribe external event first is safer
                     if (_allItems != null)
                     {
@@ -385,7 +384,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                     // Clear local collections
                     Tags.Clear();
                     _allUniqueTags.Clear();
-                    Logger.Debug($"TagComponent (AutoComplete Corrected) disposed (Root: {_root.Id}).");
+                    Logger.Debug($"TagComponent (AutoComplete Corrected) disposed (Root: {Root.Id}).");
                 }
                 _isDisposed = true;
             }
