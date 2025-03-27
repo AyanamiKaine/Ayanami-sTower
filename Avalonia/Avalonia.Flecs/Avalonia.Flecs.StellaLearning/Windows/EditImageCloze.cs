@@ -182,12 +182,27 @@ public class EditImageCloze : IUIComponent, IDisposable
 
                             if (ImagePath.Length != 0)
                             {
-                                var bitmap = new Bitmap(File.OpenRead(ImagePath));
-                                image.SetSource(bitmap);
+                                try
+                                {
+                                    var bitmap = new Bitmap(File.OpenRead(ImagePath));
+                                    image.SetSource(bitmap);
 
-                                // Set the canvas size to match the image's natural size
-                                canvas.SetWidth(bitmap.Size.Width);
-                                canvas.SetHeight(bitmap.Size.Height);
+                                    // Set the canvas size to match the image's natural size
+                                    canvas.SetWidth(bitmap.Size.Width);
+                                    canvas.SetHeight(bitmap.Size.Height);
+                                }
+                                catch (FileNotFoundException ex)
+                                {
+                                    var cd = new ContentDialog()
+                                    {
+                                        Title = "Picture not found",
+                                        Content = $"The picture couldn't not be found at path: {ex.FileName}",
+                                        PrimaryButtonText = "Ok",
+                                        DefaultButton = ContentDialogButton.Primary,
+                                        IsSecondaryButtonEnabled = true,
+                                    };
+                                    cd.ShowAsync();
+                                }
                             }
 
                             image
@@ -360,15 +375,30 @@ public class EditImageCloze : IUIComponent, IDisposable
     {
         if (ImagePath.Length != 0)
         {
-            var bitmap = new Bitmap(File.OpenRead(ImagePath));
+            try
+            {
+                var bitmap = new Bitmap(File.OpenRead(ImagePath));
 
-            image?.With((img) => img.Source = bitmap);
+                image?.With((img) => img.Source = bitmap);
 
-            var canvas = canvasEntity.Get<Canvas>();
+                var canvas = canvasEntity.Get<Canvas>();
 
-            // Set the canvas size to match the image's natural size
-            canvas.Width = bitmap.Size.Width;
-            canvas.Height = bitmap.Size.Height;
+                // Set the canvas size to match the image's natural size
+                canvas.Width = bitmap.Size.Width;
+                canvas.Height = bitmap.Size.Height;
+            }
+            catch (FileNotFoundException ex)
+            {
+                var cd = new ContentDialog()
+                {
+                    Title = "Picture not found",
+                    Content = $"The picture couldn't not be found at path: {ex.FileName}",
+                    PrimaryButtonText = "Ok",
+                    DefaultButton = ContentDialogButton.Primary,
+                    IsSecondaryButtonEnabled = true,
+                };
+                cd.ShowAsync();
+            }
         }
     }
 
