@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Input;
 using Avalonia.Media;
 using Flecs.NET.Core;
@@ -106,11 +107,14 @@ public class EditFlashcard : IUIComponent
                 textBox.Get<TextBox>().AcceptsReturn = true;
             });
 
+            var tagManager = new TagComponent(world, flashcard.Tags);
+            stackPanel.Child(tagManager); // Add the tag manager UI
+
             stackPanel.Child<Button>((button) =>
             {
                 button.Child<TextBlock>((textBlock) =>
                 {
-                    textBlock.SetText("Save");
+                    textBlock.SetText("Save Changes");
                 });
 
                 button.OnClick((sender, args) =>
@@ -169,6 +173,7 @@ public class EditFlashcard : IUIComponent
                     flashcard.Name = nameTextBox.GetText();
                     flashcard.Front = frontText.GetText();
                     flashcard.Back = backText.GetText();
+                    flashcard.Tags = [.. tagManager.Tags];
 
                     // Clearing an entity results in all components, relationships etc to be removed.
                     // this also results in invoking the remove hooks that are used on components for 
