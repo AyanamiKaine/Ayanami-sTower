@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Reactive.Disposables;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
@@ -18,12 +19,14 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type file
 /// </summary>
-public class EditFile : IUIComponent
+public class EditFile : IUIComponent, IDisposable
 {
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
     private SpacedRepetitionFile spacedRepetitionFile;
+    private readonly CompositeDisposable _disposables = new(); // For managing disposables
+    private bool _isDisposed = false; // For IDisposable pattern
     /// <summary>
     /// Create the Add File Window
     /// </summary>
@@ -47,12 +50,8 @@ public class EditFile : IUIComponent
                 .Child(DefineWindowContents(world));
             });
 
-            /* NOTE:
-            You might see high memory usage and no memory reclaim when the window closes and the entity is destroyed.
-            Why might that be? Because the GC didnt run yet, the GC reclaims the memory only when it thinks its a
-            good moment to do so.
-            */
-            window.OnClosed((sender, args) => _root.Destruct());
+
+            window.OnClosed((sender, args) => Dispose());
 
             window.Show();
         });
@@ -158,6 +157,7 @@ public class EditFile : IUIComponent
             stackPanel.Child<TextBlock>(t => t.SetText("Tags").SetMargin(0, 10, 0, 0)); // Label for tags
 
             var tagManager = new TagComponent(world, spacedRepetitionFile.Tags);
+            _disposables.Add(tagManager); // Add tagManager to window's disposables
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             stackPanel.Child<Button>((button) =>
@@ -281,4 +281,40 @@ public class EditFile : IUIComponent
         }
         return string.Empty;
     }
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    /// <summary>
+    /// Diposer
+    /// </summary>
+    /// <param name="disposing"></param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_isDisposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed state (like TagComponent instance in _disposables)
+                _disposables.Dispose(); // Disposes tagManager
+
+                // Destroy the root entity *last*
+                if (_root.IsValid() && _root.IsAlive())
+                {
+                    // Clearing triggers component remove hooks (like Window Closing)
+                    // _root.Clear();
+                    // Explicit destruction might be needed if Clear doesn't close window
+                    _root.Destruct();
+                }
+            }
+            _isDisposed = true;
+        }
+    }
+    /// <summary>
+    /// Destructor
+    /// </summary>
+    ~EditFile() { Dispose(disposing: false); }
+
 }
