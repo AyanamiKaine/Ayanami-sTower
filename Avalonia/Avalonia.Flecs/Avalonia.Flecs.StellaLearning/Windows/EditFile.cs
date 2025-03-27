@@ -25,7 +25,7 @@ public class EditFile : IUIComponent, IDisposable
     /// <inheritdoc/>
     public Entity Root => _root;
     private SpacedRepetitionFile spacedRepetitionFile;
-    private readonly CompositeDisposable _disposables = new(); // For managing disposables
+    private readonly CompositeDisposable _disposables = []; // For managing disposables
     private bool _isDisposed = false; // For IDisposable pattern
     /// <summary>
     /// Create the Add File Window
