@@ -6,6 +6,7 @@ using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -153,11 +154,17 @@ public class EditFile : IUIComponent
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
             });
 
+
+            stackPanel.Child<TextBlock>(t => t.SetText("Tags").SetMargin(0, 10, 0, 0)); // Label for tags
+
+            var tagManager = new TagComponent(world, spacedRepetitionFile.Tags);
+            stackPanel.Child(tagManager); // Add the tag manager UI
+
             stackPanel.Child<Button>((button) =>
             {
                 button.Child<TextBlock>((textBlock) =>
                 {
-                    textBlock.SetText("Save");
+                    textBlock.SetText("Save Changes");
                 });
 
                 button.OnClick((sender, args) =>
@@ -231,6 +238,7 @@ public class EditFile : IUIComponent
                         spacedRepetitionFile.Name = nameTextBox.GetText();
                         spacedRepetitionFile.Question = questionTextBox.GetText();
                         spacedRepetitionFile.FilePath = filePath.GetText();
+                        spacedRepetitionFile.Tags = [.. tagManager.Tags];
 
                         // Clearing an entity results in all components, relationships etc to be removed.
                         // this also results in invoking the remove hooks that are used on components for 
