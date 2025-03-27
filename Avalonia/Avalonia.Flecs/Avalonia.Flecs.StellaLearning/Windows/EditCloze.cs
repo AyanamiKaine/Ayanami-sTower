@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Utilities;
@@ -160,12 +161,15 @@ public class EditCloze : IUIComponent
                     .SetBorderBrush(Brushes.Black);
             });
 
+            var tagManager = new TagComponent(world, cloze.Tags);
+            stackPanel.Child(tagManager); // Add the tag manager UI
+
             // Create button
             stackPanel.Child<Button>((button) =>
             {
                 button.Child<TextBlock>((textBlock) =>
                 {
-                    textBlock.SetText("Save");
+                    textBlock.SetText("Save Changes");
                 });
 
                 button.OnClick((sender, args) =>
@@ -207,6 +211,7 @@ public class EditCloze : IUIComponent
                     cloze.Name = nameTextBox.GetText();
                     cloze.FullText = clozeBox.GetText();
                     cloze.ClozeWords = [.. clozes];
+                    cloze.Tags = [.. tagManager.Tags];
 
                     // Clearing an entity results in all components, relationships etc to be removed.
                     // this also results in invoking the remove hooks that are used on components for 
