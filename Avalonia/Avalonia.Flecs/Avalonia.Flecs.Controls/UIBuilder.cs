@@ -370,6 +370,21 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the watermark text for a auto complete box
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="placeholderText"></param>
+    /// <returns></returns>
+    public static UIBuilder<AutoCompleteBox> SetWatermark(this UIBuilder<AutoCompleteBox> builder, string placeholderText)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.SetWatermark(placeholderText);
+        return builder;
+    }
+
+    /// <summary>
     /// Set the wrapping of the text
     /// </summary>
     /// <param name="builder"></param>
