@@ -329,7 +329,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             }
 
             // Clear input only if tag was successfully added
-            if (added && _tagInputAutoCompleteBox != null && _tagInputAutoCompleteBox.Entity.IsAlive())
+            if (added && _tagInputAutoCompleteBox?.Entity.IsAlive() == true)
             {
                 Dispatcher.UIThread.InvokeAsync(() =>
                 {
