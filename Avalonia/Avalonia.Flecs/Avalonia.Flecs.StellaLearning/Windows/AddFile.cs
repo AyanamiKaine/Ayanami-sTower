@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -235,12 +236,15 @@ public class AddFile : IUIComponent, IDisposable
                         return;
                     }
 
+                    List<string> tagsToAdd = [.. tagManager.Tags];
+
                     world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                     {
                         Name = nameTextBox.GetText(),
                         Priority = calculatedPriority.Get<int>(),
                         Question = questionTextBox.GetText(),
                         FilePath = filePath.GetText(),
+                        Tags = tagsToAdd,
                         SpacedRepetitionItemType = SpacedRepetitionItemType.File
                     });
 
@@ -249,6 +253,8 @@ public class AddFile : IUIComponent, IDisposable
                     questionTextBox.SetText("");
                     filePath.SetText("");
                     tags.Clear();
+
+                    tagManager.ClearTags();
                     comparePriority.Reset();
                 };
                 button.With((b) => b.Click += createButtonClickedHandler);
