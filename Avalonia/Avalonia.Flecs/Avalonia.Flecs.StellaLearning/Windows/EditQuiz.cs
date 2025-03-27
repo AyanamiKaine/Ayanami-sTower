@@ -46,7 +46,7 @@ public class EditQuiz : IUIComponent, IDisposable
                 .SetColumnSpan(3)
                 .Child(DefineWindowContents(world));
             });
-            window.OnClosed((sender, args) => _root.Destruct());
+            window.OnClosed((sender, args) => Dispose());
 
             window.Show();
         });
