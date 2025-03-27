@@ -190,6 +190,10 @@ public class AddCloze : IUIComponent, IDisposable
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
             });
 
+            var tagManager = new TagComponent(world);
+            _disposables.Add(tagManager);
+            stackPanel.Child(tagManager);
+
             stackPanel.Child<Separator>((separator) =>
             {
                 separator
@@ -253,6 +257,7 @@ public class AddCloze : IUIComponent, IDisposable
                             Priority = calculatedPriority.Get<int>(),
                             FullText = clozeBox.GetText(),
                             ClozeWords = [.. clozes],
+                            Tags = [.. tagManager.Tags],
                             SpacedRepetitionItemType = SpacedRepetitionItemType.Cloze
                         });
 
@@ -260,7 +265,9 @@ public class AddCloze : IUIComponent, IDisposable
                         clozeBox.SetText("");
                         clozes.Clear();
                         calculatedPriority.Set(500000000);
+
                         comparePriority.Reset();
+                        tagManager.ClearTags();
                     }
                 };
 
