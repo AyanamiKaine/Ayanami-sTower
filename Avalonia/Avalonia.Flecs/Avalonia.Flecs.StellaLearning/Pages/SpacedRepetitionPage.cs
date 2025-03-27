@@ -416,7 +416,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     private IEnumerable<SpacedRepetitionItem> ApplySorting(IEnumerable<SpacedRepetitionItem> itemsToSort)
     {
         string? selectedSort = null;
-        if (_sortItemButtonBuilder != null && _sortItemButtonBuilder.Entity.IsAlive())
+        if (_sortItemButtonBuilder?.Entity.IsAlive() == true)
         {
             selectedSort = _sortItemButtonBuilder.Get<ComboBox>().SelectedItem as string;
         }
