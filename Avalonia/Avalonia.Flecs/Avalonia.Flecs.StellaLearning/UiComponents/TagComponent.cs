@@ -28,13 +28,8 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly CompositeDisposable _disposables = [];
         private bool _isDisposed = false;
-
         private readonly Entity _root;
-        private readonly World _world;
-
         private UIBuilder<AutoCompleteBox>? _tagInputAutoCompleteBox; // Changed from TextBox
-        private UIBuilder<Button>? _addTagButton;
-        private UIBuilder<ItemsControl>? _tagsItemsControl;
         /// <summary>
         /// The underlying collection of tags *for this specific instance* managed by this component.
         /// </summary>
@@ -56,8 +51,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         /// <param name="world">The Flecs world, expected to contain ObservableCollection&lt;SpacedRepetitionItem&gt;.</param>
         public TagComponent(World world)
         {
-            _world = world;
-
             // --- Get Data & Setup AutoComplete Source ---
             try
             {
@@ -177,7 +170,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                     // Add Tag Button
                     inputGrid.Child<Button>(button =>
                     {
-                        _addTagButton = button;
                         button
                             .SetText("Add")
                             .SetColumn(1)
@@ -200,7 +192,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                 // --- Tag Display Area (Unchanged) ---
                 rootPanel.Child<ItemsControl>(itemsControl =>
                 {
-                    _tagsItemsControl = itemsControl;
                     itemsControl
                         .SetItemsSource(Tags)
                         .SetItemTemplate(tagItemTemplate)
