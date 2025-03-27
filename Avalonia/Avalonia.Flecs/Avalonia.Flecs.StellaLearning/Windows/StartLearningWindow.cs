@@ -746,13 +746,27 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
                             if (imageCloze.ImagePath.Length != 0)
                             {
+                                try
+                                {
+                                    var bitmap = new Bitmap(File.OpenRead(imageCloze.ImagePath));
+                                    image.SetSource(bitmap);
 
-                                var bitmap = new Bitmap(File.OpenRead(imageCloze.ImagePath));
-                                image.SetSource(bitmap);
-
-                                // Set the canvas size to match the image's natural size
-                                canvas.SetWidth(bitmap.Size.Width);
-                                canvas.SetHeight(bitmap.Size.Height);
+                                    // Set the canvas size to match the image's natural size
+                                    canvas.SetWidth(bitmap.Size.Width);
+                                    canvas.SetHeight(bitmap.Size.Height);
+                                }
+                                catch (FileNotFoundException ex)
+                                {
+                                    var cd = new ContentDialog()
+                                    {
+                                        Title = "Picture not found",
+                                        Content = $"The picture couldn't not be found at path: {ex.FileName}",
+                                        PrimaryButtonText = "Ok",
+                                        DefaultButton = ContentDialogButton.Primary,
+                                        IsSecondaryButtonEnabled = true,
+                                    };
+                                    cd.ShowAsync();
+                                }
                             }
                         });
 
