@@ -141,6 +141,10 @@ public class AddQuiz : IUIComponent, IDisposable
             });
             */
 
+            var tagManager = new TagComponent(world);
+            _disposables.Add(tagManager);
+            stackPanel.Child(tagManager);
+
             stackPanel.Child<Separator>((separator) =>
             {
                 separator
@@ -148,6 +152,7 @@ public class AddQuiz : IUIComponent, IDisposable
                     .SetBorderThickness(new Thickness(100, 5, 100, 0))
                     .SetBorderBrush(Brushes.Black);
             });
+
 
             stackPanel.Child(comparePriority);
 
@@ -240,6 +245,7 @@ public class AddQuiz : IUIComponent, IDisposable
                         Priority = calculatedPriority.Get<int>(),
                         CorrectAnswerIndex = findAnswerIndex(),
                         Answers = gatherAllAnswers(),
+                        Tags = [.. tagManager.Tags],
                         SpacedRepetitionItemType = SpacedRepetitionItemType.Quiz
                     });
 
@@ -248,6 +254,7 @@ public class AddQuiz : IUIComponent, IDisposable
                     quizQuestionTextBox.SetText("");
                     calculatedPriority.Set(500000000);
                     comparePriority.Reset();
+                    tagManager.ClearTags();
 
                     // Clear answer text boxes and toggle buttons
                     for (int i = 0; i < 4; i++)
