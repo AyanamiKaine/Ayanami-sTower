@@ -365,23 +365,23 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             string searchTerm = lowerSearchText;
 
             filteredItems = _baseSpacedRepetitionItems.Where(item =>
-                       {
-                           // Check Name (null-safe, case-insensitive)
-                           bool nameMatch = item.Name?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase) ?? false;
-                           if (nameMatch) return true; // Early exit if name matches
+            {
+                // Check Name (null-safe, case-insensitive)
+                bool nameMatch = item.Name?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase) ?? false;
+                if (nameMatch) return true; // Early exit if name matches
 
-                           // Check Tags (null-safe, case-insensitive)
-                           bool tagMatch = item.Tags?.Any(tag => tag?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false;
-                           if (tagMatch) return true; // Early exit if tag matches
+                // Check Tags (null-safe, case-insensitive)
+                bool tagMatch = item.Tags?.Any(tag => tag?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false;
+                if (tagMatch) return true; // Early exit if tag matches
 
-                           // Check Type (case-insensitive)
-                           // Convert Enum to string and compare
-                           bool typeMatch = item.SpacedRepetitionItemType.ToString().Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase);
-                           if (typeMatch) return true; // Early exit if type matches
+                // Check Type (case-insensitive)
+                // Convert Enum to string and compare
+                bool typeMatch = item.SpacedRepetitionItemType.ToString().Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase);
+                if (typeMatch) return true; // Early exit if type matches
 
-                           // No match found for this item
-                           return false;
-                       });
+                // No match found for this item
+                return false;
+            });
         }
 
         // 2. Apply the current sort order
