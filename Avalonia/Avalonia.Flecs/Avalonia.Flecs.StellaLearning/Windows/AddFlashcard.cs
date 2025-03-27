@@ -124,6 +124,10 @@ public class AddFlashcard : IUIComponent, IDisposable
                 textBox.Get<TextBox>().AcceptsReturn = true;
             });
 
+            var tagManager = new TagComponent(world);
+            _disposables.Add(tagManager);
+            stackPanel.Child(tagManager);
+
             stackPanel.Child<Separator>((separator) =>
             {
                 separator
@@ -203,6 +207,7 @@ public class AddFlashcard : IUIComponent, IDisposable
                         Front = frontText.GetText(),
                         Back = backText.GetText(),
                         Priority = calculatedPriority.Get<int>(),
+                        Tags = [.. tagManager.Tags],
                         SpacedRepetitionItemType = SpacedRepetitionItemType.Flashcard
                     });
 
@@ -212,6 +217,7 @@ public class AddFlashcard : IUIComponent, IDisposable
                     backText.SetText("");
                     tags.Clear();
                     comparePriority.Reset();
+                    tagManager.ClearTags();
                 };
                 button.With((b) => b.Click += createButtonClickedHandler);
                 _disposables.Add(Disposable.Create(() => createButton?.With((b) => b.Click -= createButtonClickedHandler)));
