@@ -1,65 +1,91 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
+using Avalonia.Flecs.StellaLearning.Data; // Needed for SpacedRepetitionItem
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Flecs.NET.Core;
 using System.Reactive.Disposables;
-using NLog; // Assuming you use NLog like in ComparePriority
+using NLog;
+using Avalonia.Threading; // For Dispatcher.UIThread
 
 namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if needed
 {
     /// <summary>
-    /// A reusable UI component for managing a list of tags.
+    /// A reusable UI component for managing a list of tags with auto-completion.
     /// Allows adding tags via text input and removing existing tags.
+    /// Suggests existing tags from the main SpacedRepetitionItem collection.
     /// </summary>
     public class TagComponent : IUIComponent, IDisposable
     {
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger(); // Optional logging
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly CompositeDisposable _disposables = [];
         private bool _isDisposed = false;
 
         private readonly Entity _root;
-        private readonly World _world; // Keep world reference for creating templates
+        private readonly World _world;
 
-        // --- UI Element Builders (optional, but good for reference) ---
-        private UIBuilder<TextBox>? _tagInputTextBox;
+        private UIBuilder<AutoCompleteBox>? _tagInputAutoCompleteBox; // Changed from TextBox
         private UIBuilder<Button>? _addTagButton;
         private UIBuilder<ItemsControl>? _tagsItemsControl;
-        // ---
-
         /// <summary>
-        /// The underlying collection of tags managed by this component.
-        /// Changes to this collection will reflect in the UI.
+        /// The underlying collection of tags *for this specific instance* managed by this component.
         /// </summary>
         public ObservableCollection<string> Tags { get; } = [];
-
+        /// <summary>
+        /// Collection holding all unique tags found across all SpacedRepetitionItems.
+        /// Used as the source for AutoCompleteBox suggestions.
+        /// </summary>
+        private readonly ObservableCollection<string> _allUniqueTags = [];
+        /// <summary>
+        /// Reference to the main collection of all spaced repetition items.
+        /// </summary>
+        private readonly ObservableCollection<SpacedRepetitionItem>? _allItems; // Make nullable
         /// <inheritdoc/>
         public Entity Root => _root;
-
         /// <summary>
-        /// Creates a new Tag Management UI Component.
+        /// Creates a new Tag Management UI Component with auto-completion.
         /// </summary>
-        /// <param name="world">The Flecs world.</param>
+        /// <param name="world">The Flecs world, expected to contain ObservableCollection&lt;SpacedRepetitionItem&gt;.</param>
         public TagComponent(World world)
         {
-            _world = world; // Store world for template creation
+            _world = world;
 
-            // Define the ItemTemplate for displaying each tag
+            // --- Get Data & Setup AutoComplete Source ---
+            try
+            {
+                _allItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
+                UpdateAllUniqueTags();
+                _allItems.CollectionChanged += OnAllItemsChanged;
+                // Add cleanup for the external collection subscription
+                _disposables.Add(Disposable.Create(() =>
+                {
+                    if (_allItems != null) _allItems.CollectionChanged -= OnAllItemsChanged;
+                    Logger.Debug("Unsubscribed from _allItems.CollectionChanged");
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn(ex, "Failed to get ObservableCollection<SpacedRepetitionItem> from world. Auto-completion source will be empty.");
+                _allItems = null; // Ensure it's null if retrieval fails
+            }
+
+            // --- Define Tag Item Template (Unchanged) ---
             var tagItemTemplate = world.CreateTemplate<string, Border>((borderBuilder, tagText) =>
             {
+                // ... (Identical to previous version) ...
                 borderBuilder
                     .SetMargin(2)
                     .SetPadding(5, 2)
                     .SetCornerRadius(new CornerRadius(4))
-                    .SetBackground(Brushes.LightGray) // Example background
+                    .SetBackground(Brushes.LightGray)
                     .Child<StackPanel>(stackPanel =>
                     {
                         stackPanel
@@ -67,7 +93,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                             .SetSpacing(5)
                             .SetVerticalAlignment(VerticalAlignment.Center);
 
-                        // Tag Text
                         stackPanel.Child<TextBlock>(textBlock =>
                         {
                             textBlock
@@ -75,26 +100,20 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                                 .SetVerticalAlignment(VerticalAlignment.Center);
                         });
 
-                        // Remove Button ('x')
                         stackPanel.Child<Button>(removeButton =>
                         {
                             removeButton
                                 .SetText("x")
-                                .SetPadding(5, 0)
+                                .SetPadding(2, 0)
                                 .SetFontSize(10)
                                 .SetVerticalAlignment(VerticalAlignment.Center)
                                 .SetHorizontalAlignment(HorizontalAlignment.Center)
-                                // Optional: Style the remove button further (e.g., transparent background, specific foreground)
-                                //.SetBackground(Brushes.Transparent)
-                                //.SetForeground(Brushes.DarkRed)
                                 .SetBorderThickness(new Thickness(0))
-                                .OnClick((_, _) =>
-                                {
-                                    Tags.Remove(tagText);
-                                });
+                                .OnClick((_, _) => Tags.Remove(tagText));
                         });
                     });
             });
+
 
             // --- Build the main component UI ---
             _root = world.UI<StackPanel>(rootPanel =>
@@ -103,118 +122,249 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                     .SetOrientation(Orientation.Vertical)
                     .SetSpacing(5);
 
-                // --- Input Area (TextBox + Add Button) ---
+                // --- Input Area (AutoCompleteBox + Add Button) ---
                 rootPanel.Child<Grid>(inputGrid =>
                 {
                     inputGrid
-                        .SetColumnDefinitions("*,Auto") // TextBox takes available space, Button takes needed space
+                        .SetColumnDefinitions("*,Auto")
                         .SetRowDefinitions("Auto");
 
-                    // Tag Input TextBox
-                    inputGrid.Child<TextBox>(textBox =>
+                    // Tag Input AutoCompleteBox
+                    inputGrid.Child<AutoCompleteBox>(autoCompleteBox =>
                     {
-                        _tagInputTextBox = textBox; // Store reference
-                        textBox
-                            .SetWatermark("Add Tag...")
+                        _tagInputAutoCompleteBox = autoCompleteBox;
+
+                        autoCompleteBox
                             .SetColumn(0)
-                            .OnKeyDown((sender, args) =>
+                            .With(acb => // Use 'With' for direct property access
                             {
-                                if (args.Key == Key.Enter)
+                                // Set the source of suggestions
+                                acb.ItemsSource = _allUniqueTags;
+
+                                // Set the desired filter mode (e.g., StartsWith - case insensitive by default)
+                                // Options: StartsWith, StartsWithCaseSensitive, StartsWithOrdinal, StartsWithOrdinalCaseSensitive,
+                                // Contains, ContainsCaseSensitive, ContainsOrdinal, ContainsOrdinalCaseSensitive,
+                                // Equals, EqualsCaseSensitive, EqualsOrdinal, EqualsOrdinalCaseSensitive
+                                acb.FilterMode = AutoCompleteFilterMode.StartsWith; // Or AutoCompleteFilterMode.Contains
+                            })
+                            .OnKeyDown((sender, args) => // Handle Enter and Tab
+                            {
+                                // Using 'as' pattern matching for safety
+                                if (sender is AutoCompleteBox acb)
                                 {
-                                    AddTagFromInput();
-                                    args.Handled = true; // Prevent further processing of Enter key
+                                    // Check if Enter or Tab was pressed
+                                    if (args.Key == Key.Enter || args.Key == Key.Tab)
+                                    {
+                                        // When Enter/Tab is pressed, the AutoCompleteBox Text property
+                                        // should already be updated if a suggestion was highlighted.
+                                        // We add whatever text is currently in the box.
+                                        AddTagFromInput(acb.Text);
+
+                                        // Prevent the Enter/Tab key from doing anything else (like moving focus outside)
+                                        args.Handled = true;
+
+                                        // Optional: If Tab specifically was pressed, you might want to manually move focus
+                                        // to the 'Add' button for keyboard accessibility flow.
+                                        // if (args.Key == Key.Tab && _addTagButton != null && _addTagButton.Entity.IsAlive())
+                                        // {
+                                        //    Dispatcher.UIThread.InvokeAsync(() => _addTagButton.Get<Button>().Focus());
+                                        // }
+                                    }
                                 }
                             });
-                        // Optionally subscribe to TextChanged for real-time validation/suggestions
                     });
 
                     // Add Tag Button
                     inputGrid.Child<Button>(button =>
                     {
-                        _addTagButton = button; // Store reference
+                        _addTagButton = button;
                         button
                             .SetText("Add")
                             .SetColumn(1)
-                            .SetMargin(5, 0, 0, 0) // Add some space between textbox and button
+                            .SetMargin(5, 0, 0, 0)
                             .OnClick((_, _) =>
                             {
-                                AddTagFromInput();
+                                if (_tagInputAutoCompleteBox != null && _tagInputAutoCompleteBox.Entity.IsAlive())
+                                {
+                                    // Add the text *currently* present in the AutoCompleteBox
+                                    AddTagFromInput(_tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text);
+                                }
+                                else
+                                {
+                                    Logger.Warn("Add button clicked but AutoCompleteBox reference is invalid.");
+                                }
                             });
                     });
                 });
 
-                // --- Tag Display Area ---
+                // --- Tag Display Area (Unchanged) ---
                 rootPanel.Child<ItemsControl>(itemsControl =>
                 {
-                    _tagsItemsControl = itemsControl; // Store reference
+                    _tagsItemsControl = itemsControl;
                     itemsControl
-                        .SetItemsSource(Tags) // Bind to the ObservableCollection
-                        .SetItemTemplate(tagItemTemplate) // Use the template defined above
-                        .With(ic => // Use 'With' for properties not covered by extensions
+                        .SetItemsSource(Tags)
+                        .SetItemTemplate(tagItemTemplate)
+                        .With(ic =>
                         {
-                            // Use a WrapPanel so tags flow to the next line
-                            ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel())!;
+                            ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!; // Ensure horizontal wrap
                         });
-                    // Optional: Add styling like a border or background
-                    // .SetBorderBrush(Brushes.Gray)
-                    // .SetBorderThickness(new Thickness(1))
-                    // .SetMinHeight(50) // Ensure it has some visible space even when empty
                 });
             });
 
-            // Add the root entity destruction to the disposables
+            // --- Disposables & Setup ---
             _disposables.Add(Disposable.Create(() =>
             {
                 if (_root.IsValid() && _root.IsAlive())
                 {
                     Logger.Debug($"Disposing TagComponent Root Entity: {_root.Id}");
-                    _root.Destruct(); // Destroy the entire UI entity hierarchy for this component
+                    _root.Destruct();
+                }
+                else
+                {
+                    Logger.Warn("Root entity invalid or dead during TagComponent Dispose.");
                 }
             }));
 
-            // Add event handler cleanup to disposables if needed (OnClick is usually managed by Avalonia's weak event manager, but explicit cleanup is safer if unsure)
-            // Example: _disposables.Add(Disposable.Create(() => { if (_addTagButton != null) { /* Unsubscribe logic if needed */ } }));
-            // OnKeyDown might need explicit detachment if added directly to the control instance outside the builder actions. Since it's done via the builder extension, it *should* be okay, but explicit cleanup is safest.
+            _root.SetName($"TAGCOMPONENT_AC-{new Random().Next()}");
+            Logger.Info($"TagComponent (AutoComplete Corrected) created with Root Entity: {_root.Id}");
+        }
 
-            _root.SetName($"TAGCOMPONENT-{new Random().Next()}"); // Give it a debug name
-            Logger.Info($"TagComponent created with Root Entity: {_root.Id}");
+
+        /// <summary>
+        /// Rebuilds the _allUniqueTags collection based on the current _allItems.
+        /// Should be called on initialization and when _allItems changes.
+        /// Uses Dispatcher to ensure UI thread safety for modifying _allUniqueTags.
+        /// </summary>
+        private async void UpdateAllUniqueTags()
+        {
+            if (_allItems == null)
+            {
+                Logger.Warn("Cannot update unique tags, _allItems collection is null.");
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (_allUniqueTags.Any()) _allUniqueTags.Clear();
+                });
+                return;
+            }
+
+            Logger.Debug("Updating unique tags list...");
+            // Using HashSet for efficient unique collection, ignoring case
+            var uniqueTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Iterate safely - consider locking _allItems if modifications can happen on other threads,
+            // but ObservableCollection is generally safe for reads if changes happen via CollectionChanged on UI thread.
+            try
+            {
+                foreach (var item in _allItems) // Assuming SpacedRepetitionItem and Tags list are accessible
+                {
+                    if (item?.Tags != null) // Check item and Tags list for null
+                    {
+                        foreach (var tag in item.Tags)
+                        {
+                            if (!string.IsNullOrWhiteSpace(tag))
+                            {
+                                uniqueTags.Add(tag.Trim());
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Catch potential issues during iteration, e.g., if item becomes invalid unexpectedly
+                Logger.Error(ex, "Error occurred while iterating through _allItems to collect unique tags.");
+                return; // Abort update if iteration fails
+            }
+
+
+            var sortedTags = uniqueTags.OrderBy(t => t).ToList(); // Sort alphabetically
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                try
+                {
+                    // Efficiently update the ObservableCollection on the UI thread
+                    var tagsToRemove = _allUniqueTags.Except(sortedTags).ToList();
+                    foreach (var tagToRemove in tagsToRemove) _allUniqueTags.Remove(tagToRemove);
+
+                    var tagsToAdd = sortedTags.Except(_allUniqueTags).ToList();
+                    foreach (var tagToAdd in tagsToAdd) _allUniqueTags.Add(tagToAdd); // Add new tags
+
+                    Logger.Debug($"Unique tags list updated. Count: {_allUniqueTags.Count}");
+                }
+                catch (Exception uiEx)
+                {
+                    Logger.Error(uiEx, "Error occurred while updating _allUniqueTags collection on UI thread.");
+                }
+            });
         }
 
         /// <summary>
-        /// Helper method to add a tag from the input TextBox.
+        /// Handles changes in the main _allItems collection to update the unique tag list.
         /// </summary>
-        private void AddTagFromInput()
+        private void OnAllItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            if (_tagInputTextBox == null) return;
-
-            string newTag = _tagInputTextBox.GetText()?.Trim() ?? string.Empty;
-
-            if (!string.IsNullOrWhiteSpace(newTag) && !Tags.Contains(newTag))
+            // It's generally safer to schedule the update via Dispatcher
+            // in case the CollectionChanged event isn't raised on the UI thread.
+            Dispatcher.UIThread.InvokeAsync(() =>
             {
-                Tags.Add(newTag);
-                _tagInputTextBox.SetText(string.Empty); // Clear input after adding
-                Logger.Debug($"Tag added: {newTag}");
+                Logger.Debug("Main item collection changed, queuing unique tags update.");
+                UpdateAllUniqueTags();
+            });
+        }
+
+        /// <summary>
+        /// Helper method to add a tag from the input AutoCompleteBox.
+        /// </summary>
+        /// <param name="tagToAdd">The raw text/tag to add.</param>
+        private void AddTagFromInput(string? tagToAdd)
+        {
+            string cleanTag = tagToAdd?.Trim() ?? string.Empty;
+            bool added = false;
+
+            if (!string.IsNullOrWhiteSpace(cleanTag) && !Tags.Any(t => t.Equals(cleanTag, StringComparison.OrdinalIgnoreCase))) // Use LINQ Any for case-insensitive check
+            {
+                Tags.Add(cleanTag);
+                Logger.Debug($"Tag added: {cleanTag}");
+                added = true;
             }
-            else if (string.IsNullOrWhiteSpace(newTag))
+            else if (string.IsNullOrWhiteSpace(cleanTag))
             {
                 Logger.Debug("Attempted to add empty tag.");
-                // Optionally provide user feedback (e.g., shake the textbox, show a message)
             }
-            else if (Tags.Contains(newTag))
+            else // Tag already exists (case-insensitive)
             {
-                Logger.Debug($"Attempted to add duplicate tag: {newTag}");
-                // Optionally provide user feedback
-                _tagInputTextBox.SetText(string.Empty); // Clear input even if duplicate
+                Logger.Debug($"Attempted to add duplicate tag: {cleanTag}");
             }
+
+            // Clear input only if tag was successfully added
+            if (added && _tagInputAutoCompleteBox != null && _tagInputAutoCompleteBox.Entity.IsAlive())
+            {
+                Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (_tagInputAutoCompleteBox.Entity.IsAlive())
+                    { // Double check validity inside dispatcher
+                        _tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text = string.Empty;
+                    }
+                });
+            }
+            // Optional: Decide if you want to clear input even if adding failed (e.g., duplicate)
+            // else if (!added && _tagInputAutoCompleteBox != null && _tagInputAutoCompleteBox.Entity.IsAlive()) {
+            //    Dispatcher.UIThread.InvokeAsync(() => _tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text = string.Empty);
+            // }
         }
 
+
         /// <summary>
-        /// Clears all tags from the component.
+        /// Clears all tags *from this component instance*.
         /// </summary>
         public void ClearTags()
         {
-            Tags.Clear();
-            Logger.Debug("All tags cleared.");
+            if (Tags.Any())
+            {
+                Tags.Clear();
+                Logger.Debug("Component tags cleared.");
+            }
         }
 
         /// <inheritdoc/>
@@ -227,34 +377,32 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         /// <summary>
         /// Releases unmanaged and - optionally - managed resources.
         /// </summary>
-        /// <param name="disposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (!_isDisposed)
             {
                 if (disposing)
                 {
-                    Logger.Debug($"Disposing TagComponent (Root: {_root.Id})...");
-                    // Dispose managed state (managed objects).
-                    _disposables.Dispose(); // This handles root entity destruction and event cleanup if added.
-                    Tags.Clear(); // Clear the collection as the UI is gone.
-                    Logger.Debug($"TagComponent disposed (Root: {_root.Id}).");
+                    Logger.Debug($"Disposing TagComponent (AutoComplete Corrected) (Root: {_root.Id})...");
+                    // Unsubscribe external event first is safer
+                    if (_allItems != null)
+                    {
+                        _allItems.CollectionChanged -= OnAllItemsChanged;
+                    }
+                    // Dispose Flecs entities and internal handlers
+                    _disposables.Dispose();
+                    // Clear local collections
+                    Tags.Clear();
+                    _allUniqueTags.Clear();
+                    Logger.Debug($"TagComponent (AutoComplete Corrected) disposed (Root: {_root.Id}).");
                 }
-
-                // Free unmanaged resources (unmanaged objects) and override finalizer
-                // (Not applicable in this specific component, but standard pattern)
-
                 _isDisposed = true;
             }
         }
 
         /// <summary>
-        /// Finalizer (Destructor)
+        /// Destructor
         /// </summary>
-        ~TagComponent()
-        {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: false);
-        }
+        ~TagComponent() { Dispose(disposing: false); }
     }
 }
