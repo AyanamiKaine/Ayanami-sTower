@@ -44,19 +44,31 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         private readonly ObservableCollection<SpacedRepetitionItem>? _allItems; // Make nullable
         /// <inheritdoc/>
         public Entity Root { get; }
+               // --- Primary Constructor (Existing) ---
         /// <summary>
-        /// Creates a new Tag Management UI Component with auto-completion.
+        /// Creates a new Tag Management UI Component with auto-completion, initially empty.
         /// </summary>
         /// <param name="world">The Flecs world, expected to contain ObservableCollection&lt;SpacedRepetitionItem&gt;.</param>
-        public TagComponent(World world)
+        public TagComponent(World world) : this(world, null) // Chain to the new constructor with null initial tags
+        {
+            // Primary constructor logic is now mostly in the new constructor
+            // Or keep the common logic here and call common init methods
+        }
+
+        // --- NEW Constructor Overload ---
+        /// <summary>
+        /// Creates a new Tag Management UI Component with auto-completion, optionally initializing with existing tags.
+        /// </summary>
+        /// <param name="world">The Flecs world, expected to contain ObservableCollection&lt;SpacedRepetitionItem&gt;.</param>
+        /// <param name="initialTags">An optional collection of tags to pre-populate the component.</param>
+        public TagComponent(World world, IEnumerable<string>? initialTags)
         {
             // --- Get Data & Setup AutoComplete Source ---
             try
             {
                 _allItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
-                UpdateAllUniqueTags();
+                UpdateAllUniqueTags(); // Populate suggestions source
                 _allItems.CollectionChanged += OnAllItemsChanged;
-                // Add cleanup for the external collection subscription
                 _disposables.Add(Disposable.Create(() =>
                 {
                     if (_allItems != null) _allItems.CollectionChanged -= OnAllItemsChanged;
@@ -65,10 +77,21 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             }
             catch (Exception ex)
             {
-                Logger.Warn(ex, "Failed to get ObservableCollection<SpacedRepetitionItem> from world. Auto-completion source will be empty.");
-                _allItems = null; // Ensure it's null if retrieval fails
+                Logger.Warn(ex, "Failed to get SpacedRepetitionItem collection. Auto-completion source empty.");
+                _allItems = null;
             }
 
+            // --- Initialize Component's Tags ---
+            // Clear any defaults and add initial tags if provided
+            Tags.Clear(); // Ensure Tags starts empty before adding initial ones
+            if (initialTags != null)
+            {
+                foreach (var tag in initialTags.Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    Tags.Add(tag.Trim());
+                }
+                Logger.Debug($"Initialized TagComponent with {Tags.Count} tags.");
+            }
             // --- Define Tag Item Template (Unchanged) ---
             var tagItemTemplate = world.CreateTemplate<string, Border>((borderBuilder, tagText) =>
             {
@@ -107,97 +130,41 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             });
 
 
-            // --- Build the main component UI ---
+            // --- Build the main component UI (Same as before) ---
             Root = world.UI<StackPanel>(rootPanel =>
             {
-                rootPanel
-                    .SetOrientation(Orientation.Vertical)
-                    .SetSpacing(5);
-
-                // --- Input Area (AutoCompleteBox + Add Button) ---
+                rootPanel.SetOrientation(Orientation.Vertical).SetSpacing(5);
                 rootPanel.Child<Grid>(inputGrid =>
                 {
-                    inputGrid
-                        .SetColumnDefinitions("*,Auto")
-                        .SetRowDefinitions("Auto");
-
-                    // Tag Input AutoCompleteBox
+                    inputGrid.SetColumnDefinitions("*,Auto").SetRowDefinitions("Auto");
                     inputGrid.Child<AutoCompleteBox>(autoCompleteBox =>
                     {
-                        _tagInputAutoCompleteBox = autoCompleteBox;
-
-                        autoCompleteBox
-                            .SetColumn(0)
-                            .With(acb => // Use 'With' for direct property access
-                            {
-                                // Set the source of suggestions
+                         _tagInputAutoCompleteBox = autoCompleteBox;
+                         autoCompleteBox.SetColumn(0).SetWatermark("Add Tag...") // Added Watermark here
+                            .With(acb => {
                                 acb.ItemsSource = _allUniqueTags;
-
-                                // Set the desired filter mode (e.g., StartsWith - case insensitive by default)
-                                // Options: StartsWith, StartsWithCaseSensitive, StartsWithOrdinal, StartsWithOrdinalCaseSensitive,
-                                // Contains, ContainsCaseSensitive, ContainsOrdinal, ContainsOrdinalCaseSensitive,
-                                // Equals, EqualsCaseSensitive, EqualsOrdinal, EqualsOrdinalCaseSensitive
-                                acb.FilterMode = AutoCompleteFilterMode.StartsWith; // Or AutoCompleteFilterMode.Contains
+                                acb.FilterMode = AutoCompleteFilterMode.StartsWith;
                             })
-                            .OnKeyDown((sender, args) => // Handle Enter and Tab
-                            {
-                                // Using 'as' pattern matching for safety
-                                if (sender is AutoCompleteBox acb)
-                                {
-                                    // Check if Enter or Tab was pressed
-                                    if (args.Key == Key.Enter || args.Key == Key.Tab)
-                                    {
-                                        // When Enter/Tab is pressed, the AutoCompleteBox Text property
-                                        // should already be updated if a suggestion was highlighted.
-                                        // We add whatever text is currently in the box.
-                                        AddTagFromInput(acb.Text);
-
-                                        // Prevent the Enter/Tab key from doing anything else (like moving focus outside)
-                                        args.Handled = true;
-
-                                        // Optional: If Tab specifically was pressed, you might want to manually move focus
-                                        // to the 'Add' button for keyboard accessibility flow.
-                                        // if (args.Key == Key.Tab && _addTagButton != null && _addTagButton.Entity.IsAlive())
-                                        // {
-                                        //    Dispatcher.UIThread.InvokeAsync(() => _addTagButton.Get<Button>().Focus());
-                                        // }
-                                    }
+                            .OnKeyDown((sender, args) => {
+                                if (sender is AutoCompleteBox acb && (args.Key == Key.Enter || args.Key == Key.Tab)) {
+                                    AddTagFromInput(acb.Text);
+                                    args.Handled = true;
                                 }
                             });
                     });
-
-                    // Add Tag Button
-                    inputGrid.Child<Button>(button =>
-                    {
-                        button
-                            .SetText("Add")
-                            .SetColumn(1)
-                            .SetMargin(5, 0, 0, 0)
-                            .OnClick((_, _) =>
-                            {
-                                if (_tagInputAutoCompleteBox?.Entity.IsAlive() == true)
-                                {
-                                    // Add the text *currently* present in the AutoCompleteBox
+                    inputGrid.Child<Button>(button => {
+                        button.SetText("Add").SetColumn(1).SetMargin(5, 0, 0, 0)
+                           .OnClick((_, _) => {
+                                if (_tagInputAutoCompleteBox?.Entity.IsAlive() == true) {
                                     AddTagFromInput(_tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text);
                                 }
-                                else
-                                {
-                                    Logger.Warn("Add button clicked but AutoCompleteBox reference is invalid.");
-                                }
-                            });
+                           });
                     });
                 });
-
-                // --- Tag Display Area (Unchanged) ---
                 rootPanel.Child<ItemsControl>(itemsControl =>
                 {
-                    itemsControl
-                        .SetItemsSource(Tags)
-                        .SetItemTemplate(tagItemTemplate)
-                        .With(ic =>
-                        {
-                            ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!; // Ensure horizontal wrap
-                        });
+                     itemsControl.SetItemsSource(Tags).SetItemTemplate(tagItemTemplate)
+                        .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
                 });
             });
 
