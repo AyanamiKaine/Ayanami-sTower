@@ -203,6 +203,10 @@ public class AddImageCloze : IUIComponent, IDisposable
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
             });
 
+            var tagManager = new TagComponent(world);
+            _disposables.Add(tagManager);
+            stackPanel.Child(tagManager);
+
             stackPanel.Child<Separator>((separator) =>
             {
                 separator
@@ -270,6 +274,7 @@ public class AddImageCloze : IUIComponent, IDisposable
                             Priority = calculatedPriority.Get<int>(),
                             ImagePath = ImagePath,
                             ClozeAreas = imageClozeAreas,
+                            Tags = [.. tagManager.Tags],
                             SpacedRepetitionItemType = SpacedRepetitionItemType.ImageCloze
                         });
 
@@ -295,6 +300,7 @@ public class AddImageCloze : IUIComponent, IDisposable
                         image?.RemoveSource();
                         calculatedPriority.Set(500000000);
                         comparePriority.Reset();
+                        tagManager.ClearTags();
                     }
                 };
 
@@ -561,10 +567,10 @@ public class AddImageCloze : IUIComponent, IDisposable
                 string appDataPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "StellaLearning", "Images");
-                
+
                 // Ensure the directory exists
                 Directory.CreateDirectory(appDataPath);
-                
+
                 // Create a persistent file path for the image
                 string imagePath = Path.Combine(appDataPath, $"cloze_image_{Guid.NewGuid()}.png");
 
