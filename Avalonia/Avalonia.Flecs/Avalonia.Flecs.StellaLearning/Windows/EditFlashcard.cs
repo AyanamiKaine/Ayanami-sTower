@@ -1,4 +1,6 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Reactive.Disposables;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
@@ -14,14 +16,15 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to add spaced repetition items of the type file
 /// </summary>
-public class EditFlashcard : IUIComponent
+public class EditFlashcard : IUIComponent, IDisposable
 {
 
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
     private SpacedRepetitionFlashcard flashcard;
-
+    private readonly CompositeDisposable _disposables = []; // For managing disposables
+    private bool _isDisposed = false; // For IDisposable pattern
     /// <summary>
     /// Create the Add File Window
     /// </summary>
@@ -44,7 +47,7 @@ public class EditFlashcard : IUIComponent
                         .SetColumnSpan(3)
                         .Child(DefineWindowContents(world));
                     });
-                    window.OnClosed((sender, args) => _root.Destruct());
+                    window.OnClosed((sender, args) => Dispose());
 
                     window.Show();
                 });
@@ -108,6 +111,7 @@ public class EditFlashcard : IUIComponent
             });
 
             var tagManager = new TagComponent(world, flashcard.Tags);
+            _disposables.Add(tagManager);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             stackPanel.Child<Button>((button) =>
@@ -183,4 +187,40 @@ public class EditFlashcard : IUIComponent
             });
         });
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    /// <summary>
+    /// Diposer
+    /// </summary>
+    /// <param name="disposing"></param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_isDisposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed state (like TagComponent instance in _disposables)
+                _disposables.Dispose(); // Disposes tagManager
+
+                // Destroy the root entity *last*
+                if (_root.IsValid() && _root.IsAlive())
+                {
+                    // Clearing triggers component remove hooks (like Window Closing)
+                    // _root.Clear();
+                    // Explicit destruction might be needed if Clear doesn't close window
+                    _root.Destruct();
+                }
+            }
+            _isDisposed = true;
+        }
+    }
+    /// <summary>
+    /// Destructor
+    /// </summary>
+    ~EditFlashcard() { Dispose(disposing: false); }
 }
