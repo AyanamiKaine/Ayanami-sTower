@@ -211,7 +211,9 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Sets the text of a button control.
+    /// Sets the text of a button control by adding a textblock control to it.
+    /// This is done so you can easily say button.SetFontSize() and changing the 
+    /// text size of the textblock
     /// </summary>
     public static UIBuilder<Button> SetText(this UIBuilder<Button> builder, string text)
     {
@@ -396,6 +398,24 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Entity.SetTextWrapping(textWrapping);
+        return builder;
+    }
+
+    /// <summary>
+    /// Set the wrapping of the text of a button
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="textWrapping"></param>
+    /// <returns></returns>
+    public static UIBuilder<Button> SetTextWrapping(this UIBuilder<Button> builder, TextWrapping textWrapping)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Child<TextBlock>((t) =>
+        {
+            t.SetTextWrapping(textWrapping);
+        });
         return builder;
     }
 
