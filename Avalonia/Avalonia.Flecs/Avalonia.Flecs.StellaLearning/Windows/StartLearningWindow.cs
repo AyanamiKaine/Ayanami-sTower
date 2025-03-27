@@ -587,6 +587,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 .SetVerticalAlignment(Layout.VerticalAlignment.Center)
                 .OnClick((_, _) =>
                                 {
+                                    // Disable the show button after it revealed its clozes
+                                    button.Disable();
                                     clozeText!.SetText(cloze.FullText);
                                     againButton!.Enable();
                                     hardButton!.Enable();
