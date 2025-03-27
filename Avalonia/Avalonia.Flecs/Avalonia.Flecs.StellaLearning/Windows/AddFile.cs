@@ -141,6 +141,10 @@ public class AddFile : IUIComponent, IDisposable
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
             });
 
+            var tagManager = new TagComponent(world);
+            _disposables.Add(tagManager);
+            stackPanel.Child(tagManager);
+
             stackPanel.Child<Separator>((separator) =>
             {
                 separator
@@ -148,6 +152,7 @@ public class AddFile : IUIComponent, IDisposable
                     .SetBorderThickness(new Thickness(100, 5, 100, 0))
                     .SetBorderBrush(Brushes.Black);
             });
+
 
             var comparePriority = new ComparePriority(world);
             calculatedPriority = comparePriority.CalculatedPriorityEntity;
