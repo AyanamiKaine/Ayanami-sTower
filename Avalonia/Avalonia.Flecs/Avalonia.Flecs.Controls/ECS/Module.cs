@@ -127,6 +127,7 @@ namespace Avalonia.Flecs.Controls.ECS
             AddFlyoutToControlObserver(world);
             RemoveControlFromParentObserver(world);
             RemoveControlComponentObserver(world);
+            SetupFlecsDisposalHooks(world);
             //AddPageObserver(world);
 
 
@@ -279,6 +280,46 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                 });
             Logger.Debug("ControlComponentRemover observer registered successfully");
+        }
+
+        /// <summary>
+        /// The main idea is the following, sometimes an entity hierarchy represents a ui component 
+        /// with various unmanaged ressources we must manages ourselves this could include event delegates
+        /// and correctly destroying avalonia objects. When an entity gets destroyed it removes all components
+        /// when an entity has a disposale component removed it should start calling its dipose method. 
+        /// This ensure we dont forget to manually call it. As this will automatic call it when needed.
+        /// </summary>
+        /// <param name="world"></param>
+        public static void SetupFlecsDisposalHooks(World world)
+        {
+            world.Observer<DisposableComponentHandle>()
+                .Event(Ecs.OnRemove) // Trigger when the DisposableComponentHandle is removed
+                .Each((Entity entity, ref DisposableComponentHandle handle) =>
+                {
+                    // Check if the target hasn't already been disposed elsewhere
+                    if (handle.Target != null)
+                    {
+                        Console.WriteLine($"Flecs OnRemove: Disposing component via handle on entity {entity.Id} ({handle.Target.GetType().Name}).");
+                        try
+                        {
+                            handle.Target.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log disposal errors
+                            Console.WriteLine($"Error disposing component {handle.Target.GetType().Name} via Flecs hook: {ex.Message}");
+                        }
+                        // Optional: Nullify the target to prevent double disposal if somehow
+                        // the handle reference persists and is triggered again (shouldn't happen with OnRemove).
+                        // handle.Target = null;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Flecs OnRemove: Target was null for handle on entity {entity.Id}. Already disposed?");
+                    }
+                });
+
+            Console.WriteLine("Flecs DisposableComponentHandle observer setup complete.");
         }
 
         /// <summary>
