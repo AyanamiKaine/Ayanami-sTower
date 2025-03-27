@@ -175,7 +175,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                             .SetMargin(5, 0, 0, 0)
                             .OnClick((_, _) =>
                             {
-                                if (_tagInputAutoCompleteBox != null && _tagInputAutoCompleteBox.Entity.IsAlive())
+                                if (_tagInputAutoCompleteBox?.Entity.IsAlive() == true)
                                 {
                                     // Add the text *currently* present in the AutoCompleteBox
                                     AddTagFromInput(_tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text);
@@ -267,7 +267,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             }
 
 
-            var sortedTags = uniqueTags.OrderBy(t => t).ToList(); // Sort alphabetically
+            var sortedTags = uniqueTags.Order().ToList(); // Sort alphabetically
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
