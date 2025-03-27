@@ -111,18 +111,14 @@ public class EditFlashcard : IUIComponent, IDisposable
             });
 
             var tagManager = new TagComponent(world, flashcard.Tags);
-            _disposables.Add(tagManager);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             stackPanel.Child<Button>((button) =>
             {
                 button
+                .SetText("Save Changes")
                 .SetVerticalAlignment(Layout.VerticalAlignment.Center)
                 .SetHorizontalAlignment(Layout.HorizontalAlignment.Stretch);
-                button.Child<TextBlock>((textBlock) =>
-                {
-                    textBlock.SetText("Save Changes");
-                });
 
                 button.OnClick((sender, args) =>
                 {
