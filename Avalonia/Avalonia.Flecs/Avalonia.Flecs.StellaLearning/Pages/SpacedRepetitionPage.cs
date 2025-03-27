@@ -95,6 +95,17 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                     string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
                     ApplyFilterAndSort(searchText); // Apply filter and current sort
                 });
+
+                textBox.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                {
+                    toolTip.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText(
+                        """
+                        You can search spaced repetition items by name or by their tags.
+                        """);
+                    });
+                }));
             });
 
             grid.Child<TextBlock>((textBlock) =>
