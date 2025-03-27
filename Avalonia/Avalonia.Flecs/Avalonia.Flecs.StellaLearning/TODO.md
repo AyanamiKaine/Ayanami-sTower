@@ -1,6 +1,6 @@
 # TODO (Things that must be done)
 
-## Enable a way to edit items (DONE!)
+## Enable a way to edit items (IN-PROGESS)
 
 ### Problem
 
