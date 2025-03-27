@@ -6,6 +6,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
+using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Media;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
@@ -137,11 +138,14 @@ public class EditQuiz : IUIComponent
             });
             */
 
+            var tagManager = new TagComponent(world, _spacedRepetitionQuiz.Tags);
+            stackPanel.Child(tagManager); // Add the tag manager UI
+
             stackPanel.Child<Button>((button) =>
             {
                 button.Child<TextBlock>((textBlock) =>
                 {
-                    textBlock.SetText("Save");
+                    textBlock.SetText("Save Changes");
                 });
 
                 button.OnClick((_, _) =>
@@ -222,6 +226,7 @@ public class EditQuiz : IUIComponent
                     _spacedRepetitionQuiz.Question = quizQuestionTextBox.GetText();
                     _spacedRepetitionQuiz.CorrectAnswerIndex = findAnswerIndex();
                     _spacedRepetitionQuiz.Answers = gatherAllAnswers();
+                    _spacedRepetitionQuiz.Tags = [.. tagManager.Tags];
 
                     // Clearing an entity results in all components, relationships etc to be removed.
                     // this also results in invoking the remove hooks that are used on components for 
