@@ -1,4 +1,6 @@
+using System;
 using System.Collections.ObjectModel;
+using System.Reactive.Disposables;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS;
@@ -15,12 +17,14 @@ namespace Avalonia.Flecs.StellaLearning.Windows;
 /// <summary>
 /// Represents the window to edit spaced repetition items of the type cloze
 /// </summary>
-public class EditCloze : IUIComponent
+public class EditCloze : IUIComponent, IDisposable
 {
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
     private SpacedRepetitionCloze cloze;
+    private readonly CompositeDisposable _disposables = []; // For managing disposables
+    private bool _isDisposed = false; // For IDisposable pattern
     /// <summary>
     /// Create the edit Cloze Window
     /// </summary>
@@ -43,7 +47,7 @@ public class EditCloze : IUIComponent
                 .SetColumnSpan(3)
                 .Child(DefineWindowContents(world));
             });
-            window.OnClosed((sender, args) => _root.Destruct());
+            window.OnClosed((sender, args) => Dispose());
 
             window.Show();
         });
@@ -162,6 +166,7 @@ public class EditCloze : IUIComponent
             });
 
             var tagManager = new TagComponent(world, cloze.Tags);
+            _disposables.Add(tagManager);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             // Create button
@@ -221,4 +226,40 @@ public class EditCloze : IUIComponent
             });
         });
     }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    /// <summary>
+    /// Diposer
+    /// </summary>
+    /// <param name="disposing"></param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_isDisposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed state (like TagComponent instance in _disposables)
+                _disposables.Dispose(); // Disposes tagManager
+
+                // Destroy the root entity *last*
+                if (_root.IsValid() && _root.IsAlive())
+                {
+                    // Clearing triggers component remove hooks (like Window Closing)
+                    // _root.Clear();
+                    // Explicit destruction might be needed if Clear doesn't close window
+                    _root.Destruct();
+                }
+            }
+            _isDisposed = true;
+        }
+    }
+    /// <summary>
+    /// Destructor
+    /// </summary>
+    ~EditCloze() { Dispose(disposing: false); }
 }
