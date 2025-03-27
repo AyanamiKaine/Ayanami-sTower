@@ -160,7 +160,9 @@ public class AddQuiz : IUIComponent, IDisposable
             {
                 // We only want to enable the button when a anwser is selected.
                 //button.Disable();
-
+                button
+                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center);
                 button.Child<TextBlock>((textBlock) =>
                 {
                     textBlock.SetText("Create Quiz");

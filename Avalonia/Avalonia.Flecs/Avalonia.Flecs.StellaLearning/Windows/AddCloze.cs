@@ -208,7 +208,9 @@ public class AddCloze : IUIComponent, IDisposable
             stackPanel.Child<Button>((button) =>
             {
                 createButton = button;
-
+                button
+                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center);
                 button.Child<TextBlock>((textBlock) =>
                 {
                     textBlock.SetText("Create Cloze");

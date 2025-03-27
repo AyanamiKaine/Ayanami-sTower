@@ -147,6 +147,9 @@ public class EditQuiz : IUIComponent, IDisposable
 
             stackPanel.Child<Button>((button) =>
             {
+                button
+                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                .SetHorizontalAlignment(Layout.HorizontalAlignment.Stretch);
                 button.Child<TextBlock>((textBlock) =>
                 {
                     textBlock.SetText("Save Changes");
