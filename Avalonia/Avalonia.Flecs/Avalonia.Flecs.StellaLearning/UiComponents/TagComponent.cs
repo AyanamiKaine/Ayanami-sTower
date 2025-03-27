@@ -80,7 +80,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                         {
                             removeButton
                                 .SetText("x")
-                                .SetPadding(2, 0)
+                                .SetPadding(5, 0)
                                 .SetFontSize(10)
                                 .SetVerticalAlignment(VerticalAlignment.Center)
                                 .SetHorizontalAlignment(HorizontalAlignment.Center)
