@@ -236,15 +236,13 @@ public class AddFile : IUIComponent, IDisposable
                         return;
                     }
 
-                    List<string> tagsToAdd = [.. tagManager.Tags];
-
                     world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFile()
                     {
                         Name = nameTextBox.GetText(),
                         Priority = calculatedPriority.Get<int>(),
                         Question = questionTextBox.GetText(),
                         FilePath = filePath.GetText(),
-                        Tags = tagsToAdd,
+                        Tags = [.. tagManager.Tags],
                         SpacedRepetitionItemType = SpacedRepetitionItemType.File
                     });
 
