@@ -231,6 +231,10 @@ namespace Avalonia.Flecs.Controls.ECS
                         {
                             parent.Get<Viewbox>().Child = control;
                         }
+                        else if (parent.Has<Border>())
+                        {
+                            parent.Get<Border>().Child = control;
+                        }
                     }
                 });
             Logger.Debug("ControlToParentAdder observer registered successfully");
