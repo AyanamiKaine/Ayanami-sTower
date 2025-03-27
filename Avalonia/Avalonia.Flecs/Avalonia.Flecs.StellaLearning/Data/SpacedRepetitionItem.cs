@@ -157,9 +157,9 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// </summary>
     public Guid Uid { get; set; } = Guid.NewGuid();
     [ObservableProperty]
-    private string _name = "Lorem Ipsum";
+    private string _name = "";
     [ObservableProperty]
-    private List<string> _tags = ["Lorem", "Ipsum"];
+    private List<string> _tags = [];
     [ObservableProperty]
     private float? _stability;
     [ObservableProperty]
