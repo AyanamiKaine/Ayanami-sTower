@@ -392,7 +392,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         Dispatcher.UIThread.Post(() =>
         {
             // Re-check validity inside dispatcher
-            if (_srItemsBuilder != null && _srItemsBuilder.Entity.IsAlive())
+            if (_srItemsBuilder?.Entity.IsAlive() == true)
             {
                 _srItemsBuilder.SetItemsSource(finalCollection);
                 Logger.Trace($"ListBox updated. Filter: '{searchText}', Items: {finalCollection.Count}");
@@ -402,7 +402,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         // 4. Update item count (also on UI thread)
         Dispatcher.UIThread.Post(() =>
         {
-            if (_itemCountTextBlockBuilder != null && _itemCountTextBlockBuilder.Entity.IsAlive())
+            if (_itemCountTextBlockBuilder?.Entity.IsAlive() == true)
             {
                 _itemCountTextBlockBuilder.SetText($"Total Items: {_baseSpacedRepetitionItems.Count}"); // Show total count always
                                                                                                         // Or show filtered count: .SetText($"Items: {finalCollection.Count} / {_baseSpacedRepetitionItems.Count}");
