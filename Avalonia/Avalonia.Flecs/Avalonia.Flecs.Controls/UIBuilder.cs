@@ -211,6 +211,21 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the text of a button control.
+    /// </summary>
+    public static UIBuilder<Button> SetText(this UIBuilder<Button> builder, string text)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Child<TextBlock>((t) =>
+        {
+            t.SetText(text);
+        });
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the IsChecked property of a ToggleButton to false.
     /// </summary>
     /// <param name="builder">The UI builder</param>
@@ -512,6 +527,18 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the background brush of a Panel control.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="background">The brush to set as the background</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<Border> SetBackground(this UIBuilder<Border> builder, IBrush background)
+    {
+        builder.Get<Border>().Background = background;
+        return builder;
+    }
+
+    /// <summary>
     /// Removes the background brush of a Panel control by setting it to null.
     /// </summary>
     /// <typeparam name="T">The type of Panel</typeparam>
@@ -806,6 +833,58 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the fontsize for the buttons textblock
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="fontSize"></param>
+    /// <returns></returns>
+    public static UIBuilder<Button> SetFontSize(this UIBuilder<Button> builder, double fontSize)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Children((child) =>
+        {
+            if (child.Has<TextBlock>())
+                child.Get<TextBlock>().FontSize = fontSize;
+        });
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the fontsize for the buttons textblock
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="cornerRadius"></param>
+    /// <returns></returns>
+    public static UIBuilder<Border> SetCornerRadius(this UIBuilder<Border> builder, double cornerRadius)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Border>().CornerRadius = new CornerRadius(cornerRadius);
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the fontsize for the buttons textblock
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="cornerRadius"></param>
+    /// <returns></returns>
+    public static UIBuilder<Border> SetCornerRadius(this UIBuilder<Border> builder, CornerRadius cornerRadius)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Border>().CornerRadius = cornerRadius;
+
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the font size of a TextBox.
     /// </summary>
     /// <param name="builder">The UI builder</param>
@@ -936,6 +1015,22 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Entity.SetPadding(padding);
+        return builder;
+    }
+
+    /// <summary>
+    /// Set padding
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="horizontalPadding"></param>
+    /// <param name="verticalPadding"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double horizontalPadding, double verticalPadding) where T : Control, new()
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.SetPadding(horizontalPadding, verticalPadding);
         return builder;
     }
 
