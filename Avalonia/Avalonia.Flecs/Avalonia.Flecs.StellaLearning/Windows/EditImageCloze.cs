@@ -242,6 +242,9 @@ public class EditImageCloze : IUIComponent, IDisposable
             });
 
 
+            var tagManager = new TagComponent(world, _spacedRepetitionImageCloze.Tags);
+            stackPanel.Child(tagManager); // Add the tag manager UI
+
             // Create button
             stackPanel.Child<Button>((button) =>
             {
@@ -249,7 +252,7 @@ public class EditImageCloze : IUIComponent, IDisposable
 
                 button.Child<TextBlock>((textBlock) =>
                 {
-                    textBlock.SetText("Save");
+                    textBlock.SetText("Save Changes");
                 });
 
 
@@ -296,6 +299,8 @@ public class EditImageCloze : IUIComponent, IDisposable
                         _spacedRepetitionImageCloze.Name = nameTextBox.GetText();
                         _spacedRepetitionImageCloze.ImagePath = ImagePath;
                         _spacedRepetitionImageCloze.ClozeAreas = imageClozeAreas;
+                        _spacedRepetitionImageCloze.Tags = [.. tagManager.Tags];
+
                         _root.Get<Window>().Close();
                     }
                 };
