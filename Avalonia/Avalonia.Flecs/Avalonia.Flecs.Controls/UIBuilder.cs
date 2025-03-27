@@ -868,6 +868,22 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the font opacity
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="opacity"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetOpacity<T>(this UIBuilder<T> builder, double opacity) where T : TextBlock
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<T>().Opacity = opacity;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the fontsize for the buttons textblock
     /// </summary>
     /// <param name="builder"></param>
