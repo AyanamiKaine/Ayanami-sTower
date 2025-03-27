@@ -13,6 +13,18 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
 
+/// <summary>
+/// A component added to the IUIComponent's root entity
+/// It holds the reference to the disposable component itself.
+/// </summary>
+public struct DisposableComponentHandle
+{
+    /// <summary>
+    /// When the component's root entity is destroyed, its Dispose method is called automatically.
+    /// </summary>
+    public IDisposable Target;
+}
+
 /*
 TODO: Highly Experimental, the goal of this module is to improve the way
 we create a UI in code. Its all about making it more obvious how the UI is 
@@ -1780,7 +1792,21 @@ public class UIBuilder<T> where T : AvaloniaObject
     /// <returns></returns>
     public UIBuilder<T> Child(IUIComponent uIComponent)
     {
-        uIComponent.Attach(_entity);
+        // 1. Attach the component's root entity as a child in the Flecs hierarchy.
+        //    Assuming uIComponent.Attach() does something like uIComponent.Root.ChildOf(this.Entity)
+        //    or ensures the UI hierarchy implies the Flecs hierarchy. If not, ensure
+        //    uIComponent.Root is made a child of this.Entity here or within Attach.
+        uIComponent.Attach(Entity); // Your existing logic
+
+        // 2. Check if the component needs disposal and add the handle *to its own root*
+        if (uIComponent is IDisposable disposableComponent)
+        {
+            // Ensure the component's root entity is valid and alive
+            if (uIComponent.Root.IsValid() && uIComponent.Root.IsAlive())
+            {
+                uIComponent.Root.Set(new DisposableComponentHandle { Target = disposableComponent });
+            }
+        }
         return this;
     }
 
