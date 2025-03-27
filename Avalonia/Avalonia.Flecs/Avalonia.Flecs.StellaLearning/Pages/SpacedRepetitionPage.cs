@@ -499,7 +499,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                                 var nf = new Notification
                                 {
                                     Title = "New item can be learned",
-                                    Body = _ItemToBeLearned!.Name,
+                                    Body = "Open the learning window by clicking start learning",
                                     Buttons =
                                 {
                                     ("Start Learning", "startLearning"),
