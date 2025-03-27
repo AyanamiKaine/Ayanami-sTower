@@ -349,7 +349,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     /// </summary>
     private void ApplyFilterAndSort(string searchText)
     {
-        if (_srItemsBuilder == null || !_srItemsBuilder.Entity.IsAlive())
+        if (_srItemsBuilder?.Entity.IsAlive() != true)
         {
             Logger.Warn("Cannot apply filter/sort, ListBox builder is invalid.");
             return;
