@@ -362,13 +362,26 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         }
         else
         {
-            filteredItems = _baseSpacedRepetitionItems.Where(item =>
-                // Check Name (null-safe, case-insensitive)
-                (item.Name?.ToLowerInvariant() ?? string.Empty).Contains(lowerSearchText) ||
+            string searchTerm = lowerSearchText;
 
-                // Check Tags (null-safe, case-insensitive)
-                (item.Tags?.Any(tag => (tag?.ToLowerInvariant() ?? string.Empty).Contains(lowerSearchText)) == true)
-            );
+            filteredItems = _baseSpacedRepetitionItems.Where(item =>
+                       {
+                           // Check Name (null-safe, case-insensitive)
+                           bool nameMatch = item.Name?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase) ?? false;
+                           if (nameMatch) return true; // Early exit if name matches
+
+                           // Check Tags (null-safe, case-insensitive)
+                           bool tagMatch = item.Tags?.Any(tag => tag?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false;
+                           if (tagMatch) return true; // Early exit if tag matches
+
+                           // Check Type (case-insensitive)
+                           // Convert Enum to string and compare
+                           bool typeMatch = item.SpacedRepetitionItemType.ToString().Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase);
+                           if (typeMatch) return true; // Early exit if type matches
+
+                           // No match found for this item
+                           return false;
+                       });
         }
 
         // 2. Apply the current sort order
