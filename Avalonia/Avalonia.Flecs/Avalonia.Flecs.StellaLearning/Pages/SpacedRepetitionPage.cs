@@ -21,28 +21,35 @@ using Avalonia.Flecs.Controls;
 using System.Timers;
 using Avalonia.Threading;
 using DesktopNotifications;
+using System.Collections.Specialized;
+using System.Reactive.Disposables;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
 /// <summary>
 /// This class represents the Spaced Repetition Page
 /// </summary>
-public class SpacedRepetitionPage : IUIComponent
+public class SpacedRepetitionPage : IUIComponent, IDisposable
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
-
+    private readonly CompositeDisposable _disposables = [];
+    private bool _isDisposed = false;
     private readonly List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
     private static readonly INotificationManager _iNotificationManager = Program.NotificationManager ??
                            throw new InvalidOperationException("Missing notification manager");
-    private readonly List<string> itemTypes = ["File", "Quiz", "Cloze"];
-    private UIBuilder<ListBox>? srItems;
-    private UIBuilder<ComboBox>? sortItemButton;
+    // --- Control References ---
+    private UIBuilder<ListBox>? _srItemsBuilder;
+    private UIBuilder<ComboBox>? _sortItemButtonBuilder;
+    private UIBuilder<TextBox>? _searchTextBoxBuilder; // Keep ref to search box
+    private UIBuilder<TextBlock>? _itemCountTextBlockBuilder; // Keep ref to count textblock
+    // ---
     private static bool _previouslyHadItemToReview = false;
-    private ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems;
+    private readonly ObservableCollection<SpacedRepetitionItem> _baseSpacedRepetitionItems; // The original, unfiltered list
+
     /// <summary>
     /// Creates the Spaced Repetition Page
     /// </summary>
@@ -50,9 +57,8 @@ public class SpacedRepetitionPage : IUIComponent
     /// <returns></returns>
     public SpacedRepetitionPage(World world)
     {
-        ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems = LoadSpaceRepetitionItemsFromDisk();
-        _spacedRepetitionItems = spacedRepetitionItems;
-        world.Set(spacedRepetitionItems);
+        _baseSpacedRepetitionItems = LoadSpaceRepetitionItemsFromDisk();
+        world.Set(_baseSpacedRepetitionItems);
 
         /*
         We only add the handler once. 
@@ -78,31 +84,35 @@ public class SpacedRepetitionPage : IUIComponent
 
             grid.Child<TextBox>((textBox) =>
             {
+                _searchTextBoxBuilder = textBox; // Store reference
+
                 textBox
                 .SetColumn(0)
                 .SetWatermark("Search Entries")
                 .OnTextChanged((sender, args) =>
                 {
-                    string searchText = textBox.GetText().ToLower();
-                    var filteredItems = spacedRepetitionItems.Where(item => item.Name.ToLower().Contains(searchText));
-                    srItems!.SetItemsSource(new ObservableCollection<SpacedRepetitionItem>(filteredItems)); ;
+                    // Get current search text directly from the event sender or builder
+                    string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
+                    ApplyFilterAndSort(searchText); // Apply filter and current sort
                 });
             });
 
             grid.Child<TextBlock>((textBlock) =>
             {
+                _itemCountTextBlockBuilder = textBlock; // Store reference
+
                 textBlock
                 .SetVerticalAlignment(VerticalAlignment.Center)
                 .SetMargin(new Thickness(10, 0))
-                .SetText($"Total Items: {spacedRepetitionItems.Count}")
+                .SetText($"Total Items: {_baseSpacedRepetitionItems.Count}")
                 .SetColumn(1);
 
-                spacedRepetitionItems.CollectionChanged += (sender, args) => textBlock.SetText($"Total Items: {spacedRepetitionItems.Count}");
+                _baseSpacedRepetitionItems.CollectionChanged += (sender, args) => textBlock.SetText($"Total Items: {_baseSpacedRepetitionItems.Count}");
             });
 
             grid.Child<ComboBox>((comboBox) =>
             {
-                sortItemButton = comboBox;
+                _sortItemButtonBuilder = comboBox; // Store reference
 
                 comboBox
                 .SetPlaceholderText("Sort Items")
@@ -116,7 +126,7 @@ public class SpacedRepetitionPage : IUIComponent
                         return;
                     }
                     var selectedItem = args.AddedItems[0]!.ToString();
-                    var itemsSource = (ObservableCollection<SpacedRepetitionItem>)srItems!.GetItemsSource();
+                    var itemsSource = (ObservableCollection<SpacedRepetitionItem>)_srItemsBuilder!.GetItemsSource();
 
                     if (selectedItem == "Sort By Date")
                     {
@@ -135,7 +145,7 @@ public class SpacedRepetitionPage : IUIComponent
                     }
                     // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
 
-                    srItems!.SetItemsSource(itemsSource);
+                    _srItemsBuilder!.SetItemsSource(itemsSource);
                 });
 
             });
@@ -148,7 +158,7 @@ public class SpacedRepetitionPage : IUIComponent
 
                 scrollViewer.Child<ListBox>((listBox) =>
                 {
-                    srItems = listBox;
+                    _srItemsBuilder = listBox; // Store reference
 
                     var contextFlyout = world.UI<MenuFlyout>((menuFlyout) =>
                     {
@@ -185,15 +195,15 @@ public class SpacedRepetitionPage : IUIComponent
                             .OnClick((sender, args) =>
                             {
                                 var item = listBox.GetSelectedItem<SpacedRepetitionItem>();
-                                spacedRepetitionItems.Remove(item);
+                                _baseSpacedRepetitionItems.Remove(item);
                             });
 
                         });
 
                     });
 
-                    srItems
-                    .SetItemsSource(spacedRepetitionItems)
+                    _srItemsBuilder
+                    .SetItemsSource(_baseSpacedRepetitionItems)
                     .SetItemTemplate(DefineSpacedRepetitionItemTemplate())
                     .SetSelectionMode(SelectionMode.Single)
                     .SetContextFlyout(contextFlyout.Get<MenuFlyout>());
@@ -288,6 +298,9 @@ public class SpacedRepetitionPage : IUIComponent
             }
         });
 
+        // Initial Apply Filter & Sort
+        Dispatcher.UIThread.InvokeAsync(() => ApplyFilterAndSort(string.Empty));
+
         //ToolTip.SetTip(sortItemsButton.Get<ComboBox>(), myToolTip);
 
         /*
@@ -302,46 +315,120 @@ public class SpacedRepetitionPage : IUIComponent
         //App.Entities!["SpacedRepetitionItems"] = world.Entity()
         //    .Set(dummyItems);
 
+        // --- Timers & Save Logic ---
         var timerEntity = world.Entity()
-            .Set(CreateAutoSaveTimer(spacedRepetitionItems));
+            .Set(CreateAutoSaveTimer(_baseSpacedRepetitionItems));
+        _disposables.Add(Disposable.Create(() => timerEntity.Destruct())); // Cleanup timer entity
 
         var notificationTimer = world.Entity()
             .Set(CreateNotificationTimer());
+        _disposables.Add(Disposable.Create(() => notificationTimer.Destruct())); // Cleanup timer entity
 
-        /*
-        When the spaced reptition items change we want to refresh the shown list, this mostly occurs when new items are added, updated or removed.
-        */
-        spacedRepetitionItems.CollectionChanged += ((_, _) =>
-                {
-                    if (sortItemButton!.Get<ComboBox>().SelectedItem is null)
-                    {
-                        return;
-                    }
-                    var selectedItem = sortItemButton.Get<ComboBox>().SelectedItem!.ToString();
-                    var itemsSource = spacedRepetitionItems;
 
-                    if (selectedItem == "Sort By Date")
-                    {
-                        // Sort by NextReview date (ascending - soonest due date first)
-                        itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
-                    }
-                    else if (selectedItem == "Sort By Priority")
-                    {
-                        // Sort by Priority (descending - highest priority first)
-                        itemsSource = [.. itemsSource.OrderByDescending(s => s.Priority)];
-                    }
-                    else if (selectedItem == "Sort By Name")
-                    {
-                        // Sort by Name (ascending - alphabetical order)
-                        itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
-                    }
-                    // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
+        // Handle Base Collection Changed (Re-apply filter/sort)
+        _baseSpacedRepetitionItems.CollectionChanged += OnBaseCollectionChanged;
+        _disposables.Add(Disposable.Create(() => _baseSpacedRepetitionItems.CollectionChanged -= OnBaseCollectionChanged));
 
-                    srItems!.SetItemsSource(itemsSource);
-                });
+        App.GetMainWindow().Closing += (_, _) => SaveSpaceRepetitionItemsToDisk(_baseSpacedRepetitionItems);
+    }
 
-        App.GetMainWindow().Closing += (_, _) => SaveSpaceRepetitionItemsToDisk(spacedRepetitionItems);
+    /// <summary>
+    /// Applies the current search filter and sort order to the base item list
+    /// and updates the ListBox ItemsSource.
+    /// </summary>
+    private void ApplyFilterAndSort(string searchText)
+    {
+        if (_srItemsBuilder == null || !_srItemsBuilder.Entity.IsAlive())
+        {
+            Logger.Warn("Cannot apply filter/sort, ListBox builder is invalid.");
+            return;
+        }
 
+        string lowerSearchText = searchText?.ToLowerInvariant() ?? string.Empty;
+
+        // 1. Filter the base list
+        IEnumerable<SpacedRepetitionItem> filteredItems;
+        if (string.IsNullOrWhiteSpace(lowerSearchText))
+        {
+            filteredItems = _baseSpacedRepetitionItems; // No filter
+        }
+        else
+        {
+            filteredItems = _baseSpacedRepetitionItems.Where(item =>
+                // Check Name (null-safe, case-insensitive)
+                (item.Name?.ToLowerInvariant() ?? string.Empty).Contains(lowerSearchText) ||
+
+                // Check Tags (null-safe, case-insensitive)
+                (item.Tags?.Any(tag => (tag?.ToLowerInvariant() ?? string.Empty).Contains(lowerSearchText)) == true)
+            );
+        }
+
+        // 2. Apply the current sort order
+        IEnumerable<SpacedRepetitionItem> sortedAndFilteredItems = ApplySorting(filteredItems);
+
+        // 3. Update the ListBox ItemsSource on the UI thread
+        var finalCollection = new ObservableCollection<SpacedRepetitionItem>(sortedAndFilteredItems);
+        Dispatcher.UIThread.Post(() =>
+        {
+            // Re-check validity inside dispatcher
+            if (_srItemsBuilder != null && _srItemsBuilder.Entity.IsAlive())
+            {
+                _srItemsBuilder.SetItemsSource(finalCollection);
+                Logger.Trace($"ListBox updated. Filter: '{searchText}', Items: {finalCollection.Count}");
+            }
+        }, DispatcherPriority.Background); // Use Background priority for UI updates
+
+        // 4. Update item count (also on UI thread)
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_itemCountTextBlockBuilder != null && _itemCountTextBlockBuilder.Entity.IsAlive())
+            {
+                _itemCountTextBlockBuilder.SetText($"Total Items: {_baseSpacedRepetitionItems.Count}"); // Show total count always
+                                                                                                        // Or show filtered count: .SetText($"Items: {finalCollection.Count} / {_baseSpacedRepetitionItems.Count}");
+            }
+        }, DispatcherPriority.Background);
+    }
+
+    /// <summary>
+    /// Applies sorting to a given collection based on the selected sort option.
+    /// </summary>
+    private IEnumerable<SpacedRepetitionItem> ApplySorting(IEnumerable<SpacedRepetitionItem> itemsToSort)
+    {
+        string? selectedSort = null;
+        if (_sortItemButtonBuilder != null && _sortItemButtonBuilder.Entity.IsAlive())
+        {
+            selectedSort = _sortItemButtonBuilder.Get<ComboBox>().SelectedItem as string;
+        }
+
+        Logger.Trace($"Applying sort: {selectedSort ?? "Default"}");
+
+        switch (selectedSort)
+        {
+            case "Sort By Date":
+                return itemsToSort.OrderBy(s => s.NextReview);
+            case "Sort By Priority":
+                // Ensure stable sort if priorities are equal (e.g., sort by Name next)
+                return itemsToSort.OrderByDescending(s => s.Priority).ThenBy(s => s.Name);
+            case "Sort By Name":
+                return itemsToSort.OrderBy(s => s.Name);
+            default:
+                // Default sort order (e.g., by name if nothing selected)
+                return itemsToSort.OrderBy(s => s.Name);
+        }
+    }
+
+    /// <summary>
+    /// Handles changes to the base collection (_baseSpacedRepetitionItems).
+    /// </summary>
+    private void OnBaseCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        // When the underlying data changes (add/remove), re-apply the current filter and sort.
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            Logger.Debug("Base collection changed, re-applying filter and sort.");
+            string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
+            ApplyFilterAndSort(searchText);
+        });
     }
 
     /// <summary>
@@ -363,7 +450,8 @@ public class SpacedRepetitionPage : IUIComponent
             Logger.Info($"{DateTime.Now}: Auto-saving data..."); // Debug output
             try
             {
-                SaveSpaceRepetitionItemsToDisk(spacedRepetitionItems);
+                Dispatcher.UIThread.Post(() =>
+                SaveSpaceRepetitionItemsToDisk(spacedRepetitionItems));
             }
             catch (Exception ex)
             {
@@ -396,7 +484,7 @@ public class SpacedRepetitionPage : IUIComponent
                                 return;
                             }
 
-                            var _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                            var _ItemToBeLearned = _baseSpacedRepetitionItems.GetNextItemToBeReviewed();
                             bool hasItemToReview = _ItemToBeLearned != null;
                             if (hasItemToReview && !_previouslyHadItemToReview && !App.GetMainWindow().IsActive && _root.CsWorld().Get<Settings>().enableNotifications)
                             {
@@ -588,6 +676,48 @@ public class SpacedRepetitionPage : IUIComponent
         if (e.ActionId == "startLearning")
         {
             Dispatcher.UIThread.Post(() => new StartLearningWindow(_root.CsWorld()));
+        }
+    }
+
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    /// <summary>
+    /// Diposes flecs entities and event handlers correctly
+    /// </summary>
+    /// <param name="disposing"></param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_isDisposed)
+        {
+            if (disposing)
+            {
+                Logger.Debug($"Disposing SpacedRepetitionPage (Root: {_root.Id})...");
+                // Unsubscribe external events first
+                if (_baseSpacedRepetitionItems != null)
+                {
+                    _baseSpacedRepetitionItems.CollectionChanged -= OnBaseCollectionChanged;
+                }
+                var mainWindow = App.GetMainWindow();
+
+                _iNotificationManager.NotificationActivated -= OnNotificationActivated; // Ensure this is removed too
+
+                // Dispose internal disposables (includes timer entities)
+                _disposables.Dispose();
+
+                // Destroy root Flecs UI if necessary (depends on ownership model)
+                // If the Page lifecycle is managed elsewhere that destroys Root, this isn't needed.
+                // If this page component *owns* its UI root, destroy it.
+                // Assuming it owns it for now:
+                if (_root.IsValid() && _root.IsAlive()) _root.Destruct();
+
+                Logger.Debug("SpacedRepetitionPage disposed.");
+            }
+            _isDisposed = true;
         }
     }
 }
