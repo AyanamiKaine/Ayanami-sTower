@@ -283,10 +283,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                 .SetColumn(2)
                 .SetRow(2)
                 .SetFlyout(menu)
-                .Child<TextBlock>((textBlock) =>
-                {
-                    textBlock.SetText("Add Item");
-                });
+                .SetText("Add Item");
             });
 
         })
