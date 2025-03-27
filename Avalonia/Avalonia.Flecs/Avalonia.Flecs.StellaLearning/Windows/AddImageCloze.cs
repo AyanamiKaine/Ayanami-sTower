@@ -557,17 +557,25 @@ public class AddImageCloze : IUIComponent, IDisposable
         {
             try
             {
-                // Create a temp file for the image
-                string tempPath = Path.Combine(Path.GetTempPath(), $"cloze_image_{Guid.NewGuid()}.png");
+                // Create a persistent directory for storing images
+                string appDataPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "StellaLearning", "Images");
+                
+                // Ensure the directory exists
+                Directory.CreateDirectory(appDataPath);
+                
+                // Create a persistent file path for the image
+                string imagePath = Path.Combine(appDataPath, $"cloze_image_{Guid.NewGuid()}.png");
 
-                // Save the bitmap to the temp file
-                await using (var fs = File.OpenWrite(tempPath))
+                // Save the bitmap to the file
+                await using (var fs = File.OpenWrite(imagePath))
                 {
                     bitmap.Save(fs);
                 }
 
                 // Update the image path
-                _imagePathSubject.OnNext(tempPath);
+                _imagePathSubject.OnNext(imagePath);
 
                 // Show notification or update UI to indicate successful paste
                 if (nameTextBox != null && string.IsNullOrEmpty(nameTextBox.GetText()))
