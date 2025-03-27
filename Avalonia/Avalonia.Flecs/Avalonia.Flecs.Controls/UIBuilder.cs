@@ -1786,7 +1786,9 @@ public class UIBuilder<T> where T : AvaloniaObject
     }
 
     /// <summary>
-    /// Attaches an ui component as a child.
+    /// Attaches an ui component as a child. If they are implemented IDisposable
+    /// its ensured that when the parent entity is destroyed it automatically calls
+    /// the dispose method of its children.
     /// </summary>
     /// <param name="uIComponent"></param>
     /// <returns></returns>
