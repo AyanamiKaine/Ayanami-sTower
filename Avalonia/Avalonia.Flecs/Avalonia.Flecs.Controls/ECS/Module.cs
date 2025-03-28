@@ -319,6 +319,22 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                 });
 
+            world.Observer<SubscriptionListComponent>("SubscriptionListRemover")
+                .Event(Ecs.OnRemove) // Trigger when the component is removed
+                .Each((Entity entity, ref SubscriptionListComponent subList) =>
+                {
+                    Console.WriteLine($"Flecs OnRemove: Disposing subscriptions for entity {entity.Id}.");
+                    try
+                    {
+                        // The Dispose method handles unsubscribing everything
+                        subList.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error disposing SubscriptionListComponent for entity {entity.Id}: {ex.Message}");
+                    }
+                });
+
             Console.WriteLine("Flecs DisposableComponentHandle observer setup complete.");
         }
 
