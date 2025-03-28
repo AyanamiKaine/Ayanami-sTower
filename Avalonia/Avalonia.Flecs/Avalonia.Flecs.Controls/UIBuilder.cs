@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reactive.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
@@ -24,6 +25,68 @@ public struct DisposableComponentHandle
     /// </summary>
     public IDisposable Target;
 }
+
+/// <summary>
+/// Helper class to wrap the unsubscribe action
+/// </summary>
+public class EventSubscriptionToken(Action unsubscribeAction) : IDisposable
+{
+    private Action? _unsubscribeAction = unsubscribeAction;
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _unsubscribeAction?.Invoke();
+        _unsubscribeAction = null; // Prevent double disposal
+    }
+}
+
+/// <summary>
+/// Component to hold all subscriptions for an entity
+/// </summary>
+public struct SubscriptionListComponent() : IDisposable
+{
+    /// <summary>
+    /// Subscriptions of the entity
+    /// </summary>
+    public List<IDisposable> Subscriptions { get; private set; } = [];
+
+
+    /// <summary>
+    /// Method to add a subscription
+    /// </summary>
+    /// <param name="subscription"></param>
+    public void Add(IDisposable subscription)
+    {
+        Subscriptions ??= []; // Ensure list exists
+        Subscriptions.Add(subscription);
+    }
+
+    /// <summary>
+    /// Dispose method to clean up all subscriptions
+    /// </summary>
+    public readonly void Dispose()
+    {
+        if (Subscriptions != null)
+        {
+            // Dispose in reverse order of addition (optional, but sometimes helpful)
+            for (int i = Subscriptions.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    Subscriptions[i]?.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    // Log error during disposal
+                    Console.WriteLine($"Error disposing subscription: {ex.Message}");
+                }
+            }
+            Subscriptions.Clear();
+        }
+    }
+}
+
 
 /*
 TODO: Highly Experimental, the goal of this module is to improve the way
@@ -94,6 +157,31 @@ public static class UIBuilderExtensions
         var builder = new UIBuilder<T>(world, entity);
         configure(builder);
         return entity;
+    }
+
+    // --- Helper Method to Add Subscription (using DisposableComponentHandle) ---
+    // If you prefer a dedicated list, use the AddSubscription from Approach 1
+    private static void AddDisposableSubscription(Entity entity, IDisposable subscription)
+    {
+        // Option A: Use SubscriptionListComponent (from Approach 1)
+        // ref var subListComp = ref entity.Ensure<SubscriptionListComponent>();
+        // subListComp.Add(subscription);
+
+        // Option B: Add multiple DisposableComponentHandle? Not ideal.
+        // A list component is generally better for multiple disposables.
+        // Let's stick with Option A or create a dedicated list component.
+        // For simplicity here, let's assume SubscriptionListComponent is used.
+        ref var subListComp = ref entity.Ensure<SubscriptionListComponent>();
+        subListComp.Add(subscription);
+
+        // --- Alternatively, if DisposableComponentHandle could hold multiple ---
+        // --- or if you only expect one disposable per entity (less likely) ---
+        // if (entity.Has<DisposableComponentHandle>()) {
+        //    // How to handle multiple? Need a list.
+        // } else {
+        //    entity.Set(new DisposableComponentHandle { Target = subscription });
+        // }
+        // --> Using a dedicated list component like SubscriptionListComponent is cleaner.
     }
 
     /// <summary>
@@ -1254,7 +1342,21 @@ public static class UIBuilderExtensions
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Entity.OnClick(handler);
+        var control = builder.Get<Button>();
+
+        // Create an observable from the Click event
+        var clickObservable = Observable.FromEventPattern<RoutedEventArgs>(
+            addHandler => control.Click += addHandler,
+            removeHandler => control.Click -= removeHandler);
+
+        // Subscribe the lambda and get the disposable token
+        var subscription = clickObservable
+            .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
+            .Subscribe(eventPattern => handler(eventPattern.Sender, eventPattern.EventArgs)); // Pass EventArgs directly
+
+        // Add the subscription token to the entity for automatic disposal
+        AddDisposableSubscription(builder.Entity, subscription);
+
         return builder;
     }
 
@@ -1281,7 +1383,17 @@ public static class UIBuilderExtensions
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Entity.OnSelectionChanged(handler);
+        var control = builder.Get<ComboBox>();
+
+        var checkedChangedObservable = Observable.FromEventPattern<SelectionChangedEventArgs>(
+            addHandler => control.SelectionChanged += addHandler,
+            removeHandler => control.SelectionChanged -= removeHandler);
+
+        var subscription = checkedChangedObservable
+            .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
+            .Subscribe(eventPattern => handler(eventPattern.Sender, eventPattern.EventArgs));
+
+        AddDisposableSubscription(builder.Entity, subscription);
         return builder;
     }
 
