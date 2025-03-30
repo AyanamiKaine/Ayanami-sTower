@@ -75,7 +75,7 @@ public class AddFlashcard : IUIComponent, IDisposable
                     window.OnClosed((sender, args) => Dispose());
 
                     window.Show();
-                });
+                }).Entity;
 
         _disposables.Add(Disposable.Create(() =>
         {
@@ -224,7 +224,7 @@ public class AddFlashcard : IUIComponent, IDisposable
                 button.With((b) => b.Click += createButtonClickedHandler);
                 _disposables.Add(Disposable.Create(() => createButton?.With((b) => b.Click -= createButtonClickedHandler)));
             });
-        });
+        }).Entity;
     }
 
     /// <summary>
