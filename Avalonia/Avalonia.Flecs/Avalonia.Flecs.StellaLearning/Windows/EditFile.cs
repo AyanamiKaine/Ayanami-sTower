@@ -132,12 +132,18 @@ public class EditFile : IUIComponent, IDisposable
                 filePath = textBox;
                 textBox
                 .SetWatermark("FilePath")
-                .SetInnerRightContent(FilePickerButton(world).OnClick(async (e, args) =>
-                {
-                    var path = await FilePickerAsync();
-                    textBox.SetText(path);
-                    ValidateFilePath(path);
-                }));
+                .SetInnerRightContent(
+                    world.UI<Button>((button) =>
+                    {
+                        button.Child<TextBlock>((t) => t.SetText("Browse"));
+
+                        button.OnClick(async (e, args) =>
+                        {
+                            var path = await FilePickerAsync();
+                            textBox.SetText(path);
+                            ValidateFilePath(path);
+                        });
+                    }));
 
                 textBox.SetText(spacedRepetitionFile.FilePath);
 
@@ -166,9 +172,9 @@ public class EditFile : IUIComponent, IDisposable
                 .SetVerticalAlignment(Layout.VerticalAlignment.Center)
                 .SetHorizontalAlignment(Layout.HorizontalAlignment.Stretch);
                 button.Child<TextBlock>((textBlock) =>
-                {
-                    textBlock.SetText("Save Changes");
-                });
+                                {
+                                    textBlock.SetText("Save Changes");
+                                });
 
                 button.OnClick((sender, args) =>
                     {
@@ -253,15 +259,6 @@ public class EditFile : IUIComponent, IDisposable
         });
     }
 
-
-
-    private Entity FilePickerButton(World world)
-    {
-        return world.UI<Button>((button) =>
-        {
-            button.Child<TextBlock>((t) => t.SetText("Browse"));
-        });
-    }
 
     private async Task<string> FilePickerAsync()
     {
