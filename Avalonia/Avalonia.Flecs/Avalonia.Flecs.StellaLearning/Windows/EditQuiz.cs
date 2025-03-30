@@ -70,10 +70,10 @@ public class EditQuiz : IUIComponent, IDisposable
                 t.SetText("Name");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            nameTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                nameTextBox = textBox;
-                textBox.SetWatermark("Name")
+                textBox
+                .SetWatermark("Name")
                 .SetText(_spacedRepetitionQuiz.Name);
             });
 
@@ -82,10 +82,8 @@ public class EditQuiz : IUIComponent, IDisposable
                 t.SetText("Quiz Question");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            quizQuestionTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                quizQuestionTextBox = textBox;
-
                 textBox
                 .SetWatermark("Quiz Question")
                 .SetTextWrapping(TextWrapping.Wrap)
@@ -94,9 +92,8 @@ public class EditQuiz : IUIComponent, IDisposable
                 textBox.Get<TextBox>().AcceptsReturn = true;
             });
 
-            stackPanel.Child<Grid>((grid) =>
+            quizAnswers = stackPanel.Child<Grid>((grid) =>
             {
-                quizAnswers = grid;
                 grid.SetRowDefinitions("*,*,*,*")
                 .SetColumnDefinitions("Auto, *");
 
