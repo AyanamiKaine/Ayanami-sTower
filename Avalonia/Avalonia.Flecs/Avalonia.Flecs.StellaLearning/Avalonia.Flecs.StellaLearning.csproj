@@ -56,9 +56,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\CsFSRS\FSRS\FSRS.csproj" />
     <ProjectReference Include="..\Avalonia.Flecs.Controls\Avalonia.Flecs.Controls.csproj" />
     <ProjectReference Include="..\Avalonia.Flecs.FluentUI.Controls\Avalonia.Flecs.FluentUI.Controls.csproj" />
-    <ProjectReference Include="..\..\..\FSRSPythonCSharpBridge\FSRSPythonBridge\FSRSPythonBridge.csproj" />
     <ProjectReference Include="..\Avalonia.Flecs.Util\Avalonia.Flecs.Util.csproj" />
     <ProjectReference Include="..\DesktopNotifications\DesktopNotifications.Avalonia\DesktopNotifications.Avalonia.csproj" />
   </ItemGroup>

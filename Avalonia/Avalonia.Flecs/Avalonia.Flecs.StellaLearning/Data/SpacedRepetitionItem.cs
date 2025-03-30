@@ -2,7 +2,6 @@ namespace Avalonia.Flecs.StellaLearning.Data;
 
 using System;
 using System.Collections.Generic;
-using FSRSPythonBridge;
 using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
 using System.Collections.ObjectModel;

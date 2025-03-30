@@ -17,7 +17,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
-using FSRSPythonBridge;
+using FsrsSharp;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
 
