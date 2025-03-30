@@ -58,7 +58,7 @@ public class SettingsPage : IUIComponent
 
             });
 
-        }).Add<Page>();
+        }).Add<Page>().Entity;
 
     }
 
@@ -115,7 +115,7 @@ public class SettingsPage : IUIComponent
                         """);
                     });
                 }));
-            });
+            }).Entity;
         }
     }
 
@@ -161,7 +161,7 @@ public class SettingsPage : IUIComponent
                             enableNotifications: currentSettings.enableNotifications));
                     });
                 });
-            });
+            }).Entity;
         }
     }
 
@@ -219,7 +219,7 @@ public class SettingsPage : IUIComponent
                         """);
                     });
                 }));
-            });
+            }).Entity;
 
 
         }
@@ -278,7 +278,7 @@ public class SettingsPage : IUIComponent
                                             """);
                     });
                 }));
-            });
+            }).Entity;
         }
     }
 
