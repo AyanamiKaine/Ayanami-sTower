@@ -140,7 +140,7 @@ This should also result in better testability of components. As their global dep
 - Turn pages into UI-Components (DONE)
 - Turn windows into UI-Components (PROCESS)
 
-## [] Making it AOT-Compatible
+## [IN-PROGRESS] Making it AOT-Compatible
 
 ### Problem
 
@@ -148,7 +148,7 @@ The current use of many reflection features in the way we access specific avalon
 
 ### Solution
 
-Simply rewrite all reflection usages to functions that do not need them.
+Simply rewrite all reflection usages to functions that do not need them. Add `<IsAotCompatible>true</IsAotCompatible>` to the project file to show what things are not compatible. And slowly removing them.
 
 ## [X] Remove named entities as a global refrence from the app class
 
