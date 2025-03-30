@@ -77,7 +77,7 @@ public class ContentQueuePage : IUIComponent
 
                 });
             });
-        }).Add<Page>();
+        }).Add<Page>().Entity;
     }
 
     /// <inheritdoc/>
