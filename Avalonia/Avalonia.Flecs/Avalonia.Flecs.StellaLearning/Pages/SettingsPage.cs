@@ -254,7 +254,7 @@ public class SettingsPage : IUIComponent
                                string newObsidanPath = await ObsidianFilePickerAsync();
                                if (newObsidanPath != "")
                                {
-                                   _root.SetText(newObsidanPath);
+                                   textBox.SetText(newObsidanPath);
                                    var currentSettings = world.Get<Settings>();
                                    world.Set<Settings>(new(
                                        isDarkMode: currentSettings.isDarkMode,
