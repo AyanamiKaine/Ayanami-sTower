@@ -298,7 +298,7 @@ public class FSRSUnitTests
 
         var copiedScheduler = Scheduler.FromDictionary(schedulerDict);
 
-        AssertDictionariesEquivalent(schedulerDict, copiedScheduler.ToDictionary());
+        AssertDictionariesEquivalent(schedulerDict!, copiedScheduler.ToDictionary()!);
     }
 
     // Helper method adapted for xUnit Asserts
@@ -531,7 +531,7 @@ public class FSRSUnitTests
         Assert.Equal(1, currentCard.Step);
         currentTime = currentCard.Due;
 
-        Assert.Equal(1, schedulerWithOneLearningStep.LearningSteps.Length);
+        Assert.Single(schedulerWithOneLearningStep.LearningSteps);
         currentCard = schedulerWithOneLearningStep.ReviewCard(currentCard, Rating.Again, currentTime).UpdatedCard;
         Assert.Equal(State.Learning, currentCard.State);
         Assert.Equal(0, currentCard.Step);
@@ -557,7 +557,7 @@ public class FSRSUnitTests
         currentTime = currentCard.Due;
 
 
-        Assert.Equal(1, schedulerWithOneRelearningStep.RelearningSteps.Length);
+        Assert.Single(schedulerWithOneRelearningStep.RelearningSteps);
         currentCard = schedulerWithOneRelearningStep.ReviewCard(currentCard, Rating.Again, currentTime).UpdatedCard;
         Assert.Equal(State.Relearning, currentCard.State);
         Assert.Equal(0, currentCard.Step);
