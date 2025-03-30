@@ -49,6 +49,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesktopNotifications.FreeDe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesktopNotifications.Apple", "DesktopNotifications\DesktopNotifications.Apple\DesktopNotifications.Apple.csproj", "{364DAE64-C42A-41E4-B2A2-B79336ADA374}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSRS", "..\..\CsFSRS\FSRS\FSRS.csproj", "{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -323,6 +325,18 @@ Global
 		{364DAE64-C42A-41E4-B2A2-B79336ADA374}.Release|x64.Build.0 = Release|Any CPU
 		{364DAE64-C42A-41E4-B2A2-B79336ADA374}.Release|x86.ActiveCfg = Release|Any CPU
 		{364DAE64-C42A-41E4-B2A2-B79336ADA374}.Release|x86.Build.0 = Release|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Debug|x64.Build.0 = Debug|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Debug|x86.Build.0 = Debug|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|x64.ActiveCfg = Release|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|x64.Build.0 = Release|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|x86.ActiveCfg = Release|Any CPU
+		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
