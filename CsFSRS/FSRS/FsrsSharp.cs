@@ -157,7 +157,7 @@ public class Card : ICloneable // Implement ICloneable for easy copying
     /// <param name="lastReview">Initial last review date.</param>
     public Card(
         long? cardId = null,
-        State state = State.New, // MODIFIED Default state to New
+        State state = State.New,
         int? step = 0,
         double? stability = null,
         double? difficulty = null,
