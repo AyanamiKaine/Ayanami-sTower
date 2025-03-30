@@ -934,15 +934,15 @@ public class StartLearningWindow : IUIComponent, IDisposable
             text = $"Next Item: '{futureItem?.Name}', due: {futureItem?.NextReview}";
         }
 
-        return _world.Entity("NoMoreItemToBeReviewed")
-            .Set(new TextBlock()
-            {
-                TextWrapping = TextWrapping.Wrap
-            })
+        return _world.UI<TextBlock>((textBlock) =>
+        {
+            textBlock
+            .SetTextWrapping(TextWrapping.Wrap)
             .SetVerticalAlignment(VerticalAlignment.Center)
             .SetHorizontalAlignment(HorizontalAlignment.Center)
             .SetMargin(20)
             .SetText(text);
+        });
     }
 
     /// <summary>
