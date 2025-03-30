@@ -121,9 +121,9 @@ public class Card : ICloneable // Implement ICloneable for easy copying
     public State State { get; set; }
 
     /// <summary>
-    /// The card's current learning or relearning step, or null if the card is in the Review state.
+    /// The card's current learning or relearning step, or null if the card is New or in the Review state.
     /// </summary>
-    public int? Step { get; set; }
+    public int? Step { get; set; } = 0;
 
     /// <summary>
     /// Core mathematical parameter used for future scheduling (memory stability). Null if not calculated yet.
@@ -149,26 +149,24 @@ public class Card : ICloneable // Implement ICloneable for easy copying
     /// Initializes a new instance of the <see cref="Card"/> class.
     /// </summary>
     /// <param name="cardId">Optional card ID. If null, generated from current UTC time.</param>
-    /// <param name="state">Initial state. Defaults to Learning.</param>
-    /// <param name="step">Initial step. Defaults to 0 if state is Learning, otherwise null.</param>
+    /// <param name="state">Initial state. Defaults to New.</param> // MODIFIED Default
+    /// <param name="step">Initial step. Should be null for New/Review states.</param> // MODIFIED Comment
     /// <param name="stability">Initial stability.</param>
     /// <param name="difficulty">Initial difficulty.</param>
     /// <param name="due">Initial due date. If null, defaults to current UTC time.</param>
     /// <param name="lastReview">Initial last review date.</param>
     public Card(
         long? cardId = null,
-        State state = State.New,
+        State state = State.New, // MODIFIED Default state to New
         int? step = 0,
-        double? stability = 0,
-        double? difficulty = 0,
+        double? stability = null,
+        double? difficulty = null,
         DateTimeOffset? due = null,
         DateTimeOffset? lastReview = null)
     {
         if (cardId == null)
         {
-            // Generate ID from epoch milliseconds (Unix timestamp * 1000)
             CardId = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            // Wait 1ms to prevent potential card_id collision on next Card creation
             Thread.Sleep(1);
         }
         else
@@ -178,22 +176,14 @@ public class Card : ICloneable // Implement ICloneable for easy copying
 
         State = state;
 
-        // If Learning state and step is not provided, default to 0
-        if (State == State.Learning && step == null)
-        {
-            Step = 0;
-        }
-        else
-        {
-            Step = step; // Can be null for other states or if explicitly provided
-        }
+        // Step should generally be null unless explicitly set for an existing Learning/Relearning card
+        // It will be set to 0 during the first review if the card starts as New.
+        Step = step; // MODIFIED Logic: No default step setting here
 
         Stability = stability;
         Difficulty = difficulty;
 
-        // Default due date to now (UTC) if not provided
         Due = due ?? DateTimeOffset.UtcNow;
-
         LastReview = lastReview;
     }
 
@@ -273,12 +263,13 @@ public class Card : ICloneable // Implement ICloneable for easy copying
     /// <returns>The retrievability (probability between 0 and 1).</returns>
     public double GetRetrievability(DateTimeOffset? currentDateTime = null)
     {
+        // If card is new or hasn't been reviewed, retrievability is not really defined.
+        // Python returns 0, but 1.0 (perfect recall assumed before first lapse) might also make sense.
+        // Let's stick closer to Python here for consistency, returning 0.
+        // MODIFIED: Changed back to return 0 for consistency with Python test expectation
         if (State == State.New || !LastReview.HasValue || !Stability.HasValue || Stability <= 0)
         {
-            return 1.0; // Assume perfect recall for new cards or cards without review/stability
-                        // Python version returns 0 if last_review is None, which seems less intuitive.
-                        // Returning 1.0 for unreviewed cards might be more practical.
-                        // If Stability is somehow 0 or less, avoid division by zero.
+            return 0.0; // Return 0 if card is new or stability not set
         }
 
         DateTimeOffset now = currentDateTime ?? DateTimeOffset.UtcNow;
@@ -294,9 +285,6 @@ public class Card : ICloneable // Implement ICloneable for easy copying
     /// <returns>A new Card object with the same property values.</returns>
     public object Clone()
     {
-        // MemberwiseClone performs a shallow copy. This is sufficient here as
-        // State and Rating are value types (enums), and DateTimeOffset is a struct (value type).
-        // Nullable types (like int?, double?, DateTimeOffset?) are also handled correctly by shallow copy.
         return MemberwiseClone();
     }
 }
@@ -455,15 +443,15 @@ public class Scheduler
         int maximumIntervalDays = 36500,
         bool enableFuzzing = true)
     {
-        Parameters = [.. (parameters ?? FsrsConstants.DefaultParameters)];
+        Parameters = (parameters ?? FsrsConstants.DefaultParameters).ToArray();
         if (Parameters.Length != 19) // FSRS v4 has 19 parameters
         {
             throw new ArgumentException($"Parameters array must contain exactly 19 values, but found {Parameters.Length}.", nameof(parameters));
         }
 
         DesiredRetention = Math.Clamp(desiredRetention, 0.01, 0.99); // Keep retention within a reasonable range
-        LearningSteps = [.. (learningSteps ?? new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10) })];
-        RelearningSteps = [.. (relearningSteps ?? new[] { TimeSpan.FromMinutes(10) })];
+        LearningSteps = (learningSteps ?? new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10) }).ToArray();
+        RelearningSteps = (relearningSteps ?? new[] { TimeSpan.FromMinutes(10) }).ToArray();
         MaximumIntervalDays = Math.Max(1, maximumIntervalDays); // Ensure at least 1 day
         EnableFuzzing = enableFuzzing;
     }
@@ -488,11 +476,11 @@ public class Scheduler
     /// <summary>
     /// Reviews a card with a given rating at a given time.
     /// </summary>
-    /// <param name="card">The card being reviewed. **Note:** This card object is modified directly if cloning is not done beforehand.</param>
+    /// <param name="card">The card being reviewed. The returned card is a modified clone.</param> // MODIFIED Comment
     /// <param name="rating">The chosen rating for the review.</param>
     /// <param name="reviewDateTime">The date and time of the review (UTC). If null, uses DateTimeOffset.UtcNow.</param>
     /// <param name="reviewDurationMs">Optional duration in milliseconds.</param>
-    /// <returns>A tuple containing the updated Card and the corresponding ReviewLog.</returns>
+    /// <returns>A tuple containing the updated Card (a clone) and the corresponding ReviewLog.</returns> // MODIFIED Comment
     /// <exception cref="ArgumentNullException">Thrown if card is null.</exception>
     /// <exception cref="ArgumentException">Thrown if reviewDateTime is not UTC.</exception>
     public (Card UpdatedCard, ReviewLog Log) ReviewCard(
@@ -503,25 +491,19 @@ public class Scheduler
     {
         if (card == null) throw new ArgumentNullException(nameof(card));
 
-        // Ensure review time is UTC
         DateTimeOffset now = reviewDateTime ?? DateTimeOffset.UtcNow;
         if (now.Offset != TimeSpan.Zero)
         {
-            // While DateTimeOffset handles offsets, FSRS logic assumes calculations based on UTC days.
-            // Forcing UTC simplifies interval calculations.
             throw new ArgumentException("Review DateTimeOffset must be in UTC (Offset zero).", nameof(reviewDateTime));
         }
 
-        // --- Create a clone to avoid modifying the original object directly ---
-        // This matches the behavior of the Python `copy(card)`
+        // Create a clone to work with, leaving the original card unmodified.
         Card workingCard = (Card)card.Clone();
-        // --- All modifications below happen on 'workingCard' ---
 
         double? daysSinceLastReview = workingCard.LastReview.HasValue
             ? (now - workingCard.LastReview.Value).TotalDays
-            : null; // Null if never reviewed before
+            : null;
 
-        // Create the log entry for this review
         var reviewLog = new ReviewLog(
             cardId: workingCard.CardId,
             rating: rating,
@@ -529,74 +511,87 @@ public class Scheduler
             reviewDurationMs: reviewDurationMs
         );
 
-        // Determine the card's state and update Stability (S) and Difficulty (D)
-        State previousState = workingCard.State; // Remember state before potential change
+        State previousState = workingCard.State; // State of the card *before* this review
 
-        if (previousState == State.New) // Handle new cards explicitly
+        // --- Update Stability (S) and Difficulty (D) based on previous state ---
+        // MODIFIED Logic Block Start
+        if (previousState == State.New)
         {
-            // New cards always start in the Learning state conceptually
-            workingCard.State = State.Learning;
-            workingCard.Step = 0; // Start at the first learning step
+            // First review of a new card: Initialize S and D
             workingCard.Stability = InitialStability(rating);
             workingCard.Difficulty = InitialDifficulty(rating);
+            // Transition state to Learning and set initial step
+            workingCard.State = State.Learning;
+            workingCard.Step = 0;
         }
         else // Card was previously Learning, Review, or Relearning
         {
-            // Calculate Retrievability (R) before updating S and D
-            // Note: GetRetrievability uses the card's state *before* this review
+            // Card has existing S and D (assume they are not null if not New)
+            if (!workingCard.Stability.HasValue || !workingCard.Difficulty.HasValue)
+            {
+                // This case should ideally not happen if cards are always created as New
+                // and transition correctly. Throw an exception or handle as an error.
+                throw new InvalidOperationException($"Card in state {previousState} has null Stability or Difficulty.");
+            }
+
             double retrievability = workingCard.GetRetrievability(now);
 
-            // Update Stability and Difficulty based on the review
-            // Check if the review happened very shortly after the last one (less than a day)
             if (daysSinceLastReview.HasValue && daysSinceLastReview < 1.0)
             {
-                // Use short-term stability update if reviewed again on the same day
-                workingCard.Stability = ShortTermStability(workingCard.Stability!.Value, rating); // Assume S exists if not new
+                // Reviewed again on the same day (short-term update)
+                workingCard.Stability = ShortTermStability(workingCard.Stability.Value, rating);
+                // Difficulty update is the same regardless of short/long term review timing
+                workingCard.Difficulty = NextDifficulty(workingCard.Difficulty.Value, rating);
             }
             else
             {
-                // Use standard next stability calculation
+                // Standard update for reviews > 1 day apart or first review after New state
                 workingCard.Stability = NextStability(
-                    workingCard.Difficulty!.Value, // Assume D exists if not new
-                    workingCard.Stability!.Value,  // Assume S exists if not new
+                    workingCard.Difficulty.Value,
+                    workingCard.Stability.Value,
                     retrievability,
                     rating
                 );
+                workingCard.Difficulty = NextDifficulty(workingCard.Difficulty.Value, rating);
             }
-            // Always update difficulty
-            workingCard.Difficulty = NextDifficulty(workingCard.Difficulty!.Value, rating); // Assume D exists if not new
         }
+        // MODIFIED Logic Block End
 
 
         // --- Determine next state and schedule interval based on the *current* review ---
+        // Note: workingCard.State might have changed from New to Learning in the block above
 
         TimeSpan nextInterval;
 
-        switch (workingCard.State) // Use the potentially updated state (e.g., New -> Learning)
+        switch (workingCard.State) // Use the potentially updated state
         {
             case State.Learning:
-                // Handle edge case: More steps taken than available (e.g., config change)
+                // Ensure Step has a value; it should have been set to 0 if transitioned from New
+                if (!workingCard.Step.HasValue)
+                {
+                    throw new InvalidOperationException("Card is in Learning state but Step is null.");
+                }
+
                 bool learningStepsExhausted = LearningSteps.Length == 0 ||
-                                              (workingCard.Step.HasValue && workingCard.Step.Value >= LearningSteps.Length);
+                                              (workingCard.Step.Value >= LearningSteps.Length);
 
                 if (learningStepsExhausted && rating >= Rating.Hard)
                 {
-                    // Graduate to Review state
                     workingCard.State = State.Review;
                     workingCard.Step = null;
-                    int intervalDays = NextInterval(workingCard.Stability!.Value); // Assume S exists
+                    int intervalDays = NextInterval(workingCard.Stability!.Value); // S guaranteed non-null here
                     nextInterval = TimeSpan.FromDays(intervalDays);
                 }
-                else // Still within learning steps or rated Again
+                else
                 {
                     if (rating == Rating.Again)
                     {
-                        workingCard.Step = 0; // Reset to first step
-                        nextInterval = LearningSteps.Length > 0 ? LearningSteps[0] : TimeSpan.FromMinutes(1); // Default if no steps
+                        workingCard.Step = 0;
+                        nextInterval = LearningSteps.Length > 0 ? LearningSteps[0] : TimeSpan.FromMinutes(1);
                     }
                     else if (rating == Rating.Hard)
                     {
-                        // Step stays the same, calculate interval based on current/next step average if possible
+                        // Step stays the same
                         if (workingCard.Step == 0 && LearningSteps.Length == 1)
                         {
                             nextInterval = LearningSteps[0].Multiply(1.5);
@@ -605,80 +600,82 @@ public class Scheduler
                         {
                             nextInterval = (LearningSteps[0] + LearningSteps[1]).Divide(2.0);
                         }
-                        else // Use current step's interval
+                        else
                         {
-                            nextInterval = LearningSteps.Length > 0 ? LearningSteps[workingCard.Step ?? 0] : TimeSpan.FromMinutes(5); // Default
+                            nextInterval = LearningSteps.Length > 0 ? LearningSteps[workingCard.Step.Value] : TimeSpan.FromMinutes(5);
                         }
                     }
-                    else // Rating == Good or Easy
+                    else // Good or Easy
                     {
-                        // Check if this was the last learning step
-                        if (workingCard.Step.HasValue && workingCard.Step.Value + 1 >= LearningSteps.Length)
+                        if (workingCard.Step.Value + 1 >= LearningSteps.Length)
                         {
-                            // Graduate to Review state
+                            // Graduate
                             workingCard.State = State.Review;
                             workingCard.Step = null;
-                            int intervalDays = NextInterval(workingCard.Stability!.Value); // Assume S exists
+                            int intervalDays = NextInterval(workingCard.Stability!.Value); // S guaranteed non-null here
                             nextInterval = TimeSpan.FromDays(intervalDays);
                         }
                         else
                         {
-                            // Advance to the next learning step
-                            workingCard.Step = (workingCard.Step ?? -1) + 1; // Increment step
+                            // Advance step
+                            workingCard.Step += 1;
                             nextInterval = LearningSteps[workingCard.Step.Value];
                         }
                     }
                 }
-                break; // End Learning case
+                break;
 
             case State.Review:
+                // S and D guaranteed non-null in Review state
                 if (rating == Rating.Again)
                 {
                     if (RelearningSteps.Length == 0)
                     {
-                        // No relearning steps, calculate interval based on new stability but stay in Review state
-                        int intervalDays = NextInterval(workingCard.Stability!.Value); // Assume S exists
+                        int intervalDays = NextInterval(workingCard.Stability!.Value);
                         nextInterval = TimeSpan.FromDays(intervalDays);
                     }
                     else
                     {
-                        // Enter Relearning state
                         workingCard.State = State.Relearning;
                         workingCard.Step = 0;
                         nextInterval = RelearningSteps[0];
                     }
                 }
-                else // Rating == Hard, Good, or Easy
+                else // Hard, Good, or Easy
                 {
-                    // Stay in Review state, calculate next interval based on updated stability
-                    int intervalDays = NextInterval(workingCard.Stability!.Value); // Assume S exists
+                    int intervalDays = NextInterval(workingCard.Stability!.Value);
                     nextInterval = TimeSpan.FromDays(intervalDays);
                 }
-                break; // End Review case
+                break;
 
             case State.Relearning:
-                // Handle edge case: More steps taken than available
+                // Ensure Step has a value
+                if (!workingCard.Step.HasValue)
+                {
+                    throw new InvalidOperationException("Card is in Relearning state but Step is null.");
+                }
+                // S and D guaranteed non-null in Relearning state
+
                 bool relearningStepsExhausted = RelearningSteps.Length == 0 ||
-                                                (workingCard.Step >= RelearningSteps.Length);
+                                                (workingCard.Step.Value >= RelearningSteps.Length);
 
                 if (relearningStepsExhausted && rating >= Rating.Hard)
                 {
-                    // Graduate back to Review state
                     workingCard.State = State.Review;
                     workingCard.Step = null;
-                    int intervalDays = NextInterval(workingCard.Stability!.Value); // Assume S exists
+                    int intervalDays = NextInterval(workingCard.Stability!.Value);
                     nextInterval = TimeSpan.FromDays(intervalDays);
                 }
-                else // Still within relearning steps or rated Again
+                else
                 {
                     if (rating == Rating.Again)
                     {
-                        workingCard.Step = 0; // Reset to first step
-                        nextInterval = RelearningSteps.Length > 0 ? RelearningSteps[0] : TimeSpan.FromMinutes(1); // Default
+                        workingCard.Step = 0;
+                        nextInterval = RelearningSteps.Length > 0 ? RelearningSteps[0] : TimeSpan.FromMinutes(1);
                     }
                     else if (rating == Rating.Hard)
                     {
-                        // Step stays the same, calculate interval based on current/next step average if possible
+                        // Step stays the same
                         if (workingCard.Step == 0 && RelearningSteps.Length == 1)
                         {
                             nextInterval = RelearningSteps[0].Multiply(1.5);
@@ -687,36 +684,35 @@ public class Scheduler
                         {
                             nextInterval = (RelearningSteps[0] + RelearningSteps[1]).Divide(2.0);
                         }
-                        else // Use current step's interval
+                        else
                         {
-                            nextInterval = RelearningSteps.Length > 0 ? RelearningSteps[workingCard.Step ?? 0] : TimeSpan.FromMinutes(5); // Default
+                            nextInterval = RelearningSteps.Length > 0 ? RelearningSteps[workingCard.Step.Value] : TimeSpan.FromMinutes(5);
                         }
                     }
-                    else // Rating == Good or Easy
+                    else // Good or Easy
                     {
-                        // Check if this was the last relearning step
-                        if (workingCard.Step.HasValue && workingCard.Step.Value + 1 >= RelearningSteps.Length)
+                        if (workingCard.Step.Value + 1 >= RelearningSteps.Length)
                         {
-                            // Graduate back to Review state
+                            // Graduate back to Review
                             workingCard.State = State.Review;
                             workingCard.Step = null;
-                            int intervalDays = NextInterval(workingCard.Stability!.Value); // Assume S exists
+                            int intervalDays = NextInterval(workingCard.Stability!.Value);
                             nextInterval = TimeSpan.FromDays(intervalDays);
                         }
                         else
                         {
-                            // Advance to the next relearning step
-                            workingCard.Step = (workingCard.Step ?? -1) + 1;
+                            // Advance step
+                            workingCard.Step += 1;
                             nextInterval = RelearningSteps[workingCard.Step.Value];
                         }
                     }
                 }
-                break; // End Relearning case
+                break;
 
-            default: // Should not happen
+            default:
                 throw new InvalidOperationException($"Unexpected card state: {workingCard.State}");
 
-        } // End switch (workingCard.State)
+        } // End switch
 
         // Apply fuzzing if enabled and the card ended up in the Review state
         if (EnableFuzzing && workingCard.State == State.Review)
@@ -764,8 +760,8 @@ public class Scheduler
             var parametersObj = sourceDict["parameters"];
             List<double> parameters;
             if (parametersObj is List<double> pList) parameters = pList;
-            else if (parametersObj is IEnumerable<object> pEnum) parameters = [.. pEnum.Select(Convert.ToDouble)];
-            else if (parametersObj is IEnumerable<double> pDEnum) parameters = [.. pDEnum];
+            else if (parametersObj is System.Collections.IEnumerable pEnum) parameters = pEnum.Cast<object>().Select(Convert.ToDouble).ToList(); // More robust cast
+                                                                                                                                                 // else if (parametersObj is IEnumerable<double> pDEnum) parameters = pDEnum.ToList(); // This might be redundant with IEnumerable cast
             else throw new InvalidCastException("Cannot cast parameters to List<double>");
 
 
@@ -773,17 +769,17 @@ public class Scheduler
 
             var learningStepsObj = sourceDict["learning_steps"];
             List<TimeSpan> learningSteps;
-            if (learningStepsObj is List<long> lsList) learningSteps = [.. lsList.Select(TimeSpan.FromSeconds)];
-            else if (learningStepsObj is IEnumerable<object> lsEnum) learningSteps = [.. lsEnum.Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o)))];
-            else if (learningStepsObj is IEnumerable<long> lsLEnum) learningSteps = [.. lsLEnum.Select(TimeSpan.FromSeconds)];
+            if (learningStepsObj is List<long> lsList) learningSteps = lsList.Select(TimeSpan.FromSeconds).ToList();
+            else if (learningStepsObj is System.Collections.IEnumerable lsEnum) learningSteps = lsEnum.Cast<object>().Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o))).ToList(); // More robust cast
+                                                                                                                                                                                      // else if (learningStepsObj is IEnumerable<long> lsLEnum) learningSteps = lsLEnum.Select(TimeSpan.FromSeconds).ToList(); // Redundant
             else throw new InvalidCastException("Cannot cast learning_steps to List<long>");
 
 
             var relearningStepsObj = sourceDict["relearning_steps"];
             List<TimeSpan> relearningSteps;
-            if (relearningStepsObj is List<long> rlsList) relearningSteps = [.. rlsList.Select(TimeSpan.FromSeconds)];
-            else if (relearningStepsObj is IEnumerable<object> rlsEnum) relearningSteps = [.. rlsEnum.Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o)))];
-            else if (relearningStepsObj is IEnumerable<long> rlsLEnum) relearningSteps = [.. rlsLEnum.Select(TimeSpan.FromSeconds)];
+            if (relearningStepsObj is List<long> rlsList) relearningSteps = rlsList.Select(TimeSpan.FromSeconds).ToList();
+            else if (relearningStepsObj is System.Collections.IEnumerable rlsEnum) relearningSteps = rlsEnum.Cast<object>().Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o))).ToList(); // More robust cast
+                                                                                                                                                                                            // else if (relearningStepsObj is IEnumerable<long> rlsLEnum) relearningSteps = rlsLEnum.Select(TimeSpan.FromSeconds).ToList(); // Redundant
             else throw new InvalidCastException("Cannot cast relearning_steps to List<long>");
 
 
@@ -808,206 +804,108 @@ public class Scheduler
 
     // --- Private Helper Methods for FSRS Calculations ---
 
-    /// <summary>
-    /// Clamps difficulty between 1.0 and 10.0.
-    /// </summary>
-    private static double ClampDifficulty(double difficulty)
+    private double ClampDifficulty(double difficulty)
     {
         return Math.Clamp(difficulty, 1.0, 10.0);
     }
 
-    /// <summary>
-    /// Calculates the initial stability (S) for a new card based on the first rating.
-    /// Uses parameters w0, w1, w2, w3.
-    /// </summary>
     private double InitialStability(Rating rating)
     {
-        // Index matches rating: Again=1 (index 0), Hard=2 (index 1), Good=3 (index 2), Easy=4 (index 3)
         double initialStability = Parameters[(int)rating - 1];
-        return Math.Max(initialStability, 0.1); // Ensure stability is at least 0.1
+        return Math.Max(initialStability, 0.1);
     }
 
-    /// <summary>
-    /// Calculates the initial difficulty (D) for a new card based on the first rating.
-    /// Uses parameters w4, w5.
-    /// </summary>
     private double InitialDifficulty(Rating rating)
     {
-        // Formula: D = w4 - (rating - 3) * w5  (Original paper v4 formula)
-        // Python code uses: w4 - (exp(w5 * (rating - 1)) -1) -> This seems different, let's use the Python version's formula
-        // Python: self.parameters[4] - (math.e ** (self.parameters[5] * (rating - 1))) + 1
-        double initialDifficulty = Parameters[4] - (Math.Pow(Math.E, Parameters[5] * ((int)rating - 1)) - 1); // Match Python calculation more closely
-                                                                                                              // double initialDifficulty = Parameters[4] - ((int)rating - 3) * Parameters[5]; // Formula from paper
-
+        double initialDifficulty = Parameters[4] - (Math.Pow(Math.E, Parameters[5] * ((int)rating - 1)) - 1);
         return ClampDifficulty(initialDifficulty);
     }
 
-    /// <summary>
-    /// Calculates the next interval in days based on stability (S) and desired retention (R).
-    /// Formula: I = (S / factor) * (R^(1/decay) - 1)
-    /// </summary>
     private int NextInterval(double stability)
     {
-        // Ensure stability is positive to avoid issues
         stability = Math.Max(0.01, stability);
-
-        double interval = (stability / FsrsConstants.Factor) *
-                          (Math.Pow(DesiredRetention, 1 / FsrsConstants.Decay) - 1);
-
+        double interval = (stability / FsrsConstants.Factor) * (Math.Pow(DesiredRetention, 1 / FsrsConstants.Decay) - 1);
         int intervalDays = (int)Math.Round(interval);
-
-        // Ensure interval is at least 1 day and not more than the maximum
         intervalDays = Math.Max(1, intervalDays);
         intervalDays = Math.Min(intervalDays, MaximumIntervalDays);
-
         return intervalDays;
     }
 
-    /// <summary>
-    /// Calculates stability update when a card is reviewed again within the same day (short-term).
-    /// Uses parameters w17, w18.
-    /// Formula: S_short = S * exp(w17 * (rating - 3 + w18))
-    /// </summary>
     private double ShortTermStability(double stability, Rating rating)
     {
-        // Ensure stability is positive
         stability = Math.Max(0.01, stability);
         return stability * Math.Exp(Parameters[17] * ((int)rating - 3 + Parameters[18]));
     }
 
-
-    /// <summary>
-    /// Calculates the next difficulty (D) after a review.
-    /// Incorporates mean reversion towards initial difficulty for Easy rating.
-    /// Uses parameters w6, w7.
-    /// Formula involves mean reversion: D_next = w7 * D_initial_easy + (1 - w7) * D_after_update
-    /// D_after_update = D - w6 * (rating - 3) * linear_damping
-    /// linear_damping = (10 - D) / 9
-    /// </summary>
     private double NextDifficulty(double difficulty, Rating rating)
     {
-        // Calculate difficulty after direct update based on rating
         double deltaDifficulty = -Parameters[6] * ((int)rating - 3);
-
-        // Apply linear damping: effect is smaller for higher D
-        // Note: Python code seems to apply damping to delta_difficulty, not directly in mean reversion. Let's match Python.
-        // Python: difficulty + _linear_damping(delta_difficulty=delta_difficulty, difficulty=difficulty)
         double linearDampingFactor = (10.0 - difficulty) / 9.0;
         double difficultyAfterUpdate = difficulty + deltaDifficulty * linearDampingFactor;
-
-
-        // Calculate initial difficulty if the first rating was Easy (used for mean reversion)
-        double initialDifficultyEasy = Parameters[4] - (Math.Pow(Math.E, Parameters[5] * ((int)Rating.Easy - 1)) - 1); // Match Python calculation
-                                                                                                                       // double initialDifficultyEasy = Parameters[4] - ((int)Rating.Easy - 3) * Parameters[5]; // Formula from paper
-
-        // Apply mean reversion towards the initial difficulty for 'Easy'
+        double initialDifficultyEasy = Parameters[4] - (Math.Pow(Math.E, Parameters[5] * ((int)Rating.Easy - 1)) - 1);
         double nextDifficulty = Parameters[7] * initialDifficultyEasy + (1 - Parameters[7]) * difficultyAfterUpdate;
-
         return ClampDifficulty(nextDifficulty);
     }
 
-    /// <summary>
-    /// Calculates the next stability (S) after a review, dispatching to recall or forget stability calculation.
-    /// </summary>
     private double NextStability(double difficulty, double stability, double retrievability, Rating rating)
     {
-        // Ensure stability is positive
         stability = Math.Max(0.01, stability);
-
         if (rating == Rating.Again)
         {
             return NextForgetStability(difficulty, stability, retrievability);
         }
-        else // Hard, Good, Easy
+        else
         {
             return NextRecallStability(difficulty, stability, retrievability, rating);
         }
     }
 
-    /// <summary>
-    /// Calculates the next stability (S) after forgetting (Rating.Again).
-    /// Uses parameters w11, w12, w13, w14, w17, w18.
-    /// Formula: S_forget = min ( w11 * D^-w12 * ((S+1)^w13 - 1) * exp((1-R)*w14) , S_short_term_limit )
-    /// S_short_term_limit = S / exp(w17 * w18) --- This limit seems unusual, Python code uses it. Let's verify.
-    /// Python: stability / (math.e ** (self.parameters[17] * self.parameters[18]))
-    /// </summary>
     private double NextForgetStability(double difficulty, double stability, double retrievability)
     {
-        // Ensure stability is positive
         stability = Math.Max(0.01, stability);
-
-        // Long term component based on D, S, R
         double stabilityLongTerm = Parameters[11]
                                  * Math.Pow(difficulty, -Parameters[12])
                                  * (Math.Pow(stability + 1, Parameters[13]) - 1)
                                  * Math.Exp((1 - retrievability) * Parameters[14]);
-
-        // Short term limit (from Python code, seems related to short term stability logic)
         double stabilityShortTermLimit = stability / Math.Exp(Parameters[17] * Parameters[18]);
-
-
-        // The next stability after forgetting is the minimum of the two components
-        return Math.Max(0.1, Math.Min(stabilityLongTerm, stabilityShortTermLimit)); // Ensure >= 0.1
+        return Math.Max(0.1, Math.Min(stabilityLongTerm, stabilityShortTermLimit));
     }
 
-    /// <summary>
-    /// Calculates the next stability (S) after recalling (Rating.Hard, Good, Easy).
-    /// Uses parameters w8, w9, w10, w15 (hard penalty), w16 (easy bonus).
-    /// Formula: S_recall = S * (1 + exp(w8) * (11 - D) * S^-w9 * (exp((1 - R) * w10) - 1) * hard_penalty * easy_bonus)
-    /// </summary>
     private double NextRecallStability(double difficulty, double stability, double retrievability, Rating rating)
     {
-        // Ensure stability is positive
         stability = Math.Max(0.01, stability);
-
         double hardPenalty = (rating == Rating.Hard) ? Parameters[15] : 1.0;
         double easyBonus = (rating == Rating.Easy) ? Parameters[16] : 1.0;
-
         double stabilityIncreaseFactor = Math.Exp(Parameters[8])
                                        * (11 - difficulty)
                                        * Math.Pow(stability, -Parameters[9])
                                        * (Math.Exp((1 - retrievability) * Parameters[10]) - 1);
-
         double nextStability = stability * (1 + stabilityIncreaseFactor * hardPenalty * easyBonus);
-
-        return Math.Max(0.1, nextStability); // Ensure >= 0.1
+        return Math.Max(0.1, nextStability);
     }
 
 
-    /// <summary>
-    /// Applies random fuzz to the calculated interval.
-    /// </summary>
     private TimeSpan GetFuzzedInterval(TimeSpan interval)
     {
         double intervalDays = interval.TotalDays;
+        if (intervalDays < 2.5) return interval;
 
-        if (intervalDays < 2.5) // Fuzz is not applied to intervals less than 2.5 days
-        {
-            return interval;
-        }
-
-        // Calculate the fuzz delta based on the interval ranges
-        double delta = 1.0; // Base delta
+        double delta = 1.0;
         foreach (var range in FsrsConstants.FuzzRanges)
         {
             delta += range.Factor * Math.Max(0.0, Math.Min(intervalDays, range.End) - range.Start);
         }
 
-        // Determine the min and max possible interval after fuzzing
         int minIvl = (int)Math.Round(intervalDays - delta);
         int maxIvl = (int)Math.Round(intervalDays + delta);
 
-        // Ensure the bounds are valid
-        minIvl = Math.Max(2, minIvl); // Minimum fuzzed interval is 2 days
+        minIvl = Math.Max(2, minIvl);
         maxIvl = Math.Min(maxIvl, MaximumIntervalDays);
-        minIvl = Math.Min(minIvl, maxIvl); // Ensure min is not greater than max
+        minIvl = Math.Min(minIvl, maxIvl);
 
-        // Generate a random integer interval within the bounds [minIvl, maxIvl]
-        int fuzzedIntervalDays = _random.Next(minIvl, maxIvl + 1); // +1 because upper bound is exclusive in Random.Next
-
-        // Clamp to maximum interval just in case
+        int fuzzedIntervalDays = _random.Next(minIvl, maxIvl + 1);
         fuzzedIntervalDays = Math.Min(fuzzedIntervalDays, MaximumIntervalDays);
-
         return TimeSpan.FromDays(fuzzedIntervalDays);
     }
 }
+
