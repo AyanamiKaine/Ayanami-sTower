@@ -35,7 +35,7 @@ public class KnowledgeVaultPage : IUIComponent
             grid
             .SetColumnDefinitions("*, Auto, Auto")
             .SetRowDefinitions("Auto, *, Auto");
-        }).Add<Page>();
+        }).Add<Page>().Entity;
 
         /*
         Here we are setting Default styling for the page entity.
