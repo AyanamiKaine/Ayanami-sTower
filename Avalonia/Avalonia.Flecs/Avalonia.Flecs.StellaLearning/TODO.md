@@ -19,3 +19,4 @@ Currently spaced repetition items have the ability to holds tags. But there is n
 ### Solution
 
 Either show tags in the spaced repetition list, simply make it possible to search by them in the search bar or something else I dont know yet.
+
