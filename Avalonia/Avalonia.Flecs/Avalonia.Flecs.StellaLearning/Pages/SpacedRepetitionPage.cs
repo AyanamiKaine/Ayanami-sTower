@@ -600,6 +600,9 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     /// <returns></returns>
     public static FuncDataTemplate<SpacedRepetitionItem> DefineSpacedRepetitionItemTemplate()
     {
+
+        var dateTimeConverter = new DateTimeOffsetToLocalTimeStringConverter();
+
         return new FuncDataTemplate<SpacedRepetitionItem>((item, nameScope) =>
         {
             var grid = new Grid
@@ -661,7 +664,17 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                 HorizontalAlignment = HorizontalAlignment.Right,
             };
 
-            nextReviewTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.NextReview)));
+            var nextReviewBinding = new Binding(nameof(SpacedRepetitionItem.NextReview))
+            {
+                // Assign the converter instance
+                Converter = dateTimeConverter,
+                // Optionally pass a format string as the ConverterParameter
+                // If omitted, the converter's default ("g") will be used.
+                ConverterParameter = "dd/MM/yyyy HH:mm"
+                // StringFormat is NO LONGER used here, the converter handles formatting
+            };
+
+            nextReviewTextBlock.Bind(TextBlock.TextProperty, nextReviewBinding);
             Grid.SetRow(nextReviewTextBlock, 0);
             Grid.SetColumn(nextReviewTextBlock, 1);
             grid.Children.Add(nextReviewTextBlock);
