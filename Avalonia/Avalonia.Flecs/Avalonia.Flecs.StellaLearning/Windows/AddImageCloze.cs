@@ -209,7 +209,6 @@ public class AddImageCloze : IUIComponent, IDisposable
             });
 
             var tagManager = new TagComponent(world);
-            _disposables.Add(tagManager);
             stackPanel.Child(tagManager);
 
             stackPanel.Child<Separator>((separator) =>

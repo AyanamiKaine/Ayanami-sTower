@@ -166,7 +166,6 @@ public class EditCloze : IUIComponent, IDisposable
             });
 
             var tagManager = new TagComponent(world, cloze.Tags);
-            _disposables.Add(tagManager);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             // Create button

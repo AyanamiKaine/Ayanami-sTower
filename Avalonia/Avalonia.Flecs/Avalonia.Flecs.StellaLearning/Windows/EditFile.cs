@@ -158,7 +158,6 @@ public class EditFile : IUIComponent, IDisposable
             stackPanel.Child<TextBlock>(t => t.SetText("Tags").SetMargin(0, 10, 0, 0)); // Label for tags
 
             var tagManager = new TagComponent(world, spacedRepetitionFile.Tags);
-            _disposables.Add(tagManager); // Add tagManager to window's disposables
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             stackPanel.Child<Button>((button) =>

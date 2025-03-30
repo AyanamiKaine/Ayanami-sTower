@@ -140,7 +140,6 @@ public class EditQuiz : IUIComponent, IDisposable
 
             var tagManager = new TagComponent(world, _spacedRepetitionQuiz.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
-            _disposables.Add(tagManager); // Add tagManager to window's disposables
 
             stackPanel.Child<Button>((button) =>
             {
