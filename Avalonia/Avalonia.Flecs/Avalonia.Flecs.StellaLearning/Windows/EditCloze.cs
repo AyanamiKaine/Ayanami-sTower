@@ -50,7 +50,7 @@ public class EditCloze : IUIComponent, IDisposable
             window.OnClosed((sender, args) => Dispose());
 
             window.Show();
-        });
+        }).Entity;
     }
 
     private Entity DefineWindowContents(World world)
@@ -227,7 +227,7 @@ public class EditCloze : IUIComponent, IDisposable
                     _root.Clear();
                 });
             });
-        });
+        }).Entity;
     }
 
     /// <inheritdoc/>
