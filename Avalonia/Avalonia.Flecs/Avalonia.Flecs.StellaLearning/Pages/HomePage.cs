@@ -23,7 +23,7 @@ public class HomePage : IUIComponent
     public HomePage(World world)
     {
         _root = world.UI<TextBlock>((t) => t.SetText("Home"))
-            .Add<Page>();
+            .Add<Page>().Entity;
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public class HomePage : IUIComponent
     public HomePage(World world, Entity parent)
     {
         _root = world.UI<TextBlock>((t) => t.SetText("Home"))
-            .Add<Page>()
+            .Add<Page>().Entity
             .ChildOf(parent);
     }
 }
