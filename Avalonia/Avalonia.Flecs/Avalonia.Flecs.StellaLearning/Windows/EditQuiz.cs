@@ -49,7 +49,7 @@ public class EditQuiz : IUIComponent, IDisposable
             window.OnClosed((sender, args) => Dispose());
 
             window.Show();
-        });
+        }).Entity;
     }
 
     private Entity DefineWindowContents(World world)
@@ -241,7 +241,7 @@ public class EditQuiz : IUIComponent, IDisposable
                     _root.Clear();
                 });
             });
-        });
+        }).Entity;
     }
 
     private static T? FindControl<T>(Grid grid, int row, int column) where T : Control
