@@ -1,11 +1,68 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Avalonia.Data.Converters;
 using Avalonia.Flecs.StellaLearning.Data;
 
 namespace Avalonia.Flecs.StellaLearning.Converters
 {
+
+    /// <summary>
+    /// Converts a DateTimeOffset (expected to be UTC) to a formatted string
+    /// representing the local date and time.
+    /// </summary>
+    public class DateTimeOffsetToLocalTimeStringConverter : IValueConverter
+    {
+        /// <summary>
+        /// Converts the UTC DateTimeOffset value to a local time string.
+        /// </summary>
+        /// <param name="value">The DateTimeOffset value to convert (expected UTC).</param>
+        /// <param name="targetType">The type of the binding target property (should be string).</param>
+        /// <param name="parameter">An optional parameter (e.g., a custom format string). If null or empty, uses a default format.</param>
+        /// <param name="culture">The culture to use in the converter (usually ignored for standard formats).</param>
+        /// <returns>A formatted string representing the local date and time, or an empty string/default value if conversion fails.</returns>
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            // Check if the input value is a DateTimeOffset
+            if (value is DateTimeOffset dto)
+            {
+                try
+                {
+                    // Convert the DateTimeOffset to the system's local time
+                    DateTimeOffset localTime = dto.ToLocalTime();
+
+                    // Determine the format string to use
+                    string format = parameter as string ?? "g"; // Use parameter as format, default to "g" (short date/time) if null/empty
+                                                                // Example: You could pass "dd/MM/yyyy HH:mm:ss" as the parameter if needed
+
+                    // Return the formatted local time string
+                    return localTime.ToString(format, culture);
+                }
+                catch (Exception ex)
+                {
+                    // Log the exception if you have logging set up
+                    Console.WriteLine($"Error converting DateTimeOffset to local string: {ex.Message}"); // Basic error logging
+                    return "Error"; // Return an error indicator
+                }
+            }
+
+            // If the value is null or not a DateTimeOffset, return a default value or indicate inaction
+            return string.Empty; // Or return AvaloniaProperty.UnsetValue or BindingOperations.DoNothing depending on desired behavior
+        }
+
+        /// <summary>
+        /// Converts a string back to a DateTimeOffset (not typically needed for display).
+        /// </summary>
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            // ConvertBack is usually not implemented for one-way display formatting
+            throw new NotSupportedException("Cannot convert string back to DateTimeOffset in this converter.");
+            // Or return BindingOperations.DoNothing;
+        }
+    }
+
     /// <summary>
     /// Used to correctly deserialize and serialize space repetition items
     /// </summary>
