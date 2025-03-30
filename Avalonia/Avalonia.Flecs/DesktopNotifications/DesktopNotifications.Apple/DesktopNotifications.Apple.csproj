@@ -22,6 +22,7 @@
 		<PackageId>DesktopNotificationsNet8.Apple</PackageId>
 		<Title>DesktopNotificationsNet8.Apple</Title>
 		<VersionPrefix>1.3.4</VersionPrefix>
+        <IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
 
 	<ItemGroup>

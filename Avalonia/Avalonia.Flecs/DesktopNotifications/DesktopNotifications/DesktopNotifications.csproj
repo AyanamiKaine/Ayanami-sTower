@@ -19,6 +19,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<Title>DesktopNotificationsNet8</Title>
 		<PackageId>DesktopNotificationsNet8</PackageId>
+        <IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
 	
 	<ItemGroup>

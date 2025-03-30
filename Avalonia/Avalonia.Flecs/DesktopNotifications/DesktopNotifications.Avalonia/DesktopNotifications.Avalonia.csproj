@@ -19,6 +19,7 @@
 		<PackageId>DesktopNotificationsNet8.Avalonia</PackageId>
 		<Title>DesktopNotificationsNet8.Avalonia</Title>
 		<VersionPrefix>1.3.4</VersionPrefix>
+        <IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
 
 	<ItemGroup>

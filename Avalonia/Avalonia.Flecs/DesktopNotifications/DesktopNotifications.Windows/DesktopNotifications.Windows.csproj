@@ -19,6 +19,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageId>DesktopNotificationsNet8.Windows</PackageId>
 		<Title>DesktopNotificationsNet8.Windows</Title>
+        <IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(OS)' == 'Windows_NT'">
