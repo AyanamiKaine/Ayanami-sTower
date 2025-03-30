@@ -30,7 +30,7 @@ public class LiteraturePage : IUIComponent
             grid
             .SetColumnDefinitions("*, Auto, Auto")
             .SetRowDefinitions("Auto, *, Auto");
-        }).Add<Page>();
+        }).Add<Page>().Entity;
 
         _root.AddDefaultStyling((literaturePage) =>
         {
@@ -53,6 +53,6 @@ public class LiteraturePage : IUIComponent
         {
             textBlock.SetText("Literature");
 
-        }).ChildOf(_root);
+        }).Entity.ChildOf(_root);
     }
 }
