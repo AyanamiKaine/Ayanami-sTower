@@ -125,7 +125,7 @@ public class EditImageCloze : IUIComponent, IDisposable
 
             window.OnClosed((sender, args) => Dispose());
             window.Show();
-        });
+        }).Entity;
         // We want to change the image path AFTER the ui is constructed.
         // Because the handler expects ui elements to exit.
         _imagePathSubject.OnNext(_spacedRepetitionImageCloze.ImagePath);
@@ -313,7 +313,7 @@ public class EditImageCloze : IUIComponent, IDisposable
 
                 button.With((b) => b.Click += createButtonClickedHandler);
             });
-        });
+        }).Entity;
     }
 
     /// <summary>
@@ -376,7 +376,7 @@ public class EditImageCloze : IUIComponent, IDisposable
                 .SetFill(new SolidColorBrush(Color.FromArgb(50, 255, 0, 0)))
                 .SetWidth(0)
                 .SetHeight(0);
-            });
+            }).Entity;
 
             canvasEntity.Get<Canvas>().Children.Add(selectionRectangle.Get<Rectangle>());
         }
