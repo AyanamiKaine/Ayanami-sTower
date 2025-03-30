@@ -27,12 +27,12 @@ public class AddFile : IUIComponent, IDisposable
     /// Collection to track all disposables
     /// </summary>
     private readonly CompositeDisposable _disposables = [];
-    private UIBuilder<Button>? createButton = null;
+    private UIBuilder<Button>? createButton;
     private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
-    private UIBuilder<TextBlock>? validationTextBlock = null;
-    private UIBuilder<TextBox>? nameTextBox = null;
-    private UIBuilder<TextBox>? filePath = null;
-    private UIBuilder<TextBox>? questionTextBox = null;
+    private UIBuilder<TextBlock>? validationTextBlock;
+    private UIBuilder<TextBox>? nameTextBox;
+    private UIBuilder<TextBox>? filePath;
+    private UIBuilder<TextBox>? questionTextBox;
     private Entity calculatedPriority;
     private Entity _root;
     /// <inheritdoc/>
@@ -164,9 +164,8 @@ public class AddFile : IUIComponent, IDisposable
             calculatedPriority = comparePriority.CalculatedPriorityEntity;
             stackPanel.Child(comparePriority);
 
-            stackPanel.Child<Button>((button) =>
+            createButton = stackPanel.Child<Button>((button) =>
             {
-                createButton = button;
                 button
                 .SetVerticalAlignment(Layout.VerticalAlignment.Center)
                 .SetHorizontalAlignment(Layout.HorizontalAlignment.Center);
