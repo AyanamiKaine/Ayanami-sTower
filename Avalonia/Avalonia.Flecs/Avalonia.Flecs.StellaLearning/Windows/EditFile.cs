@@ -64,10 +64,10 @@ public class EditFile : IUIComponent, IDisposable
 
         return world.UI<StackPanel>((stackPanel) =>
         {
-            UIBuilder<TextBlock>? validationTextBlock = null;
-            UIBuilder<TextBox>? nameTextBox = null;
-            UIBuilder<TextBox>? filePath = null;
-            UIBuilder<TextBox>? questionTextBox = null;
+            UIBuilder<TextBlock> validationTextBlock;
+            UIBuilder<TextBox> nameTextBox;
+            UIBuilder<TextBox> filePath;
+            UIBuilder<TextBox> questionTextBox;
 
 
             void ValidateFilePath(string path)
