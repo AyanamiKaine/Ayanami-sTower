@@ -338,9 +338,8 @@ public partial class SpacedRepetitionItem : ObservableObject
     {
         Logger.Trace("Creating new SpacedRepetitionItem with new FsrsSharp.Card. Item ID: {Uid}", Uid);
         // Create a new native C# Card (defaults to State.New)
-        var newCard = new FsrsSharp.Card();
         // Set the internal card and update observable properties
-        Card = newCard; // Use the property setter to update all fields
+        Card = new FsrsSharp.Card(); // Use the property setter to update all fields
     }
 
     /// <summary>
