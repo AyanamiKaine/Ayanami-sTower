@@ -50,7 +50,7 @@ public class EditFlashcard : IUIComponent, IDisposable
                     window.OnClosed((sender, args) => Dispose());
 
                     window.Show();
-                });
+                }).Entity;
     }
 
     private Entity DefineWindowContents(World world)
@@ -184,7 +184,7 @@ public class EditFlashcard : IUIComponent, IDisposable
                     _root.Clear();
                 });
             });
-        });
+        }).Entity;
     }
 
     /// <inheritdoc/>
