@@ -122,12 +122,18 @@ public class AddFile : IUIComponent, IDisposable
                 filePath = textBox;
                 textBox
                 .SetWatermark("FilePath")
-                .SetInnerRightContent(FilePickerButton(world).OnClick(async (e, args) =>
-                {
-                    var path = await FilePickerAsync();
-                    textBox.SetText(path);
-                    ValidateFilePath(path);
-                }));
+                .SetInnerRightContent(
+                    world.UI<Button>((button) =>
+                    {
+                        button.Child<TextBlock>((t) => t.SetText("Browse"));
+
+                        button.OnClick(async (e, args) =>
+                        {
+                            var path = await FilePickerAsync();
+                            textBox.SetText(path);
+                            ValidateFilePath(path);
+                        });
+                    }));
 
                 filePathHasChangedHandler = (_, _) => ValidateFilePath(textBox.GetText());
 
@@ -261,16 +267,6 @@ public class AddFile : IUIComponent, IDisposable
                 };
                 button.With((b) => b.Click += createButtonClickedHandler);
             });
-        });
-    }
-
-
-
-    private Entity FilePickerButton(World world)
-    {
-        return world.UI<Button>((button) =>
-        {
-            button.Child<TextBlock>((t) => t.SetText("Browse"));
         });
     }
 
