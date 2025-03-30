@@ -54,7 +54,7 @@ public class EditFile : IUIComponent, IDisposable
             window.OnClosed((sender, args) => Dispose());
 
             window.Show();
-        });
+        }).Entity;
     }
 
     private Entity DefineWindowContents(World world)
@@ -256,7 +256,7 @@ public class EditFile : IUIComponent, IDisposable
                     });
 
             });
-        });
+        }).Entity;
     }
 
 
