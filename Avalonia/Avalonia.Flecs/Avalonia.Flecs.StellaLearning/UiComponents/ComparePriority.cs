@@ -137,7 +137,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
                           .SetColumn(1).SetRow(3); // Moved to row 3
                     button.OnClick((_, _) => HandleMorePriorityClick());
                 });
-            });
+            }).Entity;
 
             // --- Initial Setup & Event Subscriptions ---
             Reset(); // Set initial state and select first item
