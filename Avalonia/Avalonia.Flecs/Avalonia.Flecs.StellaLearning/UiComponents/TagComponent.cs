@@ -172,7 +172,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                     itemsControl.SetItemsSource(Tags).SetItemTemplate(tagItemTemplate)
                        .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
                 });
-            });
+            }).Entity;
 
             // --- Disposables & Setup ---
             _disposables.Add(Disposable.Create(() =>
