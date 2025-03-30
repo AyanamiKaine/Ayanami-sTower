@@ -297,10 +297,10 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                 switch (spacedRepetitionPage.Parent().Get<NavigationView>().DisplayMode)
                 {
                     case NavigationViewDisplayMode.Minimal:
-                        spacedRepetitionPage.SetMargin(50, 10, 20, 20);
+                        //spacedRepetitionPage.SetMargin(50, 10, 20, 20);
                         break;
                     default:
-                        spacedRepetitionPage.SetMargin(20, 10, 20, 20);
+                        //spacedRepetitionPage.SetMargin(20, 10, 20, 20);
                         break;
                 }
             }
