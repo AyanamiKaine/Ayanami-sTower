@@ -40,9 +40,9 @@ public partial class App : Application
     private SpacedRepetitionPage? spacedRepetitionPage;
 
     /// <summary>
-    /// Entity that holds the window component for the main window
+    /// Ui Builder that represents the main window
     /// </summary>
-    public Entity MainWindow;
+    public UIBuilder<Window>? MainWindow;
     // TODO: Remove all refrences to name entities,
     // its a global that will cause many problems when grown too big.
     /// <summary>
@@ -89,12 +89,13 @@ public partial class App : Application
                       });
             });
         _mainWindow = MainWindow.Get<Window>();
-        CreateUILayout().ChildOf(MainWindow);
+
+        MainWindow.Child(CreateUILayout());
         InitializeTrayIcon();
     }
 
 
-    private Entity CreateUILayout()
+    private UIBuilder<NavigationView> CreateUILayout()
     {
         contentQueuePage = new(_world);
         knowledgeVaultPage = new(_world);
@@ -269,7 +270,7 @@ public partial class App : Application
     /// </summary>
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && MainWindow is not null)
         {
             _mainWindow = MainWindow.Get<Window>();
             desktop.MainWindow = MainWindow.Get<Window>();
@@ -287,7 +288,7 @@ public partial class App : Application
     /// </summary>
     public void ShowMainWindow()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime && MainWindow is not null)
         {
             var mainWindow = MainWindow.Get<Window>();
 
