@@ -64,7 +64,12 @@ public class EditFile : IUIComponent, IDisposable
 
         return world.UI<StackPanel>((stackPanel) =>
         {
-            UIBuilder<TextBlock> validationTextBlock;
+            UIBuilder<TextBlock> validationTextBlock = world.UI<TextBlock>((textBlock) =>
+            {
+                textBlock.SetText("");
+                textBlock.SetFontSize(12);
+                textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
+            });
             UIBuilder<TextBox> nameTextBox;
             UIBuilder<TextBox> filePath;
             UIBuilder<TextBox> questionTextBox;
@@ -148,13 +153,7 @@ public class EditFile : IUIComponent, IDisposable
 
             });
 
-            validationTextBlock = stackPanel.Child<TextBlock>((textBlock) =>
-            {
-                textBlock.SetText("");
-                textBlock.SetFontSize(12);
-                textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
-            });
-
+            stackPanel.Child(validationTextBlock);
 
             stackPanel.Child<TextBlock>(t => t.SetText("Tags").SetMargin(0, 10, 0, 0)); // Label for tags
 
