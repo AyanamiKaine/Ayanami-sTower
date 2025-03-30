@@ -68,7 +68,7 @@ public class AddCloze : IUIComponent, IDisposable
 
             window.OnClosed((sender, args) => Dispose());
             window.Show();
-        });
+        }).Entity;
         calculatedPriority.ChildOf(_root);
     }
 
@@ -120,7 +120,7 @@ public class AddCloze : IUIComponent, IDisposable
                           });
                       });
 
-                menu.ChildOf(textBox.Entity);
+                menu.Entity.ChildOf(textBox.Entity);
 
                 textBox.SetContextFlyout(menu);
             });
@@ -275,7 +275,7 @@ public class AddCloze : IUIComponent, IDisposable
 
                 button.With((b) => b.Click += createButtonClickedHandler);
             });
-        });
+        }).Entity;
     }
 
     /// <summary>
