@@ -282,12 +282,12 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                 .SetHorizontalAlignment(HorizontalAlignment.Right)
                 .SetColumn(2)
                 .SetRow(2)
-                .SetFlyout(menu)
+                .SetFlyout(menu.Entity)
                 .SetText("Add Item");
             });
 
         })
-        .Add<Page>();
+        .Add<Page>().Entity;
 
         _root.AddDefaultStyling((spacedRepetitionPage) =>
         {
