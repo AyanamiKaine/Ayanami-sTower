@@ -70,7 +70,7 @@ public class AddQuiz : IUIComponent, IDisposable
             window.OnClosed((sender, args) => Dispose());
 
             window.Show();
-        });
+        }).Entity;
     }
 
     private Entity DefineWindowContents(World world)
@@ -269,7 +269,7 @@ public class AddQuiz : IUIComponent, IDisposable
                 button.With((b) => b.Click += createButtonClickedHandler);
 
             });
-        });
+        }).Entity;
     }
 
     private static T? FindControl<T>(Grid grid, int row, int column) where T : Control
