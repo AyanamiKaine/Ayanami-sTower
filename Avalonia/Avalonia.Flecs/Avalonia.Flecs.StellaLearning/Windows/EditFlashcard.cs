@@ -73,9 +73,8 @@ public class EditFlashcard : IUIComponent, IDisposable
                 t.SetText("Name");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            nameTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                nameTextBox = textBox;
                 textBox.SetWatermark("Name").SetText(flashcard.Name);
             });
 
@@ -85,9 +84,8 @@ public class EditFlashcard : IUIComponent, IDisposable
             });
 
 
-            stackPanel.Child<TextBox>((textBox) =>
+            frontText = stackPanel.Child<TextBox>((textBox) =>
             {
-                frontText = textBox;
                 textBox
                 .SetWatermark("Front Text")
                 .SetTextWrapping(TextWrapping.Wrap).SetText(flashcard.Front);
@@ -100,9 +98,8 @@ public class EditFlashcard : IUIComponent, IDisposable
                 t.SetText("Back Text");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            backText = stackPanel.Child<TextBox>((textBox) =>
             {
-                backText = textBox;
                 textBox
                 .SetWatermark("Back Text")
                 .SetTextWrapping(TextWrapping.Wrap).SetText(flashcard.Back);
