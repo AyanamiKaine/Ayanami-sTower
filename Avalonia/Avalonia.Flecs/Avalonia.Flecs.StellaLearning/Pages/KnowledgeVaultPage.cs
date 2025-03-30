@@ -30,11 +30,12 @@ public class KnowledgeVaultPage : IUIComponent
     /// <returns></returns>
     public KnowledgeVaultPage(World world)
     {
-        _root = world.Entity()
-            .Add<Page>()
-            .Set(new Grid())
+        _root = world.UI<Grid>((grid) =>
+        {
+            grid
             .SetColumnDefinitions("*, Auto, Auto")
             .SetRowDefinitions("Auto, *, Auto");
+        }).Add<Page>();
 
         /*
         Here we are setting Default styling for the page entity.
@@ -55,10 +56,10 @@ public class KnowledgeVaultPage : IUIComponent
                 switch (vaultPage.Parent().Get<NavigationView>().DisplayMode)
                 {
                     case NavigationViewDisplayMode.Minimal:
-                        vaultPage.SetMargin(50, 10, 20, 20);
+                        //vaultPage.SetMargin(50, 10, 20, 20);
                         break;
                     default:
-                        vaultPage.SetMargin(20, 10, 20, 20);
+                        //vaultPage.SetMargin(20, 10, 20, 20);
                         break;
                 }
             }
@@ -66,18 +67,14 @@ public class KnowledgeVaultPage : IUIComponent
 
 
 
-        var vaultContent = world.Entity()
-            .ChildOf(_root)
-            .Set(new TextBlock())
-            .SetText("VaultContent")
+        var vaultContent = _root.UI<TextBlock>((textBlock) =>
+        {
+            textBlock.SetText("VaultContent")
             .SetRow(0)
             .SetColumn(0);
+        });
 
-        var scrollViewer = world.Entity()
-            .ChildOf(_root)
-            .Set(new ScrollViewer())
-            .SetRow(1)
-            .SetColumnSpan(3);
+
 
 
         ObservableCollection<Content> dummyItems = [
@@ -186,15 +183,22 @@ public class KnowledgeVaultPage : IUIComponent
             return grid;
         });
 
+        var scrollViewer = _root.UI<ScrollViewer>((scrollViewer) =>
+                {
+                    scrollViewer
+                    .SetRow(1)
+                    .SetColumnSpan(3);
+
+                    var vaultItems = scrollViewer.Child<ListBox>((listBox) =>
+                        {
+                            listBox
+                            .SetItemsSource(dummyItems)
+                            .SetItemTemplate(contentTemplate)
+                            .SetSelectionMode(SelectionMode.Single);
+                        });
+                });
+
         //var filteredItems = new ObservableCollection<Content>(dummyItems.Where(x => x.NumberOfTimesSeen == 0));
-
-
-        var vaultItems = world.Entity()
-            .ChildOf(scrollViewer)
-            .Set(new ListBox())
-            .SetItemsSource(dummyItems)
-            .SetItemTemplate(contentTemplate)
-            .SetSelectionMode(SelectionMode.Single);
     }
 }
 
