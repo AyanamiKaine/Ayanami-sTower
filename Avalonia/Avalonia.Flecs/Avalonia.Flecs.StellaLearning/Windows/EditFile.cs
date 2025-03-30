@@ -103,9 +103,8 @@ public class EditFile : IUIComponent, IDisposable
                 t.SetText("Name");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            nameTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                nameTextBox = textBox;
                 textBox.SetWatermark("Name")
                 .SetText(spacedRepetitionFile.Name);
             });
@@ -115,9 +114,8 @@ public class EditFile : IUIComponent, IDisposable
                 t.SetText("Question");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            questionTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                questionTextBox = textBox;
                 textBox.SetWatermark("Question")
                 .SetText(spacedRepetitionFile.Question);
             });
@@ -127,9 +125,8 @@ public class EditFile : IUIComponent, IDisposable
                 t.SetText("FilePath");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            filePath = stackPanel.Child<TextBox>((textBox) =>
             {
-                filePath = textBox;
                 textBox
                 .SetWatermark("FilePath")
                 .SetInnerRightContent(
@@ -151,9 +148,8 @@ public class EditFile : IUIComponent, IDisposable
 
             });
 
-            stackPanel.Child<TextBlock>((textBlock) =>
+            validationTextBlock = stackPanel.Child<TextBlock>((textBlock) =>
             {
-                validationTextBlock = textBlock;
                 textBlock.SetText("");
                 textBlock.SetFontSize(12);
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
