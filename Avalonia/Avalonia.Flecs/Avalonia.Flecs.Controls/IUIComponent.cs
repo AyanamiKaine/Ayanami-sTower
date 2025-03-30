@@ -1,3 +1,4 @@
+using Avalonia.Controls;
 using Avalonia.Flecs.Controls.ECS;
 using Flecs.NET.Core;
 
@@ -42,13 +43,13 @@ public interface IUIComponent
     /// <param name="margin">New Margin</param>
     void SetMargin(Thickness margin)
     {
-        Root.SetMargin(margin);
+        Root.Get<Control>().Margin = margin;
     }
     /// <summary>
     /// Gets the margin of the underlying control element
     /// </summary>
     Thickness GetMargin()
     {
-        return Root.GetMargin();
+        return Root.Get<Control>().Margin;
     }
 }
