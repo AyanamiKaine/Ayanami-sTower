@@ -25,11 +25,12 @@ public class LiteraturePage : IUIComponent
     /// <returns></returns>
     public LiteraturePage(World world)
     {
-        _root = world.Entity()
-            .Add<Page>()
-            .Set(new Grid())
+        _root = world.UI<Grid>((grid) =>
+        {
+            grid
             .SetColumnDefinitions("*, Auto, Auto")
             .SetRowDefinitions("Auto, *, Auto");
+        }).Add<Page>();
 
         _root.AddDefaultStyling((literaturePage) =>
         {
@@ -39,18 +40,19 @@ public class LiteraturePage : IUIComponent
                 switch (literaturePage.Parent().Get<NavigationView>().DisplayMode)
                 {
                     case NavigationViewDisplayMode.Minimal:
-                        literaturePage.SetMargin(50, 10, 20, 20);
+                        //literaturePage.SetMargin(50, 10, 20, 20);
                         break;
                     default:
-                        literaturePage.SetMargin(20, 10, 20, 20);
+                        //literaturePage.SetMargin(20, 10, 20, 20);
                         break;
                 }
             }
         });
 
-        var text = world.Entity()
-            .Set(new TextBlock())
-            .SetText("Literature")
-            .ChildOf(_root);
+        var text = world.UI<TextBlock>((textBlock) =>
+        {
+            textBlock.SetText("Literature");
+
+        }).ChildOf(_root);
     }
 }
