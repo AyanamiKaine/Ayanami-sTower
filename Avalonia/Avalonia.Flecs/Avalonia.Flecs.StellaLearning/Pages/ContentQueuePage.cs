@@ -91,16 +91,4 @@ public class ContentQueuePage : IUIComponent
     {
         _root.Remove(Ecs.ChildOf);
     }
-
-    /// <inheritdoc/>
-    public Thickness GetMargin()
-    {
-        return _root.GetMargin();
-    }
-
-    /// <inheritdoc/>
-    public void SetMargin(Thickness margin)
-    {
-        _root.SetMargin(margin);
-    }
 }
