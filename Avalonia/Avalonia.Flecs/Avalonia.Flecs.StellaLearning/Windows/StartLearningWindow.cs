@@ -919,7 +919,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
         }
         else
         {
-            text = $"Next Item: '{futureItem?.Name}', due: {futureItem?.NextReview}";
+            text = $"Next Item: '{futureItem?.Name}', due: {futureItem?.NextReview.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "N/A"}";
         }
 
         return _world.UI<TextBlock>((textBlock) =>
