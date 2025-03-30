@@ -44,7 +44,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         private readonly ObservableCollection<SpacedRepetitionItem>? _allItems; // Make nullable
         /// <inheritdoc/>
         public Entity Root { get; }
-               // --- Primary Constructor (Existing) ---
+        // --- Primary Constructor (Existing) ---
         /// <summary>
         /// Creates a new Tag Management UI Component with auto-completion, initially empty.
         /// </summary>
@@ -139,32 +139,38 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                     inputGrid.SetColumnDefinitions("*,Auto").SetRowDefinitions("Auto");
                     inputGrid.Child<AutoCompleteBox>(autoCompleteBox =>
                     {
-                         _tagInputAutoCompleteBox = autoCompleteBox;
-                         autoCompleteBox.SetColumn(0).SetWatermark("Add Tag...") // Added Watermark here
-                            .With(acb => {
-                                acb.ItemsSource = _allUniqueTags;
-                                acb.FilterMode = AutoCompleteFilterMode.StartsWith;
-                            })
-                            .OnKeyDown((sender, args) => {
-                                if (sender is AutoCompleteBox acb && (args.Key == Key.Enter || args.Key == Key.Tab)) {
-                                    AddTagFromInput(acb.Text);
-                                    args.Handled = true;
-                                }
-                            });
+                        _tagInputAutoCompleteBox = autoCompleteBox;
+                        autoCompleteBox.SetColumn(0).SetWatermark("Add Tag...") // Added Watermark here
+                           .With(acb =>
+                           {
+                               acb.ItemsSource = _allUniqueTags;
+                               acb.FilterMode = AutoCompleteFilterMode.StartsWith;
+                           })
+                           .OnKeyDown((sender, args) =>
+                           {
+                               if (sender is AutoCompleteBox acb && (args.Key == Key.Enter || args.Key == Key.Tab))
+                               {
+                                   AddTagFromInput(acb.Text);
+                                   args.Handled = true;
+                               }
+                           });
                     });
-                    inputGrid.Child<Button>(button => {
+                    inputGrid.Child<Button>(button =>
+                    {
                         button.SetText("Add").SetColumn(1).SetMargin(5, 0, 0, 0)
-                           .OnClick((_, _) => {
-                                if (_tagInputAutoCompleteBox?.Entity.IsAlive() == true) {
-                                    AddTagFromInput(_tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text);
-                                }
+                           .OnClick((_, _) =>
+                           {
+                               if (_tagInputAutoCompleteBox?.Entity.IsAlive() == true)
+                               {
+                                   AddTagFromInput(_tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text);
+                               }
                            });
                     });
                 });
                 rootPanel.Child<ItemsControl>(itemsControl =>
                 {
-                     itemsControl.SetItemsSource(Tags).SetItemTemplate(tagItemTemplate)
-                        .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
+                    itemsControl.SetItemsSource(Tags).SetItemTemplate(tagItemTemplate)
+                       .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
                 });
             });
 
