@@ -134,11 +134,16 @@ public class AddImageCloze : IUIComponent, IDisposable
                 textBox.SetWatermark("Name");
             });
 
-            stackPanel.Child(FilePickerButton(world).OnClick(async (e, args) =>
-            {
-                var path = await FilePickerAsync();
-                _imagePathSubject.OnNext(path); // Update using OnNext instead of assignment
-            }));
+            stackPanel.Child(world.UI<Button>((button) =>
+                                {
+                                    button.Child<TextBlock>((t) => t.SetText("Select Image"));
+
+                                    button.OnClick(async (e, args) =>
+                                    {
+                                        var path = await FilePickerAsync();
+                                        _imagePathSubject.OnNext(path); // Update using OnNext instead of assignment
+                                    });
+                                }));
 
             stackPanel.Child<Grid>((grid) =>
             {
@@ -504,14 +509,6 @@ public class AddImageCloze : IUIComponent, IDisposable
         // Remove the selection rectangle
         canvasEntity.Get<Canvas>().Children.Remove(rect);
         selectionRectangle.Destruct();
-    }
-
-    private Entity FilePickerButton(World world)
-    {
-        return world.UI<Button>((button) =>
-        {
-            button.Child<TextBlock>((t) => t.SetText("Select Image"));
-        });
     }
 
     private static async Task<string> FilePickerAsync()
