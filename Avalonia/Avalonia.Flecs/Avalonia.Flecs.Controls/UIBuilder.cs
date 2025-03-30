@@ -108,6 +108,42 @@ shows information where its needed and hides it where it doesnt.
 /// </summary>
 public static class UIBuilderExtensions
 {
+
+    /// <summary>
+    /// Converts a UIBuilder for a derived AvaloniaObject type to a UIBuilder for a base type.
+    /// Creates a new UIBuilder instance wrapping the same entity.
+    /// </summary>
+    /// <typeparam name="TBase">The base AvaloniaObject type for the new builder.</typeparam>
+    /// <typeparam name="TDerived">The derived AvaloniaObject type of the source builder.</typeparam>
+    /// <param name="derivedBuilder">The source builder instance.</param>
+    /// <exception cref="ArgumentNullException">Thrown if derivedBuilder is null.</exception>
+    /// <exception cref="ArgumentException">Thrown if derivedBuilder's entity is invalid or dead.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the entity does not have a component of type TBase.</exception>
+    public static UIBuilder<TBase> AsBaseBuilder<TBase, TDerived>(this UIBuilder<TDerived> derivedBuilder)
+        where TDerived : AvaloniaObject, TBase // Ensure Derived inherits from Base
+        where TBase : AvaloniaObject
+    {
+        if (derivedBuilder == null)
+            throw new ArgumentNullException(nameof(derivedBuilder), "Cannot convert a null builder.");
+
+        var entity = derivedBuilder.Entity;
+
+        if (!entity.IsValid() || !entity.IsAlive())
+            throw new ArgumentException("Cannot convert a builder with an invalid or dead entity.", nameof(derivedBuilder));
+
+        // Check if the entity has the base component type. Crucial!
+        // Use Has<TBase>() because Get<TBase>() might throw if it doesn't exist.
+        if (!entity.Has<TBase>())
+        {
+            // This could happen if the component was removed after the derived builder was created.
+            throw new InvalidOperationException($"Entity {entity.Id} ({entity.Name()}) does not have the required base component {typeof(TBase).Name} for conversion.");
+        }
+
+        // Get the world instance safely from the entity
+        World entityWorld = entity.CsWorld();
+        return new UIBuilder<TBase>(entityWorld, entity);
+    }
+
     /// <summary>
     /// Creates a template for a type with a specific root control type.
     /// </summary>
@@ -129,29 +165,14 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Creates a new entity with the specified control component and configures it using a builder pattern.
-    /// </summary>
-    /// <typeparam name="T">The type of Avalonia control to create.</typeparam>
-    /// <param name="world">The Flecs world.</param>
-    /// <param name="configure">Action to configure the entity and its children.</param>
-    /// <returns>The created entity.</returns>
-    public static Entity UI<T>(this World world, Action<UIBuilder<T>> configure) where T : AvaloniaObject, new()
-    {
-        var entity = world.Entity().Set(new T());
-        var builder = new UIBuilder<T>(world, entity);
-        configure(builder);
-        return entity;
-    }
-
-    /// <summary>
     /// Creates a new entity with the specified control component, configures it using a builder pattern,
     /// and returns the builder for further configuration.
     /// </summary>
     /// <typeparam name="T">The type of Avalonia control to create.</typeparam>
     /// <param name="world">The Flecs world.</param>
-    /// <param name="configure">Action to configure the entity and its children.</param>
-    /// <returns>The builder for the created entity.</returns>
-    public static UIBuilder<T> UIBuilder<T>(this World world, Action<UIBuilder<T>> configure) where T : AvaloniaObject, new()
+    /// <param name="configure">Action to configure the entity and its children using the builder.</param>
+    /// <returns>The builder for the created entity.</returns> // CHANGED RETURN TYPE
+    public static UIBuilder<T> UI<T>(this World world, Action<UIBuilder<T>> configure) where T : AvaloniaObject, new()
     {
         var entity = world.Entity().Set(new T());
         var builder = new UIBuilder<T>(world, entity);
@@ -160,19 +181,38 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Creates a new child entity with the specified control component and configures it using a builder pattern.
+    /// Creates a new child entity with the specified control component, configures it using a builder pattern,
+    /// and returns the builder for further configuration.
+    /// </summary>
+    /// <typeparam name="T">The type of Avalonia control to create.</typeparam>
+    /// <param name="parentBuilder">The builder for the parent entity.</param> // CHANGED PARAMETER TYPE (for consistency, though Entity also works)
+    /// <param name="configure">Action to configure the entity and its children using the builder.</param>
+    /// <returns>The builder for the created child entity.</returns> // CHANGED RETURN TYPE
+    public static UIBuilder<T> UI<T>(this UIBuilder<AvaloniaObject> parentBuilder, Action<UIBuilder<T>> configure) where T : Control, new() // Generic parent type might be needed
+    {
+        var world = parentBuilder.Entity.CsWorld(); // Get world from parent builder's entity
+        var parentEntity = parentBuilder.Entity;
+        var entity = world.Entity().ChildOf(parentEntity).Set(new T());
+        var builder = new UIBuilder<T>(world, entity);
+        configure(builder);
+        return builder;
+    }
+
+    /// <summary>
+    /// Creates a new child entity with the specified control component, configures it using a builder pattern,
+    /// and returns the builder for further configuration.
     /// </summary>
     /// <typeparam name="T">The type of Avalonia control to create.</typeparam>
     /// <param name="parent">The parent entity.</param>
-    /// <param name="configure">Action to configure the entity and its children.</param>
-    /// <returns>The created child entity.</returns>
-    public static Entity UI<T>(this Entity parent, Action<UIBuilder<T>> configure) where T : Control, new()
+    /// <param name="configure">Action to configure the entity and its children using the builder.</param>
+    /// <returns>The builder for the created child entity.</returns> // CHANGED RETURN TYPE
+    public static UIBuilder<T> UI<T>(this Entity parent, Action<UIBuilder<T>> configure) where T : Control, new()
     {
         var world = parent.CsWorld();
         var entity = world.Entity().ChildOf(parent).Set(new T());
         var builder = new UIBuilder<T>(world, entity);
         configure(builder);
-        return entity;
+        return builder; // RETURN BUILDER
     }
 
     // --- Helper Method to Add Subscription (using DisposableComponentHandle) ---
@@ -414,6 +454,26 @@ public static class UIBuilderExtensions
         if (toolTipEntity.Has<ToolTip>())
         {
             ToolTip.SetTip(builder.Get<Control>(), toolTipEntity.Get<ToolTip>());
+            return builder;
+        }
+        return builder;
+    }
+
+    /// <summary>
+    /// Attaches an tooltip to an control
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="toolTip"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, UIBuilder<ToolTip> toolTip) where T : Control, new()
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        if (toolTip.Entity.Has<ToolTip>())
+        {
+            ToolTip.SetTip(builder.Get<Control>(), toolTip.Get<ToolTip>());
             return builder;
         }
         return builder;
@@ -1754,12 +1814,12 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="content"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetInnerRightContent(this UIBuilder<TextBox> builder, object content)
+    public static UIBuilder<TextBox> SetInnerRightContent<T>(this UIBuilder<TextBox> builder, UIBuilder<T> content) where T : AvaloniaObject
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Entity.Get<TextBox>().InnerRightContent = content;
+        builder.Entity.Get<TextBox>().InnerRightContent = content.Get<T>();
 
         return builder;
     }
@@ -1788,12 +1848,13 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="content"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetInnerLeftContent(this UIBuilder<TextBox> builder, object content)
+    public static UIBuilder<TextBox> SetInnerLeftContent<T>(this UIBuilder<TextBox> builder, UIBuilder<T> content) where T : AvaloniaObject
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Entity.Get<TextBox>().InnerLeftContent = content;
+        builder.Entity.Get<TextBox>().InnerLeftContent = content.Get<T>();
+
         return builder;
     }
 
@@ -1949,6 +2010,23 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the context flyout of a control component
+    /// </summary>
+    /// <typeparam name="T">The type of control to set the context flyout for</typeparam>
+    /// <typeparam name="flyoutType">The type of flyout to set as the context</typeparam>
+    /// <param name="builder">The UI builder for the control</param>
+    /// <param name="flyoutBuilder">The UI builder for the flyout</param>
+    /// <returns>The UI builder for the control, for method chaining</returns>
+    public static UIBuilder<T> SetContextFlyout<T, flyoutType>(this UIBuilder<T> builder, UIBuilder<flyoutType> flyoutBuilder) where T : Control, new() where flyoutType : FlyoutBase
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<T>().ContextFlyout = flyoutBuilder.Get<FlyoutBase>();
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the context flyout for a listbox
     /// </summary>
     /// <param name="builder"></param>
@@ -2021,9 +2099,21 @@ public class UIBuilder<T> where T : AvaloniaObject
     /// <returns>The builder for the newly created child entity.</returns>
     public UIBuilder<TChild> Child<TChild>(Action<UIBuilder<TChild>> configure) where TChild : Control, new()
     {
-        var child = _entity.UI(configure);
-        return new UIBuilder<TChild>(_world, child);
+        return _entity.UI(configure);
     }
+
+    /// <summary>
+    /// Attaches an ui builder to another ui builder.
+    /// </summary>
+    /// <typeparam name="TChild"></typeparam>
+    /// <param name="childBuilder"></param>
+    /// <returns></returns>
+    public UIBuilder<T> Child<TChild>(UIBuilder<TChild> childBuilder) where TChild : AvaloniaObject
+    {
+        childBuilder._entity.ChildOf(_entity);
+        return this;
+    }
+
 
     /// <summary>
     /// Attaches an ui component as a child. If they are implemented IDisposable
@@ -2070,6 +2160,16 @@ public class UIBuilder<T> where T : AvaloniaObject
     public UIBuilder<T> SetComponent<ComponentType>(ComponentType component) where ComponentType : new()
     {
         Entity.Set(component);
+        return this;
+    }
+
+    /// <summary>
+    /// Attaches an tag to an entity
+    /// </summary>
+    /// <returns></returns>
+    public UIBuilder<T> Add<ComponentType>() where ComponentType : new()
+    {
+        Entity.Add<ComponentType>();
         return this;
     }
 
