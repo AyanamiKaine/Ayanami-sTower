@@ -57,7 +57,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Avalonia.Flecs.Controls\Avalonia.Flecs.Controls.csproj" />
-    <ProjectReference Include="..\Avalonia.Flecs.Debug.Window\Avalonia.Flecs.Debug.Window.csproj" />
     <ProjectReference Include="..\Avalonia.Flecs.FluentUI.Controls\Avalonia.Flecs.FluentUI.Controls.csproj" />
     <ProjectReference Include="..\..\..\FSRSPythonCSharpBridge\FSRSPythonBridge\FSRSPythonBridge.csproj" />
     <ProjectReference Include="..\Avalonia.Flecs.Util\Avalonia.Flecs.Util.csproj" />
