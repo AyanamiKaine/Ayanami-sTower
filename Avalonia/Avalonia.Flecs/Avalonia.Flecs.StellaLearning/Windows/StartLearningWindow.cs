@@ -31,8 +31,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
     /// <inheritdoc/>
     public Entity Root => _root;
     private World _world;
-    private Entity _contentContainer;
-    private Entity _currentContent;
+    private UIBuilder<Control>? _contentContainer;
+    private UIBuilder<Control>? _currentContent;
     private ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems;
     /// <summary>
     /// Represents the item that is or should be currently be 
@@ -47,7 +47,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
             _itemToBeLearnedField = value;
 
             //When the UI is not fully constructed dont update the content display
-            if (_root == 0 || _contentContainer == 0 || _currentContent == 0)
+            if (_root == 0 || _contentContainer is null || _currentContent is null)
             { return; }
 
             UpdateContentDisplay();
@@ -90,15 +90,15 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 await StatsTracker.Instance.EndStudySession();
             });
             window.Show();
-        });
+        }).Entity;
     }
-    private Entity CreateWindowContents()
+    private UIBuilder<Control> CreateWindowContents()
     {
         _contentContainer = _world.UI<ContentControl>(container =>
         {
             container.SetVerticalAlignment(Layout.VerticalAlignment.Stretch)
                      .SetHorizontalAlignment(Layout.HorizontalAlignment.Stretch);
-        });
+        }).AsBaseBuilder<Control, ContentControl>();
 
         // Single event handler per item that handles all property change needs
         foreach (var item in _spacedRepetitionItems)
@@ -113,7 +113,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
         return _contentContainer;
     }
 
-    private Entity LearnFileContent()
+    private UIBuilder<StackPanel> LearnFileContent()
     {
         var file = (SpacedRepetitionFile)_ItemToBeLearned!;
 
@@ -289,7 +289,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
     }
 
-    private Entity LearnQuizContent()
+    private UIBuilder<StackPanel> LearnQuizContent()
     {
         var quiz = (SpacedRepetitionQuiz)_ItemToBeLearned!;
 
@@ -381,7 +381,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
         });
     }
 
-    private Entity LearnFlashcardContent()
+    private UIBuilder<StackPanel> LearnFlashcardContent()
     {
         var flashcard = (SpacedRepetitionFlashcard)_ItemToBeLearned!;
 
@@ -517,7 +517,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 });
     }
 
-    private Entity LearnClozeContent()
+    private UIBuilder<StackPanel> LearnClozeContent()
     {
         var cloze = (SpacedRepetitionCloze)_ItemToBeLearned!;
         return _world.UI<StackPanel>((stackPanel) =>
@@ -643,7 +643,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
         });
     }
 
-    private Entity LearnImageClozeContent()
+    private UIBuilder<StackPanel> LearnImageClozeContent()
     {
         var imageCloze = (SpacedRepetitionImageCloze)_ItemToBeLearned!;
 
@@ -837,25 +837,13 @@ public class StartLearningWindow : IUIComponent, IDisposable
         // If we already have content, destroy it
         if (_currentContent != default)
         {
-            _currentContent.Destruct();
+            _currentContent.Entity.Destruct();
         }
         // Generate the new content
         _currentContent = DisplayRightItem();
 
-        if (!_contentContainer.Has<ContentControl>())
-        {
-            Console.WriteLine("ContentContainer is missing its content control component!");
-            return;
-        }
-
-        if (!_currentContent.Has<object>())
-        {
-            Console.WriteLine("_currentContent is missing its object component!");
-            return;
-        }
-
         // Set it as the content of our container
-        _contentContainer.Get<ContentControl>().Content = _currentContent.Get<object>();
+        _contentContainer!.Get<ContentControl>().Content = _currentContent.Get<object>();
     }
 
     // Centralized method to attach event handler
@@ -899,28 +887,28 @@ public class StartLearningWindow : IUIComponent, IDisposable
         _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
     }
 
-    private Entity DisplayRightItem()
+    private UIBuilder<Control> DisplayRightItem()
     {
         try
         {
             return _ItemToBeLearned switch
             {
-                SpacedRepetitionQuiz => LearnQuizContent(),
-                SpacedRepetitionFlashcard => LearnFlashcardContent(),
-                SpacedRepetitionFile => LearnFileContent(),
-                SpacedRepetitionCloze => LearnClozeContent(),
-                SpacedRepetitionImageCloze => LearnImageClozeContent(),
-                _ => NoMoreItemToBeReviewedContent(),
+                SpacedRepetitionQuiz quizItem => LearnQuizContent().AsBaseBuilder<Control, StackPanel>(),
+                SpacedRepetitionFlashcard => LearnFlashcardContent().AsBaseBuilder<Control, StackPanel>(),
+                SpacedRepetitionFile => LearnFileContent().AsBaseBuilder<Control, StackPanel>(),
+                SpacedRepetitionCloze => LearnClozeContent().AsBaseBuilder<Control, StackPanel>(),
+                SpacedRepetitionImageCloze => LearnImageClozeContent().AsBaseBuilder<Control, StackPanel>(),
+                _ => NoMoreItemToBeReviewedContent().AsBaseBuilder<Control, TextBlock>(),
             };
         }
         catch (NotImplementedException e)
         {
             Console.WriteLine(e.Message);
-            return _world.Entity();
+            return _world.UI<TextBox>((t) => t.SetText("Somethin Went Wrong!")).AsBaseBuilder<Control, TextBox>();
         }
     }
 
-    private Entity NoMoreItemToBeReviewedContent()
+    private UIBuilder<TextBlock> NoMoreItemToBeReviewedContent()
     {
         var futureItem = _spacedRepetitionItems.NextItemToBeReviewedInFuture();
 
