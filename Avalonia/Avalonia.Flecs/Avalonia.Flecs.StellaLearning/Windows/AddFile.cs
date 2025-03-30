@@ -66,7 +66,7 @@ public class AddFile : IUIComponent, IDisposable
             window.OnClosed((sender, args) => Dispose());
 
             window.Show();
-        });
+        }).Entity;
     }
 
     private Entity DefineWindowContents(World world)
@@ -267,7 +267,7 @@ public class AddFile : IUIComponent, IDisposable
                 };
                 button.With((b) => b.Click += createButtonClickedHandler);
             });
-        });
+        }).Entity;
     }
 
     private async Task<string> FilePickerAsync()
