@@ -276,6 +276,13 @@ public partial class App : Application
             desktop.MainWindow = MainWindow.Get<Window>();
             desktop.MainWindow.Hide();
         }
+
+        // Create the scheduler instance (use default parameters or load custom ones)
+        var scheduler = new FsrsSharp.Scheduler();
+
+        // Initialize the service
+        SchedulerService.Initialize(scheduler);
+
         base.OnFrameworkInitializationCompleted();
         //_world.RunRESTAPI();
 #if DEBUG

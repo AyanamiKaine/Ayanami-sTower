@@ -145,7 +145,7 @@ namespace Avalonia.Flecs.StellaLearning.Converters
                             baseItem.Priority = reader.GetInt32();
                             break;
                         case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.Step):
-                            baseItem.Step = reader.TokenType == JsonTokenType.Null ? null : reader.GetInt64();
+                            baseItem.Step = reader.TokenType == JsonTokenType.Null ? null : (int)reader.GetInt64();
                             break;
                         case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.LastReview):
                             baseItem.LastReview = reader.TokenType == JsonTokenType.Null ? null : reader.GetDateTime();

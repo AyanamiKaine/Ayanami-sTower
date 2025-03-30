@@ -12,20 +12,23 @@ using Avalonia.Media;
 /// <summary>
 /// Provides extension methods for ObservableCollection of SpacedRepetitionItem objects.
 /// </summary>
+/// <summary>
+/// Provides extension methods for ObservableCollection of SpacedRepetitionItem objects.
+/// </summary>
 public static class SpacedRepetitionObservableCollectionExtensions
 {
-
+    // Comments explaining randomization remain the same...
     /*
-    Why are the first most priority items randomized? 
+    Why are the first most priority items randomized?
 
-    To avoid the creation of patterns. Sometimes a pattern of 
+    To avoid the creation of patterns. Sometimes a pattern of
     items can emerge that a closely together. Where you can anticipate
-    the next item. 
-    
+    the next item.
+
     Why is that bad?
 
     What can happen is that you associate the anwswer of spaced repetition items
-    based on what items came before, making it harder or easier to do active recall. 
+    based on what items came before, making it harder or easier to do active recall.
     This is a real thing that can happen.
     That is why we need to add some randomize.
     */
@@ -42,23 +45,24 @@ public static class SpacedRepetitionObservableCollectionExtensions
             return null; // Return null if the collection is empty or null
         }
 
-        DateTime now = DateTime.Now;
+        // Use DateTimeOffset.UtcNow for accurate time comparison
+        DateTimeOffset now = DateTimeOffset.UtcNow;
         var random = new Random();
 
-        // Get all due items, take top 25 by priority, then randomize their order
+        // Filter using DateTimeOffset
         return spacedRepetitionItems
-                .Where(item => item.NextReview <= now)      // Filter for items that are due
-                .OrderByDescending(item => item.Priority)   // Order by priority
-                .Take(25)                                    // Take top 25 priority items
-                .OrderBy(item => random.Next())             // Randomize these top 25
-                .FirstOrDefault();                          // Return the first (random) item
+                .Where(item => item.NextReview <= now)      // Filter for items that are due (compare DateTimeOffset)
+                .OrderByDescending(item => item.Priority)  // Order by priority
+                .Take(25)                                  // Take top 25 priority items
+                .OrderBy(item => random.Next())            // Randomize these top 25
+                .FirstOrDefault();                         // Return the first (random) item
     }
 
 
     /// <summary>
     /// Returns the next item to be reviewed that has its due date in the future.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>The earliest item due in the future, or null if none exist.</returns>
     public static SpacedRepetitionItem? NextItemToBeReviewedInFuture(this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
         if (spacedRepetitionItems?.Any() != true)
@@ -66,9 +70,70 @@ public static class SpacedRepetitionObservableCollectionExtensions
             return null;
         }
 
+        // Order by DateTimeOffset
         return spacedRepetitionItems
                 .OrderBy(item => item.NextReview)
                 .FirstOrDefault();
+    }
+}
+
+/// <summary>
+/// Provides a globally accessible instance of the FSRS Scheduler.
+/// Initialize this service once at application startup.
+/// </summary>
+public static class SchedulerService
+{
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private static FsrsSharp.Scheduler? _instance;
+
+    /// <summary>
+    /// Gets the configured Scheduler instance.
+    /// Throws an InvalidOperationException if the service has not been initialized.
+    /// </summary>
+    public static FsrsSharp.Scheduler Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                Logger.Error("SchedulerService accessed before initialization.");
+                throw new InvalidOperationException("SchedulerService has not been initialized. Call Initialize() first.");
+            }
+            return _instance;
+        }
+    }
+
+    /// <summary>
+    /// Initializes the SchedulerService with a specific Scheduler instance.
+    /// This should be called once during application startup.
+    /// </summary>
+    /// <param name="scheduler">The Scheduler instance to use globally.</param>
+    public static void Initialize(FsrsSharp.Scheduler scheduler)
+    {
+        if (_instance != null)
+        {
+            Logger.Warn("SchedulerService is being initialized more than once.");
+            // Decide if re-initialization should be allowed or throw an error
+            // For now, allow re-initialization but log a warning.
+        }
+        if (scheduler == null)
+        {
+            Logger.Error("Attempted to initialize SchedulerService with a null scheduler.");
+            throw new ArgumentNullException(nameof(scheduler));
+        }
+
+        Logger.Info("SchedulerService initialized.");
+        _instance = scheduler;
+    }
+
+    /// <summary>
+    /// Resets the service, clearing the current scheduler instance.
+    /// Useful for testing or specific shutdown scenarios.
+    /// </summary>
+    public static void Reset()
+    {
+        Logger.Info("SchedulerService reset.");
+        _instance = null;
     }
 }
 
@@ -78,73 +143,78 @@ public static class SpacedRepetitionObservableCollectionExtensions
 public enum SpacedRepetitionItemType
 {
     /// <summary>
-    /// The item is a cloze
+    /// Cloze
     /// </summary>
     Cloze,
-
     /// <summary>
-    /// The item is an image
+    /// Image
     /// </summary>
     Image,
     /// <summary>
-    /// The item is an image cloze
+    /// ImageCloze
     /// </summary>
     ImageCloze,
     /// <summary>
-    /// The item is a video
+    /// Video
     /// </summary>
     Video,
     /// <summary>
-    /// The item is only a audio
+    /// Audio
     /// </summary>
     Audio,
     /// <summary>
-    /// The item is a quiz
+    /// Quiz
     /// </summary>
     Quiz,
     /// <summary>
-    /// The item is a flashcard
+    /// Flashcard
     /// </summary>
     Flashcard,
     /// <summary>
-    /// The item is a text
+    /// Text
     /// </summary>
     Text,
     /// <summary>
-    /// The item is an exercise
+    /// Exercise
     /// </summary>
     Exercise,
     /// <summary>
-    /// The item is a file
+    /// File
     /// </summary>
     File,
     /// <summary>
-    /// The item is a PDF
+    /// PDF
     /// </summary>
     PDF,
     /// <summary>
-    /// The item is an executable
+    /// Executable
     /// </summary>
     Executable,
 }
+
 /// <summary>
-/// Represents the state of the spaced repetition item
+/// Represents the state of the spaced repetition item, mapping to FsrsSharp.State
 /// </summary>
 public enum SpacedRepetitionState
 {
     /// <summary>
-    /// The card is in the learning state
+    /// The item has not been reviewed yet.
+    /// </summary>
+    New = 0, // Added to match FsrsSharp.State
+    /// <summary>
+    /// The item is in the learning state.
     /// </summary>
     Learning = 1,
     /// <summary>
-    /// The card is in the review state
+    /// The item has graduated from learning.
     /// </summary>
     Review = 2,
     /// <summary>
-    /// The card is in the relearning state
+    /// The item was forgotten and is being relearned.
     /// </summary>
     Relearning = 3
 }
+
 ///<summary>
 ///Defines an SpacedRepetitionItem that can be used for spaced repetition
 ///</summary>
@@ -156,202 +226,352 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// The unique identifier of the item
     /// </summary>
     public Guid Uid { get; set; } = Guid.NewGuid();
+
     [ObservableProperty]
     private string _name = "";
+
     [ObservableProperty]
     private List<string> _tags = [];
+
     [ObservableProperty]
-    private float? _stability;
+    private double? _stability; // Changed to double? to match FsrsSharp.Card
+
     [ObservableProperty]
-    private float? _difficulty;
+    private double? _difficulty; // Changed to double? to match FsrsSharp.Card
+
     [ObservableProperty]
     private int _priority;
 
     /// <summary>
-    /// The card's current learning or relearning step or None if the card is in the Review state.
+    /// The card's current learning or relearning step or null if the card is New or in the Review state.
     /// </summary>
     [ObservableProperty]
-    private long? _step = null;
+    private int? _step = null; // Changed to int? to match FsrsSharp.Card
 
     [ObservableProperty]
-    private DateTime? _lastReview;
+    private DateTimeOffset? _lastReview; // Changed to DateTimeOffset?
 
     [ObservableProperty]
-    private DateTime _nextReview;
+    private DateTimeOffset _nextReview; // Changed to DateTimeOffset
+
     [ObservableProperty]
     private int _numberOfTimesSeen;
+
+    // These properties seem less directly related to FSRS state, keeping them as int
     [ObservableProperty]
     private int _elapsedDays;
     [ObservableProperty]
     private int _scheduledDays;
+
     [ObservableProperty]
-    private SpacedRepetitionState _spacedRepetitionState = SpacedRepetitionState.Learning;
+    private SpacedRepetitionState _spacedRepetitionState = SpacedRepetitionState.New; // Default to New
+
     [ObservableProperty]
     private SpacedRepetitionItemType _spacedRepetitionItemType = SpacedRepetitionItemType.Text;
 
-    // Backing field for the Card property
-    private Card? _card;
+    // Backing field for the Card property using the native C# FSRS card
+    private FsrsSharp.Card? _card;
 
-    // Represents a refrence to the underlying representation of the card
-    // Here we use a python library to create a card object using FSRS
-    private Card Card
+    /// <summary>
+    /// Represents a reference to the underlying FsrsSharp.Card object.
+    /// Setting this property updates the related ObservableProperties of the SpacedRepetitionItem.
+    /// </summary>
+    private FsrsSharp.Card Card
     {
         get
         {
-            Logger.Trace("Getting Card reference");
+            // Ensure the card exists, especially after deserialization
+            // If _card is null, try to recreate it from the item's properties
+            if (_card == null)
+            {
+                Logger.Warn("FsrsSharp.Card reference was null. Recreating from SpacedRepetitionItem properties. Item ID: {Uid}", Uid);
+                CreateCardFromSpacedRepetitionData();
+            }
+            // The non-null forgiveness operator (!) assumes CreateCardFromSpacedRepetitionData always succeeds in setting _card.
+            // Consider adding null checks or alternative handling if that's not guaranteed.
             return _card!;
         }
         set
         {
             try
             {
-                Logger.Debug("Setting Card reference and updating properties from it. Card ID: {CardID}", value.ID);
+                if (value == null)
+                {
+                    Logger.Warn("Attempted to set Card reference to null. Item ID: {Uid}", Uid);
+                    _card = null;
+                    // Optionally reset related properties or handle as needed
+                    Stability = null;
+                    Difficulty = null;
+                    Step = null;
+                    // Keep state, lastReview, nextReview as they might have been loaded
+                    return;
+                }
+
+                Logger.Debug("Setting FsrsSharp.Card reference and updating properties from it. Card ID: {CardID}", value.CardId);
                 _card = value;
-                Stability = Card.Stability;
-                Difficulty = Card.Difficulty;
-                SpacedRepetitionState = (SpacedRepetitionState)Card.State;
-                LastReview = Card.LastReview;
-                NextReview = Card.Due;
-                Step = Card.Step;
-                Logger.Debug("Updated properties from Card: State={State}, Stability={Stability}, Difficulty={Difficulty}",
-                    SpacedRepetitionState, Stability, Difficulty);
+
+                // Update Observable Properties from the FsrsSharp.Card
+                // Note the type conversions/casting
+                Stability = _card.Stability; // double? to double?
+                Difficulty = _card.Difficulty; // double? to double?
+                SpacedRepetitionState = (SpacedRepetitionState)_card.State; // FsrsSharp.State to SpacedRepetitionState
+                LastReview = _card.LastReview; // DateTimeOffset? to DateTimeOffset?
+                NextReview = _card.Due; // DateTimeOffset to DateTimeOffset
+                Step = _card.Step; // int? to int?
+
+                Logger.Debug("Updated properties from Card: State={State}, Stability={Stability}, Difficulty={Difficulty}, Step={Step}, NextReview={NextReview:O}",
+                    SpacedRepetitionState, Stability, Difficulty, Step, NextReview);
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Error setting Card reference and updating properties");
-                throw;
+                Logger.Error(ex, "Error setting FsrsSharp.Card reference and updating properties for Item ID: {Uid}", Uid);
+                // Decide if re-throwing is appropriate or if the application can recover
+                // throw;
             }
         }
     }
+
     /// <summary>
-    /// The name of the item
+    /// Default constructor for creating a new spaced repetition item.
+    /// Initializes a new underlying FsrsSharp.Card.
     /// </summary>
     public SpacedRepetitionItem()
     {
-        Card = FSRS.CreateCard();
-        Stability = Card.Stability;
-        Difficulty = Card.Difficulty;
-        SpacedRepetitionState = (SpacedRepetitionState)Card.State;
-        LastReview = Card.LastReview;
-        NextReview = Card.Due;
-        Step = Card.Step;
+        Logger.Trace("Creating new SpacedRepetitionItem with new FsrsSharp.Card. Item ID: {Uid}", Uid);
+        // Create a new native C# Card (defaults to State.New)
+        var newCard = new FsrsSharp.Card();
+        // Set the internal card and update observable properties
+        this.Card = newCard; // Use the property setter to update all fields
     }
 
     /// <summary>
-    /// Used for desirialisation for already created and used spaced repetition items
-    /// otherwise we would reset the card state to the initial card state that would mean
-    /// the spaced repetition would look like it was just created and not already learned
-    /// a certain amount of time.
+    /// Constructor primarily used for deserialization.
+    /// It avoids creating a new FSRS card state immediately, assuming properties
+    /// will be set by the deserializer, and the FSRS card will be reconstructed later if needed.
     /// </summary>
-    /// <param name="alreadySavedItem"></param>
-    public SpacedRepetitionItem(bool alreadySavedItem = true)
+    /// <param name="isDeserializing">Flag indicating if this constructor is called during deserialization.</param>
+    public SpacedRepetitionItem(bool isDeserializing) : this() // Chain to default constructor initially
     {
-        if (!alreadySavedItem)
+        // If deserializing, we don't want the default new card state from the
+        // chained constructor to overwrite deserialized values immediately.
+        // The properties (Stability, Difficulty, State, LastReview, NextReview, Step)
+        // will be set by the deserialization process.
+        // The _card backing field will remain null initially after this constructor.
+        // The Card property getter will handle recreating the _card object
+        // from the deserialized properties when it's first accessed.
+        if (isDeserializing)
         {
-            Card = FSRS.CreateCard();
-            Stability = Card.Stability;
-            Difficulty = Card.Difficulty;
-            SpacedRepetitionState = (SpacedRepetitionState)Card.State;
-            LastReview = Card.LastReview;
-            NextReview = Card.Due;
-            Step = Card.Step;
+            Logger.Trace("Creating SpacedRepetitionItem instance for deserialization. Item ID: {Uid}", Uid);
+            _card = null; // Ensure card is null, properties will be set by deserializer.
+                          // Reset observable properties that might have been set by chained constructor,
+                          // allowing deserializer to set the correct values.
+            _stability = null;
+            _difficulty = null;
+            _step = null;
+            _lastReview = null;
+            _nextReview = default; // Reset to default DateTimeOffset
+            _spacedRepetitionState = SpacedRepetitionState.New; // Default, will be overwritten
         }
+        // If isDeserializing is false, it behaves like the default constructor.
     }
+
     /// <summary>
-    /// Converts the data from the spaced repetition item to a FSRS Card
+    /// Reconstructs the internal FsrsSharp.Card object from the current
+    /// state of the SpacedRepetitionItem properties. Typically used after deserialization
+    /// or if the internal card reference needs to be refreshed.
     /// </summary>
     public void CreateCardFromSpacedRepetitionData()
     {
-        var initalCard = FSRS.CreateCard();
-        initalCard.Stability = Stability;
-        initalCard.Difficulty = Difficulty;
-        initalCard.State = (CardState)SpacedRepetitionState;
-        initalCard.LastReview = LastReview;
-        initalCard.Due = NextReview;
-        initalCard.Step = Step;
-        Card = initalCard;
-    }
-
-    /// <summary>
-    /// Remembered the card after a hesitation
-    /// </summary>
-    public void GoodReview()
-    {
         try
         {
-            Logger.Info("Rating card as Good for item: {ItemName} (ID: {Uid})", Name, Uid);
-            Card = FSRS.RateCard(Card, Rating.Good);
-            NumberOfTimesSeen++;
-            Logger.Debug("Card rated as Good. New state: {State}, Next review: {NextReview}",
-                SpacedRepetitionState, NextReview);
+            Logger.Trace("Reconstructing FsrsSharp.Card from SpacedRepetitionItem properties. Item ID: {Uid}", Uid);
+            // Create a new card object and populate it from the item's properties
+            var reconstructedCard = new FsrsSharp.Card(
+                // Assuming Uid doesn't directly map to Fsrs CardId, generate new or handle mapping if needed
+                // cardId: this.Uid, // Cannot directly map Guid to long CardId easily. FsrsSharp generates its own long ID.
+                // If you need to persist/link based on *your* Uid, store the FsrsSharp CardId separately or handle mapping elsewhere.
+                state: (FsrsSharp.State)this.SpacedRepetitionState,
+                step: this.Step, // int? maps directly
+                stability: this.Stability, // double? maps directly
+                difficulty: this.Difficulty, // double? maps directly
+                due: this.NextReview, // DateTimeOffset maps directly
+                lastReview: this.LastReview // DateTimeOffset? maps directly
+            );
+
+            // Assign the reconstructed card back using the property setter
+            // This ensures consistency if the setter has additional logic.
+            this.Card = reconstructedCard;
+            Logger.Debug("Successfully reconstructed FsrsSharp.Card. Card ID: {CardId}", _card?.CardId);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error rating card as Good");
+            Logger.Error(ex, "Error reconstructing FsrsSharp.Card from SpacedRepetitionItem properties. Item ID: {Uid}", Uid);
+            // Decide on error handling: throw, log, or attempt recovery?
+            // For now, log the error. The _card might remain null or in an inconsistent state.
+        }
+    }
+
+    // --- Review Methods ---
+    // These now require a Scheduler instance to perform the rating.
+
+    /// <summary>
+    /// Reviews the item with a 'Good' rating using the globally configured FSRS scheduler.
+    /// </summary>
+    public void GoodReview() // Removed Scheduler parameter
+    {
+        RateCardInternal(FsrsSharp.Rating.Good);
+    }
+
+    /// <summary>
+    /// Reviews the item with an 'Again' rating using the globally configured FSRS scheduler.
+    /// </summary>
+    public void AgainReview() // Removed Scheduler parameter
+    {
+        RateCardInternal(FsrsSharp.Rating.Again);
+    }
+
+    /// <summary>
+    /// Reviews the item with an 'Easy' rating using the globally configured FSRS scheduler.
+    /// </summary>
+    public void EasyReview() // Removed Scheduler parameter
+    {
+        RateCardInternal(FsrsSharp.Rating.Easy);
+    }
+
+    /// <summary>
+    /// Reviews the item with a 'Hard' rating using the globally configured FSRS scheduler.
+    /// </summary>
+    public void HardReview() // Removed Scheduler parameter
+    {
+        RateCardInternal(FsrsSharp.Rating.Hard);
+    }
+
+    /// <summary>
+    /// Reviews the item with a 'Good' rating using the provided FSRS scheduler.
+    /// </summary>
+    /// <param name="scheduler">The FSRS scheduler instance to use for calculations.</param>
+    public void GoodReview(FsrsSharp.Scheduler scheduler)
+    {
+        RateCardInternal(scheduler, FsrsSharp.Rating.Good);
+    }
+
+    /// <summary>
+    /// Reviews the item with an 'Again' rating using the provided FSRS scheduler.
+    /// </summary>
+    /// <param name="scheduler">The FSRS scheduler instance to use for calculations.</param>
+    public void AgainReview(FsrsSharp.Scheduler scheduler)
+    {
+        RateCardInternal(scheduler, FsrsSharp.Rating.Again);
+    }
+
+    /// <summary>
+    /// Reviews the item with an 'Easy' rating using the provided FSRS scheduler.
+    /// </summary>
+    /// <param name="scheduler">The FSRS scheduler instance to use for calculations.</param>
+    public void EasyReview(FsrsSharp.Scheduler scheduler)
+    {
+        RateCardInternal(scheduler, FsrsSharp.Rating.Easy);
+    }
+
+    /// <summary>
+    /// Reviews the item with a 'Hard' rating using the provided FSRS scheduler.
+    /// </summary>
+    /// <param name="scheduler">The FSRS scheduler instance to use for calculations.</param>
+    public void HardReview(FsrsSharp.Scheduler scheduler)
+    {
+        RateCardInternal(scheduler, FsrsSharp.Rating.Hard);
+    }
+
+    /// <summary>
+    /// Internal helper method to rate the card using the native FSRS scheduler.
+    /// </summary>
+    /// <param name="scheduler">The scheduler instance.</param>
+    /// <param name="rating">The FSRS rating.</param>
+    private void RateCardInternal(FsrsSharp.Scheduler scheduler, FsrsSharp.Rating rating)
+    {
+        if (scheduler == null)
+        {
+            Logger.Error("Scheduler instance provided to RateCardInternal was null. Item ID: {Uid}", Uid);
+            throw new ArgumentNullException(nameof(scheduler));
+        }
+
+        try
+        {
+            // Ensure the internal card object exists before rating
+            FsrsSharp.Card currentFsrsCard = this.Card; // Access via property getter to ensure it's initialized
+
+            Logger.Info("Rating card as {Rating} for item: {ItemName} (ID: {Uid}) using FsrsSharp", rating, Name, Uid);
+
+            // Use the native C# scheduler's ReviewCard method
+            // It returns a *new* card object (a clone with updated state)
+            var reviewResult = scheduler.ReviewCard(currentFsrsCard, rating, DateTimeOffset.UtcNow);
+
+            // Update the internal card reference and observable properties
+            // by assigning the result back via the property setter.
+            this.Card = reviewResult.UpdatedCard;
+
+            NumberOfTimesSeen++;
+            Logger.Debug("Card rated as {Rating}. New state: {State}, Next review: {NextReview:O}",
+                rating, SpacedRepetitionState, NextReview);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error rating card as {Rating} using FsrsSharp for Item ID: {Uid}", rating, Uid);
+            // Consider if re-throwing is appropriate for the application context
             throw;
         }
     }
 
     /// <summary>
-    /// Forgot the cardw
+    /// Internal helper method to rate the card using the native FSRS scheduler obtained from the service locator.
     /// </summary>
-    public void AgainReview()
+    /// <param name="rating">The FSRS rating.</param>
+    private void RateCardInternal(FsrsSharp.Rating rating) // Removed Scheduler parameter
     {
+        // Get the scheduler instance from the static service
+        FsrsSharp.Scheduler scheduler;
         try
         {
-            Logger.Info("Rating card as Again for item: {ItemName} (ID: {Uid})", Name, Uid);
-            Card = FSRS.RateCard(Card, Rating.Again);
-            NumberOfTimesSeen++;
-            Logger.Debug("Card rated as Again. New state: {State}, Next review: {NextReview}",
-                SpacedRepetitionState, NextReview);
+            scheduler = SchedulerService.Instance; // Retrieve the global scheduler instance
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            Logger.Error(ex, "Error rating card as Again");
-            throw;
+            Logger.Error(ex, "Failed to rate card because SchedulerService is not initialized. Item ID: {Uid}", Uid);
+            // Decide how to handle this - maybe throw a more specific exception or return early?
+            throw new InvalidOperationException("Cannot review item because the FSRS Scheduler has not been initialized.", ex);
         }
-    }
+        catch (Exception ex) // Catch other potential exceptions during retrieval
+        {
+            Logger.Error(ex, "An unexpected error occurred while retrieving the scheduler instance. Item ID: {Uid}", Uid);
+            throw; // Re-throw other exceptions
+        }
 
-    /// <summary>
-    /// Remembered the card easily
-    /// </summary>
-    public void EasyReview()
-    {
-        try
-        {
-            Logger.Info("Rating card as Easy for item: {ItemName} (ID: {Uid})", Name, Uid);
-            Card = FSRS.RateCard(Card, Rating.Easy);
-            NumberOfTimesSeen++;
-            Logger.Debug("Card rated as Easy. New state: {State}, Next review: {NextReview}",
-                SpacedRepetitionState, NextReview);
-        }
-        catch (Exception ex)
-        {
-            Logger.Error(ex, "Error rating card as Easy");
-            throw;
-        }
-    }
 
-    /// <summary>
-    /// Remembered the card with serious difficulty
-    /// </summary>
-    public void HardReview()
-    {
         try
         {
-            Logger.Info("Rating card as Hard for item: {ItemName} (ID: {Uid})", Name, Uid);
-            Card = FSRS.RateCard(Card, Rating.Hard);
+            FsrsSharp.Card currentFsrsCard = this.Card;
+
+            Logger.Info("Rating card as {Rating} for item: {ItemName} (ID: {Uid}) using FsrsSharp", rating, Name, Uid);
+
+            var reviewResult = scheduler.ReviewCard(currentFsrsCard, rating, DateTimeOffset.UtcNow);
+
+            this.Card = reviewResult.UpdatedCard; // Assign back using property setter
+
             NumberOfTimesSeen++;
-            Logger.Debug("Card rated as Hard. New state: {State}, Next review: {NextReview}",
-                SpacedRepetitionState, NextReview);
+            Logger.Debug("Card rated as {Rating}. New state: {State}, Next review: {NextReview:O}",
+                rating, SpacedRepetitionState, NextReview);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error rating card as Hard");
+            Logger.Error(ex, "Error rating card as {Rating} using FsrsSharp for Item ID: {Uid}", rating, Uid);
             throw;
         }
     }
 }
+
+// --- Other Spaced Repetition Item Types (Cloze, Flashcard, etc.) ---
+// These classes inherit from SpacedRepetitionItem and don't need changes
+// unless they directly interacted with the FSRS Python bridge themselves.
 
 /// <summary>
 /// Represents a quiz item for spaced repetition
@@ -359,15 +579,15 @@ public partial class SpacedRepetitionItem : ObservableObject
 public class SpacedRepetitionQuiz : SpacedRepetitionItem
 {
     /// <summary>
-    /// The question of the quiz
+    /// Question
     /// </summary>
     public string Question { get; set; } = "Lorem Ispusm";
     /// <summary>
-    /// The answers of the quiz
+    /// Answers you can select
     /// </summary>
     public List<string> Answers { get; set; } = ["Lorem Ispusm", "Lorem Ispusmiusm Dorema", "Anwser3", "Anwser4"];
     /// <summary>
-    /// The index of the correct answer
+    /// Index number for the answer list
     /// </summary>
     public int CorrectAnswerIndex { get; set; } = 0;
 }
@@ -378,13 +598,11 @@ public class SpacedRepetitionQuiz : SpacedRepetitionItem
 public class SpacedRepetitionCloze : SpacedRepetitionItem
 {
     /// <summary>
-    /// The Full Text where certain words are hidden based if they appear in
-    /// in the ClozeWords list
+    /// Full text
     /// </summary>
     public string FullText = "Lorem Ispusm";
-
     /// <summary>
-    /// A list of words to be hidden and asked to correctly fill out.
+    /// Clozes
     /// </summary>
     public List<string> ClozeWords { get; set; } = [];
 }
@@ -395,50 +613,51 @@ public class SpacedRepetitionCloze : SpacedRepetitionItem
 public class SpacedRepetitionFlashcard : SpacedRepetitionItem
 {
     /// <summary>
-    /// The front and back of the flashcard
+    /// Front text
     /// </summary>
     public string Front { get; set; } = "Front";
     /// <summary>
-    /// The back of the flashcard
+    /// Back text
     /// </summary>
     public string Back { get; set; } = "Back";
 }
 
 /// <summary>
-/// Represents a text item for spaced repetition
+/// Represents a video item for spaced repetition
 /// </summary>
 public class SpacedRepetitionVideo : SpacedRepetitionItem
 {
     /// <summary>
-    /// The URL of the video
+    /// Video URL
     /// </summary>
     public string VideoUrl { get; set; } = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 }
+
 /// <summary>
-/// Represents a text item for spaced repetition
+/// Represents a file item for spaced repetition
 /// </summary>
 public class SpacedRepetitionFile : SpacedRepetitionItem
 {
     /// <summary>
-    /// Question that is shown.
+    /// Question
     /// </summary>
     public string Question { get; set; } = "Lorum Ipsum";
     /// <summary>
-    /// The path to the file
+    /// Filepath
     /// </summary>
     public string FilePath { get; set; } = "C:/Users/YOUR_USERNAME/Documents/EXAMPLE_FILE.txt";
 }
 /// <summary>
-/// Represents a text item for spaced repetition
+/// Represents an exercise item for spaced repetition
 /// </summary>
 public class SpacedRepetitionExercise : SpacedRepetitionItem
 {
     /// <summary>
-    /// The exercise problem
+    /// Problem
     /// </summary>
     public string Problem { get; set; } = "Lorem Ipsum";
     /// <summary>
-    /// The exercise solution
+    /// Solution
     /// </summary>
     public string Solution { get; set; } = "Lorem Ipsum";
 }
@@ -449,12 +668,11 @@ public class SpacedRepetitionExercise : SpacedRepetitionItem
 public class SpacedRepetitionImageCloze : SpacedRepetitionItem
 {
     /// <summary>
-    /// Path to the image file
+    /// Image path used to find the image when to be displayed.
     /// </summary>
     public string ImagePath { get; set; } = string.Empty;
-
     /// <summary>
-    /// Collection of cloze areas on the image
+    /// List of areas to be covered.
     /// </summary>
     public List<ImageClozeArea> ClozeAreas { get; set; } = [];
 }
@@ -465,36 +683,27 @@ public class SpacedRepetitionImageCloze : SpacedRepetitionItem
 public class ImageClozeArea
 {
     /// <summary>
-    /// X-coordinate of the cloze area (left position)
+    /// X Position
     /// </summary>
     public double X { get; set; }
-
     /// <summary>
-    /// Y-coordinate of the cloze area (top position)
+    /// Y Position
     /// </summary>
     public double Y { get; set; }
-
     /// <summary>
-    /// Width of the cloze area
+    /// Width
     /// </summary>
     public double Width { get; set; }
-
     /// <summary>
-    /// Height of the cloze area
+    /// Height
     /// </summary>
     public double Height { get; set; }
-
     /// <summary>
-    /// Text associated with this cloze area
+    /// Text
     /// </summary>
     public string Text { get; set; } = string.Empty;
-
     /// <summary>
-    /// The color used to fill the cloze area when displayed
+    /// Area Color
     /// </summary>
-    public SolidColorBrush FillColor { get; set; } = new SolidColorBrush(Color.FromArgb(
-            a: 255,
-            r: 221,
-            g: 176,
-            b: 55));
+    public SolidColorBrush FillColor { get; set; } = new SolidColorBrush(Color.FromArgb(255, 221, 176, 55));
 }
