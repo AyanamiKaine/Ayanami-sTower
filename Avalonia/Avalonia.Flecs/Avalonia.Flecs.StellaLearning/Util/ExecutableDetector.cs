@@ -27,7 +27,9 @@ public static class ExecutableDetector
         // Check extension for Windows executables
         if (Path.GetExtension(filePath).ToLowerInvariant() is string ext &&
             (ext == ".exe" || ext == ".bat" || ext == ".cmd" || ext == ".com"))
+        {
             return true;
+        }
 
         // For Unix systems (Linux/macOS), check execute permissions
         if (!OperatingSystem.IsWindows())
