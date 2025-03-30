@@ -340,7 +340,7 @@ public partial class SpacedRepetitionItem : ObservableObject
         // Create a new native C# Card (defaults to State.New)
         var newCard = new FsrsSharp.Card();
         // Set the internal card and update observable properties
-        this.Card = newCard; // Use the property setter to update all fields
+        Card = newCard; // Use the property setter to update all fields
     }
 
     /// <summary>
@@ -389,17 +389,17 @@ public partial class SpacedRepetitionItem : ObservableObject
                 // Assuming Uid doesn't directly map to Fsrs CardId, generate new or handle mapping if needed
                 // cardId: this.Uid, // Cannot directly map Guid to long CardId easily. FsrsSharp generates its own long ID.
                 // If you need to persist/link based on *your* Uid, store the FsrsSharp CardId separately or handle mapping elsewhere.
-                state: (FsrsSharp.State)this.SpacedRepetitionState,
-                step: this.Step, // int? maps directly
-                stability: this.Stability, // double? maps directly
-                difficulty: this.Difficulty, // double? maps directly
-                due: this.NextReview, // DateTimeOffset maps directly
-                lastReview: this.LastReview // DateTimeOffset? maps directly
+                state: (FsrsSharp.State)SpacedRepetitionState,
+                step: Step, // int? maps directly
+                stability: Stability, // double? maps directly
+                difficulty: Difficulty, // double? maps directly
+                due: NextReview, // DateTimeOffset maps directly
+                lastReview: LastReview // DateTimeOffset? maps directly
             );
 
             // Assign the reconstructed card back using the property setter
             // This ensures consistency if the setter has additional logic.
-            this.Card = reconstructedCard;
+            Card = reconstructedCard;
             Logger.Debug("Successfully reconstructed FsrsSharp.Card. Card ID: {CardId}", _card?.CardId);
         }
         catch (Exception ex)
@@ -497,7 +497,7 @@ public partial class SpacedRepetitionItem : ObservableObject
         try
         {
             // Ensure the internal card object exists before rating
-            FsrsSharp.Card currentFsrsCard = this.Card; // Access via property getter to ensure it's initialized
+            FsrsSharp.Card currentFsrsCard = Card; // Access via property getter to ensure it's initialized
 
             Logger.Info("Rating card as {Rating} for item: {ItemName} (ID: {Uid}) using FsrsSharp", rating, Name, Uid);
 
@@ -507,7 +507,7 @@ public partial class SpacedRepetitionItem : ObservableObject
 
             // Update the internal card reference and observable properties
             // by assigning the result back via the property setter.
-            this.Card = reviewResult.UpdatedCard;
+            Card = reviewResult.UpdatedCard;
 
             NumberOfTimesSeen++;
             Logger.Debug("Card rated as {Rating}. New state: {State}, Next review: {NextReview:O}",
@@ -548,13 +548,13 @@ public partial class SpacedRepetitionItem : ObservableObject
 
         try
         {
-            FsrsSharp.Card currentFsrsCard = this.Card;
+            FsrsSharp.Card currentFsrsCard = Card;
 
             Logger.Info("Rating card as {Rating} for item: {ItemName} (ID: {Uid}) using FsrsSharp", rating, Name, Uid);
 
             var reviewResult = scheduler.ReviewCard(currentFsrsCard, rating, DateTimeOffset.UtcNow);
 
-            this.Card = reviewResult.UpdatedCard; // Assign back using property setter
+            Card = reviewResult.UpdatedCard; // Assign back using property setter
 
             NumberOfTimesSeen++;
             Logger.Debug("Card rated as {Rating}. New state: {State}, Next review: {NextReview:O}",
