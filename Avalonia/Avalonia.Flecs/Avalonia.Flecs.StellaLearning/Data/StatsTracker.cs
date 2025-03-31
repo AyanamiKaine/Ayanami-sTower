@@ -385,13 +385,11 @@ namespace Avalonia.Flecs.StellaLearning.Data
         {
             var result = new Dictionary<DayOfWeek, TimeSpan>();
 
-            foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
+            foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
             {
                 var sessionsOnDay = StudySessions.Where(s => s.StartTime.DayOfWeek == day);
-                var totalTime = sessionsOnDay.Aggregate(TimeSpan.Zero,
+                result[day] = sessionsOnDay.Aggregate(TimeSpan.Zero,
                     (current, session) => current + session.Duration);
-
-                result[day] = totalTime;
             }
 
             return result;
