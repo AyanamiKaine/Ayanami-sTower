@@ -173,7 +173,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
                     var contextFlyout = world.UI<MenuFlyout>((menuFlyout) =>
                     {
-                        menuFlyout.OnOpened((object? sender, EventArgs e) =>
+                        menuFlyout.OnOpened((sender, e) =>
                         {
                             if (!listBox.HasItemSelected())
                             {
