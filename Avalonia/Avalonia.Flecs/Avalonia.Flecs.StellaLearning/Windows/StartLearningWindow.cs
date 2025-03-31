@@ -947,6 +947,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
                 Calling AsBaseBuilder uses the same underlying entity and fields with the only difference being 
                 that the UIBuilder gets converted from the type UIBuilder<StackPanel> => UIBuilder<Control>.
+
+                For better clarity you can imagine this as a simple type cast.
                 */
 
                 SpacedRepetitionQuiz quizItem => LearnQuizContent().AsBaseBuilder<Control, StackPanel>(),
