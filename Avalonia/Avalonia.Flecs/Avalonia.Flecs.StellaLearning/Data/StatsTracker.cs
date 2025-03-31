@@ -78,10 +78,10 @@ namespace Avalonia.Flecs.StellaLearning.Data
         private int _longestStreak;
 
         /// <summary>
-        /// Total time spent studying in minutes.
+        /// Total time spent studying across all sessions, stored in seconds.
         /// </summary>
         [ObservableProperty]
-        private long _totalStudyTimeMinutes;
+        private double _totalStudyTimeSeconds;
 
         /// <summary>
         /// Total number of reviews made.
@@ -167,8 +167,12 @@ namespace Avalonia.Flecs.StellaLearning.Data
             CurrentSession.EndTime = DateTime.Now;
             CurrentSession.Duration = CurrentSession.EndTime - CurrentSession.StartTime;
 
-            // Update total study time
-            TotalStudyTimeMinutes += (long)CurrentSession.Duration.TotalMinutes;
+            // Update total study time by adding the total seconds from the session duration.
+            double secondsToAdd = CurrentSession.Duration.TotalSeconds;
+            TotalStudyTimeSeconds += secondsToAdd; // Add seconds directly
+
+            // Add to sessions collection (use Dispatcher if accessed from non-UI thread)
+            await Dispatcher.UIThread.InvokeAsync(() => StudySessions.Add(CurrentSession));
 
             // Add to sessions collection
             StudySessions.Add(CurrentSession);
@@ -465,13 +469,13 @@ namespace Avalonia.Flecs.StellaLearning.Data
                 var statsData = new StatsData
                 {
                     // Use ToList() to capture a snapshot of the collections at save time
-                    DailyStats = DailyStats.ToList(),
-                    StudySessions = StudySessions.ToList(),
+                    DailyStats = [.. DailyStats],
+                    StudySessions = [.. StudySessions],
                     ItemTypeStats = ItemTypeStats, // Dictionaries are usually saved correctly
                     TagStats = TagStats,
                     CurrentStreak = CurrentStreak,
                     LongestStreak = LongestStreak,
-                    TotalStudyTimeMinutes = TotalStudyTimeMinutes,
+                    TotalStudyTimeSeconds = TotalStudyTimeSeconds, // Save seconds
                     TotalReviews = TotalReviews,
                     OverallAccuracy = OverallAccuracy,
                     LastUpdated = DateTime.Now // Update LastUpdated time on save
@@ -525,15 +529,15 @@ namespace Avalonia.Flecs.StellaLearning.Data
                         DailyStats = new ObservableCollection<DailyStats>(statsData.DailyStats ?? new List<DailyStats>());
                         StudySessions = new ObservableCollection<StudySession>(statsData.StudySessions ?? new List<StudySession>());
                         // Dictionaries might not need dispatcher if replaced entirely
-                        ItemTypeStats = statsData.ItemTypeStats ?? new Dictionary<SpacedRepetitionItemType, ItemTypeStats>();
-                        TagStats = statsData.TagStats ?? new Dictionary<string, TagStats>();
+                        ItemTypeStats = statsData.ItemTypeStats ?? [];
+                        TagStats = statsData.TagStats ?? [];
                     });
 
 
                     // Update scalar properties - triggers PropertyChanged
                     CurrentStreak = statsData.CurrentStreak;
                     LongestStreak = statsData.LongestStreak;
-                    TotalStudyTimeMinutes = statsData.TotalStudyTimeMinutes;
+                    TotalStudyTimeSeconds = statsData.TotalStudyTimeSeconds;
                     TotalReviews = statsData.TotalReviews;
                     OverallAccuracy = statsData.OverallAccuracy;
                     LastUpdated = statsData.LastUpdated;
@@ -574,7 +578,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
 
             CurrentStreak = 0;
             LongestStreak = 0;
-            TotalStudyTimeMinutes = 0;
+            TotalStudyTimeSeconds = 0.0;
             TotalReviews = 0;
             OverallAccuracy = 0;
             LastUpdated = DateTime.MinValue; // Indicate no valid data loaded
@@ -605,7 +609,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
             // Reset scalar properties - these automatically trigger PropertyChanged
             CurrentStreak = 0;
             LongestStreak = 0;
-            TotalStudyTimeMinutes = 0;
+            TotalStudyTimeSeconds = 0.0;
             TotalReviews = 0;
             OverallAccuracy = 0;
             LastUpdated = DateTime.Now; // Set last updated time to now
@@ -668,9 +672,9 @@ namespace Avalonia.Flecs.StellaLearning.Data
         public int LongestStreak { get; set; }
 
         /// <summary>
-        /// Total time spent studying across all sessions, in minutes.
+        /// Total time spent studying across all sessions, stored in seconds.
         /// </summary>
-        public long TotalStudyTimeMinutes { get; set; }
+        public double TotalStudyTimeSeconds { get; set; }
 
         /// <summary>
         /// Total number of card reviews performed across all sessions.
