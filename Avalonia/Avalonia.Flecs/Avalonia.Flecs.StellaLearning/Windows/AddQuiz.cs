@@ -219,7 +219,7 @@ public class AddQuiz : IUIComponent, IDisposable
                         return;
                     }
 
-                    var findAnswerIndex = () =>
+                    int findAnswerIndex()
                     {
                         for (int i = 0; i < 4; i++)
                         {
@@ -227,9 +227,9 @@ public class AddQuiz : IUIComponent, IDisposable
                                 return i;
                         }
                         throw new Exception("An Answer must be checked!");
-                    };
+                    }
 
-                    var gatherAllAnswers = () =>
+                    List<string> gatherAllAnswers()
                     {
                         var answers = new List<string>();
                         for (int i = 0; i < 4; i++)
@@ -237,7 +237,7 @@ public class AddQuiz : IUIComponent, IDisposable
                             answers.Add(FindControl<TextBox>(grid, i, 1)?.Text ?? $"Answer{i + 1}");
                         }
                         return answers;
-                    };
+                    }
 
                     world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionQuiz()
                     {
