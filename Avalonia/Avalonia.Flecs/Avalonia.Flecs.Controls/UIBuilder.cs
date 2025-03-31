@@ -1285,6 +1285,22 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="padding"></param>
     /// <returns></returns>
+    public static UIBuilder<Border> SetPadding(this UIBuilder<Border> builder, double padding)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Border>().Padding = new Thickness(padding);
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Set padding
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="padding"></param>
+    /// <returns></returns>
     public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double padding) where T : TemplatedControl, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
@@ -1683,6 +1699,21 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the border thickness of a border.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="borderThickness">The thickness to set for the border</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<Border> SetBorderThickness(this UIBuilder<Border> builder, Thickness borderThickness)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<Border>().BorderThickness = borderThickness;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the border brush of a TemplatedControl.
     /// </summary>
     /// <typeparam name="T">The type of TemplatedControl</typeparam>
@@ -1695,6 +1726,21 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Entity.Get<T>().BorderBrush = brush;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the border brush of a Border.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="brush">The brush to set as the border</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<Border> SetBorderBrush(this UIBuilder<Border> builder, IBrush brush)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<Border>().BorderBrush = brush;
         return builder;
     }
 
