@@ -213,15 +213,15 @@ namespace Avalonia.Flecs.StellaLearning.Data
                 CurrentSession!.Reviews.Add(review);
 
                 // Update item type statistics
-                if (!ItemTypeStats.ContainsKey(item.SpacedRepetitionItemType))
+                if (!ItemTypeStats.TryGetValue(item.SpacedRepetitionItemType, out ItemTypeStats? typeStats))
                 {
-                    ItemTypeStats[item.SpacedRepetitionItemType] = new ItemTypeStats
+                    typeStats = new ItemTypeStats
                     {
                         ItemType = item.SpacedRepetitionItemType
                     };
+                    ItemTypeStats[item.SpacedRepetitionItemType] = typeStats;
                 }
 
-                var typeStats = ItemTypeStats[item.SpacedRepetitionItemType];
                 typeStats.TotalReviews++;
                 if ((int)rating >= 3) // Good or Easy
                 {
