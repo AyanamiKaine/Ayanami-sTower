@@ -1426,7 +1426,8 @@ public static class UIBuilderExtensions
 
     /// <summary>
     /// Adds an event handler that gets invoked when the Closing event happens. For Windows this happens
-    /// BEFORE the window is fully closed but AFTER the window tries to close.
+    /// BEFORE the window is fully closed but AFTER the window tries to close. When the
+    /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
     public static UIBuilder<Window> OnClosing(this UIBuilder<Window> builder, EventHandler<WindowClosingEventArgs> handler)
     {
@@ -1452,7 +1453,8 @@ public static class UIBuilderExtensions
 
     /// <summary>
     /// Adds an event handler that gets invoked when the Openend event happens. For Windows this happens
-    /// After the window is fully opened.
+    /// After the window is fully opened. When the
+    /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
     public static UIBuilder<Window> OnOpened(this UIBuilder<Window> builder, EventHandler handler)
     {
@@ -1478,7 +1480,8 @@ public static class UIBuilderExtensions
 
     /// <summary>
     /// Adds an event handler that gets invoked when the Closed event happens. For Windows this happens
-    /// AFTER the window is fully closed.
+    /// AFTER the window is fully closed. When the
+    /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
     public static UIBuilder<Window> OnClosed(this UIBuilder<Window> builder, EventHandler handler)
     {
@@ -1503,7 +1506,8 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Adds an event handler that gets invoked when the Click event happens
+    /// Adds an event handler that gets invoked when the Click event happens, when the
+    /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
     public static UIBuilder<Button> OnClick(this UIBuilder<Button> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
     {
@@ -1529,7 +1533,8 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Adds an event handler that gets invoked when the OnClick event happens
+    /// Adds an event handler that gets invoked when the OnClick event happens, when the
+    /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
     public static UIBuilder<MenuItem> OnClick(this UIBuilder<MenuItem> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
     {
@@ -1555,7 +1560,8 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// When the selection of a combo box changes is the handler executed.
+    /// When the selection of a combo box changes is the handler executed., when the
+    /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
     /// <param name="builder"></param>
     /// <param name="handler"></param>
