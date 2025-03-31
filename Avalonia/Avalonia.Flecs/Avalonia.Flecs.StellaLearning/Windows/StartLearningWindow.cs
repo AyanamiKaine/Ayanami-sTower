@@ -938,6 +938,17 @@ public class StartLearningWindow : IUIComponent, IDisposable
         {
             return _ItemToBeLearned switch
             {
+
+                /*
+                Note regarding the AsBaseBuilder method. The problem we face is the following, we want that our
+                display right item simply returns a avalonia control class that gets used as a children. But
+                our various content displayers, return UIBuilder<MoreSpecificType> like a stack panel. The caller
+                shouldnt care for what more specific type gets returned only the base control type matters.
+
+                Calling AsBaseBuilder uses the same underlying entity and fields with the only difference being 
+                that the UIBuilder gets converted from the type UIBuilder<StackPanel> => UIBuilder<Control>.
+                */
+
                 SpacedRepetitionQuiz quizItem => LearnQuizContent().AsBaseBuilder<Control, StackPanel>(),
                 SpacedRepetitionFlashcard => LearnFlashcardContent().AsBaseBuilder<Control, StackPanel>(),
                 SpacedRepetitionFile => LearnFileContent().AsBaseBuilder<Control, StackPanel>(),
