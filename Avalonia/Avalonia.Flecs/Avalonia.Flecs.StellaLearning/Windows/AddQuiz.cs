@@ -189,7 +189,6 @@ public class AddQuiz : IUIComponent, IDisposable
                         };
                         cd.ShowAsync();
                         return;
-
                     }
 
                     Grid grid = quizAnswers.Get<Grid>();
