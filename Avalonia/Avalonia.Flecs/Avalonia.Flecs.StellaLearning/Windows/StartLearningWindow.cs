@@ -426,8 +426,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     stackPanel.Child<Separator>((separatorUI) =>
                     {
                         separatorUI
-                            .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                            .SetBorderBrush(Brushes.Black);
+                        .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                        .SetBorderBrush(Brushes.Black);
                     });
 
                     stackPanel.Child<TextBlock>((textBlock) =>
@@ -441,8 +441,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     stackPanel.Child<Separator>((separatorUI) =>
                     {
                         separatorUI
-                            .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                            .SetBorderBrush(Brushes.Black);
+                        .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                        .SetBorderBrush(Brushes.Black);
                     });
 
                     stackPanel.Child<TextBlock>((textBlock) =>
