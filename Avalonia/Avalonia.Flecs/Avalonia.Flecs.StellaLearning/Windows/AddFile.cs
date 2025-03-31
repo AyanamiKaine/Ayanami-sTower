@@ -105,21 +105,18 @@ public class AddFile : IUIComponent, IDisposable
             .SetSpacing(10)
             .SetMargin(20);
 
-            stackPanel.Child<TextBox>((textBox) =>
+            nameTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                nameTextBox = textBox;
                 textBox.SetWatermark("Name");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            questionTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                questionTextBox = textBox;
                 textBox.SetWatermark("Question");
             });
 
-            stackPanel.Child<TextBox>((textBox) =>
+            filePath = stackPanel.Child<TextBox>((textBox) =>
             {
-                filePath = textBox;
                 textBox
                 .SetWatermark("FilePath")
                 .SetInnerRightContent(
@@ -140,12 +137,11 @@ public class AddFile : IUIComponent, IDisposable
                 textBox.With((textBox) => textBox.TextChanged += filePathHasChangedHandler);
             });
 
-            stackPanel.Child<TextBlock>((textBlock) =>
+            validationTextBlock = stackPanel.Child<TextBlock>((textBlock) =>
             {
-                validationTextBlock = textBlock;
-                textBlock.SetText("");
-                textBlock.SetFontSize(12);
-                textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
+                textBlock.SetText("")
+                .SetFontSize(12)
+                .SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
             });
 
             var tagManager = new TagComponent(world);
