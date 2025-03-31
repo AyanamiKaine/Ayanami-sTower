@@ -357,12 +357,12 @@ namespace Avalonia.Flecs.StellaLearning.Data
             {
                 foreach (var review in session.Reviews)
                 {
-                    if (!itemPerformance.ContainsKey(review.ItemId))
+                    if (!itemPerformance.TryGetValue(review.ItemId, out (int TotalReviews, int FailedReviews) current))
                     {
-                        itemPerformance[review.ItemId] = (0, 0);
+                        current = (0, 0);
+                        itemPerformance[review.ItemId] = current;
                     }
 
-                    var current = itemPerformance[review.ItemId];
                     var newTotal = current.TotalReviews + 1;
                     var newFailed = current.FailedReviews + (review.Rating < 3 ? 1 : 0);
 
@@ -371,12 +371,11 @@ namespace Avalonia.Flecs.StellaLearning.Data
             }
 
             // Filter for items with at least 3 reviews
-            return itemPerformance
+            return [.. itemPerformance
                 .Where(kvp => kvp.Value.TotalReviews >= 3)
                 .OrderByDescending(kvp => (double)kvp.Value.FailedReviews / kvp.Value.TotalReviews)
                 .Take(count)
-                .Select(kvp => kvp.Key)
-                .ToList();
+                .Select(kvp => kvp.Key)];
         }
 
         /// <summary>
