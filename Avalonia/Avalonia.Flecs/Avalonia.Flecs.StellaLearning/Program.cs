@@ -23,7 +23,8 @@ static class Program
         /*
         Implementation done by Medo64
         (https://github.com/medo64/Medo/blob/main/examples/SingleInstanceApplication/App.cs)
-        I simply copied it into my own repo for better maintainablility.
+        I simply copied it into my own repo for better maintainablility and updated it to 
+        support dotnet 9
         */
         SingleInstance.Attach();  // will auto-exit for second instance
         SingleInstance.NewInstanceDetected += OnNewInstanceDetected;
