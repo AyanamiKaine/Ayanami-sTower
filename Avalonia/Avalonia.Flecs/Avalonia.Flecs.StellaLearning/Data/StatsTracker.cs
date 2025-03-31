@@ -402,7 +402,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
         /// <summary>
         /// Gets a forecast of reviews due in the upcoming days.
         /// </summary>
-        public Dictionary<DateTime, int> GetReviewForecast(ObservableCollection<SpacedRepetitionItem> items, int daysAhead = 14)
+        public static Dictionary<DateTime, int> GetReviewForecast(ObservableCollection<SpacedRepetitionItem> items, int daysAhead = 14)
         {
             var result = new Dictionary<DateTime, int>();
             var today = DateTime.Today;
