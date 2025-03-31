@@ -133,6 +133,22 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 .SetSpacing(10)
                 .SetMargin(20);
 
+            layout.Child<TextBlock>((textBlock) =>
+            {
+                textBlock
+                .SetText(file.Name)
+                .SetTextWrapping(TextWrapping.Wrap)
+                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                .SetVerticalAlignment(Layout.VerticalAlignment.Center);
+            });
+
+            layout.Child<Separator>((separatorUI) =>
+            {
+                separatorUI
+                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                    .SetBorderBrush(Brushes.Black);
+            });
+
             layout.Child<TextBlock>((question) =>
             {
                 question
@@ -308,9 +324,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetVerticalAlignment(Layout.VerticalAlignment.Center)
                     .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
                     .SetMargin(0, 20)
-                    .SetText(quiz.Name);
-
-                question.Get<TextBlock>().TextWrapping = Media.TextWrapping.Wrap;
+                    .SetText(quiz.Name)
+                    .SetTextWrapping(TextWrapping.Wrap);
             });
 
             layout.Child<TextBlock>((content) =>
@@ -319,9 +334,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetVerticalAlignment(Layout.VerticalAlignment.Center)
                     .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
                     .SetMargin(0, 10)
-                    .SetText(quiz.Question);
-
-                content.Get<TextBlock>().TextWrapping = Media.TextWrapping.Wrap;
+                    .SetText(quiz.Question)
+                    .SetTextWrapping(TextWrapping.Wrap);
             });
 
             layout.Child<WrapPanel>((wrapPanel) =>
@@ -399,6 +413,22 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
                     .SetSpacing(10)
                     .SetMargin(20);
+
+                    stackPanel.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock
+                        .SetText(flashcard.Name)
+                        .SetTextWrapping(TextWrapping.Wrap)
+                        .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                        .SetVerticalAlignment(Layout.VerticalAlignment.Center);
+                    });
+
+                    stackPanel.Child<Separator>((separatorUI) =>
+                    {
+                        separatorUI
+                            .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                            .SetBorderBrush(Brushes.Black);
+                    });
 
                     stackPanel.Child<TextBlock>((textBlock) =>
                     {
@@ -522,7 +552,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
         var cloze = (SpacedRepetitionCloze)_ItemToBeLearned!;
         return _world.UI<StackPanel>((stackPanel) =>
         {
-            UIBuilder<TextBlock>? clozeText = null;
+            UIBuilder<TextBlock> clozeText;
             UIBuilder<Button>? easyButton = null;
             UIBuilder<Button>? goodButton = null;
             UIBuilder<Button>? hardButton = null;
@@ -537,7 +567,22 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
             stackPanel.Child<TextBlock>((textBlock) =>
             {
-                clozeText = textBlock;
+                textBlock
+                .SetText(cloze.Name)
+                .SetTextWrapping(TextWrapping.Wrap)
+                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                .SetVerticalAlignment(Layout.VerticalAlignment.Center);
+            });
+
+            stackPanel.Child<Separator>((separatorUI) =>
+            {
+                separatorUI
+                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                    .SetBorderBrush(Brushes.Black);
+            });
+
+            clozeText = stackPanel.Child<TextBlock>((textBlock) =>
+            {
                 StringBuilder sb = new(cloze.FullText);
                 foreach (string word in cloze.ClozeWords)
                 {
@@ -562,7 +607,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                 {
                                     // Disable the show button after it revealed its clozes
                                     button.Disable();
-                                    clozeText!.SetText(cloze.FullText);
+                                    clozeText.SetText(cloze.FullText);
                                     againButton!.Enable();
                                     hardButton!.Enable();
                                     goodButton!.Enable();
