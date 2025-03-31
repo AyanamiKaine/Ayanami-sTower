@@ -6,7 +6,6 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
-using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data; // Needed for SpacedRepetitionItem
 using Avalonia.Input;
 using Avalonia.Layout;

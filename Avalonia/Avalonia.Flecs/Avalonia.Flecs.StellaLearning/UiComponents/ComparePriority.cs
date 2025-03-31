@@ -4,13 +4,11 @@ using System.Collections.Specialized;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
-using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Flecs.NET.Core;
 using System.Reactive.Disposables;
 using NLog;
 using Avalonia.Layout; // Added for Layout enums
-using Avalonia.Media; // Added for Media enums
 using Avalonia.Threading;
 using System.Collections.Generic; // Added for Dispatcher
 

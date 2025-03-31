@@ -4,7 +4,6 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Flecs.FluentUI.Controls.ECS;
 using Avalonia.Markup.Xaml;
 using FluentAvalonia.UI.Controls;
-using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
 using Avalonia.Flecs.FluentUI.Controls;
 using Avalonia.Flecs.StellaLearning.Pages;

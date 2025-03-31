@@ -2,15 +2,12 @@ using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Reactive.Disposables;
-using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
-using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Utilities;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 

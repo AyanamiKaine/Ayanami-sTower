@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Flecs.NET.Core;
