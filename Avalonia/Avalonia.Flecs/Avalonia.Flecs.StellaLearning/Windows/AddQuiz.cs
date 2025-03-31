@@ -210,7 +210,7 @@ public class AddQuiz : IUIComponent, IDisposable
                         var cd = new ContentDialog()
                         {
                             Title = "Missing Answer",
-                            Content = "Now anwser for your quiz was selected please select at least one",
+                            Content = "No anwser for your quiz was selected please select at least one",
                             PrimaryButtonText = "Ok",
                             DefaultButton = ContentDialogButton.Primary,
                             IsSecondaryButtonEnabled = true,
