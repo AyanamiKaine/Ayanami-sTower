@@ -109,6 +109,16 @@ shows information where its needed and hides it where it doesnt.
 public static class UIBuilderExtensions
 {
 
+    /*
+    Note regarding the AsBaseBuilder method. The problem we face is the following, we want that our
+    display right item simply returns a avalonia control class that gets used as a children. But
+    our various content displayers, return UIBuilder<MoreSpecificType> like a stack panel. The caller
+    shouldnt care for what more specific type gets returned only the base control type matters.
+
+    Calling AsBaseBuilder uses the same underlying entity and fields with the only difference being 
+    that the UIBuilder gets converted from the type UIBuilder<StackPanel> => UIBuilder<Control>.
+    */
+
     /// <summary>
     /// Converts a UIBuilder for a derived AvaloniaObject type to a UIBuilder for a base type.
     /// Creates a new UIBuilder instance wrapping the same entity.
