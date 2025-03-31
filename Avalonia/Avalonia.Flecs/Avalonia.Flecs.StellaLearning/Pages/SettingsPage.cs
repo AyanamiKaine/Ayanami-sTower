@@ -44,6 +44,9 @@ public class SettingsPage : IUIComponent
         {
             scrollViewer.Child<StackPanel>((stackPanel) =>
             {
+                stackPanel.Child<TextBlock>(header => header.SetText("Settings").SetFontSize(18).SetFontWeight(FontWeight.Bold));
+
+
                 stackPanel.Child(new ThemeToggleSwitch(world));
                 stackPanel.Child(new AppToTray(world));
                 stackPanel.Child(new EnableNotificationsToggleSwitch(world));
