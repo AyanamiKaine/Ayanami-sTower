@@ -141,7 +141,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
                         {
                             overallStatsPanel.SetSpacing(5);
 
-                            _totalStudyTimeTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Total Study Time: {FormatTime(_statsTracker.TotalStudyTimeMinutes)}"));
+                            _totalStudyTimeTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Total Study Time: {FormatTime((long)(_statsTracker.TotalStudyTimeSeconds / 60))}"));
                             _totalReviewsTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Total Reviews: {_statsTracker.TotalReviews}"));
                             _overallAccuracyTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Overall Accuracy: {_statsTracker.OverallAccuracy:F1}%"));
                             _currentStreakTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Current Streak: {_statsTracker.CurrentStreak} days"));
@@ -221,8 +221,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
                 {
                     switch (e.PropertyName)
                     {
-                        case nameof(StatsTracker.TotalStudyTimeMinutes):
-                            _totalStudyTimeTextBlock?.SetText($"Total Study Time: {FormatTime(_statsTracker.TotalStudyTimeMinutes)}");
+                        case nameof(StatsTracker.TotalStudyTimeSeconds):
+                            _totalStudyTimeTextBlock?.SetText($"Total Study Time: {FormatTime((long)(_statsTracker.TotalStudyTimeSeconds / 60))}");
                             break;
                         case nameof(StatsTracker.TotalReviews):
                             _totalReviewsTextBlock?.SetText($"Total Reviews: {_statsTracker.TotalReviews}");
