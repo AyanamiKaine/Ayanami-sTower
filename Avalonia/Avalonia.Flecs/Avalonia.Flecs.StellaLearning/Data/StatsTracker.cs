@@ -39,25 +39,25 @@ namespace Avalonia.Flecs.StellaLearning.Data
         /// Records of daily study activities.
         /// </summary>
         [ObservableProperty]
-        private ObservableCollection<DailyStats> _dailyStats = new();
+        private ObservableCollection<DailyStats> _dailyStats = [];
 
         /// <summary>
         /// Records of study sessions.
         /// </summary>
         [ObservableProperty]
-        private ObservableCollection<StudySession> _studySessions = new();
+        private ObservableCollection<StudySession> _studySessions = [];
 
         /// <summary>
         /// Statistics about different card types.
         /// </summary>
         [ObservableProperty]
-        private Dictionary<SpacedRepetitionItemType, ItemTypeStats> _itemTypeStats = new();
+        private Dictionary<SpacedRepetitionItemType, ItemTypeStats> _itemTypeStats = [];
 
         /// <summary>
         /// Statistics about tags and their performance.
         /// </summary>
         [ObservableProperty]
-        private Dictionary<string, TagStats> _tagStats = new();
+        private Dictionary<string, TagStats> _tagStats = [];
 
         /// <summary>
         /// Current active study session or null if not studying.
@@ -526,8 +526,8 @@ namespace Avalonia.Flecs.StellaLearning.Data
                     // Use Dispatcher for collections if necessary
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        DailyStats = new ObservableCollection<DailyStats>(statsData.DailyStats ?? new List<DailyStats>());
-                        StudySessions = new ObservableCollection<StudySession>(statsData.StudySessions ?? new List<StudySession>());
+                        DailyStats = new ObservableCollection<DailyStats>(statsData.DailyStats ?? []);
+                        StudySessions = new ObservableCollection<StudySession>(statsData.StudySessions ?? []);
                         // Dictionaries might not need dispatcher if replaced entirely
                         ItemTypeStats = statsData.ItemTypeStats ?? [];
                         TagStats = statsData.TagStats ?? [];
