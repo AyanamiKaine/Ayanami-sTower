@@ -39,7 +39,6 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
         private UIBuilder<TextBlock>? _currentStreakTextBlock;
         private UIBuilder<TextBlock>? _longestStreakTextBlock;
         private UIBuilder<TextBlock>? _lastUpdatedTextBlock;
-        private UIBuilder<ItemsControl>? _dailyStatsItemsControl;
         private UIBuilder<ItemsControl>? _itemTypeStatsItemsControl;
         private UIBuilder<ItemsControl>? _tagStatsItemsControl;
         // Add references for Forecast and Difficult Items if implemented
@@ -128,12 +127,15 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
             // --- Build the UI ---
             Root = world.UI<ScrollViewer>(scrollViewer =>
             {
+                scrollViewer.SetMargin(40, 0, 0, 0);
+
                 scrollViewer.Child<StackPanel>(mainPanel =>
                 {
-                    mainPanel.SetSpacing(15).SetMargin(20); // Add some padding around the page content
+                    mainPanel.SetMargin(0, 10, 20, 20);
+                    mainPanel.SetSpacing(15); // Add some padding around the page content
 
                     // --- Overall Stats Section ---
-                    mainPanel.Child<TextBlock>(header => header.SetText("Overall Statistics").SetFontSize(18).SetFontWeight(FontWeight.Bold).SetMargin(0, 0, 0, 10));
+                    mainPanel.Child<TextBlock>(header => header.SetText("Overall Statistics").SetFontSize(18).SetFontWeight(FontWeight.Bold));
                     mainPanel.Child<Border>(border => // Wrap in border for visual separation
                     {
                         border.SetPadding(10).SetCornerRadius(5).SetBackground(Brushes.WhiteSmoke); // Light background
@@ -148,16 +150,6 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
                             _longestStreakTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Longest Streak: {_statsTracker.LongestStreak} days"));
                             _lastUpdatedTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Last Updated: {_statsTracker.LastUpdated:g}").SetFontSize(10).SetForeground(Brushes.Gray).SetMargin(0, 5, 0, 0));
                         });
-                    });
-
-                    // --- Daily Stats Section ---
-                    mainPanel.Child<TextBlock>(header => header.SetText("Daily Activity").SetFontSize(16).SetFontWeight(FontWeight.Bold).SetMargin(0, 15, 0, 5));
-                    _dailyStatsItemsControl = mainPanel.Child<ItemsControl>(ic =>
-                    {
-                        ic.SetItemsSource(_statsTracker.DailyStats.OrderByDescending(d => d.Date)) // Show most recent first
-                          .SetItemTemplate(dailyStatsTemplate);
-                        // Optional: Add max height and wrap in another ScrollViewer if needed, but main ScrollViewer might suffice
-                        // ic.SetMaxHeight(300);
                     });
 
                     // --- Item Type Stats Section ---
