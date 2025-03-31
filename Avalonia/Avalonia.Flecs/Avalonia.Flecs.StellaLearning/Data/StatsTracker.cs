@@ -108,7 +108,17 @@ namespace Avalonia.Flecs.StellaLearning.Data
                 "StellaLearning");
 
             Directory.CreateDirectory(appDataPath);
-            _statsFilePath = Path.Combine(appDataPath, "learning_stats.json");
+
+#if DEBUG
+            // Use a specific filename for Debug builds
+            const string statsFilename = "learning_stats_debug.json";
+            Logger.Info("Running in DEBUG mode. Using stats file: {Filename}", statsFilename);
+#else
+            // Use the standard filename for Release builds
+            const string statsFilename = "learning_stats.json";
+            Logger.Info("Running in RELEASE mode. Using stats file: {Filename}", statsFilename);
+#endif
+            _statsFilePath = Path.Combine(appDataPath, statsFilename);
 
             // Start auto-save timer
             Task.Run(AutoSaveLoop);
