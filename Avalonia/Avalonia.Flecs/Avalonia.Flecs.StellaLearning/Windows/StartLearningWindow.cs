@@ -96,8 +96,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
     {
         _contentContainer = _world.UI<ContentControl>(container =>
         {
-            container.SetVerticalAlignment(Layout.VerticalAlignment.Stretch)
-                     .SetHorizontalAlignment(Layout.HorizontalAlignment.Stretch);
+            container.SetVerticalAlignment(VerticalAlignment.Stretch)
+                     .SetHorizontalAlignment(HorizontalAlignment.Stretch);
         }).AsBaseBuilder<Control, ContentControl>();
 
         // Single event handler per item that handles all property change needs
@@ -127,9 +127,9 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
 
             layout
-                .SetOrientation(Layout.Orientation.Vertical)
-                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                .SetOrientation(Orientation.Vertical)
+                .SetVerticalAlignment(VerticalAlignment.Center)
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
                 .SetSpacing(10)
                 .SetMargin(20);
 
@@ -138,8 +138,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 textBlock
                 .SetText(file.Name)
                 .SetTextWrapping(TextWrapping.Wrap)
-                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-                .SetVerticalAlignment(Layout.VerticalAlignment.Center);
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                .SetVerticalAlignment(VerticalAlignment.Center);
             });
 
             layout.Child<Separator>((separatorUI) =>
@@ -152,23 +152,23 @@ public class StartLearningWindow : IUIComponent, IDisposable
             layout.Child<TextBlock>((question) =>
             {
                 question
-                    .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
                     .SetMargin(0, 20)
                     .SetText(file.Question);
 
-                question.Get<TextBlock>().TextWrapping = Media.TextWrapping.Wrap;
+                question.Get<TextBlock>().TextWrapping = TextWrapping.Wrap;
             });
 
             layout.Child<TextBlock>((content) =>
             {
                 content
-                    .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
                     .SetMargin(0, 10)
                     .SetText(file.FilePath);
 
-                content.Get<TextBlock>().TextWrapping = Media.TextWrapping.Wrap;
+                content.Get<TextBlock>().TextWrapping = TextWrapping.Wrap;
             });
 
             layout.Child<Button>((button) =>
@@ -176,7 +176,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 button
                     .SetText("Open File")
                     .SetMargin(0, 10)
-                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
                     .OnClick((sender, e) =>
                     {
                         try
@@ -312,17 +312,17 @@ public class StartLearningWindow : IUIComponent, IDisposable
         return _world.UI<StackPanel>((layout) =>
         {
             layout
-                .SetOrientation(Layout.Orientation.Vertical)
-                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                .SetOrientation(Orientation.Vertical)
+                .SetVerticalAlignment(VerticalAlignment.Center)
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
                 .SetSpacing(10)
                 .SetMargin(20);
 
             layout.Child<TextBlock>((question) =>
             {
                 question
-                    .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
                     .SetMargin(0, 20)
                     .SetText(quiz.Name)
                     .SetTextWrapping(TextWrapping.Wrap);
@@ -331,8 +331,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
             layout.Child<TextBlock>((content) =>
             {
                 content
-                    .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
                     .SetMargin(0, 10)
                     .SetText(quiz.Question)
                     .SetTextWrapping(TextWrapping.Wrap);
@@ -343,8 +343,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 wrapPanel
                 .SetHorizontalAlignment(HorizontalAlignment.Center)
                 .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center);
+                .SetVerticalAlignment(VerticalAlignment.Center)
+                .SetHorizontalAlignment(HorizontalAlignment.Center);
 
 
 
@@ -361,8 +361,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         });
 
                         button
-                        .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                        .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                        .SetVerticalAlignment(VerticalAlignment.Center)
+                        .SetHorizontalAlignment(HorizontalAlignment.Center)
                         .SetMargin(10, 10)
                         .OnClick(async (sender, args) =>
                         {
@@ -408,9 +408,9 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     UIBuilder<Button>? againButton = null;
 
                     stackPanel
-                    .SetOrientation(Layout.Orientation.Vertical)
-                    .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                    .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                    .SetOrientation(Orientation.Vertical)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
                     .SetSpacing(10)
                     .SetMargin(20);
 
@@ -419,8 +419,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         textBlock
                         .SetText(flashcard.Name)
                         .SetTextWrapping(TextWrapping.Wrap)
-                        .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-                        .SetVerticalAlignment(Layout.VerticalAlignment.Center);
+                        .SetHorizontalAlignment(HorizontalAlignment.Center)
+                        .SetVerticalAlignment(VerticalAlignment.Center);
                     });
 
                     stackPanel.Child<Separator>((separatorUI) =>
@@ -458,8 +458,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         button
                         .SetText("Reveal")
                         .SetMargin(0, 20)
-                        .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                        .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                        .SetVerticalAlignment(VerticalAlignment.Center)
+                        .SetHorizontalAlignment(HorizontalAlignment.Center)
                         .OnClick((_, _) =>
                                         {
                                             flashcardBackText!.Visible();
@@ -559,9 +559,9 @@ public class StartLearningWindow : IUIComponent, IDisposable
             UIBuilder<Button>? againButton = null;
 
             stackPanel
-            .SetOrientation(Layout.Orientation.Vertical)
-            .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-            .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+            .SetOrientation(Orientation.Vertical)
+            .SetVerticalAlignment(VerticalAlignment.Center)
+            .SetHorizontalAlignment(HorizontalAlignment.Center)
             .SetSpacing(10)
             .SetMargin(20);
 
@@ -570,8 +570,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 textBlock
                 .SetText(cloze.Name)
                 .SetTextWrapping(TextWrapping.Wrap)
-                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-                .SetVerticalAlignment(Layout.VerticalAlignment.Center);
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                .SetVerticalAlignment(VerticalAlignment.Center);
             });
 
             stackPanel.Child<Separator>((separatorUI) =>
@@ -601,8 +601,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 button
                 .SetText("Show")
                 .SetMargin(15)
-                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
-                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                .SetVerticalAlignment(VerticalAlignment.Center)
                 .OnClick((_, _) =>
                                 {
                                     // Disable the show button after it revealed its clozes
@@ -700,9 +700,9 @@ public class StartLearningWindow : IUIComponent, IDisposable
             UIBuilder<Button>? againButton = null;
 
             stackPanel
-                .SetOrientation(Layout.Orientation.Vertical)
-                .SetVerticalAlignment(Layout.VerticalAlignment.Center)
-                .SetHorizontalAlignment(Layout.HorizontalAlignment.Center)
+                .SetOrientation(Orientation.Vertical)
+                .SetVerticalAlignment(VerticalAlignment.Center)
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
                 .SetSpacing(10)
                 .SetMargin(20);
 
