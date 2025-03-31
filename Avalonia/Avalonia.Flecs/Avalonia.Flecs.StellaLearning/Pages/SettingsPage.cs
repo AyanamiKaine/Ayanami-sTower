@@ -10,6 +10,7 @@ using Avalonia.Flecs.StellaLearning.Data;
 using NLog;
 using Avalonia.Flecs.Controls;
 using Avalonia.Media;
+using FluentAvalonia.UI.Controls;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -54,6 +55,39 @@ public class SettingsPage : IUIComponent
                     .SetBorderBrush(Brushes.Black);
                 });
                 stackPanel.Child(new ObsidianPath(world));
+                stackPanel.Child<Separator>((Separator) =>
+                {
+                    Separator
+                    .SetMargin(0, 10, 0, 10)
+                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                    .SetBorderBrush(Brushes.Black);
+                });
+                stackPanel.Child<Button>((button) =>
+                {
+                    button
+                    .SetText("Reset Statistics")
+                    .OnClick(async (_, _) =>
+                    {
+
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Resetting Statistics",
+                            Content = "Do you want to reset your statistics?",
+                            PrimaryButtonText = "Confirm",
+                            DefaultButton = ContentDialogButton.Secondary,
+                            SecondaryButtonText = "Deny",
+                            IsSecondaryButtonEnabled = true,
+                        };
+
+                        cd.PrimaryButtonClick += (s, e) => { };
+                        var result = await cd.ShowAsync();
+
+                        if (result == ContentDialogResult.Primary)
+                        {
+                            await StatsTracker.Instance.ResetStatsAsync();
+                        }
+                    });
+                });
 
             });
 
