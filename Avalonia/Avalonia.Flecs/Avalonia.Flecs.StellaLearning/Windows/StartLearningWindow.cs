@@ -33,13 +33,13 @@ public class StartLearningWindow : IUIComponent, IDisposable
     private World _world;
     private UIBuilder<Control>? _contentContainer;
     private UIBuilder<Control>? _currentContent;
-    private ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems;
+    private readonly ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems;
     /// <summary>
     /// Represents the item that is or should be currently be 
     /// displayed.
     /// </summary>
     private SpacedRepetitionItem? _itemToBeLearnedField;
-    private SpacedRepetitionItem? _ItemToBeLearned
+    private SpacedRepetitionItem? ItemToBeLearned
     {
         get => _itemToBeLearnedField;
         set
@@ -63,7 +63,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
     {
         _world = world;
         _spacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
-        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
         _root = world.UI<Window>((window) =>
         {
             window
@@ -80,7 +80,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
             window.OnOpened(async (_, _) =>
             {
-                if (_ItemToBeLearned is not null)
+                if (ItemToBeLearned is not null)
                     await StatsTracker.Instance.StartStudySession();
             });
 
@@ -115,7 +115,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
     private UIBuilder<StackPanel> LearnFileContent()
     {
-        var file = (SpacedRepetitionFile)_ItemToBeLearned!;
+        var file = (SpacedRepetitionFile)ItemToBeLearned!;
 
         return _world.UI<StackPanel>((layout) =>
         {
@@ -243,7 +243,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         {
                             await StatsTracker.Instance.RecordReview(file, Rating.Easy);
                             file.EasyReview();
-                            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                         });
 
                     button.Disable();
@@ -260,7 +260,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         {
                             await StatsTracker.Instance.RecordReview(file, Rating.Good);
                             file.GoodReview();
-                            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                         });
 
                     button.Disable();
@@ -277,7 +277,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         {
                             await StatsTracker.Instance.RecordReview(file, Rating.Hard);
                             file.HardReview();
-                            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                         });
 
                     button.Disable();
@@ -294,7 +294,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         {
                             await StatsTracker.Instance.RecordReview(file, Rating.Again);
                             file.AgainReview();
-                            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
 
                         });
 
@@ -307,7 +307,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
     private UIBuilder<StackPanel> LearnQuizContent()
     {
-        var quiz = (SpacedRepetitionQuiz)_ItemToBeLearned!;
+        var quiz = (SpacedRepetitionQuiz)ItemToBeLearned!;
 
         return _world.UI<StackPanel>((layout) =>
         {
@@ -374,7 +374,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                     button.Background = Brushes.LightGreen;
                                     await Task.Delay(1000);
                                     quiz.GoodReview();
-                                    _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                    ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                                 }
                                 else
                                 {
@@ -382,7 +382,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                     button.Background = Brushes.Red;
                                     await Task.Delay(1000);
                                     quiz.AgainReview();
-                                    _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                    ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                                 }
                             }
                         });
@@ -397,7 +397,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
     private UIBuilder<StackPanel> LearnFlashcardContent()
     {
-        var flashcard = (SpacedRepetitionFlashcard)_ItemToBeLearned!;
+        var flashcard = (SpacedRepetitionFlashcard)ItemToBeLearned!;
 
         return _world.UI<StackPanel>((stackPanel) =>
                 {
@@ -490,7 +490,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                 await StatsTracker.Instance.RecordReview(flashcard, Rating.Easy);
 
                                 flashcard.EasyReview();
-                                _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                             });
 
                             button.Child<TextBlock>((textBlock) =>
@@ -510,7 +510,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             {
                                 await StatsTracker.Instance.RecordReview(flashcard, Rating.Good);
                                 flashcard.GoodReview();
-                                _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                             });
                         });
 
@@ -525,7 +525,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             {
                                 await StatsTracker.Instance.RecordReview(flashcard, Rating.Hard);
                                 flashcard.HardReview();
-                                _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                             });
                         });
 
@@ -540,7 +540,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             {
                                 await StatsTracker.Instance.RecordReview(flashcard, Rating.Again);
                                 flashcard.AgainReview();
-                                _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                             });
                         });
                     });
@@ -549,7 +549,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
     private UIBuilder<StackPanel> LearnClozeContent()
     {
-        var cloze = (SpacedRepetitionCloze)_ItemToBeLearned!;
+        var cloze = (SpacedRepetitionCloze)ItemToBeLearned!;
         return _world.UI<StackPanel>((stackPanel) =>
         {
             UIBuilder<TextBlock> clozeText;
@@ -635,7 +635,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     {
                         await StatsTracker.Instance.RecordReview(cloze, Rating.Easy);
                         cloze.EasyReview();
-                        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                     });
                 });
 
@@ -650,7 +650,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     {
                         await StatsTracker.Instance.RecordReview(cloze, Rating.Good);
                         cloze.GoodReview();
-                        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                     });
                 });
 
@@ -665,7 +665,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     {
                         await StatsTracker.Instance.RecordReview(cloze, Rating.Hard);
                         cloze.HardReview();
-                        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                     });
 
                 });
@@ -681,7 +681,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     {
                         await StatsTracker.Instance.RecordReview(cloze, Rating.Again);
                         cloze.AgainReview();
-                        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                     });
                 });
             });
@@ -690,7 +690,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
     private UIBuilder<StackPanel> LearnImageClozeContent()
     {
-        var imageCloze = (SpacedRepetitionImageCloze)_ItemToBeLearned!;
+        var imageCloze = (SpacedRepetitionImageCloze)ItemToBeLearned!;
 
         return _world.UI<StackPanel>((stackPanel) =>
         {
@@ -828,7 +828,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     {
                         await StatsTracker.Instance.RecordReview(imageCloze, Rating.Easy);
                         imageCloze.EasyReview();
-                        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                     });
                 });
 
@@ -842,7 +842,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     {
                         await StatsTracker.Instance.RecordReview(imageCloze, Rating.Good);
                         imageCloze.GoodReview();
-                        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                     });
                 });
 
@@ -856,7 +856,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     {
                         await StatsTracker.Instance.RecordReview(imageCloze, Rating.Hard);
                         imageCloze.HardReview();
-                        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                     });
                 });
 
@@ -870,7 +870,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     {
                         await StatsTracker.Instance.RecordReview(imageCloze, Rating.Again);
                         imageCloze.AgainReview();
-                        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                     });
                 });
             });
@@ -908,7 +908,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
     {
         if (e.PropertyName == nameof(SpacedRepetitionItem.NextReview) || e == null)
         {
-            _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
         }
     }
 
@@ -929,14 +929,14 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 DetachItemEventHandler(oldItem);
             }
         }
-        _ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
     }
 
     private UIBuilder<Control> DisplayRightItem()
     {
         try
         {
-            return _ItemToBeLearned switch
+            return ItemToBeLearned switch
             {
 
                 /*
