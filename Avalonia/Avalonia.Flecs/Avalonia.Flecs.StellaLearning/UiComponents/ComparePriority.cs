@@ -268,7 +268,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
             Logger.Debug($"Next comparison item selected: {currentItemName} (Prio: {_currentItemToCompare.Priority}, ID: {_currentItemToCompare.Uid}). Comparison #{_timesCompared + 1}");
         }
 
-        // --- HandleLessPriorityClick (No changes needed from previous version) ---
         private void HandleLessPriorityClick()
         {
             if (_isDisposed || _currentItemToCompare == null) { /* ... Log/Recover ... */ return; }
@@ -278,7 +277,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
             SelectNextItemToCompare();
         }
 
-        // --- HandleMorePriorityClick (No changes needed from previous version) ---
         private void HandleMorePriorityClick()
         {
             if (_isDisposed || _currentItemToCompare == null) { /* ... Log/Recover ... */ return; }
@@ -345,7 +343,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
             }
         }
 
-        // --- OnCollectionChanged (No changes needed from previous version) ---
         private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             if (_isDisposed) return;
