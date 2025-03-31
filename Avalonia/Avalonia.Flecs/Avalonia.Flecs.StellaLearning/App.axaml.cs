@@ -37,6 +37,7 @@ public partial class App : Application
     private HomePage? homePage;
     private LiteraturePage? literaturePage;
     private SpacedRepetitionPage? spacedRepetitionPage;
+    private StatisticsPage? statisticsPage;
 
     /// <summary>
     /// Ui Builder that represents the main window
@@ -63,6 +64,11 @@ public partial class App : Application
         _world.Set<ObservableCollection<SpacedRepetitionItem>>([]);
         //var debugWindow = new Debug.Window.Window(_world);
         //Entities.OnEntityAdded += debugWindow.AddEntity;
+
+        Dispatcher.UIThread.Post(async () =>
+        {
+            await StatsTracker.Instance.InitializeAsync();
+        });
 
         MainWindow = _world.UI<Window>((window) =>
             {
@@ -102,6 +108,7 @@ public partial class App : Application
         homePage = new(_world);
         literaturePage = new(_world);
         spacedRepetitionPage = new(_world);
+        statisticsPage = new(_world);
 
         // Using the UI Builder is part of an effort to make it much more obvious how the UI is structured.
         // While you might say just use XAML, the whole point was not to use it in the firstplace.
@@ -145,7 +152,7 @@ public partial class App : Application
              */
 
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Study")));
-            nav.Child<NavigationViewItem>((item) =>
+            var srPage = nav.Child<NavigationViewItem>((item) =>
             {
                 item.With((item) =>
                 {
@@ -155,9 +162,24 @@ public partial class App : Application
                     };
                 });
                 item.Child<TextBlock>(t => t.SetText("Spaced Repetition"));
+            });
+
+            nav.Child<NavigationViewItem>((item) =>
+            {
+                item.With((item) =>
+                {
+                    item.IconSource = new SymbolIconSource()
+                    {
+                        Symbol = Symbol.Library
+                    };
+                });
+                item.Child<TextBlock>(t => t.SetText("Statistics"));
 
             });
-            nav.Child(spacedRepetitionPage!);
+            nav.Get<NavigationView>().SelectedItem = srPage.Get<NavigationViewItem>();
+            nav.Child(spacedRepetitionPage);
+
+
             nav.OnDisplayModeChanged((sender, args) =>
             {
                 if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
@@ -219,6 +241,14 @@ public partial class App : Application
                 else if (selectedItem?.Content is TextBlock LiteratureTextBlock && LiteratureTextBlock.Text == "Literature")
                 {
                     nav.Child(literaturePage!);
+                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                        ((IUIComponent)literaturePage!).SetMargin(new Thickness(50, 10, 20, 20));
+                    else
+                        ((IUIComponent)literaturePage!).SetMargin(new Thickness(20, 10, 20, 20));
+                }
+                else if (selectedItem?.Content is TextBlock StatisticsTextBlock && StatisticsTextBlock.Text == "Statistics")
+                {
+                    nav.Child(statisticsPage);
                     if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
                         ((IUIComponent)literaturePage!).SetMargin(new Thickness(50, 10, 20, 20));
                     else
