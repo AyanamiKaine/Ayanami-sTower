@@ -246,11 +246,9 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                 try
                 {
                     // Efficiently update the ObservableCollection on the UI thread
-                    var tagsToRemove = _allUniqueTags.Except(sortedTags).ToList();
-                    foreach (var tagToRemove in tagsToRemove) _allUniqueTags.Remove(tagToRemove);
+                    foreach (var tagToRemove in _allUniqueTags.Except(sortedTags).ToList()) _allUniqueTags.Remove(tagToRemove);
 
-                    var tagsToAdd = sortedTags.Except(_allUniqueTags).ToList();
-                    foreach (var tagToAdd in tagsToAdd) _allUniqueTags.Add(tagToAdd); // Add new tags
+                    foreach (var tagToAdd in sortedTags.Except(_allUniqueTags).ToList()) _allUniqueTags.Add(tagToAdd); // Add new tags
 
                     Logger.Debug($"Unique tags list updated. Count: {_allUniqueTags.Count}");
                 }
