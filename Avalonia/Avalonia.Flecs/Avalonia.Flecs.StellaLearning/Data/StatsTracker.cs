@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
 using System.Collections.ObjectModel;
 using FsrsSharp;
+using Avalonia.Threading;
 
 namespace Avalonia.Flecs.StellaLearning.Data
 {
@@ -230,12 +231,12 @@ namespace Avalonia.Flecs.StellaLearning.Data
                 // Update tag statistics
                 foreach (var tag in item.Tags)
                 {
-                    if (!TagStats.ContainsKey(tag))
+                    if (!TagStats.TryGetValue(tag, out TagStats? tagStat))
                     {
-                        TagStats[tag] = new TagStats { Tag = tag };
+                        tagStat = new TagStats { Tag = tag };
+                        TagStats[tag] = tagStat;
                     }
 
-                    var tagStat = TagStats[tag];
                     tagStat.TotalReviews++;
                     if ((int)rating >= 3) // Good or Easy
                     {
@@ -441,35 +442,56 @@ namespace Avalonia.Flecs.StellaLearning.Data
         /// </summary>
         public async Task SaveStatsAsync()
         {
+            // Prevent saving if not initialized to avoid writing default/empty data over existing file
+            if (!_isInitialized && File.Exists(_statsFilePath))
+            {
+                Logger.Warn("Attempted to save stats before initialization, but an existing file was found. Skipping save to prevent data loss.");
+                return;
+            }
+            // Allow saving if not initialized *but no file exists* (first time save)
+            if (!_isInitialized && !File.Exists(_statsFilePath))
+            {
+                Logger.Info("Performing initial save of potentially empty stats as no file exists.");
+            }
+
+
             try
             {
                 var options = new JsonSerializerOptions
                 {
-                    WriteIndented = true
+                    WriteIndented = true,
+                    // Add any necessary converters if complex types are involved
+                    // Converters = { ... }
                 };
 
+                // Create data object on the fly to ensure current values are captured
                 var statsData = new StatsData
                 {
-                    DailyStats = [.. DailyStats],
-                    StudySessions = [.. StudySessions],
-                    ItemTypeStats = ItemTypeStats,
+                    // Use ToList() to capture a snapshot of the collections at save time
+                    DailyStats = DailyStats.ToList(),
+                    StudySessions = StudySessions.ToList(),
+                    ItemTypeStats = ItemTypeStats, // Dictionaries are usually saved correctly
                     TagStats = TagStats,
                     CurrentStreak = CurrentStreak,
                     LongestStreak = LongestStreak,
                     TotalStudyTimeMinutes = TotalStudyTimeMinutes,
                     TotalReviews = TotalReviews,
                     OverallAccuracy = OverallAccuracy,
-                    LastUpdated = DateTime.Now
+                    LastUpdated = DateTime.Now // Update LastUpdated time on save
                 };
 
                 var json = JsonSerializer.Serialize(statsData, options);
                 await File.WriteAllTextAsync(_statsFilePath, json);
+
+                // Update the LastUpdated property *after* successful save
+                LastUpdated = statsData.LastUpdated; // Triggers OnPropertyChanged
 
                 Logger.Debug("Saved statistics to {FilePath}", _statsFilePath);
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "Failed to save statistics");
+                // Consider notifying the user of the save failure
             }
         }
 
@@ -482,19 +504,36 @@ namespace Avalonia.Flecs.StellaLearning.Data
             {
                 if (!File.Exists(_statsFilePath))
                 {
-                    Logger.Info("No existing statistics file found at {FilePath}", _statsFilePath);
+                    Logger.Info("No existing statistics file found at {FilePath}. Starting with default stats.", _statsFilePath);
+                    // Ensure default values are set if loading fails or file doesn't exist
+                    ResetObservablePropertiesToDefault();
                     return;
                 }
 
                 var json = await File.ReadAllTextAsync(_statsFilePath);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    Logger.Warn("Statistics file at {FilePath} is empty. Starting with default stats.", _statsFilePath);
+                    ResetObservablePropertiesToDefault();
+                    return;
+                }
+
                 var statsData = JsonSerializer.Deserialize<StatsData>(json);
 
                 if (statsData != null)
                 {
-                    DailyStats = [.. statsData.DailyStats];
-                    StudySessions = [.. statsData.StudySessions];
-                    ItemTypeStats = statsData.ItemTypeStats;
-                    TagStats = statsData.TagStats;
+                    // Use Dispatcher for collections if necessary
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        DailyStats = new ObservableCollection<DailyStats>(statsData.DailyStats ?? new List<DailyStats>());
+                        StudySessions = new ObservableCollection<StudySession>(statsData.StudySessions ?? new List<StudySession>());
+                        // Dictionaries might not need dispatcher if replaced entirely
+                        ItemTypeStats = statsData.ItemTypeStats ?? new Dictionary<SpacedRepetitionItemType, ItemTypeStats>();
+                        TagStats = statsData.TagStats ?? new Dictionary<string, TagStats>();
+                    });
+
+
+                    // Update scalar properties - triggers PropertyChanged
                     CurrentStreak = statsData.CurrentStreak;
                     LongestStreak = statsData.LongestStreak;
                     TotalStudyTimeMinutes = statsData.TotalStudyTimeMinutes;
@@ -504,11 +543,95 @@ namespace Avalonia.Flecs.StellaLearning.Data
 
                     Logger.Info("Loaded statistics from {FilePath}", _statsFilePath);
                 }
+                else
+                {
+                    Logger.Error("Failed to deserialize statistics data from {FilePath}. File might be corrupted. Starting with default stats.", _statsFilePath);
+                    ResetObservablePropertiesToDefault();
+                }
+            }
+            catch (JsonException jsonEx)
+            {
+                Logger.Error(jsonEx, "JSON Error loading statistics from {FilePath}. File might be corrupted. Starting with default stats.", _statsFilePath);
+                ResetObservablePropertiesToDefault();
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Failed to load statistics");
+                Logger.Error(ex, "Failed to load statistics from {FilePath}. Starting with default stats.", _statsFilePath);
+                ResetObservablePropertiesToDefault();
             }
+        }
+
+        /// <summary>
+        /// Resets observable properties to their default values. Used when loading fails.
+        /// </summary>
+        private void ResetObservablePropertiesToDefault()
+        {
+            // Use Dispatcher for collections
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                DailyStats.Clear();
+                StudySessions.Clear();
+                ItemTypeStats.Clear();
+                TagStats.Clear();
+            }).Wait(); // Consider if waiting is necessary
+
+            CurrentStreak = 0;
+            LongestStreak = 0;
+            TotalStudyTimeMinutes = 0;
+            TotalReviews = 0;
+            OverallAccuracy = 0;
+            LastUpdated = DateTime.MinValue; // Indicate no valid data loaded
+
+            // Manually notify changes for collections/dictionaries
+            OnPropertyChanged(nameof(DailyStats));
+            OnPropertyChanged(nameof(StudySessions));
+            OnPropertyChanged(nameof(ItemTypeStats));
+            OnPropertyChanged(nameof(TagStats));
+        }
+
+        /// <summary>
+        /// Resets all tracked statistics to their initial state and saves immediately.
+        /// </summary>
+        public async Task ResetStatsAsync()
+        {
+            Logger.Warn("Resetting all learning statistics!");
+
+            // Use Dispatcher for collection clearing if accessed from non-UI thread
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                DailyStats.Clear();
+                StudySessions.Clear();
+                ItemTypeStats.Clear();
+                TagStats.Clear();
+            });
+
+            // Reset scalar properties - these automatically trigger PropertyChanged
+            CurrentStreak = 0;
+            LongestStreak = 0;
+            TotalStudyTimeMinutes = 0;
+            TotalReviews = 0;
+            OverallAccuracy = 0;
+            LastUpdated = DateTime.Now; // Set last updated time to now
+
+            // Manually notify changes for collections/dictionaries as Clear() might not be sufficient
+            // depending on how the UI bindings are set up.
+            OnPropertyChanged(nameof(DailyStats));
+            OnPropertyChanged(nameof(StudySessions));
+            OnPropertyChanged(nameof(ItemTypeStats));
+            OnPropertyChanged(nameof(TagStats));
+
+
+            // Ensure current session is also cleared if one was active
+            if (CurrentSession != null)
+            {
+                Logger.Warn("Resetting stats while a study session ({SessionId}) was active. Ending the session without saving its final state.", CurrentSession.SessionId);
+                CurrentSession = null; // Clears the session without saving its potentially partial data
+            }
+
+
+            // Save the reset state immediately
+            await SaveStatsAsync();
+            Logger.Info("Learning statistics have been reset and saved.");
         }
     }
 
