@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Reactive.Disposables;
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
-using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Input;
@@ -71,12 +69,10 @@ public class AddFile : IUIComponent, IDisposable
 
     private Entity DefineWindowContents(World world)
     {
-
         ObservableCollection<Tag> tags = [];
 
         return world.UI<StackPanel>((stackPanel) =>
         {
-
             void ValidateFilePath(string path)
             {
                 if (string.IsNullOrWhiteSpace(path))
@@ -180,7 +176,6 @@ public class AddFile : IUIComponent, IDisposable
                         return;
                     }
 
-
                     if (string.IsNullOrEmpty(nameTextBox.GetText()))
                     {
                         nameTextBox.SetWatermark("Name is required");
@@ -195,9 +190,6 @@ public class AddFile : IUIComponent, IDisposable
                         cd.ShowAsync();
                         return;
                     }
-
-
-
 
                     if (string.IsNullOrEmpty(filePath.GetText()))
                     {
@@ -215,8 +207,6 @@ public class AddFile : IUIComponent, IDisposable
                         return;
                     }
 
-
-
                     if (string.IsNullOrEmpty(questionTextBox.GetText()))
                     {
                         questionTextBox.SetWatermark("Question is required");
@@ -232,7 +222,6 @@ public class AddFile : IUIComponent, IDisposable
                         cd.ShowAsync();
                         return;
                     }
-
 
                     if (!System.IO.File.Exists(filePath!.GetText()))
                     {
@@ -264,7 +253,7 @@ public class AddFile : IUIComponent, IDisposable
         }).Entity;
     }
 
-    private async Task<string> FilePickerAsync()
+    private static async Task<string> FilePickerAsync()
     {
         // Create and configure the file picker options
         var options = new FilePickerOpenOptions
