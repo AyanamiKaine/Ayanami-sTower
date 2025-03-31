@@ -194,7 +194,7 @@ public class AddQuiz : IUIComponent, IDisposable
 
                     Grid grid = quizAnswers.Get<Grid>();
 
-                    var isAnswerCheck = () =>
+                    bool isAnswerCheck()
                     {
                         for (int i = 0; i < 4; i++)
                         {
@@ -202,7 +202,7 @@ public class AddQuiz : IUIComponent, IDisposable
                                 return true;
                         }
                         return false;
-                    };
+                    }
 
                     if (!isAnswerCheck())
                     {
