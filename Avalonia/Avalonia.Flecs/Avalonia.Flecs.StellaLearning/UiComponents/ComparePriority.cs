@@ -23,8 +23,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems;
-        private readonly Entity _root;
-        private readonly Entity _calculatedPriorityEntity;
         private readonly Random _rng = new();
         private readonly CompositeDisposable _disposables = [];
         private bool _isDisposed = false;
@@ -49,10 +47,10 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
         /// <summary>
         /// Returns the entity that holds the final calculated priority (as an int).
         /// </summary>
-        public Entity CalculatedPriorityEntity => _calculatedPriorityEntity;
+        public Entity CalculatedPriorityEntity { get; }
 
         /// <inheritdoc/>
-        public Entity Root => _root;
+        public Entity Root { get; }
 
         /// <summary>
         /// Creates a ComparePriority component.
@@ -72,9 +70,9 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
             }
 
             // Entity to store the final calculated priority (as int)
-            _calculatedPriorityEntity = world.Entity().Set(0); // Default value
+            CalculatedPriorityEntity = world.Entity().Set(0); // Default value
 
-            _root = world.UI<Grid>((grid) =>
+            Root = world.UI<Grid>((grid) =>
             {
                 grid
                     .SetColumnDefinitions("*,*")
@@ -153,11 +151,11 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
 
             _disposables.Add(Disposable.Create(() =>
             {
-                if (_calculatedPriorityEntity.IsAlive()) _calculatedPriorityEntity.Destruct(); // Clean up entity
-                if (_root.IsValid() && _root.IsAlive()) _root.Destruct(); // Clean up UI
+                if (CalculatedPriorityEntity.IsAlive()) CalculatedPriorityEntity.Destruct(); // Clean up entity
+                if (Root.IsValid() && Root.IsAlive()) Root.Destruct(); // Clean up UI
             }));
 
-            _root.SetName($"COMPAREPRIORITY-{_rng.Next()}");
+            Root.SetName($"COMPAREPRIORITY-{_rng.Next()}");
         }
 
         /// <summary>
@@ -323,9 +321,9 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
             int finalPriorityInt = (int)Math.Clamp(finalPriorityLong, MIN_PRIORITY_VALUE, MAX_PRIORITY_VALUE);
 
             // 6. Set the Entity Value
-            if (_calculatedPriorityEntity.IsAlive())
+            if (CalculatedPriorityEntity.IsAlive())
             {
-                _calculatedPriorityEntity.Set(finalPriorityInt);
+                CalculatedPriorityEntity.Set(finalPriorityInt);
                 Logger.Info($"Final calculated priority set to: {finalPriorityInt} (Range: [{_internalSmallestPrio} - {_internalHighestPrio}], BaseMid: {(_internalSmallestPrio + _internalHighestPrio) / 2}, Offset: {offset})");
             }
             else
@@ -384,7 +382,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
             {
                 if (disposing)
                 {
-                    Logger.Debug($"Disposing ComparePriority (Root: {_root.Id})...");
+                    Logger.Debug($"Disposing ComparePriority (Root: {Root.Id})...");
                     // Dispose managed state (managed objects).
                     _disposables.Dispose(); // Unsubscribes events, destroys entities added to it
                                             // Set fields to null to aid GC? Optional.
