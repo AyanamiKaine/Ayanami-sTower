@@ -15,6 +15,7 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Threading;
 using Avalonia.Flecs.StellaLearning.Data;
 using System.Collections.ObjectModel;
+using Avalonia.Styling;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -70,6 +71,8 @@ public partial class App : Application
             await StatsTracker.Instance.InitializeAsync();
         });
 
+        InitializeSettings();
+
         MainWindow = _world.UI<Window>((window) =>
             {
                 window.SetTitle("Stella Learning")
@@ -81,7 +84,7 @@ public partial class App : Application
                           {
                               // We dont close the main window but instead hide it,
                               // because we have a tray icon that is still active.
-                              if (_world.Get<Settings>().closeToTray)
+                              if (_world.Get<Settings>().CloseToTray)
                               {
                                   args.Cancel = true;
                                   win.Hide();
@@ -299,6 +302,18 @@ public partial class App : Application
     /// </summary>
     public override void OnFrameworkInitializationCompleted()
     {
+
+        var isDarkMode = _world.Get<Settings>().IsDarkMode;
+
+        if (isDarkMode)
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
+        }
+        else
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && MainWindow is not null)
         {
             _mainWindow = MainWindow.Get<Window>();
@@ -346,6 +361,27 @@ public partial class App : Application
         {
             desktop.Shutdown();
         }
+    }
+
+    private void InitializeSettings()
+    {
+
+
+
+
+        _world.Set(Settings.LoadFromDisk());
+        var settings = _world.Get<Settings>();
+        settings.PropertyChanged += (sender, e) =>
+        {
+            if (e.PropertyName == nameof(Settings.IsDarkMode))
+            {
+                if (Application.Current is not null)
+                    Settings.SetTheme(Application.Current, settings.IsDarkMode ? "Dark" : "Light");
+
+            }
+
+            Settings.SaveToDisk(settings);
+        };
     }
 
     private void InitializeTrayIcon()
