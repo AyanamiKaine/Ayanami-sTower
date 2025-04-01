@@ -9,6 +9,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.StellaLearning.Data; // Required for StatsTracker, SpacedRepetitionItem, etc.
 using Avalonia.Layout;
+using Avalonia.Markup.Xaml.Converters;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Flecs.NET.Core;
@@ -72,7 +73,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
                 borderBuilder
                     .SetPadding(5)
                     .SetMargin(0, 2)
-                    .SetBorderBrush(Brushes.LightGray)
+                    .SetBorderBrush(Brushes.LightGray) // Default
                     .SetBorderThickness(new Thickness(0, 0, 0, 1)) // Bottom border
                     .Child<Grid>(grid =>
                     {
@@ -138,7 +139,18 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
                     mainPanel.Child<TextBlock>(header => header.SetText("Overall Statistics").SetFontSize(18).SetFontWeight(FontWeight.Bold));
                     mainPanel.Child<Border>(border => // Wrap in border for visual separation
                     {
-                        border.SetPadding(10).SetCornerRadius(5).SetBackground(Brushes.WhiteSmoke); // Light background
+                        var settings = world.Get<Settings>();
+
+                        if (settings.IsDarkMode)
+                        {
+                            border.SetBackground(new SolidColorBrush(new Color(255, 45, 45, 45)));
+                        }
+                        else
+                        {
+                            border.SetBackground(Brushes.WhiteSmoke);
+                        }
+
+                        border.SetPadding(10).SetCornerRadius(5); // Light background
                         border.Child<StackPanel>(overallStatsPanel =>
                         {
                             overallStatsPanel.SetSpacing(5);
@@ -150,6 +162,21 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
                             _longestStreakTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Longest Streak: {_statsTracker.LongestStreak} days"));
                             _lastUpdatedTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Last Updated: {_statsTracker.LastUpdated:g}").SetFontSize(10).SetForeground(Brushes.Gray).SetMargin(0, 5, 0, 0));
                         });
+
+                        settings.PropertyChanged += (sender, e) =>
+                        {
+                            if (e.PropertyName == nameof(Settings.IsDarkMode))
+                            {
+                                if (settings.IsDarkMode)
+                                {
+                                    border.SetBackground(new SolidColorBrush(new Color(255, 45, 45, 45)));
+                                }
+                                else
+                                {
+                                    border.SetBackground(Brushes.WhiteSmoke);
+                                }
+                            }
+                        };
                     });
 
                     // --- Item Type Stats Section ---
