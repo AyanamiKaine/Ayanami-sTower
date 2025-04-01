@@ -507,7 +507,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
                             var _ItemToBeLearned = _baseSpacedRepetitionItems.GetNextItemToBeReviewed();
                             bool hasItemToReview = _ItemToBeLearned != null;
-                            if (hasItemToReview && !_previouslyHadItemToReview && !App.GetMainWindow().IsActive && _root.CsWorld().Get<Settings>().enableNotifications)
+                            if (hasItemToReview && !_previouslyHadItemToReview && !App.GetMainWindow().IsActive && _root.CsWorld().Get<Settings>().EnableNotifications)
                             {
                                 var nf = new Notification
                                 {
