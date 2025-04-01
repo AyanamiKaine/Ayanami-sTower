@@ -2,31 +2,38 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Avalonia.Styling;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Avalonia.Flecs.StellaLearning.Data;
 
 /// <summary>
 /// Settings for the application
 /// </summary>
-public class Settings
+public partial class Settings : ObservableObject
 {
     /// <summary>
     /// Whether the application is allowed to send notifcations
     /// </summary>
-    public bool enableNotifications = true;
+    [ObservableProperty]
+    private bool _enableNotifications = true;
     /// <summary>
     /// Whether the application is in dark mode
     /// </summary>
-    public bool isDarkMode = false;
+    [ObservableProperty]
+    private bool _isDarkMode = false;
     /// <summary>
     /// Whether the application closes to a small tray icon instead. Leaving
     /// the app running in the background.
     /// </summary>
-    public bool closeToTray = true;
+    [ObservableProperty]
+    private bool _closeToTray = true;
     /// <summary>
     /// The path to the Obsidian executable
     /// </summary>
-    public string ObsidianPath = string.Empty;
+    [ObservableProperty]
+    private string _obsidianPath = string.Empty;
     /// <summary>
     /// Caching the json serializer options for performance
     /// </summary>
@@ -38,19 +45,55 @@ public class Settings
     /// <summary>
     /// Create a new settings object
     /// </summary>
-    /// <param name="isDarkMode"></param>
-    /// <param name="ObsidianPath">The obsidian path is used for markdown files, if set we will try to open the markdown file with obsidian.</param>
-    /// <param name="closeToTray">When set to true, the app will close to tray instead of exiting completly.</param>
-    /// <param name="enableNotifications">Notifications are used to show that new spaced repetition items can be learned or other important user notifications.</param>
-    public Settings(bool isDarkMode = false, string ObsidianPath = "", bool closeToTray = true, bool enableNotifications = true)
+    public Settings()
     {
-        if (ObsidianPath.Length == 0 && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            ObsidianPath = GetWindowsDefaultObsidianFolderPath();
+        // Set initial safe defaults. The deserializer will overwrite these
+        // with values from the JSON if they exist.
+        _enableNotifications = true;
+        _isDarkMode = false; // Default to light mode unless specified in JSON
+        _closeToTray = true;
+        _obsidianPath = string.Empty; // Default path handled later or in CreateDefaultSettings
 
-        this.closeToTray = closeToTray;
-        this.isDarkMode = isDarkMode;
-        this.ObsidianPath = ObsidianPath;
-        this.enableNotifications = enableNotifications;
+        if (_isDarkMode)
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
+        }
+        else
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        }
+        // Optionally set OS-specific defaults here if they apply universally to new instances
+        if (string.IsNullOrEmpty(_obsidianPath) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            _obsidianPath = GetWindowsDefaultObsidianFolderPath();
+        }
+    }
+
+    /// <summary>
+    /// Create a new settings object, especially used for json deserialiation
+    /// </summary>
+    [JsonConstructor] // Explicitly tell JsonSerializer to prefer this if needed, though parameterless is usually default
+    public Settings(bool isDarkMode, string obsidianPath, bool closeToTray, bool enableNotifications)
+    {
+        _isDarkMode = isDarkMode; // Use the value passed in
+        _obsidianPath = obsidianPath; // Use the value passed in
+        _closeToTray = closeToTray;
+        _enableNotifications = enableNotifications;
+
+        if (_isDarkMode)
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
+        }
+        else
+        {
+            Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        }
+
+        // Handle default Obsidian path only if the provided one is empty
+        if (string.IsNullOrEmpty(_obsidianPath) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            _obsidianPath = GetWindowsDefaultObsidianFolderPath();
+        }
     }
 
     private static string GetWindowsDefaultObsidianFolderPath()
@@ -118,6 +161,27 @@ public class Settings
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving settings: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Sets the application theme based on the provided theme name.
+    /// </summary>
+    /// <param name="app">The application instance to apply the theme to.</param>
+    /// <param name="theme">The theme name to set. Use "dark" for dark mode, any other value for light mode.</param>
+    public static void SetTheme(Application app, string theme)
+    {
+        // Get the current app theme variant
+        var currentThemeVariant = app.ActualThemeVariant;
+
+        // Determine the new theme variant based on the input string
+
+        var newThemeVariant = string.Equals(theme, "dark", StringComparison.OrdinalIgnoreCase) ? ThemeVariant.Dark : ThemeVariant.Light;
+
+        // Only update the theme if it has changed
+        if (currentThemeVariant != newThemeVariant)
+        {
+            app.RequestedThemeVariant = newThemeVariant;
         }
     }
 }
