@@ -23,6 +23,7 @@ public class SettingsPage : IUIComponent
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
+    private Settings Settings { get; }
     /// <summary>
     /// Create the settings page
     /// </summary>
@@ -30,16 +31,7 @@ public class SettingsPage : IUIComponent
     /// <returns></returns>
     public SettingsPage(World world)
     {
-        world.Component<Settings>("Settings").OnSet((Entity e, ref Settings settings) =>
-        {
-            if (Application.Current is not null)
-                SetTheme(Application.Current, settings.isDarkMode ? "Dark" : "Light");
-
-            Settings.SaveToDisk(settings);
-        });
-
-        world.Set(Settings.LoadFromDisk());
-
+        Settings = world.Get<Settings>();
         _root = world.UI<ScrollViewer>((scrollViewer) =>
         {
             scrollViewer.Child<StackPanel>((stackPanel) =>
@@ -125,18 +117,14 @@ public class SettingsPage : IUIComponent
 
                     toggleSwitch.With((toggleSwitch) =>
                     {
-                        toggleSwitch.IsChecked = world.Get<Settings>().enableNotifications;
+                        toggleSwitch.IsChecked = world.Get<Settings>().EnableNotifications;
                     });
 
                     toggleSwitch.OnIsCheckedChanged((sender, args) =>
                     {
                         var enableNotifications = ((ToggleSwitch)sender!).IsChecked ?? false;
                         var currentSettings = world.Get<Settings>();
-                        world.Set<Settings>(new(
-                            isDarkMode: currentSettings.isDarkMode,
-                            ObsidianPath: currentSettings.ObsidianPath,
-                            closeToTray: currentSettings.closeToTray,
-                            enableNotifications: enableNotifications));
+                        currentSettings.EnableNotifications = enableNotifications;
                     });
                 });
 
@@ -183,18 +171,14 @@ public class SettingsPage : IUIComponent
 
                     toggleSwitch.With((toggleSwitch) =>
                     {
-                        toggleSwitch.IsChecked = world.Get<Settings>().isDarkMode;
+                        toggleSwitch.IsChecked = world.Get<Settings>().IsDarkMode;
                     });
 
                     toggleSwitch.OnIsCheckedChanged((sender, args) =>
                     {
                         var isDarkMode = ((ToggleSwitch)sender!).IsChecked ?? false;
                         var currentSettings = world.Get<Settings>();
-                        world.Set<Settings>(new(
-                            isDarkMode: isDarkMode,
-                            ObsidianPath: currentSettings.ObsidianPath,
-                            closeToTray: currentSettings.closeToTray,
-                            enableNotifications: currentSettings.enableNotifications));
+                        currentSettings.IsDarkMode = isDarkMode;
                     });
                 });
             }).Entity;
@@ -228,18 +212,14 @@ public class SettingsPage : IUIComponent
 
                     toggleSwitch.With((toggleSwitch) =>
                     {
-                        toggleSwitch.IsChecked = world.Get<Settings>().closeToTray;
+                        toggleSwitch.IsChecked = world.Get<Settings>().CloseToTray;
                     });
 
                     toggleSwitch.OnIsCheckedChanged((sender, args) =>
                     {
                         var closeToTray = ((ToggleSwitch)sender!).IsChecked ?? false;
                         var currentSettings = world.Get<Settings>();
-                        world.Set<Settings>(new(
-                            isDarkMode: currentSettings.isDarkMode,
-                            ObsidianPath: currentSettings.ObsidianPath,
-                            closeToTray: closeToTray,
-                            enableNotifications: currentSettings.enableNotifications));
+                        currentSettings.CloseToTray = closeToTray;
                     });
                 });
 
@@ -292,11 +272,7 @@ public class SettingsPage : IUIComponent
                                {
                                    textBox.SetText(newObsidanPath);
                                    var currentSettings = world.Get<Settings>();
-                                   world.Set<Settings>(new(
-                                       isDarkMode: currentSettings.isDarkMode,
-                                       ObsidianPath: newObsidanPath,
-                                       closeToTray: currentSettings.closeToTray,
-                                       enableNotifications: currentSettings.enableNotifications));
+                                   currentSettings.ObsidianPath = newObsidanPath;
                                }
                            });
                        }));
@@ -339,22 +315,6 @@ public class SettingsPage : IUIComponent
             return file.Path.AbsolutePath;
         }
         return "";
-    }
-
-    private static void SetTheme(Application app, string theme)
-    {
-        // Get the current app theme variant
-        var currentThemeVariant = app.ActualThemeVariant;
-
-        // Determine the new theme variant based on the input string
-
-        var newThemeVariant = string.Equals(theme, "dark", StringComparison.OrdinalIgnoreCase) ? ThemeVariant.Dark : ThemeVariant.Light;
-
-        // Only update the theme if it has changed
-        if (currentThemeVariant != newThemeVariant)
-        {
-            app.RequestedThemeVariant = newThemeVariant;
-        }
     }
 }
 
