@@ -182,10 +182,14 @@ namespace Avalonia.Flecs.StellaLearning.Data
             TotalStudyTimeSeconds += secondsToAdd; // Add seconds directly
 
             // Add to sessions collection (use Dispatcher if accessed from non-UI thread)
-            await Dispatcher.UIThread.InvokeAsync(() => StudySessions.Add(CurrentSession));
+            await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (CurrentSession is not null) // Check again inside dispatcher in case it changed
+                    {
+                        StudySessions.Add(CurrentSession);
+                    }
+                });
 
-            // Add to sessions collection
-            StudySessions.Add(CurrentSession);
 
             // Update daily stats
             UpdateDailyStats(CurrentSession);
@@ -332,15 +336,42 @@ namespace Avalonia.Flecs.StellaLearning.Data
         }
 
         /// <summary>
-        /// Updates the overall accuracy based on all reviews.
+        /// Updates the overall accuracy based on all reviews, ensuring the value stays within the 0-100 range.
         /// </summary>
         private void UpdateOverallAccuracy()
         {
+            // Calculate the total number of correct reviews across all sessions recorded so far.
             var totalCorrect = StudySessions.SelectMany(s => s.Reviews).Count(r => r.Rating >= 3);
+
+            double calculatedAccuracy; // Use a temporary variable for the raw calculation
+
             if (TotalReviews > 0)
             {
-                OverallAccuracy = (double)totalCorrect / TotalReviews * 100;
+                // Calculate the accuracy percentage.
+                calculatedAccuracy = (double)totalCorrect / TotalReviews * 100;
+
+                // --- Optional but Recommended: Log if the raw calculation is out of bounds ---
+                // This helps identify if the underlying bug (like double counting) is still present
+                // or if some other data inconsistency has occurred.
+                if (calculatedAccuracy > 100.0 || calculatedAccuracy < 0.0)
+                {
+                    Logger.Warn($"Raw calculated accuracy ({calculatedAccuracy:F2}%) was outside the valid 0-100 range before clamping. This indicates an ongoing calculation issue or data inconsistency. TotalCorrect={totalCorrect}, TotalReviews={TotalReviews}.");
+                }
             }
+            else
+            {
+                // If there are no reviews at all, the accuracy is defined as 0%.
+                calculatedAccuracy = 0.0;
+            }
+
+            // --- Add the Clamp Here ---
+            // Ensure the final OverallAccuracy value is strictly between 0.0 and 100.0.
+            // Math.Clamp(value, min, max)
+            OverallAccuracy = Math.Clamp(calculatedAccuracy, 0.0, 100.0);
+
+            // The OverallAccuracy property will now never be assigned a value outside the 0-100 range.
+            // If calculatedAccuracy was 133.33, OverallAccuracy will be set to 100.0.
+            // If calculatedAccuracy was -10.0 (somehow), OverallAccuracy will be set to 0.0.
         }
 
         /// <summary>
