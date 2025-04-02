@@ -150,7 +150,19 @@ The current use of many reflection features in the way we access specific avalon
 
 Simply rewrite all reflection usages to functions that do not need them. Add `<IsAotCompatible>true</IsAotCompatible>` to the project file to show what things are not compatible. And slowly removing them.
 
-## [X] Remove named entities as a global refrence from the app class
+## [] Implement Hot-Reloading
+
+See the hot reloading example for a working prototype.
+
+### Problem
+
+Currently hotreloading does not update the UI because we need to update the method that defines the UI body and also have a way to reinvoke the updated method.
+
+### Solution
+
+We could define a IReload interface that gets called when an reload event gets send to an entity. And the entity calls the IReload interface on all components and childrens components that implement it. The abstraction needs to be so simply as a caller it should be a no brainer how to use it and when to use it correctly.
+
+## [DONE] Remove named entities as a global refrence from the app class
 
 ### Problem
 
