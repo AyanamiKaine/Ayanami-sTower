@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
+using Avalonia.Data;
 using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -2104,6 +2105,30 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Entity.Get<T>().ItemsSource = collection;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets a binding between a property on the control and a property path on the control's DataContext.
+    /// </summary>
+    /// <typeparam name="TControl">The type of control to set the binding for</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="targetProperty">The Avalonia property to bind to (e.g., TextBlock.TextProperty)</param>
+    /// <param name="sourcePropertyPath">The property path on the DataContext (e.g., "Name")</param>
+    /// <param name="mode">The binding mode (default: OneWay)</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<TControl> SetBinding<TControl>(
+        this UIBuilder<TControl> builder,
+        AvaloniaProperty targetProperty, // e.g., TextBlock.TextProperty
+        string sourcePropertyPath,      // e.g., "Name"
+        BindingMode mode = BindingMode.OneWay) where TControl : AvaloniaObject
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive()) return builder;
+
+        var control = builder.Entity.Get<TControl>(); // Get the Avalonia control
+        var binding = new Binding(sourcePropertyPath) { Mode = mode };
+        control.Bind(targetProperty, binding); // Use Avalonia's Bind method
+
         return builder;
     }
 
