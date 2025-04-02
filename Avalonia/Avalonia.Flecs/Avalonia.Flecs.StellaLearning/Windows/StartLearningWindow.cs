@@ -13,6 +13,7 @@ using Avalonia.Flecs.Util;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using FsrsSharp;
