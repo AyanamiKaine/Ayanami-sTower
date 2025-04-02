@@ -16,6 +16,11 @@ using Avalonia.Threading;
 using Avalonia.Flecs.StellaLearning.Data;
 using System.Collections.ObjectModel;
 using Avalonia.Styling;
+using System.IO;
+using System.Text.Json;
+using Avalonia.Flecs.StellaLearning.Converters;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -58,14 +63,20 @@ public partial class App : Application
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
 
-        _world.Set<ObservableCollection<SpacedRepetitionItem>>([]);
+        _world.Set(LoadSpaceRepetitionItemsFromDisk());
         //var debugWindow = new Debug.Window.Window(_world);
         //Entities.OnEntityAdded += debugWindow.AddEntity;
 
-        Dispatcher.UIThread.Post(async () =>
-        {
-            await StatsTracker.Instance.InitializeAsync();
-        });
+        // 1. Ensure SpacedRepetitionItem collection is available/loaded
+        // Assuming world.Get retrieves the collection used by the application
+        var spacedRepetitionItems = _world.Get<ObservableCollection<SpacedRepetitionItem>>();
+        // If items need loading from a file *into* this collection, do it here:
+        // await LoadItemsFromFileIntoCollectionAsync(spacedRepetitionItems, "your_items_filepath.json");
+
+        // 2. Create a HashSet of existing item IDs for efficient lookup
+        var existingItemIds = new HashSet<Guid>(spacedRepetitionItems.Select(item => item.Uid));
+
+        Dispatcher.UIThread.Post(async () => await StatsTracker.Instance.InitializeAsync(existingItemIds));
 
         InitializeSettings();
 
@@ -339,11 +350,10 @@ public partial class App : Application
         {
             var mainWindow = MainWindow.Get<Window>();
 
-            Dispatcher.UIThread.Post(async () =>
+            Dispatcher.UIThread.Post(() =>
             {
                 mainWindow.Show();
                 mainWindow.Activate();
-                await StatsTracker.Instance.InitializeAsync();
             });
         }
     }
@@ -357,7 +367,7 @@ public partial class App : Application
         {
             desktop.Shutdown();
 
-            Dispatcher.UIThread.Post(async () => await StatsTracker.Instance.InitializeAsync());
+            Dispatcher.UIThread.Post(async () => await StatsTracker.Instance.SaveStatsAsync());
         }
     }
 
@@ -420,4 +430,38 @@ public partial class App : Application
             Console.WriteLine($"Failed to initialize tray icon: {ex.Message}");
         }
     }
+
+    /// <summary>
+    /// Loads the spaced repetition items from disk
+    /// </summary>
+    /// <returns></returns>
+    public static ObservableCollection<SpacedRepetitionItem> LoadSpaceRepetitionItemsFromDisk()
+    {
+        string filePath = Path.Combine("./save", "space_repetition_items.json");
+
+        if (File.Exists(filePath))
+        {
+            string jsonString = File.ReadAllText(filePath);
+
+            // Create JsonSerializerOptions and register the converter
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new SpacedRepetitionItemConverter() }
+            };
+
+            ObservableCollection<SpacedRepetitionItem>? items = JsonSerializer.Deserialize<ObservableCollection<SpacedRepetitionItem>>(jsonString, options);
+
+            foreach (var item in items!)
+            {
+                item.CreateCardFromSpacedRepetitionData();
+            }
+
+            return items ?? [];
+        }
+        else
+        {
+            return [];
+        }
+    }
+
 }
