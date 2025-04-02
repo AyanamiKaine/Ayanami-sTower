@@ -9,6 +9,7 @@ using NLog;
 using System.Collections.ObjectModel;
 using FsrsSharp;
 using Avalonia.Threading;
+using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.StellaLearning.Data
 {
@@ -125,22 +126,33 @@ namespace Avalonia.Flecs.StellaLearning.Data
         }
 
         /// <summary>
-        /// Initializes the stats tracker and loads existing statistics.
+        /// Initializes the stats tracker, loads existing statistics,
+        /// and filters them based on currently existing item IDs.
         /// </summary>
-        public async Task InitializeAsync()
+        /// <param name="existingItemIds">A HashSet containing the Guids of all SpacedRepetitionItems currently loaded in the main application.</param>
+        public async Task InitializeAsync(HashSet<Guid> existingItemIds)
         {
             if (_isInitialized) return;
 
             try
             {
-                await LoadStatsAsync();
+                // Pass the existing IDs down to LoadStatsAsync for filtering
+                await LoadStatsAsync(existingItemIds);
                 _isInitialized = true;
-                Logger.Info("StatsTracker initialized successfully");
+                Logger.Info("StatsTracker initialized successfully. Stats filtered for existing items.");
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "Failed to initialize StatsTracker");
+                // ResetObservablePropertiesToDefault might be called within LoadStatsAsync catches,
+                // but call again here ensure clean state if InitializeAsync itself fails early.
+                ResetObservablePropertiesToDefault();
+                _isInitialized = false; // Ensure it's marked as not initialized
+                // Consider re-throwing or specific error handling if initialization is critical
             }
+            // Start auto-save timer regardless of initial load success? Or only if successful?
+            // Current constructor starts it immediately. Let's keep it there for simplicity unless specific need arises.
+            // Task.Run(AutoSaveLoop); // Already started in constructor
         }
 
         /// <summary>
@@ -544,19 +556,19 @@ namespace Avalonia.Flecs.StellaLearning.Data
         }
 
         /// <summary>
-        /// Loads statistics from disk.
+        /// Loads statistics from disk, filtering reviews for existing items
+        /// and recalculating all aggregate statistics.
+        /// Marked internal as InitializeAsync is the intended public entry point.
         /// </summary>
-        public async Task LoadStatsAsync()
+        /// <param name="existingItemIds">A HashSet containing the Guids of currently existing SpacedRepetitionItems.</param>
+        internal async Task LoadStatsAsync(HashSet<Guid> existingItemIds) // Changed signature
         {
-            // TODO: When we load stats we should check if the items with stats actually exist.
-            // Maybe we combine stats with the space repetition item class?
-
+            // The TODO is now addressed by this implementation.
             try
             {
                 if (!File.Exists(_statsFilePath))
                 {
                     Logger.Info("No existing statistics file found at {FilePath}. Starting with default stats.", _statsFilePath);
-                    // Ensure default values are set if loading fails or file doesn't exist
                     ResetObservablePropertiesToDefault();
                     return;
                 }
@@ -573,33 +585,79 @@ namespace Avalonia.Flecs.StellaLearning.Data
 
                 if (statsData != null)
                 {
-                    // Use Dispatcher for collections if necessary
+                    Logger.Debug("Deserialized StatsData successfully. Filtering review history for existing item IDs...");
+
+                    // --- 1. Filter StudySessions and Reviews ---
+                    List<StudySession> filteredSessions = [];
+                    int originalReviewCount = statsData.StudySessions?.SelectMany(s => s?.Reviews ?? []).Count() ?? 0;
+                    int keptReviewCount = 0;
+
+                    if (statsData.StudySessions != null)
+                    {
+                        foreach (var session in statsData.StudySessions)
+                        {
+                            // Skip null sessions or sessions with no reviews initially
+                            if (session?.Reviews == null || !session.Reviews.Any()) continue;
+
+                            // Keep only reviews for items that still exist in the main application data
+                            var reviewsToKeep = session.Reviews
+                                .Where(review => existingItemIds.Contains(review.ItemId))
+                                .ToList();
+
+                            keptReviewCount += reviewsToKeep.Count;
+
+                            // Only keep the session itself if it still contains relevant reviews after filtering
+                            if (reviewsToKeep.Any())
+                            {
+                                // Update the session's review list to the filtered one
+                                session.Reviews = reviewsToKeep;
+                                filteredSessions.Add(session); // Add the modified session to our list
+                            }
+                        }
+                    }
+                    Logger.Info($"Filtered review history: Kept {keptReviewCount} reviews out of {originalReviewCount} based on {existingItemIds.Count} existing items.");
+
+
+                    // --- 2. Reset Aggregates (DO NOT load from statsData) ---
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
-                        DailyStats = new ObservableCollection<DailyStats>(statsData.DailyStats ?? []);
-                        StudySessions = new ObservableCollection<StudySession>(statsData.StudySessions ?? []);
-                        // Dictionaries might not need dispatcher if replaced entirely
-                        ItemTypeStats = statsData.ItemTypeStats ?? [];
-                        TagStats = statsData.TagStats ?? [];
+                        // Assign filtered sessions to the observable collection
+                        StudySessions = new ObservableCollection<StudySession>(filteredSessions);
+
+                        // Clear aggregate collections/dictionaries before rebuilding
+                        ItemTypeStats.Clear();
+                        TagStats.Clear(); // Requires ReviewRecord.Tags for accurate rebuild
+                        DailyStats.Clear();
                     });
+                    // Reset scalar aggregates before rebuilding
+                    TotalReviews = 0;
+                    TotalStudyTimeSeconds = 0;
+                    CurrentStreak = 0;
+                    LongestStreak = 0;
+                    OverallAccuracy = 0;
 
+                    // --- 3. Recalculate Aggregates from Filtered Data ---
+                    // Ensure sessions are ordered correctly for daily/streak rebuild
+                    var orderedSessions = filteredSessions.OrderBy(s => s.StartTime).ToList();
 
-                    // Update scalar properties - triggers PropertyChanged
-                    CurrentStreak = statsData.CurrentStreak;
-                    LongestStreak = statsData.LongestStreak;
-                    TotalStudyTimeSeconds = statsData.TotalStudyTimeSeconds;
-                    TotalReviews = statsData.TotalReviews;
-                    // Note: We intentionally DO NOT load statsData.OverallAccuracy here
-                    // Because its better to calculate it instead so we always have the correct value
+                    // Call the same helper methods used after item deletion
+                    RecalculateTotalReviews(orderedSessions);
+                    RecalculateTotalStudyTime(orderedSessions);
+                    RebuildItemAndTagStats(orderedSessions); // Requires ReviewRecord.Tags
+                    RebuildDailyStatsAndStreaks(orderedSessions); // Includes RecalculateStreaks
+                    UpdateOverallAccuracy(); // Calculates based on rebuilt TotalReviews & sessions
 
-                    // --- RECALCULATE OverallAccuracy ---
-                    // Call the existing method to compute accuracy based on the just-loaded
-                    // StudySessions and TotalReviews. This also applies the 0-100 clamp.
-                    UpdateOverallAccuracy();
-                    // --- End Recalculation ---                    
+                    // --- 4. Load Necessary Non-Recalculated Data ---
+                    // LastUpdated reflects when the file was *saved*, which is still relevant.
                     LastUpdated = statsData.LastUpdated;
 
-                    Logger.Info("Loaded statistics from {FilePath}", _statsFilePath);
+                    Logger.Info("Loaded statistics from {FilePath}. Stats rebuilt based on filtered history.", _statsFilePath);
+
+                    // Notify UI elements that might need a refresh after rebuild
+                    OnPropertyChanged(nameof(ItemTypeStats));
+                    OnPropertyChanged(nameof(TagStats));
+                    OnPropertyChanged(nameof(DailyStats));
+                    // Scalar properties notify automatically via [ObservableProperty] setters used in helpers
                 }
                 else
                 {
