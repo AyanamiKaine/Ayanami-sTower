@@ -493,7 +493,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     public static Timer CreateAutoSaveTimer(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
         // Create a System.Timers.Timer for auto-saving
-        var autoSaveTimer = new Timer(300000) // 5 minutes in milliseconds
+        var autoSaveTimer = new Timer(TimeSpan.FromMinutes(1).TotalMilliseconds) // 5 minutes
         {
             AutoReset = true, // Make the timer repeat
             Enabled = true,   // Start the timer immediately
@@ -501,7 +501,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
         autoSaveTimer.Elapsed += async (sender, e) =>
         {
-            Logger.Info($"{DateTime.Now}: Auto-saving data..."); // Debug output
+            Console.WriteLine("Auto Saving data...");
             try
             {
                 await Dispatcher.UIThread.InvokeAsync(async () =>
@@ -565,35 +565,71 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         return notificationTimer;
     }
 
+    // Track the last hash of the saved data to detect changes
+    private static string? _lastSavedDataHash;
+
     /// <summary>
-    /// Saves the spaced repetition items to disk
+    /// Saves the spaced repetition items to disk, but only if the data has changed since the last save
     /// </summary>
     /// <param name="spacedRepetitionItems"></param>
     public static void SaveSpaceRepetitionItemsToDisk(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
-        Logger.Info("Trying to save space repetition data."); // Debug output
+        if (spacedRepetitionItems == null || spacedRepetitionItems.Count == 0)
+        {
+            Logger.Debug("No items to save or collection is null.");
+            return;
+        }
 
         try
         {
+            // Create JsonSerializerOptions and register the converter
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Converters = { new SpacedRepetitionItemConverter() }
+            };
+
+            // Generate JSON string from current data
+            string jsonString = JsonSerializer.Serialize(spacedRepetitionItems, options);
+
+            // Calculate hash of current data
+            string currentHash = CalculateDataHash(jsonString);
+
+            // Check if data has changed by comparing hashes
+            if (currentHash == _lastSavedDataHash)
+            {
+                Logger.Debug("Data hasn't changed since last save - skipping write operation.");
+                return;
+            }
+
+            // Data has changed, save it
+            Logger.Info("Data changed - saving space repetition data.");
+
             const string directoryPath = "./save";
             Directory.CreateDirectory(directoryPath);
             string filePath = Path.Combine(directoryPath, "space_repetition_items.json");
 
-            // Create JsonSerializerOptions and register the converter
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true, // For pretty-printing the JSON
-                Converters = { new SpacedRepetitionItemConverter() } // Register the custom converter
-            };
-
-            string jsonString = JsonSerializer.Serialize(spacedRepetitionItems, options);
-
             File.WriteAllText(filePath, jsonString);
+
+            // Update the hash after successful save
+            _lastSavedDataHash = currentHash;
+            Logger.Debug($"Successfully saved {spacedRepetitionItems.Count} items.");
         }
         catch (Exception ex)
         {
-            Logger.Warn($"Error during auto-save: {ex.Message}");
+            Logger.Warn($"Error during space repetition data save: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Calculates a hash of the serialized data for change detection
+    /// </summary>
+    private static string CalculateDataHash(string data)
+    {
+        using var sha = System.Security.Cryptography.SHA256.Create();
+        var bytes = System.Text.Encoding.UTF8.GetBytes(data);
+        var hash = sha.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
     }
 
     /// <summary>
