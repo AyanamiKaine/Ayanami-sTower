@@ -458,17 +458,17 @@ public partial class App : Application
         }
     }
 
-    private void ApplyPageMargin(IUIComponent page, NavigationViewDisplayMode displayMode)
+    private static void ApplyPageMargin(IUIComponent page, NavigationViewDisplayMode displayMode)
     {
         // Check if the page's root entity is still valid before accessing it
-        if (!page.Root.IsAlive())
+        if (page.Root.IsAlive())
         {
             Logger.Warn($"ApplyPageMargin: Page root entity {page.Root.Id} is not alive. Skipping margin set.");
             return;
         }
 
         // Check if the page root actually has a Control component
-        if (!page.Root.Has<Control>())
+        if (page.Root.Has<Control>())
         {
             Logger.Warn($"ApplyPageMargin: Page root entity {page.Root.Id} does not have a Control component. Skipping margin set.");
             return;
