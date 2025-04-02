@@ -216,7 +216,7 @@ public partial class App : Application
             {
                 if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
                 {
-                    nav.Children((Entity child) =>
+                    nav.Children(child =>
                     {
                         if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
                         {
@@ -226,7 +226,7 @@ public partial class App : Application
                 }
                 else
                 {
-                    nav.Children((Entity child) =>
+                    nav.Children(child =>
                     {
                         if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
                         {
@@ -237,12 +237,12 @@ public partial class App : Application
             });
             // This observer runs its callback when 
             // nav.Emit<OnSelectionChanged>() is called.
-            nav.Observe<OnSelectionChanged>((Entity _) =>
-                    {
+            nav.Observe<OnSelectionChanged>(_ =>
+            {
                         // We first remove any other page ensuring 
                         // that only the selected page is displayed
-                        nav.Children((Entity child) =>
-                            {
+                        nav.Children(child =>
+                        {
                                 if (child.Has<Controls.ECS.Module.Page>())
                                 {
                                     child.Remove(Ecs.ChildOf, Ecs.Wildcard);
