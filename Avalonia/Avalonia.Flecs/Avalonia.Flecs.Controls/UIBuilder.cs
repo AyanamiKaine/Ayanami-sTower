@@ -1279,6 +1279,26 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+
+    /// <summary>
+    /// Set padding
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="left"></param>
+    /// <param name="top"></param>
+    /// <param name="right"></param>
+    /// <param name="bottom"></param>
+    /// <returns></returns>
+    public static UIBuilder<Border> SetPadding(this UIBuilder<Border> builder, double left, double top, double right, double bottom)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Border>().Padding = new Thickness(left, top, right, bottom);
+
+        return builder;
+    }
+
     /// <summary>
     /// Set padding
     /// </summary>
