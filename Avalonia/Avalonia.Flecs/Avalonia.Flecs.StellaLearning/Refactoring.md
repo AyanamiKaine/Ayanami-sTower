@@ -51,7 +51,7 @@ This makes the structure of the UI much more obvious.
 - It will reduce errors in complex UI structures.
 - It will enable type safe methods.
 
-## [IN-PROGRESS] Cleaning up unused created UI-Components (FIX THE MEMORY LEAK)
+## [DONE] Cleaning up unused created UI-Components (FIX THE MEMORY LEAK)
 
 ### Problem (FIXED)
 
@@ -80,6 +80,10 @@ When a componen is removed it should remove all the event handlers it possible h
 #### Example Solution:
 
 We implement the IDisposable interface and call dispose when the window closes. To dispose all related handlers.
+
+### What I did
+
+I implement event handlers disposables in the UI builder now when events are added to a button like button.OnClick those event delegates are removed as soon as the entity gets disposed internally. The same goes for entities and their avalonia objects, we remove the children of them as well as their parents so they can become dead objects.
 
 ## [X] Implementing UI Components as Classes
 
