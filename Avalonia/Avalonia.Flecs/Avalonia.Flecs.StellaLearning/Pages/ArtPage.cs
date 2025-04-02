@@ -17,7 +17,8 @@ add painting we want to be able to copy, see progessive
 Speed sketches, thumbnail sketches, should be part of our routine.
 
 We should store all pictures related to our art studies in a folder called art
-with appropriated nested folders, like sketches, art for copies, etc.
+with appropriated nested folders, like sketches, art for copies, or my recorded paintings
+associated with the created ones, etc.
 */
 
 /// <summary>
