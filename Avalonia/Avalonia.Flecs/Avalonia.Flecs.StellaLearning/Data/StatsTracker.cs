@@ -580,7 +580,14 @@ namespace Avalonia.Flecs.StellaLearning.Data
                     LongestStreak = statsData.LongestStreak;
                     TotalStudyTimeSeconds = statsData.TotalStudyTimeSeconds;
                     TotalReviews = statsData.TotalReviews;
-                    OverallAccuracy = statsData.OverallAccuracy;
+                    // Note: We intentionally DO NOT load statsData.OverallAccuracy here
+                    // Because its better to calculate it instead so we always have the correct value
+
+                    // --- RECALCULATE OverallAccuracy ---
+                    // Call the existing method to compute accuracy based on the just-loaded
+                    // StudySessions and TotalReviews. This also applies the 0-100 clamp.
+                    UpdateOverallAccuracy();
+                    // --- End Recalculation ---                    
                     LastUpdated = statsData.LastUpdated;
 
                     Logger.Info("Loaded statistics from {FilePath}", _statsFilePath);
