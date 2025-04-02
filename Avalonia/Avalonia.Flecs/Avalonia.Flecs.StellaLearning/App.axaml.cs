@@ -44,6 +44,8 @@ public partial class App : Application
     private LiteraturePage? literaturePage;
     private SpacedRepetitionPage? spacedRepetitionPage;
     private StatisticsPage? statisticsPage;
+    private ArtPage? artPage;
+
 
     /// <summary>
     /// Ui Builder that represents the main window
@@ -124,6 +126,7 @@ public partial class App : Application
         homePage = new(_world);
         literaturePage = new(_world);
         spacedRepetitionPage = new(_world);
+        artPage = new(_world);
         statisticsPage = new(_world);
 
         // Using the UI Builder is part of an effort to make it much more obvious how the UI is structured.
@@ -151,6 +154,19 @@ public partial class App : Application
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Literature")));
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Content Queue")));
 
+
+            nav.Child<NavigationViewItem>((item) =>
+            {
+                item.With((item) =>
+                {
+                    item.IconSource = new SymbolIconSource()
+                    {
+                        Symbol = Symbol.Edit
+                    };
+                });
+                item.Child<TextBlock>(t => t.SetText("Art"));
+            });
+
             /*
              The study page will be something more complex
              it will represent various topics and different 
@@ -168,6 +184,7 @@ public partial class App : Application
              */
 
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Study")));
+
             var srPage = nav.Child<NavigationViewItem>((item) =>
             {
                 item.With((item) =>
@@ -190,7 +207,6 @@ public partial class App : Application
                     };
                 });
                 item.Child<TextBlock>(t => t.SetText("Statistics"));
-
             });
             nav.Get<NavigationView>().SelectedItem = srPage.Get<NavigationViewItem>();
             nav.Child(spacedRepetitionPage);
@@ -305,6 +321,15 @@ public partial class App : Application
                         ((IUIComponent)contentQueuePage!).SetMargin(new Thickness(50, 10, 20, 20));
                     else
                         ((IUIComponent)contentQueuePage!).SetMargin(new Thickness(20, 10, 20, 20));
+                }
+                else if (selectedItem?.Content is TextBlock artTextBlock && artTextBlock.Text == "Art")
+                {
+                    nav.Child(artPage!);
+
+                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
+                        ((IUIComponent)artPage!).SetMargin(new Thickness(50, 10, 20, 20));
+                    else
+                        ((IUIComponent)artPage!).SetMargin(new Thickness(20, 10, 20, 20));
                 }
             });
         });
