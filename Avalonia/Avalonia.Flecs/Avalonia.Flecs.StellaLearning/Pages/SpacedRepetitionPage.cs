@@ -444,12 +444,46 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     private void OnBaseCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         // When the underlying data changes (add/remove), re-apply the current filter and sort.
-        Dispatcher.UIThread.InvokeAsync(() =>
+        Dispatcher.UIThread.InvokeAsync(async () =>
         {
             Logger.Debug("Base collection changed, re-applying filter and sort.");
             string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
             ApplyFilterAndSort(searchText);
+
+
+            if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
+            {
+                // Iterate through all items that were removed in this event.
+                foreach (var removedItemObject in e.OldItems)
+                {
+                    // Safely cast the removed item to the expected type.
+                    if (removedItemObject is SpacedRepetitionItem removedItem)
+                    {
+                        Guid itemIdToRemove = removedItem.Uid; // Get the unique ID.
+                        Logger.Info($"Item removed from base collection: '{removedItem.Name ?? "N/A"}' (ID: {itemIdToRemove}). Scheduling statistics removal.");
+
+                        try
+                        {
+                            // Get the singleton instance and await the removal process.
+                            await StatsTracker.Instance.RemoveStatsForItemAsync(itemIdToRemove);
+                            Logger.Info($"Successfully completed background statistics removal for item ID {itemIdToRemove}.");
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log any exceptions during the stats removal process.
+                            Logger.Error(ex, $"Error occurred during background statistics removal for item ID {itemIdToRemove}.");
+                            // Consider additional error handling if needed (e.g., user notification).
+                        }
+                    }
+                    else
+                    {
+                        // Log a warning if the removed item was not of the expected type.
+                        Logger.Warn($"An item removed from the base collection was not of the expected type 'SpacedRepetitionItem'. Actual type: {removedItemObject?.GetType().FullName ?? "null"}");
+                    }
+                }
+            }
         });
+
     }
 
     /// <summary>
@@ -466,13 +500,16 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             Enabled = true,   // Start the timer immediately
         };
 
-        autoSaveTimer.Elapsed += (sender, e) =>
+        autoSaveTimer.Elapsed += async (sender, e) =>
         {
             Logger.Info($"{DateTime.Now}: Auto-saving data..."); // Debug output
             try
             {
-                Dispatcher.UIThread.Post(() =>
-                SaveSpaceRepetitionItemsToDisk(spacedRepetitionItems));
+                await Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    SaveSpaceRepetitionItemsToDisk(spacedRepetitionItems);
+                    await StatsTracker.Instance.SaveStatsAsync();
+                });
             }
             catch (Exception ex)
             {
