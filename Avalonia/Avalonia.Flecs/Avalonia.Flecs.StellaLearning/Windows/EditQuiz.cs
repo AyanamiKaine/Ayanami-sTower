@@ -8,6 +8,7 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 
@@ -220,6 +221,11 @@ public class EditQuiz : IUIComponent, IDisposable
                     _spacedRepetitionQuiz.CorrectAnswerIndex = findAnswerIndex();
                     _spacedRepetitionQuiz.Answers = gatherAllAnswers();
                     _spacedRepetitionQuiz.Tags = [.. tagManager.Tags];
+
+                    Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        await StatsTracker.Instance.UpdateTagsForItemAsync(_spacedRepetitionQuiz.Uid, _spacedRepetitionQuiz.Tags);
+                    });
 
                     // Clearing an entity results in all components, relationships etc to be removed.
                     // this also results in invoking the remove hooks that are used on components for 
