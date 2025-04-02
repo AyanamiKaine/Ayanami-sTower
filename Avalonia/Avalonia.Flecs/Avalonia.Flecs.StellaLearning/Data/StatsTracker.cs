@@ -911,7 +911,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
 
                 // --- Rebuild TagStats ---
                 // CRITICAL: This assumes ReviewRecord has a 'Tags' property populated at review time.
-                if (review.Tags != null && review.Tags.Any())
+                if (review.Tags != null && review.Tags.Count != 0)
                 {
                     foreach (var tag in review.Tags)
                     {
