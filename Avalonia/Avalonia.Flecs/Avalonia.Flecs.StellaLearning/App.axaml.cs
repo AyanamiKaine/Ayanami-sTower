@@ -44,11 +44,7 @@ public partial class App : Application
     /// Ui Builder that represents the main window
     /// </summary>
     public UIBuilder<Window>? MainWindow;
-    // TODO: Remove all refrences to name entities,
-    // its a global that will cause many problems when grown too big.
-    /// <summary>
-    /// Named global app entities
-    /// </summary>
+
     private TrayIcon? _trayIcon;
 
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
