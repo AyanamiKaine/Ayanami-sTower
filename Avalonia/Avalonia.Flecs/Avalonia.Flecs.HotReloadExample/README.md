@@ -2,6 +2,8 @@
 
 This document explains the hot reload mechanism used in this project to enable live UI updates during development when modifying C# code that programmatically defines the user interface using Avalonia and Flecs.NET.
 
+NOTE: Yes this works, BUT the code is ugly to use and implement yourself, there is a missing abstraction for UI-Components and default avalonia flecs apps. Maybe we can work with entity events that say something like reload and when a component of an entity implements an IReload interface we call that? For know for a fact that having run dotnet watch or the hotreload in Visual Studio does change methods. The big question remains what unifying abstraction there is to say when files change invoke the reload function.
+
 ## Goal
 
 The primary goal is to modify the C# code that defines UI structure (e.g., within a method like `MainContent` in `App.cs`) and see the changes reflected in the running application _without requiring a full application restart_. This significantly speeds up the UI development workflow.
