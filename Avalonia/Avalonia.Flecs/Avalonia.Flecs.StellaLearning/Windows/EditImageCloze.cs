@@ -19,6 +19,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Clowd.Clipboard;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
@@ -304,7 +305,10 @@ public class EditImageCloze : IUIComponent, IDisposable
                         _spacedRepetitionImageCloze.ImagePath = ImagePath;
                         _spacedRepetitionImageCloze.ClozeAreas = imageClozeAreas;
                         _spacedRepetitionImageCloze.Tags = [.. tagManager.Tags];
-
+                        Dispatcher.UIThread.InvokeAsync(async () =>
+                        {
+                            await StatsTracker.Instance.UpdateTagsForItemAsync(_spacedRepetitionImageCloze.Uid, _spacedRepetitionImageCloze.Tags);
+                        });
                         _root.Get<Window>().Close();
                     }
                 };
