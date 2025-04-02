@@ -193,6 +193,11 @@ namespace Avalonia.Flecs.StellaLearning.Data
 
             // Update daily stats
             UpdateDailyStats(CurrentSession);
+            UpdateOverallAccuracy();
+            RecalculateTotalReviews([.. StudySessions]);       // Recalc TotalReviews first
+            RecalculateTotalStudyTime([.. StudySessions]);     // Recalc TotalStudyTimeSeconds
+            RebuildItemAndTagStats([.. StudySessions]);        // Rebuild ItemTypeStats, TagStats
+            RebuildDailyStatsAndStreaks([.. StudySessions]);   // Rebuild DailyStats, CurrentStreak, LongestStreak
 
             // Clear current session
             CurrentSession = null;
@@ -224,7 +229,8 @@ namespace Avalonia.Flecs.StellaLearning.Data
                     ReviewTime = DateTime.Now,
                     Rating = (int)rating,
                     State = item.SpacedRepetitionState,
-                    ItemType = item.SpacedRepetitionItemType
+                    ItemType = item.SpacedRepetitionItemType,
+                    Tags = [.. item.Tags]
                 };
 
                 // Add to current session
@@ -542,6 +548,9 @@ namespace Avalonia.Flecs.StellaLearning.Data
         /// </summary>
         public async Task LoadStatsAsync()
         {
+            // TODO: When we load stats we should check if the items with stats actually exist.
+            // Maybe we combine stats with the space repetition item class?
+
             try
             {
                 if (!File.Exists(_statsFilePath))
@@ -682,6 +691,365 @@ namespace Avalonia.Flecs.StellaLearning.Data
             await SaveStatsAsync();
             Logger.Info("Learning statistics have been reset and saved.");
         }
+
+        /// <summary>
+        /// Removes all statistical records associated with a specific item ID
+        /// and recalculates aggregate statistics.
+        /// </summary>
+        /// <param name="itemId">The Guid of the item that has been deleted.</param>
+        public async Task RemoveStatsForItemAsync(Guid itemId)
+        {
+            Logger.Info($"Attempting to remove statistics for deleted item: {itemId}");
+
+            // --- Early Exit Check ---
+            // Verify if any reviews for this specific item ID exist in the tracker.
+            // This avoids unnecessary processing if the item had no recorded stats.
+            bool itemHasReviews = StudySessions // Access the current list of sessions
+                .SelectMany(session => session.Reviews) // Flatten into a single sequence of all reviews
+                .Any(review => review.ItemId == itemId); // Check if any review matches the ID
+
+            if (!itemHasReviews)
+            {
+                // If no reviews match the item ID, log it and exit the method.
+                Logger.Info($"No review records found for item ID {itemId}. No statistics removal needed.");
+                return; // Stop execution here
+            }
+            // --- End Early Exit Check ---
+
+            // If the code reaches here, it means at least one review for the item exists.
+            Logger.Debug($"Reviews found for item {itemId}. Proceeding with stats removal and recalculation...");
+
+            Logger.Info($"Attempting to remove statistics for deleted item: {itemId}");
+            bool statsChanged = false;
+
+            // --- 1. Filter Review Records ---
+            // Create a new list to hold sessions that still have relevant reviews
+            List<StudySession> sessionsToKeep = [];
+            int removedReviewsCount = 0;
+
+            // Iterate over a copy of the sessions to avoid modification issues during iteration
+            var currentSessionsSnapshot = StudySessions.ToList();
+            StudySessions.Clear(); // Clear original collection, will rebuild or repopulate
+
+            foreach (var session in currentSessionsSnapshot)
+            {
+                int reviewsBefore = session.Reviews.Count;
+                // Keep only reviews NOT matching the deleted item ID
+                session.Reviews.RemoveAll(review => review.ItemId == itemId);
+                int reviewsAfter = session.Reviews.Count;
+
+                if (reviewsAfter < reviewsBefore)
+                {
+                    statsChanged = true; // Mark that we need to recalculate
+                    removedReviewsCount += (reviewsBefore - reviewsAfter);
+                }
+
+                // Only keep the session if it still contains any reviews after filtering
+                if (session.Reviews.Count != 0)
+                {
+                    sessionsToKeep.Add(session);
+                }
+                else
+                {
+                    // If session becomes empty, we might need to adjust total study time later if we sum durations
+                    statsChanged = true; // Removing an empty session also triggers recalc
+                }
+            }
+
+            // If no stats were changed/removed, we can potentially stop early
+            if (!statsChanged)
+            {
+                Logger.Info($"No review records found for item {itemId}. No statistics were changed.");
+                // Re-add the original sessions if we cleared the main list
+                foreach (var session in currentSessionsSnapshot) { StudySessions.Add(session); }
+                return;
+            }
+
+            Logger.Info($"Removed {removedReviewsCount} review records for item {itemId}. Recalculating all aggregate statistics...");
+
+            // --- 2. Reset Aggregates ---
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StudySessions.Clear(); // Clear original collection
+                foreach (var session in sessionsToKeep) { StudySessions.Add(session); } // Repopulate
+
+                ItemTypeStats.Clear();
+                TagStats.Clear();
+                DailyStats.Clear();
+            });
+
+            TotalReviews = 0;
+            TotalStudyTimeSeconds = 0;
+            CurrentStreak = 0;
+            LongestStreak = 0;
+            OverallAccuracy = 0;
+
+
+            // --- 3. Recalculate Aggregates from Filtered Data ---
+            var orderedSessions = sessionsToKeep.OrderBy(s => s.StartTime).ToList();
+
+            RecalculateTotalReviews(orderedSessions);       // Recalc TotalReviews first
+            RecalculateTotalStudyTime(orderedSessions);     // Recalc TotalStudyTimeSeconds
+            RebuildItemAndTagStats(orderedSessions);        // Rebuild ItemTypeStats, TagStats
+            RebuildDailyStatsAndStreaks(orderedSessions);   // Rebuild DailyStats, CurrentStreak, LongestStreak
+
+            // Final accuracy calculation based on rebuilt totals
+            UpdateOverallAccuracy(); // Uses recalculated TotalReviews and scans current StudySessions
+
+            // --- 4. Save Updated Stats ---
+            LastUpdated = DateTime.Now;
+            await SaveStatsAsync();
+
+            // PropertyChanged notifications for collections were handled internally or by caller's InvokeAsync.
+            // Scalar properties updated trigger their own notifications via [ObservableProperty].
+
+            Logger.Info($"Statistics recalculation complete after removing item {itemId}.");
+        }
+
+        #region Recalculation Helper Methods for Item Deletion
+
+        /// <summary>
+        /// Recalculates the TotalReviews count based on a list of sessions.
+        /// </summary>
+        /// <param name="sessions">The list of sessions to count reviews from.</param>
+        private void RecalculateTotalReviews(List<StudySession> sessions)
+        {
+            TotalReviews = sessions.Sum(s => s.Reviews.Count);
+            Logger.Debug($"Recalculated TotalReviews: {TotalReviews}");
+        }
+
+        /// <summary>
+        /// Recalculates the TotalStudyTimeSeconds based on the duration of sessions.
+        /// </summary>
+        /// <param name="sessions">The list of sessions to sum durations from.</param>
+        private void RecalculateTotalStudyTime(List<StudySession> sessions)
+        {
+            TotalStudyTimeSeconds = sessions.Sum(s => s.Duration.TotalSeconds);
+            Logger.Debug($"Recalculated TotalStudyTimeSeconds: {TotalStudyTimeSeconds}");
+        }
+
+        /// <summary>
+        /// Rebuilds the ItemTypeStats and TagStats dictionaries from a list of sessions.
+        /// Assumes ItemTypeStats and TagStats dictionaries have been cleared beforehand.
+        /// Requires ReviewRecord.Tags to be populated for TagStats accuracy.
+        /// </summary>
+        /// <param name="sessions">The list of sessions containing the reviews to process.</param>
+        private void RebuildItemAndTagStats(List<StudySession> sessions)
+        {
+            // Ensure dictionaries are clear (should be done by caller, but belt-and-suspenders)
+            ItemTypeStats.Clear();
+            TagStats.Clear();
+
+            foreach (var review in sessions.SelectMany(s => s.Reviews))
+            {
+                // --- Rebuild ItemTypeStats ---
+                if (!ItemTypeStats.TryGetValue(review.ItemType, out ItemTypeStats? typeStats))
+                {
+                    typeStats = new ItemTypeStats { ItemType = review.ItemType };
+                    ItemTypeStats[review.ItemType] = typeStats;
+                }
+                typeStats.TotalReviews++;
+                if (review.Rating >= 3) typeStats.CorrectReviews++;
+
+                // --- Rebuild TagStats ---
+                // CRITICAL: This assumes ReviewRecord has a 'Tags' property populated at review time.
+                if (review.Tags != null && review.Tags.Any())
+                {
+                    foreach (var tag in review.Tags)
+                    {
+                        if (!TagStats.TryGetValue(tag, out TagStats? tagStat))
+                        {
+                            tagStat = new TagStats { Tag = tag };
+                            TagStats[tag] = tagStat;
+                        }
+                        tagStat.TotalReviews++;
+                        if (review.Rating >= 3) tagStat.CorrectReviews++;
+                    }
+                }
+                // else { // Optional: Log if a review record is missing tags if you expect them
+                //    Logger.Warn($"Review record for item {review.ItemId} at {review.ReviewTime} is missing Tags for TagStats rebuild.");
+                // }
+            }
+            Logger.Debug($"Rebuilt ItemTypeStats (Count: {ItemTypeStats.Count}) and TagStats (Count: {TagStats.Count})");
+
+            // Notify observers that the dictionaries have been potentially repopulated
+            // This might be redundant if the caller notifies, but safer to include.
+            OnPropertyChanged(nameof(ItemTypeStats));
+            OnPropertyChanged(nameof(TagStats));
+        }
+
+
+        /// <summary>
+        /// Rebuilds the DailyStats collection and recalculates CurrentStreak and LongestStreak.
+        /// Assumes DailyStats collection has been cleared beforehand.
+        /// </summary>
+        /// <param name="orderedSessions">A list of sessions, PRE-SORTED chronologically by StartTime.</param>
+        private void RebuildDailyStatsAndStreaks(List<StudySession> orderedSessions)
+        {
+            // Ensure DailyStats is clear (should be done by caller)
+            DailyStats.Clear();
+
+            if (!orderedSessions.Any())
+            {
+                Logger.Debug("No sessions remaining, DailyStats and Streaks remain at 0.");
+                CurrentStreak = 0;
+                LongestStreak = 0;
+                OnPropertyChanged(nameof(DailyStats)); // Notify UI it's empty
+                return;
+            }
+
+            // --- Rebuild DailyStats Collection ---
+            foreach (var session in orderedSessions)
+            {
+                UpdateDailyStatsForRebuild(session);
+            }
+            Logger.Debug($"Rebuilt DailyStats collection (Count: {DailyStats.Count})");
+
+            // --- Recalculate Streaks ---
+            // This needs the fully rebuilt DailyStats collection
+            RecalculateStreaks(); // Calculates and sets CurrentStreak, LongestStreak
+
+            OnPropertyChanged(nameof(DailyStats)); // Notify UI about the rebuilt collection
+        }
+
+        /// <summary>
+        /// Helper to populate a single day's stats from a session during a rebuild.
+        /// Adds or updates an entry in the DailyStats collection.
+        /// Does NOT handle streak calculation itself.
+        /// </summary>
+        /// <param name="session">The study session to process.</param>
+        private void UpdateDailyStatsForRebuild(StudySession session)
+        {
+            var sessionDate = session.StartTime.Date;
+            var dailyStat = DailyStats.FirstOrDefault(s => s.Date == sessionDate);
+
+            if (dailyStat == null)
+            {
+                dailyStat = new DailyStats { Date = sessionDate };
+                // This modification happens within the context that already cleared DailyStats,
+                // so direct add should be okay unless called concurrently.
+                // If called from multiple threads potentially, use Dispatcher here.
+                DailyStats.Add(dailyStat);
+            }
+
+            // Accumulate stats for the day
+            dailyStat.TotalReviews += session.Reviews.Count;
+            dailyStat.CorrectReviews += session.Reviews.Count(r => r.Rating >= 3);
+            dailyStat.TotalTimeMinutes += (int)session.Duration.TotalMinutes; // Assumes Duration is accurate for the session
+
+            // Update unique items reviewed for the day
+            var uniqueItemIdsInSession = session.Reviews.Select(r => r.ItemId).Distinct();
+            foreach (var id in uniqueItemIdsInSession)
+            {
+                if (!dailyStat.ReviewedItemIds.Contains(id))
+                {
+                    dailyStat.ReviewedItemIds.Add(id);
+                    // Only increment UniqueItemsReviewed if it was actually added as unique *for that day*
+                    dailyStat.UniqueItemsReviewed++;
+                }
+            }
+
+            // Recalculate accuracy for the day
+            if (dailyStat.TotalReviews > 0)
+            {
+                dailyStat.Accuracy = (double)dailyStat.CorrectReviews / dailyStat.TotalReviews * 100;
+            }
+            else
+            {
+                dailyStat.Accuracy = 0;
+            }
+        }
+
+
+        /// <summary>
+        /// Recalculates CurrentStreak and LongestStreak based *only* on the current state
+        /// of the DailyStats collection. Assumes DailyStats is populated and sorted.
+        /// </summary>
+        private void RecalculateStreaks()
+        {
+            CurrentStreak = 0; // Reset before calculation
+            LongestStreak = 0; // Reset before calculation
+            int currentTempStreak = 0;
+
+            if (!DailyStats.Any())
+            {
+                Logger.Debug("DailyStats is empty, streaks are 0.");
+                return; // No stats, no streaks
+            }
+
+            // Sort daily stats by date to ensure correct streak calculation
+            var orderedDailyStats = DailyStats.OrderBy(ds => ds.Date).ToList();
+
+            // Calculate longest streak
+            for (int i = 0; i < orderedDailyStats.Count; i++)
+            {
+                if (i == 0 || orderedDailyStats[i].Date != orderedDailyStats[i - 1].Date.AddDays(1))
+                {
+                    currentTempStreak = 1; // Start new streak (first day or gap)
+                }
+                else
+                {
+                    currentTempStreak++; // Continue streak
+                }
+
+                if (currentTempStreak > LongestStreak)
+                {
+                    LongestStreak = currentTempStreak; // Update longest streak found
+                }
+            }
+
+            // Calculate current streak (relative to today)
+            DateTime today = DateTime.Today;
+            var lastStudyDay = orderedDailyStats.Last().Date;
+
+            if (lastStudyDay == today || lastStudyDay == today.AddDays(-1))
+            {
+                // If the last study session was today or yesterday, the current streak is the one ending on that day.
+                // We recalculate the streak ending on the last study day.
+                currentTempStreak = 0;
+                for (int i = orderedDailyStats.Count - 1; i >= 0; i--)
+                {
+                    if (i == orderedDailyStats.Count - 1 || orderedDailyStats[i].Date == orderedDailyStats[i + 1].Date.AddDays(-1))
+                    {
+                        currentTempStreak++;
+                    }
+                    else
+                    {
+                        break; // Gap found, streak ended before this point
+                    }
+                }
+                // Assign only if the streak is contiguous up to yesterday or today
+                if (lastStudyDay >= today.AddDays(-1))
+                {
+                    CurrentStreak = currentTempStreak;
+                }
+                else
+                {
+                    CurrentStreak = 0; // Should not happen based on outer if, but defensive check
+                }
+
+            }
+            else
+            {
+                // If the last study day was before yesterday, the current streak is 0.
+                CurrentStreak = 0;
+            }
+
+            // Basic sanity checks
+            if (LongestStreak < 0) LongestStreak = 0;
+            if (CurrentStreak < 0) CurrentStreak = 0;
+            if (CurrentStreak > LongestStreak) LongestStreak = CurrentStreak; // Current can't exceed longest
+
+
+            Logger.Debug($"Streaks recalculated: Current={CurrentStreak}, Longest={LongestStreak}");
+
+            // PropertyChanged notifications for streaks are handled by their setters (if using [ObservableProperty])
+            // If not using [ObservableProperty], manually call OnPropertyChanged here.
+            // OnPropertyChanged(nameof(CurrentStreak));
+            // OnPropertyChanged(nameof(LongestStreak));
+        }
+
+        #endregion // Recalculation Helper Methods
     }
 
     /// <summary>
@@ -846,6 +1214,10 @@ namespace Avalonia.Flecs.StellaLearning.Data
         /// The type of the spaced repetition item that was reviewed.
         /// </summary>
         public SpacedRepetitionItemType ItemType { get; set; }
+        /// <summary>
+        /// Tags associated with the item at the time of review.
+        /// </summary>
+        public List<string> Tags { get; set; } = []; // Initialize to empty list
     }
 
     /// <summary>
@@ -904,3 +1276,4 @@ namespace Avalonia.Flecs.StellaLearning.Data
             : 0;
     }
 }
+
