@@ -6,6 +6,7 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 
@@ -216,6 +217,12 @@ public class EditCloze : IUIComponent, IDisposable
                     cloze.FullText = clozeBox.GetText();
                     cloze.ClozeWords = [.. clozes];
                     cloze.Tags = [.. tagManager.Tags];
+
+                    Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        await StatsTracker.Instance.UpdateTagsForItemAsync(cloze.Uid, cloze.Tags);
+                    });
+
 
                     // Clearing an entity results in all components, relationships etc to be removed.
                     // this also results in invoking the remove hooks that are used on components for 
