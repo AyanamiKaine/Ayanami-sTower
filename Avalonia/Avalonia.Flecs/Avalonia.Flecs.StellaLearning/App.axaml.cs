@@ -356,6 +356,8 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.Shutdown();
+
+            Dispatcher.UIThread.Post(async () => await StatsTracker.Instance.InitializeAsync());
         }
     }
 
