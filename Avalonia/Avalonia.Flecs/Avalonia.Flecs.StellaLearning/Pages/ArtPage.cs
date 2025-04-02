@@ -404,7 +404,7 @@ public class ArtPage : IUIComponent, IDisposable
                 img.SetWidth(THUMBNAIL_SIZE)
                    .SetHeight(THUMBNAIL_SIZE)
                    .SetStretch(Stretch.UniformToFill)
-                   .SetSource(item.Thumbnail) // Assumes Thumbnail is pre-loaded
+                   .SetBinding(Image.SourceProperty, nameof(ReferencePaintingItem.Thumbnail))
                    .SetVerticalAlignment(VerticalAlignment.Center);
             });
 
@@ -414,7 +414,7 @@ public class ArtPage : IUIComponent, IDisposable
                 details.SetOrientation(Orientation.Vertical)
                        .SetVerticalAlignment(VerticalAlignment.Center);
 
-                details.Child<TextBlock>(nameTxt => nameTxt.SetText(item.Name));
+                details.Child<TextBlock>(nameTxt => nameTxt.SetBinding(TextBlock.TextProperty, nameof(ReferencePaintingItem.Name)));
                 details.Child<TextBlock>(typeTxt =>
                 {
                     typeTxt.SetText(item.Type.ToString()) // Display study type
