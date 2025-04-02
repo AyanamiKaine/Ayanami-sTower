@@ -1632,6 +1632,32 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// When the selection of a ListBox changes, the handler is executed.
+    /// When the underlying entity gets destroyed, it automatically disposes the event handler.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="handler">The event handler to invoke when selection changes</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<ListBox> OnSelectionChanged(this UIBuilder<ListBox> builder, Action<object?, SelectionChangedEventArgs> handler)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        var control = builder.Get<ListBox>();
+
+        var checkedChangedObservable = Observable.FromEventPattern<SelectionChangedEventArgs>(
+            addHandler => control.SelectionChanged += addHandler,
+            removeHandler => control.SelectionChanged -= removeHandler);
+
+        var subscription = checkedChangedObservable
+            .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
+            .Subscribe(eventPattern => handler(eventPattern.Sender, eventPattern.EventArgs));
+
+        AddDisposableSubscription(builder.Entity, subscription);
+        return builder;
+    }
+
+    /// <summary>
     /// add an callback for the on opened event for a flyout. 
     /// </summary>
     /// <typeparam name="T"></typeparam>
