@@ -261,75 +261,43 @@ public partial class App : Application
                 var selectedItem = args.SelectedItem as NavigationViewItem;
                 if (selectedItem?.Content is TextBlock homeTextBlock && homeTextBlock.Text == "Home")
                 {
-                    nav.Child(homePage!);
-
-                    //Maybe we could implement an event for the navigation view entity that says
-                    //something like new page added and than changes the margin of the page
-                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)homePage!).SetMargin(new Thickness(50, 10, 20, 20));
-                    else
-                        ((IUIComponent)homePage!).SetMargin(new Thickness(20, 10, 20, 20));
+                    nav.Child(homePage);
+                    ApplyPageMargin(homePage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock LiteratureTextBlock && LiteratureTextBlock.Text == "Literature")
                 {
-                    nav.Child(literaturePage!);
-                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)literaturePage!).SetMargin(new Thickness(50, 10, 20, 20));
-                    else
-                        ((IUIComponent)literaturePage!).SetMargin(new Thickness(20, 10, 20, 20));
+                    nav.Child(literaturePage);
+                    ApplyPageMargin(literaturePage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock StatisticsTextBlock && StatisticsTextBlock.Text == "Statistics")
                 {
                     nav.Child(statisticsPage);
-                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)literaturePage!).SetMargin(new Thickness(50, 10, 20, 20));
-                    else
-                        ((IUIComponent)literaturePage!).SetMargin(new Thickness(20, 10, 20, 20));
+                    ApplyPageMargin(statisticsPage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock SRtextBlock && SRtextBlock.Text == "Spaced Repetition")
                 {
-                    nav.Child(spacedRepetitionPage!);
-
-                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)spacedRepetitionPage!).SetMargin(new Thickness(50, 10, 20, 20));
-                    else
-                        ((IUIComponent)spacedRepetitionPage!).SetMargin(new Thickness(20, 10, 20, 20));
+                    nav.Child(spacedRepetitionPage);
+                    ApplyPageMargin(spacedRepetitionPage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
                 {
-                    nav.Child(settingsPage!);
-
-                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)settingsPage!).SetMargin(new Thickness(50, 10, 20, 20));
-                    else
-                        ((IUIComponent)settingsPage!).SetMargin(new Thickness(20, 10, 20, 20));
+                    nav.Child(settingsPage);
+                    ApplyPageMargin(settingsPage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock KVtextBlock && KVtextBlock.Text == "Knowledge Vault")
                 {
-                    nav.Child(knowledgeVaultPage!);
-
-                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)knowledgeVaultPage!).SetMargin(new Thickness(50, 10, 20, 20));
-                    else
-                        ((IUIComponent)knowledgeVaultPage!).SetMargin(new Thickness(20, 10, 20, 20));
+                    nav.Child(knowledgeVaultPage);
+                    ApplyPageMargin(knowledgeVaultPage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock CQtextBlock && CQtextBlock.Text == "Content Queue")
                 {
-                    nav.Child(contentQueuePage!);
-
-                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)contentQueuePage!).SetMargin(new Thickness(50, 10, 20, 20));
-                    else
-                        ((IUIComponent)contentQueuePage!).SetMargin(new Thickness(20, 10, 20, 20));
+                    nav.Child(contentQueuePage);
+                    ApplyPageMargin(contentQueuePage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock artTextBlock && artTextBlock.Text == "Art")
                 {
-                    nav.Child(artPage!);
-
-                    if (e.DisplayMode == NavigationViewDisplayMode.Minimal)
-                        ((IUIComponent)artPage!).SetMargin(new Thickness(50, 10, 20, 20));
-                    else
-                        ((IUIComponent)artPage!).SetMargin(new Thickness(20, 10, 20, 20));
+                    nav.Child(artPage);
+                    ApplyPageMargin(artPage, e.DisplayMode);
                 }
             });
         });
@@ -490,4 +458,27 @@ public partial class App : Application
         }
     }
 
+    private void ApplyPageMargin(IUIComponent page, NavigationViewDisplayMode displayMode)
+    {
+        // Check if the page's root entity is still valid before accessing it
+        if (!page.Root.IsAlive())
+        {
+            Logger.Warn($"ApplyPageMargin: Page root entity {page.Root.Id} is not alive. Skipping margin set.");
+            return;
+        }
+
+        // Check if the page root actually has a Control component
+        if (!page.Root.Has<Control>())
+        {
+            Logger.Warn($"ApplyPageMargin: Page root entity {page.Root.Id} does not have a Control component. Skipping margin set.");
+            return;
+        }
+
+        var margin = displayMode == NavigationViewDisplayMode.Minimal
+            ? new Thickness(50, 10, 20, 20)
+            : new Thickness(20, 10, 20, 20);
+
+        Logger.Trace($"Applying margin {margin} to page {page.Root.Id} for display mode {displayMode}");
+        page.SetMargin(margin);
+    }
 }
