@@ -51,6 +51,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesktopNotifications.Apple"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSRS", "..\..\CsFSRS\FSRS\FSRS.csproj", "{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.HotReloadExample", "Avalonia.Flecs.HotReloadExample\Avalonia.Flecs.HotReloadExample.csproj", "{F89E2D47-221E-470C-8C72-E74E3D04DC55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -337,6 +339,18 @@ Global
 		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|x64.Build.0 = Release|Any CPU
 		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|x86.ActiveCfg = Release|Any CPU
 		{240B2C9D-1FE8-EB47-E422-517E77AD6D7B}.Release|x86.Build.0 = Release|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Debug|x64.Build.0 = Debug|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Debug|x86.Build.0 = Debug|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Release|x64.ActiveCfg = Release|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Release|x64.Build.0 = Release|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Release|x86.ActiveCfg = Release|Any CPU
+		{F89E2D47-221E-470C-8C72-E74E3D04DC55}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
