@@ -7,6 +7,7 @@ using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 
@@ -173,6 +174,12 @@ public class EditFlashcard : IUIComponent, IDisposable
                     flashcard.Front = frontText.GetText();
                     flashcard.Back = backText.GetText();
                     flashcard.Tags = [.. tagManager.Tags];
+
+                    Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        await StatsTracker.Instance.UpdateTagsForItemAsync(flashcard.Uid, flashcard.Tags);
+                    });
+
 
                     // Clearing an entity results in all components, relationships etc to be removed.
                     // this also results in invoking the remove hooks that are used on components for 
