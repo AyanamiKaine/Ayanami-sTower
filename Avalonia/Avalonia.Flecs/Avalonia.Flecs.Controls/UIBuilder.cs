@@ -2005,6 +2005,22 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+
+    /// <summary>
+    /// Sets the stretch mode of an Image control.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="stretch">The stretch mode to apply to the image</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<Image> SetStretch(this UIBuilder<Image> builder, Stretch stretch)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<Image>().Stretch = stretch;
+        return builder;
+    }
+
     /// <summary>
     /// Sets the vertical scroll bar visibility for a ScrollViewer.
     /// </summary>
