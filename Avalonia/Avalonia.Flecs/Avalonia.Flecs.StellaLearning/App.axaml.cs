@@ -60,6 +60,12 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
 
+        // Create the scheduler instance (use default parameters or load custom ones)
+        var scheduler = new FsrsSharp.Scheduler();
+
+        // Initialize the service
+        SchedulerService.Initialize(scheduler);
+
         _world.Import<Controls.ECS.Module>();
         _world.Import<FluentUI.Controls.ECS.Module>();
 
@@ -328,11 +334,6 @@ public partial class App : Application
             desktop.MainWindow.Hide();
         }
 
-        // Create the scheduler instance (use default parameters or load custom ones)
-        var scheduler = new FsrsSharp.Scheduler();
-
-        // Initialize the service
-        SchedulerService.Initialize(scheduler);
 
         base.OnFrameworkInitializationCompleted();
         //_world.RunRESTAPI();
