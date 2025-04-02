@@ -7,6 +7,10 @@ using NLog;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Media;
+using System.Text.Json;
+using System.IO;
+using Avalonia.Flecs.StellaLearning.Converters;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Provides extension methods for ObservableCollection of SpacedRepetitionItem objects.
@@ -55,6 +59,35 @@ public static class SpacedRepetitionObservableCollectionExtensions
                 .Take(25)                                  // Take top 25 priority items
                 .OrderBy(item => random.Next())            // Randomize these top 25
                 .FirstOrDefault();                         // Return the first (random) item
+    }
+    /// <summary>
+    /// Saves the spaced repetition items to disk asynchronously
+    /// </summary>
+    /// <param name="spacedRepetitionItems">The collection of items to save</param>
+    /// <returns>A task representing the asynchronous operation</returns>
+    public static async Task SaveSpaceRepetitionItemsToDiskAsync(this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    {
+        try
+        {
+            const string directoryPath = "./save";
+            Directory.CreateDirectory(directoryPath);
+            string filePath = Path.Combine(directoryPath, "space_repetition_items.json");
+
+            // Create JsonSerializerOptions and register the converter
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true, // For pretty-printing the JSON
+                Converters = { new SpacedRepetitionItemConverter() } // Register the custom converter
+            };
+
+            string jsonString = JsonSerializer.Serialize(spacedRepetitionItems, options);
+
+            await File.WriteAllTextAsync(filePath, jsonString);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 
 
