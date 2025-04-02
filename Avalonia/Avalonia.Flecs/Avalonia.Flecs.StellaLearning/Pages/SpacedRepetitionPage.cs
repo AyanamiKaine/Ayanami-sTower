@@ -57,8 +57,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     /// <returns></returns>
     public SpacedRepetitionPage(World world)
     {
-        _baseSpacedRepetitionItems = LoadSpaceRepetitionItemsFromDisk();
-        world.Set(_baseSpacedRepetitionItems);
+        _baseSpacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
 
         /*
         We only add the handler once. 
@@ -594,39 +593,6 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         catch (Exception ex)
         {
             Logger.Warn($"Error during auto-save: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// Loads the spaced repetition items from disk
-    /// </summary>
-    /// <returns></returns>
-    public static ObservableCollection<SpacedRepetitionItem> LoadSpaceRepetitionItemsFromDisk()
-    {
-        string filePath = Path.Combine("./save", "space_repetition_items.json");
-
-        if (File.Exists(filePath))
-        {
-            string jsonString = File.ReadAllText(filePath);
-
-            // Create JsonSerializerOptions and register the converter
-            var options = new JsonSerializerOptions
-            {
-                Converters = { new SpacedRepetitionItemConverter() }
-            };
-
-            ObservableCollection<SpacedRepetitionItem>? items = JsonSerializer.Deserialize<ObservableCollection<SpacedRepetitionItem>>(jsonString, options);
-
-            foreach (var item in items!)
-            {
-                item.CreateCardFromSpacedRepetitionData();
-            }
-
-            return items ?? [];
-        }
-        else
-        {
-            return [];
         }
     }
 
