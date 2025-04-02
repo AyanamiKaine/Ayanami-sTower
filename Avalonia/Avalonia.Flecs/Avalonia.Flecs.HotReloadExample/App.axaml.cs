@@ -2,8 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Flecs.Controls; // UIBuilder
-using Avalonia.Flecs.Controls.ECS; // Module
-using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading; // Dispatcher
 using Flecs.NET.Core;
@@ -11,7 +9,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Avalonia.Flecs.HotReloadExample;
 
@@ -42,7 +39,7 @@ public class App : Application, IDisposable
         // If you removed AvaloniaXamlLoader.Load(this), you'll likely need this:
         // Styles.Parse("/* Avalonia.Themes.Fluent */\n@import url('avares://Avalonia.Themes.Fluent/FluentLight.xaml');");
 
-        _world.Import<Avalonia.Flecs.Controls.ECS.Module>();
+        _world.Import<Controls.ECS.Module>();
 
         // Create the builder for the initial content first
         var initialContentBuilder = MainContent();
@@ -75,13 +72,15 @@ public class App : Application, IDisposable
             stackPanel.Child<TextBlock>((textBlock) =>
             {
                 textBlock.SetText($"Change me! Last rebuilt: {DateTime.Now:HH:mm:ss.fff}");
-                //textBlock.SetText("Some other text...");
+                // text can as easily be removed as added
+                // textBlock.SetText("Some other text...");
             });
 
             stackPanel.Child<Button>((button) =>
             {
                 button.SetText("Click Me!"); // Changed text
-                // button.OnClick((s, e) => Console.WriteLine("Hot Reloaded Button clicked!"));
+                // We can easily add new events
+                // button.OnClick((s, e) => button.SetText("Button CLICKED"));
             });
 
             // Maybe add a new control during reload:
