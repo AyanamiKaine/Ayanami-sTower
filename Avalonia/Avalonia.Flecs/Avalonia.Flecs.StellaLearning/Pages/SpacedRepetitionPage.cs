@@ -493,7 +493,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     public static Timer CreateAutoSaveTimer(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
         // Create a System.Timers.Timer for auto-saving
-        var autoSaveTimer = new Timer(TimeSpan.FromMinutes(1).TotalMilliseconds) // 5 minutes
+        var autoSaveTimer = new Timer(TimeSpan.FromMinutes(5).TotalMilliseconds) // 5 minutes
         {
             AutoReset = true, // Make the timer repeat
             Enabled = true,   // Start the timer immediately
