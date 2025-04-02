@@ -864,7 +864,110 @@ namespace Avalonia.Flecs.StellaLearning.Data
             Logger.Info($"Statistics recalculation complete after removing item {itemId}.");
         }
 
+        /// <summary>
+        /// Updates the 'Tags' list in all historical ReviewRecords for a specific item
+        /// and recalculates TagStats.
+        /// WARNING: This modifies historical data. It assumes that a tag change should
+        /// apply retroactively to all past reviews of the item.
+        /// </summary>
+        /// <param name="itemId">The Guid of the item whose tags have changed.</param>
+        /// <param name="newTags">The new list of tags for the item.</param>
+        public async Task UpdateTagsForItemAsync(Guid itemId, List<string> newTags)
+        {
+            Logger.Info($"Updating historical tags for item {itemId} to: [{string.Join(", ", newTags ?? [])}]");
+
+            bool tagsActuallyChanged = false;
+
+            // Create a defensive copy of the new tags list
+            var newTagsCopy = newTags == null ? new List<string>() : [.. newTags];
+
+            // Iterate through all sessions and reviews
+            // No need for Dispatcher here if just reading/modifying ReviewRecord content,
+            // but the rebuild step might need it if called from background.
+            foreach (var session in StudySessions)
+            {
+                foreach (var review in session.Reviews)
+                {
+                    if (review.ItemId == itemId)
+                    {
+                        // Check if the tags are actually different before updating
+                        // Simple comparison assuming order doesn't matter for equality check here
+                        var currentTagsSet = review.Tags?.ToHashSet() ?? [];
+                        var newTagsSet = newTagsCopy.ToHashSet();
+
+                        if (!currentTagsSet.SetEquals(newTagsSet))
+                        {
+                            review.Tags = newTagsCopy; // Update the review record's tags
+                            tagsActuallyChanged = true;
+                            // Logger.Debug($"Updated tags for review at {review.ReviewTime} for item {itemId}");
+                        }
+                    }
+                }
+            }
+
+            // If any review records were modified, rebuild TagStats and save
+            if (tagsActuallyChanged)
+            {
+                Logger.Info($"Historical tags updated for item {itemId}. Rebuilding TagStats...");
+
+                // Rebuild TagStats based on the modified review records
+                // Ensure this happens on the correct thread if necessary
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    // ItemTypeStats are unaffected by tag changes, only rebuild TagStats
+                    RebuildTagStatsOnly(StudySessions.ToList()); // Use a helper focused only on tags
+                });
+
+
+                // Save the changes
+                LastUpdated = DateTime.Now;
+                await SaveStatsAsync();
+
+                Logger.Info($"TagStats rebuilt and statistics saved after updating tags for item {itemId}.");
+            }
+            else
+            {
+                Logger.Info($"No historical tag changes detected for item {itemId}. TagStats remain unchanged.");
+            }
+        }
+
         #region Recalculation Helper Methods for Item Deletion
+
+        /// <summary>
+        /// Rebuilds ONLY the TagStats dictionary from a list of sessions.
+        /// Assumes TagStats dictionary has been cleared beforehand.
+        /// Requires ReviewRecord.Tags to be populated. Used after tag updates.
+        /// </summary>
+        private void RebuildTagStatsOnly(List<StudySession> sessions)
+        {
+            // Ensure dictionary is clear
+            TagStats.Clear();
+            var tempTagStats = new Dictionary<string, TagStats>();
+
+            foreach (var review in sessions.SelectMany(s => s.Reviews))
+            {
+                if (review.Tags != null && review.Tags.Any())
+                {
+                    foreach (var tag in review.Tags)
+                    {
+                        var normalizedTag = tag.Trim();
+                        if (string.IsNullOrEmpty(normalizedTag)) continue;
+
+                        if (!tempTagStats.TryGetValue(normalizedTag, out TagStats? tagStat))
+                        {
+                            tagStat = new TagStats { Tag = normalizedTag };
+                            tempTagStats[normalizedTag] = tagStat;
+                        }
+                        tagStat.TotalReviews++;
+                        if (review.Rating >= (int)Rating.Good) tagStat.CorrectReviews++;
+                    }
+                }
+            }
+            // Update the observable dictionary
+            TagStats = new Dictionary<string, TagStats>(tempTagStats);
+            Logger.Debug($"Rebuilt TagStats ONLY (Count: {TagStats.Count})");
+            OnPropertyChanged(nameof(TagStats)); // Notify observers
+        }
 
         /// <summary>
         /// Recalculates the TotalReviews count based on a list of sessions.
