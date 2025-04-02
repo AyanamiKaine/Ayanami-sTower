@@ -54,7 +54,6 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             // Or keep the common logic here and call common init methods
         }
 
-        // --- NEW Constructor Overload ---
         /// <summary>
         /// Creates a new Tag Management UI Component with auto-completion, optionally initializing with existing tags.
         /// </summary>
