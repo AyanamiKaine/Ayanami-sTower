@@ -1991,6 +1991,36 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the horizontal scroll bar visibility for a ScrollViewer.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="scrollBarVisibility">The visibility mode for the horizontal scrollbar</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<ScrollViewer> SetHorizontalScrollBarVisibility(this UIBuilder<ScrollViewer> builder, ScrollBarVisibility scrollBarVisibility)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<ScrollViewer>().HorizontalScrollBarVisibility = scrollBarVisibility;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the vertical scroll bar visibility for a ScrollViewer.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="scrollBarVisibility">The visibility mode for the vertical scrollbar</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<ScrollViewer> SetVerticalScrollBarVisibility(this UIBuilder<ScrollViewer> builder, ScrollBarVisibility scrollBarVisibility)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<ScrollViewer>().VerticalScrollBarVisibility = scrollBarVisibility;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the dock property of a control when it's placed in a DockPanel.
     /// </summary>
     /// <typeparam name="T">The type of Control</typeparam>
