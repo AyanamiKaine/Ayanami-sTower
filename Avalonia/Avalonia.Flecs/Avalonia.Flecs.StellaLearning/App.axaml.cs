@@ -158,12 +158,9 @@ public partial class App : Application
 
             nav.Child<NavigationViewItem>((item) =>
             {
-                item.With((item) =>
+                item.SetIconSource(new SymbolIconSource()
                 {
-                    item.IconSource = new SymbolIconSource()
-                    {
-                        Symbol = Symbol.Edit
-                    };
+                    Symbol = Symbol.Edit
                 });
                 item.Child<TextBlock>(t => t.SetText("Art"));
             });
@@ -188,24 +185,18 @@ public partial class App : Application
 
             var srPage = nav.Child<NavigationViewItem>((item) =>
             {
-                item.With((item) =>
+                item.SetIconSource(new SymbolIconSource()
                 {
-                    item.IconSource = new SymbolIconSource()
-                    {
-                        Symbol = Symbol.RepeatAll
-                    };
+                    Symbol = Symbol.RepeatAll
                 });
                 item.Child<TextBlock>(t => t.SetText("Spaced Repetition"));
             });
 
             nav.Child<NavigationViewItem>((item) =>
             {
-                item.With((item) =>
+                item.SetIconSource(new SymbolIconSource()
                 {
-                    item.IconSource = new SymbolIconSource()
-                    {
-                        Symbol = Symbol.Library
-                    };
+                    Symbol = Symbol.Library
                 });
                 item.Child<TextBlock>(t => t.SetText("Statistics"));
             });
