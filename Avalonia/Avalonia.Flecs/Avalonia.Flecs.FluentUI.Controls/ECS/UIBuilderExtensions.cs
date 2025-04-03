@@ -29,4 +29,14 @@ public static class UIBuilderExtensions
         builder.Entity.OnNavViewSelectionChanged(handler);
         return builder;
     }
+
+    public static UIBuilder<NavigationViewItem> SetIconSource(this UIBuilder<NavigationViewItem> builder, IconSource iconSource)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<NavigationViewItem>().IconSource = iconSource;
+
+        return builder;
+    }
 }
