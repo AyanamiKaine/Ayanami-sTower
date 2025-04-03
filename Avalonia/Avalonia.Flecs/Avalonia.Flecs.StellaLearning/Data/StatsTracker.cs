@@ -541,12 +541,12 @@ namespace Avalonia.Flecs.StellaLearning.Data
                 };
 
                 var json = JsonSerializer.Serialize(statsData, options);
-                try 
+                try
                 {
                     // Try up to 3 times with a short delay between attempts
-                    for (int attempt = 1; attempt <= 3; attempt++)
+                    for (int attempt = 1; attempt <= 5; attempt++)
                     {
-                        try 
+                        try
                         {
                             await File.WriteAllTextAsync(_statsFilePath, json);
                             // If successful, break out of the retry loop
@@ -559,7 +559,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
                             await Task.Delay(250 * attempt); // Increasing delay between retries
                         }
                     }
-                    
+
                     // Update the LastUpdated property *after* successful save
                     LastUpdated = statsData.LastUpdated; // Triggers OnPropertyChanged
                 }
