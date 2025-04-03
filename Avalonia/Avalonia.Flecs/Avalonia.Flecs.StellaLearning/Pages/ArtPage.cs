@@ -144,13 +144,12 @@ public class ArtPage : IUIComponent, IDisposable
     private const int THUMBNAIL_SIZE = 100; // Size for thumbnails in lists
 
     // --- Fields for Hover Preview ---
-    private DispatcherTimer? _hoverTimer;
     private Flyout? _previewFlyout;
     private Image? _previewImage;
     private Control? _flyoutTargetControl = null; // Keep track of what the flyout is attached to
-    private Control? _currentItemHoverTarget = null; // The ListBoxItem's visual root currently targeted
+    private Image? _currentHoveredImage = null;
+    private ReferencePaintingItem? _currentHoveredItem = null;
     private const int PREVIEW_MAX_SIZE = 400; // Max width/height for preview image pixels
-    private readonly TimeSpan _hoverDelay = TimeSpan.FromSeconds(1); // Hover delay duration
 
     /// <inheritdoc/>
     public Entity Root => _root;
@@ -869,12 +868,6 @@ public class ArtPage : IUIComponent, IDisposable
 
     private void InitializeHoverPreview()
     {
-        _hoverTimer = new DispatcherTimer
-        {
-            Interval = _hoverDelay,
-        };
-        _hoverTimer.Tick += HoverTimer_Tick;
-
         _previewImage = new Image
         {
             MaxWidth = PREVIEW_MAX_SIZE,
@@ -886,16 +879,13 @@ public class ArtPage : IUIComponent, IDisposable
         {
             Content = _previewImage,
             Placement = PlacementMode.RightEdgeAlignedTop,
-            // Keep this mode - it's designed for this scenario
+            // Keep this mode, it handles dismissal nicely if pointer moves away
             ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
         };
 
-        // --- Add Handler for Cleanup ---
         _previewFlyout.Closed += PreviewFlyout_Closed;
-        // ------------------------------
     }
 
-    // --- New Handler for Flyout.Closed ---
     private void PreviewFlyout_Closed(object? sender, EventArgs e)
     {
         // When the flyout closes (for any reason), detach it from the control
@@ -907,143 +897,126 @@ public class ArtPage : IUIComponent, IDisposable
         }
         // Optional: Clear the image to free memory sooner
         if (_previewImage != null) _previewImage.Source = null;
+
+        // Also clear hover state just in case Exited didn't fire correctly (e.g., window closed)
+        _currentHoveredImage = null;
+        _currentHoveredItem = null;
+        // _previewLoadCts?.Cancel(); // Ensure cancellation on close if using CTS
     }
 
-    private void HandleItemPointerEntered(object? sender, PointerEventArgs e)
+    private async void HandleItemPointerEntered(object? sender, PointerEventArgs e)
     {
-        if (sender is not Control control || control.DataContext is not ReferencePaintingItem item || _hoverTimer == null)
+        if (sender is not Image hoveredImage || hoveredImage.DataContext is not ReferencePaintingItem item || _previewFlyout == null || _previewImage == null)
         {
-            // Ensure cleanup if sender is invalid
-            StopHoverTimerAndHideFlyout(); // Use original method here
+            // If sender is not the image or context is wrong, ensure any existing flyout is hidden
+            _previewFlyout?.Hide();
+            _currentHoveredImage = null; // Clear state
+            _currentHoveredItem = null;
+            // _previewLoadCts?.Cancel(); // Cancel any ongoing load if using CTS
             return;
         }
 
-        // Entering a (potentially new) item. Stop any pending timer
-        // for a previous item AND hide any currently open flyout immediately.
-        StopHoverTimerAndHideFlyout(); // Use original method here
-
-        _currentItemHoverTarget = control; // Set new target
-        _hoverTimer.Start(); // Start timer for this item
-        Console.WriteLine($"Pointer Entered: Timer started for {item.Name}"); // Debug
-    }
-
-    // Keep the original StopHoverTimerAndHideFlyout method as it is needed by HandleItemPointerEntered
-    private void StopHoverTimerAndHideFlyout()
-    {
-        _hoverTimer?.Stop();
-        _currentItemHoverTarget = null;
-        _previewFlyout?.Hide(); // Explicitly hide here
-    }
-
-    private void HandleItemPointerExited(object? sender, PointerEventArgs e)
-    {
-        // If the pointer leaves the item we were tracking
-        if (sender == _currentItemHoverTarget)
+        // If pointer is already over the image we are showing/loading for, do nothing
+        if (ReferenceEquals(_currentHoveredImage, hoveredImage))
         {
-            // --- Only stop the timer ---
-            // If the timer hasn't ticked yet, this prevents it from firing.
-            // If the flyout is already shown, we let FlyoutShowMode handle dismissal.
-            _hoverTimer?.Stop();
-            Console.WriteLine("Pointer Exited: Timer stopped."); // Debug
-
-            // Clear the target so the timer tick condition fails if it happens late
-            _currentItemHoverTarget = null;
-            // --- Do NOT hide the flyout here ---
-        }
-    }
-
-    private async void HoverTimer_Tick(object? sender, EventArgs e)
-    {
-        _hoverTimer?.Stop(); // Ensure timer is stopped
-
-        // Check if we still have a valid target and the mouse is *still* over it
-        if (_currentItemHoverTarget?.IsPointerOver != true || _previewFlyout == null || _previewImage == null)
-        {
-            _currentItemHoverTarget = null; // Clear target just in case
-            // Console.WriteLine("Timer ticked, but conditions not met (pointer moved?)."); // Optional: Debugging
             return;
         }
 
-        // Double-check the DataContext
-        if (_currentItemHoverTarget.DataContext is not ReferencePaintingItem item)
-        {
-            _currentItemHoverTarget = null;
-            // Console.WriteLine("Timer ticked, but DataContext invalid."); // Optional: Debugging
-            return;
-        }
+        // Entering a new image, hide any previous flyout immediately
+        _previewFlyout.Hide(); // Hides flyout attached to previous target
+        _currentHoveredImage = hoveredImage; // Set new target image
+        _currentHoveredItem = item;         // Set new target item
+                                            // _previewLoadCts?.Cancel(); // Cancel previous load if using CTS
+                                            // _previewLoadCts = new CancellationTokenSource(); // Create new token if using CTS
+                                            // var cancellationToken = _previewLoadCts.Token; // Get token if using CTS
 
-        // Console.WriteLine($"Timer ticked for {item.Name}, attempting to show preview."); // Optional: Debugging
+        Console.WriteLine($"Pointer Entered Image for: {item.Name}. Loading preview..."); // Debug
 
-        // --- Load the full image asynchronously ---
         Bitmap? fullBitmap = null;
         try
         {
-            // Use Task.Run to perform file I/O and decoding off the UI thread
-            fullBitmap = await Task.Run(() =>
+            // Load the image asynchronously off the UI thread
+            fullBitmap = await Task.Run(async () => // Make inner lambda async if needed
             {
+                // cancellationToken.ThrowIfCancellationRequested(); // Check cancellation if using CTS
                 if (!File.Exists(item.ImagePath)) return null;
                 try
                 {
-                    using var stream = File.OpenRead(item.ImagePath);
-                    // Decode reasonably large but capped - helps with huge images
-                    // Adjust decode size as needed for performance vs quality trade-off
-                    return Bitmap.DecodeToWidth(stream, PREVIEW_MAX_SIZE * 2); // Decode larger than display size for quality
-                    // Or simply: return new Bitmap(stream); // if performance is acceptable
+                    await using var stream = File.OpenRead(item.ImagePath);
+                    // Decode reasonably large but capped
+                    // Consider adding cancellationToken support to async file/decode methods if possible
+                    return Bitmap.DecodeToWidth(stream, PREVIEW_MAX_SIZE * 2);
                 }
                 catch (Exception decodeEx)
                 {
                     Console.WriteLine($"Error DECODING image for preview ({item.ImagePath}): {decodeEx.Message}");
-                    return null; // Handle decoding errors
+                    return null;
                 }
-            });
+            }/*, cancellationToken*/); // Pass token if using CTS
+
+            // --- Post-Load Check ---
+            // ThrowIfCancellationRequested(); // Check cancellation if using CTS
+
+            // Check if we are STILL hovering over the SAME image after the async load completed
+            if (!ReferenceEquals(_currentHoveredImage, hoveredImage) || // Target changed?
+                !hoveredImage.IsPointerOver)                          // Pointer left?
+            {
+                Console.WriteLine($"Preview loaded for {item.Name}, but hover target changed/left during load."); // Debug
+                fullBitmap?.Dispose(); // IMPORTANT: Dispose the unused bitmap
+                return; // Don't show the flyout
+            }
+
+            // --- Show Flyout ---
+            if (fullBitmap != null)
+            {
+                _previewImage.Source = fullBitmap; // Set loaded image
+
+                // Store the target control *just before* showing
+                // The Closed event handler uses this to detach
+                _flyoutTargetControl = hoveredImage;
+
+                // Show the flyout directly at the image control
+                _previewFlyout.ShowAt(hoveredImage);
+                Console.WriteLine($"Showing preview flyout for {item.Name}"); // Debug
+            }
+            else
+            {
+                // Handle load/decode failure
+                Console.WriteLine($"Failed to load/decode bitmap for preview: {item.Name}"); // Debug
+                _previewImage.Source = null; // Clear image source
+                                             // Clear target state if loading failed
+                if (ReferenceEquals(_currentHoveredImage, hoveredImage))
+                {
+                    _currentHoveredImage = null;
+                    _currentHoveredItem = null;
+                }
+            }
         }
+        // catch (OperationCanceledException) // Catch cancellation if using CTS
+        // {
+        //     Console.WriteLine($"Preview load cancelled for {item.Name}."); // Debug
+        //     fullBitmap?.Dispose(); // Dispose if cancelled mid-load
+        // }
         catch (Exception ex)
         {
             // Catch potential errors during Task.Run setup or file access before stream creation
             Console.WriteLine($"Error loading full image for preview ({item.ImagePath}): {ex.Message}");
             _previewImage.Source = null; // Clear previous image on error
-            _currentItemHoverTarget = null; // Reset target
-            return;
+                                         // Clear target state on error
+            if (ReferenceEquals(_currentHoveredImage, hoveredImage))
+            {
+                _currentHoveredImage = null;
+                _currentHoveredItem = null;
+            }
+            fullBitmap?.Dispose(); // Ensure disposal on error
         }
-
-
-        // --- Check Hover State *After* Async Load ---
-        // The user might have moved the mouse while the image was loading!
-        if (_currentItemHoverTarget == null || !_currentItemHoverTarget.IsPointerOver || _currentItemHoverTarget.DataContext != item)
-        {
-            // Console.WriteLine("Preview load finished, but pointer moved away or target changed during load."); // Optional: Debugging
-            _previewImage.Source = null; // Clear the image if we aren't showing it
-            fullBitmap?.Dispose(); // IMPORTANT: Dispose the loaded bitmap if not used
-            _currentItemHoverTarget = null; // Reset target
-            return;
-        }
-        // --- End Post-Async Check ---
-
-        if (fullBitmap != null)
-        {
-            _previewImage.Source = fullBitmap; // Set the loaded image to the Image control
-
-            var displayTarget = _currentItemHoverTarget;
-
-
-            _flyoutTargetControl = displayTarget;
-            // Attach the flyout instance to the target control
-            FlyoutBase.SetAttachedFlyout(displayTarget, _previewFlyout);
-            // Show the flyout that is now attached to the control
-            FlyoutBase.ShowAttachedFlyout(displayTarget);
-
-            // Show the flyout attached to the ListBoxItem's visual root
-            _previewFlyout.ShowAt(_currentItemHoverTarget);
-            // Console.WriteLine($"Showing preview flyout for {item.Name}"); // Optional: Debugging
-        }
-        else
-        {
-            _previewImage.Source = null; // Clear if bitmap failed to load or decode
-            Console.WriteLine($"Failed to load/decode bitmap for preview: {item.Name}"); // Optional: Debugging
-            _currentItemHoverTarget = null; // Reset target
-        }
-        // Note: Don't clear _currentItemHoverTarget here; HandleItemPointerExited or starting hover on a new item will handle it.
     }
+
+    private void HandleItemPointerExited(object? sender, PointerEventArgs e)
+    {
+
+    }
+
 
     // --- IDisposable Implementation ---
 
