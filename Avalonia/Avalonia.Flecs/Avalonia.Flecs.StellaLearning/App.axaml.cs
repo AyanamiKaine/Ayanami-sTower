@@ -219,7 +219,7 @@ public partial class App : Application
                     return;
 
                 _currentPage.Root.Get<Control>().Margin = args.DisplayMode == NavigationViewDisplayMode.Minimal
-                    ? new Thickness(40, 5, 20, 20)
+                    ? new Thickness(50, 7, 20, 20)
                     : new Thickness(20, 5, 20, 20);
             });
             // This observer runs its callback when 
@@ -470,7 +470,7 @@ public partial class App : Application
         }
 
         var margin = displayMode == NavigationViewDisplayMode.Minimal
-            ? new Thickness(40, 5, 20, 20)
+            ? new Thickness(50, 7, 20, 20)
             : new Thickness(20, 5, 20, 20);
 
         Logger.Trace($"Applying margin {margin} to page {page.Root.Id} for display mode {displayMode}");
