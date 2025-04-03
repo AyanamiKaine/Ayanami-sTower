@@ -391,12 +391,12 @@ public partial class App : Application
                     {
                         new NativeMenuItem("Open")
                         {
-                            Command = new RelayCommand(() => ShowMainWindow())
+                            Command = new RelayCommand(ShowMainWindow)
                         },
                         new NativeMenuItemSeparator(),
                         new NativeMenuItem("Exit")
                         {
-                            Command = new RelayCommand(() => ShutdownApplication())
+                            Command = new RelayCommand(ShutdownApplication)
                         }
                     }
                 }
