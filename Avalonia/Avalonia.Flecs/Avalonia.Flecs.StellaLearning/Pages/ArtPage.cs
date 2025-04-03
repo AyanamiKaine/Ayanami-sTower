@@ -4,10 +4,13 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS; // Assuming Module and UIBuilderExtensions are here or accessible
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage; // For FilePicker
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Flecs.NET.Core;
 using System;
@@ -245,10 +248,32 @@ public class ArtPage : IUIComponent, IDisposable
                                             {
                                                 // Renames the list entry and its file name
                                                 item.SetHeader("Rename")
-                                                .OnClick((_, _) =>
+                                                .OnClick((sender, _) =>
                                                 {
                                                     var item = listBox.GetSelectedItem<ReferencePaintingItem>();
-                                                    item.Name = "CHANGED";
+
+                                                    // Ensure we have the ListBox control instance
+                                                    if (listBox == null) return;
+
+                                                    // Get the item associated with the context menu click
+                                                    // The DataContext of the MenuItem should be the ReferencePaintingItem
+                                                    var itemToRename = (sender as Control)?.DataContext as ReferencePaintingItem ??
+                                                                       listBox.GetSelectedItem<ReferencePaintingItem>(); // Fallback
+
+                                                    if (itemToRename == null) return;
+
+                                                    // Find the ListBoxItem container for positioning the flyout
+                                                    var container = listBox.Get<ListBox>().ContainerFromItem(itemToRename);
+                                                    if (container is Control targetControl)
+                                                    {
+                                                        ShowRenameFlyout(targetControl, itemToRename);
+                                                    }
+                                                    else
+                                                    {
+                                                        // Fallback: Show attached to the ListBox itself if container not found
+                                                        ShowRenameFlyout(listBox.Get<ListBox>(), itemToRename);
+                                                    }
+
                                                 });
                                             });
 
@@ -259,13 +284,21 @@ public class ArtPage : IUIComponent, IDisposable
                                                 item.SetHeader("Remove")
                                                 .OnClick((_, _) =>
                                                 {
-                                                    ClearSelectedReferenceView();
-                                                    var item = listBox.GetSelectedItem<ReferencePaintingItem>();
-                                                    _selectedReference = null;
-                                                    _referencePaintings.Remove(item);
-                                                    _currentStudies.Clear();
+                                                    if (listBox == null) return;
+                                                    var itemToRemove = listBox.GetSelectedItem<ReferencePaintingItem>();
+                                                    if (itemToRemove != null)
+                                                    {
+                                                        // If the removed item was the selected one, clear the details view
+                                                        if (ReferenceEquals(_selectedReference, itemToRemove))
+                                                        {
+                                                            ClearSelectedReferenceView();
+                                                            _selectedReference = null;
+                                                            _currentStudies.Clear();
+                                                            // Optionally disable "Add Study" button here
+                                                        }
+                                                        _referencePaintings.Remove(itemToRemove);
+                                                    }
                                                 });
-
                                             });
                                         });
                     listBox
@@ -388,6 +421,177 @@ public class ArtPage : IUIComponent, IDisposable
     }
 
     /// <summary>
+    /// Shows a flyout with a TextBox to rename the given item, attached to the target control.
+    /// </summary>
+    /// <param name="targetControl">The control to attach the flyout to (ideally the ListBoxItem).</param>
+    /// <param name="itemToRename">The ReferencePaintingItem being renamed.</param>
+    private void ShowRenameFlyout(Control targetControl, ReferencePaintingItem itemToRename)
+    {
+        // Create the TextBox for renaming
+        var renameTextBox = new TextBox
+        {
+            Text = itemToRename.Name, // Pre-populate with current name
+            MinWidth = 150,        // Give it some initial width
+            AcceptsReturn = false,   // Prevent multi-line names
+        };
+
+        // Create the Flyout to host the TextBox
+        var renameFlyout = new Flyout
+        {
+            Content = renameTextBox,
+            Placement = PlacementMode.BottomEdgeAlignedLeft, // Position it nicely below the item
+            ShowMode = FlyoutShowMode.Transient // Hide when clicking outside
+        };
+
+        // --- Event Handlers for Confirmation/Cancellation ---
+        EventHandler<KeyEventArgs>? keyDownHandler = null;
+        EventHandler<RoutedEventArgs>? lostFocusHandler = null;
+        bool confirmed = false; // Flag to prevent LostFocus cancel after Enter confirm
+
+        keyDownHandler = (s, kargs) =>
+        {
+            if (kargs.Key == Key.Enter)
+            {
+                confirmed = true; // Mark as confirmed
+                string newName = renameTextBox.Text.Trim();
+                renameFlyout.Hide(); // Hide the flyout first
+
+                if (!string.IsNullOrWhiteSpace(newName) && newName != itemToRename.Name)
+                {
+                    // Use Task.Run for file operation, but update UI item directly
+                    RenameReferenceItem(itemToRename, newName); // Call the rename logic
+                }
+                kargs.Handled = true; // Mark event as handled
+            }
+            else if (kargs.Key == Key.Escape)
+            {
+                renameFlyout.Hide(); // Just hide on Escape
+                kargs.Handled = true;
+            }
+
+            // Clean up handlers after flyout closes if needed (though GC should handle it)
+            // renameFlyout.Closed += (sender, e) => {
+            //    renameTextBox.KeyDown -= keyDownHandler;
+            //    renameTextBox.LostFocus -= lostFocusHandler;
+            // };
+        };
+
+        lostFocusHandler = (s, rargs) =>
+        {
+            // If rename wasn't confirmed via Enter, LostFocus acts as cancel
+            if (!confirmed)
+            {
+                renameFlyout.Hide();
+            }
+            // Clean up handlers (optional, GC should manage)
+            // renameTextBox.KeyDown -= keyDownHandler;
+            // renameTextBox.LostFocus -= lostFocusHandler;
+        };
+
+        renameTextBox.KeyDown += keyDownHandler;
+        renameTextBox.LostFocus += lostFocusHandler; // Hide on focus loss (acts as cancel if not confirmed)
+
+        // Show the flyout attached to the target control (e.g., the ListBoxItem)
+        renameFlyout.ShowAt(targetControl);
+
+        // --- Focus the TextBox after the Flyout opens ---
+        // Use Dispatcher.UIThread.Post to ensure the flyout is ready
+        Dispatcher.UIThread.Post(() =>
+        {
+            renameTextBox.Focus();
+            renameTextBox.SelectAll(); // Select existing text for easy replacement
+        }, DispatcherPriority.Input);
+    }
+
+    /// <summary>
+    /// Renames the underlying file and updates the ReferencePaintingItem.
+    /// Runs file operations potentially off the UI thread.
+    /// </summary>
+    /// <param name="item">The item to rename.</param>
+    /// <param name="newName">The desired new name (without extension).</param>
+    private async void RenameReferenceItem(ReferencePaintingItem item, string newName)
+    {
+        string oldPath = item.ImagePath;
+        string? directory = Path.GetDirectoryName(oldPath);
+        string extension = Path.GetExtension(oldPath); // Keep the original extension
+
+        if (string.IsNullOrEmpty(directory) || string.IsNullOrEmpty(extension))
+        {
+            Console.WriteLine($"Error: Could not parse path components for {oldPath}");
+            // Consider showing an error message to the user
+            return;
+        }
+
+        // Try to preserve the GUID prefix if it exists (assuming format GUID_Name.ext)
+        string oldFileNameWithoutExtension = Path.GetFileNameWithoutExtension(oldPath);
+        string newFileNameWithoutExtension;
+        string guidPrefix = "";
+
+        var parts = oldFileNameWithoutExtension.Split('_', 2);
+        if (parts.Length == 2 && Guid.TryParse(parts[0], out _)) // Check if first part is a GUID
+        {
+            guidPrefix = parts[0] + "_"; // Keep the GUID and the underscore
+            newFileNameWithoutExtension = guidPrefix + newName;
+        }
+        else
+        {
+            // If no recognizable GUID prefix, just use the new name.
+            // Consider adding a GUID if one wasn't present before for uniqueness?
+            // For now, just use the new name directly.
+            newFileNameWithoutExtension = newName;
+        }
+
+        string newFileName = newFileNameWithoutExtension + extension;
+        string newPath = Path.Combine(directory, newFileName);
+
+        // Check if the name is actually changing and if the new file already exists
+        if (newPath.Equals(oldPath, StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Rename skipped: New name is the same as the old name.");
+            item.Name = newName; // Ensure ObservableObject updates UI even if file doesn't change case etc.
+            return; // No file operation needed
+        }
+
+        if (File.Exists(newPath))
+        {
+            Console.WriteLine($"Error: Cannot rename. File already exists at {newPath}");
+            // Show error to user (e.g., using a message box or status bar)
+            // Example: await ShowErrorMessageAsync("Rename failed", $"A file named '{newFileName}' already exists.");
+            return;
+        }
+
+        try
+        {
+            // Perform file move (rename) potentially off the UI thread
+            await Task.Run(() => File.Move(oldPath, newPath));
+
+            // --- Update item properties on the UI thread ---
+            // Although Task.Run was used, this continuation might run on any thread.
+            // It's safer to ensure UI property updates happen on the UI thread.
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                item.ImagePath = newPath; // Update the stored path
+                item.Name = newName;      // Update the observable property (UI will refresh)
+                Console.WriteLine($"Successfully renamed '{Path.GetFileName(oldPath)}' to '{newFileName}'");
+
+                // If the renamed item was the selected one, update the details view header
+                if (ReferenceEquals(_selectedReference, item) && _selectedImageNameBuilder != null)
+                {
+                    _selectedImageNameBuilder.SetText(newName);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error renaming file from '{oldPath}' to '{newPath}': {ex.Message}");
+            // Show error to user
+            // Example: await ShowErrorMessageAsync("Rename failed", $"Could not rename the file: {ex.Message}");
+            // No need to revert item properties here, as the file operation failed,
+            // and the item properties were not yet updated.
+        }
+    }
+
+    /// <summary>
     /// Creates the DataTemplate for the art studies ListBox.
     /// </summary>
     private IDataTemplate CreateStudyItemTemplate()
@@ -506,7 +710,7 @@ public class ArtPage : IUIComponent, IDisposable
             // 2. Create ReferencePaintingItem
             var newItem = new ReferencePaintingItem
             {
-                Name = Path.GetFileNameWithoutExtension(newPath),
+                Name = Path.GetFileNameWithoutExtension(filePath),
                 ImagePath = newPath,
                 // Generate thumbnail (implement LoadThumbnail)
                 Thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE)
@@ -628,7 +832,33 @@ public class ArtPage : IUIComponent, IDisposable
             }
         });
     }
+    /// <summary>
+    /// Extracts a user-friendly display name from a filename,
+    /// removing a leading "GUID_" prefix if present.
+    /// </summary>
+    /// <param name="fileName">The full filename (e.g., "guid_MyPainting.jpg" or "MyPainting.jpg").</param>
+    /// <returns>The display name (e.g., "MyPainting").</returns>
+    private string GetDisplayNameFromFileName(string fileName)
+    {
+        // Get the part of the filename without the extension
+        string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
 
+        // Check if it contains an underscore, suggesting a potential prefix
+        int underscoreIndex = nameWithoutExtension.IndexOf('_');
+
+        // If an underscore exists and the part before it looks like a GUID
+        if (underscoreIndex > 0 && // Ensure underscore is not the first character
+            Guid.TryParse(nameWithoutExtension.Substring(0, underscoreIndex), out _))
+        {
+            // Return the part *after* the first underscore
+            return nameWithoutExtension.Substring(underscoreIndex + 1);
+        }
+        else
+        {
+            // Otherwise, return the whole filename without extension
+            return nameWithoutExtension;
+        }
+    }
     private void LoadReferencePaintings()
     {
         // Placeholder: Load reference painting metadata and populate _referencePaintings
@@ -652,12 +882,19 @@ public class ArtPage : IUIComponent, IDisposable
                 // Load async
                 Task.Run(async () =>
                 {
+                    // --- Modification Start ---
+                    string fullPath = file;
+                    string fileName = Path.GetFileName(fullPath);
+                    string displayName = GetDisplayNameFromFileName(fileName); // Use the helper function
+                    // --- Modification End ---
+
                     var newItem = new ReferencePaintingItem
                     {
-                        Name = Path.GetFileNameWithoutExtension(file),
-                        ImagePath = file,
-                        Thumbnail = await LoadThumbnail(file, THUMBNAIL_SIZE)
+                        Name = displayName, // <-- Use the parsed display name
+                        ImagePath = fullPath, // <-- Keep the original full path
+                        Thumbnail = await LoadThumbnail(fullPath, THUMBNAIL_SIZE)
                     };
+
                     // Use dispatcher to add to collection on UI thread
                     await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
                     {
