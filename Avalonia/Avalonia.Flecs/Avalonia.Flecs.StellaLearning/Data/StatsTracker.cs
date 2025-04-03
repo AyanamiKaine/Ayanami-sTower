@@ -541,10 +541,34 @@ namespace Avalonia.Flecs.StellaLearning.Data
                 };
 
                 var json = JsonSerializer.Serialize(statsData, options);
-                await File.WriteAllTextAsync(_statsFilePath, json);
-
-                // Update the LastUpdated property *after* successful save
-                LastUpdated = statsData.LastUpdated; // Triggers OnPropertyChanged
+                try 
+                {
+                    // Try up to 3 times with a short delay between attempts
+                    for (int attempt = 1; attempt <= 3; attempt++)
+                    {
+                        try 
+                        {
+                            await File.WriteAllTextAsync(_statsFilePath, json);
+                            // If successful, break out of the retry loop
+                            break;
+                        }
+                        catch (IOException ioEx) when (attempt < 3)
+                        {
+                            // Log the failure but continue to retry
+                            Logger.Warn(ioEx, $"Failed to save statistics on attempt {attempt}/3: File access error. Retrying after delay...");
+                            await Task.Delay(250 * attempt); // Increasing delay between retries
+                        }
+                    }
+                    
+                    // Update the LastUpdated property *after* successful save
+                    LastUpdated = statsData.LastUpdated; // Triggers OnPropertyChanged
+                }
+                catch (IOException ioEx)
+                {
+                    // After all retries failed, log the error but don't crash
+                    Logger.Error(ioEx, "Failed to save statistics after multiple attempts: File access error (file may be locked by another process)");
+                    // Consider notifying user of save failure if critical
+                }
 
                 Logger.Debug("Saved statistics to {FilePath}", _statsFilePath);
             }
