@@ -282,23 +282,76 @@ public class ArtPage : IUIComponent, IDisposable
                                                 //Removes the refrence from the list
                                                 //Should not delete the file!
                                                 item.SetHeader("Remove")
-                                                .OnClick((_, _) =>
-                                                {
-                                                    if (listBox == null) return;
-                                                    var itemToRemove = listBox.GetSelectedItem<ReferencePaintingItem>();
-                                                    if (itemToRemove != null)
+                                                    .OnClick((_, _) => // Make the lambda async if you plan to add async dialogs
                                                     {
-                                                        // If the removed item was the selected one, clear the details view
-                                                        if (ReferenceEquals(_selectedReference, itemToRemove))
+                                                        if (listBox == null) return;
+
+                                                        var itemToRemove = listBox.GetSelectedItem<ReferencePaintingItem>();
+                                                        if (itemToRemove != null)
                                                         {
-                                                            ClearSelectedReferenceView();
-                                                            _selectedReference = null;
-                                                            _currentStudies.Clear();
-                                                            // Optionally disable "Add Study" button here
+                                                            string filePath = itemToRemove.ImagePath;
+                                                            string displayName = itemToRemove.Name; // For use in messages
+
+                                                            // Basic validation
+                                                            if (string.IsNullOrEmpty(filePath))
+                                                            {
+                                                                Console.WriteLine($"Error: ImagePath is missing for item '{displayName}'. Cannot delete.");
+                                                                // TODO: Show error message to user via UI dialog/popup
+                                                                return;
+                                                            }
+
+                                                            // --- RECOMMENDED: Insert Confirmation Dialog Here ---
+                                                            // Example (requires a dialog implementation):
+                                                            // var dialogService = GetSomeDialogService(); // Get your dialog service instance
+                                                            // bool confirmed = await dialogService.ShowConfirmationAsync(
+                                                            //    "Confirm Deletion",
+                                                            //    $"Are you sure you want to permanently delete the reference file '{displayName}'?\n\nThis action cannot be undone.");
+                                                            //
+                                                            // if (!confirmed)
+                                                            // {
+                                                            //     Console.WriteLine("Deletion cancelled by user.");
+                                                            //     return; // Stop if user cancels
+                                                            // }
+                                                            // --- End Confirmation Dialog Placeholder ---
+
+
+                                                            try
+                                                            {
+                                                                // 1. Attempt to delete the file from disk FIRST
+                                                                File.Delete(filePath);
+                                                                Console.WriteLine($"Successfully deleted file: {filePath}");
+
+                                                                // 2. If file deletion succeeded, THEN update UI and collection
+                                                                // Clear details view if the deleted item was the selected one
+                                                                if (ReferenceEquals(_selectedReference, itemToRemove))
+                                                                {
+                                                                    ClearSelectedReferenceView();
+                                                                    _selectedReference = null;
+                                                                    _currentStudies.Clear();
+                                                                    // TODO: Consider disabling "Add Study" button state here
+                                                                }
+
+                                                                // Remove the item from the observable collection
+                                                                _referencePaintings.Remove(itemToRemove);
+
+                                                            }
+                                                            catch (IOException ioEx) // Catch specific IO exceptions
+                                                            {
+                                                                Console.WriteLine($"Error deleting file '{filePath}' for item '{displayName}': {ioEx.Message}");
+                                                                // TODO: Show specific error message to user (e.g., "File might be in use or path not found.")
+                                                            }
+                                                            catch (UnauthorizedAccessException authEx) // Catch permissions errors
+                                                            {
+                                                                Console.WriteLine($"Error deleting file '{filePath}' for item '{displayName}': {authEx.Message}");
+                                                                // TODO: Show specific error message to user (e.g., "Permission denied.")
+                                                            }
+                                                            catch (Exception ex) // Catch any other unexpected errors
+                                                            {
+                                                                Console.WriteLine($"An unexpected error occurred while deleting file '{filePath}' for item '{displayName}': {ex.Message}");
+                                                                // TODO: Show generic error message to user
+                                                            }
                                                         }
-                                                        _referencePaintings.Remove(itemToRemove);
-                                                    }
-                                                });
+                                                    });
                                             });
                                         });
                     listBox
