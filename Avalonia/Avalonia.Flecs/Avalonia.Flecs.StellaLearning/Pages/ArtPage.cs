@@ -388,7 +388,6 @@ public class ArtPage : IUIComponent, IDisposable
                         //TODO: There is a big chance that a tooltip with a image attached 
                         // is much closer to the thing we want.
                         .OnPointerEntered(HandleItemPointerEntered)
-                        .OnPointerExited(HandleItemPointerExited)
                         .SetIsHitTestVisible(true);
                 });
 
@@ -1011,12 +1010,6 @@ public class ArtPage : IUIComponent, IDisposable
             fullBitmap?.Dispose(); // Ensure disposal on error
         }
     }
-
-    private void HandleItemPointerExited(object? sender, PointerEventArgs e)
-    {
-
-    }
-
 
     // --- IDisposable Implementation ---
 
