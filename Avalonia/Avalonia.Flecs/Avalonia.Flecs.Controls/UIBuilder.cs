@@ -837,6 +837,23 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+
+    /// <summary>
+    /// Sets the IsHitTestVisible property of an InputElement.
+    /// </summary>
+    /// <typeparam name="T">The type of InputElement</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="isHitTestVisible">Whether the element should be hit test visible</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetIsHitTestVisible<T>(this UIBuilder<T> builder, bool isHitTestVisible) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().IsHitTestVisible = isHitTestVisible;
+        return builder;
+    }
+
     /// <summary>
     /// Removes the image that will be displayed.
     /// </summary>
@@ -973,6 +990,24 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Get<InputElement>().PointerEntered += onPointerEntered;
+        return builder;
+    }
+
+    //TODO: IMPLEMENT WEAK EVENT HANDLERS for diposables
+
+    /// <summary>
+    /// Adds an on pointer exited event to the input element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="onPoninterExited"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> OnPointerExited<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPoninterExited) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerExited += onPoninterExited;
         return builder;
     }
 
