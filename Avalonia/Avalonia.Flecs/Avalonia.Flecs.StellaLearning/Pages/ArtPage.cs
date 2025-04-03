@@ -149,7 +149,7 @@ public class ArtPage : IUIComponent, IDisposable
     private Image? _previewImage;
     private Control? _flyoutTargetControl = null; // Keep track of what the flyout is attached to
     private Control? _currentItemHoverTarget = null; // The ListBoxItem's visual root currently targeted
-    private const int PREVIEW_MAX_SIZE = 300; // Max width/height for preview image pixels
+    private const int PREVIEW_MAX_SIZE = 400; // Max width/height for preview image pixels
     private readonly TimeSpan _hoverDelay = TimeSpan.FromSeconds(1); // Hover delay duration
 
     /// <inheritdoc/>
