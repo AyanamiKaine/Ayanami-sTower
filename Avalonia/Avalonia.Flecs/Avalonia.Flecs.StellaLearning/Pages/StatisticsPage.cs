@@ -128,11 +128,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
             // --- Build the UI ---
             Root = world.UI<ScrollViewer>(scrollViewer =>
             {
-                scrollViewer.SetMargin(40, 0, 0, 0);
-
                 scrollViewer.Child<StackPanel>(mainPanel =>
                 {
-                    mainPanel.SetMargin(0, 10, 20, 20);
                     mainPanel.SetSpacing(15); // Add some padding around the page content
 
                     // --- Overall Stats Section ---

@@ -288,23 +288,6 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         })
         .Add<Page>().Entity;
 
-        _root.AddDefaultStyling((spacedRepetitionPage) =>
-        {
-            if (spacedRepetitionPage.Parent() != 0 &&
-                spacedRepetitionPage.Parent().Has<NavigationView>())
-            {
-                switch (spacedRepetitionPage.Parent().Get<NavigationView>().DisplayMode)
-                {
-                    case NavigationViewDisplayMode.Minimal:
-                        //spacedRepetitionPage.SetMargin(50, 10, 20, 20);
-                        break;
-                    default:
-                        //spacedRepetitionPage.SetMargin(20, 10, 20, 20);
-                        break;
-                }
-            }
-        });
-
         // Initial Apply Filter & Sort
         Dispatcher.UIThread.InvokeAsync(() => ApplyFilterAndSort(string.Empty));
 

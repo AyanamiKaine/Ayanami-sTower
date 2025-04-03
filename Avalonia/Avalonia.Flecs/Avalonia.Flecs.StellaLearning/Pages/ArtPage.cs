@@ -170,8 +170,7 @@ public class ArtPage : IUIComponent, IDisposable
     private void BuildArtPageUI(UIBuilder<Grid> grid)
     {
         grid.SetRowDefinitions("Auto, *") // Row 0 for buttons, Row 1 for content
-            .SetColumnDefinitions("Auto, *") // Col 0 for reference list, Col 1 for details
-            .SetMargin(10);
+            .SetColumnDefinitions("Auto, *"); // Col 0 for reference list, Col 1 for details
 
         // --- Row 0: Action Buttons ---
         grid.Child<StackPanel>(buttonsPanel =>

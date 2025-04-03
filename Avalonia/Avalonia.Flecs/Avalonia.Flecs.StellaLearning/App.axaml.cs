@@ -45,6 +45,7 @@ public partial class App : Application
     private SpacedRepetitionPage? spacedRepetitionPage;
     private StatisticsPage? statisticsPage;
     private ArtPage? artPage;
+    private IUIComponent? _currentPage;
 
 
     /// <summary>
@@ -210,45 +211,31 @@ public partial class App : Application
             });
             nav.Get<NavigationView>().SelectedItem = srPage.Get<NavigationViewItem>();
             nav.Child(spacedRepetitionPage);
-
-
+            _currentPage = spacedRepetitionPage;
             nav.OnDisplayModeChanged((sender, args) =>
             {
-                if (args.DisplayMode == NavigationViewDisplayMode.Minimal)
-                {
-                    nav.Children(child =>
-                    {
-                        if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
-                        {
-                            child.Get<Control>().Margin = new Thickness(50, 10, 20, 20);
-                        }
-                    });
-                }
-                else
-                {
-                    nav.Children(child =>
-                    {
-                        if (child.Has<Controls.ECS.Module.Page>() && child.Has<Control>())
-                        {
-                            child.Get<Control>().Margin = new Thickness(20, 10, 20, 20);
-                        }
-                    });
-                }
+
+                if (_currentPage is null)
+                    return;
+
+                _currentPage.Root.Get<Control>().Margin = args.DisplayMode == NavigationViewDisplayMode.Minimal
+                    ? new Thickness(40, 5, 20, 20)
+                    : new Thickness(20, 5, 20, 20);
             });
             // This observer runs its callback when 
             // nav.Emit<OnSelectionChanged>() is called.
             nav.Observe<OnSelectionChanged>(_ =>
             {
-                        // We first remove any other page ensuring 
-                        // that only the selected page is displayed
-                        nav.Children(child =>
-                        {
-                                if (child.Has<Controls.ECS.Module.Page>())
-                                {
-                                    child.Remove(Ecs.ChildOf, Ecs.Wildcard);
-                                }
-                            });
-                    });
+                // We first remove any other page ensuring 
+                // that only the selected page is displayed
+                nav.Children(child =>
+                {
+                    if (child.Has<Controls.ECS.Module.Page>())
+                    {
+                        child.Remove(Ecs.ChildOf, Ecs.Wildcard);
+                    }
+                });
+            });
 
             // TODO: they way we use a chain if statement is rather ugly, and need improvment.
             nav.OnNavViewSelectionChanged((sender, args) =>
@@ -262,41 +249,49 @@ public partial class App : Application
                 if (selectedItem?.Content is TextBlock homeTextBlock && homeTextBlock.Text == "Home")
                 {
                     nav.Child(homePage);
+                    _currentPage = homePage;
                     ApplyPageMargin(homePage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock LiteratureTextBlock && LiteratureTextBlock.Text == "Literature")
                 {
                     nav.Child(literaturePage);
+                    _currentPage = literaturePage;
                     ApplyPageMargin(literaturePage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock StatisticsTextBlock && StatisticsTextBlock.Text == "Statistics")
                 {
                     nav.Child(statisticsPage);
+                    _currentPage = statisticsPage;
                     ApplyPageMargin(statisticsPage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock SRtextBlock && SRtextBlock.Text == "Spaced Repetition")
                 {
                     nav.Child(spacedRepetitionPage);
+                    _currentPage = spacedRepetitionPage;
                     ApplyPageMargin(spacedRepetitionPage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is not null && selectedItem?.Content.ToString() == "Settings")
                 {
                     nav.Child(settingsPage);
+                    _currentPage = settingsPage;
                     ApplyPageMargin(settingsPage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock KVtextBlock && KVtextBlock.Text == "Knowledge Vault")
                 {
                     nav.Child(knowledgeVaultPage);
+                    _currentPage = knowledgeVaultPage;
                     ApplyPageMargin(knowledgeVaultPage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock CQtextBlock && CQtextBlock.Text == "Content Queue")
                 {
                     nav.Child(contentQueuePage);
+                    _currentPage = contentQueuePage;
                     ApplyPageMargin(contentQueuePage, e.DisplayMode);
                 }
                 else if (selectedItem?.Content is TextBlock artTextBlock && artTextBlock.Text == "Art")
                 {
                     nav.Child(artPage);
+                    _currentPage = artPage;
                     ApplyPageMargin(artPage, e.DisplayMode);
                 }
             });
@@ -461,22 +456,22 @@ public partial class App : Application
     private static void ApplyPageMargin(IUIComponent page, NavigationViewDisplayMode displayMode)
     {
         // Check if the page's root entity is still valid before accessing it
-        if (page.Root.IsAlive())
+        if (!page.Root.IsAlive())
         {
             Logger.Warn($"ApplyPageMargin: Page root entity {page.Root.Id} is not alive. Skipping margin set.");
             return;
         }
 
         // Check if the page root actually has a Control component
-        if (page.Root.Has<Control>())
+        if (!page.Root.Has<Control>())
         {
             Logger.Warn($"ApplyPageMargin: Page root entity {page.Root.Id} does not have a Control component. Skipping margin set.");
             return;
         }
 
         var margin = displayMode == NavigationViewDisplayMode.Minimal
-            ? new Thickness(50, 10, 20, 20)
-            : new Thickness(20, 10, 20, 20);
+            ? new Thickness(40, 5, 20, 20)
+            : new Thickness(20, 5, 20, 20);
 
         Logger.Trace($"Applying margin {margin} to page {page.Root.Id} for display mode {displayMode}");
         page.SetMargin(margin);
