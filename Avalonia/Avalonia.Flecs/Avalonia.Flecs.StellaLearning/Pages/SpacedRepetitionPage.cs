@@ -323,14 +323,35 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                     {
                         menuItem
                         .SetHeader("Normal")
-                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: false));
+                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: false))
+                        .AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                        {
+                            toolTip.Child<TextBlock>((textBlock) =>
+                            {
+                                textBlock.SetText(
+                                """
+                                Use spaced repetition to learn items in order of their defined priority.
+                                """);
+                            });
+                        }));
                     });
 
                     menu.Child<MenuItem>((menuItem) =>
                     {
                         menuItem
                         .SetHeader("Cram")
-                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: true));
+                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: true))
+                        .AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                        {
+                            toolTip.Child<TextBlock>((textBlock) =>
+                            {
+                                textBlock.SetText(
+                                """
+                                Learn items based on their priority (They are slightly randomized, to avoid seeing the pattern)
+                                regardless of their due date.
+                                """);
+                            });
+                        }));
                     });
                 });
 
