@@ -373,11 +373,11 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
                 startLearningButton
                 .SetMargin(0, 20, 0, 0)
-                            .SetColumn(0)
-                            .SetColumnSpan(2)
-                            .SetRow(2)
-                            .SetFlyout(menu)
-                            .Child<TextBlock>(t => t.SetText("Start Learning"));
+                .SetColumn(0)
+                .SetColumnSpan(2)
+                .SetRow(2)
+                .SetFlyout(menu)
+                .Child<TextBlock>(t => t.SetText("Start Learning"));
             });
 
             grid.Child<Button>((addItemButton) =>
