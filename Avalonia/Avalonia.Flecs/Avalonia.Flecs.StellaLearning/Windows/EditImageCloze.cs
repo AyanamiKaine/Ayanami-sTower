@@ -136,60 +136,6 @@ public class EditImageCloze : IUIComponent, IDisposable
     {
         return world.UI<StackPanel>((stackPanel) =>
         {
-            var tagManager = new TagComponent(world, _spacedRepetitionImageCloze.Tags);
-
-            void SaveData()
-            {
-                if (nameTextBox is null)
-                {
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(ImagePath))
-                {
-                    nameTextBox!.SetWatermark("Name");
-                    return;
-                }
-
-                if (clozeAreas.Count == 0)
-                {
-                    var cd = new ContentDialog()
-                    {
-                        Title = "Missing Areas",
-                        Content = "Your image does not currently have hidding any areas defined, they are required",
-                        PrimaryButtonText = "Ok",
-                        DefaultButton = ContentDialogButton.Primary,
-                        IsSecondaryButtonEnabled = true,
-                    };
-                    cd.ShowAsync();
-                    return;
-                }
-
-                if (_root.IsValid())
-                {
-                    // Create a list of ImageClozeArea objects from our clozeAreas collection
-                    var imageClozeAreas = clozeAreas.Select(area => new ImageClozeArea
-                    {
-                        X = area.X,
-                        Y = area.Y,
-                        Width = area.Width,
-                        Height = area.Height,
-                        Text = area.Text
-                    }).ToList();
-
-
-                    _spacedRepetitionImageCloze.Name = nameTextBox.GetText();
-                    _spacedRepetitionImageCloze.ImagePath = ImagePath;
-                    _spacedRepetitionImageCloze.ClozeAreas = imageClozeAreas;
-                    _spacedRepetitionImageCloze.Tags = [.. tagManager.Tags];
-                    Dispatcher.UIThread.InvokeAsync(async () =>
-                    {
-                        await StatsTracker.Instance.UpdateTagsForItemAsync(_spacedRepetitionImageCloze.Uid, _spacedRepetitionImageCloze.Tags);
-                    });
-                    _root.Get<Window>().Close();
-                }
-            }
-
             stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
             .SetSpacing(10)
@@ -205,7 +151,7 @@ public class EditImageCloze : IUIComponent, IDisposable
                 {
                     if (args.Key == Key.Enter)
                     {
-                        SaveData();
+                        createButtonClickedHandler!.Invoke(sender, args);
                     }
                 });
             });
@@ -306,7 +252,7 @@ public class EditImageCloze : IUIComponent, IDisposable
                     .SetBorderBrush(Brushes.Black);
             });
 
-
+            var tagManager = new TagComponent(world, _spacedRepetitionImageCloze.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             // Create button
@@ -322,7 +268,7 @@ public class EditImageCloze : IUIComponent, IDisposable
                 });
 
 
-                createButtonClickedHandler = (sender, args) =>
+                createButtonClickedHandler = (_, _) =>
                 {
                     if (nameTextBox is null)
                     {
