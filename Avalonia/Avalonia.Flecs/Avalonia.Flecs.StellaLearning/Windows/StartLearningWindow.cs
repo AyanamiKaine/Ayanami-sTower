@@ -1116,7 +1116,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
         Console.WriteLine($"Cram session list initialized/reset with {_cramSessionItems.Count} items (Sorted by Priority * (1 + Noise%)).");
 
         // Optional: Log the first few items to verify the semi-randomized priority order
-        
+        /*
         Console.WriteLine("Top 5 items in cram session queue:");
         foreach(var item in _cramSessionItems.Take(5))
         {
@@ -1124,7 +1124,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
             double basePrio = Math.Max(1.0, (double)item.Priority);
             Console.WriteLine($"- Name: {item.Name}, Prio: {item.Priority}, Approx. Score Range: {basePrio * 1.0:F0} - {basePrio * (1.0 + relativeNoiseFactor):F0}");
         }
-        
+        */
     }
 
     private SpacedRepetitionItem? GetNextCramItem()
