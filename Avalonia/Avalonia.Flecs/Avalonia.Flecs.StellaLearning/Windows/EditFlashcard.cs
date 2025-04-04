@@ -62,6 +62,77 @@ public class EditFlashcard : IUIComponent, IDisposable
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? frontText = null;
             UIBuilder<TextBox>? backText = null;
+            var tagManager = new TagComponent(world, flashcard.Tags);
+
+            void SaveData()
+            {
+                if (nameTextBox is null ||
+                    frontText is null ||
+                    backText is null)
+                {
+                    return;
+                }
+                if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                {
+                    nameTextBox.SetWatermark("Name is required");
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Name",
+                        Content = "You must define a name",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(frontText.GetText()))
+                {
+                    frontText.SetWatermark("A front text is required");
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Front Text",
+                        Content = "You must define a front text",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(backText.GetText()))
+                {
+                    backText.SetWatermark("A back text is required");
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Back Text",
+                        Content = "You must define a back text",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+                flashcard.Name = nameTextBox.GetText();
+                flashcard.Front = frontText.GetText();
+                flashcard.Back = backText.GetText();
+                flashcard.Tags = [.. tagManager.Tags];
+
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await StatsTracker.Instance.UpdateTagsForItemAsync(flashcard.Uid, flashcard.Tags);
+                });
+
+
+                // Clearing an entity results in all components, relationships etc to be removed.
+                // this also results in invoking the remove hooks that are used on components for 
+                // cleanup. For example removing a window component results in closing it.
+                _root.Clear();
+            }
 
             stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
@@ -75,7 +146,16 @@ public class EditFlashcard : IUIComponent, IDisposable
 
             nameTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                textBox.SetWatermark("Name").SetText(flashcard.Name);
+                textBox
+                .SetWatermark("Name")
+                .SetText(flashcard.Name)
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        SaveData();
+                    }
+                });
             });
 
             stackPanel.Child<TextBlock>((t) =>
@@ -107,7 +187,6 @@ public class EditFlashcard : IUIComponent, IDisposable
                 textBox.Get<TextBox>().AcceptsReturn = true;
             });
 
-            var tagManager = new TagComponent(world, flashcard.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             stackPanel.Child<Button>((button) =>
@@ -119,72 +198,7 @@ public class EditFlashcard : IUIComponent, IDisposable
 
                 button.OnClick((sender, args) =>
                 {
-                    if (nameTextBox is null ||
-                        frontText is null ||
-                        backText is null)
-                    {
-                        return;
-                    }
-                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
-                    {
-                        nameTextBox.SetWatermark("Name is required");
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Missing Name",
-                            Content = "You must define a name",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
-
-                    if (string.IsNullOrEmpty(frontText.GetText()))
-                    {
-                        frontText.SetWatermark("A front text is required");
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Missing Front Text",
-                            Content = "You must define a front text",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
-
-                    if (string.IsNullOrEmpty(backText.GetText()))
-                    {
-                        backText.SetWatermark("A back text is required");
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Missing Back Text",
-                            Content = "You must define a back text",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
-
-                    flashcard.Name = nameTextBox.GetText();
-                    flashcard.Front = frontText.GetText();
-                    flashcard.Back = backText.GetText();
-                    flashcard.Tags = [.. tagManager.Tags];
-
-                    Dispatcher.UIThread.InvokeAsync(async () =>
-                    {
-                        await StatsTracker.Instance.UpdateTagsForItemAsync(flashcard.Uid, flashcard.Tags);
-                    });
-
-
-                    // Clearing an entity results in all components, relationships etc to be removed.
-                    // this also results in invoking the remove hooks that are used on components for 
-                    // cleanup. For example removing a window component results in closing it.
-                    _root.Clear();
+                    SaveData();
                 });
             });
         }).Entity;
