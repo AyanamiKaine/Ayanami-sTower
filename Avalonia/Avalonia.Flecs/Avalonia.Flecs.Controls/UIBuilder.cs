@@ -763,15 +763,28 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Sets the minimum height of a Layoutable control.
+    /// Sets the minimum heigth of a Layoutable control.
     /// </summary>
     /// <typeparam name="T">The type of Layoutable</typeparam>
     /// <param name="builder">The UI builder</param>
-    /// <param name="minHeight">The minimum height value to set</param>
+    /// <param name="minHeigth">The minimum height value to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetMinHeight<T>(this UIBuilder<T> builder, double minHeight) where T : Layoutable
+    public static UIBuilder<T> SetMinHeigth<T>(this UIBuilder<T> builder, double minHeigth) where T : Layoutable
     {
-        builder.Get<T>().MinHeight = minHeight;
+        builder.Get<T>().MinHeight = minHeigth;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the maximum height of a Layoutable control.
+    /// </summary>
+    /// <typeparam name="T">The type of Layoutable</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="maxHeigth">The maximum height value to set</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetMaxHeigth<T>(this UIBuilder<T> builder, double maxHeigth) where T : Layoutable
+    {
+        builder.Get<T>().MaxHeight = maxHeigth;
         return builder;
     }
 
@@ -785,6 +798,19 @@ public static class UIBuilderExtensions
     public static UIBuilder<T> SetMinWidth<T>(this UIBuilder<T> builder, double minWidth) where T : Layoutable
     {
         builder.Get<T>().MinWidth = minWidth;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the maximum width of a Layoutable control.
+    /// </summary>
+    /// <typeparam name="T">The type of Layoutable</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="maxWidth">The maximum width value to set</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetMaxWidth<T>(this UIBuilder<T> builder, double maxWidth) where T : Layoutable
+    {
+        builder.Get<T>().MaxWidth = maxWidth;
         return builder;
     }
 
