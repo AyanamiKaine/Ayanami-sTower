@@ -1113,7 +1113,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
             })
             .ToList(); // Create the final sorted list
 
-        Console.WriteLine($"Cram session list initialized/reset with {_cramSessionItems.Count} items (Sorted by Priority * (1 + Noise%)).");
+        //Console.WriteLine($"Cram session list initialized/reset with {_cramSessionItems.Count} items (Sorted by Priority * (1 + Noise%)).");
 
         // Optional: Log the first few items to verify the semi-randomized priority order
         /*
@@ -1132,7 +1132,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
         // Ensure the session list exists (should be initialized in constructor or reset)
         if (_cramSessionItems == null)
         {
-            Console.WriteLine("Error: Cram session item list is null. Re-initializing."); // Debugging
+            //Console.WriteLine("Error: Cram session item list is null. Re-initializing."); // Debugging
             InitializeCramSession(); // Attempt recovery
             if (_cramSessionItems == null) return null; // If still null, something is wrong
         }
@@ -1144,17 +1144,17 @@ public class StartLearningWindow : IUIComponent, IDisposable
             // Check if the original list is also empty
             if (!_spacedRepetitionItems.Any())
             {
-                Console.WriteLine("No items available in the main list to cram.");
+                //Console.WriteLine("No items available in the main list to cram.");
                 return null; // Truly no items left
             }
 
-            Console.WriteLine("Cram session pass complete. Re-initializing and shuffling for another pass."); // Debugging
+            //Console.WriteLine("Cram session pass complete. Re-initializing and shuffling for another pass."); // Debugging
             InitializeCramSession();
 
             // If after re-initializing it's still empty, means the source was empty
             if (_cramSessionItems.Count == 0)
             {
-                Console.WriteLine("Source list is empty, cannot get next cram item.");
+                //Console.WriteLine("Source list is empty, cannot get next cram item.");
                 return null;
             }
         }
@@ -1164,7 +1164,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
         // IMPORTANT: Remove the item from the temporary list so it's not immediately repeated in this pass.
         _cramSessionItems.RemoveAt(0);
 
-        Console.WriteLine($"Next cram item: {nextItem?.Name ?? "N/A"}. Items remaining in this pass: {_cramSessionItems.Count}"); // Debugging
+        //Console.WriteLine($"Next cram item: {nextItem?.Name ?? "N/A"}. Items remaining in this pass: {_cramSessionItems.Count}"); // Debugging
         return nextItem;
     }
 
@@ -1195,9 +1195,9 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 _ => NoMoreItemToBeReviewedContent().AsBaseBuilder<Control, TextBlock>(),
             };
         }
-        catch (NotImplementedException e)
+        catch (NotImplementedException)
         {
-            Console.WriteLine(e.Message);
+            //Console.WriteLine(e.Message);
             return _world.UI<TextBox>((t) => t.SetText("Somethin Went Wrong!")).AsBaseBuilder<Control, TextBox>();
         }
     }
