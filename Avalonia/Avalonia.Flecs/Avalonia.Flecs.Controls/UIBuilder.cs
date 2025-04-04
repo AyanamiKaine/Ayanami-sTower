@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Controls.Templates;
@@ -10,6 +11,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Flecs.NET.Core;
 
@@ -2361,6 +2363,218 @@ public static class UIBuilderExtensions
     {
         builder.Get<ListBox>().ContextFlyout = content;
         return builder;
+    }
+
+    // Helper method to create and add the style
+    private static UIBuilder<T> AddStyleInternal<T>(
+        this UIBuilder<T> builder,
+        Func<Selector?, Selector> selectorBuilder, // Function to build the selector
+        IEnumerable<(AvaloniaProperty Property, object Value)> setters) where T : Control // Use Control constraint for Styles
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
+            return builder;
+
+        var control = builder.Get<Control>(); // Get the base Control
+
+        var style = new Style(selectorBuilder); // Use the provided selector builder
+
+        // Add setters to the collection rather than assigning to the property
+        foreach (var (Property, Value) in setters)
+        {
+            style.Setters.Add(new Setter(Property, Value));
+        }
+
+        control.Styles.Add(style); // Add the style to the control's specific Styles collection
+        return builder;
+    }
+
+    /// <summary>
+    /// Applies a style directly to the control type (no pseudo-class).
+    /// NOTE: For state-dependent properties (Background, Foreground, BorderBrush on :pointerover, etc.),
+    /// default theme styles might use more specific selectors targeting template parts, potentially overriding this style.
+    /// Consider using more specific styling methods if needed.
+    /// Example: buttonBuilder.SetBaseStyle((Button.FontSizeProperty, 14.0), (Button.FontWeightProperty, FontWeight.Bold));
+    /// </summary>
+    public static UIBuilder<T> SetBaseStyle<T>(
+        this UIBuilder<T> builder,
+        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+    {
+        // Selector for the base type: s => s.OfType<T>()
+        return builder.AddStyleInternal(s => s.OfType<T>(), setters);
+    }
+
+    /// <summary>
+    /// Applies a style for the :pointerover pseudo-class.
+    /// Example: buttonBuilder.SetPointerOverStyle((Button.BackgroundProperty, Brushes.LightGreen));
+    /// </summary>
+    /// <typeparam name="T">The type of Control.</typeparam>
+    /// <param name="builder">The UI builder.</param>
+    /// <param name="setters">A collection of property-value pairs to apply on hover.</param>
+    /// <returns>The builder for method chaining.</returns>
+    public static UIBuilder<T> SetPointerOverStyle<T>(
+        this UIBuilder<T> builder,
+        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+    {
+        // Selector: s => s.OfType<T>().Class(":pointerover")
+        return builder.AddStyleInternal(s => s.OfType<T>().Class(":pointerover"), setters);
+    }
+
+    /// <summary>
+    /// Applies a style for the :pressed pseudo-class.
+    /// Example: buttonBuilder.SetPressedStyle((Button.BackgroundProperty, Brushes.DarkGreen));
+    /// </summary>
+    /// <typeparam name="T">The type of Control.</typeparam>
+    /// <param name="builder">The UI builder.</param>
+    /// <param name="setters">A collection of property-value pairs to apply when pressed.</param>
+    /// <returns>The builder for method chaining.</returns>
+    public static UIBuilder<T> SetPressedStyle<T>(
+        this UIBuilder<T> builder,
+        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+    {
+        // Selector: s => s.OfType<T>().Class(":pressed")
+        return builder.AddStyleInternal(s => s.OfType<T>().Class(":pressed"), setters);
+    }
+
+    /// <summary>
+    /// Applies a style for the :disabled pseudo-class.
+    /// Example: buttonBuilder.SetDisabledStyle((Button.OpacityProperty, 0.5));
+    /// </summary>
+    /// <typeparam name="T">The type of Control.</typeparam>
+    /// <param name="builder">The UI builder.</param>
+    /// <param name="setters">A collection of property-value pairs to apply when disabled.</param>
+    /// <returns>The builder for method chaining.</returns>
+    public static UIBuilder<T> SetDisabledStyle<T>(
+        this UIBuilder<T> builder,
+        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+    {
+        // Selector: s => s.OfType<T>().Class(":disabled")
+        return builder.AddStyleInternal(s => s.OfType<T>().Class(":disabled"), setters);
+    }
+
+    // Add more methods for other common pseudo-classes (:focus, etc.) or custom classes as needed...
+
+    /// <summary>
+    /// Applies a style for a specific pseudo-class or custom class directly on the control.
+    /// NOTE: For state-dependent properties (Background, Foreground, BorderBrush on :pointerover, etc.),
+    /// default theme styles might use more specific selectors targeting template parts, potentially overriding this style.
+    /// Consider using SetClassTemplatePartStyle for common controls or inspecting the default theme.
+    /// Example: buttonBuilder.SetClassStyle(":focus", (Button.BorderBrushProperty, Brushes.Blue));
+    /// </summary>
+    public static UIBuilder<T> SetClassStyle<T>(
+        this UIBuilder<T> builder,
+        string className, // e.g., ":pointerover", ":pressed", "custom-class"
+        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+    {
+        if (string.IsNullOrEmpty(className))
+        {
+            throw new ArgumentException("Class name cannot be null or empty for SetClassStyle.", nameof(className));
+        }
+        // Selector: s => s.OfType<T>().Class(className)
+        return builder.AddStyleInternal(s => s.OfType<T>().Class(className), setters);
+    }
+
+    /// <summary>
+    /// Adds or removes a style class from the control.
+    /// Example: builder.SetClass("highlighted", true); builder.SetClass("highlighted", false);
+    /// </summary>
+    /// <typeparam name="T">The type of Control.</typeparam>
+    /// <param name="builder">The UI builder.</param>
+    /// <param name="className">The class name to add or remove.</param>
+    /// <param name="add">True to add the class, false to remove it.</param>
+    /// <returns>The builder for method chaining.</returns>
+    public static UIBuilder<T> SetClass<T>(this UIBuilder<T> builder, string className, bool add = true) where T : Control
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
+            return builder;
+
+        var control = builder.Get<Control>();
+        if (add)
+        {
+            control.Classes.Add(className);
+        }
+        else
+        {
+            control.Classes.Remove(className);
+        }
+        return builder;
+    }
+    /// <summary>
+    /// Applies a style targeting a specific named part within the control's template
+    /// when a specific class (pseudo-class or custom) is active on the main control.
+    /// This is often necessary to override default theme styles for states like :pointerover, :pressed.
+    /// Example:
+    /// buttonBuilder.SetClassTemplatePartStyle Button, ContentPresenter(
+    ///     ":pointerover", // Pseudo-class on the Button
+    ///     "PART_ContentPresenter", // Name of the part inside the template
+    ///     (ContentPresenter.BackgroundProperty, Brushes.SkyBlue) // Property and Value for the ContentPresenter
+    /// );
+    /// </summary>
+    /// <typeparam name="T">The type of the main Control being styled.</typeparam>
+    /// <typeparam name="TPart">The type of the template part being targeted (e.g., ContentPresenter, Border).</typeparam>
+    /// <param name="builder">The UI builder for the main control.</param>
+    /// <param name="className">The class name on the main control (e.g., ":pointerover", "my-custom-class").</param>
+    /// <param name="partName">The name of the template part (e.g., "PART_ContentPresenter"). Can be null if targeting by type only within template.</param>
+    /// <param name="setters">A collection of property-value pairs to apply to the template part.</param>
+    /// <returns>The builder for method chaining.</returns>
+    public static UIBuilder<T> SetClassTemplatePartStyle<T, TPart>(
+        this UIBuilder<T> builder,
+        string className,
+        string? partName, // Allow null for targeting only by type within template
+        params (AvaloniaProperty Property, object Value)[] setters)
+        where T : Control // Main control constraint
+        where TPart : Control // Template part constraint
+    {
+        if (string.IsNullOrEmpty(className))
+        {
+            throw new ArgumentException("Class name cannot be null or empty.", nameof(className));
+        }
+
+        // Build the selector: T.className /template/ TPart#partName
+        Func<Selector?, Selector> selectorBuilder = s =>
+        {
+            // Start with: T.className
+            Selector finalSelector = s.OfType<T>().Class(className);
+            // Add: /template/
+            finalSelector = finalSelector.Template();
+            // Add: TPart
+            finalSelector = finalSelector.OfType<TPart>();
+            // Add: #partName (if provided)
+            if (!string.IsNullOrEmpty(partName))
+            {
+                finalSelector = finalSelector.Name(partName);
+            }
+            return finalSelector;
+        };
+
+        return builder.AddStyleInternal(selectorBuilder, setters); // Use the existing helper
+    }
+
+    // --- NEW: Convenience Methods for Common Scenarios (Example: Button Background) ---
+
+    /// <summary>
+    /// Convenience method to set the Button's :pointerover background,
+    /// correctly targeting the PART_ContentPresenter to override default themes.
+    /// </summary>
+    public static UIBuilder<Button> SetButtonPointerOverBackground(this UIBuilder<Button> builder, IBrush background)
+    {
+        return builder.SetClassTemplatePartStyle<Button, ContentPresenter>(
+            ":pointerover",
+            "PART_ContentPresenter", // Standard name in default themes
+            (ContentPresenter.BackgroundProperty, background) // Target the part's property
+        );
+    }
+
+    /// <summary>
+    /// Convenience method to set the Button's :pressed background,
+    /// correctly targeting the PART_ContentPresenter to override default themes.
+    /// </summary>
+    public static UIBuilder<Button> SetButtonPressedBackground(this UIBuilder<Button> builder, IBrush background)
+    {
+        return builder.SetClassTemplatePartStyle<Button, ContentPresenter>(
+            ":pressed",
+            "PART_ContentPresenter", // Standard name in default themes
+            (ContentPresenter.BackgroundProperty, background) // Target the part's property
+        );
     }
 }
 
