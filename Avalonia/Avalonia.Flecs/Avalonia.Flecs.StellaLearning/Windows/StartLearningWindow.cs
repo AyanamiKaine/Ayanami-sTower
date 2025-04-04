@@ -427,11 +427,11 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                 foreach (var button in buttons)
                                 {
                                     button.SetBackground(Brushes.Red);
-                                    button.SetButtonPointerOverBackground(Brushes.Red);
+                                    button.SetPointerOverBackground(Brushes.Red);
                                 }
 
                                 button.SetBackground(Brushes.Green);
-                                button.SetButtonPointerOverBackground(Brushes.Green);
+                                button.SetPointerOverBackground(Brushes.Green);
 
                                 await StatsTracker.Instance.RecordReview(quiz, Rating.Good);
                                 await Task.Delay(3000);
@@ -447,16 +447,18 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             }
                             else
                             {
-                                button.SetButtonPointerOverBackground(Brushes.Red);
+                                button.SetPointerOverBackground(Brushes.Red);
                                 button.SetBackground(Brushes.Red);
 
                                 foreach (var button in buttons)
                                 {
                                     button.SetBackground(Brushes.Red);
+                                    button.SetPointerOverBackground(Brushes.Red);
                                 }
                                 // At this point all buttons are red, we now want to turn
                                 // the correct anwser green.
                                 buttons[quiz.CorrectAnswerIndex].SetBackground(Brushes.Green);
+                                buttons[quiz.CorrectAnswerIndex].SetPointerOverBackground(Brushes.Green);
 
                                 await StatsTracker.Instance.RecordReview(quiz, Rating.Again);
                                 await Task.Delay(3000);
