@@ -23,6 +23,7 @@ using Avalonia.Threading;
 using DesktopNotifications;
 using System.Collections.Specialized;
 using System.Reactive.Disposables;
+using Avalonia.Controls.Primitives;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -222,17 +223,32 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
             grid.Child<Button>((startLearningButton) =>
             {
+
+                var menu = world.UI<MenuFlyout>((menu) =>
+                {
+                    menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
+                    menu.Child<MenuItem>((menuItem) =>
+                    {
+                        menuItem
+                        .SetHeader("Normal")
+                        .OnClick((_, _) => new StartLearningWindow(world));
+                    });
+
+                    menu.Child<MenuItem>((menuItem) =>
+                    {
+                        menuItem
+                        .SetHeader("Cram")
+                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: true));
+                    });
+                });
+
                 startLearningButton
                 .SetMargin(0, 20, 0, 0)
                 .SetColumn(0)
                 .SetColumnSpan(2)
                 .SetRow(2)
+                .SetFlyout(menu)
                 .Child<TextBlock>(t => t.SetText("Start Learning"));
-
-                startLearningButton.OnClick((btns, _) =>
-                {
-                    new StartLearningWindow(world);
-                });
             });
 
             grid.Child<Button>((addItemButton) =>
