@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Flecs.NET.Core;
@@ -64,11 +65,69 @@ public class EditCloze : IUIComponent, IDisposable
 
         ObservableCollection<string> clozes = [.. cloze.ClozeWords];
 
+
+
+
         return world.UI<StackPanel>((stackPanel) =>
         {
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? clozeBox = null;
             UIBuilder<ItemsControl>? clozeList = null;
+            var tagManager = new TagComponent(world, cloze.Tags);
+
+            void SaveData()
+            {
+                if (nameTextBox is null || clozeBox is null)
+                {
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                {
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Name",
+                        Content = "You must define a name",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+
+                if (clozes.Count == 0)
+                {
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Clozes Missing",
+                        Content = "Your test currently has not cloze words defined you must atleast define one",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+                cloze.Name = nameTextBox.GetText();
+                cloze.FullText = clozeBox.GetText();
+                cloze.ClozeWords = [.. clozes];
+                cloze.Tags = [.. tagManager.Tags];
+
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await StatsTracker.Instance.UpdateTagsForItemAsync(cloze.Uid, cloze.Tags);
+                });
+
+
+                // Clearing an entity results in all components, relationships etc to be removed.
+                // this also results in invoking the remove hooks that are used on components for 
+                // cleanup. For example removing a window component results in closing it.
+                _root.Clear();
+            }
+
 
             stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
@@ -83,8 +142,16 @@ public class EditCloze : IUIComponent, IDisposable
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
-                textBox.SetWatermark("Name");
-                textBox.SetText(cloze.Name);
+                textBox
+                .SetWatermark("Name")
+                .SetText(cloze.Name)
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        SaveData();
+                    }
+                });
             });
 
             stackPanel.Child<TextBlock>((t) =>
@@ -163,7 +230,6 @@ public class EditCloze : IUIComponent, IDisposable
                     .SetBorderBrush(Brushes.Black);
             });
 
-            var tagManager = new TagComponent(world, cloze.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             // Create button
@@ -179,55 +245,7 @@ public class EditCloze : IUIComponent, IDisposable
 
                 button.OnClick((sender, args) =>
                 {
-                    if (nameTextBox is null || clozeBox is null)
-                    {
-                        return;
-                    }
-
-                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
-                    {
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Missing Name",
-                            Content = "You must define a name",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
-
-
-                    if (clozes.Count == 0)
-                    {
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Clozes Missing",
-                            Content = "Your test currently has not cloze words defined you must atleast define one",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
-
-                    cloze.Name = nameTextBox.GetText();
-                    cloze.FullText = clozeBox.GetText();
-                    cloze.ClozeWords = [.. clozes];
-                    cloze.Tags = [.. tagManager.Tags];
-
-                    Dispatcher.UIThread.InvokeAsync(async () =>
-                    {
-                        await StatsTracker.Instance.UpdateTagsForItemAsync(cloze.Uid, cloze.Tags);
-                    });
-
-
-                    // Clearing an entity results in all components, relationships etc to be removed.
-                    // this also results in invoking the remove hooks that are used on components for 
-                    // cleanup. For example removing a window component results in closing it.
-                    _root.Clear();
+                    SaveData();
                 });
             });
         }).Entity;
