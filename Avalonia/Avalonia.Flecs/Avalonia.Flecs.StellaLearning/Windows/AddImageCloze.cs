@@ -148,7 +148,7 @@ public class AddImageCloze : IUIComponent, IDisposable
 
                 grid.SetHorizontalAlignment(HorizontalAlignment.Stretch);
                 grid.SetVerticalAlignment(VerticalAlignment.Stretch);
-                grid.SetMinHeight(250); // Set a reasonable minimum height
+                grid.SetMinHeigth(250); // Set a reasonable minimum height
 
                 // Add a Viewbox to contain and scale the image properly
                 grid.Child<Viewbox>((viewbox) =>
