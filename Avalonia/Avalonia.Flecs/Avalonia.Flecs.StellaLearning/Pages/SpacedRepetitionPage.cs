@@ -658,16 +658,16 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                 MaxWidth = 200, // Set a maximum width for wrapping
                 Text = "This is a very long tooltip text that spans multiple lines. " +
                         "It provides more detailed information about the content item. " +
-                        "You can even add more and more text to make it even longer."
+                        "You can even add more and more text to make it even longer.",
             };
 
             //Name
             var nameTextBlock = new TextBlock
             {
-                TextWrapping = TextWrapping.Wrap,
+                TextWrapping = TextWrapping.NoWrap,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 FontWeight = FontWeight.Bold,
-                Margin = new Thickness(0, 0, 5, 0)
+                Margin = new Thickness(0, 0, 5, 0),
             };
             nameTextBlock.Bind(TextBlock.TextProperty, new Binding("Name"));
             Grid.SetColumn(nameTextBlock, 0);
@@ -686,9 +686,9 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             //Type (ENUM)
             var typeTextBlock = new TextBlock
             {
-                TextWrapping = TextWrapping.Wrap,
+                TextWrapping = TextWrapping.NoWrap,
                 TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(0, 0, 5, 0)
+                Margin = new Thickness(0, 0, 5, 0),
             };
 
             typeTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.SpacedRepetitionItemType)));
@@ -698,6 +698,8 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
             var nextReviewTextBlock = new TextBlock
             {
+                TextWrapping = TextWrapping.NoWrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
                 FontWeight = FontWeight.Bold,
                 HorizontalAlignment = HorizontalAlignment.Right,
             };
