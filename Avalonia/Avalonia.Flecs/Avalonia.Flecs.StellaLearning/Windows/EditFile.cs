@@ -70,9 +70,94 @@ public class EditFile : IUIComponent, IDisposable
                 textBlock.SetFontSize(12);
                 textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
             });
-            UIBuilder<TextBox> nameTextBox;
-            UIBuilder<TextBox> filePath;
-            UIBuilder<TextBox> questionTextBox;
+            UIBuilder<TextBox>? nameTextBox = null;
+            UIBuilder<TextBox>? filePath = null;
+            UIBuilder<TextBox>? questionTextBox = null;
+            var tagManager = new TagComponent(world, spacedRepetitionFile.Tags);
+
+
+            void SaveData()
+            {
+                if (nameTextBox is null ||
+                    questionTextBox is null ||
+                    filePath is null)
+                {
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                {
+                    nameTextBox.SetWatermark("Name is required");
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Name",
+                        Content = "You must define a name",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+
+
+
+                if (string.IsNullOrEmpty(filePath.GetText()))
+                {
+                    filePath.SetWatermark("File path is required");
+
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Filepath",
+                        Content = "You must define a valid filepath",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+
+
+                if (string.IsNullOrEmpty(questionTextBox.GetText()))
+                {
+                    questionTextBox.SetWatermark("Question is required");
+
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Question",
+                        Content = "You must define a question",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+                if (!System.IO.File.Exists(filePath!.GetText()))
+                {
+                    filePath!.SetWatermark("File at defined path does not exist");
+                    return;
+                }
+
+
+                spacedRepetitionFile.Name = nameTextBox.GetText();
+                spacedRepetitionFile.Question = questionTextBox.GetText();
+                spacedRepetitionFile.FilePath = filePath.GetText();
+                spacedRepetitionFile.Tags = [.. tagManager.Tags];
+
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await StatsTracker.Instance.UpdateTagsForItemAsync(spacedRepetitionFile.Uid, spacedRepetitionFile.Tags);
+                });
+                // Clearing an entity results in all components, relationships etc to be removed.
+                // this also results in invoking the remove hooks that are used on components for 
+                // cleanup. For example removing a window component results in closing it.
+                _root.Clear();
+            }
 
 
             void ValidateFilePath(string path)
@@ -110,8 +195,16 @@ public class EditFile : IUIComponent, IDisposable
 
             nameTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
-                textBox.SetWatermark("Name")
-                .SetText(spacedRepetitionFile.Name);
+                textBox
+                .SetWatermark("Name")
+                .SetText(spacedRepetitionFile.Name)
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        SaveData();
+                    }
+                });
             });
 
             stackPanel.Child<TextBlock>((t) =>
@@ -122,7 +215,14 @@ public class EditFile : IUIComponent, IDisposable
             questionTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
                 textBox.SetWatermark("Question")
-                .SetText(spacedRepetitionFile.Question);
+                .SetText(spacedRepetitionFile.Question)
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        SaveData();
+                    }
+                });
             });
 
             stackPanel.Child<TextBlock>((t) =>
@@ -145,19 +245,24 @@ public class EditFile : IUIComponent, IDisposable
                             textBox.SetText(path);
                             ValidateFilePath(path);
                         });
-                    }));
+                    }))
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        SaveData();
+                    }
+                }); ;
 
                 textBox.SetText(spacedRepetitionFile.FilePath);
 
                 textBox.With((textBox) => textBox.TextChanged += (sender, args) => ValidateFilePath(textBox.Text!));
-
             });
 
             stackPanel.Child(validationTextBlock);
 
             stackPanel.Child<TextBlock>(t => t.SetText("Tags").SetMargin(0, 10, 0, 0)); // Label for tags
 
-            var tagManager = new TagComponent(world, spacedRepetitionFile.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             stackPanel.Child<Button>((button) =>
@@ -172,85 +277,7 @@ public class EditFile : IUIComponent, IDisposable
 
                 button.OnClick((sender, args) =>
                     {
-                        if (nameTextBox is null ||
-                            questionTextBox is null ||
-                            filePath is null)
-                        {
-                            return;
-                        }
-
-                        if (string.IsNullOrEmpty(nameTextBox.GetText()))
-                        {
-                            nameTextBox.SetWatermark("Name is required");
-                            var cd = new ContentDialog()
-                            {
-                                Title = "Missing Name",
-                                Content = "You must define a name",
-                                PrimaryButtonText = "Ok",
-                                DefaultButton = ContentDialogButton.Primary,
-                                IsSecondaryButtonEnabled = true,
-                            };
-                            cd.ShowAsync();
-                            return;
-                        }
-
-
-
-
-                        if (string.IsNullOrEmpty(filePath.GetText()))
-                        {
-                            filePath.SetWatermark("File path is required");
-
-                            var cd = new ContentDialog()
-                            {
-                                Title = "Missing Filepath",
-                                Content = "You must define a valid filepath",
-                                PrimaryButtonText = "Ok",
-                                DefaultButton = ContentDialogButton.Primary,
-                                IsSecondaryButtonEnabled = true,
-                            };
-                            cd.ShowAsync();
-                            return;
-                        }
-
-
-
-                        if (string.IsNullOrEmpty(questionTextBox.GetText()))
-                        {
-                            questionTextBox.SetWatermark("Question is required");
-
-                            var cd = new ContentDialog()
-                            {
-                                Title = "Missing Question",
-                                Content = "You must define a question",
-                                PrimaryButtonText = "Ok",
-                                DefaultButton = ContentDialogButton.Primary,
-                                IsSecondaryButtonEnabled = true,
-                            };
-                            cd.ShowAsync();
-                            return;
-                        }
-
-                        if (!System.IO.File.Exists(filePath!.GetText()))
-                        {
-                            filePath!.SetWatermark("File at defined path does not exist");
-                            return;
-                        }
-
-
-                        spacedRepetitionFile.Name = nameTextBox.GetText();
-                        spacedRepetitionFile.Question = questionTextBox.GetText();
-                        spacedRepetitionFile.FilePath = filePath.GetText();
-                        spacedRepetitionFile.Tags = [.. tagManager.Tags];
-
-                        Dispatcher.UIThread.InvokeAsync(async () =>
-                        {
-                            await StatsTracker.Instance.UpdateTagsForItemAsync(spacedRepetitionFile.Uid, spacedRepetitionFile.Tags);
-                        });
-                        // Clearing an entity results in all components, relationships etc to be removed.
-                        // this also results in invoking the remove hooks that are used on components for 
-                        // cleanup. For example removing a window component results in closing it.
-                        _root.Clear();
+                        SaveData();
                     });
 
             });
