@@ -2561,8 +2561,6 @@ public static class UIBuilderExtensions
         return builder.AddStyleInternal(selectorBuilder, setters); // Use the existing helper
     }
 
-    // --- NEW: Convenience Methods for Common Scenarios (Example: Button Background) ---
-
     /// <summary>
     /// Convenience method to set the controls's :pointerover background,
     /// correctly targeting the PART_ContentPresenter to override default themes.
