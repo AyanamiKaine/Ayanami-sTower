@@ -422,13 +422,15 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         {
                             if (quiz.CorrectAnswerIndex == index)
                             {
-
+                                // We first remove the correct button so it does not turn red.
                                 buttons.RemoveAt(index);
                                 foreach (var button in buttons)
                                 {
                                     button.SetBackground(Brushes.Red);
+                                    button.SetButtonPointerOverBackground(Brushes.Red);
                                 }
 
+                                button.SetBackground(Brushes.Green);
                                 button.SetButtonPointerOverBackground(Brushes.Green);
 
                                 await StatsTracker.Instance.RecordReview(quiz, Rating.Good);
@@ -446,12 +448,14 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             else
                             {
                                 button.SetButtonPointerOverBackground(Brushes.Red);
+                                button.SetBackground(Brushes.Red);
 
                                 foreach (var button in buttons)
                                 {
                                     button.SetBackground(Brushes.Red);
                                 }
-
+                                // At this point all buttons are red, we now want to turn
+                                // the correct anwser green.
                                 buttons[quiz.CorrectAnswerIndex].SetBackground(Brushes.Green);
 
                                 await StatsTracker.Instance.RecordReview(quiz, Rating.Again);
