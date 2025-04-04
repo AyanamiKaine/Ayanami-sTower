@@ -2564,17 +2564,18 @@ public static class UIBuilderExtensions
     // --- NEW: Convenience Methods for Common Scenarios (Example: Button Background) ---
 
     /// <summary>
-    /// Convenience method to set the Button's :pointerover background,
+    /// Convenience method to set the controls's :pointerover background,
     /// correctly targeting the PART_ContentPresenter to override default themes.
     /// </summary>
-    public static UIBuilder<Button> SetButtonPointerOverBackground(this UIBuilder<Button> builder, IBrush background)
+    public static UIBuilder<T> SetPointerOverBackground<T>(this UIBuilder<T> builder, IBrush background) where T : Control
     {
-        return builder.SetClassTemplatePartStyle<Button, ContentPresenter>(
+        return builder.SetClassTemplatePartStyle<T, ContentPresenter>(
             ":pointerover",
             "PART_ContentPresenter", // Standard name in default themes
             (ContentPresenter.BackgroundProperty, background) // Target the part's property
         );
     }
+
 
     /// <summary>
     /// Convenience method to set the Button's :pressed background,
