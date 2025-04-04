@@ -624,6 +624,21 @@ public static class UIBuilderExtensions
         return builder;
     }
     /// <summary>
+    /// Set the trimming of the text
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <param name="textTrimming"></param>
+    /// <returns></returns>
+    public static UIBuilder<TextBlock> SetTextTrimming(this UIBuilder<TextBlock> builder, TextTrimming textTrimming)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<TextBlock>().TextTrimming = textTrimming;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the text alignment for a TextBlock.
     /// </summary>
     /// <param name="builder">The UI builder</param>
@@ -2211,6 +2226,27 @@ public static class UIBuilderExtensions
 
         var control = builder.Entity.Get<TControl>(); // Get the Avalonia control
         var binding = new Binding(sourcePropertyPath) { Mode = mode };
+        control.Bind(targetProperty, binding); // Use Avalonia's Bind method
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets a binding between a property on the control and a binding object.
+    /// </summary>
+    /// <typeparam name="TControl">The type of control to set the binding for</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="targetProperty">The Avalonia property to bind to (e.g., TextBlock.TextProperty)</param>
+    /// <param name="binding">The binding object to use</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<TControl> SetBinding<TControl>(
+        this UIBuilder<TControl> builder,
+        AvaloniaProperty targetProperty, // e.g., TextBlock.TextProperty
+        Binding binding) where TControl : AvaloniaObject
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive()) return builder;
+
+        var control = builder.Entity.Get<TControl>(); // Get the Avalonia control
         control.Bind(targetProperty, binding); // Use Avalonia's Bind method
 
         return builder;
