@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -30,9 +32,22 @@ public class StartLearningWindow : IUIComponent, IDisposable
     /// <inheritdoc/>
     public Entity Root => _root;
     private World _world;
+    /// <summary>
+    /// Cram mode determines if we simply learn all items based on the priority and ignore review dates
+    /// </summary>
+    private bool _cramMode;
     private UIBuilder<Control>? _contentContainer;
     private UIBuilder<Control>? _currentContent;
     private readonly ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems;
+    /// <summary>
+    /// Temporary list holding items for the current cram session pass.
+    /// It's a shallow copy of references, shuffled. Items are removed as they are shown.
+    /// </summary>
+    private List<SpacedRepetitionItem>? _cramSessionItems;
+    /// <summary>
+    /// Random number generator for shuffling the cram session list.
+    /// </summary>
+    private readonly Random _random = new();
     /// <summary>
     /// Represents the item that is or should be currently be 
     /// displayed.
@@ -57,12 +72,23 @@ public class StartLearningWindow : IUIComponent, IDisposable
     /// Create the Add File Window
     /// </summary>
     /// <param name="world"></param>
+    /// <param name="cramMode">When set to true we learn items regardless of time and do not update their spaced repetition values</param>
     /// <returns></returns>
-    public StartLearningWindow(World world)
+    public StartLearningWindow(World world, bool cramMode = false)
     {
+        _cramMode = cramMode;
         _world = world;
         _spacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
-        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+        if (_cramMode)
+        {
+            InitializeCramSession(); // Set up the temporary list
+            ItemToBeLearned = GetNextCramItem(); // Get the first item for cramming
+        }
+        else
+        {
+            // Original logic: Get the next item due for review based on SR schedule
+            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+        }
         _root = world.UI<Window>((window) =>
         {
             window
@@ -79,7 +105,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
             window.OnOpened(async (_, _) =>
             {
-                if (ItemToBeLearned is not null)
+                if (ItemToBeLearned is not null && !cramMode)
                     await StatsTracker.Instance.StartStudySession();
             });
 
@@ -240,6 +266,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         .SetColumn(0)
                         .OnClick(async (_, _) =>
                         {
+                            // When we are in cram mode we simply want to get the next item.
+                            if (_cramMode)
+                            {
+                                ItemToBeLearned = GetNextCramItem();
+                            }
+
                             await StatsTracker.Instance.RecordReview(file, Rating.Easy);
                             file.EasyReview();
                             ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -257,6 +289,13 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         .SetColumn(1)
                         .OnClick(async (_, _) =>
                         {
+
+                            if (_cramMode)
+                            {
+                                ItemToBeLearned = GetNextCramItem();
+                                return;
+                            }
+
                             await StatsTracker.Instance.RecordReview(file, Rating.Good);
                             file.GoodReview();
                             ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -274,6 +313,13 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         .SetColumn(2)
                         .OnClick(async (_, _) =>
                         {
+
+                            if (_cramMode)
+                            {
+                                ItemToBeLearned = GetNextCramItem();
+                                return;
+                            }
+
                             await StatsTracker.Instance.RecordReview(file, Rating.Hard);
                             file.HardReview();
                             ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -291,6 +337,13 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         .SetColumn(3)
                         .OnClick(async (_, _) =>
                         {
+
+                            if (_cramMode)
+                            {
+                                ItemToBeLearned = GetNextCramItem();
+                                return;
+                            }
+
                             await StatsTracker.Instance.RecordReview(file, Rating.Again);
                             file.AgainReview();
                             ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -372,6 +425,13 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                     await StatsTracker.Instance.RecordReview(quiz, Rating.Good);
                                     button.Background = Brushes.LightGreen;
                                     await Task.Delay(1000);
+
+                                    if (_cramMode)
+                                    {
+                                        ItemToBeLearned = GetNextCramItem();
+                                        return;
+                                    }
+
                                     quiz.GoodReview();
                                     ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                                 }
@@ -380,6 +440,13 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                     await StatsTracker.Instance.RecordReview(quiz, Rating.Again);
                                     button.Background = Brushes.Red;
                                     await Task.Delay(1000);
+
+                                    if (_cramMode)
+                                    {
+                                        ItemToBeLearned = GetNextCramItem();
+                                        return;
+                                    }
+
                                     quiz.AgainReview();
                                     ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                                 }
@@ -486,8 +553,13 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             .SetColumn(0)
                             .OnClick(async (_, _) =>
                             {
-                                await StatsTracker.Instance.RecordReview(flashcard, Rating.Easy);
+                                if (_cramMode)
+                                {
+                                    ItemToBeLearned = GetNextCramItem();
+                                    return;
+                                }
 
+                                await StatsTracker.Instance.RecordReview(flashcard, Rating.Easy);
                                 flashcard.EasyReview();
                                 ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                             });
@@ -507,6 +579,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             .SetColumn(1)
                             .OnClick(async (_, _) =>
                             {
+                                if (_cramMode)
+                                {
+                                    ItemToBeLearned = GetNextCramItem();
+                                    return;
+                                }
+
                                 await StatsTracker.Instance.RecordReview(flashcard, Rating.Good);
                                 flashcard.GoodReview();
                                 ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -522,6 +600,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             .SetColumn(2)
                             .OnClick(async (_, _) =>
                             {
+                                if (_cramMode)
+                                {
+                                    ItemToBeLearned = GetNextCramItem();
+                                    return;
+                                }
+
                                 await StatsTracker.Instance.RecordReview(flashcard, Rating.Hard);
                                 flashcard.HardReview();
                                 ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -537,6 +621,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             .SetColumn(3)
                             .OnClick(async (_, _) =>
                             {
+                                if (_cramMode)
+                                {
+                                    ItemToBeLearned = GetNextCramItem();
+                                    return;
+                                }
+
                                 await StatsTracker.Instance.RecordReview(flashcard, Rating.Again);
                                 flashcard.AgainReview();
                                 ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -632,6 +722,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetColumn(0)
                     .OnClick(async (_, _) =>
                     {
+                        if (_cramMode)
+                        {
+                            ItemToBeLearned = GetNextCramItem();
+                            return;
+                        }
+
                         await StatsTracker.Instance.RecordReview(cloze, Rating.Easy);
                         cloze.EasyReview();
                         ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -647,6 +743,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetColumn(1)
                     .OnClick(async (_, _) =>
                     {
+                        if (_cramMode)
+                        {
+                            ItemToBeLearned = GetNextCramItem();
+                            return;
+                        }
+
                         await StatsTracker.Instance.RecordReview(cloze, Rating.Good);
                         cloze.GoodReview();
                         ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -662,6 +764,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetColumn(2)
                     .OnClick(async (_, _) =>
                     {
+                        if (_cramMode)
+                        {
+                            ItemToBeLearned = GetNextCramItem();
+                            return;
+                        }
+
                         await StatsTracker.Instance.RecordReview(cloze, Rating.Hard);
                         cloze.HardReview();
                         ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -678,6 +786,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetColumn(3)
                     .OnClick(async (_, _) =>
                     {
+                        if (_cramMode)
+                        {
+                            ItemToBeLearned = GetNextCramItem();
+                            return;
+                        }
+
                         await StatsTracker.Instance.RecordReview(cloze, Rating.Again);
                         cloze.AgainReview();
                         ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -825,6 +939,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetColumn(0)
                     .OnClick(async (_, _) =>
                     {
+                        if (_cramMode)
+                        {
+                            ItemToBeLearned = GetNextCramItem();
+                            return;
+                        }
+
                         await StatsTracker.Instance.RecordReview(imageCloze, Rating.Easy);
                         imageCloze.EasyReview();
                         ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -839,6 +959,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetColumn(1)
                     .OnClick(async (_, _) =>
                     {
+                        if (_cramMode)
+                        {
+                            ItemToBeLearned = GetNextCramItem();
+                            return;
+                        }
+
                         await StatsTracker.Instance.RecordReview(imageCloze, Rating.Good);
                         imageCloze.GoodReview();
                         ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -853,6 +979,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetColumn(2)
                     .OnClick(async (_, _) =>
                     {
+                        if (_cramMode)
+                        {
+                            ItemToBeLearned = GetNextCramItem();
+                            return;
+                        }
+
                         await StatsTracker.Instance.RecordReview(imageCloze, Rating.Hard);
                         imageCloze.HardReview();
                         ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -867,6 +999,12 @@ public class StartLearningWindow : IUIComponent, IDisposable
                     .SetColumn(3)
                     .OnClick(async (_, _) =>
                     {
+                        if (_cramMode)
+                        {
+                            ItemToBeLearned = GetNextCramItem();
+                            return;
+                        }
+
                         await StatsTracker.Instance.RecordReview(imageCloze, Rating.Again);
                         imageCloze.AgainReview();
                         ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
@@ -928,7 +1066,106 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 DetachItemEventHandler(oldItem);
             }
         }
-        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+        if (!_cramMode)
+            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+        else
+            ItemToBeLearned = GetNextCramItem();
+    }
+
+    /// <summary>
+    /// Initializes the cram session list by sorting items primarily by Priority (descending),
+    /// applying relative random noise to prevent strictly deterministic ordering, suitable for large priority values.
+    /// </summary>
+    private void InitializeCramSession()
+    {
+        // 1. Create a new list containing references to the items in the main collection.
+        _cramSessionItems = _spacedRepetitionItems
+                                .Where(item => item != null) // Filter out nulls
+                                .ToList();
+
+        // 2. *** Sort by Priority Scaled by (1 + Random Noise Factor) ***
+        // This approach ensures noise is proportional to the priority magnitude.
+
+        // Adjust this factor: It represents the maximum *percentage* of noise added.
+        // e.g., 0.01 means up to 1% noise, 0.05 means up to 5% noise.
+        // Smaller values result in an order closer to strict priority.
+        // Choose based on how much deviation from strict priority you want.
+        const double relativeNoiseFactor = 0.05; // <-- TUNABLE PARAMETER (e.g., 5% relative noise)
+
+        // Sort using the scaled priority.
+        _cramSessionItems = _cramSessionItems
+            .OrderByDescending(item =>
+            {
+                // Convert Priority to double for calculation.
+                // Use Math.Max(1.0, ...) to handle potential non-positive priorities gracefully.
+                // If priority can be zero or negative, multiplying by (1 + noise) could lead to
+                // zero or negative scores, affecting sorting. Treating minimum base as 1 avoids this.
+                // If your priorities are guaranteed positive, you can simplify this.
+                double basePriority = Math.Max(1.0, item.Priority);
+
+                // Calculate the random multiplier between 1.0 and (1.0 + relativeNoiseFactor)
+                double noiseMultiplier = 1.0 + (_random.NextDouble() * relativeNoiseFactor);
+
+                // Calculate the final score for sorting
+                double noisyPriorityScore = basePriority * noiseMultiplier;
+
+                return noisyPriorityScore;
+            })
+            .ToList(); // Create the final sorted list
+
+        Console.WriteLine($"Cram session list initialized/reset with {_cramSessionItems.Count} items (Sorted by Priority * (1 + Noise%)).");
+
+        // Optional: Log the first few items to verify the semi-randomized priority order
+        
+        Console.WriteLine("Top 5 items in cram session queue:");
+        foreach(var item in _cramSessionItems.Take(5))
+        {
+            // Recalculate an approximate score for logging if needed (won't be exact due to randomness)
+            double basePrio = Math.Max(1.0, (double)item.Priority);
+            Console.WriteLine($"- Name: {item.Name}, Prio: {item.Priority}, Approx. Score Range: {basePrio * 1.0:F0} - {basePrio * (1.0 + relativeNoiseFactor):F0}");
+        }
+        
+    }
+
+    private SpacedRepetitionItem? GetNextCramItem()
+    {
+        // Ensure the session list exists (should be initialized in constructor or reset)
+        if (_cramSessionItems == null)
+        {
+            Console.WriteLine("Error: Cram session item list is null. Re-initializing."); // Debugging
+            InitializeCramSession(); // Attempt recovery
+            if (_cramSessionItems == null) return null; // If still null, something is wrong
+        }
+
+        // If the temporary list is empty, it means we've gone through all items in this pass.
+        // Reset and reshuffle the list to allow continuous cramming.
+        if (_cramSessionItems.Count == 0)
+        {
+            // Check if the original list is also empty
+            if (!_spacedRepetitionItems.Any())
+            {
+                Console.WriteLine("No items available in the main list to cram.");
+                return null; // Truly no items left
+            }
+
+            Console.WriteLine("Cram session pass complete. Re-initializing and shuffling for another pass."); // Debugging
+            InitializeCramSession();
+
+            // If after re-initializing it's still empty, means the source was empty
+            if (_cramSessionItems.Count == 0)
+            {
+                Console.WriteLine("Source list is empty, cannot get next cram item.");
+                return null;
+            }
+        }
+
+        // Get the next item (the first one in the shuffled list)
+        var nextItem = _cramSessionItems[0];
+        // IMPORTANT: Remove the item from the temporary list so it's not immediately repeated in this pass.
+        _cramSessionItems.RemoveAt(0);
+
+        Console.WriteLine($"Next cram item: {nextItem?.Name ?? "N/A"}. Items remaining in this pass: {_cramSessionItems.Count}"); // Debugging
+        return nextItem;
     }
 
     private UIBuilder<Control> DisplayRightItem()
@@ -967,26 +1204,46 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
     private UIBuilder<TextBlock> NoMoreItemToBeReviewedContent()
     {
-        var futureItem = _spacedRepetitionItems.NextItemToBeReviewedInFuture();
+        string text;
 
-        string? text;
-        if (futureItem is null)
+        if (!_spacedRepetitionItems.Any()) // Check if the main list is empty
         {
-            text = "Currently: No Items";
+            text = "There are no items added yet. Add some items to start learning!";
+        }
+        else if (_cramMode)
+        {
+            // In cram mode, if GetNextCramItem returned null, it means the main list was empty after trying to re-initialize.
+            // (Because GetNextCramItem loops otherwise)
+            text = "Cram session complete or no items to cram."; // Should ideally only show if main list is empty.
         }
         else
         {
-            text = $"Next Item: '{futureItem?.Name}', due: {futureItem?.NextReview.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "N/A"}";
+            // In normal mode, check for items due in the future
+            var futureItem = _spacedRepetitionItems.NextItemToBeReviewedInFuture();
+            if (futureItem is null)
+            {
+                // This case means there are items, but none have a future review date set (e.g., all new)
+                // Or, more likely, the GetNextItemToBeReviewed already handles new items.
+                // Let's assume it means genuinely nothing due now or later according to the SR logic.
+                text = "Congratulations! No items due for review right now.\n\nCheck back later or add new items.";
+            }
+            else
+            {
+                // Found an item due later
+                text = $"No items due right now.\nNext review: '{futureItem.Name}'\nDue: {futureItem.NextReview.ToLocalTime():dd/MM/yyyy HH:mm}";
+            }
         }
+
 
         return _world.UI<TextBlock>((textBlock) =>
         {
             textBlock
-            .SetTextWrapping(TextWrapping.Wrap)
-            .SetVerticalAlignment(VerticalAlignment.Center)
-            .SetHorizontalAlignment(HorizontalAlignment.Center)
-            .SetMargin(20)
-            .SetText(text);
+                .SetTextWrapping(TextWrapping.Wrap)
+                .SetVerticalAlignment(VerticalAlignment.Center)
+                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                .SetTextAlignment(TextAlignment.Center) // Center align text
+                .SetMargin(20)
+                .SetText(text);
         });
     }
 
