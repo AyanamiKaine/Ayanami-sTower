@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Shapes;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.StellaLearning.Data;
@@ -15,6 +16,7 @@ using Avalonia.Flecs.Util;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
@@ -360,7 +362,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
     private UIBuilder<StackPanel> LearnQuizContent()
     {
         var quiz = (SpacedRepetitionQuiz)ItemToBeLearned!;
-
+        var buttons = new List<UIBuilder<Button>>();
         return _world.UI<StackPanel>((layout) =>
         {
             layout
@@ -403,7 +405,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 for (int i = 0; i < quiz.Answers.Count; i++)
                 {
                     int index = i; // Capture the index for the lambda
-                    wrapPanel.Child<Button>((button) =>
+                    var button = wrapPanel.Child<Button>((button) =>
                     {
                         button.Child<TextBlock>((textBlock) =>
                         {
@@ -418,13 +420,19 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         .SetMargin(10, 10)
                         .OnClick(async (sender, args) =>
                         {
-                            if (sender is not Button button) return;
-
                             if (quiz.CorrectAnswerIndex == index)
                             {
+
+                                buttons.RemoveAt(index);
+                                foreach (var button in buttons)
+                                {
+                                    button.SetBackground(Brushes.Red);
+                                }
+
+                                button.SetButtonPointerOverBackground(Brushes.Green);
+
                                 await StatsTracker.Instance.RecordReview(quiz, Rating.Good);
-                                button.Background = Brushes.LightGreen;
-                                await Task.Delay(1000);
+                                await Task.Delay(3000);
 
                                 if (_cramMode)
                                 {
@@ -437,9 +445,17 @@ public class StartLearningWindow : IUIComponent, IDisposable
                             }
                             else
                             {
+                                button.SetButtonPointerOverBackground(Brushes.Red);
+
+                                foreach (var button in buttons)
+                                {
+                                    button.SetBackground(Brushes.Red);
+                                }
+
+                                buttons[quiz.CorrectAnswerIndex].SetBackground(Brushes.Green);
+
                                 await StatsTracker.Instance.RecordReview(quiz, Rating.Again);
-                                button.Background = Brushes.Red;
-                                await Task.Delay(1000);
+                                await Task.Delay(3000);
 
                                 if (_cramMode)
                                 {
@@ -454,6 +470,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         });
 
                     });
+                    buttons.Add(button);
                 }
 
 
