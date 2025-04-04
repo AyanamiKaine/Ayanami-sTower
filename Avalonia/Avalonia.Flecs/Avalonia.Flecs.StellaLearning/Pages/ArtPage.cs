@@ -877,7 +877,7 @@ public class ArtPage : IUIComponent, IDisposable
         _previewFlyout = new Flyout
         {
             Content = _previewImage,
-            Placement = PlacementMode.RightEdgeAlignedTop,
+            Placement = PlacementMode.LeftEdgeAlignedTop,
             // Keep this mode, it handles dismissal nicely if pointer moves away
             ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
         };
