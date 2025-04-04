@@ -843,6 +843,18 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the background brush of a button control.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="background">The brush to set as the background</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<Button> SetBackground(this UIBuilder<Button> builder, IBrush background)
+    {
+        builder.Get<Button>().Background = background;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the background brush of a Panel control.
     /// </summary>
     /// <param name="builder">The UI builder</param>
