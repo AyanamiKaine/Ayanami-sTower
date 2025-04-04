@@ -418,39 +418,39 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         .SetMargin(10, 10)
                         .OnClick(async (sender, args) =>
                         {
-                            if (sender is Button button)
+                            if (sender is not Button button) return;
+
+                            if (quiz.CorrectAnswerIndex == index)
                             {
-                                if (quiz.CorrectAnswerIndex == index)
+                                await StatsTracker.Instance.RecordReview(quiz, Rating.Good);
+                                button.Background = Brushes.LightGreen;
+                                await Task.Delay(1000);
+
+                                if (_cramMode)
                                 {
-                                    await StatsTracker.Instance.RecordReview(quiz, Rating.Good);
-                                    button.Background = Brushes.LightGreen;
-                                    await Task.Delay(1000);
-
-                                    if (_cramMode)
-                                    {
-                                        ItemToBeLearned = GetNextCramItem();
-                                        return;
-                                    }
-
-                                    quiz.GoodReview();
-                                    ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                    ItemToBeLearned = GetNextCramItem();
+                                    return;
                                 }
-                                else
-                                {
-                                    await StatsTracker.Instance.RecordReview(quiz, Rating.Again);
-                                    button.Background = Brushes.Red;
-                                    await Task.Delay(1000);
 
-                                    if (_cramMode)
-                                    {
-                                        ItemToBeLearned = GetNextCramItem();
-                                        return;
-                                    }
-
-                                    quiz.AgainReview();
-                                    ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                                }
+                                quiz.GoodReview();
+                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
                             }
+                            else
+                            {
+                                await StatsTracker.Instance.RecordReview(quiz, Rating.Again);
+                                button.Background = Brushes.Red;
+                                await Task.Delay(1000);
+
+                                if (_cramMode)
+                                {
+                                    ItemToBeLearned = GetNextCramItem();
+                                    return;
+                                }
+
+                                quiz.AgainReview();
+                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
+                            }
+
                         });
 
                     });
