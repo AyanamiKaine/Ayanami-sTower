@@ -292,7 +292,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
         /// <summary>
         /// Formats total minutes into a more readable string (e.g., "1h 30m", "45m").
         /// </summary>
-        private string FormatTime(long totalMinutes)
+        private static string FormatTime(long totalMinutes)
         {
             if (totalMinutes < 0) return "N/A";
             if (totalMinutes == 0) return "0m";
