@@ -434,7 +434,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                 button.SetPointerOverBackground(Brushes.Green);
 
                                 await StatsTracker.Instance.RecordReview(quiz, Rating.Good);
-                                await Task.Delay(3000);
+                                await Task.Delay(2000);
 
                                 if (_cramMode)
                                 {
@@ -461,7 +461,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                 buttons[quiz.CorrectAnswerIndex].SetPointerOverBackground(Brushes.Green);
 
                                 await StatsTracker.Instance.RecordReview(quiz, Rating.Again);
-                                await Task.Delay(3000);
+                                await Task.Delay(2000);
 
                                 if (_cramMode)
                                 {
