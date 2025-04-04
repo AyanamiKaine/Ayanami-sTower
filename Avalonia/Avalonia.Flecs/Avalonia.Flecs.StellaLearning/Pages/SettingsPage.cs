@@ -61,7 +61,7 @@ public class SettingsPage : IUIComponent
                 {
                     button
                     .SetText("Reset Statistics")
-                    .SetPointerOverBackground(Brushes.Red)
+                    .SetPointerOverBackground(Brushes.Firebrick)
                     .OnClick(async (_, _) =>
                     {
 
