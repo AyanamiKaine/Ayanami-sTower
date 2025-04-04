@@ -7,6 +7,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Flecs.NET.Core;
@@ -59,6 +60,99 @@ public class EditQuiz : IUIComponent, IDisposable
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? quizQuestionTextBox = null;
             UIBuilder<Grid>? quizAnswers = null;
+            var tagManager = new TagComponent(world, _spacedRepetitionQuiz.Tags);
+
+
+            void SaveData()
+            {
+                if (nameTextBox is null ||
+                        quizQuestionTextBox is null ||
+                        quizAnswers is null)
+                {
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                {
+                    nameTextBox.SetWatermark("Name is required");
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Name",
+                        Content = "You must define a name",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+
+                }
+
+                Grid grid = quizAnswers.Get<Grid>();
+
+                bool isAnswerCheck()
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        if (FindControl<ToggleButton>(grid, i, 0)?.IsChecked ?? false)
+                            return true;
+                    }
+                    return false;
+                }
+
+                if (!isAnswerCheck())
+                {
+
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Answer",
+                        Content = "Now anwser for your quiz was selected please select at least one",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+
+                }
+
+                int findAnswerIndex()
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        if (FindControl<ToggleButton>(grid, i, 0)?.IsChecked ?? false)
+                            return i;
+                    }
+                    throw new Exception("An Answer must be checked!");
+                }
+
+                List<string> gatherAllAnswers()
+                {
+                    var answers = new List<string>();
+                    for (int i = 0; i < 4; i++)
+                    {
+                        answers.Add(FindControl<TextBox>(grid, i, 1)?.Text ?? $"Answer{i + 1}");
+                    }
+                    return answers;
+                }
+
+
+                _spacedRepetitionQuiz.Name = nameTextBox.GetText();
+                _spacedRepetitionQuiz.Question = quizQuestionTextBox.GetText();
+                _spacedRepetitionQuiz.CorrectAnswerIndex = findAnswerIndex();
+                _spacedRepetitionQuiz.Answers = gatherAllAnswers();
+                _spacedRepetitionQuiz.Tags = [.. tagManager.Tags];
+
+                Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    await StatsTracker.Instance.UpdateTagsForItemAsync(_spacedRepetitionQuiz.Uid, _spacedRepetitionQuiz.Tags);
+                });
+
+                // Clearing an entity results in all components, relationships etc to be removed.
+                // this also results in invoking the remove hooks that are used on components for 
+                // cleanup. For example removing a window component results in closing it.
+                _root.Clear();
+            }
 
             stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
@@ -74,7 +168,14 @@ public class EditQuiz : IUIComponent, IDisposable
             {
                 textBox
                 .SetWatermark("Name")
-                .SetText(_spacedRepetitionQuiz.Name);
+                .SetText(_spacedRepetitionQuiz.Name)
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        SaveData();
+                    }
+                });
             });
 
             stackPanel.Child<TextBlock>((t) =>
@@ -129,7 +230,6 @@ public class EditQuiz : IUIComponent, IDisposable
                 }
             });
 
-            var tagManager = new TagComponent(world, _spacedRepetitionQuiz.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             stackPanel.Child<Button>((button) =>
@@ -144,93 +244,7 @@ public class EditQuiz : IUIComponent, IDisposable
 
                 button.OnClick((_, _) =>
                 {
-                    if (nameTextBox is null ||
-                        quizQuestionTextBox is null ||
-                        quizAnswers is null)
-                    {
-                        return;
-                    }
-
-                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
-                    {
-                        nameTextBox.SetWatermark("Name is required");
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Missing Name",
-                            Content = "You must define a name",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-
-                    }
-
-                    Grid grid = quizAnswers.Get<Grid>();
-
-                    bool isAnswerCheck()
-                    {
-                        for (int i = 0; i < 4; i++)
-                        {
-                            if (FindControl<ToggleButton>(grid, i, 0)?.IsChecked ?? false)
-                                return true;
-                        }
-                        return false;
-                    }
-
-                    if (!isAnswerCheck())
-                    {
-
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Missing Answer",
-                            Content = "Now anwser for your quiz was selected please select at least one",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-
-                    }
-
-                    int findAnswerIndex()
-                    {
-                        for (int i = 0; i < 4; i++)
-                        {
-                            if (FindControl<ToggleButton>(grid, i, 0)?.IsChecked ?? false)
-                                return i;
-                        }
-                        throw new Exception("An Answer must be checked!");
-                    }
-
-                    List<string> gatherAllAnswers()
-                    {
-                        var answers = new List<string>();
-                        for (int i = 0; i < 4; i++)
-                        {
-                            answers.Add(FindControl<TextBox>(grid, i, 1)?.Text ?? $"Answer{i + 1}");
-                        }
-                        return answers;
-                    }
-
-
-                    _spacedRepetitionQuiz.Name = nameTextBox.GetText();
-                    _spacedRepetitionQuiz.Question = quizQuestionTextBox.GetText();
-                    _spacedRepetitionQuiz.CorrectAnswerIndex = findAnswerIndex();
-                    _spacedRepetitionQuiz.Answers = gatherAllAnswers();
-                    _spacedRepetitionQuiz.Tags = [.. tagManager.Tags];
-
-                    Dispatcher.UIThread.InvokeAsync(async () =>
-                    {
-                        await StatsTracker.Instance.UpdateTagsForItemAsync(_spacedRepetitionQuiz.Uid, _spacedRepetitionQuiz.Tags);
-                    });
-
-                    // Clearing an entity results in all components, relationships etc to be removed.
-                    // this also results in invoking the remove hooks that are used on components for 
-                    // cleanup. For example removing a window component results in closing it.
-                    _root.Clear();
+                    SaveData();
                 });
             });
         }).Entity;
