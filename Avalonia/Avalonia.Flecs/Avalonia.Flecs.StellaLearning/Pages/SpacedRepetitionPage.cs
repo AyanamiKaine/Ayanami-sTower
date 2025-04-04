@@ -203,10 +203,26 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                         menuFlyout.Child<MenuItem>((item) =>
                         {
                             item.SetHeader("Delete")
-                            .OnClick((sender, args) =>
+                            .OnClick(async (sender, args) =>
                             {
                                 var item = listBox.GetSelectedItem<SpacedRepetitionItem>();
-                                _baseSpacedRepetitionItems.Remove(item);
+
+                                var cd = new ContentDialog()
+                                {
+                                    Title = "Attention",
+                                    Content = $"""Do you want to delete the item "{item.Name}". This cannot be undone!""",
+                                    PrimaryButtonText = "Yes",
+                                    SecondaryButtonText = "No",
+                                    DefaultButton = ContentDialogButton.Secondary,
+                                    IsSecondaryButtonEnabled = true,
+                                };
+                                var result = await cd.ShowAsync();
+
+                                if (result == ContentDialogResult.Primary)
+                                {
+                                    _baseSpacedRepetitionItems.Remove(item);
+                                }
+
                             });
 
                         });
