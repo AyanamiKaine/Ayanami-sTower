@@ -14,6 +14,7 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.StellaLearning.Data;
 using Avalonia.Flecs.StellaLearning.UiComponents;
 using Avalonia.Flecs.StellaLearning.Util;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -135,6 +136,59 @@ public class EditImageCloze : IUIComponent, IDisposable
     {
         return world.UI<StackPanel>((stackPanel) =>
         {
+            var tagManager = new TagComponent(world, _spacedRepetitionImageCloze.Tags);
+
+            void SaveData()
+            {
+                if (nameTextBox is null)
+                {
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(ImagePath))
+                {
+                    nameTextBox!.SetWatermark("Name");
+                    return;
+                }
+
+                if (clozeAreas.Count == 0)
+                {
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Areas",
+                        Content = "Your image does not currently have hidding any areas defined, they are required",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
+                if (_root.IsValid())
+                {
+                    // Create a list of ImageClozeArea objects from our clozeAreas collection
+                    var imageClozeAreas = clozeAreas.Select(area => new ImageClozeArea
+                    {
+                        X = area.X,
+                        Y = area.Y,
+                        Width = area.Width,
+                        Height = area.Height,
+                        Text = area.Text
+                    }).ToList();
+
+
+                    _spacedRepetitionImageCloze.Name = nameTextBox.GetText();
+                    _spacedRepetitionImageCloze.ImagePath = ImagePath;
+                    _spacedRepetitionImageCloze.ClozeAreas = imageClozeAreas;
+                    _spacedRepetitionImageCloze.Tags = [.. tagManager.Tags];
+                    Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        await StatsTracker.Instance.UpdateTagsForItemAsync(_spacedRepetitionImageCloze.Uid, _spacedRepetitionImageCloze.Tags);
+                    });
+                    _root.Get<Window>().Close();
+                }
+            }
 
             stackPanel
             .SetOrientation(Layout.Orientation.Vertical)
@@ -144,8 +198,16 @@ public class EditImageCloze : IUIComponent, IDisposable
             stackPanel.Child<TextBox>((textBox) =>
             {
                 nameTextBox = textBox;
-                textBox.SetWatermark("Name")
-                .SetText(_spacedRepetitionImageCloze.Name);
+                textBox
+                .SetWatermark("Name")
+                .SetText(_spacedRepetitionImageCloze.Name)
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        SaveData();
+                    }
+                });
             });
 
             stackPanel.Child(world.UI<Button>((button) =>
@@ -245,7 +307,6 @@ public class EditImageCloze : IUIComponent, IDisposable
             });
 
 
-            var tagManager = new TagComponent(world, _spacedRepetitionImageCloze.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
 
             // Create button
