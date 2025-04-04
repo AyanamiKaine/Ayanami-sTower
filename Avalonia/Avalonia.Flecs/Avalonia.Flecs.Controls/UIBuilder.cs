@@ -283,18 +283,18 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Sets the flyout for a button
+    /// Sets the base flyout for a button
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <param name="flyout"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, FlyoutBase flyout) where T : Button
+    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, UIBuilder<FlyoutBase> flyout) where T : Button
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Entity.Get<Button>().Flyout = flyout;
+        builder.Entity.Get<Button>().Flyout = flyout.Get<FlyoutBase>();
         return builder;
     }
 
@@ -305,12 +305,12 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="flyout"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, MenuFlyout flyout) where T : Button
+    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, UIBuilder<MenuFlyout> flyout) where T : Button
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Entity.Get<Button>().Flyout = flyout;
+        builder.Entity.Get<Button>().Flyout = flyout.Get<FlyoutBase>();
         return builder;
     }
 
@@ -623,6 +623,21 @@ public static class UIBuilderExtensions
         builder.Get<TextBlock>().TextWrapping = textWrapping;
         return builder;
     }
+    /// <summary>
+    /// Sets the text alignment for a TextBlock.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="textAlignment">The text alignment to set</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<TextBlock> SetTextAlignment(this UIBuilder<TextBlock> builder, TextAlignment textAlignment)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<TextBlock>().TextAlignment = textAlignment;
+        return builder;
+    }
+
 
     /// <summary>
     /// Set the wrapping of the text of a button
