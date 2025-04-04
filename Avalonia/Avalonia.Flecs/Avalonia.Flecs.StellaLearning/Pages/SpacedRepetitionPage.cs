@@ -323,7 +323,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                     {
                         menuItem
                         .SetHeader("Normal")
-                        .OnClick((_, _) => new StartLearningWindow(world));
+                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: false));
                     });
 
                     menu.Child<MenuItem>((menuItem) =>
