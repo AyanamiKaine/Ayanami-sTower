@@ -215,9 +215,101 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
                     _srItemsBuilder
                     .SetItemsSource(_baseSpacedRepetitionItems)
-                    .SetItemTemplate(DefineSpacedRepetitionItemTemplate())
-                    .SetSelectionMode(SelectionMode.Single)
-                    .SetContextFlyout(contextFlyout.Get<MenuFlyout>());
+                    .SetItemTemplate(world.CreateTemplate<SpacedRepetitionItem, Grid>((grid, item) =>
+                    {
+                        var dateTimeConverter = new DateTimeOffsetToLocalTimeStringConverter();
+
+                        grid
+                        .SetColumnDefinitions("*, *")
+                        .SetRowDefinitions("Auto, Auto")
+                        .SetMargin(0, 5);
+
+                        grid.Child<TextBlock>((textBlock) =>
+                        {
+                            textBlock
+                            .SetTextWrapping(TextWrapping.NoWrap)
+                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
+                            .SetFontWeight(FontWeight.Bold)
+                            .SetMargin(0, 0, 5, 0)
+                            .SetBinding(TextBlock.TextProperty, "Name")
+                            .SetColumn(0);
+                        });
+
+                        /*
+                        For now only when we hover over the name the long description is shown
+                        what we want is that it is also shown when we hover over the short description
+
+                        To do this we can easily use a stack panel on which we add the name and short description
+                        that extends to two rows and on that stack panel then we attach the tooltip.
+                        */
+                        //ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
+                        //tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
+
+                        //Type (ENUM)
+                        var typeTextBlock = new TextBlock
+                        {
+                            TextWrapping = TextWrapping.NoWrap,
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                            Margin = new Thickness(0, 0, 5, 0),
+                        };
+
+                        grid.Child<TextBlock>((textBlock) =>
+                        {
+                            textBlock
+                            .SetTextWrapping(TextWrapping.NoWrap)
+                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
+                            .SetMargin(0, 0, 5, 0)
+                            .SetBinding(TextBlock.TextProperty, "SpacedRepetitionItemType")
+                            .SetColumn(0)
+                            .SetRow(1);
+                        });
+
+                        var nextReviewTextBlock = new TextBlock
+                        {
+                            TextWrapping = TextWrapping.NoWrap,
+                            TextTrimming = TextTrimming.CharacterEllipsis,
+                            FontWeight = FontWeight.Bold,
+                            HorizontalAlignment = HorizontalAlignment.Right,
+                        };
+
+                        grid.Child<TextBlock>((textBlock) =>
+                        {
+                            textBlock
+                            .SetTextWrapping(TextWrapping.NoWrap)
+                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
+                            .SetFontWeight(FontWeight.Bold)
+                            .SetHorizontalAlignment(HorizontalAlignment.Right)
+                            .SetBinding(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.NextReview))
+                            {
+                                // Assign the converter instance
+                                Converter = dateTimeConverter,
+                                // Optionally pass a format string as the ConverterParameter
+                                // If omitted, the converter's default ("g") will be used.
+                                ConverterParameter = "dd/MM/yyyy HH:mm"
+                                // StringFormat is NO LONGER used here, the converter handles formatting
+                            })
+                            .SetColumn(1)
+                            .SetRow(0);
+                        });
+                        /*
+
+                        Here we want to show our tags for our items.
+
+                        grid.Child<TextBlock>((textBlock) =>
+                        {
+                            textBlock
+                            .SetTextWrapping(TextWrapping.NoWrap)
+                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
+                            .SetHorizontalAlignment(HorizontalAlignment.Right)
+                            .SetColumn(1)
+                            .SetRow(1)
+                            .SetText("YOUR TAGS HERE!");
+                        });
+                        */
+
+                    }))
+                        .SetSelectionMode(SelectionMode.Single)
+                        .SetContextFlyout(contextFlyout.Get<MenuFlyout>());
                 });
             });
 
@@ -244,11 +336,11 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
                 startLearningButton
                 .SetMargin(0, 20, 0, 0)
-                .SetColumn(0)
-                .SetColumnSpan(2)
-                .SetRow(2)
-                .SetFlyout(menu)
-                .Child<TextBlock>(t => t.SetText("Start Learning"));
+                            .SetColumn(0)
+                            .SetColumnSpan(2)
+                            .SetRow(2)
+                            .SetFlyout(menu)
+                            .Child<TextBlock>(t => t.SetText("Start Learning"));
             });
 
             grid.Child<Button>((addItemButton) =>
@@ -294,11 +386,11 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
                 addItemButton
                 .SetMargin(0, 20, 0, 0)
-                .SetHorizontalAlignment(HorizontalAlignment.Right)
-                .SetColumn(2)
-                .SetRow(2)
-                .SetFlyout(menu.Entity)
-                .SetText("Add Item");
+                                .SetHorizontalAlignment(HorizontalAlignment.Right)
+                                .SetColumn(2)
+                                .SetRow(2)
+                                .SetFlyout(menu.Entity)
+                                .SetText("Add Item");
             });
 
         })
@@ -729,7 +821,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             Grid.SetRow(priorityTextBlock, 1);
             Grid.SetColumn(priorityTextBlock, 1);
             grid.Children.Add(priorityTextBlock);
-           
+
             // *** Create a TextBlock for the multi-line tooltip ***
             var priorityTooltipTextBlock = new TextBlock
             {
