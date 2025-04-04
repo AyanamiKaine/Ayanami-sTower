@@ -130,7 +130,9 @@ namespace Avalonia.Flecs.StellaLearning.Pages // Adjust namespace if needed
             {
                 scrollViewer.Child<StackPanel>(mainPanel =>
                 {
-                    mainPanel.SetSpacing(15); // Add some padding around the page content
+                    mainPanel
+                    .SetSpacing(15) // Add some padding around the page content
+                    .SetMargin(0, 0, 10, 0);
 
                     // --- Overall Stats Section ---
                     mainPanel.Child<TextBlock>(header => header.SetText("Overall Statistics").SetFontSize(18).SetFontWeight(FontWeight.Bold));
