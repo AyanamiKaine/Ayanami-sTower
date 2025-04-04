@@ -252,7 +252,7 @@ public class EditFile : IUIComponent, IDisposable
                     {
                         SaveData();
                     }
-                }); ;
+                }); 
 
                 textBox.SetText(spacedRepetitionFile.FilePath);
 
