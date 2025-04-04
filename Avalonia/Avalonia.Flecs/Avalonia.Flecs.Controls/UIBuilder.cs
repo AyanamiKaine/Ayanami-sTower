@@ -259,6 +259,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetColumn<T>(this UIBuilder<T> builder, int column) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         Grid.SetColumn(builder.Get<Control>(), column);
         return builder;
     }
@@ -272,6 +275,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetRow<T>(this UIBuilder<T> builder, int row) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         Grid.SetRow(builder.Get<Control>(), row);
         return builder;
     }
@@ -285,6 +291,25 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, FlyoutBase flyout) where T : Button
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<Button>().Flyout = flyout;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the menu flyout for a button
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="flyout"></param>
+    /// <returns></returns>
+    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, MenuFlyout flyout) where T : Button
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<Button>().Flyout = flyout;
         return builder;
     }
@@ -298,6 +323,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, Entity entityFlyout) where T : Button
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Entity.Get<Button>().Flyout = entityFlyout.Get<FlyoutBase>();
         return builder;
     }
@@ -312,6 +340,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<T> SetColumnSpan<T>(this UIBuilder<T> builder, int columnSpan) where T : Control, new()
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         Grid.SetColumnSpan(builder.Get<Control>(), columnSpan);
         return builder;
     }
@@ -323,6 +354,9 @@ public static class UIBuilderExtensions
     /// <returns></returns>
     public static UIBuilder<Window> Show(this UIBuilder<Window> builder)
     {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
         builder.Get<Window>().Show();
         return builder;
     }
