@@ -134,6 +134,13 @@ public class EditImageCloze : IUIComponent, IDisposable
 
     private Entity DefineWindowContents(World world)
     {
+
+        var comparePriority = new ComparePriority(world);
+        _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
+        var calculatedPriority = comparePriority.CalculatedPriorityEntity;
+        // Here we set the inital priority
+        calculatedPriority.Set(_spacedRepetitionImageCloze.Priority);
+
         return world.UI<StackPanel>((stackPanel) =>
         {
             stackPanel
@@ -254,6 +261,7 @@ public class EditImageCloze : IUIComponent, IDisposable
 
             var tagManager = new TagComponent(world, _spacedRepetitionImageCloze.Tags);
             stackPanel.Child(tagManager); // Add the tag manager UI
+            stackPanel.Child(comparePriority);
 
             // Create button
             stackPanel.Child<Button>((button) =>
@@ -312,6 +320,8 @@ public class EditImageCloze : IUIComponent, IDisposable
                         _spacedRepetitionImageCloze.ImagePath = ImagePath;
                         _spacedRepetitionImageCloze.ClozeAreas = imageClozeAreas;
                         _spacedRepetitionImageCloze.Tags = [.. tagManager.Tags];
+                        _spacedRepetitionImageCloze.Priority = calculatedPriority.Get<int>();
+
                         Dispatcher.UIThread.InvokeAsync(async () =>
                         {
                             await StatsTracker.Instance.UpdateTagsForItemAsync(_spacedRepetitionImageCloze.Uid, _spacedRepetitionImageCloze.Tags);
