@@ -73,6 +73,13 @@ public class EditFile : IUIComponent, IDisposable
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? filePath = null;
             UIBuilder<TextBox>? questionTextBox = null;
+
+            var comparePriority = new ComparePriority(world);
+            _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
+            var calculatedPriority = comparePriority.CalculatedPriorityEntity;
+            // Here we set the inital priority
+            calculatedPriority.Set(spacedRepetitionFile.Priority);
+
             var tagManager = new TagComponent(world, spacedRepetitionFile.Tags);
 
 
@@ -148,6 +155,7 @@ public class EditFile : IUIComponent, IDisposable
                 spacedRepetitionFile.Question = questionTextBox.GetText();
                 spacedRepetitionFile.FilePath = filePath.GetText();
                 spacedRepetitionFile.Tags = [.. tagManager.Tags];
+                spacedRepetitionFile.Priority = calculatedPriority.Get<int>();
 
                 Dispatcher.UIThread.InvokeAsync(async () =>
                 {
@@ -252,7 +260,7 @@ public class EditFile : IUIComponent, IDisposable
                     {
                         SaveData();
                     }
-                }); 
+                });
 
                 textBox.SetText(spacedRepetitionFile.FilePath);
 
@@ -264,6 +272,7 @@ public class EditFile : IUIComponent, IDisposable
             stackPanel.Child<TextBlock>(t => t.SetText("Tags").SetMargin(0, 10, 0, 0)); // Label for tags
 
             stackPanel.Child(tagManager); // Add the tag manager UI
+            stackPanel.Child(comparePriority);
 
             stackPanel.Child<Button>((button) =>
             {
