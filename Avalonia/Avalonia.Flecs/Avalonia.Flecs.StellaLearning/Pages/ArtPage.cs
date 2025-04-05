@@ -4,6 +4,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.Controls.ECS; // Assuming Module and UIBuilderExtensions are here or accessible
+using Avalonia.Flecs.StellaLearning.Util;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -150,7 +151,8 @@ public class ArtPage : IUIComponent, IDisposable
     private Image? _currentHoveredImage = null;
     private ReferencePaintingItem? _currentHoveredItem = null;
     private const int PREVIEW_MAX_SIZE = 400; // Max width/height for preview image pixels
-
+    private static readonly string[] SupportedImageExtensions =
+            { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
     /// <inheritdoc/>
     public Entity Root => _root;
 
@@ -192,6 +194,13 @@ public class ArtPage : IUIComponent, IDisposable
             buttonsPanel.Child<Button>(button =>
             {
                 button.SetText("Add Reference...")
+                      .AttachToolTip(_world.UI<ToolTip>((toolTip) =>
+                      {
+                          toolTip.Child<TextBlock>((textBlock) =>
+                          {
+                              textBlock.SetText("You can also drag and drop images directly in the list");
+                          });
+                      }))
                       .OnClick(async (s, e) => await AddReferencePainting());
             });
 
@@ -354,7 +363,10 @@ public class ArtPage : IUIComponent, IDisposable
                     .SetItemTemplate(CreateReferenceItemTemplate())
                     .SetSelectionMode(SelectionMode.Single)
                     .SetContextFlyout(contextFlyout)
-                    .OnSelectionChanged(ReferenceList_SelectionChanged);
+                    .OnSelectionChanged(ReferenceList_SelectionChanged)
+                    .AllowDrop()
+                    .OnDragOver(HandleReferenceListDragOver)
+                    .OnDrop(HandleReferenceListDropAsync);
                 // DockPanel fills remaining space by default
             });
         });
@@ -492,7 +504,7 @@ public class ArtPage : IUIComponent, IDisposable
     /// </summary>
     /// <param name="item">The item to rename.</param>
     /// <param name="newName">The desired new name (without extension).</param>
-    private async void RenameReferenceItem(ReferencePaintingItem item, string newName)
+    private static async void RenameReferenceItem(ReferencePaintingItem item, string newName)
     {
         string oldPath = item.ImagePath;
         string? directory = Path.GetDirectoryName(oldPath);
@@ -1008,6 +1020,180 @@ public class ArtPage : IUIComponent, IDisposable
                 _currentHoveredItem = null;
             }
             fullBitmap?.Dispose(); // Ensure disposal on error
+        }
+    }
+
+    /// <summary>
+    /// Checks if a storage item represents a supported image file based on its name's extension.
+    /// </summary>
+    /// <param name="item">The storage item (file or folder).</param>
+    /// <returns>True if the item is a file with a supported image extension, false otherwise.</returns>
+    private bool IsImageFile(IStorageItem? item) // Changed parameter type
+    {
+        // Ensure it's a non-null IStorageFile
+        if (item is not IStorageFile file)
+        {
+            return false; // It's null, a folder, or some other IStorageItem type
+        }
+
+        // Check the Name property for a valid extension
+        if (string.IsNullOrEmpty(file.Name))
+            return false;
+
+        try
+        {
+            // Get the extension from the item's Name
+            var extension = Path.GetExtension(file.Name);
+            return !string.IsNullOrEmpty(extension) &&
+                   SupportedImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
+        }
+        catch (ArgumentException) // Path.GetExtension can throw on invalid chars
+        {
+            Console.WriteLine($"Warning: Could not determine extension for file name: {file.Name}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Handles the DragOver event for the references ListBox.
+    /// Checks if the dragged data contains valid image files using IStorageItem
+    /// and sets DragEffects accordingly.
+    /// </summary>
+    private void HandleReferenceListDragOver(object? sender, DragEventArgs e)
+    {
+        // Default to no drop allowed
+        e.DragEffects = DragDropEffects.None;
+
+        // Use GetFiles() - it returns null if the format isn't present
+        var storageItems = e.Data.GetFiles();
+
+        // Check if we have any items and if *any* of them are valid image files
+        if (storageItems?.Any(IsImageFile) ?? false) // Use the updated helper
+        {
+            // Allow copying the files
+            e.DragEffects = DragDropEffects.Copy;
+        }
+        // Note: No explicit check for e.Data.Contains(DataFormats.Files) is strictly needed
+        // because GetFiles() handles returning null if the format is absent.
+
+        e.Handled = true; // We've decided whether to allow the drop or not
+    }
+
+    /// <summary>
+    /// Handles the Drop event for the references ListBox.
+    /// Processes dropped files asynchronously: copies valid images to the references folder,
+    /// generates thumbnails, creates ReferencePaintingItem objects, and adds them to the collection.
+    /// </summary>
+    private async void HandleReferenceListDropAsync(object? sender, DragEventArgs e)
+    {
+        // Double-check if the data contains file names (DragOver should have ensured this)
+        //if (!e.Data.Contains(DataFormats.FileNames))
+        //{
+        //    e.Handled = false; // Should not happen if DragOver worked correctly
+        //    return;
+        //}
+
+        var filePaths = e.Data.GetFiles();
+        if (filePaths?.Any() != true)
+        {
+            e.Handled = false;
+            return;
+        }
+
+        // Indicate we are handling the drop with a Copy operation
+        e.DragEffects = DragDropEffects.Copy;
+        e.Handled = true;
+
+        Console.WriteLine($"Drop detected with {filePaths.Count()} file(s).");
+
+        // --- Process files asynchronously ---
+        // Create a list to hold tasks for processing each file
+        var processingTasks = new List<Task>();
+
+        foreach (var storageFile in filePaths)
+        {
+            // Filter out non-image files before starting the task
+            if (!IsImageFile(storageFile))
+            {
+                Console.WriteLine($"Skipping non-image or invalid file: {storageFile}");
+                continue;
+            }
+
+            // Add a task to process this specific file
+            processingTasks.Add(Task.Run(async () =>
+            {
+
+                string? filePath = storageFile.TryGetLocalPath();
+
+                if (string.IsNullOrEmpty(filePath))
+                {
+                    // Log that we couldn't get a usable path and skip
+                    Console.WriteLine($"Skipping file '{storageFile.Name}': Could not retrieve a local file system path.");
+                    return; // Stop processing this specific file
+                }
+
+                try
+                {
+                    Console.WriteLine($"Processing dropped file: {filePath}");
+
+                    // 1. Copy file to the 'art/references' directory (using your existing method)
+                    // This method already handles potential exceptions during copy
+                    var newPath = CopyFileToArtFolder(filePath, REFERENCES_SUBFOLDER);
+                    if (string.IsNullOrEmpty(newPath))
+                    {
+                        // Copy failed, error message should have been printed by CopyFileToArtFolder
+                        return; // Stop processing this file
+                    }
+
+                    // 2. Generate thumbnail (using your existing async method)
+                    var thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE);
+                    if (thumbnail == null)
+                    {
+                        Console.WriteLine($"Warning: Failed to generate thumbnail for {newPath}");
+                        // Continue without a thumbnail or decide how to handle this
+                    }
+
+                    // 3. Get display name (using your existing helper)
+                    var displayName = GetDisplayNameFromFileName(Path.GetFileName(newPath));
+
+                    // 4. Create ReferencePaintingItem
+                    var newItem = new ReferencePaintingItem
+                    {
+                        Name = displayName,
+                        ImagePath = newPath,
+                        Thumbnail = thumbnail
+                    };
+
+                    // 5. Add to collection *on the UI thread*
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        _referencePaintings.Add(newItem);
+                        Console.WriteLine($"Added reference from drop: {newItem.Name}");
+                    });
+                }
+                catch (Exception ex)
+                {
+                    // Catch any unexpected errors during the processing of a single file
+                    Console.WriteLine($"Error processing dropped file '{storageFile}': {ex.Message}");
+                    // Optionally show an error message to the user via Dispatcher
+                }
+            }));
+        }
+
+        // --- Wait for all processing tasks to complete (optional) ---
+        // You might want to await all tasks if you need to perform an action
+        // after *all* files are processed. For adding items individually,
+        // awaiting here isn't strictly necessary as InvokeAsync handles the UI updates.
+        try
+        {
+            await Task.WhenAll(processingTasks);
+            Console.WriteLine("Finished processing all dropped files.");
+        }
+        catch (Exception ex)
+        {
+            // This catch block is primarily for issues with Task.WhenAll itself,
+            // individual file processing errors are caught within the Task.Run lambda.
+            Console.WriteLine($"An error occurred while waiting for file processing tasks: {ex.Message}");
         }
     }
 
