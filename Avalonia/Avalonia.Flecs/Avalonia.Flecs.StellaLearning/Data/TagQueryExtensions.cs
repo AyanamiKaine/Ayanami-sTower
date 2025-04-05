@@ -20,8 +20,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
         public static bool ContainsTagNamed(this IEnumerable<Tag> tags, string tagName)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (tagName == null) throw new ArgumentNullException(nameof(tagName));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(tagName);
 
             // Uses the Tag.Equals method implicitly via LINQ's Any and the Tag's equality implementation
             // return tags.Any(tag => tag.Name == tagName);
@@ -39,8 +39,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
         public static bool ContainsTagNamed(this IEnumerable<Tag> tags, string tagName, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (tagName == null) throw new ArgumentNullException(nameof(tagName));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(tagName);
 
             return tags.Any(tag => tag.Name.Equals(tagName, comparisonType));
         }
@@ -56,8 +56,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
         public static IEnumerable<Tag> FindTagsNamed(this IEnumerable<Tag> tags, string tagName)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (tagName == null) throw new ArgumentNullException(nameof(tagName));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(tagName);
 
             // Uses the Tag.Equals method implicitly via LINQ's Where and the Tag's equality implementation
             // return tags.Where(tag => tag.Name == tagName);
@@ -75,8 +75,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
         public static IEnumerable<Tag> FindTagsNamed(this IEnumerable<Tag> tags, string tagName, StringComparison comparisonType)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (tagName == null) throw new ArgumentNullException(nameof(tagName));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(tagName);
 
             return tags.Where(tag => tag.Name.Equals(tagName, comparisonType));
         }
@@ -108,9 +108,9 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or prefix is null.</exception>
         public static IEnumerable<Tag> FindTagsStartingWith(this IEnumerable<Tag> tags, string prefix, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (prefix == null) throw new ArgumentNullException(nameof(prefix));
-            if (prefix == string.Empty) return tags; // Or return Enumerable.Empty<Tag>() if that's preferred
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(prefix);
+            if (prefix.Length == 0) return tags; // Or return Enumerable.Empty<Tag>() if that's preferred
 
             return tags.Where(tag => tag.Name.StartsWith(prefix, comparisonType));
         }
@@ -125,9 +125,9 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or suffix is null.</exception>
         public static IEnumerable<Tag> FindTagsEndingWith(this IEnumerable<Tag> tags, string suffix, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (suffix == null) throw new ArgumentNullException(nameof(suffix));
-            if (suffix == string.Empty) return tags; // Or return Enumerable.Empty<Tag>() if that's preferred
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(suffix);
+            if (suffix.Length == 0) return tags; // Or return Enumerable.Empty<Tag>() if that's preferred
 
             return tags.Where(tag => tag.Name.EndsWith(suffix, comparisonType));
         }
@@ -141,8 +141,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or namesToMatch is null.</exception>
         public static IEnumerable<Tag> FindTagsMatchingAny(this IEnumerable<Tag> tags, IEnumerable<string> namesToMatch)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (namesToMatch == null) throw new ArgumentNullException(nameof(namesToMatch));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(namesToMatch);
 
             // Use a HashSet for efficient lookups if namesToMatch is potentially large
             var nameSet = new HashSet<string>(namesToMatch);
@@ -159,8 +159,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or namesToMatch is null.</exception>
         public static IEnumerable<Tag> FindTagsMatchingAny(this IEnumerable<Tag> tags, IEnumerable<string> namesToMatch, StringComparison comparisonType)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (namesToMatch == null) throw new ArgumentNullException(nameof(namesToMatch));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(namesToMatch);
 
             // Use a HashSet with the appropriate comparer for efficiency
             var nameSet = new HashSet<string>(namesToMatch, GetStringComparer(comparisonType));
@@ -179,8 +179,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
         public static int CountTagsNamed(this IEnumerable<Tag> tags, string tagName)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (tagName == null) throw new ArgumentNullException(nameof(tagName));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(tagName);
 
             // Efficiently counts using the Tag's equality implementation
             return tags.Count(tag => tag.Equals(new Tag(tagName)));
@@ -196,8 +196,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
         public static int CountTagsNamed(this IEnumerable<Tag> tags, string tagName, StringComparison comparisonType)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (tagName == null) throw new ArgumentNullException(nameof(tagName));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(tagName);
 
             return tags.Count(tag => tag.Name.Equals(tagName, comparisonType));
         }
@@ -212,15 +212,10 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or substring is null.</exception>
         public static int CountTagsContaining(this IEnumerable<Tag> tags, string substring, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (substring == null) throw new ArgumentNullException(nameof(substring));
-            if (substring == string.Empty) return tags.Count(); // Count all if substring is empty
-
-#if NETCOREAPP || NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(substring);
+            if (substring.Length == 0) return tags.Count(); // Count all if substring is empty
             return tags.Count(tag => tag.Name.Contains(substring, comparisonType));
-#else
-                return tags.Count(tag => tag.Name.IndexOf(substring, comparisonType) >= 0);
-#endif
         }
 
 
@@ -235,32 +230,25 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags is null.</exception>
         public static IEnumerable<string> GetDistinctTagNames(this IEnumerable<Tag> tags, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
+            ArgumentNullException.ThrowIfNull(tags);
 
             return tags.Select(tag => tag.Name)
                        .Distinct(GetStringComparer(comparisonType));
         }
 
         // --- Helper for String Comparison ---
-        private static IEqualityComparer<string> GetStringComparer(StringComparison comparisonType)
+        private static StringComparer GetStringComparer(StringComparison comparisonType)
         {
-            switch (comparisonType)
+            return comparisonType switch
             {
-                case StringComparison.CurrentCulture:
-                    return StringComparer.CurrentCulture;
-                case StringComparison.CurrentCultureIgnoreCase:
-                    return StringComparer.CurrentCultureIgnoreCase;
-                case StringComparison.InvariantCulture:
-                    return StringComparer.InvariantCulture;
-                case StringComparison.InvariantCultureIgnoreCase:
-                    return StringComparer.InvariantCultureIgnoreCase;
-                case StringComparison.Ordinal:
-                    return StringComparer.Ordinal;
-                case StringComparison.OrdinalIgnoreCase:
-                    return StringComparer.OrdinalIgnoreCase;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(comparisonType), "Unsupported string comparison type.");
-            }
+                StringComparison.CurrentCulture => StringComparer.CurrentCulture,
+                StringComparison.CurrentCultureIgnoreCase => StringComparer.CurrentCultureIgnoreCase,
+                StringComparison.InvariantCulture => StringComparer.InvariantCulture,
+                StringComparison.InvariantCultureIgnoreCase => StringComparer.InvariantCultureIgnoreCase,
+                StringComparison.Ordinal => StringComparer.Ordinal,
+                StringComparison.OrdinalIgnoreCase => StringComparer.OrdinalIgnoreCase,
+                _ => throw new ArgumentOutOfRangeException(nameof(comparisonType), "Unsupported string comparison type."),
+            };
         }
     }
 }
