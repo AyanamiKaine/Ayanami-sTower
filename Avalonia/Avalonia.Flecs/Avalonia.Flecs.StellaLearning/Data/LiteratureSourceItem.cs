@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
@@ -79,7 +80,7 @@ public enum CitationStyle
 }
 
 /// <summary>
-/// Abstract base class representing a literature source item.
+/// base class representing a literature source item.
 /// Contains common properties shared by all source types.
 /// </summary>
 public partial class LiteratureSourceItem : ObservableObject
@@ -95,7 +96,7 @@ public partial class LiteratureSourceItem : ObservableObject
     private string _name = "Unnamed Source";
 
     [ObservableProperty]
-    private ObservableCollection<Tag> _tags = [];
+    private List<string> _tags = [];
 
     // SourceType is still useful for filtering or UI switching, set by derived classes.
     [ObservableProperty]
@@ -147,30 +148,6 @@ public partial class LiteratureSourceItem : ObservableObject
     {
 
     }
-
-    // --- Tag Management Methods ---
-    /// <summary>
-    /// Adds a tag to the literature source if it doesn't already exist in the collection.
-    /// </summary>
-    /// <param name="tagToAdd">The tag to add to the source. Cannot be null.</param>
-    public void AddTag(Tag tagToAdd)
-    {
-        if (!Tags.Contains(tagToAdd))
-        {
-            Tags.Add(tagToAdd);
-        }
-    }
-
-    /// <summary>
-    /// Removes a tag from the literature source's collection.
-    /// </summary>
-    /// <param name="tagToRemove">The tag to remove from the source. Cannot be null.</param>
-    /// <returns>True if the tag was successfully removed; otherwise, false.</returns>
-    public bool RemoveTag(Tag tagToRemove)
-    {
-        return Tags.Remove(tagToRemove);
-    }
-
 
     /// <inheritdoc/>
     public override string ToString()
