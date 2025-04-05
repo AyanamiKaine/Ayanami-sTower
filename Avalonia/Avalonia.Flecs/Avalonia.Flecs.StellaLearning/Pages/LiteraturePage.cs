@@ -353,7 +353,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
         private void HandleItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (_isDisposed) return; // Don't handle if page is disposed
-            if (sender is not SpacedRepetitionItem changedItem) return;
+            if (sender is not LiteratureSourceItem changedItem) return;
 
             // Check if the changed property is relevant for filtering or sorting
             bool needsRefresh = e.PropertyName switch
@@ -532,6 +532,12 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 _itemCountTextBlockBuilder?.SetText($"Items: {_baseLiteratureItems.Count}");
                 // Optionally trigger save immediately on changes
                 // SaveLiteratureItemsToDisk(_baseLiteratureItems);
+                if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
+                {
+                    foreach (LiteratureSourceItem item in e.NewItems.OfType<LiteratureSourceItem>()) SubscribeToItemChanges(item);
+                }
+
+
             }, DispatcherPriority.Background);
         }
 
