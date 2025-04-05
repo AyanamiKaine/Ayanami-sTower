@@ -40,8 +40,6 @@ We should be able to open our refrence folder in the app, as well as other folde
 */
 
 
-// --- Data Structures (Placeholders - Adapt as needed) ---
-
 /// <summary>
 /// Represents a reference painting for study.
 /// </summary>
