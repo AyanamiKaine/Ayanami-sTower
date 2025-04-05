@@ -250,7 +250,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                         }
                         catch (FileNotFoundException ex)
                         {
-                            Console.WriteLine(ex.Message, ex.FileName);
+                            MessageDialog.ShowErrorDialog($"{ex.Message}, {ex.FileName}");
                         }
                     });
             });
