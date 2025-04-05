@@ -27,7 +27,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
 
         private const int MAX_COMPARISONS = 4; // Number of comparisons to perform
         private const long MAX_PRIORITY_VALUE = 999_999_999L; // Consistent max value
-        private const long MIN_PRIORITY_VALUE = 0L;          // Consistent min value
+        private const long MIN_PRIORITY_VALUE = -999_999_999L;          // Consistent min value
 
         // State for the comparison process
         private int _timesCompared = 0;
