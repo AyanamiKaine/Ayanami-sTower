@@ -91,18 +91,11 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use the same namespace or a rela
         /// <exception cref="ArgumentNullException">Thrown if tags or substring is null.</exception>
         public static IEnumerable<Tag> FindTagsContaining(this IEnumerable<Tag> tags, string substring, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
         {
-            if (tags == null) throw new ArgumentNullException(nameof(tags));
-            if (substring == null) throw new ArgumentNullException(nameof(substring));
+            ArgumentNullException.ThrowIfNull(tags);
+            ArgumentNullException.ThrowIfNull(substring);
             // Handle empty substring if needed, currently returns all tags
-            if (substring == string.Empty) return tags;
-
-            // string.Contains has an overload accepting StringComparison in .NET Core / .NET 5+
-#if NETCOREAPP || NET5_0_OR_GREATER
+            if (substring.Length == 0) return tags;
             return tags.Where(tag => tag.Name.Contains(substring, comparisonType));
-#else
-                // Fallback for older .NET Framework versions that might not have the overload
-                return tags.Where(tag => tag.Name.IndexOf(substring, comparisonType) >= 0);
-#endif
         }
 
         /// <summary>
