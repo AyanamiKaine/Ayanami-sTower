@@ -33,6 +33,7 @@ public class EditFlashcard : IUIComponent, IDisposable
     /// <returns></returns>
     public EditFlashcard(World world, SpacedRepetitionFlashcard flashcard)
     {
+
         this.flashcard = flashcard;
         _root = world.UI<Window>((window) =>
                 {
@@ -55,6 +56,12 @@ public class EditFlashcard : IUIComponent, IDisposable
 
     private Entity DefineWindowContents(World world)
     {
+        var comparePriority = new ComparePriority(world);
+        _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
+        var calculatedPriority = comparePriority.CalculatedPriorityEntity;
+        // Here we set the inital priority
+        calculatedPriority.Set(flashcard.Priority);
+
         ObservableCollection<Tag> tags = [];
 
         return world.UI<StackPanel>((stackPanel) =>
@@ -120,6 +127,7 @@ public class EditFlashcard : IUIComponent, IDisposable
                 flashcard.Name = nameTextBox.GetText();
                 flashcard.Front = frontText.GetText();
                 flashcard.Back = backText.GetText();
+                flashcard.Priority = calculatedPriority.Get<int>();
                 flashcard.Tags = [.. tagManager.Tags];
 
                 Dispatcher.UIThread.InvokeAsync(async () =>
@@ -188,7 +196,7 @@ public class EditFlashcard : IUIComponent, IDisposable
             });
 
             stackPanel.Child(tagManager); // Add the tag manager UI
-
+            stackPanel.Child(comparePriority);
             stackPanel.Child<Button>((button) =>
             {
                 button
