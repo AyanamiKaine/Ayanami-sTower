@@ -183,6 +183,15 @@ public partial class App : Application
 
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Study")));
 
+            nav.Child<NavigationViewItem>((item) =>
+            {
+                item.SetIconSource(new SymbolIconSource()
+                {
+                    Symbol = Symbol.Bookmarks
+                });
+                item.Child<TextBlock>(t => t.SetText("Literature"));
+            });
+
             var srPage = nav.Child<NavigationViewItem>((item) =>
             {
                 item.SetIconSource(new SymbolIconSource()
