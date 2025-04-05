@@ -327,7 +327,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
                     }))
                         .SetSelectionMode(SelectionMode.Single)
-                        .SetContextFlyout(contextFlyout.Get<MenuFlyout>());
+                        .SetContextFlyout(contextFlyout);
                 });
             });
 
