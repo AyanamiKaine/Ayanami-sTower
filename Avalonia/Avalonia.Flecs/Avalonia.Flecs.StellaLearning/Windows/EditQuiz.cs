@@ -60,6 +60,13 @@ public class EditQuiz : IUIComponent, IDisposable
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? quizQuestionTextBox = null;
             UIBuilder<Grid>? quizAnswers = null;
+
+            var comparePriority = new ComparePriority(world);
+            _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
+            var calculatedPriority = comparePriority.CalculatedPriorityEntity;
+            // Here we set the inital priority
+            calculatedPriority.Set(_spacedRepetitionQuiz.Priority);
+
             var tagManager = new TagComponent(world, _spacedRepetitionQuiz.Tags);
 
 
@@ -142,6 +149,7 @@ public class EditQuiz : IUIComponent, IDisposable
                 _spacedRepetitionQuiz.CorrectAnswerIndex = findAnswerIndex();
                 _spacedRepetitionQuiz.Answers = gatherAllAnswers();
                 _spacedRepetitionQuiz.Tags = [.. tagManager.Tags];
+                _spacedRepetitionQuiz.Priority = calculatedPriority.Get<int>();
 
                 Dispatcher.UIThread.InvokeAsync(async () =>
                 {
@@ -231,6 +239,7 @@ public class EditQuiz : IUIComponent, IDisposable
             });
 
             stackPanel.Child(tagManager); // Add the tag manager UI
+            stackPanel.Child(comparePriority);
 
             stackPanel.Child<Button>((button) =>
             {
