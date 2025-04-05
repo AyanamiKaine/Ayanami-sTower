@@ -32,6 +32,6 @@ public static class CustomFilePickerTypes
     /// </summary>
     public static readonly FilePickerFileType ImageFileType = new("Image files")
     {
-        Patterns = ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp", "*.tiff", "*.ico"],
+        Patterns = ["*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp", "*.tiff", "*.ico", "*.webp"],
     };
 }
