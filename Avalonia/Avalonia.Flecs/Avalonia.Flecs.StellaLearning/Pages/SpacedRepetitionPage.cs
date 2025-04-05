@@ -355,7 +355,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                     menu.Child<MenuItem>((menuItem) =>
                     {
                         menuItem
-                        .SetHeader("Cram")
+                        .SetHeader("Cram (Priority)")
                         .OnClick((_, _) => new StartLearningWindow(world, cramMode: true))
                         .AttachToolTip(world.UI<ToolTip>((toolTip) =>
                         {
@@ -365,6 +365,22 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                                 """
                                 Learn items based on their priority (They are slightly randomized, to avoid seeing the pattern)
                                 regardless of their due date.
+                                """);
+                            });
+                        }));
+                    });
+                    menu.Child<MenuItem>((menuItem) =>
+                    {
+                        menuItem
+                        .SetHeader("Cram (Random)")
+                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: true, random: true))
+                        .AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                        {
+                            toolTip.Child<TextBlock>((textBlock) =>
+                            {
+                                textBlock.SetText(
+                                """
+                                Learn items total randomized
                                 """);
                             });
                         }));
