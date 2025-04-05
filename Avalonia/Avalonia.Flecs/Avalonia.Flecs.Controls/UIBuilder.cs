@@ -253,6 +253,26 @@ public static class UIBuilderExtensions
         // --> Using a dedicated list component like SubscriptionListComponent is cleaner.
     }
 
+    private static IDisposable CreateHandlerRemovalDisposable(InputElement control, RoutedEvent routedEvent, Delegate handler)
+    {
+        // Capture the specific delegate instance to remove
+        var handlerToRemove = handler;
+        return new EventSubscriptionToken(() => // Using your existing helper class
+        {
+            try
+            {
+                // Call RemoveHandler when this token is disposed
+                control?.RemoveHandler(routedEvent, handlerToRemove);
+                // Console.WriteLine($"UIBuilder: Removed handler for {routedEvent.Name}"); // Optional: Debug log
+            }
+            catch (Exception ex)
+            {
+                // Log potential errors during removal, although RemoveHandler is generally safe
+                Console.WriteLine($"UIBuilder: Error removing handler for {routedEvent.Name}: {ex.Message}");
+            }
+        });
+    }
+
     /// <summary>
     /// Helper function to set the Column property of a control component;
     /// </summary>
@@ -1746,6 +1766,70 @@ public static class UIBuilderExtensions
         AddDisposableSubscription(builder.Entity, subscription);
 
         return builder;
+    }
+
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when the DragOver routed event occurs
+    /// for this element. The underlying entity's destruction automatically removes
+    /// the event handler.
+    /// Used to indicate whether a drop is allowed over the element.
+    /// </summary>
+    /// <typeparam name="T">The type of InputElement.</typeparam>
+    /// <param name="builder">The UI builder.</param>
+    /// <param name="handler">The action to execute when DragOver occurs. Typically checks e.Data and sets e.DragEffects.</param>
+    /// <param name="routes">The routing strategies to listen on (default is Bubble).</param>
+    /// <returns>The builder for method chaining.</returns>
+    public static UIBuilder<T> OnDragOver<T>(this UIBuilder<T> builder, Action<object?, DragEventArgs> handler, RoutingStrategies routes = RoutingStrategies.Bubble) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
+            return builder; // Basic validation
+
+        var control = builder.Get<T>(); // Get the underlying Avalonia InputElement control
+
+        // Create the specific delegate type EventHandler<DragEventArgs> expected by AddHandler/RemoveHandler
+        var typedHandler = new EventHandler<DragEventArgs>(handler);
+
+        // Add the handler using Avalonia's routed event system
+        control.AddHandler(DragDrop.DragOverEvent, typedHandler, routes);
+
+        // Create and add the disposable token that will call RemoveHandler
+        var removalDisposable = CreateHandlerRemovalDisposable(control, DragDrop.DragOverEvent, typedHandler);
+        AddDisposableSubscription(builder.Entity, removalDisposable);
+
+        return builder; // Return the builder for fluent chaining
+    }
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when the Drop routed event occurs
+    /// on this element. The underlying entity's destruction automatically removes
+    /// the event handler.
+    /// Fires when a dragged item is released over the element *if* DragOver allowed it.
+    /// Make sure AllowDrop is set to true on the control using .AllowDrop() or .SetAllowDrop(true).
+    /// </summary>
+    /// <typeparam name="T">The type of InputElement.</typeparam>
+    /// <param name="builder">The UI builder.</param>
+    /// <param name="handler">The action to execute when Drop occurs. Typically retrieves data from e.Data and performs an action.</param>
+    /// <param name="routes">The routing strategies to listen on (default is Bubble).</param>
+    /// <returns>The builder for method chaining.</returns>
+    public static UIBuilder<T> OnDrop<T>(this UIBuilder<T> builder, Action<object?, DragEventArgs> handler, RoutingStrategies routes = RoutingStrategies.Bubble) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
+            return builder; // Basic validation
+
+        var control = builder.Get<T>(); // Get the underlying Avalonia InputElement control
+
+        // Create the specific delegate type EventHandler<DragEventArgs>
+        var typedHandler = new EventHandler<DragEventArgs>(handler);
+
+        // Add the handler using Avalonia's routed event system
+        control.AddHandler(DragDrop.DropEvent, typedHandler, routes);
+
+        // Create and add the disposable token that will call RemoveHandler
+        var removalDisposable = CreateHandlerRemovalDisposable(control, DragDrop.DropEvent, typedHandler);
+        AddDisposableSubscription(builder.Entity, removalDisposable);
+
+        return builder; // Return the builder for fluent chaining
     }
 
     /// <summary>
