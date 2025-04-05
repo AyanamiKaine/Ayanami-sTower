@@ -25,7 +25,8 @@ using System.Reactive.Disposables; // For CompositeDisposable
 using NLog;
 using FluentAvalonia.UI.Controls;
 using System.Collections.Specialized;
-using System.ComponentModel; // Assuming you use NLog like in SpacedRepetitionPage
+using System.ComponentModel;
+using Avalonia.Flecs.StellaLearning.Windows; // Assuming you use NLog like in SpacedRepetitionPage
 
 namespace Avalonia.Flecs.StellaLearning.Pages
 {
@@ -182,7 +183,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick((_, _) => { }));
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Edit Details...").OnClick((_, _) =>
                         {
-
+                            var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
+                            new EditLiteratureSource(_world, selectedLiteratureItem);
                         }));
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Get Citation...").OnClick((_, _) => { }));
                         menuFlyout.Child<Separator>((_) => { });
@@ -601,7 +603,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                     // Check Author
                     if (item.Author?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) return true;
                     // Check Tags
-                    if (item.Tags?.Any(tag => tag.Name?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false) return true;
+                    if (item.Tags?.Any(tag => tag?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false) return true;
                     // Check FilePath (if applicable)
                     if (item is LocalFileSourceItem fileItem && (fileItem.FilePath?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false)) return true;
                     // Check URL (if applicable)
