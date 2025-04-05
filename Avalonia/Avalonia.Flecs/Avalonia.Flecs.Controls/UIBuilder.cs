@@ -457,6 +457,36 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Enables drag-and-drop functionality on the control by setting the AllowDrop property to true.
+    /// </summary>
+    /// <typeparam name="T">The type of Interactive control</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> AllowDrop<T>(this UIBuilder<T> builder) where T : Interactive
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        DragDrop.SetAllowDrop(builder.Entity.Get<Interactive>(), true);
+        return builder;
+    }
+
+    /// <summary>
+    /// Disables drag-and-drop functionality on the control by setting the AllowDrop property to false.
+    /// </summary>
+    /// <typeparam name="T">The type of Interactive control</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> DisallowDrop<T>(this UIBuilder<T> builder) where T : Interactive
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        DragDrop.SetAllowDrop(builder.Entity.Get<Interactive>(), false);
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the foreground brush of a TemplatedControl.
     /// </summary>
     /// <typeparam name="T">The type of TemplatedControl</typeparam>
