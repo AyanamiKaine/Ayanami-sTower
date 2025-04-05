@@ -853,7 +853,7 @@ public class ArtPage : IUIComponent, IDisposable
         // Placeholder: Load studies associated with the selected reference
         // This requires storing the association (e.g., in metadata)
         _currentStudies.Clear();
-        Console.WriteLine($"Placeholder: Load studies for {reference.Name}");
+        //Console.WriteLine($"Placeholder: Load studies for {reference.Name}");
         // Example: Query metadata file/database for studies linked to reference.ImagePath or reference.EntityId
         // For now, maybe scan the studies folder and *guess* based on name? (Not reliable)
 
