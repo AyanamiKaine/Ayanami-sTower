@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Controls;
-using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Shapes;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.StellaLearning.Data;
@@ -16,13 +15,17 @@ using Avalonia.Flecs.Util;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Styling;
-using Avalonia.Threading;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using FsrsSharp;
 
 namespace Avalonia.Flecs.StellaLearning.Windows;
+
+/*
+TODO: Currently the file reaches over 1300 LOC, its a clear sign that many different not related things 
+are written together and can be refactored into their own components like the different learning content
+for each SRType. We could also simply refactor them into free standing functions not classes.
+*/
 
 /// <summary>
 /// Represents the window to learn spaced repetition items
