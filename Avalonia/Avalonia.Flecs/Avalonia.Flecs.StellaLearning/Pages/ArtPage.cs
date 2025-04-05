@@ -420,7 +420,7 @@ public class ArtPage : IUIComponent, IDisposable
     /// </summary>
     /// <param name="targetControl">The control to attach the flyout to (ideally the ListBoxItem).</param>
     /// <param name="itemToRename">The ReferencePaintingItem being renamed.</param>
-    private void ShowRenameFlyout(Control targetControl, ReferencePaintingItem itemToRename)
+    private static void ShowRenameFlyout(Control targetControl, ReferencePaintingItem itemToRename)
     {
         // Create the TextBox for renaming
         var renameTextBox = new TextBox
