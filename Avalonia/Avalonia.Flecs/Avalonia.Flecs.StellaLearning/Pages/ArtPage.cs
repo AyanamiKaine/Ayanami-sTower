@@ -1121,7 +1121,7 @@ public class ArtPage : IUIComponent, IDisposable
 
                 try
                 {
-                    Console.WriteLine($"Processing dropped file: {filePath}");
+                    //Console.WriteLine($"Processing dropped file: {filePath}");
 
                     // 1. Copy file to the 'art/references' directory (using your existing method)
                     // This method already handles potential exceptions during copy
