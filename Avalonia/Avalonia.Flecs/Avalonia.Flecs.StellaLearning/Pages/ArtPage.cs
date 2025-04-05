@@ -26,6 +26,11 @@ using static Avalonia.Flecs.Controls.ECS.Module; // If Page tag is defined here
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
 /*
+TODO: Currently the file reaches over 1300 LOC this indicates that we can probably refactor somethings into 
+their own components. Making this smaller and more maintainable.
+*/
+
+/*
 
 We want to be able to easily right click on a refrence to copy it to the clip 
 board so we can past it into our drawing program.
