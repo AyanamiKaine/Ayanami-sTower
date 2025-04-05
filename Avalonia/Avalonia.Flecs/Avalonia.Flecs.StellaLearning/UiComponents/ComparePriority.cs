@@ -25,7 +25,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents
         private readonly CompositeDisposable _disposables = [];
         private bool _isDisposed = false;
 
-        private const int MAX_COMPARISONS = 3; // Number of comparisons to perform
+        private const int MAX_COMPARISONS = 4; // Number of comparisons to perform
         private const long MAX_PRIORITY_VALUE = 999_999_999L; // Consistent max value
         private const long MIN_PRIORITY_VALUE = 0L;          // Consistent min value
 
