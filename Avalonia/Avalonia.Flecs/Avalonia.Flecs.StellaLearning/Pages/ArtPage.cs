@@ -511,8 +511,7 @@ public class ArtPage : IUIComponent, IDisposable
 
         if (string.IsNullOrEmpty(directory) || string.IsNullOrEmpty(extension))
         {
-            Console.WriteLine($"Error: Could not parse path components for {oldPath}");
-            // Consider showing an error message to the user
+            MessageDialog.ShowErrorDialog($"Error: Could not parse path components for {oldPath}");
             return;
         }
 
@@ -541,16 +540,13 @@ public class ArtPage : IUIComponent, IDisposable
         // Check if the name is actually changing and if the new file already exists
         if (newPath.Equals(oldPath, StringComparison.OrdinalIgnoreCase))
         {
-            Console.WriteLine("Rename skipped: New name is the same as the old name.");
             item.Name = newName; // Ensure ObservableObject updates UI even if file doesn't change case etc.
             return; // No file operation needed
         }
 
         if (File.Exists(newPath))
         {
-            Console.WriteLine($"Error: Cannot rename. File already exists at {newPath}");
-            // Show error to user (e.g., using a message box or status bar)
-            // Example: await ShowErrorMessageAsync("Rename failed", $"A file named '{newFileName}' already exists.");
+            MessageDialog.ShowErrorDialog($"Error: Cannot rename. File already exists at {newPath}");
             return;
         }
 
@@ -566,7 +562,7 @@ public class ArtPage : IUIComponent, IDisposable
             {
                 item.ImagePath = newPath; // Update the stored path
                 item.Name = newName;      // Update the observable property (UI will refresh)
-                Console.WriteLine($"Successfully renamed '{Path.GetFileName(oldPath)}' to '{newFileName}'");
+                //Console.WriteLine($"Successfully renamed '{Path.GetFileName(oldPath)}' to '{newFileName}'");
             });
         }
         catch (Exception ex)
@@ -715,8 +711,7 @@ public class ArtPage : IUIComponent, IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error creating art directories: {ex.Message}");
-            // Handle error appropriately (e.g., show message to user)
+            MessageDialog.ShowErrorDialog($"Error creating art directories: {ex.Message}");
         }
     }
 
@@ -734,8 +729,7 @@ public class ArtPage : IUIComponent, IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error copying file to art folder: {ex.Message}");
-            // Handle error (e.g., show message)
+            MessageDialog.ShowErrorDialog($"Error copying file to art folder: {ex.Message}");
             return null;
         }
     }
@@ -1166,7 +1160,7 @@ public class ArtPage : IUIComponent, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    MessageDialog.ShowWarningDialog($"Error processing dropped file '{storageFile}': {ex.Message}");
+                    MessageDialog.ShowErrorDialog($"Error processing dropped file '{storageFile}': {ex.Message}");
                 }
             }));
         }
