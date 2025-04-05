@@ -303,8 +303,7 @@ public class ArtPage : IUIComponent, IDisposable
                                                         // Basic validation
                                                         if (string.IsNullOrEmpty(filePath))
                                                         {
-                                                            Console.WriteLine($"Error: ImagePath is missing for item '{displayName}'. Cannot delete.");
-                                                            // TODO: Show error message to user via UI dialog/popup
+                                                            MessageDialog.ShowErrorDialog($"Error: ImagePath is missing for item '{displayName}'. Cannot delete.");
                                                             return;
                                                         }
 
@@ -327,7 +326,7 @@ public class ArtPage : IUIComponent, IDisposable
                                                         {
                                                             // 1. Attempt to delete the file from disk FIRST
                                                             File.Delete(filePath);
-                                                            Console.WriteLine($"Successfully deleted file: {filePath}");
+                                                            //Console.WriteLine($"Successfully deleted file: {filePath}");
 
                                                             // 2. If file deletion succeeded, THEN update UI and collection
                                                             // Clear details view if the deleted item was the selected one
@@ -342,20 +341,17 @@ public class ArtPage : IUIComponent, IDisposable
                                                             _referencePaintings.Remove(itemToRemove);
 
                                                         }
-                                                        catch (IOException ioEx) // Catch specific IO exceptions
+                                                        catch (IOException ex) // Catch specific IO exceptions
                                                         {
-                                                            Console.WriteLine($"Error deleting file '{filePath}' for item '{displayName}': {ioEx.Message}");
-                                                            // TODO: Show specific error message to user (e.g., "File might be in use or path not found.")
+                                                            MessageDialog.ShowErrorDialog(ex.Message);
                                                         }
                                                         catch (UnauthorizedAccessException authEx) // Catch permissions errors
                                                         {
-                                                            Console.WriteLine($"Error deleting file '{filePath}' for item '{displayName}': {authEx.Message}");
-                                                            // TODO: Show specific error message to user (e.g., "Permission denied.")
+                                                            MessageDialog.ShowErrorDialog(authEx.Message);
                                                         }
                                                         catch (Exception ex) // Catch any other unexpected errors
                                                         {
-                                                            Console.WriteLine($"An unexpected error occurred while deleting file '{filePath}' for item '{displayName}': {ex.Message}");
-                                                            // TODO: Show generic error message to user
+                                                            MessageDialog.ShowErrorDialog($"An unexpected error occurred while deleting file '{filePath}' for item '{displayName}': {ex.Message}");
                                                         }
                                                     }
                                                 });
@@ -575,11 +571,7 @@ public class ArtPage : IUIComponent, IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error renaming file from '{oldPath}' to '{newPath}': {ex.Message}");
-            // Show error to user
-            // Example: await ShowErrorMessageAsync("Rename failed", $"Could not rename the file: {ex.Message}");
-            // No need to revert item properties here, as the file operation failed,
-            // and the item properties were not yet updated.
+            MessageDialog.ShowErrorDialog($"Error renaming file from '{oldPath}' to '{newPath}': {ex.Message}");
         }
     }
 
@@ -906,7 +898,7 @@ public class ArtPage : IUIComponent, IDisposable
         if (_flyoutTargetControl != null)
         {
             FlyoutBase.SetAttachedFlyout(_flyoutTargetControl, null);
-            Console.WriteLine($"Flyout detached from {_flyoutTargetControl.GetType().Name}"); // Debug
+            //Console.WriteLine($"Flyout detached from {_flyoutTargetControl.GetType().Name}"); // Debug
             _flyoutTargetControl = null; // Clear the stored target
         }
         // Optional: Clear the image to free memory sooner
@@ -944,7 +936,7 @@ public class ArtPage : IUIComponent, IDisposable
                                             // _previewLoadCts = new CancellationTokenSource(); // Create new token if using CTS
                                             // var cancellationToken = _previewLoadCts.Token; // Get token if using CTS
 
-        Console.WriteLine($"Pointer Entered Image for: {item.Name}. Loading preview..."); // Debug
+        //Console.WriteLine($"Pointer Entered Image for: {item.Name}. Loading preview..."); // Debug
 
         Bitmap? fullBitmap = null;
         try
@@ -963,6 +955,7 @@ public class ArtPage : IUIComponent, IDisposable
                 }
                 catch (Exception decodeEx)
                 {
+
                     Console.WriteLine($"Error DECODING image for preview ({item.ImagePath}): {decodeEx.Message}");
                     return null;
                 }
@@ -975,7 +968,6 @@ public class ArtPage : IUIComponent, IDisposable
             if (!ReferenceEquals(_currentHoveredImage, hoveredImage) || // Target changed?
                 !hoveredImage.IsPointerOver)                          // Pointer left?
             {
-                Console.WriteLine($"Preview loaded for {item.Name}, but hover target changed/left during load."); // Debug
                 fullBitmap?.Dispose(); // IMPORTANT: Dispose the unused bitmap
                 return; // Don't show the flyout
             }
@@ -991,12 +983,11 @@ public class ArtPage : IUIComponent, IDisposable
 
                 // Show the flyout directly at the image control
                 _previewFlyout.ShowAt(hoveredImage);
-                Console.WriteLine($"Showing preview flyout for {item.Name}"); // Debug
             }
             else
             {
-                // Handle load/decode failure
-                Console.WriteLine($"Failed to load/decode bitmap for preview: {item.Name}"); // Debug
+                MessageDialog.ShowErrorDialog($"Failed to load/decode bitmap for preview: {item.Name}");
+
                 _previewImage.Source = null; // Clear image source
                                              // Clear target state if loading failed
                 if (ReferenceEquals(_currentHoveredImage, hoveredImage))
@@ -1013,8 +1004,8 @@ public class ArtPage : IUIComponent, IDisposable
         // }
         catch (Exception ex)
         {
-            // Catch potential errors during Task.Run setup or file access before stream creation
-            Console.WriteLine($"Error loading full image for preview ({item.ImagePath}): {ex.Message}");
+            MessageDialog.ShowErrorDialog($"Error loading full image for preview ({item.ImagePath}): {ex.Message}");
+
             _previewImage.Source = null; // Clear previous image on error
                                          // Clear target state on error
             if (ReferenceEquals(_currentHoveredImage, hoveredImage))
@@ -1052,7 +1043,7 @@ public class ArtPage : IUIComponent, IDisposable
         }
         catch (ArgumentException) // Path.GetExtension can throw on invalid chars
         {
-            Console.WriteLine($"Warning: Could not determine extension for file name: {file.Name}");
+            MessageDialog.ShowWarningDialog($"Could not determine extension for file name: {file.Name}");
             return false;
         }
     }
@@ -1107,7 +1098,7 @@ public class ArtPage : IUIComponent, IDisposable
         e.DragEffects = DragDropEffects.Copy;
         e.Handled = true;
 
-        Console.WriteLine($"Drop detected with {filePaths.Count()} file(s).");
+        //Console.WriteLine($"Drop detected with {filePaths.Count()} file(s).");
 
         // --- Process files asynchronously ---
         // Create a list to hold tasks for processing each file
@@ -1118,20 +1109,19 @@ public class ArtPage : IUIComponent, IDisposable
             // Filter out non-image files before starting the task
             if (!IsImageFile(storageFile))
             {
-                Console.WriteLine($"Skipping non-image or invalid file: {storageFile}");
+                //Console.WriteLine($"Skipping non-image or invalid file: {storageFile}");
                 continue;
             }
 
             // Add a task to process this specific file
             processingTasks.Add(Task.Run(async () =>
             {
-
                 string? filePath = storageFile.TryGetLocalPath();
 
                 if (string.IsNullOrEmpty(filePath))
                 {
                     // Log that we couldn't get a usable path and skip
-                    Console.WriteLine($"Skipping file '{storageFile.Name}': Could not retrieve a local file system path.");
+                    MessageDialog.ShowWarningDialog($"Skipping file '{storageFile.Name}': Could not retrieve a local file system path.");
                     return; // Stop processing this specific file
                 }
 
@@ -1152,7 +1142,7 @@ public class ArtPage : IUIComponent, IDisposable
                     var thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE);
                     if (thumbnail == null)
                     {
-                        Console.WriteLine($"Warning: Failed to generate thumbnail for {newPath}");
+                        MessageDialog.ShowWarningDialog($"Warning: Failed to generate thumbnail for {newPath}");
                         // Continue without a thumbnail or decide how to handle this
                     }
 
@@ -1171,14 +1161,12 @@ public class ArtPage : IUIComponent, IDisposable
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         _referencePaintings.Add(newItem);
-                        Console.WriteLine($"Added reference from drop: {newItem.Name}");
+                        //Console.WriteLine($"Added reference from drop: {newItem.Name}");
                     });
                 }
                 catch (Exception ex)
                 {
-                    // Catch any unexpected errors during the processing of a single file
-                    Console.WriteLine($"Error processing dropped file '{storageFile}': {ex.Message}");
-                    // Optionally show an error message to the user via Dispatcher
+                    MessageDialog.ShowWarningDialog($"Error processing dropped file '{storageFile}': {ex.Message}");
                 }
             }));
         }
@@ -1190,13 +1178,11 @@ public class ArtPage : IUIComponent, IDisposable
         try
         {
             await Task.WhenAll(processingTasks);
-            Console.WriteLine("Finished processing all dropped files.");
+            //Console.WriteLine("Finished processing all dropped files.");
         }
         catch (Exception ex)
         {
-            // This catch block is primarily for issues with Task.WhenAll itself,
-            // individual file processing errors are caught within the Task.Run lambda.
-            Console.WriteLine($"An error occurred while waiting for file processing tasks: {ex.Message}");
+            MessageDialog.ShowWarningDialog($"An error occurred while waiting for file processing tasks: {ex.Message}");
         }
     }
 
