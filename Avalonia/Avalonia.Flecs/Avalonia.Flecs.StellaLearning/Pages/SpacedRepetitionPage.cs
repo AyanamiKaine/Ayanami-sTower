@@ -24,6 +24,7 @@ using DesktopNotifications;
 using System.Collections.Specialized;
 using System.Reactive.Disposables;
 using Avalonia.Controls.Primitives;
+using System.ComponentModel;
 
 namespace Avalonia.Flecs.StellaLearning.Pages;
 
@@ -40,6 +41,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     private readonly CompositeDisposable _disposables = [];
     private bool _isDisposed = false;
     private readonly List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
+    private readonly Dictionary<Guid, PropertyChangedEventHandler> _itemPropertyChangedHandlers = [];
     private static readonly INotificationManager _iNotificationManager = Program.NotificationManager ??
                            throw new InvalidOperationException("Missing notification manager");
     // --- Control References ---
@@ -59,7 +61,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     public SpacedRepetitionPage(World world)
     {
         _baseSpacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
-
+        SubscribeToAllItemChanges(_baseSpacedRepetitionItems);
         /*
         We only add the handler once. 
         */
@@ -581,6 +583,98 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         }
     }
 
+    private void SubscribeToItemChanges(SpacedRepetitionItem item)
+    {
+        if (item == null || _itemPropertyChangedHandlers.ContainsKey(item.Uid))
+        {
+            // Logger.Trace($"Skipping subscription for item {item?.Uid}: Null or already subscribed.");
+            return; // Avoid double subscription or null refs
+        }
+
+        // Create a new handler instance for this item
+        PropertyChangedEventHandler handler = HandleItemPropertyChanged;
+        item.PropertyChanged += handler;
+        _itemPropertyChangedHandlers[item.Uid] = handler; // Store the specific handler instance
+        Logger.Trace($"Subscribed to PropertyChanged for item '{item.Name}' (ID: {item.Uid})");
+    }
+
+    private void UnsubscribeFromItemChanges(SpacedRepetitionItem item)
+    {
+        if (item == null || !_itemPropertyChangedHandlers.TryGetValue(item.Uid, out var handler))
+        {
+            // Logger.Trace($"Skipping unsubscription for item {item?.Uid}: Null or not found in handler dict.");
+            return; // Item not tracked or null
+        }
+
+        item.PropertyChanged -= handler; // Unsubscribe using the stored handler instance
+        _itemPropertyChangedHandlers.Remove(item.Uid); // Remove from tracking
+        Logger.Trace($"Unsubscribed from PropertyChanged for item '{item.Name}' (ID: {item.Uid})");
+    }
+
+    // Helper to subscribe to all items in a collection
+    private void SubscribeToAllItemChanges(IEnumerable<SpacedRepetitionItem>? items)
+    {
+        if (items == null) return;
+        Logger.Debug($"Subscribing to PropertyChanged for initial/reset items.");
+        foreach (var item in items)
+        {
+            SubscribeToItemChanges(item);
+        }
+    }
+
+    // Helper to unsubscribe from all tracked items (used in Dispose and Reset)
+    private void UnsubscribeFromAllItemChanges(IEnumerable<SpacedRepetitionItem>? currentItems = null)
+    {
+        Logger.Debug($"Unsubscribing from all tracked items ({_itemPropertyChangedHandlers.Count}).");
+        // Get the list of items we *are* subscribed to from the dictionary keys
+        var subscribedIds = _itemPropertyChangedHandlers.Keys.ToList();
+        var itemsToUnsubscribe = currentItems?.Where(i => i != null && subscribedIds.Contains(i.Uid)).ToList()
+                                ?? Enumerable.Empty<SpacedRepetitionItem>();
+
+        // If currentItems isn't available (e.g. during dispose after collection is gone), we might leak handlers.
+        // A better approach might be to store WeakReference<SpacedRepetitionItem> or handle this more carefully.
+        // For now, assume currentItems is available when needed.
+
+        foreach (var item in itemsToUnsubscribe)
+        {
+            UnsubscribeFromItemChanges(item); // Call the individual unsubscribe
+        }
+        // Defensive clear in case some items were missed or collection changed unexpectedly
+        _itemPropertyChangedHandlers.Clear();
+    }
+
+
+    // --- NEW: Handler for PropertyChanged Events from Items ---
+    private void HandleItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_isDisposed) return; // Don't handle if page is disposed
+        if (sender is not SpacedRepetitionItem changedItem) return;
+
+        // Check if the changed property is relevant for filtering or sorting
+        bool needsRefresh = e.PropertyName switch
+        {
+            nameof(SpacedRepetitionItem.Name) => true,
+            nameof(SpacedRepetitionItem.Priority) => true,
+            nameof(SpacedRepetitionItem.NextReview) => true,
+            nameof(SpacedRepetitionItem.Tags) => true, // If filtering by tags
+            nameof(SpacedRepetitionItem.SpacedRepetitionItemType) => true, // If filtering by type
+                                                                           // Add other properties if they affect filter/sort
+            _ => false
+        };
+
+        if (needsRefresh)
+        {
+            Logger.Trace($"Relevant property '{e.PropertyName}' changed for item '{changedItem.Name}', triggering list refresh.");
+            // Refresh the list on the UI thread. Use Post for better responsiveness if updates are frequent.
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_isDisposed) return; // Double check dispose state
+                string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
+                ApplyFilterAndSort(searchText);
+            }, DispatcherPriority.Background); // Lower priority for UI updates
+        }
+    }
+
     /// <summary>
     /// Handles changes to the base collection (_baseSpacedRepetitionItems).
     /// </summary>
@@ -593,7 +687,10 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
             ApplyFilterAndSort(searchText);
 
-
+            if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
+            {
+                foreach (SpacedRepetitionItem item in e.NewItems.OfType<SpacedRepetitionItem>()) SubscribeToItemChanges(item);
+            }
             if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
             {
                 // Iterate through all items that were removed in this event.
