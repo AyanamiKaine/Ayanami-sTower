@@ -1,0 +1,45 @@
+# Red Flag Shallow Modules
+A shallow module is one whose interface is complicated relative to the functionality it provides. Shallow modules don't help much in the battle against complexity, because the benefit the provide (not having to learn about how they work internally) is negated by the cost of learning and using their interfaces. 
+- Small modules tend to be shallow
+
+# Red Flag Information Leakage 
+Information leakage occurs when the same knowledge is used in multiple places, such as two different classes that both understand the format of a particular type of file.
+
+# Red Flag Temporal Decomposition
+In temporal decomposition, execution is reflected in the code structure:
+- Operations that happen at different times are in different methods or classes.
+
+If the same knowledge is used at different points in execution, it gets encoded in multiple places, resulting in information leakage.
+
+*When designing modules, focus on the knowledge that is needed to perform each task, not the order in which tasks occur.*
+
+# Red Flag Overexposure
+If the API for a commonly used feature forces users to learn about other features that are rarely used, this increases the cognitive load on users who don't need the rarely used features.
+
+# Red Flag Nonobvious Code
+If the meaning and behaviour of code cannot be understood with a quick reading, it is a red flag. Often this means that there is important information that is not immediately clear to someone reading the code.
+
+# Red Flag Pass-Through Method 
+A pass-through method i one that does nothing except pass its arguments to a another method, usually with the same API as the pass-through method. This typically indicates that there is not a clean division of responsibility between the classes
+
+```c++
+class area {...}
+
+public area calculateCorrectArea(area area){
+  return correctArea(area);
+}
+```
+
+Pass-through methods make classes shallower:
+- They increase the interface complexity of the class, which adds complexity, but they don't increase the total functionality of the system.
+
+Pass-through methods indicate that there is confusion over the division of responsibility between classes.
+
+When you see pass-through methods from one class to another, consider the two classes and ask yourself "Exactly which features and abstractions is each of these classes responsible for"
+- You will probably notice that there is an overlap in responsibility between the classes.
+
+# Red Flag Repetition
+If the same piece of code (or code that is almost the same) appears over and over again, that is a red flag that you haven't found the right abstractions.
+
+# Red Flag Special General Mixture
+This red flag occurs when a general-purpose mechanism also contains code specialized for a particular use of that mechanism. This makes the mechanism more complicated and creates information leakage between the mechanism and the particular use case: future modifications to the use case are likely to require changes to the underlying mechanism as well.

@@ -1,0 +1,1 @@
+The defined notes here are used for Large Language Models, to be used as a code reviewer. They simply should scan the code for red flags or code smells, bring it to my attention and provide some suggestions for improvements.
