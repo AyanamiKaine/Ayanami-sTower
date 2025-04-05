@@ -73,6 +73,13 @@ public class EditCloze : IUIComponent, IDisposable
             UIBuilder<TextBox>? nameTextBox = null;
             UIBuilder<TextBox>? clozeBox = null;
             UIBuilder<ItemsControl>? clozeList = null;
+
+            var comparePriority = new ComparePriority(world);
+            _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
+            var calculatedPriority = comparePriority.CalculatedPriorityEntity;
+            // Here we set the inital priority
+            calculatedPriority.Set(cloze.Priority);
+
             var tagManager = new TagComponent(world, cloze.Tags);
 
             void SaveData()
@@ -114,6 +121,8 @@ public class EditCloze : IUIComponent, IDisposable
                 cloze.Name = nameTextBox.GetText();
                 cloze.FullText = clozeBox.GetText();
                 cloze.ClozeWords = [.. clozes];
+                cloze.Priority = calculatedPriority.Get<int>();
+
                 cloze.Tags = [.. tagManager.Tags];
 
                 Dispatcher.UIThread.InvokeAsync(async () =>
@@ -231,6 +240,7 @@ public class EditCloze : IUIComponent, IDisposable
             });
 
             stackPanel.Child(tagManager); // Add the tag manager UI
+            stackPanel.Child(comparePriority);
 
             // Create button
             stackPanel.Child<Button>((button) =>
