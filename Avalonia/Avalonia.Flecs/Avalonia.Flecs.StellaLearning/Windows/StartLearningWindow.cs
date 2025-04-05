@@ -75,15 +75,16 @@ public class StartLearningWindow : IUIComponent, IDisposable
     /// </summary>
     /// <param name="world"></param>
     /// <param name="cramMode">When set to true we learn items regardless of time and do not update their spaced repetition values</param>
+    /// <param name="random"></param>
     /// <returns></returns>
-    public StartLearningWindow(World world, bool cramMode = false)
+    public StartLearningWindow(World world, bool cramMode = false, bool random = false)
     {
         _cramMode = cramMode;
         _world = world;
         _spacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
         if (_cramMode)
         {
-            InitializeCramSession(); // Set up the temporary list
+            InitializeCramSession(random); // Set up the temporary list
             ItemToBeLearned = GetNextCramItem(); // Get the first item for cramming
         }
         else
@@ -1096,58 +1097,45 @@ public class StartLearningWindow : IUIComponent, IDisposable
     }
 
     /// <summary>
-    /// Initializes the cram session list by sorting items primarily by Priority (descending),
-    /// applying relative random noise to prevent strictly deterministic ordering, suitable for large priority values.
+    /// Initializes the cram session list either by sorting items by Priority with random noise,
+    /// or by completely randomizing the list when random flag is set.
     /// </summary>
-    private void InitializeCramSession()
+    /// <param name="random">When true, items are shuffled completely randomly, ignoring priority</param>
+    private void InitializeCramSession(bool random = false)
     {
         // 1. Create a new list containing references to the items in the main collection.
         _cramSessionItems = _spacedRepetitionItems
                                 .Where(item => item != null) // Filter out nulls
                                 .ToList();
 
-        // 2. *** Sort by Priority Scaled by (1 + Random Noise Factor) ***
-        // This approach ensures noise is proportional to the priority magnitude.
-
-        // Adjust this factor: It represents the maximum *percentage* of noise added.
-        // e.g., 0.01 means up to 1% noise, 0.05 means up to 5% noise.
-        // Smaller values result in an order closer to strict priority.
-        // Choose based on how much deviation from strict priority you want.
-        const double relativeNoiseFactor = 0.05; // <-- TUNABLE PARAMETER (e.g., 5% relative noise)
-
-        // Sort using the scaled priority.
-        _cramSessionItems = _cramSessionItems
-            .OrderByDescending(item =>
-            {
-                // Convert Priority to double for calculation.
-                // Use Math.Max(1.0, ...) to handle potential non-positive priorities gracefully.
-                // If priority can be zero or negative, multiplying by (1 + noise) could lead to
-                // zero or negative scores, affecting sorting. Treating minimum base as 1 avoids this.
-                // If your priorities are guaranteed positive, you can simplify this.
-                double basePriority = Math.Max(1.0, item.Priority);
-
-                // Calculate the random multiplier between 1.0 and (1.0 + relativeNoiseFactor)
-                double noiseMultiplier = 1.0 + (_random.NextDouble() * relativeNoiseFactor);
-
-                // Calculate the final score for sorting
-                double noisyPriorityScore = basePriority * noiseMultiplier;
-
-                return noisyPriorityScore;
-            })
-            .ToList(); // Create the final sorted list
-
-        //Console.WriteLine($"Cram session list initialized/reset with {_cramSessionItems.Count} items (Sorted by Priority * (1 + Noise%)).");
-
-        // Optional: Log the first few items to verify the semi-randomized priority order
-        /*
-        Console.WriteLine("Top 5 items in cram session queue:");
-        foreach(var item in _cramSessionItems.Take(5))
+        // If random flag is set, completely shuffle the list without considering priority
+        if (random)
         {
-            // Recalculate an approximate score for logging if needed (won't be exact due to randomness)
-            double basePrio = Math.Max(1.0, (double)item.Priority);
-            Console.WriteLine($"- Name: {item.Name}, Prio: {item.Priority}, Approx. Score Range: {basePrio * 1.0:F0} - {basePrio * (1.0 + relativeNoiseFactor):F0}");
+            // Fisher-Yates shuffle algorithm for complete randomization
+            int n = _cramSessionItems.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = _random.Next(n + 1);
+                SpacedRepetitionItem temp = _cramSessionItems[k];
+                _cramSessionItems[k] = _cramSessionItems[n];
+                _cramSessionItems[n] = temp;
+            }
         }
-        */
+        else
+        {
+            // 2. Sort by Priority Scaled by (1 + Random Noise Factor) as before
+            const double relativeNoiseFactor = 0.05; // TUNABLE PARAMETER (5% relative noise)
+
+            _cramSessionItems = _cramSessionItems
+                .OrderByDescending(item =>
+                {
+                    double basePriority = Math.Max(1.0, item.Priority);
+                    double noiseMultiplier = 1.0 + (_random.NextDouble() * relativeNoiseFactor);
+                    return basePriority * noiseMultiplier;
+                })
+                .ToList();
+        }
     }
 
     private SpacedRepetitionItem? GetNextCramItem()
