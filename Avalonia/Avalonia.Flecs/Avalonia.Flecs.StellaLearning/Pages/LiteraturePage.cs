@@ -295,14 +295,30 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                             .SetHorizontalAlignment(HorizontalAlignment.Right)
                             .SetItemsSource(item.Tags) // Bind to the item's Tags collection
                                                        //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
-                            .SetItemTemplate(_world.CreateTemplate<Tag, Border>((border, tag) => // Simple tag template
+                            .SetItemTemplate(_world.CreateTemplate<string, Border>((border, tagText) => // Simple tag template
                             {
                                 border.SetBackground(Brushes.LightGray)
                                       .SetCornerRadius(3)
                                       .SetPadding(4, 1)
-                                      .SetMargin(2, 0);
-                                border.Child<TextBlock>(tb => tb.SetText(tag.Name).SetFontSize(10));
-                            }));
+                                      .SetMargin(2, 0)
+                                    .Child<StackPanel>(stackPanel =>
+                                    {
+                                        stackPanel
+                                            .SetOrientation(Orientation.Horizontal)
+                                            .SetSpacing(5)
+                                            .SetVerticalAlignment(VerticalAlignment.Center);
+
+                                        stackPanel.Child<TextBlock>(textBlock =>
+                                        {
+                                            textBlock
+                                                .SetText(tagText)
+                                                .SetVerticalAlignment(VerticalAlignment.Center);
+                                        });
+
+
+                                    });
+                            }))
+                            .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
                 });
 
 
