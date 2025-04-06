@@ -1201,7 +1201,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 For better clarity you can imagine this as a simple type cast.
                 */
 
-                SpacedRepetitionQuiz quizItem => LearnQuizContent().AsBaseBuilder<Control, StackPanel>(),
+                SpacedRepetitionQuiz => LearnQuizContent().AsBaseBuilder<Control, StackPanel>(),
                 SpacedRepetitionFlashcard => LearnFlashcardContent().AsBaseBuilder<Control, StackPanel>(),
                 SpacedRepetitionFile => LearnFileContent().AsBaseBuilder<Control, StackPanel>(),
                 SpacedRepetitionCloze => LearnClozeContent().AsBaseBuilder<Control, StackPanel>(),
