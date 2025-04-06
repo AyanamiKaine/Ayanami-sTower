@@ -47,7 +47,9 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         /// <summary>
         /// Reference to the main collection of all spaced repetition items.
         /// </summary>
-        private readonly ObservableCollection<SpacedRepetitionItem>? _allItems; // Make nullable
+        private readonly ObservableCollection<SpacedRepetitionItem>? _allSpacedRepetitionItems; // Make nullable
+        private readonly ObservableCollection<LiteratureSourceItem>? _allLiteratureSourceItems; // Make nullable
+
         /// <inheritdoc/>
         public Entity Root { get; }
         // --- Primary Constructor (Existing) ---
@@ -71,19 +73,28 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             // --- Get Data & Setup AutoComplete Source ---
             try
             {
-                _allItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
+                _allSpacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
+                _allLiteratureSourceItems = world.Get<ObservableCollection<LiteratureSourceItem>>();
+
                 UpdateAllUniqueTags(); // Populate suggestions source
-                _allItems.CollectionChanged += OnAllItemsChanged;
+                _allSpacedRepetitionItems.CollectionChanged += OnAllItemsChanged;
                 _disposables.Add(Disposable.Create(() =>
                 {
-                    if (_allItems != null) _allItems.CollectionChanged -= OnAllItemsChanged;
-                    Logger.Debug("Unsubscribed from _allItems.CollectionChanged");
+                    if (_allSpacedRepetitionItems != null) _allSpacedRepetitionItems.CollectionChanged -= OnAllItemsChanged;
+                    Logger.Debug("Unsubscribed from _allSpacedRepetitionItems.CollectionChanged");
+                }));
+
+                _allLiteratureSourceItems.CollectionChanged += OnAllItemsChanged;
+                _disposables.Add(Disposable.Create(() =>
+                {
+                    if (_allLiteratureSourceItems != null) _allLiteratureSourceItems.CollectionChanged -= OnAllItemsChanged;
+                    Logger.Debug("Unsubscribed from _allLiteratureSourceItems.CollectionChanged");
                 }));
             }
             catch (Exception ex)
             {
                 Logger.Warn(ex, "Failed to get SpacedRepetitionItem collection. Auto-completion source empty.");
-                _allItems = null;
+                _allSpacedRepetitionItems = null;
             }
 
             // --- Initialize Component's Tags ---
@@ -205,7 +216,7 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         /// </summary>
         private async void UpdateAllUniqueTags()
         {
-            if (_allItems == null)
+            if (_allSpacedRepetitionItems is null || _allLiteratureSourceItems is null)
             {
                 Logger.Warn("Cannot update unique tags, _allItems collection is null.");
                 await Dispatcher.UIThread.InvokeAsync(() =>
@@ -223,7 +234,30 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
             // but ObservableCollection is generally safe for reads if changes happen via CollectionChanged on UI thread.
             try
             {
-                foreach (var item in _allItems) // Assuming SpacedRepetitionItem and Tags list are accessible
+                foreach (var item in _allSpacedRepetitionItems) // Assuming SpacedRepetitionItem and Tags list are accessible
+                {
+                    if (item?.Tags != null) // Check item and Tags list for null
+                    {
+                        foreach (var tag in item.Tags)
+                        {
+                            if (!string.IsNullOrWhiteSpace(tag))
+                            {
+                                uniqueTags.Add(tag.Trim());
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Catch potential issues during iteration, e.g., if item becomes invalid unexpectedly
+                Logger.Error(ex, "Error occurred while iterating through _allItems to collect unique tags.");
+                return; // Abort update if iteration fails
+            }
+
+            try
+            {
+                foreach (var item in _allLiteratureSourceItems) // Assuming SpacedRepetitionItem and Tags list are accessible
                 {
                     if (item?.Tags != null) // Check item and Tags list for null
                     {
@@ -351,9 +385,9 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
                 {
                     Logger.Debug($"Disposing TagComponent (AutoComplete Corrected) (Root: {Root.Id})...");
                     // Unsubscribe external event first is safer
-                    if (_allItems != null)
+                    if (_allSpacedRepetitionItems != null)
                     {
-                        _allItems.CollectionChanged -= OnAllItemsChanged;
+                        _allSpacedRepetitionItems.CollectionChanged -= OnAllItemsChanged;
                     }
                     // Dispose Flecs entities and internal handlers
                     _disposables.Dispose();
