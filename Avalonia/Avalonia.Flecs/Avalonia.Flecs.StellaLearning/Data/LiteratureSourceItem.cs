@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel; // For ObservableObject
 
 namespace Avalonia.Flecs.StellaLearning.Data;
@@ -139,6 +140,7 @@ public partial class LiteratureSourceItem : ObservableObject
     /// Initializes a new instance of the <see cref="LiteratureSourceItem"/> class with the specified source type.
     /// </summary>
     /// <param name="type">The type of literature source.</param>
+    [JsonConstructor]
     public LiteratureSourceItem(LiteratureSourceType type)
     {
         _sourceType = type;
