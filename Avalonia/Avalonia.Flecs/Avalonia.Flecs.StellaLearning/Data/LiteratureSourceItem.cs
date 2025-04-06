@@ -105,13 +105,13 @@ public partial class LiteratureSourceItem : ObservableObject
     // --- Common Metadata Properties ---
 
     [ObservableProperty]
-    private string? _author;
+    private string _author = "";
 
     [ObservableProperty]
-    private string? _title;
+    private string _title = "";
 
     [ObservableProperty]
-    private int? _publicationYear;
+    private int _publicationYear = 0;
 
     [ObservableProperty]
     private string? _notes;
