@@ -182,6 +182,9 @@ namespace Avalonia.Flecs.StellaLearning.Pages
 
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick((_, _) =>
                         {
+
+
+
                             var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
                             if (selectedLiteratureItem is LocalFileSourceItem localFile)
                             {
@@ -191,7 +194,15 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                             {
                                 throw new NotImplementedException("Opening this source type is not implemented yet.");
                             }
-                        }));
+                        })
+                        .AttachToolTip(_world.UI<ToolTip>((tooltip) =>
+                        {
+                            tooltip.Child<TextBlock>((textBlock) =>
+                            {
+                                textBlock.SetText("You can also double click to open it.");
+                            });
+                        })));
+
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Edit Details...").OnClick((_, _) =>
                         {
                             var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
@@ -266,7 +277,27 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                            .SetContextFlyout(contextFlyout)
                            .AllowDrop() // Enable dropping files
                            .OnDragOver(HandleLiteratureListDragOver) // Handle hover effect
-                           .OnDrop(HandleLiteratureListDropAsync); // Handle the actual drop
+                           .OnDrop(HandleLiteratureListDropAsync)
+                           .OnContainerPrepared((sender, e) =>
+                           {
+                               if (e.Container is ListBoxItem item)
+                               {
+                                   item.DoubleTapped += (sender, e) =>
+                                   {
+                                       if (sender is ListBoxItem item)
+                                       {
+                                           object? dataContext = item.DataContext;
+                                           LiteratureSourceItem? selectedLiteratureItem = dataContext as LiteratureSourceItem;
+
+                                           if (selectedLiteratureItem is LocalFileSourceItem localFile)
+                                           {
+                                               FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
+                                           }
+                                           e.Handled = true;
+                                       }
+                                   };
+                               }
+                           }); // Handle the actual drop
                 });
             });
         }
