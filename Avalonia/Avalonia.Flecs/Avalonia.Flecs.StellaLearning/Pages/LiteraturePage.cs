@@ -180,7 +180,18 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                             }
                         });
 
-                        menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick((_, _) => { }));
+                        menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick((_, _) =>
+                        {
+                            var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
+                            if (selectedLiteratureItem is LocalFileSourceItem localFile)
+                            {
+                                FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
+                            }
+                            else
+                            {
+                                throw new NotImplementedException("Opening this source type is not implemented yet.");
+                            }
+                        }));
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Edit Details...").OnClick((_, _) =>
                         {
                             var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
@@ -188,34 +199,63 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                         }));
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Get Citation...").OnClick((_, _) => { }));
                         menuFlyout.Child<Separator>((_) => { });
-                        menuFlyout.Child<MenuItem>(item => item.SetHeader("Remove").OnClick(async (sender, e) =>
+                        menuFlyout.Child<MenuItem>(item => item.SetHeader("Remove").OnClick((sender, e) =>
                         {
 
-                            var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
+                            if (listBox == null) return;
 
-                            // Confirmation Dialog
-                            var confirmDialog = new ContentDialog
-                            {
-                                Title = "Confirm Removal",
-                                Content = $"Are you sure you want to remove '{selectedLiteratureItem.Name}' from the list?\n\nNote: This only removes the entry from the list. The associated file (if any) will NOT be deleted from your '{LITERATURE_FOLDER_NAME}' folder.",
-                                PrimaryButtonText = "Remove",
-                                CloseButtonText = "Cancel",
-                                DefaultButton = ContentDialogButton.Close
-                            };
+                            var itemToRemove = listBox.GetSelectedItem<LiteratureSourceItem>();
 
-                            var result = await confirmDialog.ShowAsync();
+                            if (itemToRemove != null && itemToRemove is LocalFileSourceItem localFile)
+                            {
+                                string filePath = localFile.FilePath;
+                                string displayName = localFile.Title; // For use in messages
 
-                            if (result == ContentDialogResult.Primary)
-                            {
-                                Logger.Info($"Removing item: {selectedLiteratureItem.Name}");
-                                _baseLiteratureItems.Remove(selectedLiteratureItem);
-                                // Selection will be cleared automatically by ListBox if the source updates correctly
-                                // Optionally trigger save
-                                // SaveLiteratureItemsToDisk(_baseLiteratureItems);
-                            }
-                            else
-                            {
-                                Logger.Debug("Removal cancelled by user.");
+                                // Basic validation
+                                if (string.IsNullOrEmpty(filePath))
+                                {
+                                    MessageDialog.ShowErrorDialog($"Error: File path is missing for item '{displayName}'. Cannot delete.");
+                                    return;
+                                }
+
+                                // --- RECOMMENDED: Insert Confirmation Dialog Here ---
+                                // Example (requires a dialog implementation):
+                                // var dialogService = GetSomeDialogService(); // Get your dialog service instance
+                                // bool confirmed = await dialogService.ShowConfirmationAsync(
+                                //    "Confirm Deletion",
+                                //    $"Are you sure you want to permanently delete the reference file '{displayName}'?\n\nThis action cannot be undone.");
+                                //
+                                // if (!confirmed)
+                                // {
+                                //     Console.WriteLine("Deletion cancelled by user.");
+                                //     return; // Stop if user cancels
+                                // }
+                                // --- End Confirmation Dialog Placeholder ---
+
+
+                                try
+                                {
+                                    // 1. Attempt to delete the file from disk FIRST
+                                    File.Delete(filePath);
+                                    //Console.WriteLine($"Successfully deleted file: {filePath}");
+
+                                    // Remove the item from the observable collection
+                                    _baseLiteratureItems.Remove(itemToRemove);
+
+                                }
+                                catch (IOException ex) // Catch specific IO exceptions
+                                {
+                                    MessageDialog.ShowErrorDialog(ex.Message);
+                                }
+                                catch (UnauthorizedAccessException authEx) // Catch permissions errors
+                                {
+                                    MessageDialog.ShowErrorDialog(authEx.Message);
+                                }
+                                catch (Exception ex) // Catch any other unexpected errors
+                                {
+                                    MessageDialog.ShowErrorDialog($"An unexpected error occurred while deleting file '{filePath}' for item '{displayName}': {ex.Message}");
+                                }
+
                             }
                         })); // Implement RemoveSelectedItem
                     });
@@ -478,6 +518,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 // 2. Create LiteratureSourceItem (LocalFileSourceItem)
                 // The constructor handles basic validation and sets the default name
                 var newItem = new LocalFileSourceItem(newPath);
+                newItem.SourceType = LiteratureSourceType.LocalFile;
                 newItem.Title = storageFile.Name;
 
                 if (Path.GetExtension(newPath) == ".pdf")
@@ -553,20 +594,27 @@ namespace Avalonia.Flecs.StellaLearning.Pages
         /// </summary>
         private void OnBaseCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
+            LiteratureSourceItem? addedItem = null;
+
+            if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
+            {
+                // Assuming only one item is added at a time from your drop logic for selection purpose
+                addedItem = e.NewItems.OfType<LiteratureSourceItem>().FirstOrDefault();
+                if (addedItem != null)
+                {
+                    SubscribeToItemChanges(addedItem); // Subscribe to changes on the new item
+                }
+            }
+
             Dispatcher.UIThread.Post(() =>
             {
                 if (_isDisposed) return; // Double check dispose state
                 string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
-                ApplyFilterAndSort(searchText);
+                ApplyFilterAndSort(searchText, addedItem);
 
                 _itemCountTextBlockBuilder?.SetText($"Items: {_baseLiteratureItems.Count}");
                 // Optionally trigger save immediately on changes
                 // SaveLiteratureItemsToDisk(_baseLiteratureItems);
-                if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
-                {
-                    foreach (LiteratureSourceItem item in e.NewItems.OfType<LiteratureSourceItem>()) SubscribeToItemChanges(item);
-                }
-
 
             }, DispatcherPriority.Background);
         }
@@ -613,7 +661,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
         }
 
         // --- Filtering & Sorting ---
-        private void ApplyFilterAndSort(string searchText)
+        private void ApplyFilterAndSort(string searchText, LiteratureSourceItem? itemToSelect = null)
         {
             if (_literatureListBuilder?.Entity.IsAlive() != true)
             {
@@ -661,6 +709,21 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 {
                     _literatureListBuilder.SetItemsSource(finalCollection);
                     Logger.Trace($"ListBox updated. Filter: '{searchText}', Items displayed: {finalCollection.Count}");
+
+                    if (itemToSelect != null && finalCollection.Contains(itemToSelect)) // Check it's in the filtered list
+                    {
+                        _literatureListBuilder.SetSelectedItem(itemToSelect);
+
+                        // Optional: Scroll the newly selected item into view
+                        var listBoxControl = _literatureListBuilder.Get<ListBox>();
+                        Dispatcher.UIThread.Post(() => // Post again ensure layout is updated before scrolling
+                        {
+                            if (listBoxControl?.IsVisible == true) listBoxControl.ScrollIntoView(itemToSelect);
+                        }, DispatcherPriority.Loaded); // Use Loaded priority for scrolling after layout
+
+                        Logger.Info($"Item '{itemToSelect.Name}' selected after filter/sort.");
+                    }
+
                 }
             }, DispatcherPriority.Background);
         }
@@ -688,7 +751,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 {
                     WriteIndented = true, // Match saving format
                                           // *** IMPORTANT: Add converter for abstract base class ***
-                                          //Converters = { new LiteratureSourceItemConverter() } // You need to create this converter
+                    Converters = { new LiteratureSourceItemConverter() } // You need to create this converter
                 };
 
                 var items = JsonSerializer.Deserialize<ObservableCollection<LiteratureSourceItem>>(jsonString, options);
@@ -722,7 +785,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 {
                     WriteIndented = true,
                     // *** IMPORTANT: Add converter for abstract base class ***
-                    //Converters = { new LiteratureSourceItemConverter() } // You need to create this converter
+                    Converters = { new LiteratureSourceItemConverter() } // You need to create this converter
                 };
 
                 string jsonString = JsonSerializer.Serialize(items, options);
