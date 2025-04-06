@@ -87,8 +87,24 @@ public class EditLiteratureSource : IUIComponent, IDisposable
                     return;
                 }
 
+                if (string.IsNullOrEmpty(authorTextBox.GetText()))
+                {
+                    authorTextBox.SetWatermark("Author is required");
+                    var cd = new ContentDialog()
+                    {
+                        Title = "Missing Author",
+                        Content = "You must define an Author",
+                        PrimaryButtonText = "Ok",
+                        DefaultButton = ContentDialogButton.Primary,
+                        IsSecondaryButtonEnabled = true,
+                    };
+                    cd.ShowAsync();
+                    return;
+                }
+
 
                 _literatureSourceItem.Name = nameTextBox.GetText();
+                _literatureSourceItem.Author = authorTextBox.GetText();
                 _literatureSourceItem.Tags = [.. tagManager.Tags];
 
                 // Clearing an entity results in all components, relationships etc to be removed.
