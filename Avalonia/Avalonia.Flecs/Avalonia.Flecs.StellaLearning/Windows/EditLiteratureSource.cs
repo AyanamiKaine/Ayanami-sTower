@@ -60,25 +60,25 @@ public class EditLiteratureSource : IUIComponent, IDisposable
 
         return world.UI<StackPanel>((stackPanel) =>
         {
-            UIBuilder<TextBox>? nameTextBox = null;
+            UIBuilder<TextBox>? titleTextBox = null;
             UIBuilder<TextBox>? authorTextBox = null;
 
             var tagManager = new TagComponent(world, [.. _literatureSourceItem.Tags]);
 
             void SaveData()
             {
-                if (nameTextBox is null ||
+                if (titleTextBox is null ||
                     authorTextBox is null)
                 {
                     return;
                 }
-                if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                if (string.IsNullOrEmpty(titleTextBox.GetText()))
                 {
-                    nameTextBox.SetWatermark("Name is required");
+                    titleTextBox.SetWatermark("Title is required");
                     var cd = new ContentDialog()
                     {
-                        Title = "Missing Name",
-                        Content = "You must define a name",
+                        Title = "Missing Title",
+                        Content = "You must define a title",
                         PrimaryButtonText = "Ok",
                         DefaultButton = ContentDialogButton.Primary,
                         IsSecondaryButtonEnabled = true,
@@ -103,7 +103,7 @@ public class EditLiteratureSource : IUIComponent, IDisposable
                 }
 
 
-                _literatureSourceItem.Name = nameTextBox.GetText();
+                _literatureSourceItem.Title = titleTextBox.GetText();
                 _literatureSourceItem.Author = authorTextBox.GetText();
                 _literatureSourceItem.Tags = [.. tagManager.Tags];
 
@@ -123,7 +123,7 @@ public class EditLiteratureSource : IUIComponent, IDisposable
                 t.SetText("Name");
             });
 
-            nameTextBox = stackPanel.Child<TextBox>((textBox) =>
+            titleTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
                 textBox
                 .SetWatermark("Name")
