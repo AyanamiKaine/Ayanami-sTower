@@ -39,3 +39,11 @@ We can attach an tags list component on the world.
 ### Problem
 
 It would be nice to set refrerences to literature items so when have problem in our review we can open the literature and rereading it.
+
+## Flecs Experimentation
+
+### Problem
+
+Inflexibility creaps in, when modeling ideas like spaced repetition items, literature, or art related objects. Its not as clear to define class boundries. Now we still have flecs and can use its components to model fields instead. We would be losing compile time type safety in some places. But we would increase our flexibility. And besides that currently we still have runtime type checks because of serialization and deserializations we are doing.
+
+This could also be a great oppurtonity to find out how good flecs built in serialization works.
