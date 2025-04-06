@@ -208,7 +208,6 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                             var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
                             new EditLiteratureSource(_world, selectedLiteratureItem);
                         }));
-                        menuFlyout.Child<MenuItem>(item => item.SetHeader("Get Citation...").OnClick((_, _) => { }));
                         menuFlyout.Child<Separator>((_) => { });
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Remove").OnClick((sender, e) =>
                         {
