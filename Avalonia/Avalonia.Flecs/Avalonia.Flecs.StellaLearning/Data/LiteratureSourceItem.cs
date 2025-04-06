@@ -130,6 +130,9 @@ public partial class LiteratureSourceItem : ObservableObject
     [ObservableProperty]
     private string? _isbn; // Common for Books
 
+    [ObservableProperty]
+    private int _pageCount;
+
     // --- Constructor ---
     // Protected constructor ensures it can only be called by derived classes.
     /// <summary>
