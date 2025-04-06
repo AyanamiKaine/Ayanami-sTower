@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Avalonia.Flecs.StellaLearning.Data // Use your appropriate namespace
@@ -15,25 +16,61 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use your appropriate namespace
         /// This field is non-nullable for this source type.
         /// </summary>
         [ObservableProperty]
-        private string _filePath; // Non-nullable
+        [JsonPropertyName("FilePath")]
+        private string _filePath = string.Empty; // Non-nullable
+
+
+
 
         // --- Constructor ---
+
+
+        /// <summary>
+        /// Parameterless constructor REQUIRED for JSON deserialization
+        /// when not using a fully bindable parameterized constructor.
+        /// </summary>
+        [JsonConstructor] // Explicitly mark, though often implicit if public parameterless exists
+        public LocalFileSourceItem() : base(LiteratureSourceType.LocalFile) // Set default type
+        {
+            // Initialize required fields/properties to safe defaults if needed.
+            _filePath = string.Empty; // Or some other indicator of "not set yet" if required
+                                      // Base properties like Name, Uid etc. will be set by deserializer via setters
+        }
         /// <summary>
         /// Initializes a new instance of the <see cref="LocalFileSourceItem"/> class.
+        /// This constructor is intended for use by the JSON deserializer.
         /// </summary>
-        /// <param name="filePath">The full path to the local file. Cannot be null or empty.</param>
-        /// <param name="type">The type of literature source. Defaults to <see cref="LiteratureSourceType.LocalFile"/>.</param>
+        /// <param name="filePath">The full path to the local file. Must match the 'FilePath' property in JSON.</param>
+        /// <param name="type">The type of literature source. Defaults to LocalFile if not present in JSON for base class.</param>
         public LocalFileSourceItem(string filePath, LiteratureSourceType type = LiteratureSourceType.LocalFile) : base(type)
         {
+            // It's generally better to perform validation *after* deserialization if possible,
+            // or make the property setter validate. File.Exists check here might fail
+            // if the file path was valid when saved but isn't accessible now.
+            // Consider if constructor validation is strictly needed *during* deserialization.
+            // For now, keeping basic null check:
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath, nameof(filePath));
-            if (!File.Exists(filePath)) // Basic validation
+
+            _filePath = filePath; // Assign directly to the backing field
+
+            // Check if Name was already deserialized from JSON, otherwise set default
+            if (string.IsNullOrWhiteSpace(Name) || Name == "Unnamed Source") // Check against base default
             {
-                Console.WriteLine($"Warning: File specified for LocalFileSourceItem does not exist: {filePath}");
-                // Consider throwing an exception or handling this more robustly depending on requirements.
-                // throw new FileNotFoundException("The specified file path does not exist.", filePath);
+                try
+                {
+                    Name = Path.GetFileNameWithoutExtension(filePath); // Default name from file
+                }
+                catch (ArgumentException)
+                {
+                    Name = "Invalid File Path"; // Handle cases where path is invalid for GetFileName...
+                }
             }
-            _filePath = filePath;
-            Name = Path.GetFileNameWithoutExtension(filePath); // Default name from file
+
+            // Optional: Post-deserialization validation or warning for File.Exists
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"Warning: File specified for deserialized LocalFileSourceItem does not exist or is inaccessible: {filePath}");
+            }
         }
 
         /// <summary>
