@@ -96,7 +96,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
             // _disposables.Add(Disposable.Create(() => timerEntity.Destruct()));
 
             // Save on close
-            App.GetMainWindow().Closing += (_, _) => SaveLiteratureItemsToDisk(_baseLiteratureItems);
+            App.GetMainWindow().Closing += async (_, _) => await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems);
         }
 
         /// <summary>
@@ -606,7 +606,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 }
             }
 
-            Dispatcher.UIThread.Post(() =>
+            Dispatcher.UIThread.Post(async () =>
             {
                 if (_isDisposed) return; // Double check dispose state
                 string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
@@ -614,7 +614,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
 
                 _itemCountTextBlockBuilder?.SetText($"Items: {_baseLiteratureItems.Count}");
                 // Optionally trigger save immediately on changes
-                // SaveLiteratureItemsToDisk(_baseLiteratureItems);
+                await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems);
 
             }, DispatcherPriority.Background);
         }
@@ -769,7 +769,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
         /// <summary>
         /// Saves the current literature items to the JSON save file.
         /// </summary>
-        public static void SaveLiteratureItemsToDisk(ObservableCollection<LiteratureSourceItem> items)
+        public static async Task SaveLiteratureItemsToDiskAsync(ObservableCollection<LiteratureSourceItem> items)
         {
             if (items == null) return;
 
@@ -789,7 +789,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 };
 
                 string jsonString = JsonSerializer.Serialize(items, options);
-                File.WriteAllText(filePath, jsonString);
+                await File.WriteAllTextAsync(filePath, jsonString);
                 Logger.Info("Successfully saved literature items.");
             }
             catch (Exception ex)
@@ -826,7 +826,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                     var mainWindow = App.GetMainWindow();
                     if (mainWindow != null)
                     {
-                        mainWindow.Closing -= (_, _) => SaveLiteratureItemsToDisk(_baseLiteratureItems!);
+                        mainWindow.Closing -= async (_, _) => await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems!);
                     }
 
                     // Dispose internal disposables (includes timer entities if added)
