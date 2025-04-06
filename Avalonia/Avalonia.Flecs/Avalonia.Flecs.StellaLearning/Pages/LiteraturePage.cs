@@ -478,6 +478,20 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 // 2. Create LiteratureSourceItem (LocalFileSourceItem)
                 // The constructor handles basic validation and sets the default name
                 var newItem = new LocalFileSourceItem(newPath);
+                newItem.Title = storageFile.Name;
+
+                if (Path.GetExtension(newPath) == ".pdf")
+                {
+                    try
+                    {
+                        PdfMetadata info = PdfSharpMetadataExtractor.ExtractMetadata(newPath);
+                        newItem.PageCount = info.PageCount;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Logger.Info($"Exception was thrown {ex}");
+                    }
+                }
                 // You might want to add default tags or prompt user later
 
                 // 3. Add to collection on UI thread
