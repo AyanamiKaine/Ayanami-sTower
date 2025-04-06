@@ -73,9 +73,9 @@ namespace Avalonia.Flecs.StellaLearning.Pages
 
             // Ensure literature directory exists
             EnsureLiteratureDirectory();
-
+            _world.Set(LoadLiteratureItemsFromDisk());
             // Load existing data
-            _baseLiteratureItems = LoadLiteratureItemsFromDisk(); // Implement this
+            _baseLiteratureItems = _world.Get<ObservableCollection<LiteratureSourceItem>>();
             SubscribeToAllItemChanges(_baseLiteratureItems);
 
             // Subscribe to collection changes for saving and UI updates
