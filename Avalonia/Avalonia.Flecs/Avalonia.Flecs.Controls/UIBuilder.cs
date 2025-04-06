@@ -1886,6 +1886,58 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+    /// <summary>
+    /// Adds an event handler that gets invoked when a container is being cleared for an item in a ListBox.
+    /// When the underlying entity gets destroyed, it automatically disposes the event handler.
+    /// </summary>
+    /// <param name="builder">The UI builder for the ListBox</param>
+    /// <param name="handler">The event handler to invoke when a container is being cleared</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<ListBox> OnContainerClearing(this UIBuilder<ListBox> builder, Action<object?, ContainerClearingEventArgs> handler)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        var listBox = builder.Get<ListBox>();
+
+        var containerMaterializedObservable = Observable.FromEventPattern<ContainerClearingEventArgs>(
+            addHandler => listBox.ContainerClearing += addHandler,
+            removeHandler => listBox.ContainerClearing -= removeHandler);
+
+        var subscription = containerMaterializedObservable
+            .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
+            .Subscribe(eventPattern => handler(eventPattern.Sender, eventPattern.EventArgs));
+
+        AddDisposableSubscription(builder.Entity, subscription);
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when the control is detached from the visual tree.
+    /// When the underlying entity gets destroyed it automatically disposes the event handler.
+    /// </summary>
+    /// <typeparam name="T">The type of Control</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="handler">The action to execute when the control is detached from the visual tree</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> OnDetachedFromVisualTree<T>(this UIBuilder<T> builder, Action<object?, VisualTreeAttachmentEventArgs> handler) where T : Control
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        var control = builder.Get<Control>();
+
+        var containerMaterializedObservable = Observable.FromEventPattern<VisualTreeAttachmentEventArgs>(
+            addHandler => control.DetachedFromVisualTree += addHandler,
+            removeHandler => control.DetachedFromVisualTree -= removeHandler);
+
+        var subscription = containerMaterializedObservable
+            .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
+            .Subscribe(eventPattern => handler(eventPattern.Sender, eventPattern.EventArgs));
+
+        AddDisposableSubscription(builder.Entity, subscription);
+        return builder;
+    }
 
     /// <summary>
     /// Adds an event handler that gets invoked when the OnClick event happens, when the
@@ -2463,13 +2515,18 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining</returns>
     public static UIBuilder<TControl> SetBinding<TControl>(
         this UIBuilder<TControl> builder,
-        AvaloniaProperty targetProperty, // e.g., TextBlock.TextProperty
+        AvaloniaProperty targetProperty,
         Binding binding) where TControl : AvaloniaObject
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive()) return builder;
 
-        var control = builder.Entity.Get<TControl>(); // Get the Avalonia control
-        control.Bind(targetProperty, binding); // Use Avalonia's Bind method
+        var control = builder.Entity.Get<TControl>();
+        control.Bind(targetProperty, binding); // Apply the binding
+
+        // Create the cleaner and add it to the entity's subscription list
+        var cleaner = new BindingCleaner(control, targetProperty);
+        ref var subListComp = ref builder.Entity.Ensure<SubscriptionListComponent>();
+        subListComp.Add(cleaner); // <<< ADD TO SUBSCRIPTION LIST
 
         return builder;
     }
