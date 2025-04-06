@@ -120,14 +120,14 @@ public class EditLiteratureSource : IUIComponent, IDisposable
 
             stackPanel.Child<TextBlock>((t) =>
             {
-                t.SetText("Name");
+                t.SetText("Title");
             });
 
             titleTextBox = stackPanel.Child<TextBox>((textBox) =>
             {
                 textBox
-                .SetWatermark("Name")
-                .SetText(_literatureSourceItem.Name)
+                .SetWatermark("Title")
+                .SetText(_literatureSourceItem.Title)
                 .OnKeyDown((sender, args) =>
                 {
                     if (args.Key == Key.Enter)
