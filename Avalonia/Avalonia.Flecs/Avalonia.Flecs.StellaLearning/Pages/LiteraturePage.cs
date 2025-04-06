@@ -36,7 +36,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages
     public class LiteraturePage : IUIComponent, IDisposable
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-
+        private static readonly AttachedProperty<Entity> ContainerEntityProperty =
+            AvaloniaProperty.RegisterAttached<LiteraturePage, Control, Entity>("ContainerEntity");
         private readonly World _world;
         private Entity _root;
         /// <inheritdoc/>
@@ -277,26 +278,18 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                            .AllowDrop() // Enable dropping files
                            .OnDragOver(HandleLiteratureListDragOver) // Handle hover effect
                            .OnDrop(HandleLiteratureListDropAsync)
-                           .OnContainerPrepared((sender, e) =>
-                           {
-                               if (e.Container is ListBoxItem item)
-                               {
-                                   item.DoubleTapped += (sender, e) =>
-                                   {
-                                       if (sender is ListBoxItem item)
-                                       {
-                                           object? dataContext = item.DataContext;
-                                           LiteratureSourceItem? selectedLiteratureItem = dataContext as LiteratureSourceItem;
-
-                                           if (selectedLiteratureItem is LocalFileSourceItem localFile)
-                                           {
-                                               FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
-                                           }
-                                           e.Handled = true;
-                                       }
-                                   };
-                               }
-                           }); // Handle the actual drop
+                            .OnDoubleTapped((sender, e) =>
+                            {
+                                if (sender is ListBox listBox)
+                                {
+                                    var selectedLiteratureItem = listBox.SelectedItem as LiteratureSourceItem;
+                                    if (selectedLiteratureItem is LocalFileSourceItem localFile)
+                                    {
+                                        FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
+                                        e.Handled = true;
+                                    }
+                                }
+                            });
                 });
             });
         }
@@ -306,10 +299,26 @@ namespace Avalonia.Flecs.StellaLearning.Pages
         /// </summary>
         private FuncDataTemplate<LiteratureSourceItem> CreateLiteratureItemTemplate()
         {
+
+            /*
+            TODO: THIS LEAKS MEMORY ALL OVER THE PLACE BECAUSE THE BINDINGS ARE NOT CORRECTLY REMOVED FROM THE 
+            AVALONIA OBJECTS SO THEY WILL ALWAYS BE REFRENCED AND NEVER GARBAGED COLLECTED, THIS NEEDS TO BE FIXED
+            ASAP.
+            */
+
             return _world.CreateTemplate<LiteratureSourceItem, Grid>((grid, item) =>
             {
                 if (item is null)
                     return;
+
+                /*
+                When the underlying template ui becomes detached from the list box we also 
+                destroy the related entities.
+                */
+                grid.OnDetachedFromVisualTree((sender, e) =>
+                {
+                    grid.Entity.Destruct();
+                });
 
                 grid.SetColumnDefinitions("Auto, *, Auto") // Icon(Type), Main Info, Tags
                     .SetRowDefinitions("Auto, Auto")    // Row 0: Name/Title, Row 1: Author/Year + Tags
