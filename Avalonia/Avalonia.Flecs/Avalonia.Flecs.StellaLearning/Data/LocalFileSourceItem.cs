@@ -47,12 +47,6 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use your appropriate namespace
                 sb.Append(Author.Trim().TrimEnd('.').TrimEnd(',')).Append(". ");
             }
 
-            // Year
-            if (PublicationYear.HasValue)
-            {
-                sb.Append($"({PublicationYear.Value}). ");
-            }
-
             // Title (Assume Title Case for Books/Reports, needs adjustment for articles if inheriting)
             if (!string.IsNullOrWhiteSpace(Title))
             {
