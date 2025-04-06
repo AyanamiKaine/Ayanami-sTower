@@ -32,6 +32,13 @@ namespace Avalonia.Flecs.StellaLearning.UiComponents // Adjust namespace if need
         /// The underlying collection of tags *for this specific instance* managed by this component.
         /// </summary>
         public ObservableCollection<string> Tags { get; } = [];
+
+
+        /*
+        TODO: We want to reuse the unique tags for everything not just spaced repetition items, so 
+        we can reuse the tags for art and literature based items. Probably we can define an tags interface
+        that implements a list of tags. That also ensure the list only holds unique values etc.
+        */
         /// <summary>
         /// Collection holding all unique tags found across all SpacedRepetitionItems.
         /// Used as the source for AutoCompleteBox suggestions.
