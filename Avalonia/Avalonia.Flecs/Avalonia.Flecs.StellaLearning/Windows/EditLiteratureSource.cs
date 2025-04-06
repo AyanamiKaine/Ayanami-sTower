@@ -61,11 +61,14 @@ public class EditLiteratureSource : IUIComponent, IDisposable
         return world.UI<StackPanel>((stackPanel) =>
         {
             UIBuilder<TextBox>? nameTextBox = null;
+            UIBuilder<TextBox>? authorTextBox = null;
+
             var tagManager = new TagComponent(world, [.. _literatureSourceItem.Tags]);
 
             void SaveData()
             {
-                if (nameTextBox is null)
+                if (nameTextBox is null ||
+                    authorTextBox is null)
                 {
                     return;
                 }
@@ -109,6 +112,25 @@ public class EditLiteratureSource : IUIComponent, IDisposable
                 textBox
                 .SetWatermark("Name")
                 .SetText(_literatureSourceItem.Name)
+                .OnKeyDown((sender, args) =>
+                {
+                    if (args.Key == Key.Enter)
+                    {
+                        SaveData();
+                    }
+                });
+            });
+
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Author");
+            });
+
+            authorTextBox = stackPanel.Child<TextBox>((textBox) =>
+            {
+                textBox
+                .SetWatermark("Author")
+                .SetText(_literatureSourceItem.Author)
                 .OnKeyDown((sender, args) =>
                 {
                     if (args.Key == Key.Enter)
