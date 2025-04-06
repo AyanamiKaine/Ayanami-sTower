@@ -52,12 +52,6 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use your appropriate namespace
             {
                 sb.Append(Author.Trim().TrimEnd('.').TrimEnd(',')).Append(". ");
             }
-
-            // Year (or n.d. for no date)
-            if (PublicationYear.HasValue)
-            {
-                sb.Append($"({PublicationYear.Value}). ");
-            }
             else
             {
                 // APA uses (n.d.) if no date is available
