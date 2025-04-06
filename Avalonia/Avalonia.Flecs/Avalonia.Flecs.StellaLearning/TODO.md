@@ -33,3 +33,9 @@ Currently the tag system was specificly created for spaced repetition items. We 
 ### Solution
 
 We can attach an tags list component on the world.
+
+## Implement the ability for spaced repetition items to refrence literature
+
+### Problem
+
+It would be nice to set refrerences to literature items so when have problem in our review we can open the literature and rereading it.
