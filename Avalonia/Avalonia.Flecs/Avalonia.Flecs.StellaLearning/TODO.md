@@ -34,6 +34,8 @@ Currently the tag system was specificly created for spaced repetition items. We 
 
 We can attach an tags list component on the world.
 
+## GIGANTIC MEMORY PROBLEM WHEN SCROLLING IN THE LIST
+
 ## Implement the ability for spaced repetition items to refrence literature
 
 ### Problem
@@ -47,3 +49,5 @@ It would be nice to set refrerences to literature items so when have problem in 
 Inflexibility creaps in, when modeling ideas like spaced repetition items, literature, or art related objects. Its not as clear to define class boundries. Now we still have flecs and can use its components to model fields instead. We would be losing compile time type safety in some places. But we would increase our flexibility. And besides that currently we still have runtime type checks because of serialization and deserializations we are doing.
 
 This could also be a great oppurtonity to find out how good flecs built in serialization works.
+
+The result will be probably much more runtime checks, but also because we will be using much more simpler components we can just say `.Ensure<Type>()`. The bigger question is how will things like the observable property work?
