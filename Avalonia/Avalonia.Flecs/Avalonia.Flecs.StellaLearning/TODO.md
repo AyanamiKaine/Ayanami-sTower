@@ -23,3 +23,9 @@ Either show tags in the spaced repetition list, simply make it possible to searc
 ### Implemented Solution
 
 Tags are implemented for spaced repetition items, and can be used to search for items with specific tags
+
+## Implemented a application wide tag system
+
+### Problem
+
+Currently the tag system was specificly created for spaced repetition items. We want to expand that idea to an application wide tag system that can be reused for everything that needs tags.
