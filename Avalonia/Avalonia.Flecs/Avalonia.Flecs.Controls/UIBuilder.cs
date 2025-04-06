@@ -1954,6 +1954,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the selected item in a ListBox control.
+    /// </summary>
+    /// <typeparam name="ItemType">The type of item to select</typeparam>
+    /// <param name="builder">The UI builder for the ListBox</param>
+    /// <param name="ToBeSelected">The item to set as selected</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<ListBox> SetSelectedItem<ItemType>(this UIBuilder<ListBox> builder, ItemType ToBeSelected) where ItemType : new()
+    {
+        builder.Get<ListBox>().SelectedItem = ToBeSelected;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the header
     /// </summary>
     /// <typeparam name="T"></typeparam>
