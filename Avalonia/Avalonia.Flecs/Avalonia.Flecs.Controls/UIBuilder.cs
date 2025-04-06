@@ -1833,6 +1833,61 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Adds an event handler that gets invoked when the DoubleTapped event happens. When the
+    /// underlying entity gets destroyed it automatically disposes the event handler.
+    /// </summary>
+    /// <typeparam name="T">The type of InputElement</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="handler">The action to execute when the control is double-tapped</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> OnDoubleTapped<T>(this UIBuilder<T> builder, Action<object?, TappedEventArgs> handler) where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        var listBox = builder.Get<InputElement>();
+
+        var checkedChangedObservable = Observable.FromEventPattern<TappedEventArgs>(
+            addHandler => listBox.DoubleTapped += addHandler,
+            removeHandler => listBox.DoubleTapped -= removeHandler);
+
+        var subscription = checkedChangedObservable
+            .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
+            .Subscribe(eventPattern => handler(eventPattern.Sender, eventPattern.EventArgs));
+
+        AddDisposableSubscription(builder.Entity, subscription);
+        return builder;
+    }
+
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when a container is prepared for an item in a ListBox.
+    /// When the underlying entity gets destroyed, it automatically disposes the event handler.
+    /// </summary>
+    /// <param name="builder">The UI builder for the ListBox</param>
+    /// <param name="handler">The event handler to invoke when a container is prepared</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<ListBox> OnContainerPrepared(this UIBuilder<ListBox> builder, Action<object?, ContainerPreparedEventArgs> handler)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        var listBox = builder.Get<ListBox>();
+
+        var containerMaterializedObservable = Observable.FromEventPattern<ContainerPreparedEventArgs>(
+            addHandler => listBox.ContainerPrepared += addHandler,
+            removeHandler => listBox.ContainerPrepared -= removeHandler);
+
+        var subscription = containerMaterializedObservable
+            .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
+            .Subscribe(eventPattern => handler(eventPattern.Sender, eventPattern.EventArgs));
+
+        AddDisposableSubscription(builder.Entity, subscription);
+        return builder;
+    }
+
+
+    /// <summary>
     /// Adds an event handler that gets invoked when the OnClick event happens, when the
     /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
