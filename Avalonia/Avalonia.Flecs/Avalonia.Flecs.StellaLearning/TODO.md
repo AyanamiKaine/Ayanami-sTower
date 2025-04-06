@@ -29,3 +29,7 @@ Tags are implemented for spaced repetition items, and can be used to search for 
 ### Problem
 
 Currently the tag system was specificly created for spaced repetition items. We want to expand that idea to an application wide tag system that can be reused for everything that needs tags.
+
+### Solution
+
+We can attach an tags list component on the world.
