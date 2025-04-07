@@ -162,6 +162,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 .With(Ecs.ChildOf, Ecs.Wildcard)
                 .Each((Entity child) =>
                 {
+
+                    if (child == 0)
+                        return;
+
                     if (child.Has<FlyoutBase>())
                     {
                         var parent = child.Parent();
@@ -194,6 +198,10 @@ namespace Avalonia.Flecs.Controls.ECS
                 .Each((Entity child) =>
                 {
                     var parent = child.Parent();
+
+
+                    if (parent == 0)
+                        return;
 
                     if (child.Has<Control>())
                     {
@@ -256,6 +264,9 @@ namespace Avalonia.Flecs.Controls.ECS
                     if (entity.Has(Ecs.ChildOf, Ecs.Wildcard))
                     {
                         var parent = entity.Parent();
+
+                        if (parent == 0)
+                            return;
 
                         if (parent.Has<Panel>())
                         {
@@ -355,6 +366,9 @@ namespace Avalonia.Flecs.Controls.ECS
                 {
                     // When the ChildOf relationship is removed, the second entity is the parent
                     var parent = child.Parent();
+
+                    if (parent == 0)
+                        return;
 
                     if (child.Has<Control>())
                     {
