@@ -172,7 +172,17 @@ public static class UIBuilderExtensions
     {
         return new FuncDataTemplate<TData>((item, _) =>
         {
-            var entity = world.UI<TControl>(builder => configure(builder, item));
+            var entity = world.UI<TControl>(builder =>
+            {
+                // When the root control of the template becomes detached we want to destroy the created
+                // entity hierarchy of the template.
+                builder.OnDetachedFromVisualTree((sender, e) =>
+                {
+                    if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+                        builder.Entity.Destruct();
+                });
+                configure(builder, item);
+            });
             return entity.Get<TControl>();
         });
     }
