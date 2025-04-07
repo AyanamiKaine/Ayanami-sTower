@@ -273,8 +273,7 @@ namespace Avalonia.Flecs.Controls.ECS
                             var panel = parent.Get<Panel>();
                             if (panel.Children.Contains(control))
                             {
-                                Logger.Debug("Removing control from panel due to Control component removal on entity {EntityId}",
-                                    entity.Name() ?? entity.ToString());
+                                Logger.Debug("Removing control from panel due to Control component removal on entity {EntityId}", entity.ToString());
                                 panel.Children.Remove(control);
                             }
                         }
@@ -283,8 +282,7 @@ namespace Avalonia.Flecs.Controls.ECS
                             var contentControl = parent.Get<ContentControl>();
                             if (contentControl.Content == control)
                             {
-                                Logger.Debug("Clearing control from content control due to Control component removal on entity {EntityId}",
-                                    entity.Name() ?? entity.ToString());
+                                Logger.Debug("Clearing control from content control due to Control component removal on entity {EntityId}", entity.ToString());
                                 contentControl.Content = null;
                             }
                         }
