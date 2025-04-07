@@ -164,21 +164,30 @@ public static class UIBuilderExtensions
     /// <typeparam name="TControl">Type of root control for the template</typeparam>
     /// <param name="world">The Flecs world</param>
     /// <param name="configure">Action to configure the control</param>
+    /// <param name="shouldBeCleanedUp">When set to true the underlying hierarchy of entities gets destroyed when the template gets detached from the visual tree. You want to disable this when you have an hierarchy of templates, where a created template uses again a nested template.</param>
     /// <returns>A data template that uses the UIBuilder pattern</returns>
     public static FuncDataTemplate<TData> CreateTemplate<TData, TControl>(
         this World world,
-        Action<UIBuilder<TControl>, TData> configure)
+        Action<UIBuilder<TControl>, TData> configure,
+        bool shouldBeCleanedUp = true)
         where TControl : Control, new()
     {
         return new FuncDataTemplate<TData>((item, _) =>
         {
             var entity = world.UI<TControl>(builder =>
             {
+
+                if (!shouldBeCleanedUp)
+                    return;
+
                 // When the root control of the template becomes detached we want to destroy the created
                 // entity hierarchy of the template.
                 builder.OnDetachedFromVisualTree((sender, e) =>
                 {
-                    if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+                    if (builder.Entity == 0)
+                        return;
+
+                    if (builder.Entity.IsValid() || builder.Entity.IsAlive())
                         builder.Entity.Destruct();
                 });
                 configure(builder, item);
@@ -2512,6 +2521,11 @@ public static class UIBuilderExtensions
         var binding = new Binding(sourcePropertyPath) { Mode = mode };
         control.Bind(targetProperty, binding); // Use Avalonia's Bind method
 
+        // Create the cleaner and add it to the entity's subscription list
+        var cleaner = new BindingCleaner(control, targetProperty);
+        ref var subListComp = ref builder.Entity.Ensure<SubscriptionListComponent>();
+        subListComp.Add(cleaner); // <<< ADD TO SUBSCRIPTION LIST
+
         return builder;
     }
 
@@ -2528,8 +2542,6 @@ public static class UIBuilderExtensions
         AvaloniaProperty targetProperty,
         Binding binding) where TControl : AvaloniaObject
     {
-        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive()) return builder;
-
         var control = builder.Entity.Get<TControl>();
         control.Bind(targetProperty, binding); // Apply the binding
 
