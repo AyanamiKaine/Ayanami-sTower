@@ -173,27 +173,32 @@ public static class UIBuilderExtensions
         where TControl : Control, new()
     {
         return new FuncDataTemplate<TData>((item, _) =>
-        {
-            var entity = world.UI<TControl>(builder =>
             {
-
-                if (!shouldBeCleanedUp)
-                    return;
-
-                // When the root control of the template becomes detached we want to destroy the created
-                // entity hierarchy of the template.
-                builder.OnDetachedFromVisualTree((sender, e) =>
+                // Create the entity and builder FIRST
+                var entity = world.UI<TControl>(builder =>
                 {
-                    if (builder.Entity == 0)
-                        return;
+                    // Always run the main configuration
+                    configure(builder, item);
 
-                    if (builder.Entity.IsValid() || builder.Entity.IsAlive())
-                        builder.Entity.Destruct();
+                    // *Conditionally* attach the cleanup handler
+                    if (shouldBeCleanedUp)
+                    {
+                        builder.OnDetachedFromVisualTreeTracked((sender, e) => // Use the tracked method
+                         {
+                             if (builder.Entity.IsValid() && builder.Entity.IsAlive())
+                             {
+                                 Console.WriteLine($"DetachedFromVisualTree (Tracked): Triggering Destruct for Entity {builder.Entity.Id}");
+                                 builder.Entity.Destruct();
+                             }
+                             else
+                             {
+                                 Console.WriteLine($"DetachedFromVisualTree (Tracked): Entity {builder.Entity.Id} already invalid/dead. Skipping Destruct.");
+                             }
+                         });
+                    }
                 });
-                configure(builder, item);
+                return entity.Get<TControl>(); // Get the control associated with the entity
             });
-            return entity.Get<TControl>();
-        });
     }
 
     /// <summary>
@@ -3024,6 +3029,41 @@ public class UIBuilder<T> where T : AvaloniaObject
     public ref readonly ComponentType Get<ComponentType>()
     {
         return ref Entity.Get<ComponentType>();
+    }
+
+    /// <summary>
+    /// Adds an event handler that gets invoked when the control is detached from the visual tree,
+    /// with automatic tracking and cleanup when the entity is destroyed.
+    /// </summary>
+    /// <param name="handlerAction">The action to execute when the control is detached from the visual tree</param>
+    /// <returns>The builder for method chaining</returns>
+    public UIBuilder<T> OnDetachedFromVisualTreeTracked(EventHandler<VisualTreeAttachmentEventArgs> handlerAction)
+    {
+        if (_control is not Control control) // Ensure it's a Control
+            return this;
+
+        // Ensure SubscriptionListComponent exists
+        if (!Entity.Has<SubscriptionListComponent>())
+        {
+            Entity.Set(new SubscriptionListComponent());
+        }
+        ref var subList = ref Entity.GetMut<SubscriptionListComponent>(); // Need mutability
+
+        // Create the handler
+        EventHandler<VisualTreeAttachmentEventArgs> handler = (sender, e) => handlerAction(sender, e);
+
+        // Subscribe
+        control.DetachedFromVisualTree += handler;
+
+        // Add token to list for auto-unsubscribe on entity destruction
+        subList.Add(new EventSubscriptionToken(() =>
+        {
+            if (control != null) // Check if control still exists (might be disposed)
+                control.DetachedFromVisualTree -= handler;
+            Console.WriteLine($"EventSubscriptionToken: Unsubscribed DetachedFromVisualTree for Entity {Entity.Id}"); // Logging
+        }));
+
+        return this;
     }
 }
 
