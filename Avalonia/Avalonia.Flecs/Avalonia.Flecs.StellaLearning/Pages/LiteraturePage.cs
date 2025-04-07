@@ -315,10 +315,6 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 When the underlying template ui becomes detached from the list box we also 
                 destroy the related entities.
                 */
-                grid.OnDetachedFromVisualTree((sender, e) =>
-                {
-                    grid.Entity.Destruct();
-                });
 
                 grid.SetColumnDefinitions("Auto, *, Auto") // Icon(Type), Main Info, Tags
                     .SetRowDefinitions("Auto, Auto")    // Row 0: Name/Title, Row 1: Author/Year + Tags
@@ -396,9 +392,14 @@ namespace Avalonia.Flecs.StellaLearning.Pages
 
 
                                     });
-                            }))
+                                /*
+                                There is no need to clean up this template because the when the ItemTemplate
+                                gets cleaned all child templates get cleaned too, we want to avoid an double free.
+                                */
+                            }, shouldBeCleanedUp: false))
                             .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
                 });
+
 
 
             });
