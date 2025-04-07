@@ -395,6 +395,8 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                                 /*
                                 There is no need to clean up this template because the when the ItemTemplate
                                 gets cleaned all child templates get cleaned too, we want to avoid an double free.
+
+                                THIS IS STILL BUGGED AND RESULTS IN A MEMORY LEAK, THE SECOND NESTED TEMPLATE NEVER GETS DESTROYED AND I DONT KNOW WHY!
                                 */
                             }, shouldBeCleanedUp: false))
                             .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
