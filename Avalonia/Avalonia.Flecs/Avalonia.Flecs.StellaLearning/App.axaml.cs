@@ -21,6 +21,7 @@ using System.Text.Json;
 using Avalonia.Flecs.StellaLearning.Converters;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia.Flecs.Controls.ECS;
 
 namespace Avalonia.Flecs.StellaLearning;
 
@@ -324,7 +325,7 @@ public partial class App : Application
 
 
         base.OnFrameworkInitializationCompleted();
-        //_world.RunRESTAPI();
+        _world.RunRESTAPI();
 #if DEBUG
         this.AttachDevTools();
 #endif
