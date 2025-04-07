@@ -10,6 +10,7 @@ using Avalonia.Flecs.Controls.ECS;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Markup.Xaml.Templates;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
@@ -197,6 +198,7 @@ public static class UIBuilderExtensions
                          });
                     }
                 });
+
                 return entity.Get<TControl>(); // Get the control associated with the entity
             });
     }
