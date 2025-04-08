@@ -125,9 +125,9 @@ namespace Avalonia.Flecs.Controls.ECS
             AddUIComponentTags(world);
             AddControlToParentAdderObserver(world);
             AddFlyoutToControlObserver(world);
-            RemoveControlFromParentObserver(world);
-            RemoveControlComponentObserver(world);
-            SetupFlecsDisposalHooks(world);
+            //RemoveControlFromParentObserver(world);
+            //RemoveControlComponentObserver(world);
+            //SetupFlecsDisposalHooks(world);
             //AddPageObserver(world);
 
 
@@ -332,11 +332,8 @@ namespace Avalonia.Flecs.Controls.ECS
                 .Event(Ecs.OnRemove) // Trigger when the component is removed
                 .Each((Entity entity, ref SubscriptionListComponent subList) =>
                 {
-                    if (!entity.IsAlive() || !entity.IsValid() || entity == 0)
+                    if (entity == 0)
                         return;
-                    // Console.WriteLine($"Flecs OnRemove: Disposing subscriptions for entity {entity.Id}.");
-
-                    // The Dispose method handles unsubscribing everything
                     subList.Dispose();
 
                 });
