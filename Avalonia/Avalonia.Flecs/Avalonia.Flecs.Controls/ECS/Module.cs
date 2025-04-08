@@ -332,6 +332,8 @@ namespace Avalonia.Flecs.Controls.ECS
                 .Event(Ecs.OnRemove) // Trigger when the component is removed
                 .Each((Entity entity, ref SubscriptionListComponent subList) =>
                 {
+                    if (!entity.IsAlive() || !entity.IsValid() || entity == 0)
+                        return;
                     Console.WriteLine($"Flecs OnRemove: Disposing subscriptions for entity {entity.Id}.");
                     try
                     {
