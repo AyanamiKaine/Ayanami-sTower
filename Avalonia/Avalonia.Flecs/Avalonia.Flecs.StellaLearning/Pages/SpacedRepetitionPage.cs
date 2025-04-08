@@ -107,7 +107,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                         You can search spaced repetition items by name or by their tags.
                         """);
                     });
-                }));
+                }), false);
             });
 
             grid.Child<TextBlock>((textBlock) =>
