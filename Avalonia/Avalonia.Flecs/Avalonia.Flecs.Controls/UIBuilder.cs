@@ -187,8 +187,7 @@ public static class UIBuilderExtensions
                         builder.OnDetachedFromVisualTreeTracked((sender, e) => // Use the tracked method
                          {
 
-                             Dispatcher.UIThread.Invoke(() =>
-                             {
+                            
 
                                  if (builder.Entity.InValid())
                                  {
@@ -196,8 +195,7 @@ public static class UIBuilderExtensions
                                  }
 
                                  builder.Entity.Destruct();
-                             }
-                             );
+ 
                          });
                     }
                 });
