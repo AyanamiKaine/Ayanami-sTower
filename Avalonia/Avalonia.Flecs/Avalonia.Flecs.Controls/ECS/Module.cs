@@ -125,9 +125,9 @@ namespace Avalonia.Flecs.Controls.ECS
             AddUIComponentTags(world);
             AddControlToParentAdderObserver(world);
             AddFlyoutToControlObserver(world);
-            //RemoveControlFromParentObserver(world);
-            //RemoveControlComponentObserver(world);
-            //SetupFlecsDisposalHooks(world);
+            RemoveControlFromParentObserver(world);
+            RemoveControlComponentObserver(world);
+            SetupFlecsDisposalHooks(world);
             //AddPageObserver(world);
 
 
