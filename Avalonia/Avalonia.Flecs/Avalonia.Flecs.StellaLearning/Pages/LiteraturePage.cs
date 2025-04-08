@@ -324,7 +324,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 grid.Child<TextBlock>(icon =>
                 {
                     // Add Tooltip for icon maybe?
-                    icon.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText(item.SourceType.ToString()!))));
+                    icon.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText(item.SourceType.ToString()!))), true);
                 });
 
                 // Row 0, Col 1: Name / Title
@@ -340,7 +340,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                                  TargetNullValue = item.Name // Show Name if Title becomes null
                              });
                     // Tooltip showing full Title or Name
-                    nameTitle.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Title)) { FallbackValue = item.Name, TargetNullValue = item.Name }))));
+                    nameTitle.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Title)) { FallbackValue = item.Name, TargetNullValue = item.Name }))), true);
 
                 });
 
@@ -360,7 +360,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                         FallbackValue = "No Author"
                     });
                     // TODO: Improve this display to include year, possibly using a converter.
-                    authorYear.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Author)) { TargetNullValue = "No Author", FallbackValue = "No Author" }))));
+                    authorYear.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Author)) { TargetNullValue = "No Author", FallbackValue = "No Author" }))), true);
                 });
 
                 // Row 1, Col 2: Tags (using ItemsControl or similar)
