@@ -397,8 +397,11 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                                 gets cleaned all child templates get cleaned too, we want to avoid an double free.
 
                                 THIS IS STILL BUGGED AND RESULTS IN A MEMORY LEAK, THE SECOND NESTED TEMPLATE NEVER GETS DESTROYED AND I DONT KNOW WHY!
+
+                                I tracked down the problem to flecs. It seems to occur when we delete an entity and
+                                something in anohter thread? runs and we get entity_index.c: 72: assert: r->dense < index->alive_count INVALID_PARAMETER.
                                 */
-                            }, shouldBeCleanedUp: false))
+                            }, shouldBeCleanedUp: true))
                             .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
                 });
 
