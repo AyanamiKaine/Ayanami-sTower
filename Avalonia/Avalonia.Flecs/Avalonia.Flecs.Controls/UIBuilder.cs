@@ -585,7 +585,7 @@ public static class UIBuilderExtensions
                                  ToolTip.SetTip(control, null);
                                  toolTip.Entity.Remove<ToolTip>();
 
-                                 if (toolTip.Entity.Validate())
+                                 if (toolTip.Entity.InValid())
                                  {
                                      return;
                                  }
