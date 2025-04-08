@@ -97,7 +97,16 @@ namespace Avalonia.Flecs.Controls.ECS
         /// <returns></returns>
         public static bool Validate(this Entity entity)
         {
-            return entity.IsAlive() && entity.IsValid() && entity != 0;
+            return entity != 0;
+        }
+        /// <summary>
+        /// Checks if an entity is invalid
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public static bool InValid(this Entity entity)
+        {
+            return !entity.Validate();
         }
     }
 }
