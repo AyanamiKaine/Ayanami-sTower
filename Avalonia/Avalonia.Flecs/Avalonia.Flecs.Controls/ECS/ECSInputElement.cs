@@ -41,7 +41,12 @@ namespace Avalonia.Flecs.Controls.ECS
                     // THIS ALSO MATTER FOR ALL FUNCTIONS 
                     // THAT WANT TO USE THE ECS WORLD FOUND IN MAIN THE APPLICATION
 
-                }).OnRemove((Entity e, ref InputElement inputElement) => e.Remove<Interactive>());
+                }).OnRemove((Entity e, ref InputElement inputElement) =>
+                {
+                    e.Remove<Interactive>();
+                    e.Remove<Layoutable>();
+                    e.Remove<Visual>();
+                });
         }
     }
 }
