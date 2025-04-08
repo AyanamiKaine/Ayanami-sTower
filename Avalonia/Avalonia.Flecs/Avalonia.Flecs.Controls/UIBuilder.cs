@@ -186,15 +186,18 @@ public static class UIBuilderExtensions
                     {
                         builder.OnDetachedFromVisualTreeTracked((sender, e) => // Use the tracked method
                          {
-                             if (builder.Entity.IsValid() && builder.Entity.IsAlive())
+
+                             Dispatcher.UIThread.Invoke(() =>
                              {
-                                 Console.WriteLine($"DetachedFromVisualTree (Tracked): Triggering Destruct for Entity {builder.Entity.Id}");
+
+                                 if (builder.Entity.InValid())
+                                 {
+                                     return;
+                                 }
+
                                  builder.Entity.Destruct();
                              }
-                             else
-                             {
-                                 Console.WriteLine($"DetachedFromVisualTree (Tracked): Entity {builder.Entity.Id} already invalid/dead. Skipping Destruct.");
-                             }
+                             );
                          });
                     }
                 });
@@ -590,16 +593,11 @@ public static class UIBuilderExtensions
                                  ToolTip.SetTip(control, null);
                                  toolTip.Entity.Remove<ToolTip>();
 
-                                 Console.WriteLine("Removing tooltip");
                                  if (toolTip.Entity.Validate())
                                  {
                                      return;
                                  }
                                  toolTip.Entity.Destruct();
-                             }
-                             else
-                             {
-                                 Console.WriteLine($"DetachedFromVisualTree (Tracked): Entity {builder.Entity.Id} already invalid/dead. Skipping Destruct.");
                              }
                          });
 
@@ -3066,7 +3064,7 @@ public class UIBuilder<T> where T : AvaloniaObject
         {
             if (control != null) // Check if control still exists (might be disposed)
                 control.DetachedFromVisualTree -= handler;
-            Console.WriteLine($"EventSubscriptionToken: Unsubscribed DetachedFromVisualTree for Entity {Entity.Id}"); // Logging
+            //Console.WriteLine($"EventSubscriptionToken: Unsubscribed DetachedFromVisualTree for Entity {Entity.Id}"); // Logging
         }));
 
         return this;
