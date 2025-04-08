@@ -400,8 +400,11 @@ namespace Avalonia.Flecs.StellaLearning.Pages
 
                                 I tracked down the problem to flecs. It seems to occur when we delete an entity and
                                 something in anohter thread? runs and we get entity_index.c: 72: assert: r->dense < index->alive_count INVALID_PARAMETER.
+
+                                ###################### THIS PROBLEM IS FIXED !!!! ##########################
+                                Using the newest version of flecs.net 4.0.4 fixed the problem, using 4.0.3 results again in the crash. 
                                 */
-                            }, shouldBeCleanedUp: true))
+                            }))
                             .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
                 });
 
