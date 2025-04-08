@@ -567,38 +567,42 @@ public static class UIBuilderExtensions
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
-    /// <param name="toolTipEntity"></param>
-    /// <returns></returns>
-    public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, Entity toolTipEntity) where T : Control, new()
-    {
-        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
-            return builder;
-
-        if (toolTipEntity.Has<ToolTip>())
-        {
-            ToolTip.SetTip(builder.Get<Control>(), toolTipEntity.Get<ToolTip>());
-            return builder;
-        }
-        return builder;
-    }
-
-    /// <summary>
-    /// Attaches an tooltip to an control
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="builder"></param>
     /// <param name="toolTip"></param>
     /// <returns></returns>
     public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, UIBuilder<ToolTip> toolTip) where T : Control, new()
     {
-        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+        // Standard validation
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
             return builder;
 
-        if (toolTip.Entity.Has<ToolTip>())
-        {
-            ToolTip.SetTip(builder.Get<Control>(), toolTip.Get<ToolTip>());
-            return builder;
-        }
+
+        // Get the control instance ONCE
+        var control = builder.Get<Control>();
+        var toolTipInstance = toolTip.Get<ToolTip>(); // Get the ToolTip instance
+
+        // Set the tooltip
+        ToolTip.SetTip(control, toolTipInstance);
+
+        builder.OnDetachedFromVisualTreeTracked((sender, e) => // Use the tracked method
+                         {
+                             if (builder.Entity.IsValid() && builder.Entity.IsAlive())
+                             {
+                                 ToolTip.SetTip(control, null);
+                                 toolTip.Entity.Remove<ToolTip>();
+
+                                 Console.WriteLine("Removing tooltip");
+                                 if (toolTip.Entity.Validate())
+                                 {
+                                     return;
+                                 }
+                                 toolTip.Entity.Destruct();
+                             }
+                             else
+                             {
+                                 Console.WriteLine($"DetachedFromVisualTree (Tracked): Entity {builder.Entity.Id} already invalid/dead. Skipping Destruct.");
+                             }
+                         });
+
         return builder;
     }
 
