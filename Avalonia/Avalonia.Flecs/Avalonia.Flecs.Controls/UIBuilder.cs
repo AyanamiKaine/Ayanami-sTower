@@ -558,7 +558,8 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Attaches an tooltip to an control
+    /// Attaches an tooltip to an control, and automatically diposes it 
+    /// when detached from visual tree
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
