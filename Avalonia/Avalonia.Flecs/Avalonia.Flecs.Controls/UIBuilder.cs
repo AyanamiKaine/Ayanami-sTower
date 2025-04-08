@@ -564,8 +564,9 @@ public static class UIBuilderExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <param name="toolTip"></param>
+    /// <param name="shouldBeDestroyedWhenDetachedFromVisualTree">When set to true the tooltip gets destroyed when it becomes detached from the visual tree. This is done so they become freed and dont leak memory mostly when using templates that get created and destroyed on the fly. THIS SHOULD NOT BE DONE WHEN YOU REUSE THE SAME TOOLTIP OTHERWISE IT WILL CRASH. For example when using flyouts you want to set this to false</param>
     /// <returns></returns>
-    public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, UIBuilder<ToolTip> toolTip) where T : Control, new()
+    public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, UIBuilder<ToolTip> toolTip, bool shouldBeDestroyedWhenDetachedFromVisualTree = true) where T : Control, new()
     {
         // Standard validation
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
@@ -578,6 +579,10 @@ public static class UIBuilderExtensions
 
         // Set the tooltip
         ToolTip.SetTip(control, toolTipInstance);
+
+        // When set to false we dont attach the visual tree tracker.
+        if (!shouldBeDestroyedWhenDetachedFromVisualTree)
+            return builder;
 
         builder.OnDetachedFromVisualTreeTracked((sender, e) => // Use the tracked method
                          {
