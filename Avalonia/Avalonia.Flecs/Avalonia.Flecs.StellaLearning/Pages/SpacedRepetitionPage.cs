@@ -351,7 +351,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                                 Use spaced repetition to learn items in order of their defined priority.
                                 """);
                             });
-                        }));
+                        }), false);
                     });
 
                     menu.Child<MenuItem>((menuItem) =>
@@ -369,7 +369,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                                 regardless of their due date.
                                 """);
                             });
-                        }));
+                        }), false);
                     });
                     menu.Child<MenuItem>((menuItem) =>
                     {
@@ -385,7 +385,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                                 Learn items total randomized
                                 """);
                             });
-                        }));
+                        }), false);
                     });
                 });
 
