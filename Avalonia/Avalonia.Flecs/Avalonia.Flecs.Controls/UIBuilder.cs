@@ -185,18 +185,12 @@ public static class UIBuilderExtensions
                     if (shouldBeCleanedUp)
                     {
                         builder.OnDetachedFromVisualTreeTracked((sender, e) => // Use the tracked method
-                         {
+                        {
+                            if (builder.Entity.InValid())
+                                return;
 
-                            
-
-                                 if (builder.Entity.InValid())
-                                 {
-                                     return;
-                                 }
-
-                                 builder.Entity.Destruct();
- 
-                         });
+                            builder.Entity.Destruct();
+                        });
                     }
                 });
 
