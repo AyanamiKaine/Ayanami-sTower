@@ -325,7 +325,7 @@ public partial class App : Application
 
 
         base.OnFrameworkInitializationCompleted();
-        _world.RunRESTAPI();
+        //_world.RunRESTAPI();
 #if DEBUG
         this.AttachDevTools();
 #endif
