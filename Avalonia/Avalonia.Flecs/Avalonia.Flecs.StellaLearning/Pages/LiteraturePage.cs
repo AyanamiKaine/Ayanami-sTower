@@ -202,7 +202,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                             {
                                 textBlock.SetText("You can also double click to open it.");
                             });
-                        })));
+                        }), false));
 
                         menuFlyout.Child<MenuItem>(item => item.SetHeader("Edit Details...").OnClick((_, _) =>
                         {
