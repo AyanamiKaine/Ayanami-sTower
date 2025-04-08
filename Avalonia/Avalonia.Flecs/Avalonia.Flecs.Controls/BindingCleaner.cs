@@ -27,12 +27,14 @@ public class BindingCleaner(AvaloniaObject target, AvaloniaProperty property) : 
                 if (_target.IsSet(_property) && BindingOperations.GetBindingExpressionBase(_target, _property) != null)
                 {
                     _target.ClearValue(_property);
-                    Console.WriteLine($"Cleared binding on {_target.GetType().Name} for property {_property.Name}");
+                    //Console.WriteLine($"Cleared binding on {_target.GetType().Name} for property {_property.Name}");
                 }
             }
             _target = null; // Release reference
             _property = null;
         });
+        
+        GC.SuppressFinalize(this);
         _disposed = true;
     }
 }
