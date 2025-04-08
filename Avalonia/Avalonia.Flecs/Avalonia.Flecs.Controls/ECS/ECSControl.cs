@@ -1,6 +1,7 @@
 using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -61,7 +62,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     control.ContextMenu = null;
 
                     var parent = e.Parent();
-                    if (parent == 0)
+                    if (parent.InValid())
                     {
                         return;
                     }
@@ -73,6 +74,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     {
                         parent.Get<ContentControl>().Content = null;
                     }
+                    Dispatcher.UIThread.Invoke(() => e.Remove<InputElement>());
                 });
         }
     }
