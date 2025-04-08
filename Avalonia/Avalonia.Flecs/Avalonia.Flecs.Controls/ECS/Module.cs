@@ -308,7 +308,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     // Check if the target hasn't already been disposed elsewhere
                     if (handle.Target != null)
                     {
-                        Console.WriteLine($"Flecs OnRemove: Disposing component via handle on entity {entity.Id} ({handle.Target.GetType().Name}).");
+                        //Console.WriteLine($"Flecs OnRemove: Disposing component via handle on entity {entity.Id} ({handle.Target.GetType().Name}).");
                         try
                         {
                             handle.Target.Dispose();
@@ -324,7 +324,7 @@ namespace Avalonia.Flecs.Controls.ECS
                     }
                     else
                     {
-                        Console.WriteLine($"Flecs OnRemove: Target was null for handle on entity {entity.Id}. Already disposed?");
+                        //Console.WriteLine($"Flecs OnRemove: Target was null for handle on entity {entity.Id}. Already disposed?");
                     }
                 });
 
@@ -334,19 +334,12 @@ namespace Avalonia.Flecs.Controls.ECS
                 {
                     if (!entity.IsAlive() || !entity.IsValid() || entity == 0)
                         return;
-                    Console.WriteLine($"Flecs OnRemove: Disposing subscriptions for entity {entity.Id}.");
-                    try
-                    {
-                        // The Dispose method handles unsubscribing everything
-                        subList.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error disposing SubscriptionListComponent for entity {entity.Id}: {ex.Message}");
-                    }
-                });
+                    // Console.WriteLine($"Flecs OnRemove: Disposing subscriptions for entity {entity.Id}.");
 
-            Console.WriteLine("Flecs DisposableComponentHandle observer setup complete.");
+                    // The Dispose method handles unsubscribing everything
+                    subList.Dispose();
+
+                });
         }
 
         /// <summary>
