@@ -109,6 +109,9 @@ public partial class LiteratureSourceItem : ObservableObject
     private string _author = "";
 
     [ObservableProperty]
+    private string _summary = "";
+
+    [ObservableProperty]
     private string _title = "";
 
     [ObservableProperty]
