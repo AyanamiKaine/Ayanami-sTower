@@ -65,3 +65,9 @@ Tracking statistics is not only something needed to keep track of things but als
 - Forgetting Curve: Visualization of retention over time
 - Learning Efficiency: How quickly items move from Learning to Review state
 - Problematic Items: Cards with consistently low performance
+
+## Integration of LLMs
+
+### Ideas
+
+It would be quite nice if we can auto generate an titles and tags as well as author for literature items, we can also use this to create tags for reference images.
