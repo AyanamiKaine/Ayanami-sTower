@@ -58,6 +58,7 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use your appropriate namespace
             _url = url;
             Name = name;
             Title = name;
+            
         }
 
         /// <summary>
