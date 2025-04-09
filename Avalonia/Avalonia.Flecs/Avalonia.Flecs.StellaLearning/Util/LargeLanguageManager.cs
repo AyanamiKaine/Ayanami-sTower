@@ -43,6 +43,12 @@ public class UrlMetadata
     /// AI Generated Publisher
     /// </summary>
     public string? Summary { get; set; }
+
+    /*
+    TODO: 
+    We should also add a date for when the information was created => Date.Now()
+    and the date when the source was created, this would need to be created by the LLM
+    */
 }
 
 /// <summary>
@@ -434,7 +440,8 @@ public sealed partial class LargeLanguageManager
         {
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(htmlContent);
-            var nodesToRemove = htmlDoc.DocumentNode.Descendants().Where(n => /* ... node names ... */ n.Name == "script" || n.Name == "style" || n.Name == "nav" || n.Name == "footer" || n.Name == "header" || n.Name == "aside" || n.Name == "form" || n.Name == "button" || n.Name == "iframe").ToList();
+            var nodesToRemove = htmlDoc.DocumentNode.Descendants().Where(n => /* ... node names ... */
+    n.Name == "script" || n.Name == "style" || n.Name == "nav" || n.Name == "footer" || n.Name == "header" || n.Name == "aside" || n.Name == "form" || n.Name == "button" || n.Name == "iframe").ToList();
             foreach (var node in nodesToRemove) { node.Remove(); }
             var contentNode = htmlDoc.DocumentNode.SelectSingleNode("//body") ?? htmlDoc.DocumentNode;
             string rawInnerText = contentNode.InnerText;
