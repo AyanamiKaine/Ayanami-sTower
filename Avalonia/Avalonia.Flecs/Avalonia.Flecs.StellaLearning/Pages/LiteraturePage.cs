@@ -631,11 +631,11 @@ namespace Avalonia.Flecs.StellaLearning.Pages
             var prompt = $"Generate me a title and a list of (A MAXIMUM OF 4)tags to categorize the content on the website({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE, PUBLISHER, AND AUTHOR AND THE TAGS AS JSON WITH THE KEYS 'Tags' AND 'Title', 'Publisher', 'Author'";
             var output = await llm.GetResponseFromUrlAsync(url, prompt);
 
-            var newItem = new WebSourceItem(url, name: output!.Title!)
+            var newItem = new WebSourceItem(url, name: output?.Title ?? "")
             {
-                Tags = output.Tags!,
-                Publisher = output.Publisher,
-                Author = output.Author!,
+                Tags = output?.Tags ?? [],
+                Publisher = output?.Publisher ?? "",
+                Author = output?.Author ?? "",
             };
             await Dispatcher.UIThread.InvokeAsync(() => _baseLiteratureItems.Add(newItem));
 
