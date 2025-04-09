@@ -190,8 +190,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                             }
                             else if (selectedLiteratureItem is WebSourceItem webSourceItem)
                             {
-                                var urlOpener = new SmartUrlOpener();
-                                await urlOpener.OpenUrlIntelligentlyAsync(webSourceItem.Url);
+                                await SmartUrlOpener.OpenUrlIntelligentlyAsync(webSourceItem.Url);
                             }
                             else
                             {
@@ -297,8 +296,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                                     }
                                     else if (selectedLiteratureItem is WebSourceItem webSourceItem)
                                     {
-                                        var urlOpener = new SmartUrlOpener();
-                                        await urlOpener.OpenUrlIntelligentlyAsync(webSourceItem.Url);
+                                        await SmartUrlOpener.OpenUrlIntelligentlyAsync(webSourceItem.Url);
                                     }
                                 }
                             });

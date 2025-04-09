@@ -8,7 +8,7 @@ namespace Avalonia.Flecs.StellaLearning.Util;
 /// <summary>
 /// Class to handle the smart URL opening logic
 /// </summary>
-public class SmartUrlOpener
+public static class SmartUrlOpener
 {
     // HttpClient is intended to be instantiated once and reused throughout the life of an application.
     // For simplicity in this example, we use 'using' per call, but in a larger app,
@@ -21,7 +21,7 @@ public class SmartUrlOpener
     /// If the URL is not reachable, it tries to open it via the Wayback Machine.
     /// </summary>
     /// <param name="url">The URL to open.</param>
-    public async Task OpenUrlIntelligentlyAsync(string url)
+    public static async Task OpenUrlIntelligentlyAsync(string url)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
@@ -56,7 +56,7 @@ public class SmartUrlOpener
     /// </summary>
     /// <param name="url">The URL to check.</param>
     /// <returns>True if the URL returns a success or redirect status code within the timeout, false otherwise.</returns>
-    private async Task<bool> IsUrlReachableAsync(string url)
+    private static async Task<bool> IsUrlReachableAsync(string url)
     {
         // Basic URL validation
         if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult)
@@ -129,7 +129,7 @@ public class SmartUrlOpener
     /// Opens the given URL in the system's default web browser.
     /// </summary>
     /// <param name="url">The URL to open.</param>
-    private void OpenUrlInDefaultBrowser(string url)
+    private static void OpenUrlInDefaultBrowser(string url)
     {
         try
         {
