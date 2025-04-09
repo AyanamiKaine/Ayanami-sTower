@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using static Avalonia.Flecs.Controls.ECS.Module; // If Page tag is defined here
 
@@ -39,6 +40,27 @@ We should be able to open our refrence folder in the app, as well as other folde
 
 */
 
+
+/// <summary>
+/// Represents the data structure for storing reference painting metadata in JSON.
+/// </summary>
+public class ReferencePaintingMetadata
+{
+    /// <summary>
+    /// The full path to the image file. This is the key identifier.
+    /// </summary>
+    public string ImagePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The user-defined or initially parsed display name.
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The list of tags associated with the reference image.
+    /// </summary>
+    public List<string> Tags { get; set; } = []; // Initialize to avoid null issues
+}
 
 /// <summary>
 /// Represents a reference painting for study.
@@ -63,7 +85,7 @@ public partial class ReferencePaintingItem : ObservableObject
     [ObservableProperty]
     private Bitmap? _thumbnail; // Cache thumbnail for performance
     [ObservableProperty]
-    private List<string> _tags = [];
+    private ObservableCollection<string> _tags = [];
 }
 
 /// <summary>
@@ -144,6 +166,7 @@ public class ArtPage : IUIComponent, IDisposable
     private ReferencePaintingItem? _selectedReference = null;
 
     // --- Constants ---
+    private const string METADATA_FILE_NAME = "references_metadata.json";
     private const string ART_FOLDER_NAME = "art";
     private const string REFERENCES_SUBFOLDER = "references";
     private const string STUDIES_SUBFOLDER = "studies";
@@ -296,7 +319,23 @@ public class ArtPage : IUIComponent, IDisposable
                                                 var item = listBox.GetSelectedItem<ReferencePaintingItem>();
 
                                                 var llm = LargeLanguageManager.Instance;
-                                                item.Tags = await llm.GetImageTagsAsync(item.ImagePath, 6);
+                                                // Get the new tags (assuming this returns List<string> or similar)
+                                                var newTagsList = await llm.GetImageTagsAsync(item.ImagePath, 6);
+
+                                                // --- Modification Start ---
+                                                // Instead of: item.Tags = newTagsList ?? [];
+
+                                                // Modify the existing ObservableCollection:
+                                                item.Tags.Clear(); // Clear the current tags
+
+                                                if (newTagsList != null) // Check if LLM returned tags
+                                                {
+                                                    foreach (var tag in newTagsList)
+                                                    {
+                                                        item.Tags.Add(tag); // Add new tags one by one
+                                                    }
+                                                }
+                                                await SaveReferenceMetadataAsync();
                                             });
                                         });
 
@@ -305,7 +344,7 @@ public class ArtPage : IUIComponent, IDisposable
                                             //Removes the refrence from the list
                                             //Should not delete the file!
                                             item.SetHeader("Remove")
-                                                .OnClick((_, _) => // Make the lambda async if you plan to add async dialogs
+                                                .OnClick(async (_, _) => // Make the lambda async if you plan to add async dialogs
                                                 {
                                                     if (listBox == null) return;
 
@@ -354,6 +393,7 @@ public class ArtPage : IUIComponent, IDisposable
 
                                                             // Remove the item from the observable collection
                                                             _referencePaintings.Remove(itemToRemove);
+                                                            await SaveReferenceMetadataAsync();
 
                                                         }
                                                         catch (IOException ex) // Catch specific IO exceptions
@@ -390,42 +430,85 @@ public class ArtPage : IUIComponent, IDisposable
 
     private FuncDataTemplate<ReferencePaintingItem> CreateReferenceItemTemplate()
     {
-        return _world.CreateTemplate<ReferencePaintingItem, StackPanel>((builder, item) =>
+        return _world.CreateTemplate<ReferencePaintingItem, Grid>((grid, item) =>
         {
-            // --- Attach Hover Handlers to the Template Root ---
-            builder
-                .SetOrientation(Orientation.Horizontal)
-                .SetSpacing(5);
-            // Attach event handlers:
+            if (item is null)
+                return;
+            grid
+                .SetColumnDefinitions("Auto, *, Auto")
+                .SetRowDefinitions("Auto, Auto, Auto")
+                .SetMargin(5);
 
-            // --- End Hover Handlers Attachment ---
 
-            if (item?.Thumbnail != null)
+            if (item.Thumbnail != null)
             {
                 // Thumbnail Image
-                builder.Child<Image>(img =>
+                grid.Child<Image>(img =>
                 {
+
+                    // Name TextBlock
+                    grid.Child<TextBlock>(txt =>
+                    {
+                        txt
+                        .SetRow(0)
+                            .SetBinding(TextBlock.TextProperty, nameof(ReferencePaintingItem.Name))
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetHorizontalAlignment(HorizontalAlignment.Left)
+                            .SetIsHitTestVisible(false);
+                    });
+
                     img
+                        .SetRow(1)
                        .SetBinding(Image.SourceProperty, nameof(ReferencePaintingItem.Thumbnail))
                        .SetWidth(THUMBNAIL_SIZE / 2.0) // Smaller thumbnail in list
                        .SetHeight(THUMBNAIL_SIZE / 2.0)
                        .SetStretch(Stretch.UniformToFill)
                        .SetVerticalAlignment(VerticalAlignment.Center)
+                        .SetHorizontalAlignment(HorizontalAlignment.Left)
                         //TODO: There is a big chance that a tooltip with a image attached 
                         // is much closer to the thing we want.
                         .OnPointerEntered(HandleItemPointerEntered)
                         .SetIsHitTestVisible(true);
                 });
 
-                // Name TextBlock
-                builder.Child<TextBlock>(txt =>
-                {
-                    txt
-                        .SetBinding(TextBlock.TextProperty, nameof(ReferencePaintingItem.Name))
-                        .SetVerticalAlignment(VerticalAlignment.Center)
-                        .SetIsHitTestVisible(false);
-                });
             }
+
+
+            // Row 1, Col 2: Tags (using ItemsControl or similar)
+            grid.Child<ItemsControl>(tagsList =>
+            {
+                tagsList.SetColumn(2)
+                    .SetRowSpan(2)
+                    .SetRow(1)
+                        .SetHorizontalAlignment(HorizontalAlignment.Right)
+                        .SetItemsSource(item.Tags) // Bind to the item's Tags collection
+                                                   //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                        .SetItemTemplate(_world.CreateTemplate<string, Border>((border, tagText) => // Simple tag template
+                        {
+                            border.SetBackground(Brushes.LightGray)
+                                  .SetCornerRadius(3)
+                                  .SetPadding(4, 1)
+                                  .SetMargin(2, 0)
+                                .Child<StackPanel>(stackPanel =>
+                                {
+                                    stackPanel
+                                        .SetOrientation(Orientation.Horizontal)
+                                        .SetSpacing(5)
+                                        .SetVerticalAlignment(VerticalAlignment.Center);
+
+                                    stackPanel.Child<TextBlock>(textBlock =>
+                                    {
+                                        textBlock
+                                            .SetText(tagText)
+                                            .SetVerticalAlignment(VerticalAlignment.Center);
+                                    });
+
+
+                                });
+                        }))
+                        .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
+            });
+
         });
     }
 
@@ -434,7 +517,7 @@ public class ArtPage : IUIComponent, IDisposable
     /// </summary>
     /// <param name="targetControl">The control to attach the flyout to (ideally the ListBoxItem).</param>
     /// <param name="itemToRename">The ReferencePaintingItem being renamed.</param>
-    private static void ShowRenameFlyout(Control targetControl, ReferencePaintingItem itemToRename)
+    private void ShowRenameFlyout(Control targetControl, ReferencePaintingItem itemToRename)
     {
         // Create the TextBox for renaming
         var renameTextBox = new TextBox
@@ -518,7 +601,7 @@ public class ArtPage : IUIComponent, IDisposable
     /// </summary>
     /// <param name="item">The item to rename.</param>
     /// <param name="newName">The desired new name (without extension).</param>
-    private static async void RenameReferenceItem(ReferencePaintingItem item, string newName)
+    private async void RenameReferenceItem(ReferencePaintingItem item, string newName)
     {
         string oldPath = item.ImagePath;
         string? directory = Path.GetDirectoryName(oldPath);
@@ -573,11 +656,12 @@ public class ArtPage : IUIComponent, IDisposable
             // --- Update item properties on the UI thread ---
             // Although Task.Run was used, this continuation might run on any thread.
             // It's safer to ensure UI property updates happen on the UI thread.
-            await Dispatcher.UIThread.InvokeAsync(() =>
+            await Dispatcher.UIThread.InvokeAsync(async () =>
             {
                 item.ImagePath = newPath; // Update the stored path
                 item.Name = newName;      // Update the observable property (UI will refresh)
-                //Console.WriteLine($"Successfully renamed '{Path.GetFileName(oldPath)}' to '{newFileName}'");
+                                          //Console.WriteLine($"Successfully renamed '{Path.GetFileName(oldPath)}' to '{newFileName}'");
+                await SaveReferenceMetadataAsync();
             });
         }
         catch (Exception ex)
@@ -672,11 +756,8 @@ public class ArtPage : IUIComponent, IDisposable
                 Thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE)
             };
 
-            // 3. Add to collection (and potentially save metadata)
             _referencePaintings.Add(newItem);
-
-            // 4. Optionally save metadata about references (e.g., to a JSON file or database)
-            // SaveReferenceMetadata();
+            await SaveReferenceMetadataAsync();
         }
     }
 
@@ -714,6 +795,49 @@ public class ArtPage : IUIComponent, IDisposable
     }
 
     // --- File/Data Handling (Placeholders - Implement Robustly) ---
+
+    /// <summary>
+    /// Asynchronously saves the current state of reference painting metadata to a JSON file.
+    /// </summary>
+    private async Task SaveReferenceMetadataAsync()
+    {
+        // Prevent saving if the list hasn't been fully loaded or is mid-operation?
+        // Consider adding checks if needed.
+
+        string filePath = GetMetadataFilePath();
+        //Console.WriteLine($"Attempting to save metadata to: {filePath}"); // Debug
+
+        try
+        {
+            // 1. Create a list of DTOs from the current ObservableCollection
+            var metadataList = _referencePaintings
+                .Select(item => new ReferencePaintingMetadata
+                {
+                    ImagePath = item.ImagePath,
+                    Name = item.Name,
+                    Tags = [.. item.Tags] // Directly use the Tags list
+                })
+                .ToList();
+
+            // 2. Configure JSON serializer options (optional, for readability)
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true // Makes the JSON file human-readable
+            };
+
+            // 3. Serialize the list to JSON and write to the file asynchronously
+            // Use FileStream for async writing
+            await using FileStream createStream = File.Create(filePath);
+            await JsonSerializer.SerializeAsync(createStream, metadataList, options);
+            Console.WriteLine($"Successfully saved metadata for {_referencePaintings.Count} items."); // Debug
+        }
+        catch (Exception ex)
+        {
+            // Log the error or show a message to the user
+            Console.WriteLine($"Error saving reference metadata to {filePath}: {ex.Message}");
+            MessageDialog.ShowErrorDialog($"Failed to save reference metadata:\n{ex.Message}");
+        }
+    }
 
     private static void EnsureArtDirectories()
     {
@@ -813,53 +937,109 @@ public class ArtPage : IUIComponent, IDisposable
             return nameWithoutExtension;
         }
     }
-    private void LoadReferencePaintings()
+    /// <summary>
+    /// Loads reference painting metadata from the JSON file, verifies files exist,
+    /// generates thumbnails, and populates the _referencePaintings collection.
+    /// </summary>
+    private async void LoadReferencePaintings() // Changed return type to void as it starts async work
     {
-        // Placeholder: Load reference painting metadata and populate _referencePaintings
-        // Example: Read from a JSON file or database
-        // For now, just scan the directory
+        string filePath = GetMetadataFilePath();
+        //Console.WriteLine($"Attempting to load metadata from: {filePath}"); // Debug
+
+        _referencePaintings.Clear(); // Clear existing items before loading
+
+        if (!File.Exists(filePath))
+        {
+            Console.WriteLine($"Metadata file not found ({filePath}). No references loaded initially.");
+            // Optionally: You could fall back to scanning the directory here if you want
+            // to automatically import files found when no metadata exists.
+            // LoadReferencesFromDirectoryFallback(); // Example call to a fallback method
+            return;
+        }
+
+        List<ReferencePaintingMetadata>? metadataList = null;
         try
         {
-            string baseArtPath = Path.Combine(Directory.GetCurrentDirectory(), ART_FOLDER_NAME);
-            string referencesFolder = Path.Combine(baseArtPath, REFERENCES_SUBFOLDER);
-            if (!Directory.Exists(referencesFolder)) return;
+            // Read and deserialize the JSON file asynchronously
+            await using FileStream openStream = File.OpenRead(filePath);
+            metadataList = await JsonSerializer.DeserializeAsync<List<ReferencePaintingMetadata>>(openStream);
 
-            _referencePaintings.Clear();
-            var imageFiles = Directory.EnumerateFiles(referencesFolder, "*.*", SearchOption.TopDirectoryOnly)
-                                      .Where(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                                                  f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                                                  f.EndsWith(".bmp", StringComparison.OrdinalIgnoreCase) ||
-                                                  f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase));
-
-            foreach (var file in imageFiles)
+            if (metadataList == null)
             {
-                // Load async
-                Task.Run(async () =>
-                {
-                    // --- Modification Start ---
-                    string fullPath = file;
-                    string fileName = Path.GetFileName(fullPath);
-                    string displayName = GetDisplayNameFromFileName(fileName); // Use the helper function
-                    // --- Modification End ---
-
-                    var newItem = new ReferencePaintingItem
-                    {
-                        Name = displayName, // <-- Use the parsed display name
-                        ImagePath = fullPath, // <-- Keep the original full path
-                        Thumbnail = await LoadThumbnail(fullPath, THUMBNAIL_SIZE)
-                    };
-
-                    // Use dispatcher to add to collection on UI thread
-                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        _referencePaintings.Add(newItem);
-                    });
-                });
+                Console.WriteLine("Metadata file is empty or corrupted. No references loaded.");
+                MessageDialog.ShowErrorDialog("Reference metadata file seems empty or corrupted.");
+                return;
             }
+            //Console.WriteLine($"Successfully deserialized {metadataList.Count} metadata items."); // Debug
+        }
+        catch (JsonException jsonEx)
+        {
+            Console.WriteLine($"Error deserializing metadata file {filePath}: {jsonEx.Message}");
+            MessageDialog.ShowErrorDialog($"Error reading reference metadata file:\n{jsonEx.Message}\n\nPlease check or delete the file '{METADATA_FILE_NAME}' in the '{ART_FOLDER_NAME}' directory.");
+            return; // Stop loading if file is corrupt
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading reference paintings: {ex.Message}");
+            Console.WriteLine($"Error opening metadata file {filePath}: {ex.Message}");
+            MessageDialog.ShowErrorDialog($"Could not open reference metadata file:\n{ex.Message}");
+            return;
+        }
+
+        // Process each loaded metadata item
+        var loadTasks = new List<Task>();
+        foreach (var metadata in metadataList)
+        {
+            // Use Task.Run to parallelize file checking and thumbnail loading
+            loadTasks.Add(Task.Run(async () =>
+            {
+                // Validate ImagePath
+                if (string.IsNullOrWhiteSpace(metadata.ImagePath))
+                {
+                    Console.WriteLine($"Warning: Skipping item with missing ImagePath in metadata.");
+                    return; // Skip this item
+                }
+
+                // Check if the referenced file actually still exists
+                if (!File.Exists(metadata.ImagePath))
+                {
+                    Console.WriteLine($"Warning: Image file not found for '{metadata.Name}' at '{metadata.ImagePath}'. Skipping.");
+                    // Optional: Show a warning to the user later, maybe aggregate these?
+                    return; // Skip this item
+                }
+
+                // Generate thumbnail
+                Bitmap? thumbnail = await LoadThumbnail(metadata.ImagePath, THUMBNAIL_SIZE);
+                // Note: LoadThumbnail already handles its own errors, returning null
+
+                // Create the ReferencePaintingItem
+                var newItem = new ReferencePaintingItem
+                {
+                    ImagePath = metadata.ImagePath,
+                    Name = metadata.Name, // Use the name from metadata
+                    Tags = new ObservableCollection<string>(metadata.Tags ?? []), // <-- Ensure this conversion
+                    Thumbnail = thumbnail
+                };
+
+                // Add to the collection on the UI thread
+                await Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    _referencePaintings.Add(newItem);
+                    await SaveReferenceMetadataAsync();
+                });
+            }));
+        }
+
+        // Wait for all loading tasks (optional, but good for knowing when loading is complete)
+        try
+        {
+            await Task.WhenAll(loadTasks);
+            //Console.WriteLine("Finished processing all loaded metadata items."); // Debug
+        }
+        catch (Exception ex)
+        {
+            // This catch is for potential errors within the Task.Run delegates that weren't caught inside.
+            Console.WriteLine($"An error occurred during the processing of loaded references: {ex.Message}");
+            MessageDialog.ShowWarningDialog($"An error occurred while loading reference details:\n{ex.Message}");
         }
     }
 
@@ -1167,9 +1347,10 @@ public class ArtPage : IUIComponent, IDisposable
                     };
 
                     // 5. Add to collection *on the UI thread*
-                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    await Dispatcher.UIThread.InvokeAsync(async () =>
                     {
                         _referencePaintings.Add(newItem);
+                        await SaveReferenceMetadataAsync();
                         //Console.WriteLine($"Added reference from drop: {newItem.Name}");
                     });
                 }
@@ -1194,6 +1375,15 @@ public class ArtPage : IUIComponent, IDisposable
             MessageDialog.ShowWarningDialog($"An error occurred while waiting for file processing tasks: {ex.Message}");
         }
     }
+    /// <summary>
+    /// Gets the full path to the main art directory.
+    /// </summary>
+    private static string GetArtFolderPath() => Path.Combine(Directory.GetCurrentDirectory(), ART_FOLDER_NAME);
+
+    /// <summary>
+    /// Gets the full path to the metadata file.
+    /// </summary>
+    private static string GetMetadataFilePath() => Path.Combine(GetArtFolderPath(), METADATA_FILE_NAME);
 
     // --- IDisposable Implementation ---
 
