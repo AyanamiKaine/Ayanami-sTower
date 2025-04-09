@@ -20,6 +20,8 @@ static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        DotNetEnv.Env.TraversePath().Load();
+
         /*
         Implementation done by Medo64
         (https://github.com/medo64/Medo/blob/main/examples/SingleInstanceApplication/App.cs)
