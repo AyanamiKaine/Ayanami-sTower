@@ -194,4 +194,10 @@ Right now now UI-Component can't be really tested. In combination with the (Impl
 
 ### Problem
 
-Currently we have arround 20.000 lines of code. While there is no upper limit of LOC, every new line comes with new overhead, dependencies and must be maintained to combat code rot. Some components and pages reach over 1000 LOC and a good rule of thumb is components should have an upper limit of 1000 LOC. But there is something to keep in mind, you may split a 2000 LOC class into two 1000 LOC but this does not mean we created 2 independend classes if we are sloopy we simply create two classes that are in reality so coupled together, that they are effectively one.  
+Currently we have arround 20.000 lines of code. While there is no upper limit of LOC, every new line comes with new overhead, dependencies and must be maintained to combat code rot. Some components and pages reach over 1000 LOC and a good rule of thumb is components should have an upper limit of 1000 LOC. But there is something to keep in mind, you may split a 2000 LOC class into two 1000 LOC but this does not mean we created 2 independend classes if we are sloopy we simply create two classes that are in reality so coupled together, that they are effectively one.
+
+## Disposing of Tooltips
+
+### Problem
+
+We dispose tooltips when they become detached from the visual tree, this is not a good default behavior because most of the time we dont want them disposed automatic. We want to dispose them automatic when they are created as part of a template, because otherwise the create tooltips over and over again, resulting in increased memory usage.
