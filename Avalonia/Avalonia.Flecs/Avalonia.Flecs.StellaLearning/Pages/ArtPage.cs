@@ -200,6 +200,8 @@ public class ArtPage : IUIComponent, IDisposable
         _root = _world.UI<Grid>(BuildArtPageUI)
                       .Add<Page>() // Add the Page tag
                       .Entity;
+
+        App.GetMainWindow().Closing += async (_, _) => await SaveReferenceMetadataAsync();
     }
 
     /// <summary>
