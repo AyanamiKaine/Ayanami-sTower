@@ -201,3 +201,9 @@ Currently we have arround 20.000 lines of code. While there is no upper limit of
 ### Problem
 
 We dispose tooltips when they become detached from the visual tree, this is not a good default behavior because most of the time we dont want them disposed automatic. We want to dispose them automatic when they are created as part of a template, because otherwise the create tooltips over and over again, resulting in increased memory usage.
+
+Right now we have to pass a flag to correctly know when to dispose them automatic, I think it would be better if we dont need to think about that.
+
+### Solution
+
+because we are using entities we could use tags to specify if and when it should be disposed.
