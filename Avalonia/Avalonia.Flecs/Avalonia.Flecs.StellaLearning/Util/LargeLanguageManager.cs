@@ -39,6 +39,10 @@ public class UrlMetadata
     /// AI Generated Publisher
     /// </summary>
     public string? Publisher { get; set; }
+    /// <summary>
+    /// AI Generated Publisher
+    /// </summary>
+    public string? Summary { get; set; }
 }
 
 /// <summary>

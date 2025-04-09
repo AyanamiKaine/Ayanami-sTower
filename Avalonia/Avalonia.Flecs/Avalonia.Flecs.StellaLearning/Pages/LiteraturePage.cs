@@ -351,7 +351,28 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                                  TargetNullValue = item.Name // Show Name if Title becomes null
                              });
                     // Tooltip showing full Title or Name
-                    nameTitle.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Title)) { FallbackValue = item.Name, TargetNullValue = item.Name }))), true);
+                    nameTitle.AttachToolTip(_world.UI<ToolTip>(
+                        tooltip =>
+                        {
+                            tooltip.Child<StackPanel>((stackPanel) =>
+                            {
+                                stackPanel.SetSpacing(10);
+
+                                stackPanel.Child<TextBlock>(tb => tb.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Title))
+                                {
+                                    FallbackValue = item.Name,
+                                    TargetNullValue = item.Name
+                                }));
+
+                                stackPanel.Child<TextBlock>((tb) =>
+                                    {
+                                        tb
+                                        .SetFontWeight(FontWeight.Normal)
+                                        .SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Summary)));
+                                    });
+                            });
+
+                        }), true);
 
                 });
 
@@ -628,7 +649,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
             var llm = LargeLanguageManager.Instance;
 
 
-            var prompt = $"Generate me a title and a list of (A MAXIMUM OF 4)tags to categorize the content on the website({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE, PUBLISHER, AND AUTHOR AND THE TAGS AS JSON WITH THE KEYS 'Tags' AND 'Title', 'Publisher', 'Author'";
+            var prompt = $"Generate me a title and a list of (A MAXIMUM OF 4)tags to categorize the content on the website({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE, PUBLISHER, AUTHOR, THE TAGS AND A SHORT SUMMARY AS JSON WITH THE KEYS 'Tags' AND 'Title', 'Publisher', 'Author', 'Summary'";
             var output = await llm.GetResponseFromUrlAsync(url, prompt);
 
             var newItem = new WebSourceItem(url, name: output?.Title ?? "")
@@ -636,6 +657,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                 Tags = output?.Tags ?? [],
                 Publisher = output?.Publisher ?? "",
                 Author = output?.Author ?? "",
+                Summary = output?.Summary ?? "",
             };
             await Dispatcher.UIThread.InvokeAsync(() => _baseLiteratureItems.Add(newItem));
 
