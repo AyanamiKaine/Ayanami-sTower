@@ -38,7 +38,7 @@ public class EditLiteratureSource : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
                 {
                     window
-                    .SetTitle($"Edit Flashcard: {literatureSourceItem.Name}")
+                    .SetTitle($"Edit Source: {literatureSourceItem.Name}")
                     .SetWidth(400)
                     .SetHeight(400)
                     .Child<ScrollViewer>((scrollViewer) =>
