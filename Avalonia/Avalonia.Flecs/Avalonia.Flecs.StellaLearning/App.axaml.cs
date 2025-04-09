@@ -22,6 +22,7 @@ using Avalonia.Flecs.StellaLearning.Converters;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Flecs.Controls.ECS;
+using GenerativeAI;
 
 namespace Avalonia.Flecs.StellaLearning;
 
