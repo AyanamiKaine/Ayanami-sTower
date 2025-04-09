@@ -30,6 +30,7 @@ using Avalonia.Flecs.StellaLearning.Windows; // Assuming you use NLog like in Sp
 
 namespace Avalonia.Flecs.StellaLearning.Pages
 {
+
     /// <summary>
     /// Represents the UI page for managing literature sources.
     /// </summary>
@@ -611,6 +612,12 @@ namespace Avalonia.Flecs.StellaLearning.Pages
 
         }
 
+        private class LLMDATA
+        {
+            public string? Title { get; set; } // Use string? for nullable reference types
+            public List<string>? Tags { get; set; } // Assuming Tags is an array of strings
+        }
+
         /// <summary>
         /// Asynchronous logic to process a dropped URL.
         /// </summary>
@@ -621,12 +628,15 @@ namespace Avalonia.Flecs.StellaLearning.Pages
             var llm = LargeLanguageManager.Instance;
 
 
-            var prompt = $"Generate me a title for this website ({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE AS ONE LINE";
+            var prompt = $"Generate me a title and a list of (A MAXIMUM OF 4)tags to categorize the content on the website({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE, PUBLISHER, AND AUTHOR AND THE TAGS AS JSON WITH THE KEYS 'Tags' AND 'Title', 'Publisher', 'Author'";
+            var output = await llm.GetResponseFromUrlAsync(url, prompt);
 
-            var name = await llm.GetResponseFromUrlAsync(url, prompt) ?? "";
-
-
-            var newItem = new WebSourceItem(url, name: name);
+            var newItem = new WebSourceItem(url, name: output!.Title!)
+            {
+                Tags = output.Tags!,
+                Publisher = output.Publisher,
+                Author = output.Author!,
+            };
             await Dispatcher.UIThread.InvokeAsync(() => _baseLiteratureItems.Add(newItem));
 
             Logger.Info($"[Simulated] Finished processing URL: {url}");
