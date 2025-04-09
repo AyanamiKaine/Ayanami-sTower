@@ -544,7 +544,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
                 try
                 {
                     // Try up to 3 times with a short delay between attempts
-                    for (int attempt = 1; attempt <= 5; attempt++)
+                    for (int attempt = 1; attempt <= 10; attempt++)
                     {
                         try
                         {
