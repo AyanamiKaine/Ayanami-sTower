@@ -181,15 +181,17 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                             }
                         });
 
-                        menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick((_, _) =>
+                        menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick(async (_, _) =>
                         {
-
-
-
                             var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
                             if (selectedLiteratureItem is LocalFileSourceItem localFile)
                             {
                                 FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
+                            }
+                            else if (selectedLiteratureItem is WebSourceItem webSourceItem)
+                            {
+                                var urlOpener = new SmartUrlOpener();
+                                await urlOpener.OpenUrlIntelligentlyAsync(webSourceItem.Url);
                             }
                             else
                             {
@@ -268,6 +270,11 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                                 }
 
                             }
+
+                            if (itemToRemove is WebSourceItem webSourceItem)
+                            {
+                                _baseLiteratureItems.Remove(itemToRemove);
+                            }
                         })); // Implement RemoveSelectedItem
                     });
 
@@ -278,7 +285,7 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                            .AllowDrop() // Enable dropping files
                            .OnDragOver(HandleLiteratureListDragOver) // Handle hover effect
                            .OnDrop(HandleLiteratureListDropAsync)
-                            .OnDoubleTapped((sender, e) =>
+                            .OnDoubleTapped(async (sender, e) =>
                             {
                                 if (sender is ListBox listBox)
                                 {
@@ -287,6 +294,11 @@ namespace Avalonia.Flecs.StellaLearning.Pages
                                     {
                                         FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
                                         e.Handled = true;
+                                    }
+                                    else if (selectedLiteratureItem is WebSourceItem webSourceItem)
+                                    {
+                                        var urlOpener = new SmartUrlOpener();
+                                        await urlOpener.OpenUrlIntelligentlyAsync(webSourceItem.Url);
                                     }
                                 }
                             });
@@ -490,6 +502,29 @@ namespace Avalonia.Flecs.StellaLearning.Pages
         {
             // Allow copy effect if data contains files.
             e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None;
+            if (e.Data.Contains(DataFormats.Text))
+            {
+                // Optional: Peek at the text to see if it *looks* like a URL for better feedback
+                // Note: Getting data here can sometimes be slow, but usually okay for text.
+                var potentialText = e.Data.Get(DataFormats.Text) as string;
+                if (!string.IsNullOrWhiteSpace(potentialText) &&
+                    Uri.TryCreate(potentialText, UriKind.Absolute, out var uri) &&
+                    (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                {
+                    // It looks like a URL, allow Copy or Link
+                    e.DragEffects = DragDropEffects.Copy; // Or DragDropEffects.Link if more appropriate
+                    e.Handled = true;
+                }
+                else
+                {
+                    // It's text, but not a URL we want. You could allow dropping general text here if needed.
+                    // For now, we only accept files or URLs based on the request.
+                    // e.DragEffects will remain None.
+                    // Set Handled = true anyway to stop bubbling if you are sure *no* parent should handle this text drop.
+                    e.Handled = true; // We've decided what to do (nothing), so handle it.
+                }
+                return; // Processed text possibility
+            }
             e.Handled = true;
         }
 
@@ -499,40 +534,104 @@ namespace Avalonia.Flecs.StellaLearning.Pages
         /// </summary>
         private async void HandleLiteratureListDropAsync(object? sender, DragEventArgs e)
         {
-            var storageItems = e.Data.GetFiles();
-            if (storageItems?.Any() != true)
-            {
-                e.Handled = false;
-                return;
-            }
-
-            e.DragEffects = DragDropEffects.Copy; // Indicate we're handling it
-            e.Handled = true;
-
-            Logger.Info($"Processing {storageItems.Count()} dropped items...");
-
             var processingTasks = new List<Task>();
+            bool dataFound = false;
 
-            foreach (var item in storageItems)
+            var storageItems = e.Data.GetFiles();
+            if (storageItems?.Any() == true)
             {
-                if (item is IStorageFile file) // Process only files
+                dataFound = true;
+                e.DragEffects = DragDropEffects.Copy; // Indicate we're handling it
+                e.Handled = true;
+
+                Logger.Info($"Processing {storageItems.Count()} dropped items...");
+
+                foreach (var item in storageItems)
                 {
-                    processingTasks.Add(ProcessDroppedFileAsync(file));
+                    if (item is IStorageFile file) // Process only files
+                    {
+                        processingTasks.Add(ProcessDroppedFileAsync(file));
+                    }
                 }
             }
 
-            try
+
+            if (e.Data.Contains(DataFormats.Text))
             {
-                await Task.WhenAll(processingTasks);
-                Logger.Info("Finished processing dropped items.");
-                // Optionally trigger save after processing drops
-                // SaveLiteratureItemsToDisk(_baseLiteratureItems);
+                var droppedText = e.Data.Get(DataFormats.Text) as string;
+                if (!string.IsNullOrWhiteSpace(droppedText))
+                {
+                    // Validate if it's a URL we want to handle
+                    if (Uri.TryCreate(droppedText, UriKind.Absolute, out var uriResult)
+                        && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
+                    {
+                        dataFound = true; // Mark that we found processable data
+                        Logger.Info($"Processing dropped URL: {uriResult.AbsoluteUri}");
+                        processingTasks.Add(ProcessDroppedUrlAsync(uriResult.AbsoluteUri)); // Use the validated, absolute URI
+                    }
+                    else
+                    {
+                        Logger.Info($"Dropped text is not a valid HTTP/HTTPS URL: '{droppedText}'");
+                        // Decide if you want to handle other types of text drops
+                    }
+                }
             }
-            catch (Exception ex)
+
+            if (dataFound && processingTasks.Count != 0)
             {
-                Logger.Error(ex, "Error occurred while processing dropped files.");
-                MessageDialog.ShowWarningDialog($"An error occurred while processing dropped files: {ex.Message}");
+                // We found something we recognize and created tasks for it.
+                e.DragEffects = DragDropEffects.Copy; // Confirm the effect (should match DragOver)
+                e.Handled = true; // Crucial: Mark the event as handled
+
+                Logger.Info($"Processing {processingTasks.Count} total dropped items (files and/or URLs)...");
+
+                try
+                {
+                    await Task.WhenAll(processingTasks);
+                    Logger.Info("Finished processing dropped items.");
+
+                    // Optional: Trigger UI updates or save operations after all items are processed
+                    // Example: If _baseLiteratureItems is modified in the async methods and needs UI refresh
+                    // Or trigger a save command:
+                    // SaveLiteratureItemsToDisk(_baseLiteratureItems);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "Error occurred while processing dropped items.");
+                    // Use Dispatcher if ShowWarningDialog needs to run on UI thread from background task exception
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                        MessageDialog.ShowWarningDialog($"An error occurred while processing dropped items: {ex.Message}")
+                    );
+                }
             }
+            else
+            {
+                // Nothing we could process was found in the drop data.
+                Logger.Info("Drop event received, but no compatible files or text URLs found.");
+                e.Handled = false; // Let the event bubble up or indicate failure.
+            }
+
+        }
+
+        /// <summary>
+        /// Asynchronous logic to process a dropped URL.
+        /// </summary>
+        private async Task ProcessDroppedUrlAsync(string url)
+        {
+            Logger.Info($"[Simulated] Start processing URL: {url}");
+
+            var llm = LargeLanguageManager.Instance;
+
+
+            var prompt = $"Generate me a title for this website ({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE AS ONE LINE";
+
+            var name = await llm.GetResponseFromUrlAsync(url, prompt) ?? "";
+
+
+            var newItem = new WebSourceItem(url, name: name);
+            await Dispatcher.UIThread.InvokeAsync(() => _baseLiteratureItems.Add(newItem));
+
+            Logger.Info($"[Simulated] Finished processing URL: {url}");
         }
 
         /// <summary>
