@@ -15,6 +15,33 @@ using HtmlAgilityPack; // For Request/Response types if needed
 namespace Avalonia.Flecs.StellaLearning.Util;
 
 /// <summary>
+/// Represents metadata information extracted from a URL, such as title and associated tags.
+/// </summary>
+public class UrlMetadata
+{
+    // Use System.Text.Json attributes if needed for specific naming,
+    // but matching property names usually works.
+    // [JsonPropertyName("Title")]
+    /// <summary>
+    /// AI Generated Title
+    /// </summary>
+    public string? Title { get; set; }
+    /// <summary>
+    /// AI Generated Author
+    /// </summary>
+    public string? Author { get; set; }
+    // [JsonPropertyName("Tags")]
+    /// <summary>
+    /// AI Generated Tags
+    /// </summary>
+    public List<string>? Tags { get; set; }
+    /// <summary>
+    /// AI Generated Publisher
+    /// </summary>
+    public string? Publisher { get; set; }
+}
+
+/// <summary>
 /// Singleton manager for interacting with large language models throughout the application.
 /// Provides a centralized interface for calling language model APIs and local models with simple functions.
 /// </summary>
@@ -185,7 +212,7 @@ public sealed partial class LargeLanguageManager
     /// <param name="url">The URL of the website to fetch.</param>
     /// <param name="promptAboutUrlContent">The specific question or instruction about the website content.</param>
     /// <returns>The AI's response, trimmed, or null if an error occurs.</returns>
-    public async Task<string?> GetResponseFromUrlAsync(string url, string promptAboutUrlContent)
+    public async Task<UrlMetadata?> GetResponseFromUrlAsync(string url, string promptAboutUrlContent)
     {
         if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out _))
         {
@@ -292,6 +319,7 @@ public sealed partial class LargeLanguageManager
         try
         {
             var aiResponse = await _textModel.GenerateContentAsync(finalPrompt);
+            var metaData = aiResponse.ToObject<UrlMetadata>();
             var rawText = aiResponse?.Text();
             var trimmedText = rawText?.Trim();
 
@@ -300,7 +328,7 @@ public sealed partial class LargeLanguageManager
                 Console.WriteLine("AI model returned an empty response after trimming.");
                 return null;
             }
-            return trimmedText;
+            return metaData;
         }
         catch (Exception ex)
         {
@@ -309,6 +337,123 @@ public sealed partial class LargeLanguageManager
             return null;
         }
     }
+
+    /// <summary>
+    /// Fetches content from a URL, extracts text, and asks the AI model
+    /// to generate a title and tags, returning them as a structured UrlMetadata object.
+    /// </summary>
+    /// <param name="url">The URL of the website to fetch.</param>
+    /// <param name="maxTags">Maximum number of tags to request.</param>
+    /// <returns>A UrlMetadata object containing the title and tags, or null if an error occurs.</returns>
+    public async Task<UrlMetadata?> GetUrlMetadataAsync(string url, int maxTags = 5)
+    {
+        string? cleanedText = await FetchAndCleanHtmlAsync(url); // Use refactored helper
+        if (cleanedText == null)
+        {
+            return null; // Error logged in helper
+        }
+
+        // Construct the prompt specifically asking for JSON output
+        // matching the UrlMetadata structure. Be explicit!
+        string jsonPrompt = $"""
+                Generate a concise, relevant title for the content and a list of up to {maxTags} relevant keyword tags.
+
+                Extracted Text:
+                ---
+                {cleanedText}
+                ---
+
+                Instructions:
+                Respond ONLY with a valid JSON object containing the generated title and tags.
+                The JSON object must have exactly two keys: "Title" (string) and "Tags" (array of strings).
+                """;
+
+        // Create the request object
+        var request = new GenerateContentRequest();
+        request.AddText(jsonPrompt);
+
+        // Configure the request to expect JSON output (important!)
+        // This tells the SDK/API to enforce JSON mode.
+        request.UseJsonMode<UrlMetadata>();
+
+        Console.WriteLine($"Sending request for JSON metadata (URL: {url}) to AI model...");
+        try
+        {
+            // Use GenerateObjectAsync<T> to directly get the deserialized object
+            UrlMetadata? result = await _textModel.GenerateObjectAsync<UrlMetadata>(request);
+
+            if (result == null)
+            {
+                Console.WriteLine("AI model returned null or failed to deserialize the JSON object.");
+            }
+            else
+            {
+                Console.WriteLine($"Successfully received JSON metadata: Title='{result.Title}', Tags='{(result.Tags != null ? string.Join(", ", result.Tags) : "None")}'");
+            }
+
+            return result; // Return the deserialized object (or null if it failed)
+        }
+        catch (Exception ex)
+        {
+            // Log the specific error related to JSON generation/parsing
+            Console.Error.WriteLine($"Error generating or parsing JSON metadata for URL '{url}': {ex.Message}");
+            // Consider checking exception type for more specific API errors if available
+            Console.Error.WriteLine($"Stack Trace: {ex.StackTrace}");
+            return null;
+        }
+    }
+
+    // --- Helper Method for HTML Fetching and Cleaning --- (Refactored from GetResponseFromUrlAsync)
+    private async Task<string?> FetchAndCleanHtmlAsync(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out _))
+        {
+            Console.Error.WriteLine($"Invalid URL provided: {url}");
+            return null;
+        }
+
+        string htmlContent;
+        try
+        {
+            Console.WriteLine($"Fetching content from: {url}");
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            htmlContent = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Successfully fetched {htmlContent.Length} characters (raw HTML) from {url}");
+        }
+        catch (HttpRequestException ex) { Console.Error.WriteLine($"HTTP error fetching URL '{url}': {ex.Message}"); return null; }
+        catch (TaskCanceledException ex) { Console.Error.WriteLine($"Timeout fetching URL '{url}': {ex.Message}"); return null; }
+        catch (Exception ex) { Console.Error.WriteLine($"Error fetching URL '{url}': {ex.Message}"); return null; }
+
+        string cleanedText;
+        try
+        {
+            var htmlDoc = new HtmlDocument();
+            htmlDoc.LoadHtml(htmlContent);
+            var nodesToRemove = htmlDoc.DocumentNode.Descendants().Where(n => /* ... node names ... */ n.Name == "script" || n.Name == "style" || n.Name == "nav" || n.Name == "footer" || n.Name == "header" || n.Name == "aside" || n.Name == "form" || n.Name == "button" || n.Name == "iframe").ToList();
+            foreach (var node in nodesToRemove) { node.Remove(); }
+            var contentNode = htmlDoc.DocumentNode.SelectSingleNode("//body") ?? htmlDoc.DocumentNode;
+            string rawInnerText = contentNode.InnerText;
+            var decodedText = HtmlEntity.DeEntitize(rawInnerText);
+            var textWithStandardNewlines = MyRegex().Replace(decodedText, "\n"); // (\r\n|\r|\n)
+            var textWithParagraphs = MyRegex1().Replace(textWithStandardNewlines, "\n\n"); // \n{3,}
+            var textWithSingleSpaces = MyRegex2().Replace(textWithParagraphs, " "); // [ \t]{2,}
+            cleanedText = textWithSingleSpaces.Trim();
+            Console.WriteLine($"Extracted and cleaned text: {cleanedText.Length} characters.");
+            if (string.IsNullOrWhiteSpace(cleanedText))
+            {
+                Console.Error.WriteLine($"Failed to extract meaningful text content from URL: {url}");
+                return null;
+            }
+            return cleanedText;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error parsing HTML for URL '{url}': {ex.Message}");
+            return null;
+        }
+    }
+
 
     [GeneratedRegex(@"(\r\n|\r|\n)")]
     private static partial Regex MyRegex();
