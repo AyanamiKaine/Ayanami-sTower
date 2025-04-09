@@ -436,7 +436,7 @@ public class ArtPage : IUIComponent, IDisposable
                 return;
             grid
                 .SetColumnDefinitions("Auto, *, Auto")
-                .SetRowDefinitions("Auto, Auto, Auto")
+                .SetRowDefinitions("Auto")
                 .SetMargin(5);
 
 
@@ -445,20 +445,8 @@ public class ArtPage : IUIComponent, IDisposable
                 // Thumbnail Image
                 grid.Child<Image>(img =>
                 {
-
-                    // Name TextBlock
-                    grid.Child<TextBlock>(txt =>
-                    {
-                        txt
-                        .SetRow(0)
-                            .SetBinding(TextBlock.TextProperty, nameof(ReferencePaintingItem.Name))
-                            .SetVerticalAlignment(VerticalAlignment.Center)
-                            .SetHorizontalAlignment(HorizontalAlignment.Left)
-                            .SetIsHitTestVisible(false);
-                    });
-
                     img
-                        .SetRow(1)
+                        .SetColumn(0)
                        .SetBinding(Image.SourceProperty, nameof(ReferencePaintingItem.Thumbnail))
                        .SetWidth(THUMBNAIL_SIZE / 2.0) // Smaller thumbnail in list
                        .SetHeight(THUMBNAIL_SIZE / 2.0)
@@ -469,6 +457,20 @@ public class ArtPage : IUIComponent, IDisposable
                         // is much closer to the thing we want.
                         .OnPointerEntered(HandleItemPointerEntered)
                         .SetIsHitTestVisible(true);
+                    // Name TextBlock
+                    grid.Child<TextBlock>(txt =>
+                    {
+                        txt
+                        .SetTextWrapping(TextWrapping.NoWrap)
+                        .SetTextTrimming(TextTrimming.CharacterEllipsis)
+                        .SetColumn(1)
+                        .SetMargin(10, 0, 0, 0)
+                        .SetBinding(TextBlock.TextProperty, nameof(ReferencePaintingItem.Name))
+                        .SetVerticalAlignment(VerticalAlignment.Center)
+                        .SetHorizontalAlignment(HorizontalAlignment.Left)
+                        .SetIsHitTestVisible(false);
+                    });
+
                 });
 
             }
@@ -477,36 +479,36 @@ public class ArtPage : IUIComponent, IDisposable
             // Row 1, Col 2: Tags (using ItemsControl or similar)
             grid.Child<ItemsControl>(tagsList =>
             {
-                tagsList.SetColumn(2)
-                    .SetRowSpan(2)
-                    .SetRow(1)
-                        .SetHorizontalAlignment(HorizontalAlignment.Right)
-                        .SetItemsSource(item.Tags) // Bind to the item's Tags collection
-                                                   //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
-                        .SetItemTemplate(_world.CreateTemplate<string, Border>((border, tagText) => // Simple tag template
-                        {
-                            border.SetBackground(Brushes.LightGray)
-                                  .SetCornerRadius(3)
-                                  .SetPadding(4, 1)
-                                  .SetMargin(2, 0)
-                                .Child<StackPanel>(stackPanel =>
+                tagsList
+                    .SetColumn(2)
+                    .SetHorizontalAlignment(HorizontalAlignment.Right)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetItemsSource(item.Tags) // Bind to the item's Tags collection
+                                               //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                    .SetItemTemplate(_world.CreateTemplate<string, Border>((border, tagText) => // Simple tag template
+                    {
+                        border.SetBackground(Brushes.LightGray)
+                              .SetCornerRadius(3)
+                              .SetPadding(4, 1)
+                              .SetMargin(4, 4)
+                            .Child<StackPanel>(stackPanel =>
+                            {
+                                stackPanel
+                                    .SetOrientation(Orientation.Horizontal)
+                                    .SetSpacing(5)
+                                    .SetVerticalAlignment(VerticalAlignment.Center);
+
+                                stackPanel.Child<TextBlock>(textBlock =>
                                 {
-                                    stackPanel
-                                        .SetOrientation(Orientation.Horizontal)
-                                        .SetSpacing(5)
+                                    textBlock
+                                        .SetText(tagText)
                                         .SetVerticalAlignment(VerticalAlignment.Center);
-
-                                    stackPanel.Child<TextBlock>(textBlock =>
-                                    {
-                                        textBlock
-                                            .SetText(tagText)
-                                            .SetVerticalAlignment(VerticalAlignment.Center);
-                                    });
-
-
                                 });
-                        }))
-                        .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
+
+
+                            });
+                    }))
+                    .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
             });
 
         });
@@ -757,7 +759,6 @@ public class ArtPage : IUIComponent, IDisposable
             };
 
             _referencePaintings.Add(newItem);
-            await SaveReferenceMetadataAsync();
         }
     }
 
@@ -1021,10 +1022,9 @@ public class ArtPage : IUIComponent, IDisposable
                 };
 
                 // Add to the collection on the UI thread
-                await Dispatcher.UIThread.InvokeAsync(async () =>
+                await Dispatcher.UIThread.InvokeAsync(() =>
                 {
                     _referencePaintings.Add(newItem);
-                    await SaveReferenceMetadataAsync();
                 });
             }));
         }
@@ -1347,10 +1347,9 @@ public class ArtPage : IUIComponent, IDisposable
                     };
 
                     // 5. Add to collection *on the UI thread*
-                    await Dispatcher.UIThread.InvokeAsync(async () =>
+                    await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         _referencePaintings.Add(newItem);
-                        await SaveReferenceMetadataAsync();
                         //Console.WriteLine($"Added reference from drop: {newItem.Name}");
                     });
                 }
@@ -1368,6 +1367,7 @@ public class ArtPage : IUIComponent, IDisposable
         try
         {
             await Task.WhenAll(processingTasks);
+            await Dispatcher.UIThread.InvokeAsync(SaveReferenceMetadataAsync);
             //Console.WriteLine("Finished processing all dropped files.");
         }
         catch (Exception ex)
