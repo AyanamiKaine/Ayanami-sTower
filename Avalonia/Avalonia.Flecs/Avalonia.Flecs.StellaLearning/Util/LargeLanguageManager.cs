@@ -34,7 +34,9 @@ public sealed partial class LargeLanguageManager
 
     // --- Generative AI Client ---
 
-    private readonly GenerativeModel _model;
+    private readonly GenerativeModel _textModel;
+    private readonly GenerativeModel _imageModel;
+
     private const string DefaultModel = GoogleAIModels.Gemini2FlashLitePreview; // Use a cost-effective and capable model
     private readonly HttpClient _httpClient;
     // Private constructor to prevent external instantiation
@@ -64,7 +66,8 @@ public sealed partial class LargeLanguageManager
 
             // Create the GenerativeModel instance
             // You can make the model name configurable if needed
-            _model = googleAI.CreateGenerativeModel(DefaultModel);
+            _textModel = googleAI.CreateGenerativeModel(DefaultModel);
+            _imageModel = googleAI.CreateGenerativeModel(GoogleAIModels.Gemini2Flash);
 
             Console.WriteLine($"LargeLanguageManager initialized with model: {DefaultModel}");
         }
@@ -95,7 +98,7 @@ public sealed partial class LargeLanguageManager
         try
         {
             // Use the simple GenerateContentAsync overload for text prompts
-            var response = await _model.GenerateContentAsync(prompt);
+            var response = await _textModel.GenerateContentAsync(prompt);
 
             // Extract the text content from the response
             // The .Text() extension method is a convenient way provided by the library
@@ -129,14 +132,15 @@ public sealed partial class LargeLanguageManager
             Console.Error.WriteLine($"Image file not found at path: {imagePath}");
             return [];
         }
-
         var request = new GenerateContentRequest();
 
         // Construct a prompt specifically asking for tags in a parseable format
         // You might need to experiment with this prompt for optimal results
         string prompt = $"""
-        Describe this image with relevant tags. 
-        Identify objects, themes, colors, and concepts. 
+        Describe this image with relevant THEME tags. THAT CAN BE USED TO CATEGORIES THE IMAGE
+        SO THEIR TAGS CAN BE USED TO SEARCH FOR THE IMAGE, FOR EXAMPLE AN PAINTING OF AN APPLE
+        WOULD GET THE TAG APPLE AND PAINTING, AND ITS STYLE. SEEING A PICTURE OF A WOMEN SMOKING
+        WOULD BECOME WOMEN, SMOKING TAGS. ONLY RETURN THE TAGS LIST NOTHING ELSE
         Provide up to {maxTags} tags as a comma-separated list (e.g., tag1, tag2, tag3).
         """;
 
@@ -149,7 +153,7 @@ public sealed partial class LargeLanguageManager
 
             // Use the GenerateContentAsync overload that takes a prompt and a local file path
             // The library handles reading the file and sending it appropriately.
-            var response = await _model.GenerateContentAsync(request);
+            var response = await _imageModel.GenerateContentAsync(request);
 
             var generatedText = response?.Text()?.Trim();
 
@@ -287,7 +291,7 @@ public sealed partial class LargeLanguageManager
         Console.WriteLine("Sending combined prompt (Extracted Text + Question) to AI model...");
         try
         {
-            var aiResponse = await _model.GenerateContentAsync(finalPrompt);
+            var aiResponse = await _textModel.GenerateContentAsync(finalPrompt);
             var rawText = aiResponse?.Text();
             var trimmedText = rawText?.Trim();
 
