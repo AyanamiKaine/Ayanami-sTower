@@ -62,6 +62,8 @@ public partial class ReferencePaintingItem : ObservableObject
     /// </summary>
     [ObservableProperty]
     private Bitmap? _thumbnail; // Cache thumbnail for performance
+    [ObservableProperty]
+    private List<string> _tags = [];
 }
 
 /// <summary>
@@ -282,6 +284,19 @@ public class ArtPage : IUIComponent, IDisposable
                                                     ShowRenameFlyout(listBox.Get<ListBox>(), itemToRename);
                                                 }
 
+                                            });
+                                        });
+
+                                        menuFlyout.Child<MenuItem>((item) =>
+                                        {
+                                            // Uses a large language model to autogenerate tags.
+                                            item.SetHeader("Generate Tags")
+                                            .OnClick(async (sender, _) =>
+                                            {
+                                                var item = listBox.GetSelectedItem<ReferencePaintingItem>();
+
+                                                var llm = LargeLanguageManager.Instance;
+                                                item.Tags = await llm.GetImageTagsAsync(item.ImagePath, 6);
                                             });
                                         });
 
