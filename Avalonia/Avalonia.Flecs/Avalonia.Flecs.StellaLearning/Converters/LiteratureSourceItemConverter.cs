@@ -123,6 +123,7 @@ namespace Avalonia.Flecs.StellaLearning.Data
             {
                 // *** Use innerOptions here ***
                 LiteratureSourceType.LocalFile => node.Deserialize<LocalFileSourceItem>(innerOptions),
+                LiteratureSourceType.Website => node.Deserialize<WebSourceItem>(innerOptions),
 
                 // *** Add cases for Book, JournalArticle, etc. using innerOptions ***
                 // LiteratureSourceType.Book => node.Deserialize<BookSourceItem>(innerOptions),
