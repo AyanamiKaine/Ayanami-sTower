@@ -1,5 +1,8 @@
 using System;
 using System.Text;
+using System.Text.Json.Serialization;
+using Avalonia.Controls.Chrome;
+using Avalonia.Flecs.StellaLearning.Util;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Avalonia.Flecs.StellaLearning.Data // Use your appropriate namespace
@@ -14,22 +17,36 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use your appropriate namespace
         /// This field is non-nullable for this source type.
         /// </summary>
         [ObservableProperty]
+        [JsonPropertyName("Url")]
         private string _url;
 
         /// <summary>
         /// Gets or sets the date the online source was accessed. Important for websites.
         /// </summary>
         [ObservableProperty]
+        [JsonPropertyName("AccessedDate")]
         private DateTime? _accessedDate;
 
         // --- Constructor ---
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="WebSourceItem"/> class.
+        /// This constructor is intended for JSON deserialization.
+        /// </summary>
+        [JsonConstructor]
+        public WebSourceItem() : base(LiteratureSourceType.Website)
+        {
+            _url = string.Empty;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="WebSourceItem"/> class with the specified URL.
         /// </summary>
         /// <param name="url">The URL of the web source. Cannot be null or whitespace.</param>
         /// <param name="type">The type of the literature source. Defaults to Website.</param>
+        /// <param name="name">Used as a name when the item gets displayed.</param>
         /// <exception cref="ArgumentException">Thrown when the URL is null or whitespace.</exception>
-        public WebSourceItem(string url, LiteratureSourceType type = LiteratureSourceType.Website) : base(type)
+        public WebSourceItem(string url, LiteratureSourceType type = LiteratureSourceType.Website, string name = "") : base(type)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(url, nameof(url));
             // Basic URL validation (can be improved)
@@ -39,7 +56,8 @@ namespace Avalonia.Flecs.StellaLearning.Data // Use your appropriate namespace
                 // throw new ArgumentException("Invalid URL format.", nameof(url));
             }
             _url = url;
-            // Default name could be derived from URL or Title if available later
+            Name = name;
+            Title = name;
         }
 
         /// <summary>
