@@ -335,7 +335,6 @@ public class ArtPage : IUIComponent, IDisposable
                                                         item.Tags.Add(tag); // Add new tags one by one
                                                     }
                                                 }
-                                                await SaveReferenceMetadataAsync();
                                             });
                                         });
 
