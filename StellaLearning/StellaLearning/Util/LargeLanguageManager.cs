@@ -308,10 +308,10 @@ public sealed partial class LargeLanguageManager
             Author: Identify the primary author(s) or creator(s) of the content. If multiple authors are present, list them if possible, but a single string representation is acceptable (e.g., "John Doe and Jane Smith").
 
             Tags: Generate a list of highly relevant keywords or topic tags that categorize the core subject matter of the content.
-            Quantity: Generate between {maxTags} distinct tags. Do not exceed 5 tags under any circumstances. NEVER GENERATE MORE THAN 5 TAGS, NEVER.
+            Quantity: Generate {maxTags} distinct tags. Do not exceed 5 tags under any circumstances. NEVER GENERATE MORE THAN {maxTags} TAGS, NEVER.
 
             Relevance & Type: Tags should represent the main themes, concepts, or disciplines discussed. Prefer broader topics over hyper-specific details.
-            Format: Tags should be single words or short phrases (ideally 1 words long).
+            Format: Tags should be single words or short phrases (ideally 1 words long) and always start with a capital letter (Math, Biology, Science, Software, Study).
 
             Exclusions: Do NOT include chapter titles, section headings, specific page numbers, minor character names, or generic words from the table of contents/index (like "Introduction", "Index", "Bibliography", "Acknowledgements", "One", "Two", "Three") as tags unless they represent a truly central theme.
             Publisher: Identify the entity (organization, company, website, individual) responsible for publishing or distributing the content.
