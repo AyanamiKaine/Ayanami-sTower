@@ -158,7 +158,7 @@ public sealed partial class LargeLanguageManager
 
             // Create the GenerativeModel instance
             // You can make the model name configurable if needed
-            _textModel = googleAI.CreateGeminiModel(GoogleAIModels.Gemini2Flash);
+            _textModel = googleAI.CreateGeminiModel(GoogleAIModels.Gemini2FlashExp);
             _imageModel = googleAI.CreateGenerativeModel(GoogleAIModels.Gemini2Flash);
 
             //Console.WriteLine($"LargeLanguageManager initialized with model: {DefaultModel}");
@@ -295,7 +295,7 @@ public sealed partial class LargeLanguageManager
         };
         // Configure the request to expect JSON output (important!)
         // This tells the SDK/API to enforce JSON mode.
-        request.UseJsonMode<ContentMetadata>();
+        //request.UseJsonMode<ContentMetadata>();
 
         // Construct a prompt specifically asking for tags in a parseable format
         // You might need to experiment with this prompt for optimal results
@@ -318,20 +318,13 @@ public sealed partial class LargeLanguageManager
 
             Summary: Generate a brief (2-6 sentence) summary capturing the core message or purpose of the content.
             Format Output: Structure the extracted information into a single, valid JSON object.
-            The JSON object must use the following exact field names (keys): Title, Author, Tags, Publisher, Summary, SourceCreationDate.
-
-            The value for Tags must be a JSON array of strings (e.g., ["Memory Techniques", "Cognitive Science", "Learning"]).
-            All other values should be JSON strings, except when information is missing.
-
-            Handle Missing Information:
-            If you cannot reasonably determine the value for Title, Author, Publisher, Summary, or SourceCreationDate from the text, use the JSON value null for that specific field.
-            If you cannot determine any relevant tags meeting the criteria above, use an empty JSON array [] for the Tags field.
+            The JSON object must use the following exact field names (keys): Title, Author, Tags, Publisher, Summary.
             """;
 
         request.AddText(promptText);
         request.AddRemoteFile(remoteFile!);
 
-        request.UseJsonMode<ContentMetadata>();
+        //request.UseJsonMode<ContentMetadata>();
 
         // Call the AI model (same logic as before)
         Console.WriteLine("Sending combined prompt (Extracted Text + Question) to AI model...");
