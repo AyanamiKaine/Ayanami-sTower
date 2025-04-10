@@ -311,7 +311,7 @@ public sealed partial class LargeLanguageManager
             Quantity: Generate {maxTags} distinct tags. Do not exceed 5 tags under any circumstances. NEVER GENERATE MORE THAN {maxTags} TAGS, NEVER.
 
             Relevance & Type: Tags should represent the main themes, concepts, or disciplines discussed. Prefer broader topics over hyper-specific details.
-            Format: Tags should be single words or short phrases (ideally 1 words long) and always start with a capital letter (Math, Biology, Science, Software, Study).
+            Format: Tags should be single words or short phrases (ideally 1-2 words long) and always start with a capital letter (Math, Biology, Science, Software, Study).
 
             Exclusions: Do NOT include chapter titles, section headings, specific page numbers, minor character names, or generic words from the table of contents/index (like "Introduction", "Index", "Bibliography", "Acknowledgements", "One", "Two", "Three") as tags unless they represent a truly central theme.
             Publisher: Identify the entity (organization, company, website, individual) responsible for publishing or distributing the content.
