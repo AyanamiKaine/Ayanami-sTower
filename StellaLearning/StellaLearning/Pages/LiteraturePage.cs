@@ -519,31 +519,86 @@ public class LiteraturePage : IUIComponent, IDisposable
     private void HandleLiteratureListDragOver(object? sender, DragEventArgs e)
     {
         // Allow copy effect if data contains files.
-        e.DragEffects = e.Data.Contains(DataFormats.Files) ? DragDropEffects.Copy : DragDropEffects.None;
+        bool allowDrop = false;
+        DragDropEffects proposedEffect = DragDropEffects.None;
+
+        // Check 1: Are files being dragged?
+        bool containsFiles = e.Data.Contains(DataFormats.Files);
+        if (containsFiles)
+        {
+            allowDrop = true;
+            proposedEffect = DragDropEffects.Copy; // Files are usually copied
+        }
+
+        // Check 2: Is text being dragged? If so, is it a valid web URL?
+        bool containsTextUrl = false;
         if (e.Data.Contains(DataFormats.Text))
         {
-            // Optional: Peek at the text to see if it *looks* like a URL for better feedback
-            // Note: Getting data here can sometimes be slow, but usually okay for text.
             var potentialText = e.Data.Get(DataFormats.Text) as string;
-            if (!string.IsNullOrWhiteSpace(potentialText) &&
-                Uri.TryCreate(potentialText, UriKind.Absolute, out var uri) &&
-                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            // Use the helper method to check if the text is a valid web URL
+            if (IsValidWebUrl(potentialText, out _)) // We don't need the Uri object here, just the boolean result
             {
-                // It looks like a URL, allow Copy or Link
-                e.DragEffects = DragDropEffects.Copy; // Or DragDropEffects.Link if more appropriate
-                e.Handled = true;
+                containsTextUrl = true;
             }
-            else
-            {
-                // It's text, but not a URL we want. You could allow dropping general text here if needed.
-                // For now, we only accept files or URLs based on the request.
-                // e.DragEffects will remain None.
-                // Set Handled = true anyway to stop bubbling if you are sure *no* parent should handle this text drop.
-                e.Handled = true; // We've decided what to do (nothing), so handle it.
-            }
-            return; // Processed text possibility
         }
+
+        // Decide if we should allow the drop based on text URL presence
+        if (containsTextUrl)
+        {
+            allowDrop = true;
+            // If files are also present, Copy is probably fine.
+            // If *only* a URL is present, you might prefer Link, but Copy is also common.
+            // Let's keep it simple: if either is valid, allow Copy.
+            proposedEffect = DragDropEffects.Copy; // Or DragDropEffects.Link
+        }
+
+        // Set the final effect based on whether any valid data format was found
+        e.DragEffects = allowDrop ? proposedEffect : DragDropEffects.None;
+
+        // We've evaluated the drag operation and decided on the effect (or None).
+        // Set Handled = true to prevent the event from bubbling up further.
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Checks if the provided text represents a valid HTTP or HTTPS URL,
+    /// including attempting to prepend "https://" if no scheme is present.
+    /// </summary>
+    /// <param name="text">The text to validate.</param>
+    /// <param name="validUri">If the text is a valid URL, this outputs the corresponding absolute Uri object.</param>
+    /// <returns>True if the text is considered a valid web URL, otherwise false.</returns>
+    private bool IsValidWebUrl(string? text, out Uri? validUri)
+    {
+        validUri = null;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        // Attempt 1: Try parsing as an absolute URI directly (handles existing http/https)
+        if (Uri.TryCreate(text, UriKind.Absolute, out var initialUri) &&
+            (initialUri.Scheme == Uri.UriSchemeHttp || initialUri.Scheme == Uri.UriSchemeHttps))
+        {
+            validUri = initialUri;
+            return true;
+        }
+
+        // Attempt 2: If the first attempt failed, try prepending "https://"
+        // Basic sanity check: Avoid prepending if it already contains "://" or whitespace.
+        if (!text.Contains("://") && !text.Any(char.IsWhiteSpace))
+        {
+            string potentialUrlWithHttps = "https://" + text;
+            if (Uri.TryCreate(potentialUrlWithHttps, UriKind.Absolute, out var prependedUri) &&
+                prependedUri.Scheme == Uri.UriSchemeHttps)
+            {
+                // Successfully parsed after prepending https
+                validUri = prependedUri;
+                return true;
+            }
+        }
+
+        // If neither attempt resulted in a valid http/https URL
+        return false;
     }
 
     /// <summary>
@@ -579,19 +634,64 @@ public class LiteraturePage : IUIComponent, IDisposable
             var droppedText = e.Data.Get(DataFormats.Text) as string;
             if (!string.IsNullOrWhiteSpace(droppedText))
             {
-                // Validate if it's a URL we want to handle
-                if (Uri.TryCreate(droppedText, UriKind.Absolute, out var uriResult)
-                    && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
+                Uri? uriResult = null; // Variable to hold the final valid URI
+                bool isValidWebUrl = false; // Flag to indicate success
+
+                // ---- Start of Updated Validation Logic ----
+
+                // 1. First attempt: Try parsing as an absolute URI directly.
+                // This handles cases where the scheme (http/https) is already present.
+                if (Uri.TryCreate(droppedText, UriKind.Absolute, out var initialUri)
+                    && (initialUri.Scheme == Uri.UriSchemeHttp || initialUri.Scheme == Uri.UriSchemeHttps))
                 {
-                    dataFound = true; // Mark that we found processable data
-                    Logger.Info($"Processing dropped URL: {uriResult.AbsoluteUri}");
-                    processingTasks.Add(ProcessDroppedUrlAsync(uriResult.AbsoluteUri)); // Use the validated, absolute URI
+                    // Successfully parsed as a valid HTTP or HTTPS absolute URI
+                    uriResult = initialUri;
+                    isValidWebUrl = true;
+                    Logger.Info($"Processing dropped absolute URL: {uriResult.AbsoluteUri}");
                 }
                 else
                 {
-                    Logger.Info($"Dropped text is not a valid HTTP/HTTPS URL: '{droppedText}'");
-                    // Decide if you want to handle other types of text drops
+                    // 2. Second attempt: If the first attempt failed OR resulted in a non-http(s) scheme,
+                    //    assume it might be a schemeless web URL (like "example.com").
+                    //    Let's prepend "https://" and try again.
+                    //    Basic sanity check: Avoid prepending if it already contains "://" (handled above)
+                    //    or if it contains whitespace (likely not a URL).
+                    if (!droppedText.Contains("://") && !droppedText.Any(char.IsWhiteSpace))
+                    {
+                        string potentialUrlWithHttps = "https://" + droppedText;
+
+                        // Try creating a URI with the prepended scheme
+                        if (Uri.TryCreate(potentialUrlWithHttps, UriKind.Absolute, out var prependedUri)
+                            && prependedUri.Scheme == Uri.UriSchemeHttps) // Ensure the result is indeed HTTPS
+                        {
+                            // Successfully parsed after prepending https
+                            uriResult = prependedUri;
+                            isValidWebUrl = true;
+                            Logger.Info($"Processing dropped schemeless URL (added https): {uriResult.AbsoluteUri}");
+                        }
+                        // No else needed here - if this fails, it remains invalid.
+                    }
                 }
+
+                // ---- End of Updated Validation Logic ----
+
+                // 3. Process if a valid web URL was found either way
+                if (isValidWebUrl && uriResult != null)
+                {
+                    dataFound = true; // Mark that we found processable data
+                                      // Add the processing task using the validated, absolute URI
+                    processingTasks.Add(ProcessDroppedUrlAsync(uriResult.AbsoluteUri));
+                }
+                else
+                {
+                    // Log if the dropped text couldn't be interpreted as a valid web URL
+                    Logger.Info($"Dropped text is not a valid HTTP/HTTPS URL or recognized schemeless URL: '{droppedText}'");
+                    // Optionally, handle other types of text drops here
+                }
+            }
+            else
+            {
+                Logger.Info("Dropped text is null or whitespace.");
             }
         }
 
