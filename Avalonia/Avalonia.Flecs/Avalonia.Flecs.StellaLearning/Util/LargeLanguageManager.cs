@@ -77,6 +77,13 @@ public sealed partial class LargeLanguageManager
     private const string DefaultModel = GoogleAIModels.Gemini2FlashLitePreview; // Use a cost-effective and capable model
     private readonly HttpClient _httpClient;
     // Private constructor to prevent external instantiation
+
+    [GeneratedRegex(@"(\r\n|\r|\n)")]
+    private static partial Regex MyRegex();
+    [GeneratedRegex(@"\n{3,}")]
+    private static partial Regex MyRegex1();
+    [GeneratedRegex(@"[ \t]{2,}")]
+    private static partial Regex MyRegex2();
     private LargeLanguageManager()
     {
         // --- Initialization ---
@@ -464,12 +471,4 @@ public sealed partial class LargeLanguageManager
             return null;
         }
     }
-
-
-    [GeneratedRegex(@"(\r\n|\r|\n)")]
-    private static partial Regex MyRegex();
-    [GeneratedRegex(@"\n{3,}")]
-    private static partial Regex MyRegex1();
-    [GeneratedRegex(@"[ \t]{2,}")]
-    private static partial Regex MyRegex2();
 }
