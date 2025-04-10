@@ -692,8 +692,15 @@ public class LiteraturePage : IUIComponent, IDisposable
             // 2. Create LiteratureSourceItem (LocalFileSourceItem)
             // The constructor handles basic validation and sets the default name
             var newItem = new LocalFileSourceItem(newPath);
+
+
+            var metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(newPath);
+
             newItem.SourceType = LiteratureSourceType.LocalFile;
-            newItem.Title = storageFile.Name;
+            newItem.Title = metaData?.Title ?? storageFile.Name;
+            newItem.Author = metaData?.Author ?? "";
+            newItem.Tags = metaData?.Tags ?? [];
+            newItem.Summary = metaData?.Summary ?? "";
 
             if (Path.GetExtension(newPath) == ".pdf")
             {
