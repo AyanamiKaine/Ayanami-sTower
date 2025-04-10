@@ -368,6 +368,50 @@ public class LiteraturePage : IUIComponent, IDisposable
                                     .SetFontWeight(FontWeight.Normal)
                                     .SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Summary)));
                                 });
+
+                            stackPanel.Child<ItemsControl>(tagsList =>
+                            {
+                                tagsList.SetColumn(2).SetRow(1)
+                                        .SetHorizontalAlignment(HorizontalAlignment.Right)
+                                        .SetItemsSource(item.Tags) // Bind to the item's Tags collection
+                                                                   //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                                        .SetItemTemplate(_world.CreateTemplate<string, Border>((border, tagText) => // Simple tag template
+                                        {
+                                            border.SetBackground(Brushes.LightGray)
+                                                  .SetCornerRadius(3)
+                                                  .SetPadding(4, 1)
+                                                  .SetMargin(2)
+                                                .Child<StackPanel>(stackPanel =>
+                                                {
+                                                    stackPanel
+                                                        .SetOrientation(Orientation.Horizontal)
+                                                        .SetSpacing(5)
+                                                        .SetVerticalAlignment(VerticalAlignment.Center);
+
+                                                    stackPanel.Child<TextBlock>(textBlock =>
+                                                    {
+                                                        textBlock
+                                                            .SetText(tagText)
+                                                            .SetVerticalAlignment(VerticalAlignment.Center);
+                                                    });
+
+
+                                                });
+                                            /*
+                                            There is no need to clean up this template because the when the ItemTemplate
+                                            gets cleaned all child templates get cleaned too, we want to avoid an double free.
+
+                                            THIS IS STILL BUGGED AND RESULTS IN A MEMORY LEAK, THE SECOND NESTED TEMPLATE NEVER GETS DESTROYED AND I DONT KNOW WHY!
+
+                                            I tracked down the problem to flecs. It seems to occur when we delete an entity and
+                                            something in anohter thread? runs and we get entity_index.c: 72: assert: r->dense < index->alive_count INVALID_PARAMETER.
+
+                                            ###################### THIS PROBLEM IS FIXED !!!! ##########################
+                                            Using the newest version of flecs.net 4.0.4 fixed the problem, using 4.0.3 results again in the crash. 
+                                            */
+                                        }))
+                                        .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
+                            });
                         });
 
                     }), true);
