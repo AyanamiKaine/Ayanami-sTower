@@ -289,24 +289,44 @@ public sealed partial class LargeLanguageManager
             Console.WriteLine($"Error uploading file: {ex.Message}");
         }
 
-        var request = new GenerateContentRequest();
-
+        var request = new GenerateContentRequest
+        {
+            SystemInstruction = new Content("You are an AI assistant specialized in extracting structured metadata from text content. Your task is to analyze the provided text content below and generate a single, valid JSON object containing specific metadata fields.", "SYSTEM")
+        };
         // Configure the request to expect JSON output (important!)
         // This tells the SDK/API to enforce JSON mode.
         request.UseJsonMode<ContentMetadata>();
 
         // Construct a prompt specifically asking for tags in a parseable format
         // You might need to experiment with this prompt for optimal results
-        var promptText = $"""
-                Analyze the content of the uploaded file.
-                Generate ONE title, ONE author (if discernible, otherwise "Unknown"), ONE publisher (if discernible, otherwise "Unknown"), ONE short summary or abstract depending on the contents for PDF a description is enough, and a list of (A MAXIMUM OF {maxTags}) relevant keyword tags to categorize the content.
+        var promptText =
+            $"""
+            Analyze Content: Carefully read the entire content
+            Extract Metadata: Identify and extract the following pieces of information from the text:
 
-                RETURN ONLY A VALID JSON OBJECT with the keys: "Title", "Author", "Publisher", "Summary", and "Tags" (which should be an array of strings).
+            Title: Determine the most appropriate main title for the content. This should be concise and representative.
+            Author: Identify the primary author(s) or creator(s) of the content. If multiple authors are present, list them if possible, but a single string representation is acceptable (e.g., "John Doe and Jane Smith").
 
-                PAY ATTENTION TO TOO LONG TITLES!
+            Tags: Generate a list of highly relevant keywords or topic tags that categorize the core subject matter of the content.
+            Quantity: Generate between {maxTags} distinct tags. Do not exceed 5 tags under any circumstances. NEVER GENERATE MORE THAN 5 TAGS, NEVER.
 
-                JSON Response:
-                """;
+            Relevance & Type: Tags should represent the main themes, concepts, or disciplines discussed. Prefer broader topics over hyper-specific details.
+            Format: Tags should be single words or short phrases (ideally 1 words long).
+
+            Exclusions: Do NOT include chapter titles, section headings, specific page numbers, minor character names, or generic words from the table of contents/index (like "Introduction", "Index", "Bibliography", "Acknowledgements", "One", "Two", "Three") as tags unless they represent a truly central theme.
+            Publisher: Identify the entity (organization, company, website, individual) responsible for publishing or distributing the content.
+
+            Summary: Generate a brief (2-6 sentence) summary capturing the core message or purpose of the content.
+            Format Output: Structure the extracted information into a single, valid JSON object.
+            The JSON object must use the following exact field names (keys): Title, Author, Tags, Publisher, Summary, SourceCreationDate.
+
+            The value for Tags must be a JSON array of strings (e.g., ["Memory Techniques", "Cognitive Science", "Learning"]).
+            All other values should be JSON strings, except when information is missing.
+
+            Handle Missing Information:
+            If you cannot reasonably determine the value for Title, Author, Publisher, Summary, or SourceCreationDate from the text, use the JSON value null for that specific field.
+            If you cannot determine any relevant tags meeting the criteria above, use an empty JSON array [] for the Tags field.
+            """;
 
         request.AddText(promptText);
         request.AddRemoteFile(remoteFile!);
@@ -318,9 +338,7 @@ public sealed partial class LargeLanguageManager
         try
         {
             var aiResponse = await _textModel.GenerateContentAsync(request);
-            var metaData = aiResponse.ToObject<ContentMetadata>();
-
-            return metaData;
+            return aiResponse.ToObject<ContentMetadata>();
         }
         catch (Exception ex)
         {
