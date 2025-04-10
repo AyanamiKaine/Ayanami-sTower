@@ -89,6 +89,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
                 textBox
                 .SetColumn(0)
+                .SetMargin(5)
                 .SetWatermark("Search Entries")
                 .OnTextChanged((sender, args) =>
                 {
@@ -129,6 +130,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                 comboBox
                 .SetPlaceholderText("Sort Items")
                 .SetColumn(2)
+                .SetMargin(5)
                 .SetItemsSource(sortItems);
 
                 comboBox.OnSelectionChanged((sender, args) =>
