@@ -75,8 +75,6 @@ public partial class App : Application
         _world.Import<Avalonia.Flecs.FluentUI.Controls.ECS.Module>();
 
         _world.Set(LoadSpaceRepetitionItemsFromDisk());
-        //var debugWindow = new Debug.Window.Window(_world);
-        //Entities.OnEntityAdded += debugWindow.AddEntity;
 
         // 1. Ensure SpacedRepetitionItem collection is available/loaded
         // Assuming world.Get retrieves the collection used by the application
