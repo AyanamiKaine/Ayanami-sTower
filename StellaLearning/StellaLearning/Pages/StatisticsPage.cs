@@ -131,7 +131,7 @@ public class StatisticsPage : IUIComponent, IDisposable
             {
                 mainPanel
                 .SetSpacing(15) // Add some padding around the page content
-                .SetMargin(0, 0, 10, 0);
+                .SetMargin(5, 5, 10, 5);
 
                 // --- Overall Stats Section ---
                 mainPanel.Child<TextBlock>(header => header.SetText("Overall Statistics").SetFontSize(18).SetFontWeight(FontWeight.Bold));
