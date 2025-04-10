@@ -51,3 +51,13 @@ Inflexibility creaps in, when modeling ideas like spaced repetition items, liter
 This could also be a great oppurtonity to find out how good flecs built in serialization works.
 
 The result will be probably much more runtime checks, but also because we will be using much more simpler components we can just say `.Ensure<Type>()`. The bigger question is how will things like the observable property work?
+
+## Implement Scaling Options for the User
+
+The user should be able to change the global scaling of the app, similar how a user can use the keyboard shortcut (ctrl,+) to increase it in the browser.
+
+```C#
+// I dont know yet how it works, but those fields can change the scaling but break some other part.
+_mainWindow.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
+_mainWindow.RenderTransform = new ScaleTransform(1.5, 1.5);
+```
