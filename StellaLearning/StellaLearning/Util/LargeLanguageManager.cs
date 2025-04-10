@@ -12,12 +12,12 @@ using GenerativeAI; // Main namespace from the library
 using GenerativeAI.Types;
 using HtmlAgilityPack; // For Request/Response types if needed
 
-namespace Avalonia.Flecs.StellaLearning.Util;
+namespace StellaLearning.Util;
 
 /// <summary>
-/// Represents metadata information extracted from a URL, such as title and associated tags.
+/// Represents metadata information extracted from content (web, pdf, markdown, etc.), such as title and associated tags.
 /// </summary>
-public class UrlMetadata
+public class ContentMetadata
 {
     // Use System.Text.Json attributes if needed for specific naming,
     // but matching property names usually works.
@@ -44,6 +44,21 @@ public class UrlMetadata
     /// </summary>
     public string? Summary { get; set; }
 
+    /// <summary>
+    /// Returns a string representation of the ContentMetadata object.
+    /// </summary>
+    /// <returns>A formatted string containing the metadata properties.</returns>
+    public override string ToString()
+    {
+        var tagsList = Tags != null ? string.Join(", ", Tags) : "No tags";
+
+        return $"Title: {Title ?? "Unknown"}\n" +
+               $"Author: {Author ?? "Unknown"}\n" +
+               $"Publisher: {Publisher ?? "Unknown"}\n" +
+               $"Tags: {tagsList}\n" +
+               $"Summary: {Summary ?? "No summary"}";
+    }
+
     /*
     TODO: 
     We should also add a date for when the information was created => Date.Now()
@@ -57,6 +72,39 @@ public class UrlMetadata
 /// </summary>
 public sealed partial class LargeLanguageManager
 {
+
+    // Efficient lookup for supported extensions (using HashSet for O(1) average time complexity)
+    // Store extensions in lowercase including the dot for consistent comparison.
+    private static readonly HashSet<string> _supportedFileApiExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Code Files
+        ".c", ".cpp", ".py", ".java", ".php", ".sql", ".html",
+        // Document Files
+        ".doc", ".docx", ".pdf", ".rtf", ".dot", ".dotx", ".hwp", ".hwpx",
+        // Plain Text
+        ".txt",
+        // Presentation
+        ".pptx",
+        // Spreadsheet/Tabular
+        ".xls", ".xlsx", ".csv", ".tsv"
+    };
+
+    // Extensions we can reasonably convert to plain text for analysis
+    private static readonly HashSet<string> _convertibleToTextExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".md", ".markdown", // Markdown
+        ".log",           // Log files
+        ".xml",           // XML
+        ".json",          // JSON (though API might support directly)
+        ".yaml", ".yml",  // YAML
+        ".css",           // CSS
+        ".js",            // JavaScript (if not using .py, .java etc.)
+        ".sh",            // Shell scripts
+        ".bat"            // Batch files
+        // Add any other primarily text-based formats you encounter
+    };
+
+
     // --- Singleton Implementation ---
 
     // Private static instance holder using Lazy<T> for thread-safety and lazy initialization
@@ -71,7 +119,7 @@ public sealed partial class LargeLanguageManager
 
     // --- Generative AI Client ---
 
-    private readonly GenerativeModel _textModel;
+    private readonly GeminiModel _textModel;
     private readonly GenerativeModel _imageModel;
 
     private const string DefaultModel = GoogleAIModels.Gemini2FlashLitePreview; // Use a cost-effective and capable model
@@ -110,10 +158,10 @@ public sealed partial class LargeLanguageManager
 
             // Create the GenerativeModel instance
             // You can make the model name configurable if needed
-            _textModel = googleAI.CreateGenerativeModel(DefaultModel);
+            _textModel = googleAI.CreateGeminiModel(GoogleAIModels.Gemini2Flash);
             _imageModel = googleAI.CreateGenerativeModel(GoogleAIModels.Gemini2Flash);
 
-            Console.WriteLine($"LargeLanguageManager initialized with model: {DefaultModel}");
+            //Console.WriteLine($"LargeLanguageManager initialized with model: {DefaultModel}");
         }
         catch (Exception ex)
         {
@@ -158,6 +206,153 @@ public sealed partial class LargeLanguageManager
     }
 
     /// <summary>
+    /// Generates metadata (title, author, tags, publisher, summary) for a given file using AI analysis.
+    /// </summary>
+    /// <param name="filePath">The path to the file to analyze.</param>
+    /// <param name="maxTags">The maximum number of tags to generate (default is 4).</param>
+    /// <returns>A ContentMetadata object containing the generated metadata, or null if an error occurred.</returns>
+    public async Task<ContentMetadata?> GenerateMetaDataBasedOnFile(string filePath, int maxTags = 4)
+    {
+        if (!File.Exists(filePath))
+        {
+            Console.Error.WriteLine("file must exists");
+            return null;
+        }
+
+        string? extension = Path.GetExtension(filePath)?.ToLowerInvariant();
+        if (string.IsNullOrEmpty(extension))
+        {
+            Console.Error.WriteLine($"Error: Could not determine file extension for '{filePath}'. Cannot process.");
+            return null;
+        }
+
+        bool isDirectlySupported = _supportedFileApiExtensions.Contains(extension);
+        bool isConvertible = !isDirectlySupported && _convertibleToTextExtensions.Contains(extension);
+
+        string fileToUploadPath = filePath; // Default to original path
+        string? tempFilePath = null;       // Path for temporary file, if created
+        bool useConversion = false;
+
+        // --- Logic Branch: Conversion Fallback ---
+        if (isConvertible)
+        {
+            Console.WriteLine($"File type '{extension}' is not directly supported by File API, attempting conversion to .txt.");
+            useConversion = true;
+            try
+            {
+                // Create a unique temporary file path
+                tempFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.txt");
+
+                // Read original content
+                string originalContent = await File.ReadAllTextAsync(filePath);
+
+                // Write to temporary .txt file
+                await File.WriteAllTextAsync(tempFilePath, originalContent);
+
+                Console.WriteLine($"Successfully converted '{Path.GetFileName(filePath)}' to temporary file: '{tempFilePath}'");
+                fileToUploadPath = tempFilePath; // Upload the temporary file
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error during temporary file conversion for '{filePath}': {ex.Message}");
+                // Clean up temp file if it was created partially before error
+                if (tempFilePath != null && File.Exists(tempFilePath))
+                {
+                    try { File.Delete(tempFilePath); } catch { /* Ignore delete error */ }
+                }
+                return null; // Cannot proceed if conversion fails
+            }
+        }
+        // --- Logic Branch: Unsupported Type ---
+        else if (!isDirectlySupported)
+        {
+            Console.Error.WriteLine($"Error: File type '{extension}' is not directly supported by the File API and is not configured for text conversion. Skipping '{filePath}'.");
+            return null;
+        }
+
+        RemoteFile? remoteFile = null;
+        try
+        {
+            Console.WriteLine($"Uploading {(useConversion ? "temporary " : "")}file '{Path.GetFileName(fileToUploadPath)}' (Original: '{Path.GetFileName(filePath)}') using File API...");
+            remoteFile = await _textModel.Files.UploadFileAsync(
+                fileToUploadPath!,
+                progressCallback: (progress) =>
+                {
+                    Console.WriteLine($"Upload Progress: {progress:F2}%");
+                }
+            );
+
+            Console.WriteLine($"File uploaded successfully. Remote File Name: {remoteFile.Name}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading file: {ex.Message}");
+        }
+
+        var request = new GenerateContentRequest();
+
+        // Configure the request to expect JSON output (important!)
+        // This tells the SDK/API to enforce JSON mode.
+        request.UseJsonMode<ContentMetadata>();
+
+        // Construct a prompt specifically asking for tags in a parseable format
+        // You might need to experiment with this prompt for optimal results
+        var promptText = $"""
+                Analyze the content of the uploaded file.
+                Generate ONE title, ONE author (if discernible, otherwise "Unknown"), ONE publisher (if discernible, otherwise "Unknown"), ONE short summary or abstract depending on the contents for PDF a description is enough, and a list of (A MAXIMUM OF {maxTags}) relevant keyword tags to categorize the content.
+
+                RETURN ONLY A VALID JSON OBJECT with the keys: "Title", "Author", "Publisher", "Summary", and "Tags" (which should be an array of strings).
+
+                PAY ATTENTION TO TOO LONG TITLES!
+
+                JSON Response:
+                """;
+
+        request.AddText(promptText);
+        request.AddRemoteFile(remoteFile!);
+
+        request.UseJsonMode<ContentMetadata>();
+
+        // Call the AI model (same logic as before)
+        Console.WriteLine("Sending combined prompt (Extracted Text + Question) to AI model...");
+        try
+        {
+            var aiResponse = await _textModel.GenerateContentAsync(request);
+            var metaData = aiResponse.ToObject<ContentMetadata>();
+
+            return metaData;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error generating AI response for file '{filePath}': {ex.Message}");
+            Console.Error.WriteLine($"Stack Trace: {ex.StackTrace}");
+            return null;
+        }
+        finally // --- Cleanup: ALWAYS try to delete the temporary file ---
+        {
+            if (tempFilePath != null && File.Exists(tempFilePath))
+            {
+                try
+                {
+                    File.Delete(tempFilePath);
+                    Console.WriteLine($"Successfully deleted temporary file: '{tempFilePath}'");
+                }
+                catch (IOException ioEx)
+                {
+                    // Log non-critically, the main operation might have succeeded
+                    Console.Error.WriteLine($"Warning: Failed to delete temporary file '{tempFilePath}': {ioEx.Message}");
+                }
+            }
+            // Optional: Delete the remote file if no longer needed (requires another API call)
+            if (remoteFile != null)
+            {
+                try { await _textModel.Files.DeleteFileAsync(remoteFile!.Name!); Console.WriteLine($"Deleted remote file: {remoteFile.Name}"); }
+                catch (Exception ex) { Console.Error.WriteLine($"Warning: Failed to delete remote file '{remoteFile.Name}': {ex.Message}"); }
+            }
+        }
+    }
+
+    /// <summary>
     /// Generates a list of tags describing the content of an image file.
     /// </summary>
     /// <param name="imagePath">The local file path to the image.</param>
@@ -178,8 +373,7 @@ public sealed partial class LargeLanguageManager
         }
         var request = new GenerateContentRequest();
 
-        // Construct a prompt specifically asking for tags in a parseable format
-        // You might need to experiment with this prompt for optimal results
+
         string prompt = $"""
         Describe this image with relevant THEME tags. THAT CAN BE USED TO CATEGORIES THE IMAGE
         SO THEIR TAGS CAN BE USED TO SEARCH FOR THE IMAGE, FOR EXAMPLE AN PAINTING OF AN APPLE
@@ -229,7 +423,7 @@ public sealed partial class LargeLanguageManager
     /// <param name="url">The URL of the website to fetch.</param>
     /// <param name="promptAboutUrlContent">The specific question or instruction about the website content.</param>
     /// <returns>The AI's response, trimmed, or null if an error occurs.</returns>
-    public async Task<UrlMetadata?> GetResponseFromUrlAsync(string url, string promptAboutUrlContent)
+    public async Task<ContentMetadata?> GetResponseFromUrlAsync(string url, string promptAboutUrlContent)
     {
         if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out _))
         {
@@ -336,15 +530,8 @@ public sealed partial class LargeLanguageManager
         try
         {
             var aiResponse = await _textModel.GenerateContentAsync(finalPrompt);
-            var metaData = aiResponse.ToObject<UrlMetadata>();
-            var rawText = aiResponse?.Text();
-            var trimmedText = rawText?.Trim();
+            var metaData = aiResponse.ToObject<ContentMetadata>();
 
-            if (string.IsNullOrEmpty(trimmedText))
-            {
-                Console.WriteLine("AI model returned an empty response after trimming.");
-                return null;
-            }
             return metaData;
         }
         catch (Exception ex)
@@ -362,7 +549,7 @@ public sealed partial class LargeLanguageManager
     /// <param name="url">The URL of the website to fetch.</param>
     /// <param name="maxTags">Maximum number of tags to request.</param>
     /// <returns>A UrlMetadata object containing the title and tags, or null if an error occurs.</returns>
-    public async Task<UrlMetadata?> GetUrlMetadataAsync(string url, int maxTags = 5)
+    public async Task<ContentMetadata?> GetUrlMetadataAsync(string url, int maxTags = 5)
     {
         string? cleanedText = await FetchAndCleanHtmlAsync(url); // Use refactored helper
         if (cleanedText == null)
@@ -391,13 +578,13 @@ public sealed partial class LargeLanguageManager
 
         // Configure the request to expect JSON output (important!)
         // This tells the SDK/API to enforce JSON mode.
-        request.UseJsonMode<UrlMetadata>();
+        request.UseJsonMode<ContentMetadata>();
 
         Console.WriteLine($"Sending request for JSON metadata (URL: {url}) to AI model...");
         try
         {
             // Use GenerateObjectAsync<T> to directly get the deserialized object
-            UrlMetadata? result = await _textModel.GenerateObjectAsync<UrlMetadata>(request);
+            ContentMetadata? result = await _textModel.GenerateObjectAsync<ContentMetadata>(request);
 
             if (result == null)
             {
