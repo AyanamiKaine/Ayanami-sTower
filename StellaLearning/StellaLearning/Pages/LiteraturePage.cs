@@ -795,7 +795,7 @@ public class LiteraturePage : IUIComponent, IDisposable
         var prompt = $"Generate me a title and a list of (A MAXIMUM OF 4)tags to categorize the content on the website({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE, PUBLISHER, AUTHOR, THE TAGS AND A SHORT SUMMARY AS JSON WITH THE KEYS 'Tags' AND 'Title', 'Publisher', 'Author', 'Summary'";
         var output = await llm.GetResponseFromUrlAsync(url, prompt);
 
-        var newItem = new WebSourceItem(url, name: output?.Title ?? "")
+        var newItem = new WebSourceItem(url, name: output?.Title ?? url)
         {
             Tags = output?.Tags ?? [],
             Publisher = output?.Publisher ?? "",
