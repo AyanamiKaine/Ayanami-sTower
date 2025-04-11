@@ -22,6 +22,7 @@ using Avalonia;
 using StellaLearning.Pages;
 using StellaLearning.Data;
 using StellaLearning.Converters;
+using StellaLearning.Util;
 
 
 namespace StellaLearning;
@@ -67,7 +68,7 @@ public partial class App : Application
 
         // Create the scheduler instance (use default parameters or load custom ones)
         var scheduler = new FsrsSharp.Scheduler();
-
+        LargeLanguageManager.Initialize(_world);
         // Initialize the service
         SchedulerService.Initialize(scheduler);
 
