@@ -646,22 +646,6 @@ public class LiteraturePage : IUIComponent, IDisposable
             validUri = initialUri;
             return true;
         }
-
-        // Attempt 2: If the first attempt failed, try prepending "https://"
-        // Basic sanity check: Avoid prepending if it already contains "://" or whitespace.
-        if (!text.Contains("://") && !text.Any(char.IsWhiteSpace))
-        {
-            string potentialUrlWithHttps = "https://" + text;
-            if (Uri.TryCreate(potentialUrlWithHttps, UriKind.Absolute, out var prependedUri) &&
-                prependedUri.Scheme == Uri.UriSchemeHttps)
-            {
-                // Successfully parsed after prepending https
-                validUri = prependedUri;
-                return true;
-            }
-        }
-
-        // If neither attempt resulted in a valid http/https URL
         return false;
     }
 
