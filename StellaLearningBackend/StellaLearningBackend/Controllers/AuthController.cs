@@ -4,8 +4,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using StellaLearningBackend.Dtos; // Your DTOs namespace
-using StellaLearningBackend.Models; // Your Models namespace (for ApplicationUser)
+using StellaLearningBackend.Models;
+using StellaLearning.Dtos; // Your Models namespace (for ApplicationUser)
 
 namespace StellaLearningBackend.Controllers;
 
