@@ -1012,6 +1012,8 @@ public class LiteraturePage : IUIComponent, IDisposable
                 if (item.Title?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) return true;
                 // Check Author
                 if (item.Author?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) return true;
+                // Check Summary
+                if (item.Summary?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) return true;
                 // Check Tags
                 if (item.Tags?.Any(tag => tag?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false) return true;
                 // Check FilePath (if applicable)
