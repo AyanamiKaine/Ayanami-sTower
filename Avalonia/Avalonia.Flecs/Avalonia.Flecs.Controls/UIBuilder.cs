@@ -1271,22 +1271,6 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Sets the font opacity
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="builder"></param>
-    /// <param name="opacity"></param>
-    /// <returns></returns>
-    public static UIBuilder<T> SetOpacity<T>(this UIBuilder<T> builder, double opacity) where T : TextBlock
-    {
-        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
-            return builder;
-
-        builder.Entity.Get<T>().Opacity = opacity;
-        return builder;
-    }
-
-    /// <summary>
     /// Sets the fontsize for the buttons textblock
     /// </summary>
     /// <param name="builder"></param>
@@ -2487,6 +2471,23 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Entity.Get<T>().HorizontalAlignment = horizontalAlignment;
+        return builder;
+    }
+
+
+    /// <summary>
+    /// Sets the opacity of a Visual element.
+    /// </summary>
+    /// <typeparam name="T">The type of Visual element</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="opacity">The opacity value to set (between 0.0 and 1.0)</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetOpacity<T>(this UIBuilder<T> builder, double opacity) where T : Visual, new()
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<T>().Opacity = opacity;
         return builder;
     }
 
