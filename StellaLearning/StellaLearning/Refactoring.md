@@ -207,3 +207,13 @@ Right now we have to pass a flag to correctly know when to dispose them automati
 ### Solution
 
 because we are using entities we could use tags to specify if and when it should be disposed.
+
+## Styling Options
+
+### Problem
+
+There are various styling options we can choose, but its much better to give the user the option for customization, he always knows better what he wants. We might not like their taste but they are our customers not reverse. Their opinion matters more. Thats it.
+
+### Solution
+
+I think we will create a style class that holds all styling options and will be refrenced by all ther use styling so we can easily use them everywhere we want.
