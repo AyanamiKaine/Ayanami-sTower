@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Avalonia.Flecs.Util", "..\A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DesktopNotifications", "..\Avalonia\Avalonia.Flecs\DesktopNotifications\DesktopNotifications\DesktopNotifications.csproj", "{7AF23A54-8402-423C-84C0-8A0E5D9E6260}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaLearningBackend", "..\StellaLearningBackend\StellaLearningBackend\StellaLearningBackend.csproj", "{94CBD767-51A0-6E00-6E70-8D22D15DFC70}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{7AF23A54-8402-423C-84C0-8A0E5D9E6260}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7AF23A54-8402-423C-84C0-8A0E5D9E6260}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7AF23A54-8402-423C-84C0-8A0E5D9E6260}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94CBD767-51A0-6E00-6E70-8D22D15DFC70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94CBD767-51A0-6E00-6E70-8D22D15DFC70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94CBD767-51A0-6E00-6E70-8D22D15DFC70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94CBD767-51A0-6E00-6E70-8D22D15DFC70}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
