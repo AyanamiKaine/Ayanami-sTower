@@ -7,10 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
+using Flecs.NET.Core;
 using GenerativeAI; // Main namespace from the library
 using GenerativeAI.Types;
-using HtmlAgilityPack; // For Request/Response types if needed
+using HtmlAgilityPack;
+using StellaLearning.Data; // For Request/Response types if needed
 
 namespace StellaLearning.Util;
 
@@ -107,22 +110,36 @@ public sealed partial class LargeLanguageManager
 
     // --- Singleton Implementation ---
 
-    // Private static instance holder using Lazy<T> for thread-safety and lazy initialization
-    private static readonly Lazy<LargeLanguageManager> lazyInstance =
-        new Lazy<LargeLanguageManager>(() => new LargeLanguageManager());
+    // Private static instance holder using Lazy<T> for thread-safety and lazy initialization// Make lazyInstance nullable and remove direct initialization here
+    private static Lazy<LargeLanguageManager>? lazyInstance;
+    // Lock object for thread-safe initialization
+    private static readonly Lock padlock = new();
 
     /// <summary>
     /// Gets the singleton instance of the LargeLanguageManager class.
-    /// This property provides thread-safe, lazy-initialized access to the manager.
+    /// Ensure that Initialize(world) has been called prior to accessing this property.
     /// </summary>
-    public static LargeLanguageManager Instance => lazyInstance.Value;
+    /// <exception cref="InvalidOperationException">Thrown if accessed before Initialize has been called.</exception>
+    public static LargeLanguageManager Instance
+    {
+        get
+        {
+            if (lazyInstance == null)
+            {
+                // This state should ideally not be reached if Initialize is called correctly at startup.
+                // This check protects against incorrect usage patterns.
+                throw new InvalidOperationException("LargeLanguageManager has not been initialized. Call Initialize(world) first during application startup.");
+            }
+            // Return the lazily initialized instance (the factory delegate inside Lazy<T> will run here if it hasn't already)
+            return lazyInstance.Value;
+        }
+    }
 
     // --- Generative AI Client ---
 
     private readonly GeminiModel _textModel;
     private readonly GenerativeModel _imageModel;
-
-    private const string DefaultModel = GoogleAIModels.Gemini2FlashLitePreview; // Use a cost-effective and capable model
+    private readonly World _world;
     private readonly HttpClient _httpClient;
     // Private constructor to prevent external instantiation
 
@@ -132,8 +149,11 @@ public sealed partial class LargeLanguageManager
     private static partial Regex MyRegex1();
     [GeneratedRegex(@"[ \t]{2,}")]
     private static partial Regex MyRegex2();
-    private LargeLanguageManager()
+    private LargeLanguageManager(World world) // <--- Added parameter
     {
+        // Assign the world instance immediately
+        _world = world;
+
         // --- Initialization ---
         // Read API Key from environment variable (Recommended approach)
         // Ensure you set the 'GEMINI_API' environment variable before running.
@@ -172,6 +192,44 @@ public sealed partial class LargeLanguageManager
         }
     }
 
+    /// <summary>
+    /// Initializes the singleton instance of the LargeLanguageManager with the required World dependency.
+    /// This method MUST be called once during application startup before accessing the Instance property.
+    /// </summary>
+    /// <param name="world">The application's Flecs.NET World instance.</param>
+    /// <exception cref="ArgumentNullException">Thrown if the provided world instance is null.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if Initialize is called more than once.</exception>
+    public static void Initialize(World world)
+    {
+        // Use double-checked locking for thread safety during initialization
+        // Although typically called once at startup, this makes it robust.
+        if (lazyInstance == null) // First check (avoids lock contention if already initialized)
+        {
+            lock (padlock)
+            {
+                if (lazyInstance == null) // Second check (ensures only one thread initializes)
+                {
+                    // Create the Lazy instance, passing the world to the constructor via the factory delegate
+                    lazyInstance = new Lazy<LargeLanguageManager>(() => new LargeLanguageManager(world));
+                    Console.WriteLine("LargeLanguageManager initialized.");
+                }
+                else
+                {
+                    // Optional: Could log a warning here if another thread initialized between the checks.
+                    // Or throw InvalidOperationException if strict single-call is desired even with race conditions.
+                    // throw new InvalidOperationException("LargeLanguageManager has already been initialized by another thread.");
+                }
+            }
+        }
+        else
+        {
+            // If Initialize is called again after successful initialization
+            throw new InvalidOperationException("LargeLanguageManager has already been initialized. Initialize should only be called once.");
+            // Alternatively, you could just log a warning and return if you want to allow redundant calls.
+            // Console.WriteLine("Warning: LargeLanguageManager.Initialize called more than once.");
+        }
+    }
+
     // --- Public Methods ---
 
     /// <summary>
@@ -181,6 +239,11 @@ public sealed partial class LargeLanguageManager
     /// <returns>The generated text response as a string, or null if an error occurred.</returns>
     public async Task<string?> GetTextResponseAsync(string prompt)
     {
+        if (!_world.Get<Settings>().EnableLargeLanguageFeatures)
+        {
+            return null;
+        }
+
         if (string.IsNullOrWhiteSpace(prompt))
         {
             Console.Error.WriteLine("Prompt cannot be null or empty.");
@@ -213,6 +276,11 @@ public sealed partial class LargeLanguageManager
     /// <returns>A ContentMetadata object containing the generated metadata, or null if an error occurred.</returns>
     public async Task<ContentMetadata?> GenerateMetaDataBasedOnFile(string filePath, int maxTags = 4)
     {
+        if (!_world.Get<Settings>().EnableLargeLanguageFeatures)
+        {
+            return null;
+        }
+
         if (!File.Exists(filePath))
         {
             Console.Error.WriteLine("file must exists");
@@ -291,7 +359,7 @@ public sealed partial class LargeLanguageManager
 
         var request = new GenerateContentRequest
         {
-            SystemInstruction = new Content("You are an AI assistant specialized in extracting structured metadata from text content. Your task is to analyze the provided text content below and generate a single, valid JSON object containing specific metadata fields.", "SYSTEM")
+            SystemInstruction = new GenerativeAI.Types.Content("You are an AI assistant specialized in extracting structured metadata from text content. Your task is to analyze the provided text content below and generate a single, valid JSON object containing specific metadata fields.", "SYSTEM")
         };
         // Configure the request to expect JSON output (important!)
         // This tells the SDK/API to enforce JSON mode.
@@ -371,6 +439,11 @@ public sealed partial class LargeLanguageManager
     /// <returns>A list of string tags, or an empty list if an error occurred or no tags were generated.</returns>
     public async Task<List<string>> GetImageTagsAsync(string imagePath, int maxTags = 4)
     {
+        if (!_world.Get<Settings>().EnableLargeLanguageFeatures)
+        {
+            return [];
+        }
+
         if (string.IsNullOrWhiteSpace(imagePath))
         {
             Console.Error.WriteLine("Image path cannot be null or empty.");
@@ -436,6 +509,11 @@ public sealed partial class LargeLanguageManager
     /// <returns>The AI's response, trimmed, or null if an error occurs.</returns>
     public async Task<ContentMetadata?> GetResponseFromUrlAsync(string url, string promptAboutUrlContent)
     {
+        if (!_world.Get<Settings>().EnableLargeLanguageFeatures)
+        {
+            return null;
+        }
+
         if (string.IsNullOrWhiteSpace(url) || !Uri.TryCreate(url, UriKind.Absolute, out _))
         {
             Console.Error.WriteLine($"Invalid URL provided: {url}");
@@ -562,6 +640,11 @@ public sealed partial class LargeLanguageManager
     /// <returns>A UrlMetadata object containing the title and tags, or null if an error occurs.</returns>
     public async Task<ContentMetadata?> GetUrlMetadataAsync(string url, int maxTags = 5)
     {
+        if (!_world.Get<Settings>().EnableLargeLanguageFeatures)
+        {
+            return null;
+        }
+
         string? cleanedText = await FetchAndCleanHtmlAsync(url); // Use refactored helper
         if (cleanedText == null)
         {
