@@ -19,6 +19,11 @@ public partial class Settings : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _enableNotifications = true;
+    /// <summary>
+    /// Whether the application is allowed to send notifcations
+    /// </summary>
+    [ObservableProperty]
+    private bool _enableCloudSaves = true;
     //TODO: I want to implement a more fine grain control so the user can say, yea titles are fine but not descriptions.
     /// <summary>
     /// Whether we are allowed to use large language models to genereate various meta data for
@@ -62,6 +67,7 @@ public partial class Settings : ObservableObject
         _closeToTray = true;
         _obsidianPath = string.Empty; // Default path handled later or in CreateDefaultSettings
         _enableLargeLanguageFeatures = true;
+        _enableCloudSaves = true;
 
         if (_isDarkMode)
         {
