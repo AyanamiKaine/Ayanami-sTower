@@ -20,7 +20,7 @@ public static class SmartUrlOpener
     /// If the URL is not reachable, it tries to open it via the Wayback Machine.
     /// </summary>
     /// <param name="url">The URL to open.</param>
-    public static async Task OpenUrlIntelligentlyAsync(string url)
+    public static void OpenUrlIntelligently(string url)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
@@ -32,7 +32,7 @@ public static class SmartUrlOpener
 
         // For now we dont use the fallback wayback machine implementation as its a bit bugged and sometimes uses it
         // even when i know it should worl.
-        bool isReachable = await IsUrlReachableAsync(url);
+        bool isReachable = true; // await IsUrlReachableAsync(url);
 
         if (isReachable)
         {
