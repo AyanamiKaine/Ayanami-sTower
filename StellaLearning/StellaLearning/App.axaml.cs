@@ -1,7 +1,6 @@
 using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Flecs.FluentUI.Controls.ECS;
 using Avalonia.Markup.Xaml;
 using FluentAvalonia.UI.Controls;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
@@ -69,25 +68,16 @@ public partial class App : Application
         // Create the scheduler instance (use default parameters or load custom ones)
         var scheduler = new FsrsSharp.Scheduler();
         LargeLanguageManager.Initialize(_world);
-        // Initialize the service
         SchedulerService.Initialize(scheduler);
 
         _world.Import<Avalonia.Flecs.Controls.ECS.Module>();
         _world.Import<Avalonia.Flecs.FluentUI.Controls.ECS.Module>();
-
         _world.Set(LoadSpaceRepetitionItemsFromDisk());
 
-        // 1. Ensure SpacedRepetitionItem collection is available/loaded
-        // Assuming world.Get retrieves the collection used by the application
-        var spacedRepetitionItems = _world.Get<ObservableCollection<SpacedRepetitionItem>>();
-        // If items need loading from a file *into* this collection, do it here:
-        // await LoadItemsFromFileIntoCollectionAsync(spacedRepetitionItems, "your_items_filepath.json");
+        Dispatcher.UIThread.Post(async () => await StatsTracker.Instance.InitializeAsync(
+            [.. _world.Get<ObservableCollection<SpacedRepetitionItem>>().Select(item => item.Uid)]));
 
-        // 2. Create a HashSet of existing item IDs for efficient lookup
-        var existingItemIds = new HashSet<Guid>(spacedRepetitionItems.Select(item => item.Uid));
-
-        Dispatcher.UIThread.Post(async () => await StatsTracker.Instance.InitializeAsync(existingItemIds));
-
+        InitializeTrayIcon();
         InitializeSettings();
 
         MainWindow = _world.UI<Window>((window) =>
@@ -118,7 +108,6 @@ public partial class App : Application
         _mainWindow = MainWindow.Get<Window>();
 
         MainWindow.Child(CreateUILayout());
-        InitializeTrayIcon();
     }
 
 
@@ -365,10 +354,6 @@ public partial class App : Application
 
     private void InitializeSettings()
     {
-
-
-
-
         _world.Set(Settings.LoadFromDisk());
         var settings = _world.Get<Settings>();
         settings.PropertyChanged += (sender, e) =>
