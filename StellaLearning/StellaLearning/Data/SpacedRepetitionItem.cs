@@ -140,7 +140,7 @@ public static class SchedulerService
     /// This should be called once during application startup.
     /// </summary>
     /// <param name="scheduler">The Scheduler instance to use globally.</param>
-    public static void Initialize(FsrsSharp.Scheduler scheduler)
+    public static void  Initialize(FsrsSharp.Scheduler scheduler)
     {
         if (_instance != null)
         {
