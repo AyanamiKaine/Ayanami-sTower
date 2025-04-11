@@ -832,6 +832,7 @@ public class LiteraturePage : IUIComponent, IDisposable
     private async Task ProcessDroppedFileAsync(IStorageFile storageFile)
     {
         string? sourcePath = storageFile.TryGetLocalPath();
+        ContentMetadata? metaData = null;
         if (string.IsNullOrEmpty(sourcePath))
         {
             Logger.Warn($"Could not get local path for dropped file: {storageFile.Name}. Skipping.");
@@ -857,15 +858,6 @@ public class LiteraturePage : IUIComponent, IDisposable
             // The constructor handles basic validation and sets the default name
             var newItem = new LocalFileSourceItem(newPath);
 
-
-            var metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(newPath);
-
-            newItem.SourceType = LiteratureSourceType.LocalFile;
-            newItem.Title = metaData?.Title ?? storageFile.Name;
-            newItem.Author = metaData?.Author ?? "";
-            newItem.Tags = metaData?.Tags ?? [];
-            newItem.Summary = metaData?.Summary ?? "";
-
             if (Path.GetExtension(newPath) == ".pdf")
             {
                 try
@@ -877,7 +869,29 @@ public class LiteraturePage : IUIComponent, IDisposable
                 {
                     Logger.Info($"Exception was thrown {ex}");
                 }
+
+                if (newItem.PageCount >= 1000)
+                {
+                    MessageDialog.ShowWarningDialog($"Only pdfs smaller than 1000 pages can be used to generate metadata via a LLM");
+                }
+                else
+                {
+                    // Here we are passing a pdf that is smaller than 1000 pages
+                    metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(newPath);
+                }
             }
+            else
+            {
+                metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(newPath);
+            }
+
+            newItem.SourceType = LiteratureSourceType.LocalFile;
+            newItem.Title = metaData?.Title ?? storageFile.Name;
+            newItem.Author = metaData?.Author ?? "";
+            newItem.Tags = metaData?.Tags ?? [];
+            newItem.Summary = metaData?.Summary ?? "";
+
+
             // You might want to add default tags or prompt user later
 
             // 3. Add to collection on UI thread
