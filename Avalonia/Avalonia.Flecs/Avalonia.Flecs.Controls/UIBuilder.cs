@@ -1605,6 +1605,17 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+    /// <summary>
+    /// Sets whether the window should always be displayed on top of other windows.
+    /// </summary>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="alwaysOnTop">True to make the window always on top, false otherwise</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<Window> AlwaysOnTop(this UIBuilder<Window> builder, bool alwaysOnTop = true)
+    {
+        builder.Get<Window>().Topmost = alwaysOnTop;
+        return builder;
+    }
 
     /// <summary>
     /// Sets the margin of a control.

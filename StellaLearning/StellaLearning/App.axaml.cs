@@ -91,28 +91,30 @@ public partial class App : Application
         InitializeSettings();
 
         MainWindow = _world.UI<Window>((window) =>
-            {
-                window.SetTitle("Stella Learning")
-                      .SetHeight(400)
-                      .SetWidth(400)
-                      .OnClosing((sender, args) =>
+        {
+            window
+                  .AlwaysOnTop(_world.Get<Settings>().EnableAlwaysOnTop)
+                  .SetTitle("Stella Learning")
+                  .SetHeight(400)
+                  .SetWidth(400)
+                  .OnClosing((sender, args) =>
+                  {
+                      if (sender is Window win)
                       {
-                          if (sender is Window win)
+                          // We dont close the main window but instead hide it,
+                          // because we have a tray icon that is still active.
+                          if (_world.Get<Settings>().CloseToTray)
                           {
-                              // We dont close the main window but instead hide it,
-                              // because we have a tray icon that is still active.
-                              if (_world.Get<Settings>().CloseToTray)
-                              {
-                                  args.Cancel = true;
-                                  win.Hide();
-                              }
-                              else
-                              {
-                                  args.Cancel = false;
-                              }
+                              args.Cancel = true;
+                              win.Hide();
                           }
-                      });
-            });
+                          else
+                          {
+                              args.Cancel = false;
+                          }
+                      }
+                  });
+        });
         _mainWindow = MainWindow.Get<Window>();
 
         MainWindow.Child(CreateUILayout());
@@ -376,6 +378,23 @@ public partial class App : Application
                 if (Application.Current is not null)
                     Settings.SetTheme(Application.Current, settings.IsDarkMode ? "Dark" : "Light");
 
+            }
+            else if (e.PropertyName == nameof(Settings.EnableAlwaysOnTop))
+            {
+                // Ensure _mainWindow exists and update runs on UI thread
+                if (_mainWindow != null)
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        // Directly set the Topmost property on the actual Window instance
+                        _mainWindow.Topmost = settings.EnableAlwaysOnTop;
+                        Logger.Trace($"MainWindow Topmost property set to: {settings.EnableAlwaysOnTop}"); // Optional: Add logging
+                    });
+                }
+                else
+                {
+                    Logger.Warn("Attempted to update Topmost, but _mainWindow is null."); // Optional: Add logging
+                }
             }
 
             Settings.SaveToDisk(settings);

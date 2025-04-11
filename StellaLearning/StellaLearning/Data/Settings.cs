@@ -20,6 +20,11 @@ public partial class Settings : ObservableObject
     [ObservableProperty]
     private bool _enableNotifications = true;
     /// <summary>
+    /// Whether the the windows are always on top
+    /// </summary>
+    [ObservableProperty]
+    private bool _enableAlwaysOnTop = false;
+    /// <summary>
     /// Whether the application is allowed to send notifcations
     /// </summary>
     [ObservableProperty]

@@ -41,6 +41,7 @@ public class EditFile : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
         {
             window
+            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
             .SetTitle($"Edit File: {spacedRepetitionFile.Name}")
             .SetWidth(400)
             .SetHeight(400)

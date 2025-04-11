@@ -58,6 +58,7 @@ public class AddQuiz : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
         {
             window
+            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
             .SetTitle("Add Quiz")
             .SetWidth(400)
             .SetHeight(400)

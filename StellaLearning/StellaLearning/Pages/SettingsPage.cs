@@ -39,6 +39,7 @@ public class SettingsPage : IUIComponent
 
                 stackPanel.Child(new ThemeToggleSwitch(world));
                 stackPanel.Child(new AppToTray(world));
+                stackPanel.Child(new EnableAlwaysOnTop(world));
                 stackPanel.Child(new EnableNotificationsToggleSwitch(world));
                 stackPanel.Child(new EnableLargeLanguageModelToggleSwitch(world));
                 stackPanel.Child(new EnableCloudSavesToggleSwitch(world));
@@ -89,6 +90,59 @@ public class SettingsPage : IUIComponent
 
         }).Add<Page>().Entity;
 
+    }
+
+    private class EnableAlwaysOnTop : IUIComponent
+    {
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
+
+        public EnableAlwaysOnTop(World world)
+        {
+            _root =
+            world.UI<DockPanel>((dockPanel) =>
+            {
+                dockPanel.Child<TextBlock>((textBlock) =>
+                {
+
+                    textBlock.SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetText("Enable Always on top")
+                    .SetTextWrapping(TextWrapping.Wrap);
+                });
+
+                dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
+                {
+                    toggleSwitch
+                    .SetDock(Dock.Right)
+                    .SetHorizontalAlignment(HorizontalAlignment.Right);
+
+                    toggleSwitch.With((toggleSwitch) =>
+                    {
+                        toggleSwitch.IsChecked = world.Get<Settings>().EnableAlwaysOnTop;
+                    });
+
+                    toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                    {
+                        var enableAlwaysOnTop = ((ToggleSwitch)sender!).IsChecked ?? false;
+                        var currentSettings = world.Get<Settings>();
+                        currentSettings.EnableAlwaysOnTop = enableAlwaysOnTop;
+                    });
+                });
+
+
+                dockPanel.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                {
+                    toolTip.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText(
+                        """
+                        Always show Stella Learning windows on top of other open windows.
+                        """);
+                    });
+                }));
+            }).Entity;
+        }
     }
 
     private class EnableNotificationsToggleSwitch : IUIComponent

@@ -63,6 +63,7 @@ public class AddFlashcard : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
                 {
                     window
+                    .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
                     .SetTitle("Add Flashcard")
                     .SetWidth(400)
                     .SetHeight(400)

@@ -39,6 +39,7 @@ public class EditFlashcard : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
                 {
                     window
+                    .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
                     .SetTitle($"Edit Flashcard: {flashcard.Name}")
                     .SetWidth(400)
                     .SetHeight(400)

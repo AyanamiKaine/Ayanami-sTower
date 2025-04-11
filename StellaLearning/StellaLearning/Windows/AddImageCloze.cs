@@ -99,6 +99,7 @@ public class AddImageCloze : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
         {
             window
+            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
             .OnKeyDown(Window_KeyDown)
             .SetTitle("Add Cloze")
             .SetWidth(400)

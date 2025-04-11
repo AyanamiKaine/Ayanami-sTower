@@ -38,6 +38,7 @@ public class EditLiteratureSource : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
                 {
                     window
+                    .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
                     .SetTitle($"Edit Source: {literatureSourceItem.Name}")
                     .SetWidth(400)
                     .SetHeight(400)

@@ -38,6 +38,7 @@ public class EditCloze : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
         {
             window
+            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
             .SetTitle($"Edit Cloze : {cloze.Name}")
             .SetWidth(400)
             .SetHeight(400)

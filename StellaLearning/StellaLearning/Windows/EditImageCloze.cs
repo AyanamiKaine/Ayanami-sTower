@@ -112,6 +112,7 @@ public class EditImageCloze : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
         {
             window
+            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
             .OnKeyDown(Window_KeyDown)
             .SetTitle($"Edit Image Cloze: {_spacedRepetitionImageCloze.Name}")
             .SetWidth(400)

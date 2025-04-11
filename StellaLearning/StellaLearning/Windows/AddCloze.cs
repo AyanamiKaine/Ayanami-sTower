@@ -54,6 +54,7 @@ public class AddCloze : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
         {
             window
+            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
             .SetTitle("Add Cloze")
             .SetWidth(400)
             .SetHeight(400)

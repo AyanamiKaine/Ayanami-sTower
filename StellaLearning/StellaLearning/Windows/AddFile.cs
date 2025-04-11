@@ -48,6 +48,7 @@ public class AddFile : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
         {
             window
+            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
             .SetTitle("Add File")
             .SetWidth(400)
             .SetHeight(400)
