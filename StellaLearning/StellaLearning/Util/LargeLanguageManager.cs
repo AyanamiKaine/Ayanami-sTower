@@ -168,7 +168,7 @@ public sealed partial class LargeLanguageManager
 
         _httpClient = new HttpClient();
         // Optional: Configure HttpClient (e.g., Timeout, Headers)
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("MyApp/1.0 (LanguageModelBot; +http://example.com/botinfo)"); // Good practice to set a User-Agent
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
 
 
         try
