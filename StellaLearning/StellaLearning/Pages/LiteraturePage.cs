@@ -722,7 +722,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                     //    or if it contains whitespace (likely not a URL).
                     if (!droppedText.Contains("://") && !droppedText.Any(char.IsWhiteSpace))
                     {
-                        string potentialUrlWithHttps = "https://" +"www."+ droppedText;
+                        string potentialUrlWithHttps = "https://" + "www." + droppedText;
 
                         // Try creating a URI with the prepended scheme
                         if (Uri.TryCreate(potentialUrlWithHttps, UriKind.Absolute, out var prependedUri)
@@ -847,6 +847,10 @@ public class LiteraturePage : IUIComponent, IDisposable
 
         try
         {
+            //TODO: We want to implement a special case for markdown files that are part of an obsidian vault,
+            //instead of copying the file we want to link to it instead, maybe creating a shortcut instead?
+
+
             // 1. Copy file to the literature directory
             string? newPath = await Task.Run(() => CopyFileToLiteratureFolder(sourcePath)); // Run copy operation in background
             if (string.IsNullOrEmpty(newPath))
