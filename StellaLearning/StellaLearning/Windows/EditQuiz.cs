@@ -38,6 +38,7 @@ public class EditQuiz : IUIComponent, IDisposable
         _root = world.UI<Window>((window) =>
         {
             window
+            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
             .SetTitle($"Edit Quiz: {_spacedRepetitionQuiz.Name}")
             .SetWidth(400)
             .SetHeight(400)
