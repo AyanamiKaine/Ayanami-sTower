@@ -722,7 +722,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                     //    or if it contains whitespace (likely not a URL).
                     if (!droppedText.Contains("://") && !droppedText.Any(char.IsWhiteSpace))
                     {
-                        string potentialUrlWithHttps = "https://" + droppedText;
+                        string potentialUrlWithHttps = "https://" +"www."+ droppedText;
 
                         // Try creating a URI with the prepended scheme
                         if (Uri.TryCreate(potentialUrlWithHttps, UriKind.Absolute, out var prependedUri)
