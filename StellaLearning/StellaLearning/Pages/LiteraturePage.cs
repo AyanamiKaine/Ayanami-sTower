@@ -713,30 +713,6 @@ public class LiteraturePage : IUIComponent, IDisposable
                     isValidWebUrl = true;
                     Logger.Info($"Processing dropped absolute URL: {uriResult.AbsoluteUri}");
                 }
-                else
-                {
-                    // 2. Second attempt: If the first attempt failed OR resulted in a non-http(s) scheme,
-                    //    assume it might be a schemeless web URL (like "example.com").
-                    //    Let's prepend "https://" and try again.
-                    //    Basic sanity check: Avoid prepending if it already contains "://" (handled above)
-                    //    or if it contains whitespace (likely not a URL).
-                    if (!droppedText.Contains("://") && !droppedText.Any(char.IsWhiteSpace))
-                    {
-                        string potentialUrlWithHttps = "https://" + droppedText;
-
-                        // Try creating a URI with the prepended scheme
-                        if (Uri.TryCreate(potentialUrlWithHttps, UriKind.Absolute, out var prependedUri)
-                            && prependedUri.Scheme == Uri.UriSchemeHttps) // Ensure the result is indeed HTTPS
-                        {
-                            // Successfully parsed after prepending https
-                            uriResult = prependedUri;
-                            isValidWebUrl = true;
-                            Logger.Info($"Processing dropped schemeless URL (added https): {uriResult.AbsoluteUri}");
-                        }
-                        // No else needed here - if this fails, it remains invalid.
-                    }
-                }
-
                 // ---- End of Updated Validation Logic ----
 
                 // 3. Process if a valid web URL was found either way
