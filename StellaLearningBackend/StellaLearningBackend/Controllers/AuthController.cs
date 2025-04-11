@@ -49,13 +49,14 @@ public class AuthController : ControllerBase
         {
             _logger.LogWarning("Registration failed: Email {Email} already exists.", registerDto.Email);
             // Return a generic error to avoid revealing if an email is registered
-            return BadRequest(new { Message = "Registration failed. Please check your details." });
+            return BadRequest(new { Message = "Registration failed: Email {Email} already exists."});
         }
 
         var newUser = new ApplicationUser
         {
             Email = registerDto.Email,
-            UserName = registerDto.Email // Typically use email as username for simplicity
+            UserName = registerDto.Email,
+            // Typically use email as username for simplicity
             // Set other properties from DTO if needed:
             // FullName = registerDto.FullName
         };
@@ -106,17 +107,26 @@ public class AuthController : ControllerBase
         if (user == null)
         {
             _logger.LogWarning("Login failed: User {Email} not found.", loginDto.Email);
-            return Unauthorized(new { Message = "Invalid email or password." }); // Generic message
+            return Unauthorized(new { Message = "Email not found" }); // Generic message
         }
 
         // Use CheckPasswordSignInAsync for password verification without setting auth cookies
         var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, lockoutOnFailure: false); // Set lockoutOnFailure to true if desired
 
+        if (result.IsNotAllowed) // Check specifically for confirmation/lockout issues
+        {
+            _logger.LogWarning("Login failed: Account for {Email} is not allowed (e.g., needs confirmation).", loginDto.Email);
+            return Unauthorized(new
+            {
+                Message = "Account not confirmed or locked out."
+            });
+        }
+
         if (!result.Succeeded)
         {
             _logger.LogWarning("Login failed: Invalid password for user {Email}.", loginDto.Email);
             // Check for specific results like IsLockedOut, RequiresTwoFactor if needed
-            return Unauthorized(new { Message = "Invalid email or password." }); // Generic message
+            return Unauthorized(new { Message = "Invalid password." }); // Generic message
         }
 
         _logger.LogInformation("User {Email} logged in successfully.", loginDto.Email);
@@ -145,10 +155,10 @@ public class AuthController : ControllerBase
         // Claims identify the user and token properties
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id), // Subject (usually user ID)
-            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+            new(JwtRegisteredClaimNames.Sub, user.Id), // Subject (usually user ID)
+            new(JwtRegisteredClaimNames.Email, user.Email!),
             // Jti is a unique identifier for the token, useful for revocation if needed
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             // Add custom claims if necessary (e.g., roles)
             // var userRoles = await _userManager.GetRolesAsync(user);
             // foreach (var role in userRoles) { claims.Add(new Claim(ClaimTypes.Role, role)); }
