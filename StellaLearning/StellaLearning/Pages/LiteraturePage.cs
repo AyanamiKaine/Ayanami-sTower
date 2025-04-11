@@ -340,6 +340,7 @@ public class LiteraturePage : IUIComponent, IDisposable
             grid.Child<TextBlock>(nameTitle =>
             {
                 nameTitle.SetColumn(1).SetRow(0)
+                         .SetColumnSpan(2)
                          .SetFontWeight(FontWeight.Bold)
                          .SetTextTrimming(TextTrimming.CharacterEllipsis)
                          .SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Title)) // Bind to Title primarily
