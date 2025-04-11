@@ -19,6 +19,13 @@ public partial class Settings : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _enableNotifications = true;
+    //TODO: I want to implement a more fine grain control so the user can say, yea titles are fine but not descriptions.
+    /// <summary>
+    /// Whether we are allowed to use large language models to genereate various meta data for
+    /// different things.
+    /// </summary>
+    [ObservableProperty]
+    private bool _enableLargeLanguageFeatures = true;
     /// <summary>
     /// Whether the application is in dark mode
     /// </summary>
@@ -54,6 +61,7 @@ public partial class Settings : ObservableObject
         _isDarkMode = false; // Default to light mode unless specified in JSON
         _closeToTray = true;
         _obsidianPath = string.Empty; // Default path handled later or in CreateDefaultSettings
+        _enableLargeLanguageFeatures = true;
 
         if (_isDarkMode)
         {
@@ -64,33 +72,6 @@ public partial class Settings : ObservableObject
             Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
         }
         // Optionally set OS-specific defaults here if they apply universally to new instances
-        if (string.IsNullOrEmpty(_obsidianPath) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            _obsidianPath = GetWindowsDefaultObsidianFolderPath();
-        }
-    }
-
-    /// <summary>
-    /// Create a new settings object, especially used for json deserialiation
-    /// </summary>
-    [JsonConstructor] // Explicitly tell JsonSerializer to prefer this if needed, though parameterless is usually default
-    public Settings(bool isDarkMode, string obsidianPath, bool closeToTray, bool enableNotifications)
-    {
-        _isDarkMode = isDarkMode; // Use the value passed in
-        _obsidianPath = obsidianPath; // Use the value passed in
-        _closeToTray = closeToTray;
-        _enableNotifications = enableNotifications;
-
-        if (_isDarkMode)
-        {
-            Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
-        }
-        else
-        {
-            Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
-        }
-
-        // Handle default Obsidian path only if the provided one is empty
         if (string.IsNullOrEmpty(_obsidianPath) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             _obsidianPath = GetWindowsDefaultObsidianFolderPath();
