@@ -65,6 +65,7 @@
     <ProjectReference Include="../../Avalonia/Avalonia.Flecs/Avalonia.Flecs.Util/Avalonia.Flecs.Util.csproj" />
     <ProjectReference Include="../../Avalonia/Avalonia.Flecs/DesktopNotifications/DesktopNotifications.Avalonia/DesktopNotifications.Avalonia.csproj" />
     <ProjectReference Include="../../CsFSRS/FSRS/FSRS.csproj" />
+    <ProjectReference Include="..\StellaLearning.Dtos\StellaLearning.Dtos.csproj" />
   </ItemGroup>
 
   <ItemGroup>
