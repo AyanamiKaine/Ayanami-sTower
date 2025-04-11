@@ -129,7 +129,7 @@ public class LiteraturePage : IUIComponent, IDisposable
         {
             _searchTextBoxBuilder = textBox;
             textBox.SetColumn(0)
-                   .SetWatermark("Search by Name, Title, Author, Tags...")
+                   .SetWatermark("Search by Name, Title, Author, Summary, Tags...")
                    .SetMargin(5)
                    .OnTextChanged((sender, args) =>
                    {
