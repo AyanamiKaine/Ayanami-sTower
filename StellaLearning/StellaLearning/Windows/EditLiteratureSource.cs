@@ -9,6 +9,7 @@ using Flecs.NET.Core;
 using StellaLearning.Data;
 using StellaLearning.UiComponents;
 using FluentAvalonia.UI.Controls;
+using Avalonia.Media;
 
 namespace StellaLearning.Windows;
 
@@ -61,13 +62,14 @@ public class EditLiteratureSource : IUIComponent, IDisposable
         {
             UIBuilder<TextBox>? titleTextBox = null;
             UIBuilder<TextBox>? authorTextBox = null;
-
+            UIBuilder<TextBox>? summaryTextBox = null;
             var tagManager = new TagComponent(world, [.. _literatureSourceItem.Tags]);
 
             void SaveData()
             {
                 if (titleTextBox is null ||
-                    authorTextBox is null)
+                    authorTextBox is null ||
+                    summaryTextBox is null)
                 {
                     return;
                 }
@@ -104,6 +106,7 @@ public class EditLiteratureSource : IUIComponent, IDisposable
 
                 _literatureSourceItem.Title = titleTextBox.GetText();
                 _literatureSourceItem.Author = authorTextBox.GetText();
+                _literatureSourceItem.Summary = summaryTextBox.GetText();
                 _literatureSourceItem.Tags = [.. tagManager.Tags];
 
                 // Clearing an entity results in all components, relationships etc to be removed.
@@ -153,6 +156,20 @@ public class EditLiteratureSource : IUIComponent, IDisposable
                         SaveData();
                     }
                 });
+            });
+
+            stackPanel.Child<TextBlock>((t) =>
+            {
+                t.SetText("Summary");
+            });
+
+            summaryTextBox = stackPanel.Child<TextBox>((textBox) =>
+            {
+                textBox
+                .SetWatermark("Summary")
+                .SetTextWrapping(TextWrapping.Wrap)
+                .AcceptsReturn()
+                .SetText(_literatureSourceItem.Summary);
             });
 
             stackPanel.Child(tagManager); // Add the tag manager UI
