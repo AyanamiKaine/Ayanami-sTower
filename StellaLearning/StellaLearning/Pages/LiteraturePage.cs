@@ -153,7 +153,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                   .SetMargin(5)
                   .SetText("Add Source...")
                   .OnClick(async (s, e) => await AddSourceAsync()); // Implement AddSourceAsync
-            button.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText("Add a new literature source (File or URL). You can also drag & drop files onto the list."))));
+            button.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText("Add a new literature source (File or URL). You can also drag & drop them onto the list."))));
 
             // TODO: Add MenuFlyout for choosing File/URL if desired
         });
