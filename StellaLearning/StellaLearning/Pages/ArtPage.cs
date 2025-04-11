@@ -491,7 +491,7 @@ public class ArtPage : IUIComponent, IDisposable
                         border.SetBackground(Brushes.LightGray)
                               .SetCornerRadius(3)
                               .SetPadding(4, 1)
-                              .SetMargin(4, 4)
+                              .SetMargin(2)
                             .Child<StackPanel>(stackPanel =>
                             {
                                 stackPanel
