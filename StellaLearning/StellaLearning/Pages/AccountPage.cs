@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Flecs.NET.Core;
@@ -7,12 +8,19 @@ using Avalonia.Layout;
 using NLog;
 using Avalonia.Flecs.Controls; // Assuming UIBuilder and extensions are here
 using Avalonia; // For Thickness
+using Avalonia.Threading; // For Dispatcher
+using System.Net.Http; // For HttpClient
+using System.Net.Http.Json; // For PostAsJsonAsync, ReadFromJsonAsync
+using System.Text.Json; // For JsonSerializerOptions
+using System.Threading.Tasks; // For Task
+using StellaLearning.Dtos; // Include the DTOs namespace
+using Avalonia.Media; // For Brushes
 
 namespace StellaLearning.Pages;
 
 /// <summary>
 /// Account page, used to login, create, and manage your account.
-/// Used to communicate with the backend.
+/// Handles communication with the backend API.
 /// </summary>
 public class AccountPage : IUIComponent
 {
@@ -21,144 +29,475 @@ public class AccountPage : IUIComponent
     public Entity Root => _root;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
+    // --- Backend ---
+    // Use a static HttpClient for performance and connection reuse.
+    // Consider configuring BaseAddress, DefaultRequestHeaders (e.g., User-Agent) in a central place.
+    private static readonly HttpClient HttpClient = new();
+    private const string BackendBaseUrl = "http://localhost:5070"; // From launchSettings.json (use HTTPS if available/configured)
+
+    // --- UI Element Builders (Store references to access input/output) ---
+    private UIBuilder<TextBox>? _usernameInputBuilder;
+    private UIBuilder<TextBox>? _passwordInputBuilder;
+    private UIBuilder<TextBox>? _confirmPasswordInputBuilder; // Added for registration
+    private UIBuilder<TextBlock>? _statusMessageBuilder; // To display feedback
+
+    // --- State (Example - In a real app, manage this better) ---
+    private string? _authToken;
+    private AuthResponseDto? _currentUser;
+
     /// <summary>
-    /// Create the account page UI layout.
+    /// Create the account page UI layout and add interaction logic.
     /// </summary>
     /// <param name="world">The Flecs world.</param>
     public AccountPage(World world)
     {
-        // Create the root Grid for the page layout
         _root = world.UI<Grid>((grid) =>
         {
             grid
-                // Set padding around the entire grid content
-                //.SetPadding(20)
-                // Center the content vertically and horizontally within the available space
                 .SetVerticalAlignment(VerticalAlignment.Center)
                 .SetHorizontalAlignment(HorizontalAlignment.Center)
-                // Define rows: Auto height for title, fields, buttons, and spacing
-                .SetRowDefinitions("Auto, Auto, Auto, 20, Auto, Auto, 20, Auto")
-                // Define one column that stretches to fill width
+                // Define rows: Title, Username, Pass, ConfirmPass, Spacing, Buttons, Status
+                .SetRowDefinitions("Auto, Auto, Auto, 20, Auto, Auto, 20, Auto, Auto, 20, Auto, Auto") // Added rows for Confirm Pass and Status
                 .SetColumnDefinitions("*");
 
             // --- Title ---
             grid.Child<TextBlock>(title =>
             {
                 title
-                    .SetRow(0) // Place in the first row
-                    .SetText("Account") // Set the title text
-                    .SetFontSize(24) // Set a larger font size for the title
-                    .SetFontWeight(Avalonia.Media.FontWeight.Bold) // Make the title bold
-                    .SetHorizontalAlignment(HorizontalAlignment.Center); // Center the title horizontally
+                    .SetRow(0)
+                    .SetText("Account")
+                    .SetFontSize(24)
+                    .SetFontWeight(Avalonia.Media.FontWeight.Bold)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center);
             });
 
             // --- Username/Email Field ---
             grid.Child<TextBlock>(usernameLabel =>
             {
                 usernameLabel
-                    .SetRow(1) // Place in the second row
-                    .SetText("Username or Email:") // Label text
-                    .SetMargin(0, 10, 0, 5); // Add some margin top and bottom
+                    .SetRow(1)
+                    .SetText("Username or Email:")
+                    .SetMargin(0, 15, 0, 5); // Increased top margin
             });
             grid.Child<TextBox>(usernameInput =>
             {
+                _usernameInputBuilder = usernameInput; // Store reference
                 usernameInput
-                    .SetRow(2) // Place below the label
-                    .SetWatermark("Enter your username or email"); // Placeholder text
-                                                                   // No OnTextChanged or binding - layout only
+                    .SetRow(2)
+                    .SetWatermark("Enter your username or email");
             });
 
             // --- Password Field ---
-            // Row 3 is skipped for spacing (defined in RowDefinitions as "20")
+            // Row 3 is spacing
             grid.Child<TextBlock>(passwordLabel =>
             {
                 passwordLabel
-                    .SetRow(4) // Place in the fifth row
-                    .SetText("Password:") // Label text
-                    .SetMargin(0, 0, 0, 5); // Add some margin bottom
+                    .SetRow(4)
+                    .SetText("Password:")
+                    .SetMargin(0, 0, 0, 5);
             });
             grid.Child<TextBox>(passwordInput =>
             {
+                _passwordInputBuilder = passwordInput; // Store reference
                 passwordInput
-                    .SetRow(5) // Place below the label
-                    .SetWatermark("Enter your password") // Placeholder text
-                    .With(tb => tb.PasswordChar = '*') // Use With() for direct property access
-                                                       // No OnTextChanged or binding - layout only
-                    ;
+                    .SetRow(5)
+                    .SetWatermark("Enter your password")
+                    .With(tb => tb.PasswordChar = '*');
+            });
+
+            // --- Confirm Password Field (for Registration) ---
+            // Row 6 is spacing
+            grid.Child<TextBlock>(confirmPasswordLabel =>
+            {
+                confirmPasswordLabel
+                    .SetRow(7)
+                    .SetText("Confirm Password:")
+                    .SetMargin(0, 0, 0, 5);
+            });
+            grid.Child<TextBox>(confirmPasswordInput =>
+            {
+                _confirmPasswordInputBuilder = confirmPasswordInput; // Store reference
+                confirmPasswordInput
+                    .SetRow(8)
+                    .SetWatermark("Confirm your password")
+                    .With(tb => tb.PasswordChar = '*');
             });
 
             // --- Action Buttons ---
-            // Row 6 is skipped for spacing (defined in RowDefinitions as "20")
+            // Row 9 is spacing
             grid.Child<StackPanel>(buttonPanel =>
             {
                 buttonPanel
-                    .SetRow(7) // Place in the last row
-                    .SetOrientation(Orientation.Horizontal) // Arrange buttons horizontally
-                    .SetHorizontalAlignment(HorizontalAlignment.Center) // Center the panel
-                    .SetSpacing(10); // Add space between buttons
+                    .SetRow(10) // Adjusted row index
+                    .SetOrientation(Orientation.Horizontal)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetSpacing(10);
 
                 // Login Button
                 buttonPanel.Child<Button>(loginButton =>
                 {
                     loginButton
-                        .SetMinWidth(100) // Set a minimum width
-                        .SetText("Login");
-                    // No OnClick handler - layout only
+                        .SetMinWidth(100)
+                        .SetText("Login")
+                        .OnClick(HandleLoginClick); // Attach the async handler
                 });
 
                 // Register Button
                 buttonPanel.Child<Button>(registerButton =>
                 {
                     registerButton
-                        .SetMinWidth(100) // Set a minimum width
-                        .SetText("Register");
-                    // No OnClick handler - layout only
+                        .SetMinWidth(100)
+                        .SetText("Register")
+                        .OnClick(HandleRegisterClick); // Attach the async handler
                 });
+            });
 
-                // Optionally, add a "Forgot Password" link/button if needed
-                // buttonPanel.Child<Button>(forgotPasswordButton => { ... });
+            // --- Status Message Area ---
+            grid.Child<TextBlock>(status =>
+            {
+                _statusMessageBuilder = status; // Store reference
+                status
+                   .SetRow(11) // Place below buttons
+                   .SetMargin(0, 15, 0, 0) // Add margin above
+                   .SetHorizontalAlignment(HorizontalAlignment.Center)
+                   .SetTextWrapping(TextWrapping.Wrap); // Wrap long messages
+                                                        // Initial text is empty
             });
 
         })
-        .Add<Page>() // Add the Page tag to identify this as a page component
-        .Entity; // Get the final entity from the builder
+        .Add<Page>()
+        .Entity;
     }
+
+    /// <summary>
+    /// Handles the click event for the Login button.
+    /// Refactored for clearer error handling based on API response.
+    /// </summary>
+    private async void HandleLoginClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        // Defensive checks for UI elements
+        if (_usernameInputBuilder == null || !_usernameInputBuilder.Entity.IsAlive() ||
+            _passwordInputBuilder == null || !_passwordInputBuilder.Entity.IsAlive())
+        {
+            SetStatusMessage("Internal error: Input fields not ready.", true);
+            Logger.Error("Login attempt failed: UI input builders are null or their entities are dead.");
+            return;
+        }
+
+        string email = _usernameInputBuilder.GetText()?.Trim() ?? string.Empty;
+        string password = _passwordInputBuilder.GetText() ?? string.Empty; // Don't trim password
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            SetStatusMessage("Please enter both email and password.", true);
+            return;
+        }
+
+        var loginDto = new LoginDto { Email = email, Password = password };
+        SetStatusMessage("Logging in...", false); // Indicate progress
+
+        HttpResponseMessage? response = null;
+        try
+        {
+            string loginUrl = $"{BackendBaseUrl}/api/auth/login";
+            Logger.Info($"Attempting login to: {loginUrl} for user {email}");
+
+            // Use PostAsJsonAsync for simplicity (handles serialization and Content-Type)
+            response = await HttpClient.PostAsJsonAsync(loginUrl, loginDto);
+
+            Logger.Debug($"Login response status code: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode) // Status 200 OK
+            {
+                // Attempt to deserialize the successful response
+                AuthResponseDto? authResponse = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+                if (authResponse != null && !string.IsNullOrEmpty(authResponse.Token))
+                {
+                    _authToken = authResponse.Token;
+                    _currentUser = authResponse;
+                    Logger.Info($"Login successful for {authResponse.Email}. Token expires at {authResponse.TokenExpiration}.");
+                    SetStatusMessage($"Welcome {authResponse.Email}!", false);
+
+                    // --- IMPORTANT: Securely store the token ---
+                    // In a real application, use platform-specific secure storage
+                    // (e.g., Windows Credential Manager, macOS Keychain, SecureStorage in MAUI/Xamarin)
+                    // DO NOT store tokens in plain text files or user settings directly.
+                    // Example placeholder: await SecureStorage.SetAsync("auth_token", _authToken);
+                    Logger.Info("TODO: Implement secure token storage.");
+
+
+                    // TODO: Update application state (e.g., navigate to main page, update UI)
+                    // Example: _world.Emit<UserLoggedInEvent>(new UserLoggedInEvent(_currentUser));
+                    // Example: NavigateToMainPage();
+                }
+                else
+                {
+                    // This case should ideally not happen if the API returns 200 OK with a valid body
+                    Logger.Error("Login successful (200 OK) but failed to deserialize response body or token is missing.");
+                    SetStatusMessage("Login failed: Could not process server response.", true);
+                }
+            }
+            else // Handle non-success status codes (400, 401, 500, etc.)
+            {
+                string responseBody = await response.Content.ReadAsStringAsync();
+                Logger.Warn($"Login failed. Status: {response.StatusCode}, Response Body: {responseBody}");
+
+                // Default error message
+                string errorMessage = "Login failed. Please check credentials or server status.";
+
+                // Try to parse specific error messages from the backend
+                // This relies on the backend consistently returning the ErrorDto or MessageDto structure on failure
+                try
+                {
+                    // Check for 401 Unauthorized first - often contains specific messages
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        var errorDto = JsonSerializer.Deserialize<MessageDto>(responseBody); // Backend might return simple message on 401
+                        if (!string.IsNullOrWhiteSpace(errorDto?.Message))
+                        {
+                            // Check for specific messages related to 'RequireConfirmedAccount' if backend provides them
+                            if (errorDto.Message.Contains("Account not confirmed", StringComparison.OrdinalIgnoreCase))
+                            {
+                                errorMessage = "Login failed: Account email needs confirmation.";
+                            }
+                            else
+                            {
+                                errorMessage = $"Login failed: {errorDto.Message}"; // Use backend message (e.g., "Invalid password", "Email not found")
+                            }
+                        }
+                        else
+                        {
+                            errorMessage = "Login failed: Invalid credentials or account issue."; // Generic 401
+                        }
+                    }
+                    // Check for 400 Bad Request (e.g., validation errors, though less common for login)
+                    else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        var errorDto = JsonSerializer.Deserialize<ErrorDto>(responseBody);
+                        if (errorDto != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(errorDto.Message))
+                            {
+                                errorMessage = errorDto.Message;
+                            }
+                            if (errorDto.Errors != null && errorDto.Errors.Count > 0)
+                            {
+                                errorMessage += " Details: " + string.Join("; ", errorDto.Errors);
+                            }
+                        }
+                        else
+                        {
+                            errorMessage = "Login failed: Invalid request."; // Generic 400
+                        }
+                    }
+                    // Handle other errors (500 Internal Server Error, etc.)
+                    else
+                    {
+                        errorMessage = $"Login failed: Server returned status {response.StatusCode}.";
+                    }
+                }
+                catch (JsonException jsonEx)
+                {
+                    Logger.Error(jsonEx, "Failed to deserialize error response body.");
+                    // Keep the default or status code based error message
+                }
+
+                SetStatusMessage(errorMessage, true);
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Logger.Error(httpEx, "HTTP request failed during login.");
+            SetStatusMessage($"Login failed: Could not connect to the server. ({httpEx.Message})", true);
+        }
+        catch (JsonException jsonEx) // Error deserializing success or error response
+        {
+            Logger.Error(jsonEx, "JSON error during login response processing.");
+            SetStatusMessage("Login failed: Error processing server response.", true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "An unexpected error occurred during login.");
+            SetStatusMessage("An unexpected error occurred during login.", true);
+        }
+        finally
+        {
+            // Dispose response message if not null
+            response?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Handles the click event for the Register button.
+    /// </summary>
+    private async void HandleRegisterClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        // Defensive checks for UI elements
+        if (_usernameInputBuilder == null || !_usernameInputBuilder.Entity.IsAlive() ||
+           _passwordInputBuilder == null || !_passwordInputBuilder.Entity.IsAlive() ||
+           _confirmPasswordInputBuilder == null || !_confirmPasswordInputBuilder.Entity.IsAlive())
+        {
+            SetStatusMessage("Internal error: Input fields not ready.", true);
+            Logger.Error("Register attempt failed: UI input builders are null or their entities are dead.");
+            return;
+        }
+
+        string email = _usernameInputBuilder.GetText()?.Trim() ?? string.Empty;
+        string password = _passwordInputBuilder.GetText() ?? string.Empty;
+        string confirmPassword = _confirmPasswordInputBuilder.GetText() ?? string.Empty;
+
+        // Basic client-side validation
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            SetStatusMessage("Please fill in all fields.", true);
+            return;
+        }
+        if (!email.Contains('@') || !email.Contains('.')) // Very basic email format check
+        {
+            SetStatusMessage("Please enter a valid email address.", true);
+            return;
+        }
+        if (password != confirmPassword)
+        {
+            SetStatusMessage("Passwords do not match.", true);
+            return;
+        }
+        // Consider adding client-side checks for password complexity if desired,
+        // although the backend enforces the definitive rules.
+
+        var registerDto = new RegisterDto
+        {
+            Email = email,
+            Password = password,
+            ConfirmPassword = confirmPassword
+        };
+
+        SetStatusMessage("Registering...", false); // Indicate progress
+        HttpResponseMessage? response = null;
+        try
+        {
+            string registerUrl = $"{BackendBaseUrl}/api/auth/register";
+            Logger.Info($"Attempting registration to: {registerUrl} for user {email}");
+
+            response = await HttpClient.PostAsJsonAsync(registerUrl, registerDto);
+            Logger.Debug($"Registration response status code: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode) // Status 201 Created
+            {
+                // Attempt to deserialize success message
+                MessageDto? successResponse = await response.Content.ReadFromJsonAsync<MessageDto>();
+                string successMsg = successResponse?.Message ?? "Registration successful!";
+                Logger.Info($"Registration successful for {email}. Message: {successMsg}");
+
+                SetStatusMessage(successMsg, false);
+
+                // Clear password fields after successful registration
+                Dispatcher.UIThread.Post(() =>
+                {
+                    _passwordInputBuilder?.SetText("");
+                    _confirmPasswordInputBuilder?.SetText("");
+                });
+            }
+            else // Handle errors (400 Bad Request, 500 Internal Server Error, etc.)
+            {
+                string errorContent = await response.Content.ReadAsStringAsync();
+                Logger.Warn($"Registration failed. Status: {response.StatusCode}, Response Body: {errorContent}");
+
+                // Try to parse structured error response
+                string errorMessage = "Registration failed. Please check your details."; // Default
+                try
+                {
+                    var errorDto = JsonSerializer.Deserialize<ErrorDto>(errorContent); // Assumes ErrorDto structure on failure
+                    if (errorDto != null)
+                    {
+                        // Use specific message from backend if provided
+                        if (!string.IsNullOrWhiteSpace(errorDto.Message))
+                        {
+                            errorMessage = errorDto.Message;
+                        }
+                        // Append validation errors if provided
+                        if (errorDto.Errors != null && errorDto.Errors.Count > 0)
+                        {
+                            errorMessage += " Errors: " + string.Join("; ", errorDto.Errors);
+                        }
+                    }
+                    else
+                    {
+                        // Try parsing as simple MessageDto if ErrorDto fails
+                        var simpleError = JsonSerializer.Deserialize<MessageDto>(errorContent);
+                        if (!string.IsNullOrWhiteSpace(simpleError?.Message))
+                        {
+                            errorMessage = simpleError.Message;
+                        }
+                    }
+                }
+                catch (JsonException jsonEx)
+                {
+                    Logger.Error(jsonEx, "Failed to deserialize registration error response body.");
+                    // Stick with default message or use status code
+                    errorMessage = $"Registration failed: Server returned status {response.StatusCode}.";
+                }
+
+                SetStatusMessage(errorMessage, true);
+            }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Logger.Error(httpEx, "HTTP request failed during registration.");
+            SetStatusMessage($"Registration failed: Could not connect to the server. ({httpEx.Message})", true);
+        }
+        catch (JsonException jsonEx) // Error deserializing success or error response
+        {
+            Logger.Error(jsonEx, "JSON error during registration response processing.");
+            SetStatusMessage("Registration failed: Error processing server response.", true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "An unexpected error occurred during registration.");
+            SetStatusMessage("An unexpected error occurred during registration.", true);
+        }
+        finally
+        {
+            response?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Sets the status message text and color on the UI thread.
+    /// </summary>
+    /// <param name="message">The message to display.</param>
+    /// <param name="isError">True if the message indicates an error (sets text color to red).</param>
+    private void SetStatusMessage(string message, bool isError)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            // Check builder exists and its entity is alive before using
+            if (_statusMessageBuilder != null && _statusMessageBuilder.Entity.IsAlive())
+            {
+                _statusMessageBuilder
+                    .SetText(message)
+                    .SetForeground(isError ? Brushes.Red : Brushes.ForestGreen); // Use distinct colors
+            }
+            else
+            {
+                Logger.Warn($"Status message TextBlock builder is null or its entity is dead. Message: '{message}'");
+            }
+        });
+    }
+
 
     /// <inheritdoc/>
     public void Attach(Entity entity)
     {
-        // Check if the root entity is valid and alive before attaching
-        if (_root.IsValid() && _root.IsAlive())
-        {
-            _root.ChildOf(entity);
-            Logger.Trace($"AccountPage (Root: {_root.Id}) attached to Parent: {entity.Id}");
-        }
-        else
-        {
-            Logger.Warn($"Attempted to attach invalid AccountPage (Root: {_root.Id}) to Parent: {entity.Id}");
-        }
+        if (_root.IsValid() && _root.IsAlive()) { _root.ChildOf(entity); }
     }
 
     /// <inheritdoc/>
     public void Detach()
     {
-        // Check if the root entity is valid and alive before detaching
-        if (_root.IsValid() && _root.IsAlive())
+        if (_root.IsValid() && _root.IsAlive() && _root.Has(Ecs.ChildOf, Ecs.Wildcard))
         {
-            // Check if it actually has a parent before trying to remove the relationship
-            if (_root.Has(Ecs.ChildOf, Ecs.Wildcard))
-            {
-                _root.Remove(Ecs.ChildOf, Ecs.Wildcard); // Use Wildcard to remove relationship regardless of parent ID
-                Logger.Trace($"AccountPage (Root: {_root.Id}) detached.");
-            }
-            else
-            {
-                Logger.Trace($"AccountPage (Root: {_root.Id}) already detached or had no parent.");
-            }
-        }
-        else
-        {
-            Logger.Warn($"Attempted to detach invalid AccountPage (Root: {_root.Id})");
+            _root.Remove(Ecs.ChildOf, Ecs.Wildcard);
         }
     }
 }
