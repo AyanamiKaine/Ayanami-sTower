@@ -23,7 +23,6 @@ public class SettingsPage : IUIComponent
     private Entity _root;
     /// <inheritdoc/>
     public Entity Root => _root;
-    private Settings Settings { get; }
     /// <summary>
     /// Create the settings page
     /// </summary>
@@ -31,7 +30,6 @@ public class SettingsPage : IUIComponent
     /// <returns></returns>
     public SettingsPage(World world)
     {
-        Settings = world.Get<Settings>();
         _root = world.UI<ScrollViewer>((scrollViewer) =>
         {
             scrollViewer.Child<StackPanel>((stackPanel) =>
@@ -42,6 +40,8 @@ public class SettingsPage : IUIComponent
                 stackPanel.Child(new ThemeToggleSwitch(world));
                 stackPanel.Child(new AppToTray(world));
                 stackPanel.Child(new EnableNotificationsToggleSwitch(world));
+                stackPanel.Child(new EnableLargeLanguageModelToggleSwitch(world));
+                stackPanel.Child(new EnableCloudSavesToggleSwitch(world));
                 stackPanel.Child<Separator>((Separator) =>
                 {
                     Separator
@@ -137,6 +137,113 @@ public class SettingsPage : IUIComponent
                         textBlock.SetText(
                         """
                         When enabled the app will send desktop notifications where appropriate.
+                        """);
+                    });
+                }));
+            }).Entity;
+        }
+    }
+
+    private class EnableLargeLanguageModelToggleSwitch : IUIComponent
+    {
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
+
+        public EnableLargeLanguageModelToggleSwitch(World world)
+        {
+            _root =
+            world.UI<DockPanel>((dockPanel) =>
+            {
+                dockPanel.Child<TextBlock>((textBlock) =>
+                {
+
+                    textBlock.SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetText("Enable Large Language Features")
+                    .SetTextWrapping(TextWrapping.Wrap);
+                });
+
+                dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
+                {
+                    toggleSwitch
+                    .SetDock(Dock.Right)
+                    .SetHorizontalAlignment(HorizontalAlignment.Right);
+
+                    toggleSwitch.With((toggleSwitch) =>
+                    {
+                        toggleSwitch.IsChecked = world.Get<Settings>().EnableLargeLanguageFeatures;
+                    });
+
+                    toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                    {
+                        var enableLargeLanguageFeatures = ((ToggleSwitch)sender!).IsChecked ?? false;
+                        var currentSettings = world.Get<Settings>();
+                        currentSettings.EnableLargeLanguageFeatures = enableLargeLanguageFeatures;
+                    });
+                });
+
+
+                dockPanel.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                {
+                    toolTip.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText(
+                        """
+                        When enabled automatic meta can be generated for various items like art, and literature (Automatic generation for title, summary, tags). (Payed Feature)
+                        """);
+                    });
+                }));
+            }).Entity;
+        }
+    }
+
+    private class EnableCloudSavesToggleSwitch : IUIComponent
+    {
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
+
+        public EnableCloudSavesToggleSwitch(World world)
+        {
+            _root =
+            world.UI<DockPanel>((dockPanel) =>
+            {
+                dockPanel.Child<TextBlock>((textBlock) =>
+                {
+
+                    textBlock.SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetText("Enable Cloud Saves")
+                    .SetTextWrapping(TextWrapping.Wrap);
+                });
+
+                dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
+                {
+                    toggleSwitch
+                    .SetDock(Dock.Right)
+                    .SetHorizontalAlignment(HorizontalAlignment.Right);
+
+                    toggleSwitch.With((toggleSwitch) =>
+                    {
+                        toggleSwitch.IsChecked = world.Get<Settings>().EnableCloudSaves;
+                    });
+
+                    toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                    {
+                        var enableCloudSaves = ((ToggleSwitch)sender!).IsChecked ?? false;
+                        var currentSettings = world.Get<Settings>();
+                        currentSettings.EnableCloudSaves = enableCloudSaves;
+                    });
+                });
+
+
+                dockPanel.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                {
+                    toolTip.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText(
+                        """
+                        Create backups in the cloud that can be used to restore your data. This includes all meta data, all files, etc. Your data is not stored as plain text but instead is decrypted. Should you lose your account data. You will never be able to access them again!
+                        (Payed Feature) (NOT YET IMPLEMENTED)
                         """);
                     });
                 }));
