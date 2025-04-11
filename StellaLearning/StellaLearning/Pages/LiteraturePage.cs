@@ -181,7 +181,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                         }
                     });
 
-                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick(async (_, _) =>
+                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick((_, _) =>
                     {
                         var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
                         if (selectedLiteratureItem is LocalFileSourceItem localFile)
@@ -190,7 +190,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                         }
                         else if (selectedLiteratureItem is WebSourceItem webSourceItem)
                         {
-                            await SmartUrlOpener.OpenUrlIntelligentlyAsync(webSourceItem.Url);
+                            SmartUrlOpener.OpenUrlIntelligently(webSourceItem.Url);
                         }
                         else
                         {
@@ -301,7 +301,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                        .AllowDrop() // Enable dropping files
                        .OnDragOver(HandleLiteratureListDragOver) // Handle hover effect
                        .OnDrop(HandleLiteratureListDropAsync)
-                        .OnDoubleTapped(async (sender, e) =>
+                        .OnDoubleTapped((sender, e) =>
                         {
                             if (sender is ListBox listBox)
                             {
@@ -313,7 +313,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                                 }
                                 else if (selectedLiteratureItem is WebSourceItem webSourceItem)
                                 {
-                                    await SmartUrlOpener.OpenUrlIntelligentlyAsync(webSourceItem.Url);
+                                    SmartUrlOpener.OpenUrlIntelligently(webSourceItem.Url);
                                 }
                             }
                         });
