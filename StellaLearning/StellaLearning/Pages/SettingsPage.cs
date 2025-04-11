@@ -189,7 +189,7 @@ public class SettingsPage : IUIComponent
                     {
                         textBlock.SetText(
                         """
-                        When enabled automatic meta can be generated for various items like art, and literature (Automatic generation for title, summary, tags). (Payed Feature)
+                        When enabled automatic meta can be generated for various items like art, and literature (Automatic generation for title, summary, tags). (Paid Feature)
                         """);
                     });
                 }));
@@ -243,7 +243,7 @@ public class SettingsPage : IUIComponent
                         textBlock.SetText(
                         """
                         Create backups in the cloud that can be used to restore your data. This includes all meta data, all files, etc. Your data is not stored as plain text but instead is decrypted. Should you lose your account data. You will never be able to access them again!
-                        (Payed Feature) (NOT YET IMPLEMENTED)
+                        (Paid Feature) (NOT YET IMPLEMENTED)
                         """);
                     });
                 }));
