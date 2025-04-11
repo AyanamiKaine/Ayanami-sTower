@@ -47,6 +47,7 @@ public partial class App : Application
     private SpacedRepetitionPage? spacedRepetitionPage;
     private StatisticsPage? statisticsPage;
     private ArtPage? artPage;
+    private AccountPage? accountPage;
     private IUIComponent? _currentPage;
 
 
@@ -121,7 +122,7 @@ public partial class App : Application
         spacedRepetitionPage = new(_world);
         artPage = new(_world);
         statisticsPage = new(_world);
-
+        accountPage = new(_world);
         // Using the UI Builder is part of an effort to make it much more obvious how the UI is structured.
         // While you might say just use XAML, the whole point was not to use it in the firstplace.
 
@@ -147,6 +148,15 @@ public partial class App : Application
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Literature")));
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Content Queue")));
 
+
+            nav.Child<NavigationViewItem>((item) =>
+            {
+                item.SetIconSource(new SymbolIconSource()
+                {
+                    Symbol = Symbol.Account
+                });
+                item.Child<TextBlock>(t => t.SetText("Account"));
+            });
 
             nav.Child<NavigationViewItem>((item) =>
             {
@@ -285,6 +295,12 @@ public partial class App : Application
                     nav.Child(artPage);
                     _currentPage = artPage;
                     ApplyPageMargin(artPage, e.DisplayMode);
+                }
+                else if (selectedItem?.Content is TextBlock accountTextBlock && accountTextBlock.Text == "Account")
+                {
+                    nav.Child(accountPage);
+                    _currentPage = accountPage;
+                    ApplyPageMargin(accountPage, e.DisplayMode);
                 }
             });
         });
