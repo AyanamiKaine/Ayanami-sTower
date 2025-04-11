@@ -442,6 +442,7 @@ public class LiteraturePage : IUIComponent, IDisposable
             grid.Child<ItemsControl>(tagsList =>
             {
                 tagsList.SetColumn(2).SetRow(1)
+                        .SetOpacity(0.5)
                         .SetHorizontalAlignment(HorizontalAlignment.Right)
                         .SetItemsSource(item.Tags) // Bind to the item's Tags collection
                                                    //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
