@@ -24,7 +24,8 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using StellaLearning.Windows;
 using Avalonia;
-using StellaLearning.Converters; // Assuming you use NLog like in SpacedRepetitionPage
+using StellaLearning.Converters;
+using FluentAvalonia.UI.Controls; // Assuming you use NLog like in SpacedRepetitionPage
 
 namespace StellaLearning.Pages;
 
@@ -210,12 +211,30 @@ public class LiteraturePage : IUIComponent, IDisposable
                         new EditLiteratureSource(_world, selectedLiteratureItem);
                     }));
                     menuFlyout.Child<Separator>((_) => { });
-                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Remove").OnClick((sender, e) =>
+                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Remove").OnClick(async (sender, e) =>
                     {
 
                         if (listBox == null) return;
 
                         var itemToRemove = listBox.GetSelectedItem<LiteratureSourceItem>();
+
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Attention",
+                            Content = $"""Do you want to delete: "{itemToRemove.Title}". This cannot be undone!""",
+                            PrimaryButtonText = "Yes",
+                            SecondaryButtonText = "No",
+                            DefaultButton = ContentDialogButton.Secondary,
+                            IsSecondaryButtonEnabled = true,
+                        };
+
+                        var result = await cd.ShowAsync();
+                        if (result == ContentDialogResult.Secondary)
+                        {
+                            return;
+                        }
+
+
 
                         if (itemToRemove != null && itemToRemove is LocalFileSourceItem localFile)
                         {
@@ -242,7 +261,6 @@ public class LiteraturePage : IUIComponent, IDisposable
                             //     return; // Stop if user cancels
                             // }
                             // --- End Confirmation Dialog Placeholder ---
-
 
                             try
                             {
