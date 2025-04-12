@@ -165,7 +165,7 @@ public class AuthController : ControllerBase
         };
 
         // Get expiration time from config or set a default (e.g., 1 hour)
-        var expirationMinutes = _configuration.GetValue<int>("Jwt:ExpirationMinutes", 60);
+        var expirationMinutes = _configuration.GetValue("Jwt:ExpirationMinutes", 60);
         var expiration = DateTime.UtcNow.AddMinutes(expirationMinutes);
 
         var tokenDescriptor = new SecurityTokenDescriptor
