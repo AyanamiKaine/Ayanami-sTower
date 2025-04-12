@@ -1,26 +1,42 @@
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore; // Required for IdentityDbContext
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using StellaLearningBackend.Models;
-// using YourBackendApiName.Models; // Uncomment later if you have custom user class
+using StellaLearningBackend.Models; // Your Models namespace
 
-namespace StellaLearningBackend.Data;
-
-// Inherit from IdentityDbContext to include Identity tables (Users, Roles, etc.)
-// Replace IdentityUser with your custom ApplicationUser if you create one later
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+namespace StellaLearningBackend.Data // Your Data namespace
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-    }
+        // DbSet for your File Metadata
+        public DbSet<FileMetadata> FileMetadataEntries
+        {
+            get; set;
+        } // Choose a suitable name
 
-    // Add DbSets for your other models here later (e.g., Subscriptions)
-    // public DbSet<Subscription> Subscriptions { get; set; }
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
 
-    protected override void OnModelCreating(ModelBuilder builder)
-    {
-        base.OnModelCreating(builder);
-        // Customize the ASP.NET Identity model and override the defaults if needed
-        // For example, configure additional User propertiesfluent API here
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            // Configure the relationship between ApplicationUser and FileMetadata
+            builder.Entity<FileMetadata>()
+                .HasOne(fm => fm.User) // FileMetadata has one User
+                .WithMany() // ApplicationUser can have many FileMetadata entries (or define a collection property on ApplicationUser if needed)
+                .HasForeignKey(fm => fm.UserId) // The foreign key is UserId
+                .OnDelete(DeleteBehavior.Cascade); // Optional: Define delete behavior (e.g., delete metadata if user is deleted)
+
+            // You can add indexes here for performance, e.g., on UserId
+            builder.Entity<FileMetadata>()
+                .HasIndex(fm => fm.UserId);
+
+            builder.Entity<FileMetadata>()
+                .HasIndex(fm => fm.StoredFileName)
+                .IsUnique(); // Ensure stored filenames are unique (within the entire system, or adjust if needed)
+
+            // Add other configurations if necessary
+        }
     }
 }
