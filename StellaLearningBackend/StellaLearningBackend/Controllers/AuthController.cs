@@ -132,14 +132,14 @@ public class AuthController : ControllerBase
         _logger.LogInformation("User {Email} logged in successfully.", loginDto.Email);
 
         // Generate JWT Token
-        var tokenDetails = GenerateJwtToken(user);
+        var (Token, Expiration) = GenerateJwtToken(user);
 
         return Ok(new AuthResponseDto
         {
             UserId = user.Id,
             Email = user.Email!, // User email should not be null if found
-            Token = tokenDetails.Token,
-            TokenExpiration = tokenDetails.Expiration
+            Token = Token,
+            TokenExpiration = Expiration
             // Map other properties if needed:
             // FullName = user.FullName
         });
