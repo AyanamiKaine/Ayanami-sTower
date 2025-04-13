@@ -3,6 +3,10 @@ using System.Text.Json;
 
 namespace Ayanami.Utilities;
 
+/*
+I quite dislike this.....
+*/
+
 /// <summary>
 /// Defines a contract for objects that can save their state to a stream
 /// and load their state from a stream.
