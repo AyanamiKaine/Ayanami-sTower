@@ -81,6 +81,8 @@ public partial class App : Application
         InitializeTrayIcon();
         InitializeSettings();
 
+
+
         MainWindow = _world.UI<Window>((window) =>
         {
             window
@@ -336,6 +338,58 @@ public partial class App : Application
 #if DEBUG
         this.AttachDevTools();
 #endif
+
+        // --- Register Savable Data with the SaveDataManager ---
+        var saveManager = SaveDataManager.Instance;
+
+        // Register Settings
+        saveManager.RegisterSavable(
+            key: "settings",
+            dataGetter: () => _world.Get<Settings>(), // How to get the current Settings object
+            fileName: "settings.json",
+            options: Settings.jsonSerializerOptions // Use options from Settings class if needed
+        );
+
+        // Register Literature Items
+        saveManager.RegisterSavable(
+            key: "literature",
+            dataGetter: () => _world.Get<ObservableCollection<LiteratureSourceItem>>(),
+            fileName: "literature_items.json",
+            options: new JsonSerializerOptions { WriteIndented = true, Converters = { new LiteratureSourceItemConverter() } }
+        );
+
+        // Register Spaced Repetition Items
+        saveManager.RegisterSavable(
+            key: "spacedRepetition",
+            dataGetter: () => _world.Get<ObservableCollection<SpacedRepetitionItem>>(),
+            fileName: "space_repetition_items.json",
+            options: new JsonSerializerOptions { WriteIndented = true, Converters = { new SpacedRepetitionItemConverter() } }
+        );
+
+        // Register Statistics Data
+        saveManager.RegisterSavable(
+            key: "statistics",
+            dataGetter: () => StatsTracker.Instance.Stats, // Need a method in StatsTracker to return the serializable StatsData object
+            fileName: "learning_stats.json", // Consider debug/release differences if needed here or in SaveDataManager constructor
+            options: new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }
+        );
+
+        // Register Art Reference Metadata
+        // This requires a way to get the List<ReferencePaintingMetadata> from ArtPage or a central store
+        saveManager.RegisterSavable(
+            key: "artReferences",
+            dataGetter: () => _world.Get<ObservableCollection<ReferencePaintingMetadata>>(), // Need a helper function/method for this
+            fileName: "references_metadata.json",
+            options: new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }
+        );
+
+        saveManager.StartAutoSave(TimeSpan.FromMinutes(5));
     }
 
     /// <summary>
@@ -364,7 +418,7 @@ public partial class App : Application
         {
             desktop.Shutdown();
 
-            Dispatcher.UIThread.Post(async () => await StatsTracker.Instance.SaveStatsAsync());
+            Dispatcher.UIThread.Post(async () => await SaveDataManager.Instance.SaveAllAsync());
         }
     }
 

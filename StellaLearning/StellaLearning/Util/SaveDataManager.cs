@@ -24,7 +24,7 @@ public sealed class SaveDataManager : IDisposable
     /// </summary>
     public static SaveDataManager Instance => _instance.Value;
 
-    private readonly Dictionary<string, SavableDataInfo> _registeredData = new();
+    private readonly Dictionary<string, SavableDataInfo> _registeredData = [];
     private readonly string _saveDirectory;
     private Timer? _autoSaveTimer;
     private bool _isDisposed;
@@ -115,10 +115,10 @@ public sealed class SaveDataManager : IDisposable
     /// <param name="data">The data object to save.</param>
     /// <returns>True if successful, False otherwise.</returns>
     /// <exception cref="ObjectDisposedException"></exception>
-    public async Task<bool> SaveAsync<T>(string key, T data) where T : class
+    private async Task<bool> SaveAsync<T>(string key, T data) where T : class
     {
         ObjectDisposedException.ThrowIf(_isDisposed, this);
-        
+
         if (!_registeredData.TryGetValue(key, out SavableDataInfo? info))
         {
             Logger.Error($"Attempted to save data with unregistered key: '{key}'");
@@ -141,7 +141,7 @@ public sealed class SaveDataManager : IDisposable
     /// </summary>
     /// <param name="key">The unique key of the data to save.</param>
     /// <returns>True if successful, False otherwise.</returns>
-    public async Task<bool> SaveCurrentAsync(string key)
+    private async Task<bool> SaveCurrentAsync(string key)
     {
         if (_isDisposed) throw new ObjectDisposedException(nameof(SaveDataManager));
         if (!_registeredData.TryGetValue(key, out SavableDataInfo? info))
@@ -172,7 +172,7 @@ public sealed class SaveDataManager : IDisposable
     /// <summary>
     /// Internal helper to perform the actual saving logic with file locking.
     /// </summary>
-    private async Task<bool> InternalSaveAsync(SavableDataInfo info, object data)
+    private static async Task<bool> InternalSaveAsync(SavableDataInfo info, object data)
     {
         bool success = false;
         // Wait to acquire the semaphore specific to this file path
@@ -295,56 +295,72 @@ public sealed class SaveDataManager : IDisposable
     }
 
     /// <summary>
-    /// Asynchronously saves the current state of ALL registered data items.
+    /// Asynchronously saves the current state of ALL registered data items sequentially.
     /// Uses the registered dataGetter functions.
     /// </summary>
-    /// <returns>A Task representing the asynchronous operation. Consider returning aggregated success/failure info if needed.</returns>
-    public async Task SaveAllAsync()
+    /// <returns>A Task representing the asynchronous operation. Returns true if all saves were successful or skipped (due to null data), false otherwise.</returns>
+    public async Task<bool> SaveAllAsync()
     {
         if (_isDisposed) throw new ObjectDisposedException(nameof(SaveDataManager));
-        Logger.Info($"Starting SaveAllAsync for {_registeredData.Count} items.");
+        Logger.Info($"Starting sequential SaveAllAsync for {_registeredData.Count} items.");
 
-        // Create a list of tasks to save each item
-        var saveTasks = new List<Task<bool>>();
+        bool allSucceeded = true;
+        int successCount = 0;
+        int skippedCount = 0;
+        int failCount = 0;
+
+        // Run saves sequentially
         foreach (var kvp in _registeredData)
         {
             SavableDataInfo info = kvp.Value;
+            object? data = info.DataGetter();
+
+            bool itemResult = false; // Assume failure until success or skip
             try
             {
-                object? data = info.DataGetter();
                 if (data != null)
                 {
-                    // Add the save task to the list
-                    saveTasks.Add(InternalSaveAsync(info, data));
+                    // Await each save individually
+                    itemResult = await InternalSaveAsync(info, data);
                 }
                 else
                 {
                     Logger.Warn($"DataGetter for key '{info.Key}' returned null during SaveAllAsync. Skipping save for this item.");
+                    itemResult = true; // Treat skipped as "not failed" for overall success tracking
+                    skippedCount++;
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, $"Error invoking DataGetter for key '{info.Key}' during SaveAllAsync.");
-                // Optionally add a completed task with 'false' result to track failure
-                saveTasks.Add(Task.FromResult(false));
+                // Catch errors from DataGetter or unexpected errors during the await InternalSaveAsync chain
+                Logger.Error(ex, $"Error invoking DataGetter or processing save for key '{info.Key}' during SaveAllAsync.");
+                itemResult = false; // Ensure failure is recorded
             }
-        }
 
-        // Wait for all save tasks to complete
-        bool[] results = await Task.WhenAll(saveTasks);
+            if (itemResult)
+            {
+                // Only count explicit successes, not skips
+                if (data != null) successCount++;
+            }
+            else
+            {
+                failCount++;
+                allSucceeded = false; // Mark overall failure if any item fails
+            }
+        } // End foreach loop
 
-        int successfulSaves = results.Count(success => success);
-        int failedSaves = results.Length - successfulSaves;
+        int totalProcessed = successCount + skippedCount + failCount;
 
-        if (failedSaves > 0)
+        if (failCount > 0)
         {
-            Logger.Warn($"SaveAllAsync completed with {failedSaves} failures out of {results.Length} items.");
+            Logger.Warn($"SaveAllAsync completed with {failCount} failures, {successCount} successes, {skippedCount} skipped out of {totalProcessed} items.");
         }
         else
         {
-            Logger.Info($"SaveAllAsync completed successfully for all {results.Length} items.");
+            Logger.Info($"SaveAllAsync completed successfully for {successCount} items ({skippedCount} skipped) out of {totalProcessed}.");
         }
-        // Optionally return overall success: return failedSaves == 0;
+
+        return allSucceeded;
     }
 
     /// <summary>

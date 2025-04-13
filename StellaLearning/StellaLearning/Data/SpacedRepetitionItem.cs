@@ -140,7 +140,7 @@ public static class SchedulerService
     /// This should be called once during application startup.
     /// </summary>
     /// <param name="scheduler">The Scheduler instance to use globally.</param>
-    public static void  Initialize(FsrsSharp.Scheduler scheduler)
+    public static void Initialize(FsrsSharp.Scheduler scheduler)
     {
         if (_instance != null)
         {
@@ -734,7 +734,8 @@ public class ImageClozeArea
     /// </summary>
     public string Text { get; set; } = string.Empty;
     /// <summary>
-    /// Area Color
+    /// Color stored as a string (e.g., "#AARRGGBB").
+    /// This is safe for serialization from any thread.
     /// </summary>
-    public SolidColorBrush FillColor { get; set; } = new SolidColorBrush(Color.FromArgb(255, 221, 176, 55));
+    public string FillColorHex { get; set; } = Color.FromArgb(255, 221, 176, 55).ToString();
 }

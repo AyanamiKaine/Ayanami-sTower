@@ -1042,6 +1042,8 @@ public class ArtPage : IUIComponent, IDisposable
             Console.WriteLine($"An error occurred during the processing of loaded references: {ex.Message}");
             MessageDialog.ShowWarningDialog($"An error occurred while loading reference details:\n{ex.Message}");
         }
+
+        _world.Set(metadataList);
     }
 
     private void LoadStudiesForReference(ReferencePaintingItem reference)

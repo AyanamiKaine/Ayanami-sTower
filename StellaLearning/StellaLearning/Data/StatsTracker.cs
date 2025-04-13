@@ -36,6 +36,39 @@ public partial class StatsTracker : ObservableObject
     }
 
     /// <summary>
+    /// Gets an object representing the current state of all statistics,
+    /// suitable for serialization by the SaveDataManager.
+    /// This creates a snapshot of the current data.
+    /// </summary>
+    public StatsData Stats
+    {
+        get
+        {
+            // Create a new StatsData instance populated with the current tracker state.
+            // Use ToList() or create new Dictionaries to capture a snapshot,
+            // preventing modification issues if the tracker state changes during serialization.
+            return new StatsData
+            {
+                // Snapshot collections and dictionaries
+                DailyStats = [.. DailyStats],
+                StudySessions = [.. StudySessions],
+                ItemTypeStats = new Dictionary<SpacedRepetitionItemType, ItemTypeStats>(ItemTypeStats),
+                TagStats = new Dictionary<string, TagStats>(TagStats),
+
+                // Copy current scalar values
+                CurrentStreak = CurrentStreak,
+                LongestStreak = LongestStreak,
+                TotalStudyTimeSeconds = TotalStudyTimeSeconds,
+                TotalReviews = TotalReviews,
+                OverallAccuracy = OverallAccuracy,
+
+                // Update LastUpdated timestamp when data is requested for saving
+                LastUpdated = DateTime.Now
+            };
+        }
+    }
+
+    /// <summary>
     /// Records of daily study activities.
     /// </summary>
     [ObservableProperty]
@@ -584,120 +617,127 @@ public partial class StatsTracker : ObservableObject
     /// Marked internal as InitializeAsync is the intended public entry point.
     /// </summary>
     /// <param name="existingItemIds">A HashSet containing the Guids of currently existing SpacedRepetitionItems.</param>
-    internal async Task LoadStatsAsync(HashSet<Guid> existingItemIds) // Changed signature
+    internal async Task LoadStatsAsync(HashSet<Guid> existingItemIds)
     {
-        // The TODO is now addressed by this implementation.
+        StatsData? loadedStatsData = null;
+
+        // Step 1: Attempt to load the StatsData object from the file
         try
         {
             if (!File.Exists(_statsFilePath))
             {
-                Logger.Info("No existing statistics file found at {FilePath}. Starting with default stats.", _statsFilePath);
-                ResetObservablePropertiesToDefault();
-                return;
-            }
-
-            var json = await File.ReadAllTextAsync(_statsFilePath);
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                Logger.Warn("Statistics file at {FilePath} is empty. Starting with default stats.", _statsFilePath);
-                ResetObservablePropertiesToDefault();
-                return;
-            }
-
-            var statsData = JsonSerializer.Deserialize<StatsData>(json);
-
-            if (statsData != null)
-            {
-                Logger.Debug("Deserialized StatsData successfully. Filtering review history for existing item IDs...");
-
-                // --- 1. Filter StudySessions and Reviews ---
-                List<StudySession> filteredSessions = [];
-                int originalReviewCount = statsData.StudySessions?.SelectMany(s => s?.Reviews ?? []).Count() ?? 0;
-                int keptReviewCount = 0;
-
-                if (statsData.StudySessions != null)
-                {
-                    foreach (var session in statsData.StudySessions)
-                    {
-                        // Skip null sessions or sessions with no reviews initially
-                        if (session?.Reviews == null || !session.Reviews.Any()) continue;
-
-                        // Keep only reviews for items that still exist in the main application data
-                        var reviewsToKeep = session.Reviews
-                            .Where(review => existingItemIds.Contains(review.ItemId))
-                            .ToList();
-
-                        keptReviewCount += reviewsToKeep.Count;
-
-                        // Only keep the session itself if it still contains relevant reviews after filtering
-                        if (reviewsToKeep.Any())
-                        {
-                            // Update the session's review list to the filtered one
-                            session.Reviews = reviewsToKeep;
-                            filteredSessions.Add(session); // Add the modified session to our list
-                        }
-                    }
-                }
-                Logger.Info($"Filtered review history: Kept {keptReviewCount} reviews out of {originalReviewCount} based on {existingItemIds.Count} existing items.");
-
-
-                // --- 2. Reset Aggregates (DO NOT load from statsData) ---
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    // Assign filtered sessions to the observable collection
-                    StudySessions = new ObservableCollection<StudySession>(filteredSessions);
-
-                    // Clear aggregate collections/dictionaries before rebuilding
-                    ItemTypeStats.Clear();
-                    TagStats.Clear(); // Requires ReviewRecord.Tags for accurate rebuild
-                    DailyStats.Clear();
-                });
-                // Reset scalar aggregates before rebuilding
-                TotalReviews = 0;
-                TotalStudyTimeSeconds = 0;
-                CurrentStreak = 0;
-                LongestStreak = 0;
-                OverallAccuracy = 0;
-
-                // --- 3. Recalculate Aggregates from Filtered Data ---
-                // Ensure sessions are ordered correctly for daily/streak rebuild
-                var orderedSessions = filteredSessions.OrderBy(s => s.StartTime).ToList();
-
-                // Call the same helper methods used after item deletion
-                RecalculateTotalReviews(orderedSessions);
-                RecalculateTotalStudyTime(orderedSessions);
-                RebuildItemAndTagStats(orderedSessions); // Requires ReviewRecord.Tags
-                RebuildDailyStatsAndStreaks(orderedSessions); // Includes RecalculateStreaks
-                UpdateOverallAccuracy(); // Calculates based on rebuilt TotalReviews & sessions
-
-                // --- 4. Load Necessary Non-Recalculated Data ---
-                // LastUpdated reflects when the file was *saved*, which is still relevant.
-                LastUpdated = statsData.LastUpdated;
-
-                Logger.Info("Loaded statistics from {FilePath}. Stats rebuilt based on filtered history.", _statsFilePath);
-
-                // Notify UI elements that might need a refresh after rebuild
-                OnPropertyChanged(nameof(ItemTypeStats));
-                OnPropertyChanged(nameof(TagStats));
-                OnPropertyChanged(nameof(DailyStats));
-                // Scalar properties notify automatically via [ObservableProperty] setters used in helpers
+                Logger.Info("No existing statistics file found at {FilePath}. Initializing defaults.", _statsFilePath);
+                // Fallthrough to initialize defaults
             }
             else
             {
-                Logger.Error("Failed to deserialize statistics data from {FilePath}. File might be corrupted. Starting with default stats.", _statsFilePath);
-                ResetObservablePropertiesToDefault();
+                var json = await File.ReadAllTextAsync(_statsFilePath);
+                if (!string.IsNullOrWhiteSpace(json))
+                {
+                    loadedStatsData = JsonSerializer.Deserialize<StatsData>(json);
+                }
+                else
+                {
+                    Logger.Warn("Statistics file at {FilePath} is empty. Initializing defaults.", _statsFilePath);
+                }
             }
         }
         catch (JsonException jsonEx)
         {
-            Logger.Error(jsonEx, "JSON Error loading statistics from {FilePath}. File might be corrupted. Starting with default stats.", _statsFilePath);
-            ResetObservablePropertiesToDefault();
+            Logger.Error(jsonEx, "JSON Error loading statistics from {FilePath}. File might be corrupted. Initializing defaults.", _statsFilePath);
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to load statistics from {FilePath}. Starting with default stats.", _statsFilePath);
-            ResetObservablePropertiesToDefault();
+            Logger.Error(ex, "Failed to load statistics from {FilePath}. Initializing defaults.", _statsFilePath);
         }
+
+        // Step 2: Populate the tracker state
+        if (loadedStatsData != null)
+        {
+            Logger.Debug("Deserialized StatsData successfully. Populating tracker and filtering history...");
+
+            // Filter the loaded sessions based on existing item IDs BEFORE assigning
+            List<StudySession> filteredSessions = FilterSessions(loadedStatsData.StudySessions, existingItemIds);
+
+            // Populate the tracker's properties from the loaded (and filtered) data
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StudySessions = new ObservableCollection<StudySession>(filteredSessions);
+                // Load dictionaries - recalculation below will ensure accuracy
+                ItemTypeStats = loadedStatsData.ItemTypeStats ?? new Dictionary<SpacedRepetitionItemType, ItemTypeStats>();
+                TagStats = loadedStatsData.TagStats ?? new Dictionary<string, TagStats>();
+                // Clear DailyStats - it will be fully rebuilt
+                DailyStats.Clear();
+            });
+
+            // Load scalar values that represent historical maximums or timestamps
+            LongestStreak = loadedStatsData.LongestStreak; // Preserve historical max
+            LastUpdated = loadedStatsData.LastUpdated; // Preserve last saved time
+
+            // Clear aggregates that need full recalculation from filtered history
+            TotalReviews = 0;
+            TotalStudyTimeSeconds = 0;
+            CurrentStreak = 0;
+            OverallAccuracy = 0;
+
+            // Recalculate aggregates based on the filtered StudySessions now in the tracker
+            var orderedSessions = StudySessions.OrderBy(s => s.StartTime).ToList();
+            RecalculateTotalReviews(orderedSessions);
+            RecalculateTotalStudyTime(orderedSessions);
+            RebuildItemAndTagStats(orderedSessions); // Rebuild Item/Tag stats from filtered reviews
+            RebuildDailyStatsAndStreaks(orderedSessions); // Rebuild Daily and Streaks from filtered sessions
+            UpdateOverallAccuracy(); // Final accuracy calc
+
+            Logger.Info("Loaded and rebuilt statistics from {FilePath}. Stats filtered.", _statsFilePath);
+        }
+        else
+        {
+            // Loading failed or no file existed, reset to defaults
+            ResetObservablePropertiesToDefault();
+            Logger.Info("Initialized StatsTracker with default values.");
+        }
+
+        // Notify potential UI listeners about changes
+        OnPropertyChanged(nameof(ItemTypeStats));
+        OnPropertyChanged(nameof(TagStats));
+        OnPropertyChanged(nameof(DailyStats));
+        // Scalar properties have their own notifications via [ObservableProperty]
+    }
+
+    // Helper method to filter sessions (keep only those with reviews for existing items)
+    private List<StudySession> FilterSessions(List<StudySession>? sessionsToFilter, HashSet<Guid> existingItemIds)
+    {
+        List<StudySession> filteredSessions = [];
+        if (sessionsToFilter == null) return filteredSessions;
+
+        int originalReviewCount = sessionsToFilter.SelectMany(s => s?.Reviews ?? []).Count();
+        int keptReviewCount = 0;
+
+        foreach (var session in sessionsToFilter)
+        {
+            if (session?.Reviews == null || !session.Reviews.Any()) continue;
+
+            var reviewsToKeep = session.Reviews
+                .Where(review => existingItemIds.Contains(review.ItemId))
+                .ToList();
+
+            keptReviewCount += reviewsToKeep.Count;
+
+            if (reviewsToKeep.Any())
+            {
+                // Add a session DTO (or modify original if safe) with only the kept reviews
+                filteredSessions.Add(new StudySession
+                { // Create new DTO to avoid modifying original list if needed elsewhere
+                    SessionId = session.SessionId,
+                    StartTime = session.StartTime,
+                    EndTime = session.EndTime,
+                    Duration = session.Duration,
+                    Reviews = reviewsToKeep // Assign filtered list
+                });
+            }
+        }
+        Logger.Info($"Filtered review history: Kept {keptReviewCount} reviews out of {originalReviewCount} based on {existingItemIds.Count} existing items.");
+        return filteredSessions;
     }
 
     /// <summary>
