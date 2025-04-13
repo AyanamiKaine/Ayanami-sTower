@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ayanami.Utilities", "Ayanami.Utilities.csproj", "{BB387C2E-E840-4E66-9886-B9C267C2D06B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ayanami.Utilities.Test", "Ayanami.Utilities.Test\Ayanami.Utilities.Test.csproj", "{AC6EF499-26D4-4C5B-80AA-E97DD474A372}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,18 @@ Global
 		{BB387C2E-E840-4E66-9886-B9C267C2D06B}.Release|x64.Build.0 = Release|Any CPU
 		{BB387C2E-E840-4E66-9886-B9C267C2D06B}.Release|x86.ActiveCfg = Release|Any CPU
 		{BB387C2E-E840-4E66-9886-B9C267C2D06B}.Release|x86.Build.0 = Release|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Debug|x64.Build.0 = Debug|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Debug|x86.Build.0 = Debug|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Release|x64.ActiveCfg = Release|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Release|x64.Build.0 = Release|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Release|x86.ActiveCfg = Release|Any CPU
+		{AC6EF499-26D4-4C5B-80AA-E97DD474A372}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
