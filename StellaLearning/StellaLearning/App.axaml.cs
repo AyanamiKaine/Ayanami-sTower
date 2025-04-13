@@ -381,7 +381,7 @@ public partial class App : Application
         // Register Settings
         saveManager.RegisterSavable(
             key: "settings",
-            dataGetter: () => _world.Get<Settings>(),
+            dataGetter: () => _world.Ensure<Settings>(),
             dataSetter: (data) => _world.Set(data),
             fileName: "settings.json"
         );
@@ -389,7 +389,7 @@ public partial class App : Application
         // Register Literature Items
         saveManager.RegisterSavable(
             key: "literature",
-            dataGetter: () => _world.Get<ObservableCollection<LiteratureSourceItem>>(),
+            dataGetter: () => _world.Ensure<ObservableCollection<LiteratureSourceItem>>(),
             dataSetter: (data) => _world.Set(data),
             fileName: "literature_items.json",
             options: new JsonSerializerOptions { WriteIndented = true, Converters = { new LiteratureSourceItemConverter() } }
@@ -398,7 +398,7 @@ public partial class App : Application
         // Register Spaced Repetition Items
         saveManager.RegisterSavable(
             key: "spacedRepetition",
-            dataGetter: () => _world.Get<ObservableCollection<SpacedRepetitionItem>>(),
+            dataGetter: () => _world.Ensure<ObservableCollection<SpacedRepetitionItem>>(),
             dataSetter: (data) => _world.Set(data),
             fileName: "space_repetition_items.json",
             options: new JsonSerializerOptions
@@ -417,12 +417,12 @@ public partial class App : Application
         // This requires a way to get the List<ReferencePaintingMetadata> from ArtPage or a central store
         saveManager.RegisterSavable(
             key: "artReferences",
-            dataGetter: () => _world.Get<ObservableCollection<ReferencePaintingMetadata>>(), // Need a helper function/method for this
+            dataGetter: () => _world.Ensure<ObservableCollection<ReferencePaintingMetadata>>(), // Need a helper function/method for this
             dataSetter: (data) => _world.Set(data),
             fileName: "references_metadata.json"
         );
-
-        saveManager.StartAutoSave(TimeSpan.FromMinutes(5));
+        
+        saveManager.StartAutoSave(TimeSpan.FromSeconds(30));
     }
 
     private void InitializeSettings()
