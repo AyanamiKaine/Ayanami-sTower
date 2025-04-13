@@ -346,8 +346,7 @@ public partial class App : Application
         saveManager.RegisterSavable(
             key: "settings",
             dataGetter: () => _world.Get<Settings>(), // How to get the current Settings object
-            fileName: "settings.json",
-            options: Settings.jsonSerializerOptions // Use options from Settings class if needed
+            fileName: "settings.json" // Use options from Settings class if needed
         );
 
         // Register Literature Items
@@ -370,11 +369,7 @@ public partial class App : Application
         saveManager.RegisterSavable(
             key: "statistics",
             dataGetter: () => StatsTracker.Instance.Stats, // Need a method in StatsTracker to return the serializable StatsData object
-            fileName: "learning_stats.json", // Consider debug/release differences if needed here or in SaveDataManager constructor
-            options: new JsonSerializerOptions
-            {
-                WriteIndented = true
-            }
+            fileName: "learning_stats.json" // Consider debug/release differences if needed here or in SaveDataManager constructor
         );
 
         // Register Art Reference Metadata
@@ -382,11 +377,7 @@ public partial class App : Application
         saveManager.RegisterSavable(
             key: "artReferences",
             dataGetter: () => _world.Get<ObservableCollection<ReferencePaintingMetadata>>(), // Need a helper function/method for this
-            fileName: "references_metadata.json",
-            options: new JsonSerializerOptions
-            {
-                WriteIndented = true
-            }
+            fileName: "references_metadata.json"
         );
 
         saveManager.StartAutoSave(TimeSpan.FromMinutes(5));
