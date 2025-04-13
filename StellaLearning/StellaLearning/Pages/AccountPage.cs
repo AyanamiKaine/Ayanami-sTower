@@ -36,6 +36,7 @@ public class AccountPage : IUIComponent
     private const string BackendBaseUrl = "http://localhost:5070"; // From launchSettings.json (use HTTPS if available/configured)
 
     // --- UI Element Builders (Store references to access input/output) ---
+    //private bool _loggedIn = false;
     private UIBuilder<TextBox>? _usernameInputBuilder;
     private UIBuilder<TextBox>? _passwordInputBuilder;
     private UIBuilder<TextBox>? _confirmPasswordInputBuilder; // Added for registration
@@ -51,55 +52,55 @@ public class AccountPage : IUIComponent
     /// <param name="world">The Flecs world.</param>
     public AccountPage(World world)
     {
-        _root = world.UI<Grid>((grid) =>
+        _root = world.UI<StackPanel>((stack) =>
         {
-            grid
+            stack
+                .SetSpacing(15)
                 .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                // Define rows: Title, Username, Pass, ConfirmPass, Spacing, Buttons, Status
-                .SetRowDefinitions("Auto, Auto, Auto, 20, Auto, Auto, 20, Auto, Auto, 20, Auto, Auto") // Added rows for Confirm Pass and Status
-                .SetColumnDefinitions("*");
+                .SetHorizontalAlignment(HorizontalAlignment.Center);
 
             // --- Title ---
-            grid.Child<TextBlock>(title =>
+            stack.Child<TextBlock>(title =>
             {
                 title
                     .SetRow(0)
                     .SetText("Account")
                     .SetFontSize(24)
-                    .SetFontWeight(Avalonia.Media.FontWeight.Bold)
+                    .SetFontWeight(FontWeight.Bold)
                     .SetHorizontalAlignment(HorizontalAlignment.Center);
             });
 
             // --- Username/Email Field ---
-            grid.Child<TextBlock>(usernameLabel =>
+
+            var usernameLabel = stack.Child<TextBlock>(usernameLabel =>
             {
                 usernameLabel
-                    .SetRow(1)
-                    .SetText("Username or Email:")
+                    .Visible(false)
+                    .SetText("Email:")
                     .SetMargin(0, 15, 0, 5); // Increased top margin
             });
-            grid.Child<TextBox>(usernameInput =>
+            var usernameInput = stack.Child<TextBox>(usernameInput =>
             {
                 _usernameInputBuilder = usernameInput; // Store reference
                 usernameInput
-                    .SetRow(2)
-                    .SetWatermark("Enter your username or email");
+                    .Visible(false)
+                    .SetWatermark("Enter your email");
             });
 
             // --- Password Field ---
             // Row 3 is spacing
-            grid.Child<TextBlock>(passwordLabel =>
+            var passwordLabel = stack.Child<TextBlock>(passwordLabel =>
             {
                 passwordLabel
-                    .SetRow(4)
+                    .Visible(false)
                     .SetText("Password:")
                     .SetMargin(0, 0, 0, 5);
             });
-            grid.Child<TextBox>(passwordInput =>
+            var passwordInput = stack.Child<TextBox>(passwordInput =>
             {
                 _passwordInputBuilder = passwordInput; // Store reference
                 passwordInput
+                    .Visible(false)
                     .SetRow(5)
                     .SetWatermark("Enter your password")
                     .With(tb => tb.PasswordChar = '*');
@@ -107,25 +108,27 @@ public class AccountPage : IUIComponent
 
             // --- Confirm Password Field (for Registration) ---
             // Row 6 is spacing
-            grid.Child<TextBlock>(confirmPasswordLabel =>
+            var confirmPasswordLabel = stack.Child<TextBlock>(confirmPasswordLabel =>
             {
                 confirmPasswordLabel
+                    .Visible(false)
                     .SetRow(7)
                     .SetText("Confirm Password:")
                     .SetMargin(0, 0, 0, 5);
             });
-            grid.Child<TextBox>(confirmPasswordInput =>
+            var confirmPasswordInput = stack.Child<TextBox>(confirmPasswordInput =>
             {
                 _confirmPasswordInputBuilder = confirmPasswordInput; // Store reference
                 confirmPasswordInput
                     .SetRow(8)
+                    .Visible(false)
                     .SetWatermark("Confirm your password")
                     .With(tb => tb.PasswordChar = '*');
             });
 
             // --- Action Buttons ---
             // Row 9 is spacing
-            grid.Child<StackPanel>(buttonPanel =>
+            stack.Child<StackPanel>(buttonPanel =>
             {
                 buttonPanel
                     .SetRow(10) // Adjusted row index
@@ -133,13 +136,20 @@ public class AccountPage : IUIComponent
                     .SetHorizontalAlignment(HorizontalAlignment.Center)
                     .SetSpacing(10);
 
-                // Login Button
                 buttonPanel.Child<Button>(loginButton =>
                 {
                     loginButton
                         .SetMinWidth(100)
-                        .SetText("Login")
-                        .OnClick(HandleLoginClick); // Attach the async handler
+                        .SetText("Sign in")
+                        .OnClick((_, _) =>
+                        {
+                            usernameLabel.Visible();
+                            usernameInput.Visible();
+                            passwordInput.Visible();
+                            passwordLabel.Visible();
+                            confirmPasswordLabel.Visible(false);
+                            confirmPasswordInput.Visible(false);
+                        });
                 });
 
                 // Register Button
@@ -147,13 +157,21 @@ public class AccountPage : IUIComponent
                 {
                     registerButton
                         .SetMinWidth(100)
-                        .SetText("Register")
-                        .OnClick(HandleRegisterClick); // Attach the async handler
+                        .SetText("Sign up")
+                        .OnClick((_, _) =>
+                        {
+                            usernameLabel.Visible();
+                            usernameInput.Visible();
+                            passwordInput.Visible();
+                            passwordLabel.Visible();
+                            confirmPasswordLabel.Visible();
+                            confirmPasswordInput.Visible();
+                        });
                 });
             });
 
             // --- Status Message Area ---
-            grid.Child<TextBlock>(status =>
+            stack.Child<TextBlock>(status =>
             {
                 _statusMessageBuilder = status; // Store reference
                 status
