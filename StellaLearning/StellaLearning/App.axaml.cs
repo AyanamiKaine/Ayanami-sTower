@@ -332,55 +332,13 @@ public partial class App : Application
             desktop.MainWindow.Hide();
         }
 
+        InitializeSaveManager();
 
         base.OnFrameworkInitializationCompleted();
         //_world.RunRESTAPI();
 #if DEBUG
         this.AttachDevTools();
 #endif
-
-        // --- Register Savable Data with the SaveDataManager ---
-        var saveManager = SaveDataManager.Instance;
-
-        // Register Settings
-        saveManager.RegisterSavable(
-            key: "settings",
-            dataGetter: () => _world.Get<Settings>(), // How to get the current Settings object
-            fileName: "settings.json" // Use options from Settings class if needed
-        );
-
-        // Register Literature Items
-        saveManager.RegisterSavable(
-            key: "literature",
-            dataGetter: () => _world.Get<ObservableCollection<LiteratureSourceItem>>(),
-            fileName: "literature_items.json",
-            options: new JsonSerializerOptions { WriteIndented = true, Converters = { new LiteratureSourceItemConverter() } }
-        );
-
-        // Register Spaced Repetition Items
-        saveManager.RegisterSavable(
-            key: "spacedRepetition",
-            dataGetter: () => _world.Get<ObservableCollection<SpacedRepetitionItem>>(),
-            fileName: "space_repetition_items.json",
-            options: new JsonSerializerOptions { WriteIndented = true, Converters = { new SpacedRepetitionItemConverter() } }
-        );
-
-        // Register Statistics Data
-        saveManager.RegisterSavable(
-            key: "statistics",
-            dataGetter: () => StatsTracker.Instance.Stats, // Need a method in StatsTracker to return the serializable StatsData object
-            fileName: "learning_stats.json" // Consider debug/release differences if needed here or in SaveDataManager constructor
-        );
-
-        // Register Art Reference Metadata
-        // This requires a way to get the List<ReferencePaintingMetadata> from ArtPage or a central store
-        saveManager.RegisterSavable(
-            key: "artReferences",
-            dataGetter: () => _world.Get<ObservableCollection<ReferencePaintingMetadata>>(), // Need a helper function/method for this
-            fileName: "references_metadata.json"
-        );
-
-        saveManager.StartAutoSave(TimeSpan.FromMinutes(5));
     }
 
     /// <summary>
@@ -411,6 +369,60 @@ public partial class App : Application
 
             Dispatcher.UIThread.Post(async () => await SaveDataManager.Instance.SaveAllAsync());
         }
+    }
+
+    /// <summary>
+    /// Here we define what data we want to save to disk.
+    /// </summary>
+    private void InitializeSaveManager()
+    {
+        var saveManager = SaveDataManager.Instance;
+
+        // Register Settings
+        saveManager.RegisterSavable(
+            key: "settings",
+            dataGetter: () => _world.Get<Settings>(),
+            dataSetter: (data) => _world.Set(data),
+            fileName: "settings.json"
+        );
+
+        // Register Literature Items
+        saveManager.RegisterSavable(
+            key: "literature",
+            dataGetter: () => _world.Get<ObservableCollection<LiteratureSourceItem>>(),
+            dataSetter: (data) => _world.Set(data),
+            fileName: "literature_items.json",
+            options: new JsonSerializerOptions { WriteIndented = true, Converters = { new LiteratureSourceItemConverter() } }
+        );
+
+        // Register Spaced Repetition Items
+        saveManager.RegisterSavable(
+            key: "spacedRepetition",
+            dataGetter: () => _world.Get<ObservableCollection<SpacedRepetitionItem>>(),
+            dataSetter: (data) => _world.Set(data),
+            fileName: "space_repetition_items.json",
+            options: new JsonSerializerOptions
+            { WriteIndented = true, Converters = { new SpacedRepetitionItemConverter() } }
+        );
+
+        // Register Statistics Data
+        saveManager.RegisterSavable(
+            key: "statistics",
+            dataGetter: () => StatsTracker.Instance.Stats, // Need a method in StatsTracker to return the serializable StatsData object
+            dataSetter: async (_) => await StatsTracker.Instance.LoadStatsAsync([.. _world.Get<ObservableCollection<SpacedRepetitionItem>>().Select(item => item.Uid)]),
+            fileName: "learning_stats.json"
+        );
+
+        // Register Art Reference Metadata
+        // This requires a way to get the List<ReferencePaintingMetadata> from ArtPage or a central store
+        saveManager.RegisterSavable(
+            key: "artReferences",
+            dataGetter: () => _world.Get<ObservableCollection<ReferencePaintingMetadata>>(), // Need a helper function/method for this
+            dataSetter: (data) => _world.Set(data),
+            fileName: "references_metadata.json"
+        );
+
+        saveManager.StartAutoSave(TimeSpan.FromMinutes(5));
     }
 
     private void InitializeSettings()
