@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using GenerativeAI.Types;
 using HtmlAgilityPack;
 using StellaLearningBackend.Data;
 using StellaLearningBackend.Models;
+using StellaLearningBackend.Util;
 
 namespace StellaLearningBackend.API;
 
@@ -115,6 +117,8 @@ public partial class LargeLanguageManager // Removed 'sealed'
     // Private constructor to prevent external instantiation
     private readonly IConfiguration _configuration;
     private readonly ILogger<LargeLanguageManager> _logger;
+    private readonly byte[] _masterKey; // Add master key field
+
     private readonly bool _enableLargeLanguageFeatures;
     [GeneratedRegex(@"(\r\n|\r|\n)")]
     private static partial Regex MyRegex();
@@ -126,13 +130,37 @@ public partial class LargeLanguageManager // Removed 'sealed'
            IConfiguration configuration,
            ILogger<LargeLanguageManager> logger,
            IHttpClientFactory httpClientFactory // Use IHttpClientFactory
-                                        // If World/Settings *must* be accessed, try injecting them if registered in DI
-                                        // ISettingsService settingsService // Example if settings are abstracted
+                                                // If World/Settings *must* be accessed, try injecting them if registered in DI
+                                                // ISettingsService settingsService // Example if settings are abstracted
            )
     {
         _configuration = configuration;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("GeminiClient"); // Create a named client
+
+
+        var masterKeyBase64 = _configuration["StorageSettings:MasterEncryptionKey"];
+        if (string.IsNullOrEmpty(masterKeyBase64))
+        {
+            _logger.LogCritical("MasterEncryptionKey (Base64) is missing in configuration.");
+            throw new InvalidOperationException("MasterEncryptionKey is not configured correctly.");
+        }
+        try
+        {
+            _masterKey = Convert.FromBase64String(masterKeyBase64);
+            if (_masterKey.Length != 32) // Ensure 256-bit key
+            {
+                _logger.LogCritical("Decoded MasterEncryptionKey is not 32 bytes (256 bits) long.");
+                throw new InvalidOperationException("MasterEncryptionKey must be a Base64 encoded 256-bit key.");
+            }
+            _logger.LogInformation("Master encryption key loaded successfully."); // Add confirmation
+        }
+        catch (FormatException ex)
+        {
+            _logger.LogCritical(ex, "MasterEncryptionKey is not a valid Base64 string.");
+            throw new InvalidOperationException("MasterEncryptionKey is not valid Base64.", ex);
+        }
+
         // --- Read Configuration ---
         // Read API Key from Configuration (more flexible than only Env Var)
         // Order: Environment Variable > Configuration File (appsettings, user secrets, etc.)
@@ -232,108 +260,87 @@ public partial class LargeLanguageManager // Removed 'sealed'
             return null;
         }
 
-        string? extension = Path.GetExtension(secureFilePath)?.ToLowerInvariant();
-        if (string.IsNullOrEmpty(extension))
+
+        // --- Decryption Setup ---
+        byte[] decryptedFileKey;
+        byte[] fileContentIv;
+        try
         {
-            _logger.LogError("Error: Could not determine file extension for secure path '{SecureFilePath}'.", secureFilePath);
+            _logger.LogDebug("Decoding encryption keys/IVs for File ID {FileId}", fileMetadata.Id);
+            byte[] encryptedKeyBytes = Convert.FromBase64String(fileMetadata.EncryptedFileKey);
+            fileContentIv = Convert.FromBase64String(fileMetadata.EncryptionIV);
+
+            _logger.LogDebug("Decrypting per-file key using master key for File ID {FileId}", fileMetadata.Id);
+            // Use the shared helper to decrypt the per-file key
+            decryptedFileKey = EncryptionHelper.DecryptData(_masterKey, encryptedKeyBytes);
+            _logger.LogInformation("Successfully decrypted file key for File ID {FileId}", fileMetadata.Id);
+        }
+        catch (FormatException ex)
+        {
+            _logger.LogError(ex, "Failed to decode Base64 encryption key/IV for File ID {FileId}", fileMetadata.Id);
             return null;
         }
-
-        bool isDirectlySupported = _supportedFileApiExtensions.Contains(extension);
-        bool isConvertible = !isDirectlySupported && _convertibleToTextExtensions.Contains(extension);
-
-        string fileToUploadPath = secureFilePath; // Start with the secure path
-        string? tempFilePath = null;          // Path for temporary file, if created
-        bool useConversion = false;
-
-        // --- Logic Branch: Conversion Fallback ---
-        if (isConvertible)
+        catch (CryptographicException cryptoEx)
         {
-            _logger.LogInformation("File type '{Extension}' for File ID {FileId} not directly supported, attempting conversion to .txt.", extension, fileMetadata.Id);
-            useConversion = true;
-            try
-            {
-                tempFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.txt");
-                // Read from the SECURE original file path
-                string originalContent = await File.ReadAllTextAsync(secureFilePath);
-                await File.WriteAllTextAsync(tempFilePath, originalContent);
-                _logger.LogInformation("Successfully converted File ID {FileId} ('{OriginalFileName}') to temporary file: '{TempFilePath}'", fileMetadata.Id, fileMetadata.OriginalFileName, tempFilePath);
-                fileToUploadPath = tempFilePath; // Upload the temporary file
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during temporary file conversion for File ID {FileId} (Path: {SecureFilePath})", fileMetadata.Id, secureFilePath);
-                if (tempFilePath != null && File.Exists(tempFilePath)) { try { File.Delete(tempFilePath); } catch { /* Ignore */ } }
-                return null;
-            }
-        }
-        // --- Logic Branch: Unsupported Type ---
-        else if (!isDirectlySupported)
-        {
-            _logger.LogError("Error: File type '{Extension}' for File ID {FileId} is not supported or convertible.", extension, fileMetadata.Id);
+            _logger.LogError(cryptoEx, "Failed to decrypt file key using master key for File ID {FileId}. Master key might be incorrect or data corrupted.", fileMetadata.Id);
             return null;
         }
-
-        RemoteFile? remoteFile = null;
-
-        // --- Logic Branch: Conversion Fallback ---
-        if (isConvertible)
+        catch (Exception ex) // Catch broader exceptions during setup
         {
-            _logger.LogInformation("File type '{Extension}' for File ID {FileId} not directly supported, attempting conversion to .txt.", extension, fileMetadata.Id);
-            useConversion = true;
-            try
-            {
-                tempFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.txt");
-                // Read from the SECURE original file path
-                string originalContent = await File.ReadAllTextAsync(secureFilePath);
-                await File.WriteAllTextAsync(tempFilePath, originalContent);
-                _logger.LogInformation("Successfully converted File ID {FileId} ('{OriginalFileName}') to temporary file: '{TempFilePath}'", fileMetadata.Id, fileMetadata.OriginalFileName, tempFilePath);
-                fileToUploadPath = tempFilePath; // Upload the temporary file
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during temporary file conversion for File ID {FileId} (Path: {SecureFilePath})", fileMetadata.Id, secureFilePath);
-                if (tempFilePath != null && File.Exists(tempFilePath)) { try { File.Delete(tempFilePath); } catch { /* Ignore */ } }
-                return null;
-            }
-        }
-        // --- Logic Branch: Unsupported Type ---
-        else if (!isDirectlySupported)
-        {
-            _logger.LogError("Error: File type '{Extension}' for File ID {FileId} is not supported or convertible.", extension, fileMetadata.Id);
+            _logger.LogError(ex, "Unexpected error during decryption setup for File ID {FileId}", fileMetadata.Id);
             return null;
         }
+        // --- End Decryption Setup ---
+
+        string? extension = Path.GetExtension(fileMetadata.StoredPath)?.ToLowerInvariant() ?? "";
+        bool canExtractText = _convertibleToTextExtensions.Contains(extension ?? "") || (extension == ".txt");
+
+
+        Stream streamToProcess = null!; // Will hold the decrypted stream or stream to temp file
+        string? tempDecryptedFilePath = null; // Path if we have to save decrypted content
+        RemoteFile? remoteFile = null; // For File API upload
+        bool useFileApi = _supportedFileApiExtensions.Contains(extension ?? ""); // Check if File API supports the original type
 
         try
         {
-            _logger.LogInformation("Uploading {FileType} file '{FileName}' using File API (File ID: {FileId})",
-                        useConversion ? "temporary" : "original", Path.GetFileName(fileToUploadPath), fileMetadata.Id);
+            // Create Decryption Stream
+            using var encryptedStream = new FileStream(fileMetadata.StoredPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var aes = Aes.Create();
+            aes.Key = decryptedFileKey;
+            aes.IV = fileContentIv;
+            using var cryptoStream = new CryptoStream(encryptedStream, aes.CreateDecryptor(), CryptoStreamMode.Read);
 
-            // Use the actual file path (secure or temporary) for the upload API call
-            remoteFile = await _textModel.Files.UploadFileAsync(
-                fileToUploadPath!,
-                progressCallback: (progress) => { /* Log progress if needed */ }
-            );
-            _logger.LogInformation("File uploaded successfully. Remote File Name: {RemoteFileName} (File ID: {FileId})", remoteFile.Name, fileMetadata.Id);
+            if (useFileApi) // File API preferred for its native support
+            {
+                // Option A: Save decrypted content to temp file for File API
+                tempDecryptedFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{Path.GetExtension(fileMetadata.OriginalFileName)}"); // Use original extension
+                _logger.LogInformation("Decrypting file {FileId} to temporary path {TempPath} for File API upload.", fileMetadata.Id, tempDecryptedFilePath);
+                using (var tempStream = new FileStream(tempDecryptedFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await cryptoStream.CopyToAsync(tempStream);
+                }
+                _logger.LogInformation("Temporary decrypted file created successfully.");
 
-        }
-        catch (Exception ex)
-        {
-            _logger.LogInformation($"Error uploading file: {ex.Message}");
-        }
+                // Upload the TEMPORARY DECRYPTED file
+                _logger.LogInformation("Uploading temporary decrypted file '{FileName}' using File API (File ID: {FileId})", Path.GetFileName(tempDecryptedFilePath), fileMetadata.Id);
+                remoteFile = await _textModel.Files.UploadFileAsync(
+                    tempDecryptedFilePath
+                );
+                _logger.LogInformation("Temporary decrypted file uploaded successfully. Remote File Name: {RemoteFileName}", remoteFile.Name);
 
-        var request = new GenerateContentRequest
-        {
-            SystemInstruction = new Content("You are an AI assistant specialized in extracting structured metadata from text content. Your task is to analyze the provided text content below and generate a single, valid JSON object containing specific metadata fields.", "SYSTEM")
-        };
-        // Configure the request to expect JSON output (important!)
-        // This tells the SDK/API to enforce JSON mode.
-        //request.UseJsonMode<ContentMetadata>();
+                // --- Construct Prompt for File API ---
+                var request = new GenerateContentRequest
+                {
+                    SystemInstruction = new Content("You are an AI assistant specialized in extracting structured metadata from text content. Your task is to analyze the provided text content below and generate a single, valid JSON object containing specific metadata fields.", "SYSTEM")
+                };
+                // Configure the request to expect JSON output (important!)
+                // This tells the SDK/API to enforce JSON mode.
+                //request.UseJsonMode<ContentMetadata>();
 
-        // Construct a prompt specifically asking for tags in a parseable format
-        // You might need to experiment with this prompt for optimal results
-        var promptText =
-            $"""
+                // Construct a prompt specifically asking for tags in a parseable format
+                // You might need to experiment with this prompt for optimal results
+                var promptText =
+                    $"""
             Analyze Content: Carefully read the entire content
             Extract Metadata: Identify and extract the following pieces of information from the text:
 
@@ -354,43 +361,97 @@ public partial class LargeLanguageManager // Removed 'sealed'
             The JSON object must use the following exact field names (keys): Title, Author, Tags, Publisher, Summary.
             """;
 
-        request.AddText(promptText);
-        request.AddRemoteFile(remoteFile!);
+                request.AddText(promptText);
+                request.AddRemoteFile(remoteFile!);
+                // request.UseJsonMode<ContentMetadata>();
 
-        //request.UseJsonMode<ContentMetadata>();
+                _logger.LogInformation("Sending request to AI model using File API (File ID: {FileId})", fileMetadata.Id);
+                var aiResponse = await _textModel.GenerateContentAsync(request); // Or GenerateObjectAsync
+                return aiResponse.ToObject<ContentMetadata>();
 
-        // Call the AI model (same logic as before)
-        _logger.LogInformation("Sending combined prompt (Extracted Text + Question) to AI model...");
-        try
+            }
+            else if (canExtractText) // Try text extraction directly from CryptoStream
+            {
+                _logger.LogInformation("Attempting direct text extraction from decrypted stream for File ID {FileId}", fileMetadata.Id);
+                // For plain text:
+                if (extension == ".txt" || _convertibleToTextExtensions.Contains(extension ?? ""))
+                {
+                    using var reader = new StreamReader(cryptoStream); // CryptoStream is the decrypted stream
+                    string extractedText = await reader.ReadToEndAsync();
+                    _logger.LogInformation("Extracted {Length} characters from decrypted text stream for File ID {FileId}", extractedText.Length, fileMetadata.Id);
+
+                    // TODO: Add extraction logic for other text types if needed (e.g., PDF, DOCX)
+                    // Example for PDF (requires PdfPig NuGet package):
+                    // using UglyToad.PdfPig;
+                    // using var pdfDoc = PdfDocument.Open(cryptoStream); // Process CryptoStream directly
+                    // string extractedText = string.Join(" ", pdfDoc.GetPages().Select(p => p.Text));
+
+                    if (string.IsNullOrWhiteSpace(extractedText))
+                    {
+                        _logger.LogWarning("Text extraction yielded empty content for File ID {FileId}", fileMetadata.Id);
+                        return null;
+                    }
+
+                    // --- Construct Prompt for Text ---
+                    string textPrompt = $"""
+                        Analyze the following extracted text content.
+                        Generate a concise title, author, publisher, summary, and up to {maxTags} relevant keyword tags.
+
+                        Extracted Text:
+                        ---
+                        {extractedText}
+                        ---
+
+                        Instructions:
+                        Respond ONLY with a single, valid JSON object.
+                        The JSON object must use the exact field names: "Title", "Author", "Tags", "Publisher", "Summary".
+                        "Tags" must be an array of strings. All other fields should be strings. If a field cannot be determined, use null or an empty string.
+                        """;
+                    var textRequest = new GenerateContentRequest();
+                    textRequest.AddText(textPrompt);
+                    textRequest.UseJsonMode<ContentMetadata>();
+
+                    _logger.LogInformation("Sending request to AI model using extracted text (File ID: {FileId})", fileMetadata.Id);
+                    ContentMetadata? result = await _textModel.GenerateObjectAsync<ContentMetadata>(textRequest);
+                    return result;
+                }
+                else
+                {
+                    _logger.LogWarning("Text extraction not implemented for file type '{Extension}' for File ID {FileId}", extension, fileMetadata.Id);
+                    return null; // Or fallback to temp file if desired
+                }
+            }
+            else
+            {
+                _logger.LogWarning("File type '{Extension}' for File ID {FileId} is not supported by File API and not configured for text extraction.", extension, fileMetadata.Id);
+                return null;
+            }
+        }
+        catch (CryptographicException cryptoEx)
         {
-            var aiResponse = await _textModel.GenerateContentAsync(request);
-            return aiResponse.ToObject<ContentMetadata>();
+            _logger.LogError(cryptoEx, "Cryptography error during file decryption for File ID {FileId}", fileMetadata.Id);
+            return null;
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Stack Trace: {ex.StackTrace}");
+            _logger.LogError(ex, "Error during AI processing or decryption for File ID '{FileId}'", fileMetadata.Id);
             return null;
         }
-        finally // --- Cleanup: ALWAYS try to delete the temporary file ---
+        finally
         {
-            if (tempFilePath != null && File.Exists(tempFilePath))
+            // Securely clear decrypted key
+            if (decryptedFileKey != null) Array.Clear(decryptedFileKey, 0, decryptedFileKey.Length);
+
+            // --- Cleanup ---
+            if (tempDecryptedFilePath != null && File.Exists(tempDecryptedFilePath))
             {
-                try
-                {
-                    File.Delete(tempFilePath);
-                    _logger.LogInformation($"Successfully deleted temporary file: '{tempFilePath}'");
-                }
-                catch (IOException ioEx)
-                {
-                    // Log non-critically, the main operation might have succeeded
-                    _logger.LogError($"Warning: Failed to delete temporary file '{tempFilePath}': {ioEx.Message}");
-                }
+                try { File.Delete(tempDecryptedFilePath); _logger.LogInformation("Deleted temporary decrypted file: {TempPath}", tempDecryptedFilePath); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Failed to delete temporary decrypted file: {TempPath}", tempDecryptedFilePath); }
             }
-            // Optional: Delete the remote file if no longer needed (requires another API call)
             if (remoteFile != null)
             {
-                try { await _textModel.Files.DeleteFileAsync(remoteFile!.Name!); _logger.LogInformation($"Deleted remote file: {remoteFile.Name}"); }
-                catch (Exception ex) { _logger.LogError($"Warning: Failed to delete remote file '{remoteFile.Name}': {ex.Message}"); }
+                try { await _textModel.Files.DeleteFileAsync(remoteFile.Name!); _logger.LogInformation("Deleted remote file: {RemoteFileName}", remoteFile.Name); }
+                catch (Exception ex) { _logger.LogWarning(ex, "Failed to delete remote file: {RemoteFileName}", remoteFile.Name); }
             }
         }
     }
@@ -403,28 +464,67 @@ public partial class LargeLanguageManager // Removed 'sealed'
     /// <returns>A list of string tags, or an empty list if an error occurred or no tags were generated.</returns>
     public async Task<List<string>> GetImageTagsAsync(FileMetadata fileMetadata, int maxTags = 4) // Changed signature
     {
-        if (!_enableLargeLanguageFeatures)
+        if (!_enableLargeLanguageFeatures) { /* ... */ return []; }
+        if (string.IsNullOrEmpty(fileMetadata.StoredPath)) { /* ... */ return []; }
+        if (!File.Exists(fileMetadata.StoredPath)) { /* ... */ return []; }
+
+        // --- Decryption Setup ---
+        byte[] decryptedFileKey;
+        byte[] fileContentIv;
+        try
         {
-            _logger.LogWarning("Large language features are disabled. Skipping GetImageTagsAsync.");
+            _logger.LogDebug("Decoding/Decrypting keys for image tag generation (File ID {FileId})", fileMetadata.Id);
+            byte[] encryptedKeyBytes = Convert.FromBase64String(fileMetadata.EncryptedFileKey);
+            fileContentIv = Convert.FromBase64String(fileMetadata.EncryptionIV);
+            decryptedFileKey = EncryptionHelper.DecryptData(_masterKey, encryptedKeyBytes);
+            _logger.LogInformation("Successfully decrypted file key for image (File ID {FileId})", fileMetadata.Id);
+        }
+        catch (Exception ex) // Catch format, crypto, etc.
+        {
+            _logger.LogError(ex, "Failed decryption setup for image tag generation (File ID {FileId})", fileMetadata.Id);
             return [];
         }
+        // --- End Decryption Setup ---
 
-        string secureFilePath = fileMetadata.StoredPath;
-
-        if (string.IsNullOrEmpty(secureFilePath))
+        byte[] decryptedImageBytes;
+        try
         {
-            _logger.LogError("StoredPath is missing in FileMetadata for ID {FileId}", fileMetadata.Id);
+            // Create Decryption Stream and read fully into memory
+            _logger.LogDebug("Opening encrypted image file {StoredPath}", fileMetadata.StoredPath);
+            using var encryptedStream = new FileStream(fileMetadata.StoredPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var aes = Aes.Create();
+            aes.Key = decryptedFileKey;
+            aes.IV = fileContentIv;
+            _logger.LogDebug("Creating crypto stream for image {FileId}", fileMetadata.Id);
+            using var cryptoStream = new CryptoStream(encryptedStream, aes.CreateDecryptor(), CryptoStreamMode.Read);
+            using var memoryStream = new MemoryStream();
+            _logger.LogDebug("Reading decrypted image data into memory for {FileId}", fileMetadata.Id);
+            await cryptoStream.CopyToAsync(memoryStream);
+            decryptedImageBytes = memoryStream.ToArray();
+            _logger.LogInformation("Successfully decrypted image data ({Length} bytes) for File ID {FileId}", decryptedImageBytes.Length, fileMetadata.Id);
+        }
+        catch (CryptographicException cryptoEx)
+        {
+            _logger.LogError(cryptoEx, "Cryptography error during image file decryption for File ID {FileId}", fileMetadata.Id);
             return [];
         }
-        if (!File.Exists(secureFilePath))
+        catch (Exception ex)
         {
-            _logger.LogError("Secure file path does not exist: {SecureFilePath} (File ID: {FileId})", secureFilePath, fileMetadata.Id);
+            _logger.LogError(ex, "Error reading or decrypting image file for File ID {FileId}", fileMetadata.Id);
             return [];
         }
-        var request = new GenerateContentRequest();
+        finally
+        {
+            // Securely clear decrypted key
+            if (decryptedFileKey != null) Array.Clear(decryptedFileKey, 0, decryptedFileKey.Length);
+        }
+
+        try
+        {
+            var request = new GenerateContentRequest();
 
 
-        string prompt = $"""
+            string prompt = $"""
         Describe this image with relevant THEME tags. THAT CAN BE USED TO CATEGORIES THE IMAGE
         SO THEIR TAGS CAN BE USED TO SEARCH FOR THE IMAGE, FOR EXAMPLE AN PAINTING OF AN APPLE
         WOULD GET THE TAG APPLE AND PAINTING, AND ITS STYLE. SEEING A PICTURE OF A WOMEN SMOKING
@@ -432,37 +532,25 @@ public partial class LargeLanguageManager // Removed 'sealed'
         Provide up to {maxTags} tags as a comma-separated list (e.g., tag1, tag2, tag3).
         """;
 
-        request.AddText(prompt);
+            request.AddText(prompt);
 
-        try
-        {
-            // Attach a local file
-            request.AddInlineFile(secureFilePath); // Provide content type
+            // Use AddInlineData with the decrypted byte array
+            string imageDataBase64 = Convert.ToBase64String(decryptedImageBytes);
 
-            // Use the GenerateContentAsync overload that takes a prompt and a local file path
-            // The library handles reading the file and sending it appropriately.
+            request.AddInlineData(imageDataBase64, fileMetadata.ContentType ?? "image/jpeg", true, "user"); // Use stored content type, fallback if null
+
+            _logger.LogInformation("Sending request for image tags using inline decrypted data (File ID: {FileId})", fileMetadata.Id);
             var response = await _imageModel.GenerateContentAsync(request);
-
             var generatedText = response?.Text()?.Trim();
 
-            if (string.IsNullOrWhiteSpace(generatedText))
-            {
-                _logger.LogWarning("No tags generated for image: {FileId}", fileMetadata.Id);
-                return [];
-            }
+            if (string.IsNullOrWhiteSpace(generatedText)) { /* ... */ return []; }
 
-            // Parse the comma-separated list
-            return generatedText.Split(',')
-                                    .Select(tag => tag.Trim()) // Remove leading/trailing whitespace
-                                    .Where(tag => !string.IsNullOrEmpty(tag)) // Remove empty entries
-                                    .ToList();
+            return generatedText.Split(',').Select(tag => tag.Trim()).Where(tag => !string.IsNullOrEmpty(tag)).ToList();
         }
         catch (Exception ex)
         {
-            // Log the error
-            _logger.LogError(ex, "Error generating tags for image File ID '{FileId}'", fileMetadata.Id);
-            _logger.LogError($"Stack Trace: {ex.StackTrace}");
-            return []; // Return empty list on failure
+            _logger.LogError(ex, "Error sending decrypted image data or generating tags for File ID '{FileId}'", fileMetadata.Id);
+            return [];
         }
     }
 
@@ -614,34 +702,52 @@ public partial class LargeLanguageManager // Removed 'sealed'
             return null; // Error logged in helper
         }
 
-        // Construct the prompt specifically asking for JSON output
-        // matching the UrlMetadata structure. Be explicit!
         string jsonPrompt = $"""
-                Generate a concise, relevant title for the content and a list of up to {maxTags} relevant keyword tags.
+            Analyze Content: Carefully read the entire content
+            Extract Metadata: Identify and extract the following pieces of information from the text:
 
-                Extracted Text:
-                ---
-                {cleanedText}
-                ---
+            Title: Determine the most appropriate main title for the content. This should be concise and representative.
+            Author: Identify the primary author(s) or creator(s) of the content. If multiple authors are present, list them if possible, but a single string representation is acceptable (e.g., "John Doe and Jane Smith").
 
-                Instructions:
-                Respond ONLY with a valid JSON object containing the generated title and tags.
-                The JSON object must have exactly two keys: "Title" (string) and "Tags" (array of strings).
-                """;
+            Tags: Generate a list of highly relevant keywords or topic tags that categorize the core subject matter of the content.
+            Quantity: Generate {maxTags} distinct tags. Do not exceed 5 tags under any circumstances. NEVER GENERATE MORE THAN {maxTags} TAGS, NEVER.
 
+            Relevance & Type: Tags should represent the main themes, concepts, or disciplines discussed. Prefer broader topics over hyper-specific details.
+            Format: Tags should be single words or short phrases (ideally 1-2 words long) and always start with a capital letter (Math, Biology, Science, Software, Study).
+
+            Exclusions: Do NOT include chapter titles, section headings, specific page numbers, minor character names, or generic words from the table of contents/index (like "Introduction", "Index", "Bibliography", "Acknowledgements", "One", "Two", "Three") as tags unless they represent a truly central theme.
+            Publisher: Identify the entity (organization, company, website, individual) responsible for publishing or distributing the content.
+
+            Summary: Generate a brief (2-6 sentence) summary capturing the core message or purpose of the content.
+            Format Output: Structure the extracted information into a single, valid JSON object.
+            The JSON object must use the following exact field names (keys): Title, Author, Tags, Publisher, Summary.
+        """;
         // Create the request object
+
         var request = new GenerateContentRequest();
-        request.AddText(jsonPrompt);
+
+
+        string finalPrompt = $"Here is the extracted text content from the website {url}:\n" +
+                             $"---\n" + // Use simpler separator
+                             $"{cleanedText}\n" +
+                             $"---\n\n" +
+                             $"Based on the text content above, please answer the follow the following:\n" +
+                             $"{jsonPrompt}";
+
+
+        request.AddText(finalPrompt);
 
         // Configure the request to expect JSON output (important!)
         // This tells the SDK/API to enforce JSON mode.
-        request.UseJsonMode<ContentMetadata>();
+        //request.UseJsonMode<ContentMetadata>();
 
         _logger.LogInformation($"Sending request for JSON metadata (URL: {url}) to AI model...");
         try
         {
             // Use GenerateObjectAsync<T> to directly get the deserialized object
-            ContentMetadata? result = await _textModel.GenerateObjectAsync<ContentMetadata>(request);
+
+            var aiResponse = await _textModel.GenerateContentAsync(finalPrompt);
+            var result = aiResponse.ToObject<ContentMetadata>();
 
             if (result == null)
             {

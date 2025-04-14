@@ -107,7 +107,7 @@ if (app.Environment.IsDevelopment())
 
 //Used for real deployment
 //app.UseHttpsRedirection();
-app.UseRouting();
+//app.UseRouting();
 // Add Authentication and Authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();

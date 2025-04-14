@@ -13,12 +13,14 @@ using System.Threading.Tasks;
 using StellaLearningBackend.Models;
 using StellaLearningBackend.Data;
 using StellaLearning.Dtos;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using StellaLearningBackend.Util;
 
 namespace StellaLearningBackend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class StorageController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -44,23 +46,27 @@ namespace StellaLearningBackend.Controllers
             // IMPORTANT: Retrieve this key securely (User Secrets, Env Vars, Key Vault).
             // DO NOT store the actual key in appsettings.json for production.
             // This example reads it from configuration for simplicity, assuming it's managed securely.
-            var masterKeyString = _configuration["StorageSettings:MasterEncryptionKey"];
-            if (string.IsNullOrEmpty(masterKeyString) || masterKeyString.Length < 32) // Example check
+            var masterKeyBase64 = _configuration["StorageSettings:MasterEncryptionKey"];
+            if (string.IsNullOrEmpty(masterKeyBase64))
             {
-                _logger.LogCritical("MasterEncryptionKey is missing or too short in configuration. Ensure it is set securely.");
-                // Throw an exception or handle appropriately to prevent startup without a valid key.
+                _logger.LogCritical("MasterEncryptionKey (Base64) is missing in configuration.");
                 throw new InvalidOperationException("MasterEncryptionKey is not configured correctly.");
             }
-            // Ensure the key is the correct size for AES (e.g., 256 bits / 32 bytes)
-            // This example assumes the key in config is Base64 encoded or a string that needs hashing.
-            // Option 1: If key in config is Base64 encoded 32-byte key:
-            // _masterKey = Convert.FromBase64String(masterKeyString);
-            // Option 2: Derive a 32-byte key from the config string using a KDF (e.g., SHA256 - less ideal but simple demo)
-            _masterKey = SHA256.HashData(Encoding.UTF8.GetBytes(masterKeyString)); // Creates a 32-byte hash
-                                                                                   // Clear the temporary string variable
-                                                                                   // --- End Master Key Handling ---
 
-
+            try
+            {
+                _masterKey = Convert.FromBase64String(masterKeyBase64);
+                if (_masterKey.Length != 32) // Check *byte* length AFTER decoding
+                {
+                    _logger.LogCritical("Decoded MasterEncryptionKey is not 32 bytes (256 bits) long.");
+                    throw new InvalidOperationException("MasterEncryptionKey must be a Base64 encoded 256-bit key.");
+                }
+            }
+            catch (FormatException ex)
+            {
+                _logger.LogCritical(ex, "MasterEncryptionKey is not a valid Base64 string.");
+                throw new InvalidOperationException("MasterEncryptionKey is not valid Base64.", ex);
+            }
             if (!Directory.Exists(_storageBasePath))
             {
                 try
@@ -140,7 +146,7 @@ namespace StellaLearningBackend.Controllers
             var filePath = Path.Combine(userStoragePath, uniqueFileName);
 
             byte[]? fileEncryptionKey = null;
-            byte[]? iv= null;
+            byte[]? iv = null;
             byte[]? encryptedKeyForDb = null; // The per-file key, itself encrypted by the master key
 
             try
@@ -154,7 +160,7 @@ namespace StellaLearningBackend.Controllers
                     iv = aes.IV;
 
                     // Encrypt the generated file key using the master key (AES encryption)
-                    encryptedKeyForDb = EncryptData(_masterKey, fileEncryptionKey); // Simple helper needed
+                    encryptedKeyForDb = EncryptionHelper.EncryptData(_masterKey, fileEncryptionKey); // Simple helper needed
 
                     _logger.LogInformation("Generated unique AES key and IV for file {OriginalFileName}", file.FileName);
 
@@ -236,49 +242,6 @@ namespace StellaLearningBackend.Controllers
                 // Note: _masterKey should be cleared on application shutdown if possible/necessary
             }
         }
-
-        // --- Helper Method for Simple Symmetric Encryption (AES-GCM preferred, but CBC shown for simplicity) ---
-        // NOTE: This is a basic example. Consider using AES-GCM for authenticated encryption.
-        // This helper encrypts the per-file key using the master key.
-        private static byte[] EncryptData(byte[] key, byte[] dataToEncrypt)
-        {
-            using var aes = Aes.Create();
-            aes.Key = key;
-            aes.GenerateIV(); // Generate a unique IV for this encryption operation
-            var iv = aes.IV;
-
-            using var memoryStream = new MemoryStream();
-            // Prepend the IV to the ciphertext for easy retrieval during decryption
-            memoryStream.Write(iv, 0, iv.Length);
-            using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write))
-            {
-                cryptoStream.Write(dataToEncrypt, 0, dataToEncrypt.Length);
-                cryptoStream.FlushFinalBlock();
-            }
-            return memoryStream.ToArray();
-        }
-
-        // --- Helper Method for Decrypting the Per-File Key ---
-        // Needed for the download/decryption endpoint (not implemented here)
-        private static byte[] DecryptData(byte[] key, byte[] dataToDecrypt)
-        {
-            using var aes = Aes.Create();
-            aes.Key = key;
-            // Read the IV from the beginning of the data
-            byte[] iv = new byte[aes.BlockSize / 8];
-            Array.Copy(dataToDecrypt, 0, iv, 0, iv.Length);
-            aes.IV = iv;
-
-            using var memoryStream = new MemoryStream();
-            using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Write))
-            {
-                // Write the ciphertext (excluding the IV part)
-                cryptoStream.Write(dataToDecrypt, iv.Length, dataToDecrypt.Length - iv.Length);
-                cryptoStream.FlushFinalBlock();
-            }
-            return memoryStream.ToArray();
-        }
-
 
         // --- Helper to clean up partially written files ---
         private void CleanupFailedUpload(string filePath)
