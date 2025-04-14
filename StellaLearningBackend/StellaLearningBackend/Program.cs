@@ -15,7 +15,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 500 * 1024 * 1024; // 500 MB global limit
+});
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 500 * 1024 * 1024; // 500 MB
+    // You might also need to increase ValueLengthLimit, KeyLengthLimit depending on your forms
+});
 // Add services to the container.
 builder.Services.AddAuthentication(options =>
 {

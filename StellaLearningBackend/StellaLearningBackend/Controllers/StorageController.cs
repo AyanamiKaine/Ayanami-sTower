@@ -15,6 +15,7 @@ using StellaLearningBackend.Data;
 using StellaLearning.Dtos;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using StellaLearningBackend.Util;
+using Microsoft.EntityFrameworkCore;
 
 namespace StellaLearningBackend.Controllers
 {
@@ -28,14 +29,17 @@ namespace StellaLearningBackend.Controllers
         private readonly IConfiguration _configuration;
         private readonly ILogger<StorageController> _logger;
         private readonly string _storageBasePath;
+        private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly byte[] _masterKey; // Master key for encrypting per-file keys
 
         public StorageController(
             UserManager<ApplicationUser> userManager,
             ApplicationDbContext context,
             IConfiguration configuration,
-            ILogger<StorageController> logger)
+            ILogger<StorageController> logger,
+            IWebHostEnvironment webHostEnvironment)
         {
+            _webHostEnvironment = webHostEnvironment;
             _userManager = userManager;
             _context = context;
             _configuration = configuration;
@@ -67,18 +71,18 @@ namespace StellaLearningBackend.Controllers
                 _logger.LogCritical(ex, "MasterEncryptionKey is not a valid Base64 string.");
                 throw new InvalidOperationException("MasterEncryptionKey is not valid Base64.", ex);
             }
-            if (!Directory.Exists(_storageBasePath))
+            var absoluteStorageBasePath = Path.Combine(_webHostEnvironment.ContentRootPath, _storageBasePath);
+            if (!Directory.Exists(absoluteStorageBasePath))
             {
                 try
                 {
-                    Directory.CreateDirectory(_storageBasePath);
-                    _logger.LogInformation("Base storage directory created at {Path}", Path.GetFullPath(_storageBasePath));
+                    Directory.CreateDirectory(absoluteStorageBasePath);
+                    _logger.LogInformation("Base storage directory created at {Path}", absoluteStorageBasePath);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogCritical(ex, "Failed to create base storage directory at {Path}. Halting operations.", Path.GetFullPath(_storageBasePath));
-                    // Depending on requirements, might need to prevent the controller from functioning
-                    throw; // Re-throw to indicate critical failure
+                    _logger.LogCritical(ex, "Failed to create base storage directory at {Path}. Halting operations.", absoluteStorageBasePath);
+                    throw;
                 }
             }
         }
@@ -90,7 +94,7 @@ namespace StellaLearningBackend.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        // [RequestSizeLimit(100 * 1024 * 1024)] // Optional: 100 MB limit
+        [RequestSizeLimit(500 * 1024 * 1024)] // 500 MB limit
         public async Task<IActionResult> UploadAndEncryptFile(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -260,15 +264,190 @@ namespace StellaLearningBackend.Controllers
             }
         }
 
-        // TODO: Implement a 'DownloadAndDecryptFile' endpoint.
-        // This endpoint would:
-        // 1. Get FileMetadata using the file ID.
-        // 2. Retrieve the Base64 encoded EncryptedFileKey and EncryptionIV.
-        // 3. Decode them back to byte arrays.
-        // 4. Decrypt the EncryptedFileKey using the _masterKey and the DecryptData helper.
-        // 5. Create an AES decryptor using the decrypted file key and the IV.
-        // 6. Open a FileStream to the encrypted file on disk.
-        // 7. Create a CryptoStream in Read mode wrapping the FileStream.
-        // 8. Return a FileStreamResult, streaming the CryptoStream back to the client.
+        [HttpGet("myfiles")]
+        [ProducesResponseType(typeof(List<FileListItemDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ListMyFiles()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                // This shouldn't happen if [Authorize] is working, but defense in depth
+                _logger.LogWarning("ListMyFiles failed: User ID claim not found in token.");
+                return Unauthorized(new { Message = "User identifier not found." });
+            }
+
+            _logger.LogInformation("User {UserId} requesting their file list.", userId);
+
+            try
+            {
+                var files = await _context.FileMetadataEntries
+                    .Where(f => f.UserId == userId)
+                    .OrderByDescending(f => f.UploadTimestamp) // Show newest first
+                    .Select(f => new FileListItemDto // Project to DTO
+                    {
+                        Id = f.Id,
+                        OriginalFileName = f.OriginalFileName,
+                        FileSize = f.FileSize,
+                        ContentType = f.ContentType ?? "",
+                        UploadTimestamp = f.UploadTimestamp
+                    })
+                    .ToListAsync(); // Execute the query
+
+                return Ok(files);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving file list for user {UserId}", userId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "An error occurred while retrieving the file list." });
+            }
+        }
+
+        // --- NEW: Delete a File ---
+        // DELETE: api/storage/{fileId}
+        [HttpDelete("{fileId:guid}")] // Route constraint for GUID
+        [ProducesResponseType(StatusCodes.Status204NoContent)] // Success
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DeleteFile(Guid fileId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("DeleteFile failed: User ID claim not found in token.");
+                return Unauthorized(new { Message = "User identifier not found." });
+            }
+
+            _logger.LogInformation("User {UserId} requesting deletion of File ID: {FileId}", userId, fileId);
+
+            FileMetadata? fileMetadata;
+            try
+            {
+                // Find the file making sure it belongs to the current user
+                fileMetadata = await _context.FileMetadataEntries
+                                             .FirstOrDefaultAsync(f => f.Id == fileId && f.UserId == userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Database error looking up FileMetadata for deletion (File ID {FileId}, User ID {UserId})", fileId, userId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Database error finding file." });
+            }
+
+
+            if (fileMetadata == null)
+            {
+                _logger.LogWarning("DeleteFile failed: File ID {FileId} not found for User ID {UserId}.", fileId, userId);
+                // Return 404 - don't reveal if file exists but belongs to someone else
+                return NotFound(new { Message = "File not found." });
+            }
+
+            // --- Delete physical file ---
+            var relativeStoredPath = fileMetadata.StoredPath;
+            var absoluteStoredPath = Path.Combine(_webHostEnvironment.ContentRootPath, relativeStoredPath);
+            try
+            {
+                // Use absolute path for Exists and Delete
+                if (System.IO.File.Exists(absoluteStoredPath))
+                {
+                    System.IO.File.Delete(absoluteStoredPath);
+                    _logger.LogInformation("Successfully deleted physical file: {absoluteStoredPath}", absoluteStoredPath);
+                }
+                else
+                {
+                    _logger.LogWarning("Physical file not found at {absoluteStoredPath} during deletion for File ID {FileId}, but metadata exists.", absoluteStoredPath, fileId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting physical file {absoluteStoredPath} for File ID {FileId}. Proceeding to delete metadata.", absoluteStoredPath, fileId);
+            }
+
+            // --- Delete metadata record ---
+            try
+            {
+                _context.FileMetadataEntries.Remove(fileMetadata);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Successfully deleted metadata for File ID: {FileId}", fileId);
+
+                // Return 204 No Content on successful deletion
+                // TODO: Maybe we want to return a succesfull message instead.
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Database error deleting FileMetadata for File ID {FileId}", fileId);
+                // If DB delete fails, the file might still be gone from disk.
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Error deleting file metadata from database." });
+            }
+        }
+
+        // --- NEW: Download Encrypted File ---
+        // GET: api/storage/{fileId}/download
+        [HttpGet("{fileId:guid}/download")]
+        [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> DownloadEncryptedFile(Guid fileId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("DownloadEncryptedFile failed: User ID claim not found in token.");
+                return Unauthorized(new { Message = "User identifier not found." });
+            }
+
+            _logger.LogInformation("User {UserId} requesting download of File ID: {FileId}", userId, fileId);
+
+            FileMetadata? fileMetadata;
+            try
+            {
+                // Find the file making sure it belongs to the current user
+                fileMetadata = await _context.FileMetadataEntries
+                                             .AsNoTracking() // Read-only is sufficient
+                                             .FirstOrDefaultAsync(f => f.Id == fileId && f.UserId == userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Database error looking up FileMetadata for download (File ID {FileId}, User ID {UserId})", fileId, userId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Database error finding file." });
+            }
+
+            if (fileMetadata == null)
+            {
+                _logger.LogWarning("DownloadEncryptedFile failed: File ID {FileId} not found for User ID {UserId}.", fileId, userId);
+                return NotFound(new { Message = "File not found." });
+            }
+
+            var relativeStoredPath = fileMetadata.StoredPath;
+            var absoluteStoredPath = Path.Combine(_webHostEnvironment.ContentRootPath, relativeStoredPath);
+            // ---
+
+            // Check if the physical file actually exists using ABSOLUTE path
+            if (!System.IO.File.Exists(absoluteStoredPath))
+            {
+                _logger.LogError("Physical file not found at {absoluteStoredPath} during download request for File ID {FileId}.", absoluteStoredPath, fileId);
+                return NotFound(new { Message = "Stored file is missing." });
+            }
+
+            try
+            {
+                _logger.LogInformation("Streaming encrypted file {absoluteStoredPath} as download '{DownloadName}' with content type {ContentType}",
+                    absoluteStoredPath, fileMetadata.OriginalFileName, fileMetadata.ContentType ?? "application/octet-stream");
+
+                // Use ABSOLUTE path for PhysicalFile
+                return PhysicalFile(
+                    absoluteStoredPath,
+                    fileMetadata.ContentType ?? "application/octet-stream",
+                    fileMetadata.OriginalFileName
+                    );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error preparing file download for File ID {FileId} from path {absoluteStoredPath}", fileId, absoluteStoredPath);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Error occurred while preparing the file for download." });
+            }
+        }
     }
 }

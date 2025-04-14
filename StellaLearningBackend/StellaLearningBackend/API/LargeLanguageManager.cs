@@ -295,8 +295,6 @@ public partial class LargeLanguageManager // Removed 'sealed'
         string? extension = Path.GetExtension(fileMetadata.StoredPath)?.ToLowerInvariant() ?? "";
         bool canExtractText = _convertibleToTextExtensions.Contains(extension ?? "") || (extension == ".txt");
 
-
-        Stream streamToProcess = null!; // Will hold the decrypted stream or stream to temp file
         string? tempDecryptedFilePath = null; // Path if we have to save decrypted content
         RemoteFile? remoteFile = null; // For File API upload
         bool useFileApi = _supportedFileApiExtensions.Contains(extension ?? ""); // Check if File API supports the original type
