@@ -11,6 +11,7 @@ namespace StellaLearningBackend.Data // Your Data namespace
         {
             get; set;
         } // Choose a suitable name
+        public DbSet<UserRefreshToken> UserRefreshTokens { get; set; } = null!;
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -36,7 +37,15 @@ namespace StellaLearningBackend.Data // Your Data namespace
                 .HasIndex(fm => fm.StoredFileName)
                 .IsUnique(); // Ensure stored filenames are unique (within the entire system, or adjust if needed)
 
-            // Add other configurations if necessary
+            builder.Entity<UserRefreshToken>()
+                            .HasIndex(rt => rt.Token)
+                            .IsUnique(); // Refresh tokens should ideally be unique
+
+            builder.Entity<UserRefreshToken>()
+                            .HasOne(rt => rt.User)
+                            .WithMany() // Assuming ApplicationUser doesn't have a collection navigation property back to tokens
+                            .HasForeignKey(rt => rt.UserId)
+                            .IsRequired();
         }
     }
 }

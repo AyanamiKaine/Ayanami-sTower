@@ -24,4 +24,8 @@ public class AuthResponseDto
     /// Gets or sets the expiration date and time of the token.
     /// </summary>
     public DateTime TokenExpiration { get; set; }
+    /// <summary>
+    /// Gets or sets the refresh token;
+    /// </summary>
+    public required string RefreshToken { get; set; }
 }
