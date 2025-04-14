@@ -115,7 +115,6 @@ public partial class LargeLanguageManager // Removed 'sealed'
     // Private constructor to prevent external instantiation
     private readonly IConfiguration _configuration;
     private readonly ILogger<LargeLanguageManager> _logger;
-    private readonly ApplicationDbContext _context;
     private readonly bool _enableLargeLanguageFeatures;
     [GeneratedRegex(@"(\r\n|\r|\n)")]
     private static partial Regex MyRegex();
@@ -126,8 +125,7 @@ public partial class LargeLanguageManager // Removed 'sealed'
     public LargeLanguageManager(
            IConfiguration configuration,
            ILogger<LargeLanguageManager> logger,
-           IHttpClientFactory httpClientFactory,
-           ApplicationDbContext context // Use IHttpClientFactory
+           IHttpClientFactory httpClientFactory // Use IHttpClientFactory
                                         // If World/Settings *must* be accessed, try injecting them if registered in DI
                                         // ISettingsService settingsService // Example if settings are abstracted
            )
@@ -135,7 +133,6 @@ public partial class LargeLanguageManager // Removed 'sealed'
         _configuration = configuration;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("GeminiClient"); // Create a named client
-        _context = context;
         // --- Read Configuration ---
         // Read API Key from Configuration (more flexible than only Env Var)
         // Order: Environment Variable > Configuration File (appsettings, user secrets, etc.)
@@ -603,7 +600,7 @@ public partial class LargeLanguageManager // Removed 'sealed'
     /// <param name="url">The URL of the website to fetch.</param>
     /// <param name="maxTags">Maximum number of tags to request.</param>
     /// <returns>A UrlMetadata object containing the title and tags, or null if an error occurs.</returns>
-    public async Task<ContentMetadata?> GetUrlMetadataAsync(string url, int maxTags = 5)
+    public async Task<ContentMetadata?> GenerateMetaDataFromUrlAsync(string url, int maxTags = 5)
     {
         if (!_enableLargeLanguageFeatures)
         {

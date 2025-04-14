@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using StellaLearningBackend.API;
 using StellaLearningBackend.Data;
 using StellaLearningBackend.Models;
 
@@ -34,6 +36,18 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddHttpClient("GeminiClient", client =>
+{
+    // Set base address if applicable, or default headers
+    // client.BaseAddress = new Uri("...");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (StellaLearningBackend/1.0)");
+    client.Timeout = TimeSpan.FromSeconds(120); // Example: Set a timeout
+});
+
+// The DI container will automatically provide IConfiguration, ILogger<LargeLanguageManager>,
+// and IHttpClientFactory to its constructor.
+builder.Services.AddSingleton<LargeLanguageManager>();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 
@@ -55,7 +69,28 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 //builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => // Add JWT Auth to Swagger UI
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please enter JWT with Bearer into field",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http, // Use Http for Bearer
+        BearerFormat = "JWT",
+        Scheme = "Bearer" // Scheme is "Bearer"
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement {
+    {
+        new OpenApiSecurityScheme {
+            Reference = new OpenApiReference {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+            }
+        },
+        Array.Empty<string>()
+    }});
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -65,14 +100,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options => // UseSwaggerUI is called only in Development.
         {
-            options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Stella Learning API V1");
             options.RoutePrefix = string.Empty;
         });
 }
 
 //Used for real deployment
 //app.UseHttpsRedirection();
-
+app.UseRouting();
 // Add Authentication and Authorization middleware
 app.UseAuthentication();
 app.UseAuthorization();
