@@ -618,6 +618,20 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Gets the visibility state of a Visual control.
+    /// </summary>
+    /// <typeparam name="T">The type of Visual control</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <returns>True if the control is visible, false otherwise</returns>
+    public static bool IsVisible<T>(this UIBuilder<T> builder) where T : Visual, new()
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return false;
+
+        return builder.Entity.Get<T>().IsVisible;
+    }
+
+    /// <summary>
     /// Sets the text of a TextBox control.
     /// </summary>
     public static UIBuilder<TextBox> SetText(this UIBuilder<TextBox> builder, string text)
