@@ -1,5 +1,3 @@
-using System;
-
 namespace StellaLearning.Dtos // Use your DTOs namespace
 {
     /// <summary>

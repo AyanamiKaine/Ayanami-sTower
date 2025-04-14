@@ -1,6 +1,4 @@
 // In Util/EncryptionHelper.cs (or similar shared location)
-using System;
-using System.IO;
 using System.Security.Cryptography;
 
 namespace StellaLearningBackend.Util // Or a more general namespace

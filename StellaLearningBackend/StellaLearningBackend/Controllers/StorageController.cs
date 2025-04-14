@@ -1,15 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using System;
-using System.IO;
-using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography; // Required for encryption
-using System.Text; // Required for Encoding
-using System.Threading.Tasks;
 using StellaLearningBackend.Models;
 using StellaLearningBackend.Data;
 using StellaLearning.Dtos;

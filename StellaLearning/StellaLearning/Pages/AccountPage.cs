@@ -1,18 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module; // Assuming this is where Page tag is defined
 using Avalonia.Controls;
 using Avalonia.Layout;
 using NLog;
 using Avalonia.Flecs.Controls; // Assuming UIBuilder and extensions are here
-using Avalonia; // For Thickness
 using Avalonia.Threading; // For Dispatcher
 using System.Net.Http; // For HttpClient
 using System.Net.Http.Json; // For PostAsJsonAsync, ReadFromJsonAsync
 using System.Text.Json; // For JsonSerializerOptions
-using System.Threading.Tasks; // For Task
 using StellaLearning.Dtos; // Include the DTOs namespace
 using Avalonia.Media; // For Brushes
 

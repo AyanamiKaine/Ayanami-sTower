@@ -1,19 +1,11 @@
 /*
 This should be a singleton that can be used in the entire app as a single place where 
 we can call, large language models APIs and local large language models with just simple functions.
-*/using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Security.Cryptography;
+*/using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using GenerativeAI; // Main namespace from the library
 using GenerativeAI.Types;
 using HtmlAgilityPack;
-using StellaLearningBackend.Data;
 using StellaLearningBackend.Models;
 using StellaLearningBackend.Util;
 
