@@ -141,8 +141,17 @@ public class AccountPage : IUIComponent
                     loginButton
                         .SetMinWidth(100)
                         .SetText("Sign in")
-                        .OnClick((_, _) =>
+                        .OnClick((sender, e) =>
                         {
+                            // We can only login when the the confirm password input
+                            // is not visible, this happens when we click the
+                            // button again. 
+
+                            if (!confirmPasswordInput.IsVisible() && usernameLabel.IsVisible())
+                            {
+                                HandleLoginClick(sender, e);
+                            }
+
                             usernameLabel.Visible();
                             usernameInput.Visible();
                             passwordInput.Visible();
@@ -158,8 +167,17 @@ public class AccountPage : IUIComponent
                     registerButton
                         .SetMinWidth(100)
                         .SetText("Sign up")
-                        .OnClick((_, _) =>
+                        .OnClick((sender, e) =>
                         {
+
+                            // We can only register when the the confirm password input
+                            // is visible
+
+                            if (confirmPasswordInput.IsVisible() && usernameLabel.IsVisible())
+                            {
+                                HandleRegisterClick(sender, e);
+                            }
+
                             usernameLabel.Visible();
                             usernameInput.Visible();
                             passwordInput.Visible();
@@ -425,7 +443,12 @@ public class AccountPage : IUIComponent
                 string errorMessage = "Registration failed. Please check your details."; // Default
                 try
                 {
-                    var errorDto = JsonSerializer.Deserialize<ErrorDto>(errorContent); // Assumes ErrorDto structure on failure
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+
+                    var errorDto = JsonSerializer.Deserialize<ErrorDto>(errorContent, options); // Assumes ErrorDto structure on failure
                     if (errorDto != null)
                     {
                         // Use specific message from backend if provided
@@ -490,7 +513,7 @@ public class AccountPage : IUIComponent
         Dispatcher.UIThread.Post(() =>
         {
             // Check builder exists and its entity is alive before using
-            if (_statusMessageBuilder != null && _statusMessageBuilder.Entity.IsAlive())
+            if (_statusMessageBuilder?.Entity.IsAlive() == true)
             {
                 _statusMessageBuilder
                     .SetText(message)
