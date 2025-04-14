@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using StellaLearningBackend.Data;
 using StellaLearningBackend.Models;
 
+DotNetEnv.Env.TraversePath().Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
