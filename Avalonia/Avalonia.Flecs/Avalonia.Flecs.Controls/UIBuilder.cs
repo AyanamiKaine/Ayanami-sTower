@@ -2110,16 +2110,15 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the header
     /// </summary>
-    /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <param name="header"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetHeader<T>(this UIBuilder<T> builder, string header) where T : MenuItem
+    public static UIBuilder<MenuItem> SetHeader(this UIBuilder<MenuItem> builder, string header)
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Get<T>().Header = header;
+        builder.Get<MenuItem>().Header = header;
 
         return builder;
     }
@@ -2529,6 +2528,23 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Entity.Get<T>().ItemsSource = collection;
+        return builder;
+    }
+
+
+    /// <summary>
+    /// Sets the header of a HeaderedItemsControl.
+    /// </summary>
+    /// <typeparam name="T">The type of HeaderedItemsControl</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="header">The header content to set</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetHeader<T>(this UIBuilder<T> builder, object header) where T : HeaderedItemsControl
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Entity.Get<T>().Header = header;
         return builder;
     }
 
