@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+namespace StellaLearning.Dtos;
 
 /// <summary>
 /// Represents a request for generating tags for an image.

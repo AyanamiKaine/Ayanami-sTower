@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+namespace StellaLearning.Dtos;
 
 /// <summary>
 /// Data transfer object for requesting metadata file generation.
