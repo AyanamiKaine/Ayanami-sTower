@@ -474,6 +474,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                 nameTitle.SetColumn(1).SetRow(0)
                          .SetColumnSpan(2)
                          .SetFontWeight(FontWeight.Bold)
+                         .SetTextWrapping(TextWrapping.NoWrap)
                          .SetTextTrimming(TextTrimming.CharacterEllipsis)
                          .SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Title)) // Bind to Title primarily
                          {
@@ -524,6 +525,8 @@ public class LiteraturePage : IUIComponent, IDisposable
                                                     stackPanel.Child<TextBlock>(textBlock =>
                                                     {
                                                         textBlock
+                                                            .SetTextWrapping(TextWrapping.NoWrap)
+                                                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
                                                             .SetText(tagText)
                                                             .SetVerticalAlignment(VerticalAlignment.Center);
                                                     });
