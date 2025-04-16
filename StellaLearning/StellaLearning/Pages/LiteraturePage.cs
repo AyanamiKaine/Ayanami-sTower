@@ -220,6 +220,49 @@ public class LiteraturePage : IUIComponent, IDisposable
                         var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
                         new EditLiteratureSource(_world, selectedLiteratureItem);
                     }));
+
+                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Generate Metadata").OnClick(async (_, _) =>
+                    {
+                        var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
+
+                        if (selectedLiteratureItem is LocalFileSourceItem localFile)
+                        {
+                            ContentMetadata? metaData = null;
+
+                            if (Path.GetExtension(localFile.FilePath) == ".pdf")
+                            {
+                                try
+                                {
+                                    PdfMetadata info = PdfSharpMetadataExtractor.ExtractMetadata(localFile.FilePath);
+                                    localFile.PageCount = info.PageCount;
+                                }
+                                catch (System.Exception ex)
+                                {
+                                    Logger.Info($"Exception was thrown {ex}");
+                                }
+
+                                if (localFile.PageCount >= 1000)
+                                {
+                                    MessageDialog.ShowWarningDialog($"Only pdfs smaller than 1000 pages can be used to generate metadata via a LLM");
+                                }
+                                else
+                                {
+                                    // Here we are passing a pdf that is smaller than 1000 pages
+                                    metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(localFile.FilePath);
+                                }
+                            }
+                            else
+                            {
+                                metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(localFile.FilePath);
+                            }
+
+                            localFile.SourceType = LiteratureSourceType.LocalFile;
+                            localFile.Author = metaData?.Author ?? "";
+                            localFile.Tags = metaData?.Tags ?? [];
+                            localFile.Summary = metaData?.Summary ?? "";
+                        }
+                    }));
+
                     menuFlyout.Child<Separator>((_) => { });
                     menuFlyout.Child<MenuItem>(item => item.SetHeader("Remove").OnClick(async (sender, e) =>
                     {
