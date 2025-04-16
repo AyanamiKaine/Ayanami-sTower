@@ -25,7 +25,8 @@ using System.ComponentModel;
 using StellaLearning.Windows;
 using Avalonia;
 using StellaLearning.Converters;
-using FluentAvalonia.UI.Controls; // Assuming you use NLog like in SpacedRepetitionPage
+using FluentAvalonia.UI.Controls;
+using StellaLearning.Util.NoteHandler; // Assuming you use NLog like in SpacedRepetitionPage
 
 namespace StellaLearning.Pages;
 
@@ -76,7 +77,8 @@ public class LiteraturePage : IUIComponent, IDisposable
         EnsureLiteratureDirectory();
         _world.Set(LoadLiteratureItemsFromDisk());
         // Load existing data
-        _baseLiteratureItems = _world.Get<ObservableCollection<LiteratureSourceItem>>();
+        _baseLiteratureItems = _world.Get<ObservableCollection<LiteratureSourceItem>>(); RemoveDuplicateFilePaths();
+
         SubscribeToAllItemChanges(_baseLiteratureItems);
 
         // Subscribe to collection changes for saving and UI updates
@@ -97,7 +99,11 @@ public class LiteraturePage : IUIComponent, IDisposable
         // _disposables.Add(Disposable.Create(() => timerEntity.Destruct()));
 
         // Save on close
-        App.GetMainWindow().Closing += async (_, _) => await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems);
+        App.GetMainWindow().Closing += async (_, _) =>
+        {
+            RemoveDuplicateFilePaths();
+            await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems);
+        };
     }
 
     /// <summary>
@@ -186,6 +192,10 @@ public class LiteraturePage : IUIComponent, IDisposable
                         var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
                         if (selectedLiteratureItem is LocalFileSourceItem localFile)
                         {
+                            if (Path.GetExtension(localFile.FilePath) == ".md")
+                            {
+                                FileOpener.OpenMarkdownFileWithObsidian(localFile.FilePath, _world.Get<Settings>().ObsidianPath);
+                            }
                             FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
                         }
                         else if (selectedLiteratureItem is WebSourceItem webSourceItem)
@@ -217,11 +227,64 @@ public class LiteraturePage : IUIComponent, IDisposable
                         if (listBox == null) return;
 
                         var itemToRemove = listBox.GetSelectedItem<LiteratureSourceItem>();
+                        UIBuilder<ToggleSwitch>? toogleSwitch = null;
+                        var stack = _world.UI<StackPanel>((stack) =>
+                        {
+                            stack.Child<TextBlock>((text) =>
+                            {
+                                text.SetText(
+                                    $"""
+                                    Do you want to remove: "{itemToRemove.Title}" from the list?.
+                                    """)
+                                    .SetTextWrapping(TextWrapping.Wrap);
+                            });
+
+                            stack.Child<DockPanel>((dockPanel) =>
+                            {
+                                dockPanel.Child<TextBlock>((textBlock) =>
+                                {
+
+                                    textBlock.SetVerticalAlignment(VerticalAlignment.Center)
+                                    .SetText("Delete Underlying File?")
+                                    .SetTextWrapping(TextWrapping.Wrap);
+                                });
+
+                                dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
+                                {
+                                    toogleSwitch = toggleSwitch
+                                    .SetDock(Dock.Right)
+                                    .SetHorizontalAlignment(HorizontalAlignment.Right);
+
+                                    toggleSwitch.With((toggleSwitch) =>
+                                    {
+                                        // toggleSwitch.IsChecked = _world.Get<Settings>().EnableNotifications;
+                                    });
+
+                                    toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                                    {
+                                        //((ToggleSwitch)sender!).IsChecked;
+                                    });
+                                });
+
+
+                                dockPanel.AttachToolTip(_world.UI<ToolTip>((toolTip) =>
+                                {
+                                    toolTip.Child<TextBlock>((textBlock) =>
+                                    {
+                                        textBlock.SetText(
+                                        """
+                                        When enabled the associated file will also be deleted. If you
+                                        just want to remove the item from the list leave it unchecked! 
+                                        """);
+                                    });
+                                }));
+                            });
+                        });
 
                         var cd = new ContentDialog()
                         {
                             Title = "Attention",
-                            Content = $"""Do you want to delete: "{itemToRemove.Title}". This cannot be undone!""",
+                            Content = stack.Get<Control>(),
                             PrimaryButtonText = "Yes",
                             SecondaryButtonText = "No",
                             DefaultButton = ContentDialogButton.Secondary,
@@ -264,11 +327,9 @@ public class LiteraturePage : IUIComponent, IDisposable
 
                             try
                             {
-                                // 1. Attempt to delete the file from disk FIRST
-                                File.Delete(filePath);
-                                //Console.WriteLine($"Successfully deleted file: {filePath}");
+                                if (toogleSwitch?.IsChecked() ?? false)
+                                    File.Delete(filePath);
 
-                                // Remove the item from the observable collection
                                 _baseLiteratureItems.Remove(itemToRemove);
 
                             }
@@ -291,6 +352,8 @@ public class LiteraturePage : IUIComponent, IDisposable
                         {
                             _baseLiteratureItems.Remove(itemToRemove);
                         }
+                        // To Clean up the ui, avoid memory leak
+                        stack.Entity.Destruct();
                     })); // Implement RemoveSelectedItem
                 });
 
@@ -308,13 +371,21 @@ public class LiteraturePage : IUIComponent, IDisposable
                                 var selectedLiteratureItem = listBox.SelectedItem as LiteratureSourceItem;
                                 if (selectedLiteratureItem is LocalFileSourceItem localFile)
                                 {
-                                    FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
-                                    e.Handled = true;
+                                    if (Path.GetExtension(localFile.FilePath) == ".md")
+                                    {
+                                        FileOpener.OpenMarkdownFileWithObsidian(localFile.FilePath, _world.Get<Settings>().ObsidianPath);
+                                    }
+
+                                    else
+                                    {
+                                        FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
+                                    }
                                 }
                                 else if (selectedLiteratureItem is WebSourceItem webSourceItem)
                                 {
                                     SmartUrlOpener.OpenUrlIntelligently(webSourceItem.Url);
                                 }
+                                e.Handled = true;
                             }
                         });
             });
@@ -1051,6 +1122,46 @@ public class LiteraturePage : IUIComponent, IDisposable
 
             }
         }, DispatcherPriority.Background);
+    }
+
+    /// <summary>
+    /// Removes items with duplicate FilePaths from the collection,
+    /// keeping the first occurrence encountered for each FilePath.
+    /// Uses LINQ GroupBy to identify duplicates.
+    /// Case-insensitive comparison for FilePath. Handles null FilePaths (treats nulls as distinct from each other unless multiple items have null path).
+    /// </summary>
+    public void RemoveDuplicateFilePaths()
+    {
+        Console.WriteLine("\n--- Running RemoveDuplicateFilePaths_UsingGroupBy ---");
+        // 1. Use LINQ to identify items to remove
+        //    - Group by FilePath (case-insensitive, handle nulls)
+        //    - Filter groups having more than one item (duplicates)
+        //    - From each duplicate group, select all items EXCEPT the first one
+        //    - Collect these items into a list
+        var itemsToRemove = _baseLiteratureItems
+            .OfType<LocalFileSourceItem>()
+            .GroupBy(item => item?.FilePath, StringComparer.OrdinalIgnoreCase) // Group by FilePath, case-insensitive
+            .Where(group => group.Count() > 1) // Find groups with more than one item
+            .SelectMany(group => group.Skip(1)) // Select all but the first item from each duplicate group
+            .ToList(); // Materialize the list of items to remove BEFORE modifying the collection
+
+        // 2. Remove the identified items from the ObservableCollection
+        if (itemsToRemove.Count != 0)
+        {
+            Console.WriteLine($"Found {itemsToRemove.Count} duplicate item(s) to remove:");
+            // It's crucial to remove items using the collection's Remove method
+            // to trigger CollectionChanged notifications correctly.
+            foreach (var itemToRemove in itemsToRemove)
+            {
+                Console.WriteLine($"- Removing: {itemToRemove}");
+                _baseLiteratureItems.Remove(itemToRemove); // This triggers notification
+            }
+            Console.WriteLine("Duplicates removed.");
+        }
+        else
+        {
+            Console.WriteLine("No duplicate file paths found to remove.");
+        }
     }
 
     // --- Persistence ---
