@@ -16,6 +16,9 @@ public class ObsidianNotePropertiesTests
         tags:
         - Blog-Post
         ---
+        There was a big problem in victoria 3 when you ran it on 12/13 gen intel cpus with performance and efficiency cores
+        - Why ? because efficiency cores cant executes AVX 512 instructions! but performance cores can! the compiled code of victoria simply didnt expect that it cant run a specific piece of code when the OS schedules the thread on a cpu that CANT EXECUTE THE INSTRUCTIONS! 
+        - https://youtu.be/kZCPURMH744?si=jRN6Zw7XXHiYeETE&t=4740
         """;
 
 
