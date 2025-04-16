@@ -66,7 +66,6 @@ public class ObsidianNoteProperties
                 return new();
             }
 
-
             var startOfYaml = trimmedContent.IndexOf('\n', 3);
             if (startOfYaml == -1 || startOfYaml >= endMarkerIndex)
             {
