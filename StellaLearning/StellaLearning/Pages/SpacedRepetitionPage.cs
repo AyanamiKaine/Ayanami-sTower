@@ -168,7 +168,8 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             {
                 scrollViewer
                     .SetRow(1)
-                    .SetColumnSpan(3);
+                    .SetColumnSpan(3)
+                    .SetMargin(5, 0);
 
                 scrollViewer.Child<ListBox>((listBox) =>
                 {
@@ -241,7 +242,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                         grid
                         .SetColumnDefinitions("*, *")
                         .SetRowDefinitions("Auto, Auto")
-                        .SetMargin(0, 5);
+                        .SetMargin(5);
 
                         grid.Child<TextBlock>((textBlock) =>
                         {
