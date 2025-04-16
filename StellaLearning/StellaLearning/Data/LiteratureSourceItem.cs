@@ -96,6 +96,9 @@ public partial class LiteratureSourceItem : ObservableObject
     [ObservableProperty]
     private List<string> _tags = [];
 
+    [ObservableProperty]
+    private List<string> _aliases = [];
+
     // SourceType is still useful for filtering or UI switching, set by derived classes.
     [ObservableProperty]
     private LiteratureSourceType? _sourceType;
