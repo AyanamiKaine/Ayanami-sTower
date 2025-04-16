@@ -21,6 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StellaLearning.Dtos", "Stel
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaLearning.Dtos", "StellaLearning.Dtos\StellaLearning.Dtos.csproj", "{24E3FFCE-217C-4E2E-8014-BB8F658B880E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaLearning.Tests", "StellaLearning.Tests\StellaLearning.Tests.csproj", "{BF041E66-4AE4-4459-B372-E8F8D05A5F46}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -127,6 +129,18 @@ Global
 		{24E3FFCE-217C-4E2E-8014-BB8F658B880E}.Release|x64.Build.0 = Release|Any CPU
 		{24E3FFCE-217C-4E2E-8014-BB8F658B880E}.Release|x86.ActiveCfg = Release|Any CPU
 		{24E3FFCE-217C-4E2E-8014-BB8F658B880E}.Release|x86.Build.0 = Release|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Debug|x64.Build.0 = Debug|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Debug|x86.Build.0 = Debug|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Release|x64.ActiveCfg = Release|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Release|x64.Build.0 = Release|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Release|x86.ActiveCfg = Release|Any CPU
+		{BF041E66-4AE4-4459-B372-E8F8D05A5F46}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
