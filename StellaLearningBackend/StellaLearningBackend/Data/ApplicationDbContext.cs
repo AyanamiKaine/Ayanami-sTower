@@ -12,6 +12,7 @@ namespace StellaLearningBackend.Data // Your Data namespace
             get; set;
         } // Choose a suitable name
         public DbSet<UserRefreshToken> UserRefreshTokens { get; set; } = null!;
+        public DbSet<ApplicationVersion> ApplicationVersions { get; set; } = null!;
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -46,6 +47,28 @@ namespace StellaLearningBackend.Data // Your Data namespace
                             .WithMany() // Assuming ApplicationUser doesn't have a collection navigation property back to tokens
                             .HasForeignKey(rt => rt.UserId)
                             .IsRequired();
+
+            builder.Entity<ApplicationVersion>(entity =>
+            {
+                // Index for quick lookup of the latest version per platform/arch
+                entity.HasIndex(v => new { v.IsLatest, v.Platform, v.Architecture })
+                      .HasFilter("[IsLatest] = 1"); // SQL Server specific filter for efficiency
+
+                // Index for finding by version number
+                entity.HasIndex(v => v.VersionNumber);
+
+                // Index for finding by stored file name (should be unique)
+                entity.HasIndex(v => v.StoredFileName).IsUnique();
+
+                // Configure the optional relationship to the uploading user
+                entity.HasOne(v => v.UploadedByUser)
+                      .WithMany() // Assuming ApplicationUser doesn't need a collection of versions uploaded
+                      .HasForeignKey(v => v.UploadedByUserId)
+                      .OnDelete(DeleteBehavior.SetNull); // If user is deleted, set UploadedByUserId to null
+
+                // You might want a unique constraint on VersionNumber + Platform + Architecture
+                entity.HasIndex(v => new { v.VersionNumber, v.Platform, v.Architecture }).IsUnique();
+            });
         }
     }
 }
