@@ -33,7 +33,7 @@ public static class FileOpener
         // 1. Trim surrounding quotes if present
         if (filePath.Length > 1 && filePath.StartsWith('"') && filePath.EndsWith('"'))
         {
-            filePath = filePath.Substring(1, filePath.Length - 2);
+            filePath = filePath[1..^1];
             Logger.Trace($"Trimmed quotes, path is now: {filePath}");
         }
 
