@@ -1594,6 +1594,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Gets whether the ToggleButton is checked.
+    /// </summary>
+    /// <param name="builder"></param>
+    /// <returns></returns>
+    public static bool IsChecked(this UIBuilder<ToggleSwitch> builder)
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return false;
+
+        return builder.Get<ToggleSwitch>().IsChecked ?? false;
+    }
+
+    /// <summary>
     /// Set the width
     /// </summary>
     /// <param name="builder"></param>

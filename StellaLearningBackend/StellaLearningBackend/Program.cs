@@ -122,4 +122,31 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>(); // Get a logger
+
+    string[] roleNames = { "Admin", "User" }; // Add roles as needed
+    foreach (var roleName in roleNames)
+    {
+        var roleExist = await roleManager.RoleExistsAsync(roleName);
+        if (!roleExist)
+        {
+            // Create the roles and seed them to the database
+            var roleResult = await roleManager.CreateAsync(new IdentityRole(roleName));
+            if (roleResult.Succeeded)
+            {
+                logger.LogInformation("Created role '{RoleName}' successfully.", roleName);
+            }
+            else
+            {
+                logger.LogError("Failed to create role '{RoleName}'. Errors: {Errors}", roleName, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+            }
+        }
+    }
+}
+
 app.Run();

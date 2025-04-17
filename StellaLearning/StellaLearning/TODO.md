@@ -61,3 +61,7 @@ The user should be able to change the global scaling of the app, similar how a u
 _mainWindow.RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative);
 _mainWindow.RenderTransform = new ScaleTransform(1.5, 1.5);
 ```
+
+## Implement a linking mechanism
+
+Currently we cannot link different content together. It would be quite nice if we could link spaced repetition items to lets says literature items.

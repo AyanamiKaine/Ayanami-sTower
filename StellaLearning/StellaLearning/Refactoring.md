@@ -223,3 +223,7 @@ I think we will create a style class that holds all styling options and will be 
 ### Problem
 
 data that needs to be saved on the disk is currently spread out in way to many places. It would be much better to have one central place where we can easily update the savedata add new fields etc. This makes it much easier to serialize, autosave, cloud-save without the need to reimplement it for every new thing we want to save.
+
+## Avoiding Inheritance
+
+Currently we are using inheritance in some places for data, technically this is not needed. We should prefer using interface.

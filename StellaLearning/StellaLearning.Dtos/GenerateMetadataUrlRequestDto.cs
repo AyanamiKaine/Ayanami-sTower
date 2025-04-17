@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+namespace StellaLearning.Dtos;
 
 /// <summary>
 /// DTO for generating metadata URL requests.
