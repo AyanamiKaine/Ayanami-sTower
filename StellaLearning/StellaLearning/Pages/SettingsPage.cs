@@ -34,15 +34,64 @@ public class SettingsPage : IUIComponent
         {
             scrollViewer.Child<StackPanel>((stackPanel) =>
             {
+                stackPanel.SetSpacing(10);
                 stackPanel.Child<TextBlock>(header => header.SetText("Settings").SetFontSize(18).SetFontWeight(FontWeight.Bold));
+                stackPanel.Child<SettingsExpander>(list =>
+                {
+                    list
+                    .SetHeader("Application Settings")
+                    .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
+                    {
+                        panel.Child(item);
+                    }))
+                    .SetItemsSource(new List<IUIComponent>() {
+                        new AppToTray(world),
+                        new EnableAlwaysOnTop(world),
+                        new EnableNotificationsToggleSwitch(world) });
+                });
+
+                stackPanel.Child<SettingsExpander>(list =>
+                {
+                    list
+                    .SetHeader("Themes/Styling")
+                    .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
+                    {
+                        panel.Child(item);
+                    }))
+                    .SetItemsSource(new List<IUIComponent>() {
+                        new ThemeToggleSwitch(world)});
+                });
+
+                stackPanel.Child<SettingsExpander>(list =>
+                {
+                    list
+                    .SetHeader("Additional Features")
+                    .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
+                    {
+                        panel.Child(item);
+                    }))
+                    .SetItemsSource(new List<IUIComponent>() {
+                        new EnableLargeLanguageModelToggleSwitch(world),
+                        new EnableCloudSavesToggleSwitch(world)
+                    });
+                });
 
 
-                stackPanel.Child(new ThemeToggleSwitch(world));
-                stackPanel.Child(new AppToTray(world));
-                stackPanel.Child(new EnableAlwaysOnTop(world));
-                stackPanel.Child(new EnableNotificationsToggleSwitch(world));
-                stackPanel.Child(new EnableLargeLanguageModelToggleSwitch(world));
-                stackPanel.Child(new EnableCloudSavesToggleSwitch(world));
+                stackPanel.Child<SettingsExpander>(list =>
+                {
+                    list
+                    .SetHeader("Dangerous Options")
+                    .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
+                    {
+                        panel.Child(item);
+                    }))
+                    .SetItemsSource(new List<IUIComponent>()
+                    {
+                        //TODO: Refactor the reset statistic button into an UIComponent 
+                        //we can then use here.
+                    });
+                });
+
                 stackPanel.Child<Separator>((Separator) =>
                 {
                     Separator
