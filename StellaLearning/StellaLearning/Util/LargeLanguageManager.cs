@@ -17,6 +17,13 @@ using StellaLearning.Data; // For Request/Response types if needed
 
 namespace StellaLearning.Util;
 
+/*
+While much of this logic was moved to the backend, i think its better to keep it in the client.
+Why? Because this makes it much more easiert to integrate local llms. As well as sending 
+the data to gemini because then we dont have to store direct user data and can instead
+implement end to end encryption. So the data we receive is never first not unencrypted.
+*/
+
 /// <summary>
 /// Represents metadata information extracted from content (web, pdf, markdown, etc.), such as title and associated tags.
 /// </summary>
