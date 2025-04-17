@@ -35,11 +35,18 @@ public class SettingsPage : IUIComponent
     /// <returns></returns>
     public SettingsPage(World world)
     {
+        var ObsidianSettings = new List<IUIComponent>() {
+                        new ImportObsidianVault(world),
+                        new ObsidianPath(world)
+                    };
         _root = world.UI<ScrollViewer>((scrollViewer) =>
         {
+            scrollViewer.SetMargin(50, 7, 0, 20);
             scrollViewer.Child<StackPanel>((stackPanel) =>
             {
-                stackPanel.SetSpacing(10);
+                stackPanel
+                .SetMargin(0, 0, 20, 0)
+                .SetSpacing(10);
                 stackPanel.Child<TextBlock>(header => header.SetText("Settings").SetFontSize(18).SetFontWeight(FontWeight.Bold));
                 stackPanel.Child<SettingsExpander>(list =>
                 {
@@ -48,7 +55,10 @@ public class SettingsPage : IUIComponent
                     .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
                     {
                         panel.Child(item);
-                    }))
+                        // Because we want that those ui components stay forever we dont destroy them 
+                        // when they are not visually attached anymore. This should not result in a 
+                        // memory leak. If we cleaned them up we would instead get a crash in flecs.
+                    }, shouldBeCleanedUp: false))
                     .SetItemsSource(new List<IUIComponent>() {
                         new AppToTray(world),
                         new EnableAlwaysOnTop(world),
@@ -62,7 +72,7 @@ public class SettingsPage : IUIComponent
                     .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
                     {
                         panel.Child(item);
-                    }))
+                    }, shouldBeCleanedUp: false))
                     .SetItemsSource(new List<IUIComponent>() {
                         new ThemeToggleSwitch(world)});
                 });
@@ -74,10 +84,8 @@ public class SettingsPage : IUIComponent
                     .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
                     {
                         panel.Child(item);
-                    }))
-                    .SetItemsSource(new List<IUIComponent>() {
-                        new ImportObsidianVault(world)
-                    });
+                    }, shouldBeCleanedUp: false))
+                    .SetItemsSource(ObsidianSettings);
                 });
 
                 stackPanel.Child<SettingsExpander>(list =>
@@ -87,7 +95,7 @@ public class SettingsPage : IUIComponent
                     .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
                     {
                         panel.Child(item);
-                    }))
+                    }, shouldBeCleanedUp: false))
                     .SetItemsSource(new List<IUIComponent>() {
                         new EnableLargeLanguageModelToggleSwitch(world),
                         new EnableCloudSavesToggleSwitch(world)
@@ -102,57 +110,12 @@ public class SettingsPage : IUIComponent
                     .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
                     {
                         panel.Child(item);
-                    }))
+                    }, shouldBeCleanedUp: false))
                     .SetItemsSource(new List<IUIComponent>()
                     {
-                        //TODO: Refactor the reset statistic button into an UIComponent 
-                        //we can then use here.
+                        new ResetStats(world)
                     });
                 });
-
-                stackPanel.Child<Separator>((Separator) =>
-                {
-                    Separator
-                    .SetMargin(0, 0, 0, 10)
-                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                    .SetBorderBrush(Brushes.Black);
-                });
-                stackPanel.Child(new ObsidianPath(world));
-                stackPanel.Child<Separator>((Separator) =>
-                {
-                    Separator
-                    .SetMargin(0, 10, 0, 10)
-                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                    .SetBorderBrush(Brushes.Black);
-                });
-                stackPanel.Child<Button>((button) =>
-                {
-                    button
-                    .SetText("Reset Statistics")
-                    .SetPointerOverBackground(Brushes.Firebrick)
-                    .OnClick(async (_, _) =>
-                    {
-
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Resetting Statistics",
-                            Content = "Do you want to reset your statistics?",
-                            PrimaryButtonText = "Confirm",
-                            DefaultButton = ContentDialogButton.Secondary,
-                            SecondaryButtonText = "Deny",
-                            IsSecondaryButtonEnabled = true,
-                        };
-
-                        cd.PrimaryButtonClick += (s, e) => { };
-                        var result = await cd.ShowAsync();
-
-                        if (result == ContentDialogResult.Primary)
-                        {
-                            await StatsTracker.Instance.ResetStatsAsync();
-                        }
-                    });
-                });
-
             });
 
         }).Add<Page>().Entity;
@@ -221,6 +184,45 @@ public class SettingsPage : IUIComponent
                         """);
                     });
                 }));
+            }).Entity;
+        }
+    }
+
+    private class ResetStats : IUIComponent
+    {
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
+
+        public ResetStats(World world)
+        {
+            _root =
+            world.UI<Button>((button) =>
+            {
+                button
+                    .SetText("Reset Statistics")
+                    .SetPointerOverBackground(Brushes.Firebrick)
+                    .OnClick(async (_, _) =>
+                    {
+
+                        var cd = new ContentDialog()
+                        {
+                            Title = "Resetting Statistics",
+                            Content = "Do you want to reset your statistics?",
+                            PrimaryButtonText = "Confirm",
+                            DefaultButton = ContentDialogButton.Secondary,
+                            SecondaryButtonText = "Deny",
+                            IsSecondaryButtonEnabled = true,
+                        };
+
+                        cd.PrimaryButtonClick += (s, e) => { };
+                        var result = await cd.ShowAsync();
+
+                        if (result == ContentDialogResult.Primary)
+                        {
+                            await StatsTracker.Instance.ResetStatsAsync();
+                        }
+                    });
             }).Entity;
         }
     }
