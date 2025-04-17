@@ -11,6 +11,11 @@ using FluentAvalonia.UI.Controls;
 using StellaLearning.Data;
 using Avalonia.Layout;
 using Avalonia;
+using System;
+using System.Reactive.Linq;
+using System.Collections.ObjectModel;
+using StellaLearning.Util.NoteHandler;
+using System.Linq;
 
 namespace StellaLearning.Pages;
 
@@ -60,6 +65,19 @@ public class SettingsPage : IUIComponent
                     }))
                     .SetItemsSource(new List<IUIComponent>() {
                         new ThemeToggleSwitch(world)});
+                });
+
+                stackPanel.Child<SettingsExpander>(list =>
+                {
+                    list
+                    .SetHeader("Obsidian")
+                    .SetItemTemplate(world.CreateTemplate<IUIComponent, Panel>((panel, item) =>
+                    {
+                        panel.Child(item);
+                    }))
+                    .SetItemsSource(new List<IUIComponent>() {
+                        new ImportObsidianVault(world)
+                    });
                 });
 
                 stackPanel.Child<SettingsExpander>(list =>
@@ -139,6 +157,72 @@ public class SettingsPage : IUIComponent
 
         }).Add<Page>().Entity;
 
+    }
+
+    private class ImportObsidianVault : IUIComponent
+    {
+        private Entity _root;
+        /// <inheritdoc/>
+        public Entity Root => _root;
+
+        public ImportObsidianVault(World world)
+        {
+            _root =
+            world.UI<DockPanel>((dockPanel) =>
+            {
+                dockPanel.Child<TextBlock>((textBlock) =>
+                {
+
+                    textBlock.SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetText("Import obsidian vault")
+                    .SetTextWrapping(TextWrapping.Wrap);
+                });
+
+                dockPanel.Child<Button>((button) =>
+                {
+                    button
+                    .SetText("Select Vault")
+                    .SetDock(Dock.Right)
+                    .SetHorizontalAlignment(HorizontalAlignment.Right)
+                    .OnClick(async (_, _) =>
+                    {
+                        // Create and configure the file picker options
+                        var options = new FolderPickerOpenOptions
+                        {
+                            Title = "Select the root of the obsidian folder",
+                            AllowMultiple = false, // Set to true if you want to allow multiple file selections
+                        };
+
+                        // Create an OpenFileDialog instance
+                        IReadOnlyList<IStorageFolder> result = await App.GetMainWindow().StorageProvider.OpenFolderPickerAsync(options);
+                        // Get the selected folder (since AllowMultiple is false, there's at most one)
+                        IStorageFolder selectedFolder = result[0]; // The result is an IStorageFolder
+
+                        if (selectedFolder.Path is Uri uri && uri.IsAbsoluteUri && uri.IsFile)
+                        {
+                            var literature = world.Get<ObservableCollection<LiteratureSourceItem>>();
+
+                            foreach (var item in ObsidianHandler.ParseVault(selectedFolder.Path.AbsolutePath, true))
+                            {
+                                literature.Add(item);
+                            }
+                        }
+                    });
+                });
+
+
+                dockPanel.AttachToolTip(world.UI<ToolTip>((toolTip) =>
+                {
+                    toolTip.Child<TextBlock>((textBlock) =>
+                    {
+                        textBlock.SetText(
+                        """
+                        Always show Stella Learning windows on top of other open windows.
+                        """);
+                    });
+                }));
+            }).Entity;
+        }
     }
 
     private class EnableAlwaysOnTop : IUIComponent
