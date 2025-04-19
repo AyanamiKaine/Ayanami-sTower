@@ -1,4 +1,6 @@
 ﻿using Flecs.NET.Core;
+using System.Collections.Generic; // Required for List<T>
+using Xunit; // Assuming xUnit is used based on [Fact]
 
 namespace AyanamisTower.NihilEx.Test;
 
@@ -12,20 +14,48 @@ public class PhaseTest
     [Fact]
     public void RenderPhaseCorrectOrder()
     {
-        var world = World.Create();
-        world.Import<ECS.PhaseModule>();
+        World world = World.Create();
+        var engine = new Engine(world);
 
-        var systemRun = false;
+        // Use a list to record the execution order
+        var executionOrder = new List<string>();
 
-        var system = world.System()
-            .Kind(world.Entity("PreRender"))
-            .Each((_) =>
+        world.System("PreRenderSystem") // Give systems names for clarity
+            .Kind(engine.Phases["PreRender"])
+            .Each(() =>
             {
-                systemRun = true;
+                executionOrder.Add("PreRender");
             });
+
+        world.System("OnRenderSystem")
+            .Kind(engine.Phases["OnRender"])
+            .Each(() =>
+            {
+                // Ensure PreRender ran before OnRender
+                Assert.Contains("PreRender", executionOrder);
+                Assert.DoesNotContain("OnRender", executionOrder);
+                Assert.DoesNotContain("PostRender", executionOrder);
+                executionOrder.Add("OnRender");
+            });
+
+        world.System("PostRenderSystem")
+            .Kind(engine.Phases["PostRender"])
+            .Each(() =>
+            {
+                // Ensure PreRender and OnRender ran before PostRender
+                Assert.Contains("PreRender", executionOrder);
+                Assert.Contains("OnRender", executionOrder);
+                Assert.DoesNotContain("PostRender", executionOrder);
+                executionOrder.Add("PostRender");
+            });
+
 
         world.Progress();
 
-        Assert.True(systemRun);
+        // Verify the final recorded order
+        Assert.Equal(3, executionOrder.Count);
+        Assert.Equal("PreRender", executionOrder[0]);
+        Assert.Equal("OnRender", executionOrder[1]);
+        Assert.Equal("PostRender", executionOrder[2]);
     }
 }
