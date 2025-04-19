@@ -10,11 +10,8 @@
   </PropertyGroup>
    
    <ItemGroup>
-        <None Include="README.md" Pack="true" PackagePath="\"/>
+        <None Include="README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
-
-  <ItemGroup>
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="SDL3-CS" Version="3.2.10" />
@@ -22,5 +19,10 @@
     <PackageReference Include="Flecs.NET.Debug" Version="4.0.4-build.548" />
 	<PackageReference Include="Flecs.NET.Release" Version="4.0.4-build.548" />    
     </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM.Flecs\AyanamisTower.SFPM.Flecs.csproj" />
+    <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM\AyanamisTower.SFPM.csproj" />
+  </ItemGroup>
 
 </Project>

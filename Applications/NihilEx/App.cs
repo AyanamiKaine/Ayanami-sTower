@@ -1,8 +1,9 @@
 
 using System.Runtime.InteropServices;
+using Flecs.NET.Core;
 using SDL3;
 
-namespace NihilEx
+namespace AyanamisTower.NihilEx
 {
     /// <summary>
     /// Base class for creating SDL applications using the callback mechanism.
@@ -16,6 +17,12 @@ namespace NihilEx
 
         // Instance variable to track time for delta time calculation
         private ulong _lastUpdateTimeTicks;
+
+        /// <summary>
+        /// Gets the SDL Window associated with this application instance.
+        /// This is typically created during the OnInit phase.
+        /// </summary>
+        protected Window? Window { get; private set; }
 
         /// <summary>
         /// Runs the SDL application.
@@ -73,14 +80,21 @@ namespace NihilEx
         /// <returns>SDL.AppResult.Continue to proceed, or Success/Failure to exit early.</returns>
         protected virtual SDL.AppResult OnInit(string[] args)
         {
-            SDL.LogInfo(SDL.LogCategory.Application, "Base OnInit called.");
-            // Basic SDL initialization (Video is common)
-            if (!SDL.Init(SDL.InitFlags.Video))
+            try
             {
-                SDL.LogError(SDL.LogCategory.System, $"Base OnInit: SDL could not initialize: {SDL.GetError()}");
+                Window = new(
+                    title: "Title",
+                    width: 600,
+                    height: 500,
+                    isResizable: true);
+                return SDL.AppResult.Continue;
+
+            }
+            catch (Exception ex)
+            {
+                SDL.LogError(SDL.LogCategory.Error, ex.Message);
                 return SDL.AppResult.Failure;
             }
-            return SDL.AppResult.Continue;
         }
 
         /// <summary>

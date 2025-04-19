@@ -1,4 +1,4 @@
-﻿namespace NihilEx.Test;
+﻿namespace AyanamisTower.NihilEx.Test;
 
 public class UnitTest1
 {
