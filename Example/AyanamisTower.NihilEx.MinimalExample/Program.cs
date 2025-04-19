@@ -52,6 +52,11 @@ public class MinimalApp : App // Inherit from App
     }
 
 
+    /*
+    We probably add some on event delegates, so people can subscribe to an event
+    like OnWindowResized. And here we simply fire the event.
+    */
+
     /// <summary>
     /// Override OnEvent to handle application-specific events.
     /// </summary>
