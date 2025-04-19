@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Drawing;
+using System.Numerics;
 using Flecs.NET.Core;
 using SDL3;
 
@@ -36,9 +37,7 @@ public class ColorApp : App // Inherit from App
     /// ECS Flecs World
     /// </summary>
     public World World { get; } = World.Create();
-    // Store SDL Window and Renderer as instance members
-    private nint _window;
-    private nint _renderer;
+    private Renderer? _renderer;
 
     // State for color cycling (now instance members)
     private float _currentR;
@@ -92,14 +91,22 @@ public class ColorApp : App // Inherit from App
         _deltaB = 70.0f;
 
         // Create Window and Renderer
-        if (!SDL.CreateWindowAndRenderer(title, width, height, SDL.WindowFlags.Resizable, out _window, out _renderer))
+        Window!.Title = title;
+        Window!.Height = width;
+        Window!.Width = height;
+
+        try
         {
-            SDL.LogError(SDL.LogCategory.Application, $"MyColorApp OnInit: Error creating window/renderer: {SDL.GetError()}");
+            _renderer = Window.CreateRenderer();
+            _renderer.VSync = true;
+        }
+        catch (System.Exception)
+        {
+            SDL.LogError(SDL.LogCategory.Application, $"MyColorApp OnInit: Error creating renderer: {SDL.GetError()}");
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
             return SDL.AppResult.Failure;
         }
 
-        SDL.SetRenderVSync(_renderer, 1);
         DefineCube();
         _projectedVertices = new Vector2[_baseVertices.Length]; // Initialize array for 2D points
         SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnInit finished successfully.");
@@ -186,16 +193,21 @@ public class ColorApp : App // Inherit from App
         // --- End Color Update Logic ---
 
         // --- Rendering ---
-        SDL.SetRenderDrawColor(_renderer, (byte)_currentR, (byte)_currentG, (byte)_currentB, 255);
-        SDL.RenderClear(_renderer);
+        if (_renderer is not null)
+            _renderer.DrawColor = Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
+
+        _renderer?.Clear();
 
         World.Progress(deltaTime);
         _fpsCounter.Update();
 
-        SDL.SetRenderDrawColor(_renderer, (byte)(255 - _currentR), (byte)(255 - _currentG), (byte)(255 - _currentB), 255);
-        SDL.RenderDebugText(_renderer, 10, 10, $"FPS: {_fpsCounter.FPS}");
+        if (_renderer is not null)
+            _renderer.DrawColor = Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
 
-        SDL.SetRenderDrawColor(_renderer, 255, 255, 255, 255);
+        _renderer?.ShowDebugText(10, 10, $"FPS: {_fpsCounter.FPS}");
+
+        if (_renderer is not null)
+            _renderer.DrawColor = Color.FromArgb(255, 255, 255, 255);
 
         // Draw the edges
         foreach (var edge in _edges)
@@ -203,10 +215,10 @@ public class ColorApp : App // Inherit from App
             Vector2 p1 = _projectedVertices[edge.Item1];
             Vector2 p2 = _projectedVertices[edge.Item2];
             // SDL.RenderLine expects integers
-            SDL.RenderLine(_renderer, (int)p1.X, (int)p1.Y, (int)p2.X, (int)p2.Y);
+            _renderer?.RenderLine((int)p1.X, (int)p1.Y, (int)p2.X, (int)p2.Y);
         }
 
-        SDL.RenderPresent(_renderer);
+        _renderer?.Present();
         // --- End Rendering ---
 
         return SDL.AppResult.Continue; // Keep iterating
@@ -239,16 +251,8 @@ public class ColorApp : App // Inherit from App
         SDL.LogInfo(SDL.LogCategory.Application, $"MyColorApp OnQuit started with result: {result}");
 
         // Destroy resources created in OnInit
-        if (_renderer != 0)
-        {
-            SDL.DestroyRenderer(_renderer);
-            SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnQuit: Renderer destroyed.");
-        }
-        if (_window != 0)
-        {
-            SDL.DestroyWindow(_window);
-            SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnQuit: Window destroyed.");
-        }
+        _renderer?.Dispose();
+        Window?.Dispose();
 
         // Call base OnQuit *after* cleaning up derived class resources
         // to ensure SDL subsystems are shut down last.
