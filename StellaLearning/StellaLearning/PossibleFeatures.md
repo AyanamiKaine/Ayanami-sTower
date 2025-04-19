@@ -66,8 +66,12 @@ Tracking statistics is not only something needed to keep track of things but als
 - Learning Efficiency: How quickly items move from Learning to Review state
 - Problematic Items: Cards with consistently low performance
 
-## Integration of LLMs
+## Integration of LLMs [PROGRESS]
 
 ### Ideas
 
 It would be quite nice if we can auto generate an titles and tags as well as author for literature items, we can also use this to create tags for reference images.
+
+## Study List and Deep Analysis using LLMs
+
+I really like reading studies but there is a problem. Studies can be wrong and can be disproven. This would mean we would have to regulary check new studies that relate to the "proven"/"disproven" hypothesis to check if the conclusion is even worth keeping in mind when making decisions relating to it. Too often did i believe in a study from prominent universities and researches only to find out the reproduction studies are unable to reproduce the results. Maybe LLMs can help here in combination with an api that can search reproduction studies and the LLM analysis it.
