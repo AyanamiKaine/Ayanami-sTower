@@ -23,7 +23,14 @@ namespace AyanamisTower.NihilEx
         /// This is typically created during the OnInit phase.
         /// </summary>
         protected Window? Window { get; private set; }
-
+        /// <summary>
+        /// ECS Flecs World
+        /// </summary>
+        public World World { get; } = World.Create();
+        /// <summary>
+        /// Gets the Engine instance associated with this application.
+        /// </summary>
+        public Engine? Engine { get; private set; }
         /// <summary>
         /// Runs the SDL application.
         /// </summary>
@@ -80,6 +87,8 @@ namespace AyanamisTower.NihilEx
         /// <returns>SDL.AppResult.Continue to proceed, or Success/Failure to exit early.</returns>
         protected virtual SDL.AppResult OnInit(string[] args)
         {
+            Engine = new(World);
+
             try
             {
                 Window = new(
@@ -105,7 +114,7 @@ namespace AyanamisTower.NihilEx
         /// <returns>SDL.AppResult.Continue to keep running, or Success/Failure to exit.</returns>
         protected virtual SDL.AppResult OnIterate(float deltaTime)
         {
-            // Base implementation does nothing, returns Continue.
+            World.Progress(deltaTime);
             return SDL.AppResult.Continue;
         }
 
