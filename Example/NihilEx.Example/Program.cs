@@ -172,8 +172,8 @@ public class ColorApp : App // Inherit from App
             // Basic perspective scaling factor (avoid division by zero or small numbers)
             float scale = (zProjected > 0.1f) ? (_fieldOfView / zProjected) : _fieldOfView / 0.1f;
 
-            float projectedX = rotatedVertex.X * scale + screenCenterX;
-            float projectedY = rotatedVertex.Y * scale + screenCenterY;
+            float projectedX = (rotatedVertex.X * scale) + screenCenterX;
+            float projectedY = (rotatedVertex.Y * scale) + screenCenterY;
 
             _projectedVertices[i] = new Vector2(projectedX, projectedY);
         }
