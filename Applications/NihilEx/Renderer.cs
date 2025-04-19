@@ -20,7 +20,8 @@ public class Renderer(nint window, string? name = null) : IDisposable
     {
         get
         {
-            return DrawColor;
+            SDL.GetRenderDrawColor(_renderer, out byte r, out byte g, out byte b, out byte a);
+            return Color.FromArgb(a, r, g, b);
         }
         set
         {
