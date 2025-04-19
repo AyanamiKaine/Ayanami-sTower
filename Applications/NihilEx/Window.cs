@@ -122,12 +122,40 @@ public class Window : IDisposable
     /// <summary>
     /// Gets or Sets a value indicating whether the window was requested to be borderless.
     /// </summary>
-    public bool IsBorderless { get; }
+    public bool IsBorderless
+    {
+        get
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.Borderless);
+        }
+        set
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            SDL.SetWindowBordered(_window, value);
+        }
+    }
 
     /// <summary>
     /// Gets or Sets a value indicating whether the window was requested to be resizable.
     /// </summary>
-    public bool IsResizable { get; }
+    public bool IsResizable
+    {
+        get
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.Resizable);
+        }
+        set
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            SDL.SetWindowResizable(_window, value);
+        }
+    }
 
     /// <summary>
     /// Gets or Sets a value indicating whether the window was requested to be modal.
@@ -142,7 +170,21 @@ public class Window : IDisposable
     /// <summary>
     /// Gets or Sets a value indicating whether the window was requested to be always on top.
     /// </summary>
-    public bool IsAlwaysOnTop { get; }
+    public bool IsAlwaysOnTop
+    {
+        get
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.AlwaysOnTop);
+        }
+        set
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            SDL.SetWindowAlwaysOnTop(_window, value);
+        }
+    }
 
     /// <summary>
     /// Gets or Sets a value indicating whether the window was requested as a utility window.
@@ -167,7 +209,21 @@ public class Window : IDisposable
     /// <summary>
     /// Gets or Sets a value indicating whether the window was requested to be non-focusable.
     /// </summary>
-    public bool IsNotFocusable { get; }
+    public bool IsNotFocusable
+    {
+        get
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.NotFocusable);
+        }
+        set
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            SDL.SetWindowFocusable(_window, value);
+        }
+    }
 
     /// <summary>
     /// Gets or Sets the current width of the window.
