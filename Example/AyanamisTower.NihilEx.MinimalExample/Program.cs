@@ -103,6 +103,5 @@ internal static class Program
 
         // Run the application - the base App class handles the rest.
         myApp.Run([]);
-        return;
     }
 }
