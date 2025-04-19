@@ -80,9 +80,6 @@ public class ColorApp : App // Inherit from App
         SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnInit started.");
 
         // Configuration for window and color
-        const int width = 800;
-        const int height = 600;
-        const string title = "SDL3 Color Cycle (Framework)";
         _currentR = 100f; // Start color
         _currentG = 149f;
         _currentB = 237f;
@@ -91,16 +88,16 @@ public class ColorApp : App // Inherit from App
         _deltaB = 70.0f;
 
         // Create Window and Renderer
-        Window!.Title = title;
-        Window!.Height = width;
-        Window!.Width = height;
+        Window!.Title = "SDL3 Color Cycle (Framework)";
+        Window!.Height = 600;
+        Window!.Width = 800;
 
         try
         {
-            _renderer = Window.CreateRenderer();
-            _renderer.VSync = true;
+            _renderer = Window?.CreateRenderer();
+            _renderer!.VSync = true;
         }
-        catch (System.Exception)
+        catch (Exception)
         {
             SDL.LogError(SDL.LogCategory.Application, $"MyColorApp OnInit: Error creating renderer: {SDL.GetError()}");
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
@@ -193,18 +190,18 @@ public class ColorApp : App // Inherit from App
         // --- End Color Update Logic ---
 
         // --- Rendering ---
-        _renderer?.DrawColor = Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
+        _renderer!.DrawColor = Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
 
         _renderer?.Clear();
 
         World.Progress(deltaTime);
         _fpsCounter.Update();
 
-        _renderer?.DrawColor = Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
+        _renderer!.DrawColor = Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
 
         _renderer?.ShowDebugText(10, 10, $"FPS: {_fpsCounter.FPS}");
 
-        _renderer?.DrawColor = Color.FromArgb(255, 255, 255, 255);
+        _renderer!.DrawColor = Color.FromArgb(255, 255, 255, 255);
 
         // Draw the edges
         foreach (var edge in _edges)
