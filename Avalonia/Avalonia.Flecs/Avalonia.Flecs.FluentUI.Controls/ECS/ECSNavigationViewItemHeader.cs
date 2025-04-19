@@ -2,8 +2,15 @@ using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
+    /// <summary>
+    /// Represents the ECS module for integrating NavigationViewItemHeader with Flecs.NET.
+    /// </summary>
     public class ECSNavigationViewItemHeader : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the ECS module for NavigationViewItemHeader.
+        /// </summary>
+        /// <param name="world">The Flecs world.</param>
         public void InitModule(World world)
         {
             world.Module<ECSNavigationViewItemHeader>();

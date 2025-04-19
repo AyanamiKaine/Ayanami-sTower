@@ -7,7 +7,9 @@ using Tmds.DBus;
 
 namespace DesktopNotifications.FreeDesktop
 {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public class FreeDesktopNotificationManager : INotificationManager
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     {
         private const string NotificationsService = "org.freedesktop.Notifications";
 
@@ -32,6 +34,7 @@ namespace DesktopNotifications.FreeDesktop
         private IFreeDesktopNotificationsProxy? _proxy;
 
         /// <summary>
+        /// Constructor
         /// </summary>
         /// <param name="appContext"></param>
         public FreeDesktopNotificationManager(FreeDesktopApplicationContext? appContext = null)
@@ -40,22 +43,34 @@ namespace DesktopNotifications.FreeDesktop
             _activeNotifications = new Dictionary<uint, Notification>();
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public void Dispose()
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             _notificationActionSubscription?.Dispose();
             _notificationCloseSubscription?.Dispose();
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public NotificationManagerCapabilities Capabilities { get; private set; } =
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
             NotificationManagerCapabilities.None;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public event EventHandler<NotificationActivatedEventArgs>? NotificationActivated;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public event EventHandler<NotificationDismissedEventArgs>? NotificationDismissed;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public string? LaunchActionId { get; }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public async Task Initialize()
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             _connection = Connection.Session;
 
@@ -85,7 +100,9 @@ namespace DesktopNotifications.FreeDesktop
             }
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public async Task ShowNotification(Notification notification, DateTimeOffset? expirationTime = null)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             CheckConnection();
 
@@ -105,13 +122,15 @@ namespace DesktopNotifications.FreeDesktop
                 GenerateNotificationBody(notification),
                 actions.ToArray(),
                 new Dictionary<string, object> { { "urgency", 1 } },
-                (int?) duration?.TotalMilliseconds ?? 0
+                (int?)duration?.TotalMilliseconds ?? 0
             ).ConfigureAwait(false);
 
             _activeNotifications[id] = notification;
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public async Task HideNotification(Notification notification)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             CheckConnection();
 
@@ -121,7 +140,9 @@ namespace DesktopNotifications.FreeDesktop
             }
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public async Task ScheduleNotification(
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
             Notification notification,
             DateTimeOffset deliveryTime,
             DateTimeOffset? expirationTime = null)

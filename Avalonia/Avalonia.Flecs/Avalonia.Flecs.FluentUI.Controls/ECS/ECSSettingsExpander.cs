@@ -4,8 +4,15 @@ using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
+    /// <summary>
+    /// Represents a Flecs module for integrating SettingsExpander controls.
+    /// </summary>
     public class ECSSettingsExpander : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the module in the Flecs world.
+        /// </summary>
+        /// <param name="world">The Flecs world.</param>
         public void InitModule(World world)
         {
             world.Module<ECSSettingsExpander>();

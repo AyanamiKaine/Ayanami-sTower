@@ -36,14 +36,38 @@ public class Entities
 
         child.ChildOf(entity);
 
-        Assert.True(entity.Has<TAG>()); // Now IsAlive should return false
+        Assert.True(entity.Has<TAG>());
         Assert.True(child.IsChildOf(entity));
 
         entity.Clear();
         child.Clear(); // This will remove the relationship (childOf | entity)
 
         Assert.False(child.IsChildOf(entity));
-        Assert.False(entity.Has<TAG>()); // Now IsAlive should return false
+        Assert.False(entity.Has<TAG>());
+    }
+
+    /// <summary>
+    /// When you construct an hierarchy of entities and destroy the 
+    /// most root entity in the hierarchy it will destroy all
+    /// children entities and their children
+    /// </summary>
+    [Fact]
+    public void DestroyingAHierarchyOfEntities()
+    {
+        World world = World.Create();
+        var entity = world.Entity().Add<TAG>();
+        var child = world.Entity();
+
+        child.ChildOf(entity);
+
+        Assert.True(entity.Has<TAG>());
+        Assert.True(child.IsChildOf(entity));
+
+        entity.Clear();
+        child.Clear(); // This will remove the relationship (childOf | entity)
+
+        Assert.False(child.IsChildOf(entity));
+        Assert.False(entity.Has<TAG>());
     }
 
 

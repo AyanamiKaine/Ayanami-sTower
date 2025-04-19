@@ -3,8 +3,15 @@ using Avalonia.Controls;
 using FluentAvalonia.UI.Controls;
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
+    /// <summary>
+    /// Represents a Flecs module for integrating Avalonia Frame controls with the ECS world.
+    /// </summary>
     public class ECSFrame : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the ECSFrame module within the specified Flecs world.
+        /// </summary>
+        /// <param name="world">The Flecs world to initialize the module in.</param>
         public void InitModule(World world)
         {
             world.Module<ECSFrame>();

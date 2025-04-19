@@ -54,11 +54,12 @@ namespace DesktopNotifications
         Task HideNotification(Notification notification);
 
         /// <summary>
+        /// Schedules a notification for delivery at a specific time.
         /// </summary>
-        /// <param name="notification"></param>
-        /// <param name="deliveryTime"></param>
-        /// <param name="expirationTime"></param>
-        /// <returns></returns>
+        /// <param name="notification">The notification to schedule.</param>
+        /// <param name="deliveryTime">The time when the notification should be shown.</param>
+        /// <param name="expirationTime">The optional expiration time marking the point when the notification gets removed after delivery.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         Task ScheduleNotification(
             Notification notification,
             DateTimeOffset deliveryTime,

@@ -4,8 +4,15 @@ using FluentAvalonia.UI.Controls;
 using Avalonia.Controls.Primitives;
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
+    /// <summary>
+    /// Represents the ECS module for integrating NavigationView controls with Flecs.
+    /// </summary>
     public class ECSNavigationView : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the ECS module for NavigationView.
+        /// </summary>
+        /// <param name="world">The Flecs world.</param>
         public void InitModule(World world)
         {
             world.Module<ECSNavigationView>();

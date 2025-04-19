@@ -10,6 +10,9 @@ namespace DesktopNotifications.Windows
     // Originally from http://www.vbaccelerator.com/home/NET/Code/Libraries/Shell_Projects
     // /Creating_and_Modifying_Shortcuts/article.asp
     // Partly based on Sending toast notifications from desktop apps sample
+    /// <summary>
+    /// Represents a Windows Shell Link (.lnk file).
+    /// </summary>
     public class ShellLink : IDisposable
     {
         #region Win32 and COM
@@ -266,7 +269,9 @@ namespace DesktopNotifications.Windows
 
         #region Public Properties (Minimal)
 
-        // Path of loaded shortcut file
+        /// <summary>
+        /// Gets the path of the loaded shortcut file.
+        /// </summary>
         public string ShortcutFile
         {
             get
@@ -279,6 +284,9 @@ namespace DesktopNotifications.Windows
             }
         }
 
+        /// <summary>
+        /// Gets or sets the path of the target file.
+        /// </summary>
         // Path of target file
         public string TargetPath
         {
@@ -297,6 +305,9 @@ namespace DesktopNotifications.Windows
             set => VerifySucceeded(shellLinkW!.SetPath(value));
         }
 
+        /// <summary>
+        /// Gets or sets the command-line arguments associated with the shortcut.
+        /// </summary>
         public string Arguments
         {
             get
@@ -311,7 +322,10 @@ namespace DesktopNotifications.Windows
             set => VerifySucceeded(shellLinkW!.SetArguments(value));
         }
 
-        // AppUserModelID to be used for Windows 7 or later.
+        /// <summary>
+        /// Gets or sets the Application User Model ID (AppUserModelID).
+        /// This property is used for Windows 7 or later.
+        /// </summary>
         public string AppUserModelID
         {
             get
@@ -342,12 +356,19 @@ namespace DesktopNotifications.Windows
 
         #region Constructor
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShellLink"/> class.
+        /// </summary>
         public ShellLink()
             : this(null)
         {
         }
 
-        // Construct with loading shortcut file.
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShellLink"/> class and loads the specified shortcut file.
+        /// </summary>
+        /// <param name="file">The path to the shortcut file to load.</param>
+        /// <exception cref="COMException">Thrown when the ShellLink object cannot be created.</exception>
         public ShellLink(string? file)
         {
             try
@@ -369,18 +390,25 @@ namespace DesktopNotifications.Windows
 
         #region Destructor
 
+        /// <summary>
+        /// Finalizes an instance of the <see cref="ShellLink"/> class.
+        /// </summary>
         ~ShellLink()
         {
             Dispose(false);
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public void Dispose()
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         protected virtual void Dispose(bool disposing)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             if (shellLinkW != null)
             {
@@ -395,7 +423,9 @@ namespace DesktopNotifications.Windows
         #region Methods
 
         // Save shortcut file.
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public void Save()
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             var file = ShortcutFile;
 
@@ -407,7 +437,9 @@ namespace DesktopNotifications.Windows
             Save(file);
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public void Save(string file)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             if (file == null)
             {
@@ -424,7 +456,9 @@ namespace DesktopNotifications.Windows
         }
 
         // Load shortcut file.
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public void Load(string file)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             if (!File.Exists(file))
             {
@@ -441,7 +475,9 @@ namespace DesktopNotifications.Windows
         }
 
         // Verify if operation succeeded.
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public static void VerifySucceeded(uint hresult)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             if (hresult > 1)
             {

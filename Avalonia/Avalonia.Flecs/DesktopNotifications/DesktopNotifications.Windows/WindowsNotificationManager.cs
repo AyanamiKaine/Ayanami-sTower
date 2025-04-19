@@ -14,7 +14,9 @@ using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace DesktopNotifications.Windows
 {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public class WindowsNotificationManager : INotificationManager
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
     {
         private const int LaunchNotificationWaitMs = 5_000;
         private readonly WindowsApplicationContext _applicationContext;
@@ -29,8 +31,20 @@ namespace DesktopNotifications.Windows
 #endif
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="WindowsNotificationManager"/> class.
         /// </summary>
-        /// <param name="applicationContext"></param>
+        /// <param name="applicationContext">
+        /// The application context to use. If null, it attempts to retrieve the context
+        /// from the current process using <see cref="WindowsApplicationContext.FromCurrentProcess"/>.
+        /// This context provides necessary information like the AppUserModelId.
+        /// </param>
+        /// <remarks>
+        /// This constructor sets up the necessary components for managing toast notifications on Windows.
+        /// It initializes the application context, prepares to handle launch actions triggered by notifications,
+        /// creates the appropriate toast notifier based on the target framework, and initializes collections
+        /// to track active and scheduled notifications. If the application was launched via a toast notification,
+        /// it attempts to capture the launch action ID.
+        /// </remarks>
         public WindowsNotificationManager(WindowsApplicationContext? applicationContext = null)
         {
             _applicationContext = applicationContext ?? WindowsApplicationContext.FromCurrentProcess();
@@ -58,23 +72,35 @@ namespace DesktopNotifications.Windows
             _scheduledNotification = new Dictionary<ScheduledToastNotification, Notification>();
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public NotificationManagerCapabilities Capabilities => NotificationManagerCapabilities.BodyText |
                                                                NotificationManagerCapabilities.BodyImages |
                                                                NotificationManagerCapabilities.Icon |
                                                                NotificationManagerCapabilities.Audio;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public event EventHandler<NotificationActivatedEventArgs>? NotificationActivated;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public event EventHandler<NotificationDismissedEventArgs>? NotificationDismissed;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public string? LaunchActionId { get; }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public Task Initialize()
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             return Task.CompletedTask;
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public Task ShowNotification(Notification notification, DateTimeOffset? expirationTime)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             if (expirationTime < DateTimeOffset.Now)
             {
@@ -97,7 +123,9 @@ namespace DesktopNotifications.Windows
             return Task.CompletedTask;
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public Task HideNotification(Notification notification)
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             if (_notifications.TryGetKey(notification, out var toastNotification))
             {
@@ -112,7 +140,9 @@ namespace DesktopNotifications.Windows
             return Task.CompletedTask;
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public Task ScheduleNotification(
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
             Notification notification,
             DateTimeOffset deliveryTime,
             DateTimeOffset? expirationTime = null)
@@ -134,7 +164,9 @@ namespace DesktopNotifications.Windows
             return Task.CompletedTask;
         }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         public void Dispose()
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         {
             _notifications.Clear();
             _scheduledNotification.Clear();

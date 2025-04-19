@@ -193,6 +193,7 @@ public class NamedEntities(World world) : IEnumerable<Entity>
         return exists;
     }
 
+    /// <inheritdoc/>
     public IEnumerator<Entity> GetEnumerator()
     {
         Logger.Debug("Enumerating {EntityCount} entities", _entities.Count);

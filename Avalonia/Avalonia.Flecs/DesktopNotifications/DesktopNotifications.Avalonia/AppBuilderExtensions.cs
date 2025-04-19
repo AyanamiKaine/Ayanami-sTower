@@ -16,6 +16,7 @@ namespace DesktopNotifications.Avalonia
         /// binds it to the service locator (<see cref="AvaloniaLocator" />).
         /// </summary>
         /// <param name="builder"></param>
+        /// <param name="manager"></param>
         /// <returns></returns>
         public static AppBuilder SetupDesktopNotifications(this AppBuilder builder, out INotificationManager? manager)
         {

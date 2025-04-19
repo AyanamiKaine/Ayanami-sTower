@@ -3,8 +3,15 @@ using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
+    /// <summary>
+    /// Represents a Flecs module for integrating FluentAvalonia NavigationViewItem with the ECS world.
+    /// </summary>
     public class ECSNavigationViewItem : IFlecsModule
     {
+        /// <summary>
+        /// Initializes the module in the specified Flecs world.
+        /// </summary>
+        /// <param name="world">The Flecs world to initialize the module in.</param>
         public void InitModule(World world)
         {
             world.Module<ECSNavigationViewItem>();

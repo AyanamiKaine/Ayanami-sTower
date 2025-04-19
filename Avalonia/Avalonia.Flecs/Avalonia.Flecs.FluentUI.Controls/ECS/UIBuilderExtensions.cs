@@ -2,8 +2,18 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.FluentUI.Controls.ECS;
 using FluentAvalonia.UI.Controls;
 namespace Avalonia.Flecs.FluentUI.Controls;
+
+/// <summary>
+/// Provides extension methods for the UIBuilder class specific to FluentAvalonia controls.
+/// </summary>
 public static class UIBuilderExtensions
 {
+    /// <summary>
+    /// Sets the pane title for the NavigationView.
+    /// </summary>
+    /// <param name="builder">The UI builder for the NavigationView.</param>
+    /// <param name="PaneTitle">The title to set for the pane.</param>
+    /// <returns>The UI builder instance.</returns>
     public static UIBuilder<NavigationView> SetPaneTitle(this UIBuilder<NavigationView> builder, string PaneTitle)
     {
         builder.Entity.SetPaneTitle(PaneTitle);
@@ -30,6 +40,12 @@ public static class UIBuilderExtensions
         return builder;
     }
 
+    /// <summary>
+    /// Sets the icon source for the NavigationViewItem.
+    /// </summary>
+    /// <param name="builder">The UI builder for the NavigationViewItem.</param>
+    /// <param name="iconSource">The icon source to set.</param>
+    /// <returns>The UI builder instance.</returns>
     public static UIBuilder<NavigationViewItem> SetIconSource(this UIBuilder<NavigationViewItem> builder, IconSource iconSource)
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)

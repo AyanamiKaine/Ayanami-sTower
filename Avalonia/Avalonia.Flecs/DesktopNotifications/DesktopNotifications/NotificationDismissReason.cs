@@ -21,7 +21,7 @@
         Application,
 
         /// <summary>
-        /// 
+        /// Unknown reason given
         /// </summary>
         Unknown
     }
