@@ -1,6 +1,6 @@
 using NLog;
 
-namespace SFPM;
+namespace AyanamisTower.SFPM;
 /// <summary>
 /// Provides extension methods for <see cref="List{Rule}"/> to optimize rule processing.
 /// </summary>

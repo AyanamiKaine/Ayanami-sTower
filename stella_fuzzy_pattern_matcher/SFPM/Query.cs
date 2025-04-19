@@ -1,6 +1,6 @@
 using NLog;
 
-namespace SFPM;
+namespace AyanamisTower.SFPM;
 
 /// <summary>
 /// Represents a query, it's a set facts, represented as a key value pair.

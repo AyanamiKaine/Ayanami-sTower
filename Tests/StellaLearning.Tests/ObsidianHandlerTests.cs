@@ -13,6 +13,8 @@ public class ObsidianHandlerTests
     [Fact]
     public void ParseVaultTest()
     {
+        // Here we are using my personal vault 
+        // TODO: We should create an example test vault.
         const string vaultPath = @"C:\Users\ayanami\AllTheKnowledgeReloaded";
         var list = ObsidianHandler.ParseVault(vaultPath, true);
 

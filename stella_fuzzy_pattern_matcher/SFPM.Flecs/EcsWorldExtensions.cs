@@ -1,6 +1,7 @@
 ﻿using Flecs.NET.Core;
+using SFPM;
 
-namespace SFPM.Flecs;
+namespace AyanamisTower.SFPM.Flecs;
 
 /// <summary>
 /// Ecs flecs world extension methods.

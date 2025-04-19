@@ -1,6 +1,6 @@
 using NLog;
 
-namespace SFPM;
+namespace AyanamisTower.SFPM;
 
 /// <summary>
 /// Represents a rule in a fuzzy pattern matching system that contains criteria and an action to execute when matched.

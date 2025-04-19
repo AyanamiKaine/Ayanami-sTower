@@ -1,6 +1,6 @@
 using NLog;
 
-namespace SFPM;
+namespace AyanamisTower.SFPM;
 
 /// <summary>
 /// Defines a criteria for matching facts.
