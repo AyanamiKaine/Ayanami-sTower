@@ -23,11 +23,11 @@ public class Engine
     {
         World = world;
         InitDefaultPhases();
+        InitDefaultSystems();
     }
 
     private void InitDefaultPhases()
     {
-
         var preRender = World
             .Entity("PreRender")
             .Add(Ecs.Phase)
@@ -47,5 +47,20 @@ public class Engine
             .DependsOn(onRender);
 
         Phases.Add("PostRender", postRender);
+    }
+
+    private void InitDefaultSystems()
+    {
+        InitRenderSystems();
+    }
+
+    private void InitRenderSystems()
+    {
+        World.System<Renderer>()
+            .Kind(Phases["OnRender"])
+            .Each((Entity _, ref Renderer renderer) =>
+            {
+                renderer.Present();
+            });
     }
 }
