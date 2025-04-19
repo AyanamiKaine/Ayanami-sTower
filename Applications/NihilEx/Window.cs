@@ -300,6 +300,15 @@ public class Window : IDisposable
     }
 
     /// <summary>
+    /// Create Render
+    /// </summary>
+    /// <returns></returns>
+    public Renderer CreateRenderer()
+    {
+        return new(_window);
+    }
+
+    /// <summary>
     /// Releases the unmanaged resources (SDL window) and potentially quits SDL.        /// <param name="disposing">
     /// <c>true</c> if called directly or indirectly from user code (via <see cref="M:System.IDisposable.Dispose"/>);
     /// <c>false</c> if called from the finalizer.
@@ -311,6 +320,7 @@ public class Window : IDisposable
     /// If other parts of your application use SDL independently, <c>SDL.Quit()</c> should be called separately at the very end of the application's lifetime,
     /// not within this specific window's disposal logic. Consider moving <c>SDL.Init</c> and <c>SDL.Quit</c> outside this class if managing multiple SDL components.
     /// </remarks>
+    /// </summary>
     protected virtual void Dispose(bool disposing)
     {
         if (!_isDisposed)
