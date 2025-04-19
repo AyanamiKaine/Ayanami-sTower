@@ -193,21 +193,18 @@ public class ColorApp : App // Inherit from App
         // --- End Color Update Logic ---
 
         // --- Rendering ---
-        if (_renderer is not null)
-            _renderer.DrawColor = Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
+        _renderer?.DrawColor = Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
 
         _renderer?.Clear();
 
         World.Progress(deltaTime);
         _fpsCounter.Update();
 
-        if (_renderer is not null)
-            _renderer.DrawColor = Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
+        _renderer?.DrawColor = Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
 
         _renderer?.ShowDebugText(10, 10, $"FPS: {_fpsCounter.FPS}");
 
-        if (_renderer is not null)
-            _renderer.DrawColor = Color.FromArgb(255, 255, 255, 255);
+        _renderer?.DrawColor = Color.FromArgb(255, 255, 255, 255);
 
         // Draw the edges
         foreach (var edge in _edges)
@@ -234,7 +231,7 @@ public class ColorApp : App // Inherit from App
         {
             _screenWidth = e.Window.Data1; // Update screen dimensions
             _screenHeight = e.Window.Data2;
-            SDL.LogInfo(SDL.LogCategory.Application, $"MyColorApp OnEvent: Window Resized (from event data) to: {_screenWidth} x {_screenHeight}");
+            SDL.LogInfo(SDL.LogCategory.Application, $"MyColorApp OnEvent: Window Resized (from event data) to: {Window?.Width} x {Window?.Height}");
 
             return SDL.AppResult.Continue;
         }
