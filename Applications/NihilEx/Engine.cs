@@ -57,7 +57,14 @@ public class Engine
     private void InitRenderSystems()
     {
         World.System<Renderer>()
-            .Kind(Phases["OnRender"])
+            .Kind(Phases["PreRender"])
+            .Each((Entity _, ref Renderer renderer) =>
+            {
+                renderer.Clear();
+            });
+
+        World.System<Renderer>()
+            .Kind(Phases["PostRender"])
             .Each((Entity _, ref Renderer renderer) =>
             {
                 renderer.Present();

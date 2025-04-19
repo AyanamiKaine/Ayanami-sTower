@@ -3,7 +3,7 @@ using System.Numerics;
 using Flecs.NET.Core;
 using SDL3;
 
-namespace AyanamisTower.NihilEx.Example;
+namespace AyanamisTower.NihilEx.SpinningCubeExample;
 
 internal record struct Position2D(float X, float Y);
 internal class FPSCounter
@@ -33,10 +33,6 @@ internal class FPSCounter
 /// </summary>
 public class ColorApp : App // Inherit from App
 {
-    /// <summary>
-    /// ECS Flecs World
-    /// </summary>
-    public World World { get; } = World.Create();
     private Renderer? _renderer;
 
     // State for color cycling (now instance members)
