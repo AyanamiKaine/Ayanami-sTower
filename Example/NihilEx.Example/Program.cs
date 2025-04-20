@@ -183,18 +183,18 @@ public class ColorApp : App // Inherit from App
         // --- End Color Update Logic ---
 
         // --- Rendering ---
-        Renderer!.DrawColor = Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
+        Renderer!.DrawColor = (ECS.RgbaColor)Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
 
         Renderer?.Clear();
 
         World.Progress(deltaTime);
         _fpsCounter.Update();
 
-        Renderer!.DrawColor = Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
+        Renderer!.DrawColor = (ECS.RgbaColor)Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
 
         Renderer?.ShowDebugText(10, 10, $"FPS: {_fpsCounter.FPS}");
 
-        Renderer!.DrawColor = Color.FromArgb(255, 255, 255, 255);
+        Renderer!.DrawColor = (ECS.RgbaColor)Color.FromArgb(255, 255, 255, 255);
 
         // Draw the edges
         foreach (var edge in _edges)
