@@ -60,7 +60,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public Vector3 Position
         {
-            get => _position;
+            readonly get => _position;
             set
             {
                 if (_position != value)
@@ -77,7 +77,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public Quaternion Orientation
         {
-            get => _orientation;
+            readonly get => _orientation;
             set
             {
                 // Normalize to ensure it remains a valid rotation quaternion
@@ -97,7 +97,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public Vector3 WorldUpDirection
         {
-            get => _worldUpDirection;
+            readonly get => _worldUpDirection;
             set
             {
                 // Normalize for safety, although typically unit vectors are used
@@ -117,7 +117,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public ProjectionType ProjectionMode
         {
-            get => _projectionType;
+            readonly get => _projectionType;
             set
             {
                 if (_projectionType != value)
@@ -134,7 +134,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public float FieldOfViewDegrees
         {
-            get => _fieldOfViewRadians * (180.0f / MathF.PI); // Convert radians to degrees for getting
+            readonly get => _fieldOfViewRadians * (180.0f / MathF.PI); // Convert radians to degrees for getting
             set
             {
                 // Convert degrees to radians for storing
@@ -153,7 +153,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public float FieldOfViewRadians
         {
-            get => _fieldOfViewRadians;
+            readonly get => _fieldOfViewRadians;
             set
             {
                 // Clamp values to prevent issues
@@ -173,7 +173,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public float AspectRatio
         {
-            get => _aspectRatio;
+            readonly get => _aspectRatio;
             set
             {
                 if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value), "Aspect ratio must be positive.");
@@ -191,7 +191,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public float NearPlane
         {
-            get => _nearPlaneDistance;
+            readonly get => _nearPlaneDistance;
             set
             {
                 if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value), "Near plane distance must be positive.");
@@ -209,7 +209,7 @@ namespace AyanamisTower.NihilEx.ECS
         /// </summary>
         public float FarPlane
         {
-            get => _farPlaneDistance;
+            readonly get => _farPlaneDistance;
             set
             {
                 if (value <= 0) throw new ArgumentOutOfRangeException(nameof(value), "Far plane distance must be positive.");
@@ -230,19 +230,19 @@ namespace AyanamisTower.NihilEx.ECS
         /// Gets the camera's forward direction vector in world space, derived from its orientation.
         /// Assumes a right-handed coordinate system where -Z is forward in view space.
         /// </summary>
-        public Vector3 Forward => Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, _orientation));
+        public readonly Vector3 Forward => Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, _orientation));
 
         /// <summary>
         /// Gets the camera's right direction vector in world space, derived from its orientation.
         /// Assumes a right-handed coordinate system where +X is right in view space.
         /// </summary>
-        public Vector3 Right => Vector3.Normalize(Vector3.Transform(Vector3.UnitX, _orientation));
+        public readonly Vector3 Right => Vector3.Normalize(Vector3.Transform(Vector3.UnitX, _orientation));
 
         /// <summary>
         /// Gets the camera's local up direction vector in world space, derived from its orientation.
         /// Assumes a right-handed coordinate system where +Y is up in view space.
         /// </summary>
-        public Vector3 Up => Vector3.Normalize(Vector3.Transform(Vector3.UnitY, _orientation));
+        public readonly Vector3 Up => Vector3.Normalize(Vector3.Transform(Vector3.UnitY, _orientation));
 
         #endregion
 
