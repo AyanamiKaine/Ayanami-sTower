@@ -114,6 +114,9 @@ public class Engine
             .Member<float>("Z")
             .Member<float>("W");
 
+        World.Component<ECS.Size>("Size")
+            .Member<Vector2>("Value");
+
         World.Component<Orientation>("Orientation")
             .Member<Quaternion>("Value");
 
