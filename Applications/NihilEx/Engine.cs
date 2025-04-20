@@ -59,6 +59,11 @@ public class Engine
 
     private void InitComponents()
     {
+        World.Component<Vector3>("Vector3")
+                    .Member<float>("X")
+                    .Member<float>("Y")
+                    .Member<float>("Z");
+
         World.Component<Rotation3D>("Rotation3D")
             .Member<Vector3>("Value");
         World.Component<Position3D>("Position3D")
