@@ -3,8 +3,9 @@ using AyanamisTower.NihilEx.ECS;
 using Flecs.NET.Core;
 
 namespace AyanamisTower.NihilEx;
+
 /// <summary>
-/// TODO
+/// Represents the main engine class responsible for managing the ECS world and its systems.
 /// </summary>
 public class Engine
 {
