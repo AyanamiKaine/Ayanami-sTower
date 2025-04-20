@@ -18,6 +18,7 @@
     <PackageReference Include="SDL3-CS.Native" Version="3.2.10" />
     <PackageReference Include="Flecs.NET.Debug" Version="4.0.4-build.548" />
 	<PackageReference Include="Flecs.NET.Release" Version="4.0.4-build.548" />    
+    <PackageReference Include="JoltPhysicsSharp" Version="2.16.1" />
     </ItemGroup>
 
   <ItemGroup>
