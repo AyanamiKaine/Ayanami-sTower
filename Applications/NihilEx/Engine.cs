@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Drawing;
+using System.Numerics;
 using AyanamisTower.NihilEx.ECS;
 using Flecs.NET.Core;
 
@@ -71,6 +72,12 @@ public class Engine
             .Member<Vector3>("Value");
         World.Component<RotationSpeed>("RotationSpeed")
             .Member<float>("Speed");
+
+        World.Component<Color>("Color")
+            .Member<byte>("R")
+            .Member<byte>("G")
+            .Member<byte>("B")
+            .Member<byte>("A");
     }
 
     private void InitRenderSystems()
