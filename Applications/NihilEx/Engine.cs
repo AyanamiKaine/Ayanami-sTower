@@ -136,6 +136,17 @@ public class Engine
             .Member<byte>("G")
             .Member<byte>("B")
             .Member<byte>("A");
+
+        World.Component<Camera>("Camera")
+            .Member<Vector3>("Position")
+            .Member<Quaternion>("Orientation")
+            .Member<Vector3>("WorldUpDirection")
+            .Member<ProjectionType>("ProjectionMode")
+            .Member<float>("FieldOfViewDegrees")
+            .Member<float>("FieldOfViewRadians")
+            .Member<float>("AspectRatio")
+            .Member<float>("NearPlane")
+            .Member<float>("FarPlane");
     }
 
     private void InitRenderSystems()
