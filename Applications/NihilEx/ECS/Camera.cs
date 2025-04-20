@@ -364,7 +364,7 @@ namespace AyanamisTower.NihilEx.ECS
             if (_viewDirty) UpdateViewMatrix();
             if (_projectionDirty) UpdateProjectionMatrix();
             // Trigger the ViewProjection getter to force recalculation if needed
-            _ = this.ViewProjectionMatrix;
+            _ = ViewProjectionMatrix;
         }
 
 
