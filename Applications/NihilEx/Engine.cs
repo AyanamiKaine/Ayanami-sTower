@@ -124,6 +124,13 @@ public class Engine
         World.Component<RotationSpeed>("RotationSpeed")
             .Member<float>("Speed");
 
+        World.Component<ECS.Point>("Point")
+            .Member<Vector2>("Value");
+
+        World.Component<Line>("Line")
+            .Member<ECS.Point>("Start")
+            .Member<ECS.Point>("End");
+
         World.Component<Color>("Color")
             .Member<byte>("R")
             .Member<byte>("G")
