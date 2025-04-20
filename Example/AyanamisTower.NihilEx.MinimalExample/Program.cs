@@ -43,6 +43,9 @@ public class MinimalApp : App // Inherit from App
             return SDL.AppResult.Failure;
         }
 
+        /* 
+        Uncomment to see a rotating box
+
         World.Entity("RotatingBox")
             .Set(new Position2D { Value = new Vector2(400, 300) })
             .Set(new ECS.Size { Value = new Vector2(100, 100) })
@@ -50,6 +53,7 @@ public class MinimalApp : App // Inherit from App
             .Set(new RotationSpeed { Speed = 90 * (MathF.PI / 180.0f) })
             .Set(new RgbaColor(r: 255, g: 0, b: 0, a: 255));
 
+        */
         SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit finished successfully.");
         return SDL.AppResult.Continue; // Signal success
     }
