@@ -17,7 +17,11 @@ namespace AyanamisTower.NihilEx
 
         // Instance variable to track time for delta time calculation
         private ulong _lastUpdateTimeTicks;
-
+        /// <summary>
+        /// Gets the SDL Renderer associated with this application instance.
+        /// This is typically created during the OnInit phase alongside the Window.
+        /// </summary>
+        protected Renderer? Renderer { get; private set; }
         /// <summary>
         /// Gets the SDL Window associated with this application instance.
         /// This is typically created during the OnInit phase.
@@ -96,6 +100,11 @@ namespace AyanamisTower.NihilEx
                     width: 600,
                     height: 500,
                     isResizable: true);
+
+                Renderer = Window?.CreateRenderer();
+
+                World.Set(Window);
+                World.Set(Renderer);
                 return SDL.AppResult.Continue;
 
             }
