@@ -66,6 +66,16 @@ public class Engine
                     .Member<float>("Y")
                     .Member<float>("Z");
 
+
+        World.Component<Quaternion>("Quaternion")
+            .Member<float>("X")
+            .Member<float>("Y")
+            .Member<float>("Z")
+            .Member<float>("W");
+
+        World.Component<Orientation>("Orientation")
+            .Member<Quaternion>("Value");
+
         World.Component<Rotation3D>("Rotation3D")
             .Member<Vector3>("Value");
         World.Component<Position3D>("Position3D")
