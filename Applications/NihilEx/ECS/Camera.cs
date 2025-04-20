@@ -21,7 +21,7 @@ namespace AyanamisTower.NihilEx.ECS
     /// <summary>
     /// Represents a camera in 3D space, handling view and projection transformations.
     /// </summary>
-    public class Camera
+    public struct Camera
     {
         // --- Core Transform Properties ---
         private Vector3 _position = Vector3.Zero; // Default to origin
