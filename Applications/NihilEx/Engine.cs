@@ -91,7 +91,7 @@ public class Engine
                     Vector2 center = pos[i].Value;
                     Vector2 dimensions = size[i].Value;
                     Quaternion currentOrientation = orientation[i].Value; // Get the quaternion
-                    RgbaColor drawColor = color[i];
+                    renderer.DrawColor = color[i];
 
                     float hw = dimensions.X / 2.0f;
                     float hh = dimensions.Y / 2.0f;
@@ -108,7 +108,6 @@ public class Engine
                         transformedCorners[j] = Vector2.Transform(corners[j], currentOrientation) + center;
                     }
 
-                    renderer.DrawColor = drawColor;
 
                     // Draw lines (same as before)
                     renderer.RenderLine(transformedCorners[0].X, transformedCorners[0].Y, transformedCorners[1].X, transformedCorners[1].Y);
