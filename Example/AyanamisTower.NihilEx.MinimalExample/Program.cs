@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Numerics;
+using AyanamisTower.NihilEx.ECS;
 using Flecs.NET.Core;
 using SDL3;
 
@@ -33,7 +34,7 @@ public class MinimalApp : App // Inherit from App
         try
         {
             Renderer!.VSync = true;
-            Renderer!.DrawColor = Color.Bisque;
+            Renderer!.DrawColor = (RgbaColor)Color.Bisque;
         }
         catch (Exception)
         {
@@ -42,8 +43,30 @@ public class MinimalApp : App // Inherit from App
             return SDL.AppResult.Failure;
         }
 
+        // In MinimalApp.OnInit()
+        float degreesPerSecond = 90.0f;
+        float radiansPerSecond = degreesPerSecond * (MathF.PI / 180.0f);
+
+        World.Entity("RotatingBox")
+            .Set(new Position2D { Value = new Vector2(400, 300) })
+            .Set(new ECS.Size { Value = new Vector2(100, 100) })
+            .Set(new Orientation { Value = Quaternion.Identity }) // Start with no rotation
+            .Set(new RotationSpeed { Speed = radiansPerSecond }) // Use radians/sec
+            .Set(new RgbaColor(r: 255, g: 0, b: 0, a: 255));
+
         SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit finished successfully.");
         return SDL.AppResult.Continue; // Signal success
+    }
+
+    /// <summary>
+    /// Override OnIterate to perform per-frame updates.
+    /// </summary>
+    /// <param name="deltaTime">The time elapsed since the last frame, in seconds.</param>
+    /// <returns>An <see cref="SDL.AppResult"/> indicating whether the application should continue.</returns>
+    protected override SDL.AppResult OnIterate(float deltaTime)
+    {
+        Renderer!.DrawColor = (RgbaColor)Color.Bisque;
+        return base.OnIterate(deltaTime);
     }
 
 

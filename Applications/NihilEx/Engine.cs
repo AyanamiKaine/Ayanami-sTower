@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Numerics;
 using AyanamisTower.NihilEx.ECS;
+using Flecs.NET.Bindings;
 using Flecs.NET.Core;
 
 namespace AyanamisTower.NihilEx;
@@ -26,6 +27,9 @@ public class Engine
     public Engine(World world)
     {
         World = world;
+
+        World.Import<Ecs.Stats>();
+        world.Set(default(flecs.EcsRest));
         InitComponents();
         InitDefaultPhases();
         InitDefaultSystems();
@@ -57,6 +61,63 @@ public class Engine
     private void InitDefaultSystems()
     {
         InitRenderSystems();
+
+        World.System<Orientation, RotationSpeed>("RotateSystem")
+                    .Kind(Ecs.OnUpdate) // Use Ecs.OnUpdate directly if Phases["OnUpdate"] is not defined or needed
+                    .Iter((Iter it, Field<Orientation> orientation, Field<RotationSpeed> speed) => // Use Field<T> for component access
+                    {
+                        float dt = it.DeltaTime();
+                        for (int i = 0; i < it.Count(); i++)
+                        {
+                            // Calculate delta rotation around Z-axis
+                            float deltaAngleRadians = speed[i].Speed * dt;
+                            Quaternion deltaRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, deltaAngleRadians);
+
+                            // Multiply the current orientation by the delta rotation
+                            // Quaternion multiplication is non-commutative: newOrientation = oldOrientation * delta
+                            orientation[i].Value = Quaternion.Normalize(orientation[i].Value * deltaRotation); // Normalize to prevent drift
+                        }
+                    });
+
+        World.System<Position2D, ECS.Size, Orientation, RgbaColor>("Render2DBoxSystem") // Query Orientation instead of Angle
+            .Kind(Phases["OnRender"])
+            .Iter((Iter it, Field<Position2D> pos, Field<ECS.Size> size, Field<Orientation> orientation, Field<RgbaColor> color) => // Use Orientation
+            {
+                ref var renderer = ref it.World().GetMut<Renderer>();
+                if (renderer == null) return;
+
+                for (int i = 0; i < it.Count(); i++)
+                {
+                    Vector2 center = pos[i].Value;
+                    Vector2 dimensions = size[i].Value;
+                    Quaternion currentOrientation = orientation[i].Value; // Get the quaternion
+                    RgbaColor drawColor = color[i];
+
+                    float hw = dimensions.X / 2.0f;
+                    float hh = dimensions.Y / 2.0f;
+
+                    Vector2[] corners =
+                    [
+                        new(-hw, -hh), new( hw, -hh), new( hw,  hh), new(-hw,  hh)
+                    ];
+
+                    Vector2[] transformedCorners = new Vector2[4];
+                    for (int j = 0; j < 4; j++)
+                    {
+                        // Use Vector2.Transform with the quaternion
+                        transformedCorners[j] = Vector2.Transform(corners[j], currentOrientation) + center;
+                    }
+
+                    renderer.DrawColor = drawColor;
+
+                    // Draw lines (same as before)
+                    renderer.RenderLine(transformedCorners[0].X, transformedCorners[0].Y, transformedCorners[1].X, transformedCorners[1].Y);
+                    renderer.RenderLine(transformedCorners[1].X, transformedCorners[1].Y, transformedCorners[2].X, transformedCorners[2].Y);
+                    renderer.RenderLine(transformedCorners[2].X, transformedCorners[2].Y, transformedCorners[3].X, transformedCorners[3].Y);
+                    renderer.RenderLine(transformedCorners[3].X, transformedCorners[3].Y, transformedCorners[0].X, transformedCorners[0].Y);
+                }
+            });
+
     }
 
     private void InitComponents()
@@ -138,7 +199,7 @@ public class Engine
             .Member<ECS.Point>("Start")
             .Member<ECS.Point>("End");
 
-        World.Component<Color>("Color")
+        World.Component<RgbaColor>("Color")
             .Member<byte>("R")
             .Member<byte>("G")
             .Member<byte>("B")

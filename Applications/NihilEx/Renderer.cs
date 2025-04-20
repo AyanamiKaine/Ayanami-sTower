@@ -1,4 +1,5 @@
 using System.Drawing;
+using AyanamisTower.NihilEx.ECS;
 using SDL3;
 
 namespace AyanamisTower.NihilEx;
@@ -16,12 +17,12 @@ public class Renderer(nint window, string? name = null) : IDisposable
     /// <summary>
     /// Gets or sets the color used for drawing operations (Rect, Line, Point).
     /// </summary>
-    public Color DrawColor
+    public RgbaColor DrawColor
     {
         get
         {
             SDL.GetRenderDrawColor(_renderer, out byte r, out byte g, out byte b, out byte a);
-            return Color.FromArgb(a, r, g, b);
+            return new RgbaColor(r: r, g: g, b: b, a: a);
         }
         set
         {
