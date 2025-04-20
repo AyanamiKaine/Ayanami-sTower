@@ -11,8 +11,6 @@ namespace AyanamisTower.NihilEx.MinimalExample;
 /// </summary>
 public class MinimalApp : App // Inherit from App
 {
-    private Renderer? _renderer;
-
     /// <summary>
     /// Override OnInit to create window, renderer, and initialize state.
     /// </summary>
@@ -34,11 +32,8 @@ public class MinimalApp : App // Inherit from App
 
         try
         {
-            _renderer = Window?.CreateRenderer();
-            _renderer!.VSync = true;
-            _renderer!.DrawColor = Color.Bisque;
-
-            World.Set(_renderer);
+            Renderer!.VSync = true;
+            Renderer!.DrawColor = Color.Bisque;
         }
         catch (Exception)
         {
@@ -82,7 +77,7 @@ public class MinimalApp : App // Inherit from App
         SDL.LogInfo(SDL.LogCategory.Application, $"MinimalApp OnQuit started with result: {result}");
 
         // Destroy resources created in OnInit
-        _renderer?.Dispose();
+        Renderer?.Dispose();
         Window?.Dispose();
 
         // Call base OnQuit *after* cleaning up derived class resources
