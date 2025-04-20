@@ -122,6 +122,10 @@ public class Engine
 
         World.Component<Rotation3D>("Rotation3D")
             .Member<Vector3>("Value");
+
+        World.Component<Position2D>("Position2D")
+            .Member<Vector2>("Value");
+
         World.Component<Position3D>("Position3D")
             .Member<Vector3>("Value");
         World.Component<RotationSpeed>("RotationSpeed")
