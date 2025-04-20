@@ -137,6 +137,10 @@ public class Engine
             .Member<byte>("B")
             .Member<byte>("A");
 
+        World.Component<ProjectionType>("ProjectionType")
+            .Constant("Perspective", ProjectionType.Perspective)
+            .Constant("Orthographic", ProjectionType.Orthographic);
+
         World.Component<Camera>("Camera")
             .Member<Vector3>("Position")
             .Member<Quaternion>("Orientation")
