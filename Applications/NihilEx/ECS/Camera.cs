@@ -18,6 +18,14 @@ namespace AyanamisTower.NihilEx.ECS
         Orthographic
     }
 
+
+    /*
+    This is a struct so we can define the members of it using world.component
+    this allows us to set the camera component using the flecs explorer.
+
+    I find it really important to quickly change the data of our components.
+    */
+
     /// <summary>
     /// Represents a camera in 3D space, handling view and projection transformations.
     /// </summary>
