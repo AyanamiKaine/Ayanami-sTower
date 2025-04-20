@@ -33,8 +33,6 @@ internal class FPSCounter
 /// </summary>
 public class ColorApp : App // Inherit from App
 {
-    private Renderer? _renderer;
-
     // State for color cycling (now instance members)
     private float _currentR;
     private float _currentG;
@@ -90,8 +88,7 @@ public class ColorApp : App // Inherit from App
 
         try
         {
-            _renderer = Window?.CreateRenderer();
-            _renderer!.VSync = true;
+            Renderer!.VSync = true;
         }
         catch (Exception)
         {
@@ -186,18 +183,18 @@ public class ColorApp : App // Inherit from App
         // --- End Color Update Logic ---
 
         // --- Rendering ---
-        _renderer!.DrawColor = Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
+        Renderer!.DrawColor = Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
 
-        _renderer?.Clear();
+        Renderer?.Clear();
 
         World.Progress(deltaTime);
         _fpsCounter.Update();
 
-        _renderer!.DrawColor = Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
+        Renderer!.DrawColor = Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
 
-        _renderer?.ShowDebugText(10, 10, $"FPS: {_fpsCounter.FPS}");
+        Renderer?.ShowDebugText(10, 10, $"FPS: {_fpsCounter.FPS}");
 
-        _renderer!.DrawColor = Color.FromArgb(255, 255, 255, 255);
+        Renderer!.DrawColor = Color.FromArgb(255, 255, 255, 255);
 
         // Draw the edges
         foreach (var edge in _edges)
@@ -205,10 +202,10 @@ public class ColorApp : App // Inherit from App
             Vector2 p1 = _projectedVertices[edge.Item1];
             Vector2 p2 = _projectedVertices[edge.Item2];
             // SDL.RenderLine expects integers
-            _renderer?.RenderLine((int)p1.X, (int)p1.Y, (int)p2.X, (int)p2.Y);
+            Renderer?.RenderLine((int)p1.X, (int)p1.Y, (int)p2.X, (int)p2.Y);
         }
 
-        _renderer?.Present();
+        Renderer?.Present();
         // --- End Rendering ---
 
         return SDL.AppResult.Continue; // Keep iterating
@@ -241,7 +238,7 @@ public class ColorApp : App // Inherit from App
         SDL.LogInfo(SDL.LogCategory.Application, $"MyColorApp OnQuit started with result: {result}");
 
         // Destroy resources created in OnInit
-        _renderer?.Dispose();
+        Renderer?.Dispose();
         Window?.Dispose();
 
         // Call base OnQuit *after* cleaning up derived class resources
