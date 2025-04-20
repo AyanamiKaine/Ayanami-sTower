@@ -1,4 +1,6 @@
-﻿using Flecs.NET.Core;
+﻿using System.Numerics;
+using AyanamisTower.NihilEx.ECS;
+using Flecs.NET.Core;
 
 namespace AyanamisTower.NihilEx;
 /// <summary>
@@ -22,6 +24,7 @@ public class Engine
     public Engine(World world)
     {
         World = world;
+        InitComponents();
         InitDefaultPhases();
         InitDefaultSystems();
     }
@@ -52,6 +55,16 @@ public class Engine
     private void InitDefaultSystems()
     {
         InitRenderSystems();
+    }
+
+    private void InitComponents()
+    {
+        World.Component<Rotation3D>("Rotation3D")
+            .Member<Vector3>("Vector3");
+        World.Component<Position3D>("Position3D")
+            .Member<Vector3>("Vector3");
+        World.Component<RotationSpeed>("RotationSpeed")
+            .Member<float>("Speed");
     }
 
     private void InitRenderSystems()
