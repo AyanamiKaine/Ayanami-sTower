@@ -42,9 +42,19 @@ public class MinimalApp : App // Inherit from App
             .Set(new RotationSpeed2D { Speed = 90 * (MathF.PI / 180.0f) })
             .Set(new RgbaColor(r: 255, g: 0, b: 0, a: 255));
 
-        AppEntity.Observe<WindowResize>(() =>
+        AppEntity.Observe((ref WindowResize windowResize) =>
         {
-            Console.WriteLine("Test");
+            Console.WriteLine($"Window was resized. New Height: {windowResize.Height} New Width: {windowResize.Width}");
+        });
+
+        AppEntity.Observe((ref KeyDownEvent keyDownEvent) =>
+        {
+            Console.WriteLine($"Key was pressed down: {keyDownEvent.Keycode}");
+        });
+
+        AppEntity.Observe((ref MouseButtonDownEvent mouseButtonDownEvent) =>
+        {
+            Console.WriteLine($"Mouse button was pressed down: {mouseButtonDownEvent.MouseButton}");
         });
 
         SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit finished successfully.");
