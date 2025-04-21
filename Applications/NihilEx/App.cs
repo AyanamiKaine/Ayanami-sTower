@@ -166,10 +166,35 @@ namespace AyanamisTower.NihilEx
         /// Note: SDL.Quit() is called automatically by SDL after this.
         /// </summary>
         /// <param name="result">The result code that caused the application to quit.</param>
-        protected virtual void OnQuit(SDL.AppResult result)
+        protected void SDLQuit(SDL.AppResult result)
         {
-            Renderer?.Dispose();
-            Window?.Dispose();
+
+            try
+            {
+                SDL.LogInfo(SDL.LogCategory.Application, "Calling OnUserQuit...");
+                OnQuit(result); // Allow derived class to clean up its resources
+                SDL.LogInfo(SDL.LogCategory.Application, "OnUserQuit finished.");
+            }
+            catch (Exception ex)
+            {
+                // Log error in user cleanup but continue with base cleanup
+                SDL.LogError(SDL.LogCategory.Application, $"Exception during OnUserQuit: {ex}");
+            }
+            if (Renderer != null)
+            {
+                Renderer.Dispose();
+                Renderer = null; // Set to null after disposal
+                SDL.LogInfo(SDL.LogCategory.Application, "Renderer Disposed.");
+            }
+
+            // Dispose Window
+            if (Window != null)
+            {
+                Window.Dispose();
+                Window = null; // Set to null after disposal
+                SDL.LogInfo(SDL.LogCategory.Application, "Window Disposed.");
+            }
+
             SDL.LogInfo(SDL.LogCategory.Application, $"Base OnQuit called with result: {result}");
             // Base implementation can Quit initialized subsystems
             if (SDL.WasInit(SDL.InitFlags.Video) != 0) // Check if Video was initialized
@@ -179,6 +204,12 @@ namespace AyanamisTower.NihilEx
             // SDL.Quit(); // DO NOT CALL SDL.Quit() here, SDL does it after this callback.
         }
 
+        /// <summary>
+        /// Called just before the application terminates and before core resources (Window, Renderer) are disposed.
+        /// Implement cleanup for resources created in OnUserInitialize here.
+        /// </summary>
+        /// <param name="result">The result code that caused the application to quit.</param>
+        protected abstract void OnQuit(SDL.AppResult result);
 
         // --- Static Callback Wrappers (Called by SDL) ---
         private static SDL.AppResult StaticAppInit(IntPtr appstatePtrRef, int argc, string[] argv)
@@ -271,7 +302,7 @@ namespace AyanamisTower.NihilEx
                 }
 
                 // Call the virtual OnQuit method
-                instance.OnQuit(result);
+                instance.SDLQuit(result);
 
                 // NOTE: Do not free the GCHandle here. The Run() method does it in its finally block.
             }
