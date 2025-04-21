@@ -37,7 +37,6 @@ public static class EcsWorldExtensions
         {
             if (rule.CriteriaCount < currentHighestScore)
                 return;
-
             /*
             This here remains a big problem, where does the rule get its data from? From one entity? From the world?
             From an ECS query? Conceptually a key would be the type of component like Health and the value the data of the component.
