@@ -275,8 +275,11 @@ public class Engine
             .Member<float>("Z")
             .Member<float>("W");
 
-        World.Component<Size2D>("Size")
+        World.Component<Size2D>("Size2D")
             .Member<Vector2>("Value");
+
+        World.Component<Size3D>("Size3D")
+            .Member<Vector3>("Value");
 
         World.Component<Orientation>("Orientation")
             .Member<Quaternion>("Value");
@@ -289,8 +292,12 @@ public class Engine
 
         World.Component<Position3D>("Position3D")
             .Member<Vector3>("Value");
+
         World.Component<RotationSpeed2D>("RotationSpeed")
             .Member<float>("Speed");
+
+        World.Component<RotationSpeed3D>("RotationSpeed")
+            .Member<Vector3>("SpeedRadPerSec");
 
         World.Component<ECS.Point>("Point")
             .Member<Vector2>("Value");
