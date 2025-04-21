@@ -262,6 +262,22 @@ namespace AyanamisTower.NihilEx
                     IsRepeat: e.Key.Repeat
                 ));
             }
+            if (e.Type == (uint)SDL.EventType.KeyUp)
+            {
+                AppEntity.Emit(new KeyUpEvent(
+                    Keycode: e.Key.Key,
+                    Modifiers: e.Key.Mod
+                ));
+            }
+            if (e.Type == (uint)SDL.EventType.MouseButtonDown)
+            {
+                AppEntity.Emit(new MouseButtonDownEvent(
+                    MouseButton: SDL.GetMouseState(out float _, out float _),
+                    X: e.Button.X,
+                    Y: e.Button.Y,
+                    Clicks: e.Button.Clicks
+                ));
+            }
             return SDL.AppResult.Continue;
         }
 
