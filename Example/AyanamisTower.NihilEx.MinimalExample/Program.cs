@@ -34,7 +34,6 @@ public class MinimalApp : App // Inherit from App
         try
         {
             Renderer!.VSync = true;
-            Renderer!.DrawColor = (RgbaColor)Color.Bisque;
         }
         catch (Exception)
         {
