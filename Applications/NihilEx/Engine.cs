@@ -62,10 +62,10 @@ public class Engine
     {
         InitRenderSystems();
 
-        World.System<Orientation, RotationSpeed, DeltaTime>("RotateSystem")
+        World.System<Orientation, RotationSpeed2D, DeltaTime>("RotateSystem")
                     .Kind(Ecs.OnUpdate) // Use Ecs.OnUpdate directly if Phases["OnUpdate"] is not defined or needed
                     .TermAt(2).Singleton()
-                    .Each((ref Orientation orientation, ref RotationSpeed speed, ref DeltaTime dt) => // Use Field<T> for component access
+                    .Each((ref Orientation orientation, ref RotationSpeed2D speed, ref DeltaTime dt) => // Use Field<T> for component access
                     {
                         float deltaAngleRadians = speed.Speed * dt.DeltaSeconds;
                         Quaternion deltaRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, deltaAngleRadians);
@@ -75,10 +75,10 @@ public class Engine
                         orientation.Value = Quaternion.Normalize(orientation.Value * deltaRotation); // Normalize to prevent drift
                     });
 
-        World.System<Position2D, ECS.Size, Orientation, RgbaColor, Renderer>("Render2DBoxSystem") // Query Orientation instead of Angle
+        World.System<Position2D, Size2D, Orientation, RgbaColor, Renderer>("Render2DBoxSystem") // Query Orientation instead of Angle
             .Kind(Phases["OnRender"])
             .TermAt(4).Singleton()
-            .Each((ref Position2D pos, ref ECS.Size size, ref Orientation orientation, ref RgbaColor color, ref Renderer renderer) => // Use Orientation
+            .Each((ref Position2D pos, ref Size2D size, ref Orientation orientation, ref RgbaColor color, ref Renderer renderer) => // Use Orientation
             {
                 if (renderer == null) return;
                 Vector2 center = pos.Value;
@@ -108,6 +108,114 @@ public class Engine
                 renderer.RenderLine(transformedCorners[2].X, transformedCorners[2].Y, transformedCorners[3].X, transformedCorners[3].Y);
                 renderer.RenderLine(transformedCorners[3].X, transformedCorners[3].Y, transformedCorners[0].X, transformedCorners[0].Y);
 
+            });
+
+        World.System<Orientation, RotationSpeed3D, DeltaTime>("RotateCubeSystem")
+            .Kind(Ecs.OnUpdate)
+            .TermAt(2).Singleton() // DeltaTime is a singleton
+            .Each((ref Orientation orientation, ref RotationSpeed3D speed, ref DeltaTime dt) =>
+            {
+                // Create rotations for each axis based on speed and delta time
+                Quaternion deltaX = Quaternion.CreateFromAxisAngle(Vector3.UnitX, speed.SpeedRadPerSec.X * dt.DeltaSeconds);
+                Quaternion deltaY = Quaternion.CreateFromAxisAngle(Vector3.UnitY, speed.SpeedRadPerSec.Y * dt.DeltaSeconds);
+                Quaternion deltaZ = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, speed.SpeedRadPerSec.Z * dt.DeltaSeconds);
+
+                // Combine the deltas and apply to the current orientation
+                // Order matters: ZYX is a common convention
+                orientation.Value = Quaternion.Normalize(orientation.Value * deltaZ * deltaY * deltaX);
+            });
+
+        World.System<ProjectedMesh, MeshGeometry, Orientation, Position3D, Camera, Window>("ProjectCubeSystem")
+            .Kind(Phases["PreRender"])
+            .TermAt(4).Singleton() // Camera is singleton
+            .TermAt(5).Singleton() // Window is singleton
+            .Each((ref ProjectedMesh projected, ref MeshGeometry geometry, ref Orientation orientation, ref Position3D position, ref Camera camera, ref Window windowSize) =>
+            {
+                // Ensure projected vertex array is allocated and sized correctly
+                if (projected.ProjectedVertices == null || projected.ProjectedVertices.Length != geometry.BaseVertices.Length)
+                {
+                    projected.ProjectedVertices = new Vector2[geometry.BaseVertices.Length];
+                }
+
+                // 1. Calculate Model Matrix (World Transform)
+                Matrix4x4 rotationMatrix = Matrix4x4.CreateFromQuaternion(orientation.Value);
+                Matrix4x4 translationMatrix = Matrix4x4.CreateTranslation(position.Value);
+                Matrix4x4 modelMatrix = rotationMatrix * translationMatrix; // Scale could be added here too
+
+                // 2. Get View-Projection Matrix from Camera
+                // Ensure camera's aspect ratio matches window size
+                // NOTE: This check should ideally happen when the window resizes, not every frame.
+                // We'll add logic in App.OnEvent later.
+                // For now, we assume the Camera singleton is updated elsewhere or is correct.
+                camera.AspectRatio = (float)windowSize.Width / windowSize.Height;
+                camera.EnsureMatricesUpdated(); // Make sure ViewProjection is current
+
+                Matrix4x4 viewMatrix = camera.ViewMatrix;             // Get for logging
+                Matrix4x4 projectionMatrix = camera.ProjectionMatrix; // Get for logging
+
+                // 3. Calculate Model-View-Projection (MVP) Matrix *directly*
+                //    Perform the multiplication step-by-step
+                Matrix4x4 modelViewMatrix = Matrix4x4.Multiply(modelMatrix, viewMatrix);
+                Matrix4x4 mvpMatrix = Matrix4x4.Multiply(modelViewMatrix, projectionMatrix); // MVP = (Model * View) * Projection
+
+
+                // 4. Transform and Project Vertices
+                float screenCenterX = windowSize.Width / 2.0f;
+                float screenCenterY = windowSize.Height / 2.0f;
+
+                for (int i = 0; i < geometry.BaseVertices.Length; i++)
+                {
+                    // Transform vertex by MVP matrix
+                    Vector4 clipSpaceVertex = Vector4.Transform(geometry.BaseVertices[i], mvpMatrix);
+
+                    // Perform perspective divide (Normalize Device Coordinates - NDC)
+                    // Check for W <= 0 to avoid division by zero/negative (points behind camera)
+                    if (clipSpaceVertex.W <= 0.0001f) // Small epsilon
+                    {
+                        // Handle points behind the camera (e.g., clamp, discard, project differently)
+                        // For simplicity, we can just place them far off-screen.
+                        projected.ProjectedVertices[i] = new Vector2(float.MinValue, float.MinValue);
+                        continue;
+                    }
+
+                    Vector3 ndcVertex = new Vector3(clipSpaceVertex.X, clipSpaceVertex.Y, clipSpaceVertex.Z) / clipSpaceVertex.W;
+
+                    // 5. Viewport Transform (NDC to Screen Coordinates)
+                    // NDC range is typically [-1, 1] for X and Y (OpenGL convention, adjust if different)
+                    float screenX = (ndcVertex.X + 1.0f) / 2.0f * windowSize.Width;
+                    // Y is often inverted (NDC +1 is top, Screen +Y is bottom)
+                    float screenY = (1.0f - ndcVertex.Y) / 2.0f * windowSize.Height;
+
+                    projected.ProjectedVertices[i] = new Vector2(screenX, screenY);
+                }
+            });
+
+        World.System<ProjectedMesh, MeshGeometry, RgbaColor, Renderer>("RenderCubeEdgesSystem")
+            .Kind(Phases["OnRender"])
+            .TermAt(3).Singleton() // Renderer is singleton
+            .Each((ref ProjectedMesh projected, ref MeshGeometry geometry, ref RgbaColor color, ref Renderer renderer) =>
+            {
+                // Check if projection results are valid
+                if (projected.ProjectedVertices == null || projected.ProjectedVertices.Length == 0) return;
+
+                renderer.DrawColor = color; // Set line color
+
+                foreach (var edge in geometry.Edges)
+                {
+                    // Basic bounds check
+                    if (edge.Index1 >= 0 && edge.Index1 < projected.ProjectedVertices.Length &&
+                        edge.Index2 >= 0 && edge.Index2 < projected.ProjectedVertices.Length)
+                    {
+                        Vector2 p1 = projected.ProjectedVertices[edge.Index1];
+                        Vector2 p2 = projected.ProjectedVertices[edge.Index2];
+
+                        // Avoid drawing lines with off-screen points if we marked them earlier
+                        if (p1.X > float.MinValue && p1.Y > float.MinValue && p2.X > float.MinValue && p2.Y > float.MinValue)
+                        {
+                            renderer.RenderLine(p1.X, p1.Y, p2.X, p2.Y);
+                        }
+                    }
+                }
             });
 
     }
@@ -167,7 +275,7 @@ public class Engine
             .Member<float>("Z")
             .Member<float>("W");
 
-        World.Component<ECS.Size>("Size")
+        World.Component<Size2D>("Size")
             .Member<Vector2>("Value");
 
         World.Component<Orientation>("Orientation")
@@ -181,7 +289,7 @@ public class Engine
 
         World.Component<Position3D>("Position3D")
             .Member<Vector3>("Value");
-        World.Component<RotationSpeed>("RotationSpeed")
+        World.Component<RotationSpeed2D>("RotationSpeed")
             .Member<float>("Speed");
 
         World.Component<ECS.Point>("Point")
