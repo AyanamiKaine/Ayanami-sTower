@@ -1,5 +1,9 @@
 # Todo
 
+## Implement Correct Handling of Aspect Ratio
+
+Currently there is no implement way to have different ways to handeling the aspect ratio when the window changes.
+
 ## Implement Jolt Physics (3D)
 
 Instead of writing our own 3D physics framework we want to use an existing one. Jolt is a good and battle tested physics engine for 3D.
