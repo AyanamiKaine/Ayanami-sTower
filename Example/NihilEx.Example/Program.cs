@@ -64,13 +64,6 @@ public class ColorApp : App // Inherit from App
     /// </summary>
     protected override SDL.AppResult OnInit(string[] args)
     {
-        // Call base OnInit first to initialize SDL subsystems (optional but good practice)
-        SDL.AppResult baseResult = base.SDLInit(args);
-        if (baseResult != SDL.AppResult.Continue)
-        {
-            return baseResult; // Exit if base initialization failed
-        }
-
         SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnInit started.");
 
         // Configuration for window and color
@@ -236,15 +229,6 @@ public class ColorApp : App // Inherit from App
     protected override void OnQuit(SDL.AppResult result)
     {
         SDL.LogInfo(SDL.LogCategory.Application, $"MyColorApp OnQuit started with result: {result}");
-
-        // Destroy resources created in OnInit
-        Renderer?.Dispose();
-        Window?.Dispose();
-
-        // Call base OnQuit *after* cleaning up derived class resources
-        // to ensure SDL subsystems are shut down last.
-        base.OnQuit(result);
-
         SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnQuit finished.");
     }
 }

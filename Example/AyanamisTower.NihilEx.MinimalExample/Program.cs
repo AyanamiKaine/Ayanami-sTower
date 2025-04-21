@@ -78,11 +78,6 @@ public class MinimalApp : App // Inherit from App
     protected override void OnQuit(SDL.AppResult result)
     {
         SDL.LogInfo(SDL.LogCategory.Application, $"MinimalApp OnQuit started with result: {result}");
-
-        // Call base OnQuit *after* cleaning up derived class resources
-        // to ensure SDL subsystems are shut down last.
-        base.OnQuit(result);
-
         SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnQuit finished.");
     }
 }
