@@ -23,7 +23,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Tmds.DBus" Version="0.20.0" />
+		<PackageReference Include="Tmds.DBus"/>
 	</ItemGroup>
 
 	<ItemGroup>

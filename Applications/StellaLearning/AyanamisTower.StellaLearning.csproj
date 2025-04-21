@@ -26,26 +26,26 @@
 	</ItemGroup>
 
 	<ItemGroup>
-    <PackageReference Include="YamlDotNet" Version="16.3.0" />
-    <PackageReference Include="DotNetEnv" Version="3.1.1" />
-    <PackageReference Include="Google_GenerativeAI" Version="2.5.6" />
-    <PackageReference Include="HtmlAgilityPack" Version="1.12.0" />
-    <PackageReference Include="PDFsharp" Version="6.1.1" />
-    <PackageReference Include="Clowd.Clipboard.Avalonia" Version="1.1.4" />
-    <PackageReference Include="System.Reactive" Version="6.0.1" />
-    <PackageReference Include="Mono.Posix.NETStandard" Version="5.20.1-preview" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Avalonia" Version="11.2.5" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.5" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.5" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.5" />
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.5" />
-    <PackageReference Include="Flecs.NET.Debug" Version="4.0.4-build.548" />
-	<PackageReference Include="Flecs.NET.Release" Version="4.0.4-build.548" />    
-	<PackageReference Include="FluentAvaloniaUI" Version="2.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />  
-  </ItemGroup>
+	    <PackageReference Include="YamlDotNet"/>
+        <PackageReference Include="DotNetEnv"/>
+        <PackageReference Include="Google_GenerativeAI"/>
+        <PackageReference Include="HtmlAgilityPack"/>
+        <PackageReference Include="PDFsharp"/>
+        <PackageReference Include="Clowd.Clipboard.Avalonia"/>
+        <PackageReference Include="System.Reactive"/>
+        <PackageReference Include="Mono.Posix.NETStandard"/>
+        <PackageReference Include="CommunityToolkit.Mvvm"/>
+        <PackageReference Include="Avalonia"/>
+        <PackageReference Include="Avalonia.Desktop"/>
+        <PackageReference Include="Avalonia.Themes.Fluent"/>
+        <PackageReference Include="Avalonia.Fonts.Inter"/>
+        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics"/>
+        <PackageReference Include="Flecs.NET.Debug"/>
+	    <PackageReference Include="Flecs.NET.Release"/>    
+	    <PackageReference Include="FluentAvaloniaUI"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting"/>  
+    </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../Avalonia/Avalonia.Flecs/Avalonia.Flecs.Controls/Avalonia.Flecs.Controls.csproj" />

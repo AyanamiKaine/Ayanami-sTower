@@ -32,8 +32,8 @@
     </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="StellaFuzzyPatternMatcher" Version="*" />
-    <PackageReference Include="Flecs.NET.Debug" Version="4.0.3" />
-    <PackageReference Include="Flecs.NET.Release" Version="4.0.3" />
+    <PackageReference Include="StellaFuzzyPatternMatcher"/>
+    <PackageReference Include="Flecs.NET.Debug" VersionOverride="4.0.3"/>
+    <PackageReference Include="Flecs.NET.Release" VersionOverride="4.0.3"/>
   </ItemGroup>
 </Project>

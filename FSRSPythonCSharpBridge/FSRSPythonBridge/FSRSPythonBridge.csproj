@@ -10,7 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="pythonnet" Version="3.0.5" />
+        	 <PackageReference Include="NLog"/>
+
+	  <PackageReference Include="pythonnet"/>
   </ItemGroup>
 
   <ItemGroup>
