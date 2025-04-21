@@ -190,7 +190,7 @@ public class Engine
                 }
             });
 
-        World.System<Position3D, Size3D, Orientation, RgbaColor, Camera, Window, Renderer>("RenderBoxSystem")
+        World.System<Position3D, Size3D, Orientation, RgbaColor, Camera, Window, Renderer>("RenderBoxWireframeSystem")
             .With<Box>() // <--- Query for entities with the Box tag!
             .Kind(Phases["OnRender"])
             .TermAt(4).Singleton() // Camera
@@ -255,7 +255,7 @@ public class Engine
                 }
             });
 
-        World.System<ProjectedMesh, MeshGeometry, RgbaColor, Renderer>("RenderCustomMeshSystem")
+        World.System<ProjectedMesh, MeshGeometry, RgbaColor, Renderer>("RenderCustomMeshWireframeSystem")
             .Kind(Phases["OnRender"])
             .TermAt(3).Singleton() // Renderer is singleton
             .Each((ref ProjectedMesh projected, ref MeshGeometry geometry, ref RgbaColor color, ref Renderer renderer) =>
