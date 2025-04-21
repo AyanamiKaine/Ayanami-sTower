@@ -325,7 +325,6 @@ namespace AyanamisTower.NihilEx
             }
             else if (e.Type == (uint)SDL.EventType.WindowMouseLeave)
             {
-
                 AppEntity.Emit(new WindowMouseLeaveEvent(
                     MouseButton: SDL.GetGlobalMouseState(out float X, out float Y),
                     Down: e.Button.Down,
@@ -333,6 +332,7 @@ namespace AyanamisTower.NihilEx
                     Y: Y,
                     Clicks: e.Button.Clicks));
             }
+
             return SDL.AppResult.Continue;
         }
 
