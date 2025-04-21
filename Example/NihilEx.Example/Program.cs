@@ -1,5 +1,6 @@
 ﻿using System.Drawing;
 using System.Numerics;
+using AyanamisTower.NihilEx.ECS;
 using Flecs.NET.Core;
 using SDL3;
 
@@ -33,13 +34,6 @@ internal class FPSCounter
 /// </summary>
 public class ColorApp : App // Inherit from App
 {
-    // State for color cycling (now instance members)
-    private float _currentR;
-    private float _currentG;
-    private float _currentB;
-    private float _deltaR;
-    private float _deltaG;
-    private float _deltaB;
     private readonly FPSCounter _fpsCounter = new();
     // Cube Geometry
     private Vector3[] _baseVertices = []; // Original cube vertices
@@ -48,31 +42,12 @@ public class ColorApp : App // Inherit from App
     // Transformed/Projected Vertices
     private Vector2[] _projectedVertices = []; // 2D screen coordinates
 
-    // Rotation State
-    private float _angleX = 0.0f;
-    private float _angleY = 0.0f;
-    private float _angleZ = 0.0f;
-    private const float RotationSpeed = 0.8f; // Radians per second
-
-    // Projection State
-    private int _screenWidth = 800;
-    private int _screenHeight = 600;
-    private float _fieldOfView = 300.0f; // Affects perspective intensity
-    private float _zOffset = 5.0f; // Move cube away from camera
     /// <summary>
     /// Override OnInit to create window, renderer, and initialize state.
     /// </summary>
     protected override SDL.AppResult OnInit(string[] args)
     {
         SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnInit started.");
-
-        // Configuration for window and color
-        _currentR = 100f; // Start color
-        _currentG = 149f;
-        _currentB = 237f;
-        _deltaR = 30.0f; // Change rates per second
-        _deltaG = 50.0f;
-        _deltaB = 70.0f;
 
         try
         {
@@ -84,119 +59,53 @@ public class ColorApp : App // Inherit from App
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
             return SDL.AppResult.Failure;
         }
+        // --- Create Singletons ---
+        // 1. Camera Singleton
+        float initialFovRadians = 60.0f * (MathF.PI / 180.0f); // e.g., 60 degrees FOV
+        float aspectRatio = (float)InitalWidth / InitalHeight; // Use initial size
+        var initialCamera = new Camera(
+            position: new Vector3(0, 0, 5),  // Move camera back along Z
+            lookAtTarget: Vector3.Zero,      // Look at the origin where the cube is
+            worldUp: Vector3.UnitY,
+            aspectRatio: aspectRatio,
+            nearPlane: 0.1f,
+            farPlane: 100.0f                 // Adjust far plane as needed
+        );
+        initialCamera.FieldOfViewRadians = initialFovRadians;
+        World.Set(initialCamera); // Set as singleton
 
-        DefineCube();
-        _projectedVertices = new Vector2[_baseVertices.Length]; // Initialize array for 2D points
+        // --- Create the Cube Entity ---
+        var cubeEntity = World.Entity("SpinningCube");
+
+        // Define Geometry
+        Vector3[] baseVertices = [
+            new(-1, -1, -1), new( 1, -1, -1), new( 1,  1, -1), new(-1,  1, -1), // Back face
+                new(-1, -1,  1), new( 1, -1,  1), new( 1,  1,  1), new(-1,  1,  1)  // Front face
+        ];
+        Edge[] edges = [
+           // Back face
+           new(0, 1), new(1, 2), new(2, 3), new(3, 0),
+                // Front face
+                new(4, 5), new(5, 6), new(6, 7), new(7, 4),
+                // Connecting edges
+                new(0, 4), new(1, 5), new(2, 6), new(3, 7)
+        ];
+
+        // Add Components to the Cube Entity
+        cubeEntity.Set(new MeshGeometry(baseVertices, edges))
+                  .Set(new ProjectedMesh { ProjectedVertices = new Vector2[baseVertices.Length] }) // Initialize array
+                  .Set(new Position3D(Vector3.Zero)) // Place cube at origin
+                  .Set(new Orientation(Quaternion.Identity)) // Start with no rotation
+                  .Set(new RotationSpeed3D(new Vector3( // Different speeds per axis (radians/sec)
+                      0.8f * 0.8f,
+                      0.8f * 1.0f,
+                      0.8f * 1.2f
+                  )))
+                  .Set(RgbaColor.Red); // Cube lines are white
+
+
         SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnInit finished successfully.");
         return SDL.AppResult.Continue; // Signal success
-    }
-
-
-    private void DefineCube()
-    {
-        // Define 8 vertices for a unit cube centered at the origin
-        _baseVertices = [
-                new(-1, -1, -1), // 0
-                new( 1, -1, -1), // 1
-                new( 1,  1, -1), // 2
-                new(-1,  1, -1), // 3
-                new(-1, -1,  1), // 4
-                new( 1, -1,  1), // 5
-                new( 1,  1,  1), // 6
-                new(-1,  1,  1)  // 7
-            ];
-
-        // Define 12 edges connecting the vertices by index
-        _edges = [
-                // Back face
-                Tuple.Create(0, 1), Tuple.Create(1, 2), Tuple.Create(2, 3), Tuple.Create(3, 0),
-                // Front face
-                Tuple.Create(4, 5), Tuple.Create(5, 6), Tuple.Create(6, 7), Tuple.Create(7, 4),
-                // Connecting edges
-                Tuple.Create(0, 4), Tuple.Create(1, 5), Tuple.Create(2, 6), Tuple.Create(3, 7)
-            ];
-    }
-    /// <summary>
-    /// Override OnIterate for update and rendering logic.
-    /// </summary>
-    protected override SDL.AppResult OnIterate(float deltaTime)
-    {
-        // --- Update Rotation ---
-        _angleX += RotationSpeed * deltaTime * 0.8f; // Slightly different speeds
-        _angleY += RotationSpeed * deltaTime;
-        _angleZ += RotationSpeed * deltaTime * 1.2f;
-        // --- End Update Rotation ---
-
-        // --- Transformation and Projection ---
-        // Create rotation matrices
-        Matrix4x4 rotX = Matrix4x4.CreateRotationX(_angleX);
-        Matrix4x4 rotY = Matrix4x4.CreateRotationY(_angleY);
-        Matrix4x4 rotZ = Matrix4x4.CreateRotationZ(_angleZ);
-        Matrix4x4 transform = rotX * rotY * rotZ; // Combine rotations
-
-        float screenCenterX = _screenWidth / 2.0f;
-        float screenCenterY = _screenHeight / 2.0f;
-
-        // Rotate and project each vertex
-        for (int i = 0; i < _baseVertices.Length; i++)
-        {
-            // Apply rotation
-            Vector3 rotatedVertex = Vector3.Transform(_baseVertices[i], transform);
-
-            // Apply simple perspective projection
-            // Move cube away from camera along Z
-            float zProjected = rotatedVertex.Z + _zOffset;
-
-            // Basic perspective scaling factor (avoid division by zero or small numbers)
-            float scale = (zProjected > 0.1f) ? (_fieldOfView / zProjected) : _fieldOfView / 0.1f;
-
-            float projectedX = (rotatedVertex.X * scale) + screenCenterX;
-            float projectedY = (rotatedVertex.Y * scale) + screenCenterY;
-
-            _projectedVertices[i] = new Vector2(projectedX, projectedY);
-        }
-
-        // --- Color Update Logic ---
-        _currentR += _deltaR * deltaTime;
-        if (_currentR > 255.0f) { _currentR = 255.0f; _deltaR *= -1.0f; }
-        else if (_currentR < 0.0f) { _currentR = 0.0f; _deltaR *= -1.0f; }
-
-        _currentG += _deltaG * deltaTime;
-        if (_currentG > 255.0f) { _currentG = 255.0f; _deltaG *= -1.0f; }
-        else if (_currentG < 0.0f) { _currentG = 0.0f; _deltaG *= -1.0f; }
-
-        _currentB += _deltaB * deltaTime;
-        if (_currentB > 255.0f) { _currentB = 255.0f; _deltaB *= -1.0f; }
-        else if (_currentB < 0.0f) { _currentB = 0.0f; _deltaB *= -1.0f; }
-        // --- End Color Update Logic ---
-
-        // --- Rendering ---
-        Renderer!.DrawColor = (ECS.RgbaColor)Color.FromArgb(255, (int)_currentR, (int)_currentG, (int)_currentB);
-
-        Renderer?.Clear();
-
-        World.Progress(deltaTime);
-        _fpsCounter.Update();
-
-        Renderer!.DrawColor = (ECS.RgbaColor)Color.FromArgb(255, (int)(255 - _currentR), (int)(255 - _currentG), (int)(255 - _currentB));
-
-        Renderer?.ShowDebugText(10, 10, $"FPS: {_fpsCounter.FPS}");
-
-        Renderer!.DrawColor = (ECS.RgbaColor)Color.FromArgb(255, 255, 255, 255);
-
-        // Draw the edges
-        foreach (var edge in _edges)
-        {
-            Vector2 p1 = _projectedVertices[edge.Item1];
-            Vector2 p2 = _projectedVertices[edge.Item2];
-            // SDL.RenderLine expects integers
-            Renderer?.RenderLine((int)p1.X, (int)p1.Y, (int)p2.X, (int)p2.Y);
-        }
-
-        Renderer?.Present();
-        // --- End Rendering ---
-
-        return SDL.AppResult.Continue; // Keep iterating
     }
 
     /// <summary>
@@ -207,8 +116,6 @@ public class ColorApp : App // Inherit from App
         // Handle window resize event specifically
         if (e.Type == (uint)SDL.EventType.WindowResized)
         {
-            _screenWidth = e.Window.Data1; // Update screen dimensions
-            _screenHeight = e.Window.Data2;
             SDL.LogInfo(SDL.LogCategory.Application, $"MyColorApp OnEvent: Window Resized (from event data) to: {Window?.Width} x {Window?.Height}");
 
             return SDL.AppResult.Continue;
