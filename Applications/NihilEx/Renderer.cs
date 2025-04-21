@@ -15,40 +15,51 @@ public class Renderer(nint window, string? name = null) : IDisposable
     private bool _isDisposed = false;
 
     /// <summary>
+    /// Backing field for the DrawColor property.
+    /// </summary>
+    private RgbaColor _drawColor;
+
+    /// <summary>
+    /// Backing field for the VSync property.
+    /// </summary>
+    private bool _vSync;
+
+    /// <summary>
     /// Gets or sets the color used for drawing operations (Rect, Line, Point).
+    /// When set, updates the internal state and the SDL renderer's draw color.
     /// </summary>
     public RgbaColor DrawColor
     {
-        get
-        {
-            SDL.GetRenderDrawColor(_renderer, out byte r, out byte g, out byte b, out byte a);
-            return new RgbaColor(r: r, g: g, b: b, a: a);
-        }
+        get => _drawColor;
         set
         {
-            SDL.SetRenderDrawColor(_renderer,
-            r: value.R,
-            g: value.G,
-            b: value.B,
-            a: value.A);
+            if (_drawColor != value)
+            {
+                _drawColor = value;
+                SDL.SetRenderDrawColor(_renderer,
+                    r: value.R,
+                    g: value.G,
+                    b: value.B,
+                    a: value.A);
+            }
         }
     }
+
     /// <summary>
     /// Gets or sets a value indicating whether VSync is enabled for the renderer.
+    /// When set, updates the internal state and the SDL renderer's VSync setting.
     /// </summary>
     public bool VSync
     {
-        get
-        {
-            SDL.GetRenderVSync(_renderer, out int vsync);
-            return vsync != 0;
-        }
+        get => _vSync;
         set
         {
-            if (value)
-                SDL.SetRenderVSync(_renderer, 1);
-            else
-                SDL.SetRenderVSync(_renderer, 0);
+            // Avoid unnecessary SDL calls if the value hasn't changed
+            if (_vSync != value)
+            {
+                _vSync = value;
+                SDL.SetRenderVSync(_renderer, value ? 1 : 0);
+            }
         }
     }
 

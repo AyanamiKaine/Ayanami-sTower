@@ -104,6 +104,7 @@ namespace AyanamisTower.NihilEx
                     isResizable: true);
 
                 Renderer = Window?.CreateRenderer();
+                Renderer!.DrawColor = (RgbaColor)Color.White;
 
                 World.Set(Window);
                 World.Set(Renderer);
