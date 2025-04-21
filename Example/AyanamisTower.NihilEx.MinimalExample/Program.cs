@@ -19,11 +19,6 @@ public class MinimalApp : App // Inherit from App
     {
         SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit started.");
 
-        // Create Window and Renderer
-        Window!.Title = "SDL3 Minimal Example";
-        Window!.Height = 600;
-        Window!.Width = 800;
-
         try
         {
             Renderer!.VSync = true;
@@ -88,7 +83,12 @@ internal static class Program
     private static void Main()
     {
         // Create an instance of your application class
-        var myApp = new MinimalApp();
+        var myApp = new MinimalApp()
+        {
+            InitalTitle = "SDL3 Minimal Example",
+            InitalWidth = 400,
+            InitalHeight = 400,
+        };
 
         // Run the application - the base App class handles the rest.
         myApp.Run([]);

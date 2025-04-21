@@ -30,6 +30,70 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         protected Window? Window { get; private set; }
         /// <summary>
+        /// Height of the app
+        /// </summary>
+        public int Height
+        {
+            get
+            {
+                return Window?.Height ?? 0;
+            }
+            set
+            {
+                if (Window is null)
+                    return;
+
+                Window.Height = value;
+            }
+        }
+        /// <summary>
+        /// Width of the app
+        /// </summary>
+        public int Width
+        {
+            get
+            {
+                return Window?.Width ?? 0;
+            }
+            set
+            {
+                if (Window is null)
+                    return;
+
+                Window.Width = value;
+            }
+        }
+        /// <summary>
+        /// Title of the app
+        /// </summary>
+        public string Title
+        {
+            get
+            {
+                return Window?.Title ?? "";
+            }
+            set
+            {
+                if (Window is null)
+                    return;
+
+                Window.Title = value;
+            }
+        }
+
+        /// <summary>
+        /// Start height of the app
+        /// </summary>
+        public required int InitalHeight { init; get; }
+        /// <summary>
+        /// Start width of the app
+        /// </summary>
+        public required int InitalWidth { init; get; }
+        /// <summary>
+        /// Start title of the app
+        /// </summary>
+        public required string InitalTitle { init; get; }
+        /// <summary>
         /// ECS Flecs World
         /// </summary>
         public World World { get; } = World.Create();
@@ -102,9 +166,9 @@ namespace AyanamisTower.NihilEx
                 World.Set(_deltaTimeManager);
 
                 Window = new(
-                    title: "Title",
-                    width: 600,
-                    height: 500,
+                    title: InitalTitle,
+                    width: InitalWidth,
+                    height: InitalHeight,
                     isResizable: true);
 
                 Renderer = Window?.CreateRenderer();
