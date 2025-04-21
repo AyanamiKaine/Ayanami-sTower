@@ -1,5 +1,7 @@
 
+using System.Drawing;
 using System.Runtime.InteropServices;
+using AyanamisTower.NihilEx.ECS;
 using Flecs.NET.Core;
 using SDL3;
 
@@ -123,6 +125,7 @@ namespace AyanamisTower.NihilEx
         /// <returns>SDL.AppResult.Continue to keep running, or Success/Failure to exit.</returns>
         protected virtual SDL.AppResult OnIterate(float deltaTime)
         {
+            Renderer!.DrawColor = (RgbaColor)Color.White;
             World.Progress(deltaTime);
             return SDL.AppResult.Continue;
         }
