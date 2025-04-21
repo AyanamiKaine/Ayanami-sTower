@@ -89,7 +89,7 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         /// <param name="args">Command line arguments.</param>
         /// <returns>SDL.AppResult.Continue to proceed, or Success/Failure to exit early.</returns>
-        protected virtual SDL.AppResult OnInit(string[] args)
+        protected SDL.AppResult SDLInit(string[] args)
         {
             Engine = new(World);
 
@@ -112,8 +112,7 @@ namespace AyanamisTower.NihilEx
 
                 World.Set(Window);
                 World.Set(Renderer);
-                return SDL.AppResult.Continue;
-
+                return OnInit(args);
             }
             catch (Exception ex)
             {
@@ -121,6 +120,15 @@ namespace AyanamisTower.NihilEx
                 return SDL.AppResult.Failure;
             }
         }
+
+        /// <summary>
+        /// Called after core SDL initialization (Window, Renderer, DeltaTime) is complete.
+        /// Implement application-specific setup here, such as loading resources,
+        /// configuring the Window/Renderer, and setting up ECS entities/systems.
+        /// </summary>
+        /// <param name="args">Command line arguments.</param>
+        /// <returns>SDL.AppResult.Continue to proceed, or Success/Failure to exit early.</returns>
+        protected abstract SDL.AppResult OnInit(string[] args);
 
         /// <summary>
         /// Called repeatedly for each frame/iteration of the application loop.
@@ -160,6 +168,8 @@ namespace AyanamisTower.NihilEx
         /// <param name="result">The result code that caused the application to quit.</param>
         protected virtual void OnQuit(SDL.AppResult result)
         {
+            Renderer?.Dispose();
+            Window?.Dispose();
             SDL.LogInfo(SDL.LogCategory.Application, $"Base OnQuit called with result: {result}");
             // Base implementation can Quit initialized subsystems
             if (SDL.WasInit(SDL.InitFlags.Video) != 0) // Check if Video was initialized
@@ -187,7 +197,7 @@ namespace AyanamisTower.NihilEx
                 Marshal.WriteIntPtr(appstatePtrRef, GCHandle.ToIntPtr(_appHandle));
 
                 // Call the virtual OnInit method on the specific App instance
-                return instance.OnInit(argv);
+                return instance.SDLInit(argv);
             }
             catch (Exception ex)
             {

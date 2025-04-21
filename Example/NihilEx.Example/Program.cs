@@ -65,7 +65,7 @@ public class ColorApp : App // Inherit from App
     protected override SDL.AppResult OnInit(string[] args)
     {
         // Call base OnInit first to initialize SDL subsystems (optional but good practice)
-        SDL.AppResult baseResult = base.OnInit(args);
+        SDL.AppResult baseResult = base.SDLInit(args);
         if (baseResult != SDL.AppResult.Continue)
         {
             return baseResult; // Exit if base initialization failed

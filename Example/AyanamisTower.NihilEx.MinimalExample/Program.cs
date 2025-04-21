@@ -17,13 +17,6 @@ public class MinimalApp : App // Inherit from App
     /// </summary>
     protected override SDL.AppResult OnInit(string[] args)
     {
-        // Call base OnInit first to initialize SDL subsystems (optional but good practice)
-        SDL.AppResult baseResult = base.OnInit(args);
-        if (baseResult != SDL.AppResult.Continue)
-        {
-            return baseResult; // Exit if base initialization failed
-        }
-
         SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit started.");
 
         // Create Window and Renderer
@@ -57,17 +50,6 @@ public class MinimalApp : App // Inherit from App
         return SDL.AppResult.Continue; // Signal success
     }
 
-    /// <summary>
-    /// Override OnIterate to perform per-frame updates.
-    /// </summary>
-    /// <param name="deltaTime">The time elapsed since the last frame, in seconds.</param>
-    /// <returns>An <see cref="SDL.AppResult"/> indicating whether the application should continue.</returns>
-    protected override SDL.AppResult OnIterate(float deltaTime)
-    {
-        return base.OnIterate(deltaTime);
-    }
-
-
     /*
     We probably add some on event delegates, so people can subscribe to an event
     like OnWindowResized. And here we simply fire the event.
@@ -96,10 +78,6 @@ public class MinimalApp : App // Inherit from App
     protected override void OnQuit(SDL.AppResult result)
     {
         SDL.LogInfo(SDL.LogCategory.Application, $"MinimalApp OnQuit started with result: {result}");
-
-        // Destroy resources created in OnInit
-        Renderer?.Dispose();
-        Window?.Dispose();
 
         // Call base OnQuit *after* cleaning up derived class resources
         // to ensure SDL subsystems are shut down last.
