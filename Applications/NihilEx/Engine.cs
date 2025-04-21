@@ -125,7 +125,7 @@ public class Engine
                 orientation.Value = Quaternion.Normalize(orientation.Value * deltaZ * deltaY * deltaX);
             });
 
-        World.System<ProjectedMesh, MeshGeometry, Orientation, Position3D, Camera, Window>("ProjectCubeSystem")
+        World.System<ProjectedMesh, MeshGeometry, Orientation, Position3D, Camera, Window>("ProjectCustomMeshSystem")
             .Kind(Phases["PreRender"])
             .TermAt(4).Singleton() // Camera is singleton
             .TermAt(5).Singleton() // Window is singleton
@@ -190,7 +190,72 @@ public class Engine
                 }
             });
 
-        World.System<ProjectedMesh, MeshGeometry, RgbaColor, Renderer>("RenderCubeEdgesSystem")
+        World.System<Position3D, Size3D, Orientation, RgbaColor, Camera, Window, Renderer>("RenderBoxSystem")
+            .With<Box>() // <--- Query for entities with the Box tag!
+            .Kind(Phases["OnRender"])
+            .TermAt(4).Singleton() // Camera
+            .TermAt(5).Singleton() // WindowSize
+            .TermAt(6).Singleton() // Renderer
+            .Each((ref Position3D pos, ref Size3D size, ref Orientation orientation, ref RgbaColor color, ref Camera camera, ref Window window, ref Renderer renderer) =>
+            {
+                if (renderer == null) return;
+
+                // --- Define Local Box Vertices (derived from Size3D) ---
+                float hw = size.Value.X / 2.0f; // Half-width
+                float hh = size.Value.Y / 2.0f; // Half-height
+                float hd = size.Value.Z / 2.0f; // Half-depth
+                Vector3[] localVertices =
+                [
+                    new(-hw, -hh, -hd), new( hw, -hh, -hd), new( hw,  hh, -hd), new(-hw,  hh, -hd), // Back face indices 0-3
+            new(-hw, -hh,  hd), new( hw, -hh,  hd), new( hw,  hh,  hd), new(-hw,  hh,  hd)  // Front face indices 4-7
+                ];
+
+                // --- Calculate Model, View, Projection, MVP ---
+                Matrix4x4 modelMatrix = Matrix4x4.CreateFromQuaternion(orientation.Value) * Matrix4x4.CreateTranslation(pos.Value);
+                camera.EnsureMatricesUpdated();
+                Matrix4x4 viewMatrix = camera.ViewMatrix;
+                Matrix4x4 projectionMatrix = camera.ProjectionMatrix;
+                Matrix4x4 mvpMatrix = modelMatrix * viewMatrix * projectionMatrix;
+
+                // --- Transform, Clip Check, Project, Viewport Transform (8 vertices) ---
+                Vector2[] screenVertices = new Vector2[8];
+                bool[] vertexValid = new bool[8]; // Track visibility
+
+                for (int i = 0; i < 8; i++)
+                {
+                    Vector4 clipSpaceVertex = Vector4.Transform(localVertices[i], mvpMatrix);
+                    if (clipSpaceVertex.W > 0.0001f) // Check W for clipping
+                    {
+                        vertexValid[i] = true;
+                        Vector3 ndcVertex = new Vector3(clipSpaceVertex.X, clipSpaceVertex.Y, clipSpaceVertex.Z) / clipSpaceVertex.W;
+                        screenVertices[i] = new Vector2(
+                            (ndcVertex.X + 1.0f) / 2.0f * window.Width,
+                            (1.0f - ndcVertex.Y) / 2.0f * window.Height // Flip Y
+                        );
+                    }
+                    else
+                    {
+                        vertexValid[i] = false;
+                    }
+                }
+
+                // --- Draw Box Edges (Implicitly known for a box) ---
+                renderer.DrawColor = color;
+                int[,] edges = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }, { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
+
+                for (int i = 0; i < 12; i++)
+                {
+                    int i1 = edges[i, 0];
+                    int i2 = edges[i, 1];
+                    // Draw line only if both endpoints are valid (in front of near plane)
+                    if (vertexValid[i1] && vertexValid[i2])
+                    {
+                        renderer.RenderLine(screenVertices[i1].X, screenVertices[i1].Y, screenVertices[i2].X, screenVertices[i2].Y);
+                    }
+                }
+            });
+
+        World.System<ProjectedMesh, MeshGeometry, RgbaColor, Renderer>("RenderCustomMeshSystem")
             .Kind(Phases["OnRender"])
             .TermAt(3).Singleton() // Renderer is singleton
             .Each((ref ProjectedMesh projected, ref MeshGeometry geometry, ref RgbaColor color, ref Renderer renderer) =>
