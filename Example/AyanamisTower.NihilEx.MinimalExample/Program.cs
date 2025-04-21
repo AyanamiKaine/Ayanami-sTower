@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Numerics;
 using AyanamisTower.NihilEx.ECS;
+using AyanamisTower.NihilEx.ECS.Events;
 using Flecs.NET.Core;
 using SDL3;
 
@@ -41,6 +42,10 @@ public class MinimalApp : App // Inherit from App
             .Set(new RotationSpeed2D { Speed = 90 * (MathF.PI / 180.0f) })
             .Set(new RgbaColor(r: 255, g: 0, b: 0, a: 255));
 
+        AppEntity.Observe<WindowResize>(() =>
+        {
+            Console.WriteLine("Test");
+        });
 
         SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit finished successfully.");
         return SDL.AppResult.Continue; // Signal success
@@ -56,14 +61,6 @@ public class MinimalApp : App // Inherit from App
     /// </summary>
     protected override SDL.AppResult OnEvent(ref SDL.Event e)
     {
-        // Handle window resize event specifically
-        if (e.Type == (uint)SDL.EventType.WindowResized)
-        {
-            SDL.LogInfo(SDL.LogCategory.Application, $"MinimalApp OnEvent: Window Resized (from event data) to: {Window?.Width} x {Window?.Height}");
-
-            return SDL.AppResult.Continue;
-        }
-
         // Call the base OnEvent implementation to handle default events (like Quit)
         return base.OnEvent(ref e);
     }

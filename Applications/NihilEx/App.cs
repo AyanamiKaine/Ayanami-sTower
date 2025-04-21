@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Runtime.InteropServices;
 using AyanamisTower.NihilEx.ECS;
+using AyanamisTower.NihilEx.ECS.Events;
 using Flecs.NET.Core;
 using SDL3;
 
@@ -17,8 +18,34 @@ namespace AyanamisTower.NihilEx
         // Limitation: This simple implementation assumes only one App instance runs via Run() at a time.
         private static GCHandle _appHandle;
 
+        private Entity _appEntity;
+        /// <summary>
+        /// Gets the Flecs Entity associated with this application instance.
+        /// </summary>
+        /// <remarks>
+        /// Use this entity to register observers for events. This provides a central point
+        /// for hooking into application-level or engine-level events managed by Flecs.
+        /// </remarks>
+        /// <example>
+        /// The following code demonstrates how to register an observer for the <c>WindowResize</c> event
+        /// using the <c>AppEntity</c> property:
+        /// <code><![CDATA[
+        /// // Get the application entity (assuming 'myApp' is an instance of your class)
+        /// var appEntity = myApp.AppEntity;
+        ///
+        /// // Register an observer for the WindowResize event.
+        /// // This lambda expression will be executed whenever the WindowResize event occurs.
+        /// appEntity.Observe<WindowResize>(() =>
+        /// {
+        ///     Console.WriteLine("Window resize event observed via AppEntity!");
+        /// });
+        /// ]]></code>
+        /// </example>
+        /// <value>The application's root <see cref="Entity"/>.</value>
+        public Entity AppEntity { get => _appEntity; }
+
         // Instance of our new DeltaTime class
-        private DeltaTime _deltaTimeManager = new DeltaTime();
+        private readonly DeltaTime _deltaTimeManager = new();
         /// <summary>
         /// Gets the SDL Renderer associated with this application instance.
         /// This is typically created during the OnInit phase alongside the Window.
@@ -174,6 +201,8 @@ namespace AyanamisTower.NihilEx
                 Renderer = Window?.CreateRenderer();
                 Renderer!.DrawColor = (RgbaColor)Color.White;
 
+                _appEntity = World.Entity($"App: {Title}");
+
                 World.Set(Window);
                 World.Set(Renderer);
                 return OnInit(args);
@@ -220,6 +249,10 @@ namespace AyanamisTower.NihilEx
             {
                 SDL.LogInfo(SDL.LogCategory.Application, "Base OnEvent: Quit event received.");
                 return SDL.AppResult.Success; // Signal graceful termination
+            }
+            if (e.Type == (uint)SDL.EventType.WindowResized)
+            {
+                AppEntity.Emit(new WindowResize(e.Display.Data1, e.Display.Data2));
             }
             return SDL.AppResult.Continue;
         }
