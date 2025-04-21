@@ -250,11 +250,11 @@ namespace AyanamisTower.NihilEx
                 SDL.LogInfo(SDL.LogCategory.Application, "Base OnEvent: Quit event received.");
                 return SDL.AppResult.Success; // Signal graceful termination
             }
-            if (e.Type == (uint)SDL.EventType.WindowResized)
+            else if (e.Type == (uint)SDL.EventType.WindowResized)
             {
                 AppEntity.Emit(new WindowResize(e.Display.Data1, e.Display.Data2));
             }
-            if (e.Type == (uint)SDL.EventType.KeyDown)
+            else if (e.Type == (uint)SDL.EventType.KeyDown)
             {
                 AppEntity.Emit(new KeyDownEvent(
                     Keycode: e.Key.Key,
@@ -262,14 +262,14 @@ namespace AyanamisTower.NihilEx
                     IsRepeat: e.Key.Repeat
                 ));
             }
-            if (e.Type == (uint)SDL.EventType.KeyUp)
+            else if (e.Type == (uint)SDL.EventType.KeyUp)
             {
                 AppEntity.Emit(new KeyUpEvent(
                     Keycode: e.Key.Key,
                     Modifiers: e.Key.Mod
                 ));
             }
-            if (e.Type == (uint)SDL.EventType.MouseButtonDown)
+            else if (e.Type == (uint)SDL.EventType.MouseButtonDown)
             {
                 AppEntity.Emit(new MouseButtonDownEvent(
                     MouseButton: SDL.GetMouseState(out float _, out float _),
@@ -278,6 +278,33 @@ namespace AyanamisTower.NihilEx
                     Clicks: e.Button.Clicks
                 ));
             }
+            else if (e.Type == (uint)SDL.EventType.MouseButtonUp)
+            {
+                AppEntity.Emit(new MouseButtonUpEvent(
+                    MouseButton: SDL.GetMouseState(out float _, out float _),
+                    X: e.Button.X,
+                    Y: e.Button.Y,
+                    Clicks: e.Button.Clicks
+                ));
+            }
+            else if (e.Type == (uint)SDL.EventType.MouseMotion)
+            {
+                AppEntity.Emit(new MouseMotionEvent(
+                    MouseState: SDL.GetMouseState(out float _, out float _),
+                    X: e.Motion.X,
+                    Y: e.Motion.Y,
+                    XRel: e.Motion.XRel,
+                    YRel: e.Motion.YRel));
+            }
+            else if (e.Type == (uint)SDL.EventType.MouseWheel)
+            {
+                AppEntity.Emit(new MouseWheelEvent(
+                    ScrollX: e.Wheel.X,
+                    ScrollY: e.Wheel.Y,
+                    Direction: e.Wheel.Direction
+                ));
+            }
+
             return SDL.AppResult.Continue;
         }
 
