@@ -52,9 +52,41 @@ public class MinimalApp : App // Inherit from App
             Console.WriteLine($"Key was pressed down: {keyDownEvent.Keycode}");
         });
 
+        AppEntity.Observe((ref KeyUpEvent keyUpEvent) =>
+        {
+            Console.WriteLine($"Key was pressed up: {keyUpEvent.Keycode}");
+        });
+
+        AppEntity.Observe((ref MouseMotionEvent mouseMotionEvent) =>
+        {
+            Console.WriteLine($"Mouse is moving: X: {mouseMotionEvent.X} Y:{mouseMotionEvent.Y} YRel: {mouseMotionEvent.YRel} XRel: {mouseMotionEvent.XRel}");
+        });
+
         AppEntity.Observe((ref MouseButtonDownEvent mouseButtonDownEvent) =>
         {
             Console.WriteLine($"Mouse button was pressed down: {mouseButtonDownEvent.MouseButton}");
+        });
+
+        AppEntity.Observe((ref MouseWheelEvent mouseWheelEvent) =>
+        {
+            Console.WriteLine($"Mouse wheel is moving:  DirectionType: {mouseWheelEvent.Direction} ScrollX: {mouseWheelEvent.ScrollX} ScrollY: {mouseWheelEvent.ScrollY}");
+        });
+
+        AppEntity.Observe((ref WindowMovedEvent windowMovedEvent) =>
+        {
+            Console.WriteLine($"Window was moved:  NewY: {windowMovedEvent.Y} NewX: {windowMovedEvent.X}");
+        });
+
+
+        AppEntity.Observe((ref WindowMouseEnterEvent windowMouseEnter) =>
+        {
+            Console.WriteLine($"Mouse enter the window at X:{windowMouseEnter.X} Y:{windowMouseEnter.Y}");
+        });
+
+
+        AppEntity.Observe((ref WindowMouseLeaveEvent windowMouseLeave) =>
+        {
+            Console.WriteLine($"Mouse leave the window at X:{windowMouseLeave.X} Y:{windowMouseLeave.Y}");
         });
 
         SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit finished successfully.");
