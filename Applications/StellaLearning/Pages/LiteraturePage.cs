@@ -300,47 +300,50 @@ public class LiteraturePage : IUIComponent, IDisposable
                                     """)
                                     .SetTextWrapping(TextWrapping.Wrap);
                             });
-
-                            stack.Child<DockPanel>((dockPanel) =>
+                            if (itemToRemove is LocalFileSourceItem file)
                             {
-                                dockPanel.Child<TextBlock>((textBlock) =>
+                                stack.Child<DockPanel>((dockPanel) =>
                                 {
 
-                                    textBlock.SetVerticalAlignment(VerticalAlignment.Center)
-                                    .SetText("Delete Underlying File?")
-                                    .SetTextWrapping(TextWrapping.Wrap);
-                                });
-
-                                dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
-                                {
-                                    toogleSwitch = toggleSwitch
-                                    .SetDock(Dock.Right)
-                                    .SetHorizontalAlignment(HorizontalAlignment.Right);
-
-                                    toggleSwitch.With((toggleSwitch) =>
+                                    dockPanel.Child<TextBlock>((textBlock) =>
                                     {
-                                        // toggleSwitch.IsChecked = _world.Get<Settings>().EnableNotifications;
+
+                                        textBlock.SetVerticalAlignment(VerticalAlignment.Center)
+                                        .SetText("Delete Underlying File?")
+                                        .SetTextWrapping(TextWrapping.Wrap);
                                     });
 
-                                    toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                                    dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
                                     {
-                                        //((ToggleSwitch)sender!).IsChecked;
+                                        toogleSwitch = toggleSwitch
+                                        .SetDock(Dock.Right)
+                                        .SetHorizontalAlignment(HorizontalAlignment.Right);
+
+                                        toggleSwitch.With((toggleSwitch) =>
+                                        {
+                                            // toggleSwitch.IsChecked = _world.Get<Settings>().EnableNotifications;
+                                        });
+
+                                        toggleSwitch.OnIsCheckedChanged((sender, args) =>
+                                        {
+                                            //((ToggleSwitch)sender!).IsChecked;
+                                        });
                                     });
-                                });
 
 
-                                dockPanel.AttachToolTip(_world.UI<ToolTip>((toolTip) =>
-                                {
-                                    toolTip.Child<TextBlock>((textBlock) =>
+                                    dockPanel.AttachToolTip(_world.UI<ToolTip>((toolTip) =>
                                     {
-                                        textBlock.SetText(
-                                        """
+                                        toolTip.Child<TextBlock>((textBlock) =>
+                                        {
+                                            textBlock.SetText(
+                                            """
                                         When enabled the associated file will also be deleted. If you
                                         just want to remove the item from the list leave it unchecked! 
                                         """);
-                                    });
-                                }));
-                            });
+                                        });
+                                    }));
+                                });
+                            }
                         });
 
                         var cd = new ContentDialog()
