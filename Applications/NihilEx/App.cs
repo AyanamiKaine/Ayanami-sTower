@@ -304,7 +304,35 @@ namespace AyanamisTower.NihilEx
                     Direction: e.Wheel.Direction
                 ));
             }
+            else if (e.Type == (uint)SDL.EventType.WindowMoved)
+            {
+                uint windowId = e.Window.WindowID;
+                SDL.GetWindowPosition(SDL.GetWindowFromID(windowId), out int newWidth, out int newHeight); // Safer way
 
+                AppEntity.Emit(new WindowMovedEvent(
+                    X: newWidth,
+                    Y: newHeight
+                ));
+            }
+            else if (e.Type == (uint)SDL.EventType.WindowMouseEnter)
+            {
+                AppEntity.Emit(new WindowMouseEnterEvent(
+                    MouseButton: SDL.GetGlobalMouseState(out float X, out float Y),
+                    Down: e.Button.Down,
+                    X: X,
+                    Y: Y,
+                    Clicks: e.Button.Clicks));
+            }
+            else if (e.Type == (uint)SDL.EventType.WindowMouseLeave)
+            {
+
+                AppEntity.Emit(new WindowMouseLeaveEvent(
+                    MouseButton: SDL.GetGlobalMouseState(out float X, out float Y),
+                    Down: e.Button.Down,
+                    X: X,
+                    Y: Y,
+                    Clicks: e.Button.Clicks));
+            }
             return SDL.AppResult.Continue;
         }
 
