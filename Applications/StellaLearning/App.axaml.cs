@@ -149,7 +149,7 @@ public partial class App : Application
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Literature")));
             //nav.Child<NavigationViewItem>(item => item.Child<TextBlock>(t => t.SetText("Content Queue")));
 
-
+            /*
             nav.Child<NavigationViewItem>((item) =>
             {
                 item.SetIconSource(new SymbolIconSource()
@@ -158,6 +158,7 @@ public partial class App : Application
                 });
                 item.Child<TextBlock>(t => t.SetText("Account"));
             });
+            */
 
             nav.Child<NavigationViewItem>((item) =>
             {

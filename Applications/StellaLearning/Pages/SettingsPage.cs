@@ -16,6 +16,7 @@ using System.Reactive.Linq;
 using System.Collections.ObjectModel;
 using AyanamisTower.StellaLearning.Util.NoteHandler;
 using System.Linq;
+using AyanamisTower.StellaLearning.Extensions;
 
 namespace AyanamisTower.StellaLearning.Pages;
 
@@ -169,6 +170,8 @@ public class SettingsPage : IUIComponent
                             {
                                 literature.Add(item);
                             }
+
+                            literature.RemoveDuplicateFilePaths();
                         }
                     });
                 });
@@ -180,7 +183,10 @@ public class SettingsPage : IUIComponent
                     {
                         textBlock.SetText(
                         """
-                        Always show Stella Learning windows on top of other open windows.
+                        Imports all markdown and pdf files to the literature list.
+                        (This does not copy the obsidian files in the literature folder)
+
+                        When an obsidian path is set it also opens the markdown file directly using obsidian.
                         """);
                     });
                 }));

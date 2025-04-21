@@ -100,7 +100,7 @@ public static class ObsidianHandler
                                     try
                                     {
                                         item.Tags = [.. properties.Tags]; // 
-                                        Console.WriteLine($"Note '{item.Name}' Tags: {string.Join(", ", properties.Tags)} (No direct Keywords field to map?)");
+                                        //Console.WriteLine($"Note '{item.Name}' Tags: {string.Join(", ", properties.Tags)} (No direct Keywords field to map?)");
 
                                     }
                                     catch (Exception ex)
@@ -113,7 +113,7 @@ public static class ObsidianHandler
                                 {
                                     item.Aliases = [.. properties.Aliases];
 
-                                    Console.WriteLine($"Note '{item.Name}' Aliases: {string.Join(", ", properties.Aliases)} (No field to map?)");
+                                    //Console.WriteLine($"Note '{item.Name}' Aliases: {string.Join(", ", properties.Aliases)} (No field to map?)");
                                 }
                             }
                         }

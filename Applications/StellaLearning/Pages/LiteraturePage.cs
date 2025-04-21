@@ -26,7 +26,8 @@ using AyanamisTower.StellaLearning.Windows;
 using Avalonia;
 using AyanamisTower.StellaLearning.Converters;
 using FluentAvalonia.UI.Controls;
-using AyanamisTower.StellaLearning.Util.NoteHandler; // Assuming you use NLog like in SpacedRepetitionPage
+using AyanamisTower.StellaLearning.Util.NoteHandler;
+using AyanamisTower.StellaLearning.Extensions; // Assuming you use NLog like in SpacedRepetitionPage
 
 namespace AyanamisTower.StellaLearning.Pages;
 
@@ -77,7 +78,8 @@ public class LiteraturePage : IUIComponent, IDisposable
         EnsureLiteratureDirectory();
         _world.Set(LoadLiteratureItemsFromDisk());
         // Load existing data
-        _baseLiteratureItems = _world.Get<ObservableCollection<LiteratureSourceItem>>(); RemoveDuplicateFilePaths();
+        _baseLiteratureItems = _world.Get<ObservableCollection<LiteratureSourceItem>>();
+        _baseLiteratureItems.RemoveDuplicateFilePaths();
 
         SubscribeToAllItemChanges(_baseLiteratureItems);
 
@@ -101,7 +103,7 @@ public class LiteraturePage : IUIComponent, IDisposable
         // Save on close
         App.GetMainWindow().Closing += async (_, _) =>
         {
-            RemoveDuplicateFilePaths();
+            _baseLiteratureItems.RemoveDuplicateFilePaths();
             await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems);
         };
     }
@@ -160,7 +162,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                   .SetMargin(5)
                   .SetText("Add Source...")
                   .OnClick(async (s, e) => await AddSourceAsync()); // Implement AddSourceAsync
-            button.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText("Add a new literature source (File or URL). You can also drag & drop them onto the list. Try it!"))));
+            button.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText("Add a new literature source (File or URL). You can also drag & drop them onto the list. Try it! This copies the file to the local literature folder."))));
 
             // TODO: Add MenuFlyout for choosing File/URL if desired
         });
@@ -1030,7 +1032,7 @@ public class LiteraturePage : IUIComponent, IDisposable
     }
 
     /// <summary>
-    /// Handles changes to the base item collection. Updates the count and triggers save.
+    /// Handles changes to the base item collection. Updates the count and triggers save asynchronously.
     /// </summary>
     private void OnBaseCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -1046,17 +1048,23 @@ public class LiteraturePage : IUIComponent, IDisposable
             }
         }
 
-        Dispatcher.UIThread.Post(async () =>
+        if (_isDisposed) return; // Double check dispose state
+
+        // Handle the UI updates asynchronously
+        _ = Dispatcher.UIThread.InvokeAsync(async () =>
         {
-            if (_isDisposed) return; // Double check dispose state
             string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
-            ApplyFilterAndSort(searchText, addedItem);
 
-            _itemCountTextBlockBuilder?.SetText($"Items: {_baseLiteratureItems.Count}");
-            // Optionally trigger save immediately on changes
-            await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems);
-
-        }, DispatcherPriority.Background);
+            // Run filtering/sorting on a background thread if it's computationally expensive
+            await Task.Run(() =>
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    ApplyFilterAndSort(searchText, addedItem);
+                    _itemCountTextBlockBuilder?.SetText($"Items: {_baseLiteratureItems.Count}");
+                });
+            });
+        });
     }
 
 
