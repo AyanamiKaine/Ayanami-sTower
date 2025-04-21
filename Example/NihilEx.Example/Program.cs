@@ -74,11 +74,6 @@ public class ColorApp : App // Inherit from App
         _deltaG = 50.0f;
         _deltaB = 70.0f;
 
-        // Create Window and Renderer
-        Window!.Title = "SDL3 Color Cycle (Framework)";
-        Window!.Height = 600;
-        Window!.Width = 800;
-
         try
         {
             Renderer!.VSync = true;
@@ -239,7 +234,12 @@ internal static class Program
     private static void Main()
     {
         // Create an instance of your application class
-        var myApp = new ColorApp();
+        var myApp = new ColorApp()
+        {
+            InitalTitle = "SDL3 Color Cycle (Framework)",
+            InitalHeight = 600,
+            InitalWidth = 800,
+        };
 
         // Run the application - the base App class handles the rest.
         myApp.Run([]);
