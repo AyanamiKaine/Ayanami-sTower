@@ -254,6 +254,14 @@ namespace AyanamisTower.NihilEx
             {
                 AppEntity.Emit(new WindowResize(e.Display.Data1, e.Display.Data2));
             }
+            if (e.Type == (uint)SDL.EventType.KeyDown)
+            {
+                AppEntity.Emit(new KeyDownEvent(
+                    Keycode: e.Key.Key,
+                    Modifiers: e.Key.Mod,
+                    IsRepeat: e.Key.Repeat
+                ));
+            }
             return SDL.AppResult.Continue;
         }
 
