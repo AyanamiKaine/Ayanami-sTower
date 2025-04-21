@@ -283,6 +283,33 @@ public class ArtPage : IUIComponent, IDisposable
                                         menuFlyout.Child<MenuItem>((item) =>
                                         {
                                             // Renames the list entry and its file name
+                                            item.SetHeader("Open")
+                                            .OnClick((sender, _) =>
+                                            {
+                                                var item = listBox.GetSelectedItem<ReferencePaintingItem>();
+
+                                                try
+                                                {
+                                                    FileOpener.OpenFileWithDefaultProgram(item.ImagePath);
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    Console.Error.WriteLine($"Something went wrong {ex.Message}");
+                                                }
+                                            });
+
+                                            item.AttachToolTip(_world.UI<ToolTip>((toolTip) =>
+                                            {
+                                                toolTip.Child<TextBlock>((textBlock) =>
+                                                {
+                                                    textBlock.SetText("You can also double click on the item to open it!");
+                                                });
+                                            }));
+                                        });
+
+                                        menuFlyout.Child<MenuItem>((item) =>
+                                        {
+                                            // Renames the list entry and its file name
                                             item.SetHeader("Rename")
                                             .OnClick((sender, _) =>
                                             {
@@ -423,7 +450,21 @@ public class ArtPage : IUIComponent, IDisposable
                     .OnSelectionChanged(ReferenceList_SelectionChanged)
                     .AllowDrop()
                     .OnDragOver(HandleReferenceListDragOver)
-                    .OnDrop(HandleReferenceListDropAsync);
+                    .OnDrop(HandleReferenceListDropAsync)
+                    .OnDoubleTapped((_, _) =>
+                    {
+                        var item = listBox.GetSelectedItem<ReferencePaintingItem>();
+
+                        try
+                        {
+                            FileOpener.OpenFileWithDefaultProgram(item.ImagePath);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Error.WriteLine($"Something went wrong {ex.Message}");
+                        }
+
+                    });
                 // DockPanel fills remaining space by default
             });
         });
