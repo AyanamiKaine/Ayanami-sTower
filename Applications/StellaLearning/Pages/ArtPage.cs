@@ -217,7 +217,7 @@ public class ArtPage : IUIComponent, IDisposable
                 .SetRow(0)
                 .SetOrientation(Orientation.Horizontal)
                 .SetSpacing(10)
-                .SetMargin(0, 0, 0, 10) // Margin below buttons
+                .SetMargin(5) // Margin below buttons
                 .SetHorizontalAlignment(HorizontalAlignment.Left);
 
             buttonsPanel.Child<Button>(button =>
@@ -254,13 +254,15 @@ public class ArtPage : IUIComponent, IDisposable
                 .SetRow(1) // Assign to Row 1
                 .SetText("References")
                 .SetFontWeight(FontWeight.Bold)
-                .SetMargin(0, 0, 0, 5);
+                .SetMargin(5);
         });
 
         // --- ScrollViewer for the List (Row 2, takes remaining space *) ---
         grid.Child<ScrollViewer>(scrollViewer =>
         {
-            scrollViewer.SetRow(2);
+            scrollViewer
+            .SetMargin(5)
+            .SetRow(2);
 
             // ListBox
             scrollViewer.Child<ListBox>(listBox =>
