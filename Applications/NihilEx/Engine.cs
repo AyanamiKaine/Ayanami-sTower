@@ -62,59 +62,52 @@ public class Engine
     {
         InitRenderSystems();
 
-        World.System<Orientation, RotationSpeed>("RotateSystem")
+        World.System<Orientation, RotationSpeed, DeltaTime>("RotateSystem")
                     .Kind(Ecs.OnUpdate) // Use Ecs.OnUpdate directly if Phases["OnUpdate"] is not defined or needed
-                    .Iter((Iter it, Field<Orientation> orientation, Field<RotationSpeed> speed) => // Use Field<T> for component access
+                    .TermAt(2).Singleton()
+                    .Each((ref Orientation orientation, ref RotationSpeed speed, ref DeltaTime dt) => // Use Field<T> for component access
                     {
-                        float dt = it.DeltaTime();
-                        for (int i = 0; i < it.Count(); i++)
-                        {
-                            // Calculate delta rotation around Z-axis
-                            float deltaAngleRadians = speed[i].Speed * dt;
-                            Quaternion deltaRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, deltaAngleRadians);
+                        float deltaAngleRadians = speed.Speed * dt.DeltaSeconds;
+                        Quaternion deltaRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, deltaAngleRadians);
 
-                            // Multiply the current orientation by the delta rotation
-                            // Quaternion multiplication is non-commutative: newOrientation = oldOrientation * delta
-                            orientation[i].Value = Quaternion.Normalize(orientation[i].Value * deltaRotation); // Normalize to prevent drift
-                        }
+                        // Multiply the current orientation by the delta rotation
+                        // Quaternion multiplication is non-commutative: newOrientation = oldOrientation * delta
+                        orientation.Value = Quaternion.Normalize(orientation.Value * deltaRotation); // Normalize to prevent drift
                     });
 
-        World.System<Position2D, ECS.Size, Orientation, RgbaColor>("Render2DBoxSystem") // Query Orientation instead of Angle
+        World.System<Position2D, ECS.Size, Orientation, RgbaColor, Renderer>("Render2DBoxSystem") // Query Orientation instead of Angle
             .Kind(Phases["OnRender"])
-            .Iter((Iter it, Field<Position2D> pos, Field<ECS.Size> size, Field<Orientation> orientation, Field<RgbaColor> color) => // Use Orientation
+            .TermAt(4).Singleton()
+            .Each((ref Position2D pos, ref ECS.Size size, ref Orientation orientation, ref RgbaColor color, ref Renderer renderer) => // Use Orientation
             {
-                ref var renderer = ref it.World().GetMut<Renderer>();
                 if (renderer == null) return;
+                Vector2 center = pos.Value;
+                Vector2 dimensions = size.Value;
+                Quaternion currentOrientation = orientation.Value; // Get the quaternion
+                renderer.DrawColor = color;
 
-                for (int i = 0; i < it.Count(); i++)
+                float hw = dimensions.X / 2.0f;
+                float hh = dimensions.Y / 2.0f;
+
+                Vector2[] corners =
+                [
+                    new(-hw, -hh), new( hw, -hh), new( hw,  hh), new(-hw,  hh)
+                ];
+
+                Vector2[] transformedCorners = new Vector2[4];
+                for (int j = 0; j < 4; j++)
                 {
-                    Vector2 center = pos[i].Value;
-                    Vector2 dimensions = size[i].Value;
-                    Quaternion currentOrientation = orientation[i].Value; // Get the quaternion
-                    renderer.DrawColor = color[i];
-
-                    float hw = dimensions.X / 2.0f;
-                    float hh = dimensions.Y / 2.0f;
-
-                    Vector2[] corners =
-                    [
-                        new(-hw, -hh), new( hw, -hh), new( hw,  hh), new(-hw,  hh)
-                    ];
-
-                    Vector2[] transformedCorners = new Vector2[4];
-                    for (int j = 0; j < 4; j++)
-                    {
-                        // Use Vector2.Transform with the quaternion
-                        transformedCorners[j] = Vector2.Transform(corners[j], currentOrientation) + center;
-                    }
-
-
-                    // Draw lines (same as before)
-                    renderer.RenderLine(transformedCorners[0].X, transformedCorners[0].Y, transformedCorners[1].X, transformedCorners[1].Y);
-                    renderer.RenderLine(transformedCorners[1].X, transformedCorners[1].Y, transformedCorners[2].X, transformedCorners[2].Y);
-                    renderer.RenderLine(transformedCorners[2].X, transformedCorners[2].Y, transformedCorners[3].X, transformedCorners[3].Y);
-                    renderer.RenderLine(transformedCorners[3].X, transformedCorners[3].Y, transformedCorners[0].X, transformedCorners[0].Y);
+                    // Use Vector2.Transform with the quaternion
+                    transformedCorners[j] = Vector2.Transform(corners[j], currentOrientation) + center;
                 }
+
+
+                // Draw lines (same as before)
+                renderer.RenderLine(transformedCorners[0].X, transformedCorners[0].Y, transformedCorners[1].X, transformedCorners[1].Y);
+                renderer.RenderLine(transformedCorners[1].X, transformedCorners[1].Y, transformedCorners[2].X, transformedCorners[2].Y);
+                renderer.RenderLine(transformedCorners[2].X, transformedCorners[2].Y, transformedCorners[3].X, transformedCorners[3].Y);
+                renderer.RenderLine(transformedCorners[3].X, transformedCorners[3].Y, transformedCorners[0].X, transformedCorners[0].Y);
+
             });
 
     }

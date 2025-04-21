@@ -17,8 +17,8 @@ namespace AyanamisTower.NihilEx
         // Limitation: This simple implementation assumes only one App instance runs via Run() at a time.
         private static GCHandle _appHandle;
 
-        // Instance variable to track time for delta time calculation
-        private ulong _lastUpdateTimeTicks;
+        // Instance of our new DeltaTime class
+        private DeltaTime _deltaTimeManager = new DeltaTime();
         /// <summary>
         /// Gets the SDL Renderer associated with this application instance.
         /// This is typically created during the OnInit phase alongside the Window.
@@ -51,8 +51,6 @@ namespace AyanamisTower.NihilEx
                 _appHandle = GCHandle.Alloc(this);
                 IntPtr appStatePtr = GCHandle.ToIntPtr(_appHandle);
 
-                // Initialize timing here, before OnInit is called.
-                _lastUpdateTimeTicks = SDL.GetTicks();
 
                 // Create delegates pointing to our static callback wrappers.
                 // Keep them alive for the duration of EnterAppMainCallbacks.
@@ -97,6 +95,12 @@ namespace AyanamisTower.NihilEx
 
             try
             {
+                // Initialize DeltaTime manager
+                _deltaTimeManager.Initialize();
+                // Register DeltaTime as a singleton component in the ECS world.
+                // This allows any system to easily query it using world.Get<DeltaTime>().
+                World.Set(_deltaTimeManager);
+
                 Window = new(
                     title: "Title",
                     width: 600,
@@ -206,9 +210,8 @@ namespace AyanamisTower.NihilEx
                 }
 
                 // --- Calculate Delta Time ---
-                ulong currentTimeTicks = SDL.GetTicks();
-                float deltaTime = (currentTimeTicks - instance._lastUpdateTimeTicks) / 1000.0f;
-                instance._lastUpdateTimeTicks = currentTimeTicks; // Update for next frame
+                instance._deltaTimeManager.Update();
+                float deltaTime = instance._deltaTimeManager.DeltaSeconds;
                 // --- End Delta Time ---
 
                 // Call the virtual OnIterate method
