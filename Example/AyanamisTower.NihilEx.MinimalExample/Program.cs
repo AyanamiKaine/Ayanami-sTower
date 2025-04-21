@@ -65,7 +65,6 @@ public class MinimalApp : App // Inherit from App
     /// <returns>An <see cref="SDL.AppResult"/> indicating whether the application should continue.</returns>
     protected override SDL.AppResult OnIterate(float deltaTime)
     {
-        Renderer!.DrawColor = (RgbaColor)Color.Bisque;
         return base.OnIterate(deltaTime);
     }
 
