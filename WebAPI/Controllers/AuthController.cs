@@ -161,7 +161,7 @@ public class AuthController : ControllerBase
         _logger.LogInformation("User {Email} logged in successfully.", loginDto.Email);
 
         var refreshToken = GenerateRefreshToken();
-        var refreshTokenExpirationDays = _configuration.GetValue<int>("Jwt:RefreshTokenExpirationDays", 30); // Default 30 days
+        var refreshTokenExpirationDays = _configuration.GetValue("Jwt:RefreshTokenExpirationDays", 30); // Default 30 days
         var refreshTokenEntity = new UserRefreshToken
         {
             UserId = user.Id,
@@ -279,7 +279,7 @@ public class AuthController : ControllerBase
 
         // --- Generate NEW Refresh Token (Rotation) ---
         var newRefreshToken = GenerateRefreshToken();
-        var refreshTokenExpirationDays = _configuration.GetValue<int>("Jwt:RefreshTokenExpirationDays", 30);
+        var refreshTokenExpirationDays = _configuration.GetValue("Jwt:RefreshTokenExpirationDays", 30);
         var newRefreshTokenEntity = new UserRefreshToken
         {
             UserId = user.Id,

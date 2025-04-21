@@ -255,7 +255,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                                     PdfMetadata info = PdfSharpMetadataExtractor.ExtractMetadata(localFile.FilePath);
                                     localFile.PageCount = info.PageCount;
                                 }
-                                catch (System.Exception ex)
+                                catch (Exception ex)
                                 {
                                     Logger.Info($"Exception was thrown {ex}");
                                 }
@@ -968,7 +968,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                     PdfMetadata info = PdfSharpMetadataExtractor.ExtractMetadata(newPath);
                     newItem.PageCount = info.PageCount;
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
                     Logger.Info($"Exception was thrown {ex}");
                 }

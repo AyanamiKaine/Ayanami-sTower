@@ -831,7 +831,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="orientation"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetOrientation<T>(this UIBuilder<T> builder, Layout.Orientation orientation) where T : StackPanel
+    public static UIBuilder<T> SetOrientation<T>(this UIBuilder<T> builder, Orientation orientation) where T : StackPanel
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1083,7 +1083,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerPressed"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerPressed<T>(this UIBuilder<T> builder, EventHandler<Input.PointerPressedEventArgs>? onPointerPressed) where T : InputElement
+    public static UIBuilder<T> OnPointerPressed<T>(this UIBuilder<T> builder, EventHandler<PointerPressedEventArgs>? onPointerPressed) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1098,7 +1098,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerPressed"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerPressed<T>(this UIBuilder<T> builder, EventHandler<Input.PointerPressedEventArgs>? onPointerPressed) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerPressed<T>(this UIBuilder<T> builder, EventHandler<PointerPressedEventArgs>? onPointerPressed) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1114,7 +1114,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerMoved"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerMoved<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPointerMoved) where T : InputElement
+    public static UIBuilder<T> OnPointerMoved<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPointerMoved) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1129,7 +1129,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerMoved"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerMoved<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPointerMoved) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerMoved<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPointerMoved) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1145,7 +1145,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerRelease"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerReleased<T>(this UIBuilder<T> builder, EventHandler<Input.PointerReleasedEventArgs>? onPointerRelease) where T : InputElement
+    public static UIBuilder<T> OnPointerReleased<T>(this UIBuilder<T> builder, EventHandler<PointerReleasedEventArgs>? onPointerRelease) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1161,7 +1161,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerRelease"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerReleased<T>(this UIBuilder<T> builder, EventHandler<Input.PointerReleasedEventArgs>? onPointerRelease) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerReleased<T>(this UIBuilder<T> builder, EventHandler<PointerReleasedEventArgs>? onPointerRelease) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1177,7 +1177,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerEntered"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerEntered<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPointerEntered) where T : InputElement
+    public static UIBuilder<T> OnPointerEntered<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPointerEntered) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1195,7 +1195,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPoninterExited"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerExited<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPoninterExited) where T : InputElement
+    public static UIBuilder<T> OnPointerExited<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPoninterExited) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1211,7 +1211,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerEntered"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerEntered<T>(this UIBuilder<T> builder, EventHandler<Input.PointerEventArgs>? onPointerEntered) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerEntered<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPointerEntered) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1227,7 +1227,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerCaptureLost"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerCaptureLost<T>(this UIBuilder<T> builder, EventHandler<Input.PointerCaptureLostEventArgs>? onPointerCaptureLost) where T : InputElement
+    public static UIBuilder<T> OnPointerCaptureLost<T>(this UIBuilder<T> builder, EventHandler<PointerCaptureLostEventArgs>? onPointerCaptureLost) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1243,7 +1243,7 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerCaptureLost"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerCaptureLost<T>(this UIBuilder<T> builder, EventHandler<Input.PointerCaptureLostEventArgs>? onPointerCaptureLost) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerCaptureLost<T>(this UIBuilder<T> builder, EventHandler<PointerCaptureLostEventArgs>? onPointerCaptureLost) where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1792,7 +1792,7 @@ public static class UIBuilderExtensions
     /// Adds an event handler that gets invoked when the Click event happens, when the
     /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
-    public static UIBuilder<Button> OnClick(this UIBuilder<Button> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
+    public static UIBuilder<Button> OnClick(this UIBuilder<Button> builder, Action<object?, RoutedEventArgs> handler)
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1990,7 +1990,7 @@ public static class UIBuilderExtensions
     /// Adds an event handler that gets invoked when the OnClick event happens, when the
     /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
-    public static UIBuilder<MenuItem> OnClick(this UIBuilder<MenuItem> builder, Action<object?, Interactivity.RoutedEventArgs> handler)
+    public static UIBuilder<MenuItem> OnClick(this UIBuilder<MenuItem> builder, Action<object?, RoutedEventArgs> handler)
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;

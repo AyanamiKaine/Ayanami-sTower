@@ -112,7 +112,7 @@ public class LiteratureSourceItemConverter : JsonConverter<LiteratureSourceItem>
             JsonElement discriminatorElement = discriminatorNode.GetValue<JsonElement>();
             if (discriminatorElement.ValueKind == JsonValueKind.String)
             {
-                if (!Enum.TryParse<LiteratureSourceType>(discriminatorElement.GetString(), true, out sourceType))
+                if (!Enum.TryParse(discriminatorElement.GetString(), true, out sourceType))
                 {
                     throw new JsonException($"Invalid string value '{discriminatorElement.GetString()}' for discriminator '{DiscriminatorPropertyName}'.");
                 }

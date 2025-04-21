@@ -172,7 +172,7 @@ public partial class LargeLanguageManager // Removed 'sealed'
         }
 
         // Read feature flag from Configuration instead of World/Settings
-        _enableLargeLanguageFeatures = _configuration.GetValue<bool>("Features:EnableLargeLanguage", true); // Default to true if not set?
+        _enableLargeLanguageFeatures = _configuration.GetValue("Features:EnableLargeLanguage", true); // Default to true if not set?
 
         // Configure HttpClient User-Agent (can be done centrally when registering the client)
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (StellaLearningBackend)");

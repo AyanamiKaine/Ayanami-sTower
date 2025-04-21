@@ -250,7 +250,7 @@ public static class FileOpener
             };
             process.Start();
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"Error opening file in Obsidian: {ex.Message}");
             throw;

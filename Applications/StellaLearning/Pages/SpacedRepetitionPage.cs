@@ -751,10 +751,10 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     /// </summary>
     /// <param name="spacedRepetitionItems"></param>
     /// <returns></returns>
-    public static System.Timers.Timer CreateAutoSaveTimer(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    public static Timer CreateAutoSaveTimer(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
     {
         // Create a System.Timers.Timer for auto-saving
-        var autoSaveTimer = new System.Timers.Timer(TimeSpan.FromMinutes(5).TotalMilliseconds) // 5 minutes
+        var autoSaveTimer = new Timer(TimeSpan.FromMinutes(5).TotalMilliseconds) // 5 minutes
         {
             AutoReset = true, // Make the timer repeat
             Enabled = true,   // Start the timer immediately
@@ -781,9 +781,9 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         return autoSaveTimer;
     }
 
-    private System.Timers.Timer CreateNotificationTimer()
+    private Timer CreateNotificationTimer()
     {
-        var notificationTimer = new System.Timers.Timer(60000)
+        var notificationTimer = new Timer(60000)
         {
             AutoReset = true,
             Enabled = true,

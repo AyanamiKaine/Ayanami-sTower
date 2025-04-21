@@ -398,7 +398,7 @@ public class EditImageCloze : IUIComponent, IDisposable
         }
     }
 
-    private void Image_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    private void Image_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         // Start dragging
         if (e.GetCurrentPoint(sender as Control).Properties.IsLeftButtonPressed)
@@ -451,7 +451,7 @@ public class EditImageCloze : IUIComponent, IDisposable
         }
     }
 
-    private void Image_PointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
+    private void Image_PointerMoved(object? sender, PointerEventArgs e)
     {
         if (!isDragging || !selectionRectangle.IsValid())
             return;
@@ -472,7 +472,7 @@ public class EditImageCloze : IUIComponent, IDisposable
         rect.Height = height;
     }
 
-    private void Image_PointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
+    private void Image_PointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         if (!isDragging || !selectionRectangle.IsValid())
             return;
@@ -587,7 +587,7 @@ public class EditImageCloze : IUIComponent, IDisposable
     }
 
     // Add this method to handle keyboard events
-    private async void Window_KeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    private async void Window_KeyDown(object? sender, KeyEventArgs e)
     {
         // Check for Ctrl+V
         if (e.Key == Avalonia.Input.Key.V && e.KeyModifiers == Avalonia.Input.KeyModifiers.Control)

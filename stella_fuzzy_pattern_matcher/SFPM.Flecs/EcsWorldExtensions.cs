@@ -92,7 +92,7 @@ public static class EcsWorldExtensions
         var acceptedRules = new List<Rule>();
         var currentHighestScore = 0;
 
-        world.Each<Rule>(callback: (ref Rule rule) =>
+        world.Each(callback: (ref Rule rule) =>
         {
             if (rule.CriteriaCount < currentHighestScore)
                 return;
