@@ -293,10 +293,10 @@ public class Engine
         World.Component<Position3D>("Position3D")
             .Member<Vector3>("Value");
 
-        World.Component<RotationSpeed2D>("RotationSpeed")
+        World.Component<RotationSpeed2D>("RotationSpeed2D")
             .Member<float>("Speed");
 
-        World.Component<RotationSpeed3D>("RotationSpeed")
+        World.Component<RotationSpeed3D>("RotationSpeed3D")
             .Member<Vector3>("SpeedRadPerSec");
 
         World.Component<ECS.Point>("Point")
