@@ -74,6 +74,8 @@ public class ColorApp : App // Inherit from App
         initialCamera.FieldOfViewRadians = initialFovRadians;
         World.Set(initialCamera); // Set as singleton
 
+
+        /*
         // --- Create the Cube Entity ---
         var cubeEntity = World.Entity("Custom Mesh Example");
 
@@ -91,7 +93,7 @@ public class ColorApp : App // Inherit from App
                 new(0, 4), new(1, 5), new(2, 6), new(3, 7)
         ];
 
-        // Add Components to the Cube Entity
+        
         cubeEntity.Set(new MeshGeometry(baseVertices, edges))
                   .Set(new ProjectedMesh { ProjectedVertices = new Vector2[baseVertices.Length] }) // Initialize array
                   .Set(new Position3D(Vector3.Zero)) // Place cube at origin
@@ -103,14 +105,15 @@ public class ColorApp : App // Inherit from App
                   )))
                   .Set(RgbaColor.Red); // Cube lines are white
 
+        */
 
-        World.Entity("SpinningCube2")
+        World.Entity("SpinningCube")
             .Add<Box>()                             // Add the Box tag
             .Set(new Size3D(new Vector3(2, 2, 2)))  // Width=2, Height=2, Depth=2
-            .Set(new Position3D(new(0, 1, 1)))
+            .Set(new Position3D(new(0, 0, 0)))
             .Set(new Orientation(Quaternion.Identity))
             .Set(new RotationSpeed3D(new Vector3(0.8f * 0.8f, 0.8f * 1.0f, 0.8f * 1.2f)))
-            .Set(RgbaColor.Green);
+            .Set(RgbaColor.Red);
 
         SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnInit finished successfully.");
         return SDL.AppResult.Continue; // Signal success
