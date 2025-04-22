@@ -9,15 +9,15 @@ namespace AyanamisTower.NihilEx.SpinningCubeExample;
 internal record struct Position2D(float X, float Y);
 internal class FPSCounter
 {
-    private ulong _lastTime = SDL.GetPerformanceCounter();
+    private ulong _lastTime = SDL.SDL_GetPerformanceCounter();
     private int _frameCount;
     private double _fps;
 
     public void Update()
     {
         _frameCount++;
-        var currentTime = SDL.GetPerformanceCounter();
-        var elapsedTime = (currentTime - _lastTime) / (double)SDL.GetPerformanceFrequency();
+        var currentTime = SDL.SDL_GetPerformanceCounter();
+        var elapsedTime = (currentTime - _lastTime) / (double)SDL.SDL_GetPerformanceFrequency();
 
         if (!(elapsedTime >= 0.1)) return;
 
@@ -45,9 +45,9 @@ public class ColorApp : App // Inherit from App
     /// <summary>
     /// Override OnInit to create window, renderer, and initialize state.
     /// </summary>
-    protected override SDL.AppResult OnInit(string[] args)
+    protected override SDL.SDL_AppResult OnInit(string[] args)
     {
-        SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnInit started.");
+        SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "MyColorApp OnInit started.");
 
         try
         {
@@ -55,9 +55,9 @@ public class ColorApp : App // Inherit from App
         }
         catch (Exception)
         {
-            SDL.LogError(SDL.LogCategory.Application, $"MyColorApp OnInit: Error creating renderer: {SDL.GetError()}");
+            SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"MyColorApp OnInit: Error creating renderer: {SDL.SDL_GetError()}");
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
-            return SDL.AppResult.Failure;
+            return SDL.SDL_AppResult.SDL_APP_FAILURE;
         }
         // --- Create Singletons ---
         // 1. Camera Singleton
@@ -115,17 +115,17 @@ public class ColorApp : App // Inherit from App
             .Set(new RotationSpeed3D(new Vector3(0.8f * 0.8f, 0.8f * 1.0f, 0.8f * 1.2f)))
             .Set(RgbaColor.Red);
 
-        SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnInit finished successfully.");
-        return SDL.AppResult.Continue; // Signal success
+        SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "MyColorApp OnInit finished successfully.");
+        return SDL.SDL_AppResult.SDL_APP_CONTINUE; // Signal success
     }
 
     /// <summary>
     /// Override OnQuit to clean up resources created in OnInit.
     /// </summary>
-    protected override void OnQuit(SDL.AppResult result)
+    protected override void OnQuit(SDL.SDL_AppResult result)
     {
-        SDL.LogInfo(SDL.LogCategory.Application, $"MyColorApp OnQuit started with result: {result}");
-        SDL.LogInfo(SDL.LogCategory.Application, "MyColorApp OnQuit finished.");
+        SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"MyColorApp OnQuit started with result: {result}");
+        SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "MyColorApp OnQuit finished.");
     }
 }
 
@@ -141,9 +141,7 @@ internal static class Program
             InitalHeight = 600,
             InitalWidth = 800,
         };
-
         // Run the application - the base App class handles the rest.
         myApp.Run([]);
-        return;
     }
 }

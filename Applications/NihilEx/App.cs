@@ -134,45 +134,57 @@ namespace AyanamisTower.NihilEx
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                //SDL.LogInfo(SDL.LogCategory.Application, "Detected Windows. Using EnterAppMainCallbacks.");
-                //return RunWindowsCallbacks(args);
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Detected Windows. Using EnterAppMainCallbacks.");
+                return RunWindowsCallbacks(args);
                 throw new Exception("NOT IMPLEMENTED");
             }
             else
             {
-                //SDL.LogInfo(SDL.LogCategory.Application, "Detected Non-Windows OS. Using manual event loop.");
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Detected Non-Windows OS. Using manual event loop.");
                 return RunManualLoop(args);
             }
         }
-        /*
-        private int RunWindowsCallbacks(string[] args)
+
+        private unsafe int RunWindowsCallbacks(string[] args)
         {
             int exitCode = 0;
             GCHandle appHandle = default; // GCHandle is local to this method now
 
             try
             {
-                // Allocate the GCHandle for this instance *only* for the callback mechanism.
                 appHandle = GCHandle.Alloc(this);
+                IntPtr handlePtr = GCHandle.ToIntPtr(appHandle);
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                    $"RunWindowsCallbacks: Thread {Environment.CurrentManagedThreadId}: Allocating handle {handlePtr:X}");
+
+                // --- Critical Section (Implicit) ---
+                // Set the shared static handle. ASSUMES no other thread is doing this concurrently.
+                _pendingAppHandle = appHandle;
+                // --- End Critical Section ---
+
+                bool isAllocatedAfterSet = _pendingAppHandle.IsAllocated;
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                    $"RunWindowsCallbacks: Thread {Environment.CurrentManagedThreadId}: Set _pendingAppHandle. IsAllocated = {isAllocatedAfterSet}");
+
 
                 // Create delegates pointing to our static callback wrappers.
-                SDL.AppInitFunc initFunc = StaticAppInit;
-                SDL.AppIterateFunc iterateFunc = StaticAppIterate;
-                SDL.AppEventFunc eventFunc = StaticAppEvent;
-                SDL.AppQuitFunc quitFunc = StaticAppQuit;
+                SDL.SDL_AppInit_func initFunc = StaticAppInit;
+                SDL.SDL_AppIterate_func iterateFunc = StaticAppIterate;
+                SDL.SDL_AppEvent_func eventFunc = StaticAppEvent;
+                SDL.SDL_AppQuit_func quitFunc = StaticAppQuit;
 
-                SDL.LogInfo(SDL.LogCategory.Application, "Entering SDL Main Callbacks...");
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Entering SDL Main Callbacks...");
                 // Pass the GCHandle's IntPtr via the initial state parameter mechanism
                 // (Note: SDL_EnterAppMainCallbacks expects the address of where to store the state pointer)
                 // We'll handle setting the state pointer inside StaticAppInit
-                exitCode = SDL.EnterAppMainCallbacks(args.Length, args, initFunc, iterateFunc, eventFunc, quitFunc);
-                SDL.LogInfo(SDL.LogCategory.Application, $"Exited SDL Main Callbacks with code: {exitCode}");
+                exitCode = SDL.SDL_EnterAppMainCallbacks(args.Length, IntPtr.Zero, initFunc, iterateFunc, eventFunc, quitFunc);
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exited SDL Main Callbacks with code: {exitCode}");
 
                 // Check for errors *after* returning, in case it exited immediately with an error
-                string sdlError = SDL.GetError();
+                string sdlError = SDL.SDL_GetError();
                 if (!string.IsNullOrEmpty(sdlError))
                 {
-                    SDL.LogError(SDL.LogCategory.Application, $"SDL Error reported after Exit: {sdlError}");
+                    SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"SDL Error reported after Exit: {sdlError}");
                     if (exitCode == 0 && !sdlError.Contains("No error")) // Avoid overriding valid non-zero exit codes
                     {
                         exitCode = 1; // Indicate error if exited cleanly but SDL has an error string
@@ -181,7 +193,7 @@ namespace AyanamisTower.NihilEx
             }
             catch (Exception ex)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Unhandled exception during Windows RunCallbacks: {ex}");
+                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Unhandled exception during Windows RunCallbacks: {ex}");
                 exitCode = 1; // Indicate an error
             }
             finally
@@ -190,13 +202,13 @@ namespace AyanamisTower.NihilEx
                 if (appHandle.IsAllocated)
                 {
                     appHandle.Free();
-                    SDL.LogInfo(SDL.LogCategory.Application, "App GCHandle Freed.");
+                    //SDL.LogInfo(SDL.LogCategory.Application, "App GCHandle Freed.");
                 }
                 // NOTE: SDL automatically calls SDL_Quit() after the callbacks finish/return.
             }
             return exitCode;
         }
-        */
+
 
         // --- Manual Event Loop for Non-Windows Platforms ---
         private int RunManualLoop(string[] args)
@@ -364,64 +376,64 @@ namespace AyanamisTower.NihilEx
                 SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Base OnEvent: Quit event received.");
                 return SDL.SDL_AppResult.SDL_APP_SUCCESS; // Signal graceful termination
             }
-            /*
-            else if (e.type == (uint)SDL.SDL_EventType.WindowResized)
+
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_RESIZED)
             {
-                AppEntity.Emit(new WindowResize(e.Display.Data1, e.Display.Data2));
+                AppEntity.Emit(new WindowResize(e.display.data1, e.display.data2));
             }
-            else if (e.type == (uint)SDL.SDL_EventType.KeyDown)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_KEY_DOWN)
             {
                 AppEntity.Emit(new KeyDownEvent(
-                    Keycode: e.Key.Key,
-                    Modifiers: e.Key.Mod,
-                    IsRepeat: e.Key.Repeat
+                    Keycode: (SDL.SDL_Keycode)e.key.key,
+                    Modifiers: e.key.mod,
+                    IsRepeat: e.key.repeat
                 ));
             }
-            else if (e.type == (uint)SDL.SDL_EventType.KeyUp)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_KEY_UP)
             {
                 AppEntity.Emit(new KeyUpEvent(
-                    Keycode: e.Key.Key,
-                    Modifiers: e.Key.Mod
+                    Keycode: (SDL.SDL_Keycode)e.key.key,
+                    Modifiers: e.key.mod
                 ));
             }
-            else if (e.type == (uint)SDL.SDL_EventType.MouseButtonDown)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN)
             {
                 AppEntity.Emit(new MouseButtonDownEvent(
                     MouseButton: SDL.SDL_GetMouseState(out float _, out float _),
-                    X: e.Button.X,
-                    Y: e.Button.Y,
-                    Clicks: e.Button.Clicks
+                    X: e.button.x,
+                    Y: e.button.y,
+                    Clicks: e.button.clicks
                 ));
             }
-            else if (e.type == (uint)SDL.EventType.MouseButtonUp)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP)
             {
                 AppEntity.Emit(new MouseButtonUpEvent(
                     MouseButton: SDL.SDL_GetMouseState(out float _, out float _),
-                    X: e.Button.X,
-                    Y: e.Button.Y,
-                    Clicks: e.Button.Clicks
+                    X: e.button.x,
+                    Y: e.button.y,
+                    Clicks: e.button.clicks
                 ));
             }
-            else if (e.type == (uint)SDL.EventType.MouseMotion)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_MOTION)
             {
                 AppEntity.Emit(new MouseMotionEvent(
-                    MouseState: SDL.GetMouseState(out float _, out float _),
-                    X: e.Motion.X,
-                    Y: e.Motion.Y,
-                    XRel: e.Motion.XRel,
-                    YRel: e.Motion.YRel));
+                    MouseState: SDL.SDL_GetMouseState(out float _, out float _),
+                    X: e.motion.x,
+                    Y: e.motion.y,
+                    XRel: e.motion.xrel,
+                    YRel: e.motion.yrel));
             }
-            else if (e.type == (uint)SDL.EventType.MouseWheel)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_WHEEL)
             {
                 AppEntity.Emit(new MouseWheelEvent(
-                    ScrollX: e.Wheel.X,
-                    ScrollY: e.Wheel.Y,
-                    Direction: e.Wheel.Direction
+                    ScrollX: e.wheel.x,
+                    ScrollY: e.wheel.y,
+                    Direction: e.wheel.direction
                 ));
             }
-            else if (e.type == (uint)SDL.EventType.WindowMoved)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOVED)
             {
-                uint windowId = e.Window.WindowID;
+                uint windowId = e.window.windowID;
                 SDL.SDL_GetWindowPosition(SDL.SDL_GetWindowFromID(windowId), out int newWidth, out int newHeight); // Safer way
 
                 AppEntity.Emit(new WindowMovedEvent(
@@ -429,25 +441,25 @@ namespace AyanamisTower.NihilEx
                     Y: newHeight
                 ));
             }
-            else if (e.type == (uint)SDL.EventType.WindowMouseEnter)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER)
             {
                 AppEntity.Emit(new WindowMouseEnterEvent(
                     MouseButton: SDL.SDL_GetGlobalMouseState(out float X, out float Y),
-                    Down: e.Button.Down,
+                    Down: e.button.down,
                     X: X,
                     Y: Y,
-                    Clicks: e.Button.Clicks));
+                    Clicks: e.button.clicks));
             }
             else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE)
             {
                 AppEntity.Emit(new WindowMouseLeaveEvent(
                     MouseButton: SDL.SDL_GetGlobalMouseState(out float X, out float Y),
-                    Down: e.Button.Down,
+                    Down: e.button.down,
                     X: X,
                     Y: Y,
-                    Clicks: e.Button.Clicks));
+                    Clicks: e.button.clicks));
             }
-            */
+
 
             return SDL.SDL_AppResult.SDL_APP_CONTINUE;
         }
@@ -502,13 +514,12 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         /// <param name="result">The result code that caused the application to quit.</param>
         protected abstract void OnQuit(SDL.SDL_AppResult result);
-        /*
+
         // --- Static Callback Wrappers (Called by SDL) ---
         // Temporary static handle used ONLY during the transition into EnterAppMainCallbacks
         // This is a workaround pattern for C APIs without explicit user_data in init.
-        [ThreadStatic] // Use ThreadStatic if multiple App instances might run in parallel threads (unlikely for SDL main loop)
         private static GCHandle _pendingAppHandle;
-        private static SDL.SDL_AppResult StaticAppInit(IntPtr appstatePtrRef, int argc, string[] argv)
+        private static SDL.SDL_AppResult StaticAppInit(IntPtr appstatePtrRef, int argc, IntPtr argv)
         {
             // Retrieve the App instance via the GCHandle passed implicitly at first, then set state pointer
             GCHandle handle = default;
@@ -539,47 +550,47 @@ namespace AyanamisTower.NihilEx
                     instance = handle.Target as App;
                     if (instance == null)
                     {
-                        SDL.LogError(SDL.LogCategory.Application, "StaticAppInit: Failed to get App instance from pending handle.");
-                        return SDL.AppResult.Failure;
+                        SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppInit: Failed to get App instance from pending handle.");
+                        return SDL.SDL_AppResult.SDL_APP_FAILURE;
                     }
                     // IMPORTANT: Tell SDL which state pointer to use for subsequent callbacks.
                     Marshal.WriteIntPtr(appstatePtrRef, GCHandle.ToIntPtr(handle));
-                    SDL.LogInfo(SDL.LogCategory.Application, "StaticAppInit: Set SDL app state pointer from pending handle.");
+                    SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppInit: Set SDL app state pointer from pending handle.");
                     _pendingAppHandle = default; // Clear the temporary static handle
                 }
                 else
                 {
                     // This case should ideally not happen if called correctly by SDL via EnterAppMainCallbacks
-                    SDL.LogError(SDL.LogCategory.Application, "StaticAppInit: No pending App handle found!");
-                    return SDL.AppResult.Failure;
+                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppInit: No pending App handle found!");
+                    return SDL.SDL_AppResult.SDL_APP_FAILURE;
                 }
 
 
-                SDL.LogInfo(SDL.LogCategory.Application, "StaticAppInit: Calling instance.SDLInit...");
-                SDL.AppResult initResult = instance.SDLInit(argv);
-                SDL.LogInfo(SDL.LogCategory.Application, $"StaticAppInit: instance.SDLInit returned: {initResult}");
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppInit: Calling instance.SDLInit...");
+                SDL.SDL_AppResult initResult = instance.SDLInit([]);
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"StaticAppInit: instance.SDLInit returned: {initResult}");
                 return initResult;
             }
             catch (Exception ex)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Exception in StaticAppInit: {ex}");
+                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in StaticAppInit: {ex}");
                 // Clean up static handle if exception occurs after acquisition but before clearing
                 if (_pendingAppHandle.IsAllocated) _pendingAppHandle = default;
-                return SDL.AppResult.Failure;
+                return SDL.SDL_AppResult.SDL_APP_FAILURE;
             }
         }
 
-        private static SDL.AppResult StaticAppIterate(IntPtr appstatePtr)
+        private static SDL.SDL_AppResult StaticAppIterate(IntPtr appstatePtr)
         {
             try
             {
                 // Retrieve the App instance from the handle passed by SDL
-                if (appstatePtr == IntPtr.Zero) return SDL.AppResult.Failure;
+                if (appstatePtr == IntPtr.Zero) return SDL.SDL_AppResult.SDL_APP_FAILURE;
                 GCHandle handle = GCHandle.FromIntPtr(appstatePtr);
                 if (!handle.IsAllocated || handle.Target is not App instance)
                 {
-                    SDL.LogError(SDL.LogCategory.Application, "StaticAppIterate: Failed to get App instance from handle.");
-                    return SDL.AppResult.Failure;
+                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppIterate: Failed to get App instance from handle.");
+                    return SDL.SDL_AppResult.SDL_APP_FAILURE;
                 }
 
                 // --- Calculate Delta Time ---
@@ -592,35 +603,37 @@ namespace AyanamisTower.NihilEx
             }
             catch (Exception ex)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Exception in StaticAppIterate: {ex}");
-                return SDL.AppResult.Failure;
+                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in StaticAppIterate: {ex}");
+                return SDL.SDL_AppResult.SDL_APP_FAILURE;
             }
         }
 
-        private static SDL.AppResult StaticAppEvent(IntPtr appstatePtr, ref SDL.Event e)
+        private static unsafe SDL.SDL_AppResult StaticAppEvent(nint appstatePtr, SDL.SDL_Event* e)
         {
             try
             {
                 // Retrieve the App instance
-                if (appstatePtr == IntPtr.Zero) return SDL.AppResult.Failure;
+                if (appstatePtr == IntPtr.Zero) return SDL.SDL_AppResult.SDL_APP_FAILURE;
                 GCHandle handle = GCHandle.FromIntPtr(appstatePtr);
                 if (!handle.IsAllocated || handle.Target is not App instance)
                 {
-                    SDL.LogError(SDL.LogCategory.Application, "StaticAppEvent: Failed to get App instance from handle.");
-                    return SDL.AppResult.Failure;
+                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppEvent: Failed to get App instance from handle.");
+                    return SDL.SDL_AppResult.SDL_APP_FAILURE;
                 }
 
+                SDL.SDL_Event eventValue = *e;
+
                 // Call the virtual OnEvent method
-                return instance.OnEvent(ref e);
+                return instance.OnEvent(ref eventValue);
             }
             catch (Exception ex)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Exception in StaticAppEvent: {ex}");
-                return SDL.AppResult.Failure; // Or Continue depending on desired robustness
+                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in StaticAppEvent: {ex}");
+                return SDL.SDL_AppResult.SDL_APP_FAILURE; // Or Continue depending on desired robustness
             }
         }
 
-        private static void StaticAppQuit(IntPtr appstatePtr, SDL.AppResult result)
+        private static void StaticAppQuit(IntPtr appstatePtr, SDL.SDL_AppResult result)
         {
             try
             {
@@ -629,7 +642,7 @@ namespace AyanamisTower.NihilEx
                 GCHandle handle = GCHandle.FromIntPtr(appstatePtr);
                 if (!handle.IsAllocated || handle.Target is not App instance)
                 {
-                    SDL.LogError(SDL.LogCategory.Application, "StaticAppQuit: Failed to get App instance from handle.");
+                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppQuit: Failed to get App instance from handle.");
                     return;
                 }
 
@@ -640,10 +653,10 @@ namespace AyanamisTower.NihilEx
             }
             catch (Exception ex)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Exception in StaticAppQuit: {ex}");
+                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in StaticAppQuit: {ex}");
                 // Don't re-throw, as we're already quitting.
             }
         }
-        */
+
     }
 }

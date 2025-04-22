@@ -6,7 +6,7 @@ namespace AyanamisTower.NihilEx;
 /// <summary>
 /// RENDERER
 /// </summary>
-public class Renderer(nint window, string? name = null) : IDisposable
+public class Renderer(nint window, string name = "") : IDisposable
 {
     internal nint _renderer = SDL.SDL_CreateRenderer(window, name);
     /// <summary>
