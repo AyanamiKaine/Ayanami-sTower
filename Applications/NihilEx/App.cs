@@ -296,7 +296,7 @@ namespace AyanamisTower.NihilEx
         protected SDL.AppResult SDLInit(string[] args)
         {
             Engine = new(World);
-
+            World.SetThreads(SDL.GetNumLogicalCPUCores());
             try
             {
                 // Initialize DeltaTime manager
