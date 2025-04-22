@@ -14,17 +14,15 @@
     </ItemGroup>
 
   <ItemGroup>
-
-	  <PackageReference Include="SDL3-CS" />
-    <PackageReference Include="SDL3-CS.Native" />
     <PackageReference Include="Flecs.NET.Debug" />
-	<PackageReference Include="Flecs.NET.Release" />    
+	  <PackageReference Include="Flecs.NET.Release" />    
     <PackageReference Include="Box2D.NET.Debug" />
     <PackageReference Include="Box2D.NET.Release" />
     <PackageReference Include="JoltPhysicsSharp" />
     </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../../SDL3-CS/SDL3/SDL3.Core.csproj" />
     <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM.Flecs\AyanamisTower.SFPM.Flecs.csproj" />
     <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM\AyanamisTower.SFPM.csproj" />
   </ItemGroup>

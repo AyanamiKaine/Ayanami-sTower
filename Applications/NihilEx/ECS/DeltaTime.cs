@@ -28,12 +28,12 @@ public class DeltaTime
     public void Initialize()
     {
         // Use high-performance counter if available for better precision
-        _frequency = SDL.GetPerformanceFrequency();
-        _startTimeTicks = SDL.GetPerformanceCounter();
+        _frequency = SDL.SDL_GetPerformanceFrequency();
+        _startTimeTicks = SDL.SDL_GetPerformanceCounter();
         _lastUpdateTimeTicks = _startTimeTicks; // Initialize last update time
         DeltaSeconds = 0.0f;
         TotalSeconds = 0.0f;
-        SDL.LogInfo(SDL.LogCategory.Application, $"DeltaTime Initialized. Frequency: {_frequency}");
+        //SDL.LogInfo(SDL.LogCategory.Application, $"DeltaTime Initialized. Frequency: {_frequency}");
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ public class DeltaTime
     /// </summary>
     public void Update()
     {
-        ulong currentTimeTicks = SDL.GetPerformanceCounter();
+        ulong currentTimeTicks = SDL.SDL_GetPerformanceCounter();
 
         // Calculate delta time
         ulong elapsedTicks = currentTimeTicks - _lastUpdateTimeTicks;

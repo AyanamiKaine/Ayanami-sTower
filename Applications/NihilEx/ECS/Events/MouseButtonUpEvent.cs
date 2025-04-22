@@ -10,4 +10,4 @@ namespace AyanamisTower.NihilEx.ECS.Events;
 /// <param name="X">The X coordinate where the mouse button was pressed.</param>
 /// <param name="Y">The Y coordinate where the mouse button was pressed.</param>
 /// <param name="Clicks">The number of clicks (1 for single-click, 2 for double-click, etc).</param>
-public record struct MouseButtonUpEvent(MouseButtonFlags MouseButton, float X, float Y, byte Clicks);
+public record struct MouseButtonUpEvent(SDL_MouseButtonFlags MouseButton, float X, float Y, byte Clicks);

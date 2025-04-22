@@ -6,6 +6,7 @@ using AyanamisTower.NihilEx.ECS.Events;
 using Flecs.NET.Core;
 using SDL3;
 
+
 namespace AyanamisTower.NihilEx
 {
     /// <summary>
@@ -133,16 +134,17 @@ namespace AyanamisTower.NihilEx
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                SDL.LogInfo(SDL.LogCategory.Application, "Detected Windows. Using EnterAppMainCallbacks.");
-                return RunWindowsCallbacks(args);
+                //SDL.LogInfo(SDL.LogCategory.Application, "Detected Windows. Using EnterAppMainCallbacks.");
+                //return RunWindowsCallbacks(args);
+                throw new Exception("NOT IMPLEMENTED");
             }
             else
             {
-                SDL.LogInfo(SDL.LogCategory.Application, "Detected Non-Windows OS. Using manual event loop.");
+                //SDL.LogInfo(SDL.LogCategory.Application, "Detected Non-Windows OS. Using manual event loop.");
                 return RunManualLoop(args);
             }
         }
-
+        /*
         private int RunWindowsCallbacks(string[] args)
         {
             int exitCode = 0;
@@ -194,35 +196,35 @@ namespace AyanamisTower.NihilEx
             }
             return exitCode;
         }
-
+        */
 
         // --- Manual Event Loop for Non-Windows Platforms ---
         private int RunManualLoop(string[] args)
         {
-            SDL.AppResult appResult = SDL.AppResult.Continue; // Track why the loop exits
+            SDL.SDL_AppResult appResult = SDL.SDL_AppResult.SDL_APP_CONTINUE; // Track why the loop exits
 
             try
             {
                 // 1. Explicit Initialization
                 // Use flags appropriate for your application (Video is common)
-                if (!SDL.Init(SDL.InitFlags.Video | SDL.InitFlags.Events /* Add other flags as needed */))
+                if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO | SDL.SDL_InitFlags.SDL_INIT_EVENTS /* Add other flags as needed */))
                 {
-                    SDL.LogError(SDL.LogCategory.Application, $"Manual Loop: SDL.Init failed: {SDL.GetError()}");
+                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Manual Loop: SDL.Init failed: {SDL.SDL_GetError()}");
                     return 1; // Early exit on failure
                 }
-                SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDL.Init successful.");
+                //SDL.SDL_LogInfo(SDL.LogCategory.Application, "Manual Loop: SDL.Init successful.");
 
                 // Call the same core initialization logic (creates Window, Renderer, calls user OnInit)
                 appResult = SDLInit(args);
-                if (appResult != SDL.AppResult.Continue)
+                if (appResult != SDL.SDL_AppResult.SDL_APP_CONTINUE)
                 {
-                    SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: SDLInit returned {appResult}. Exiting early.");
+                    //SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: SDLInit returned {appResult}. Exiting early.");
                     // Need to call SDLQuit before SDL.Quit if init partially succeeded
                     SDLQuit(appResult);
-                    SDL.Quit();
-                    return (appResult == SDL.AppResult.Success) ? 0 : 1;
+                    SDL.SDL_Quit();
+                    return (appResult == SDL.SDL_AppResult.SDL_APP_SUCCESS) ? 0 : 1;
                 }
-                SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDLInit successful.");
+                //SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDLInit successful.");
 
                 // Initialize DeltaTime manager (already done in SDLInit, but ensure it's ready)
                 _deltaTimeManager.Initialize(); // Safe to call again if already initialized
@@ -237,13 +239,13 @@ namespace AyanamisTower.NihilEx
                     // --- End Delta Time ---
 
                     // --- Event Handling ---
-                    while (SDL.PollEvent(out SDL.Event e))
+                    while (SDL.SDL_PollEvent(out SDL.SDL_Event e))
                     {
                         // Call the user's event handler
                         appResult = OnEvent(ref e);
-                        if (appResult != SDL.AppResult.Continue)
+                        if (appResult != SDL.SDL_AppResult.SDL_APP_CONTINUE)
                         {
-                            SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: OnEvent returned {appResult}. Exiting loop.");
+                            //SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: OnEvent returned {appResult}. Exiting loop.");
                             loop = false;
                             break; // Exit inner event loop
                         }
@@ -254,9 +256,9 @@ namespace AyanamisTower.NihilEx
                     // --- Update and Render ---
                     // Call the user's update/render method
                     appResult = OnIterate(deltaTime);
-                    if (appResult != SDL.AppResult.Continue)
+                    if (appResult != SDL.SDL_AppResult.SDL_APP_CONTINUE)
                     {
-                        SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: OnIterate returned {appResult}. Exiting loop.");
+                        //SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: OnIterate returned {appResult}. Exiting loop.");
                         loop = false;
                     }
 
@@ -264,25 +266,25 @@ namespace AyanamisTower.NihilEx
                     // If not, add SDL.RenderPresent(Renderer); here.
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Unhandled exception during Manual Loop: {ex}");
-                appResult = SDL.AppResult.Failure; // Ensure cleanup happens correctly
+                //SDL.LogError(SDL.LogCategory.Application, $"Unhandled exception during Manual Loop: {ex}");
+                appResult = SDL.SDL_AppResult.SDL_APP_FAILURE; // Ensure cleanup happens correctly
             }
             finally
             {
                 // 3. Cleanup
-                SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: Exited with result {appResult}. Cleaning up...");
+                //SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: Exited with result {appResult}. Cleaning up...");
                 // Call the user's cleanup logic (disposes Window/Renderer, calls user OnQuit)
                 SDLQuit(appResult);
 
                 // Explicitly Quit SDL for the manual loop
-                SDL.Quit();
-                SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDL.Quit() called.");
+                SDL.SDL_Quit();
+                //SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDL.Quit() called.");
             }
 
             // Return 0 for success, 1 for failure
-            return (appResult == SDL.AppResult.Success) ? 0 : 1;
+            return (appResult == SDL.SDL_AppResult.SDL_APP_SUCCESS) ? 0 : 1;
         }
 
         // --- Virtual methods for derived classes to override ---
@@ -293,10 +295,10 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         /// <param name="args">Command line arguments.</param>
         /// <returns>SDL.AppResult.Continue to proceed, or Success/Failure to exit early.</returns>
-        protected SDL.AppResult SDLInit(string[] args)
+        protected SDL.SDL_AppResult SDLInit(string[] args)
         {
             Engine = new(World);
-            World.SetThreads(SDL.GetNumLogicalCPUCores());
+            World.SetThreads(SDL.SDL_GetNumLogicalCPUCores());
             try
             {
                 // Initialize DeltaTime manager
@@ -322,8 +324,8 @@ namespace AyanamisTower.NihilEx
             }
             catch (Exception ex)
             {
-                SDL.LogError(SDL.LogCategory.Error, ex.Message);
-                return SDL.AppResult.Failure;
+                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_ERROR, ex.Message);
+                return SDL.SDL_AppResult.SDL_APP_FAILURE;
             }
         }
 
@@ -334,7 +336,7 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         /// <param name="args">Command line arguments.</param>
         /// <returns>SDL.AppResult.Continue to proceed, or Success/Failure to exit early.</returns>
-        protected abstract SDL.AppResult OnInit(string[] args);
+        protected abstract SDL.SDL_AppResult OnInit(string[] args);
 
         /// <summary>
         /// Called repeatedly for each frame/iteration of the application loop.
@@ -342,11 +344,11 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         /// <param name="deltaTime">Time elapsed since the last call to OnIterate, in seconds.</param>
         /// <returns>SDL.AppResult.Continue to keep running, or Success/Failure to exit.</returns>
-        protected virtual SDL.AppResult OnIterate(float deltaTime)
+        protected virtual SDL.SDL_AppResult OnIterate(float deltaTime)
         {
             Renderer!.DrawColor = (RgbaColor)Color.White;
             World.Progress(deltaTime);
-            return SDL.AppResult.Continue;
+            return SDL.SDL_AppResult.SDL_APP_CONTINUE;
         }
 
         /// <summary>
@@ -355,19 +357,19 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         /// <param name="e">The SDL_Event structure.</param>
         /// <returns>SDL.AppResult.Continue to keep running, or Success/Failure to exit.</returns>
-        protected virtual SDL.AppResult OnEvent(ref SDL.Event e)
+        protected SDL.SDL_AppResult OnEvent(ref SDL.SDL_Event e)
         {
-            // Base implementation handles Quit event.
-            if (e.Type == (uint)SDL.EventType.Quit)
+            if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_QUIT)
             {
-                SDL.LogInfo(SDL.LogCategory.Application, "Base OnEvent: Quit event received.");
-                return SDL.AppResult.Success; // Signal graceful termination
+                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Base OnEvent: Quit event received.");
+                return SDL.SDL_AppResult.SDL_APP_SUCCESS; // Signal graceful termination
             }
-            else if (e.Type == (uint)SDL.EventType.WindowResized)
+            /*
+            else if (e.type == (uint)SDL.SDL_EventType.WindowResized)
             {
                 AppEntity.Emit(new WindowResize(e.Display.Data1, e.Display.Data2));
             }
-            else if (e.Type == (uint)SDL.EventType.KeyDown)
+            else if (e.type == (uint)SDL.SDL_EventType.KeyDown)
             {
                 AppEntity.Emit(new KeyDownEvent(
                     Keycode: e.Key.Key,
@@ -375,32 +377,32 @@ namespace AyanamisTower.NihilEx
                     IsRepeat: e.Key.Repeat
                 ));
             }
-            else if (e.Type == (uint)SDL.EventType.KeyUp)
+            else if (e.type == (uint)SDL.SDL_EventType.KeyUp)
             {
                 AppEntity.Emit(new KeyUpEvent(
                     Keycode: e.Key.Key,
                     Modifiers: e.Key.Mod
                 ));
             }
-            else if (e.Type == (uint)SDL.EventType.MouseButtonDown)
+            else if (e.type == (uint)SDL.SDL_EventType.MouseButtonDown)
             {
                 AppEntity.Emit(new MouseButtonDownEvent(
-                    MouseButton: SDL.GetMouseState(out float _, out float _),
+                    MouseButton: SDL.SDL_GetMouseState(out float _, out float _),
                     X: e.Button.X,
                     Y: e.Button.Y,
                     Clicks: e.Button.Clicks
                 ));
             }
-            else if (e.Type == (uint)SDL.EventType.MouseButtonUp)
+            else if (e.type == (uint)SDL.EventType.MouseButtonUp)
             {
                 AppEntity.Emit(new MouseButtonUpEvent(
-                    MouseButton: SDL.GetMouseState(out float _, out float _),
+                    MouseButton: SDL.SDL_GetMouseState(out float _, out float _),
                     X: e.Button.X,
                     Y: e.Button.Y,
                     Clicks: e.Button.Clicks
                 ));
             }
-            else if (e.Type == (uint)SDL.EventType.MouseMotion)
+            else if (e.type == (uint)SDL.EventType.MouseMotion)
             {
                 AppEntity.Emit(new MouseMotionEvent(
                     MouseState: SDL.GetMouseState(out float _, out float _),
@@ -409,7 +411,7 @@ namespace AyanamisTower.NihilEx
                     XRel: e.Motion.XRel,
                     YRel: e.Motion.YRel));
             }
-            else if (e.Type == (uint)SDL.EventType.MouseWheel)
+            else if (e.type == (uint)SDL.EventType.MouseWheel)
             {
                 AppEntity.Emit(new MouseWheelEvent(
                     ScrollX: e.Wheel.X,
@@ -417,36 +419,37 @@ namespace AyanamisTower.NihilEx
                     Direction: e.Wheel.Direction
                 ));
             }
-            else if (e.Type == (uint)SDL.EventType.WindowMoved)
+            else if (e.type == (uint)SDL.EventType.WindowMoved)
             {
                 uint windowId = e.Window.WindowID;
-                SDL.GetWindowPosition(SDL.GetWindowFromID(windowId), out int newWidth, out int newHeight); // Safer way
+                SDL.SDL_GetWindowPosition(SDL.SDL_GetWindowFromID(windowId), out int newWidth, out int newHeight); // Safer way
 
                 AppEntity.Emit(new WindowMovedEvent(
                     X: newWidth,
                     Y: newHeight
                 ));
             }
-            else if (e.Type == (uint)SDL.EventType.WindowMouseEnter)
+            else if (e.type == (uint)SDL.EventType.WindowMouseEnter)
             {
                 AppEntity.Emit(new WindowMouseEnterEvent(
-                    MouseButton: SDL.GetGlobalMouseState(out float X, out float Y),
+                    MouseButton: SDL.SDL_GetGlobalMouseState(out float X, out float Y),
                     Down: e.Button.Down,
                     X: X,
                     Y: Y,
                     Clicks: e.Button.Clicks));
             }
-            else if (e.Type == (uint)SDL.EventType.WindowMouseLeave)
+            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE)
             {
                 AppEntity.Emit(new WindowMouseLeaveEvent(
-                    MouseButton: SDL.GetGlobalMouseState(out float X, out float Y),
+                    MouseButton: SDL.SDL_GetGlobalMouseState(out float X, out float Y),
                     Down: e.Button.Down,
                     X: X,
                     Y: Y,
                     Clicks: e.Button.Clicks));
             }
+            */
 
-            return SDL.AppResult.Continue;
+            return SDL.SDL_AppResult.SDL_APP_CONTINUE;
         }
 
         /// <summary>
@@ -455,25 +458,25 @@ namespace AyanamisTower.NihilEx
         /// Note: SDL.Quit() is called automatically by SDL after this.
         /// </summary>
         /// <param name="result">The result code that caused the application to quit.</param>
-        protected void SDLQuit(SDL.AppResult result)
+        protected void SDLQuit(SDL.SDL_AppResult result)
         {
 
             try
             {
-                SDL.LogInfo(SDL.LogCategory.Application, "Calling OnUserQuit...");
+                //SDL.LogInfo(SDL.LogCategory.Application, "Calling OnUserQuit...");
                 OnQuit(result); // Allow derived class to clean up its resources
-                SDL.LogInfo(SDL.LogCategory.Application, "OnUserQuit finished.");
+                //SDL.LogInfo(SDL.LogCategory.Application, "OnUserQuit finished.");
             }
             catch (Exception ex)
             {
                 // Log error in user cleanup but continue with base cleanup
-                SDL.LogError(SDL.LogCategory.Application, $"Exception during OnUserQuit: {ex}");
+                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception during OnUserQuit: {ex}");
             }
             if (Renderer != null)
             {
                 Renderer.Dispose();
                 Renderer = null; // Set to null after disposal
-                SDL.LogInfo(SDL.LogCategory.Application, "Renderer Disposed.");
+                //SDL.LogInfo(SDL.LogCategory.Application, "Renderer Disposed.");
             }
 
             // Dispose Window
@@ -481,14 +484,14 @@ namespace AyanamisTower.NihilEx
             {
                 Window.Dispose();
                 Window = null; // Set to null after disposal
-                SDL.LogInfo(SDL.LogCategory.Application, "Window Disposed.");
+                //SDL.LogInfo(SDL.LogCategory.Application, "Window Disposed.");
             }
 
-            SDL.LogInfo(SDL.LogCategory.Application, $"Base OnQuit called with result: {result}");
+            //SDL.LogInfo(SDL.LogCategory.Application, $"Base OnQuit called with result: {result}");
             // Base implementation can Quit initialized subsystems
-            if (SDL.WasInit(SDL.InitFlags.Video) != 0) // Check if Video was initialized
+            if (SDL.SDL_WasInit(SDL.SDL_InitFlags.SDL_INIT_VIDEO) != 0) // Check if Video was initialized
             {
-                SDL.QuitSubSystem(SDL.InitFlags.Video); // Quit only what we initialized
+                SDL.SDL_QuitSubSystem(SDL.SDL_InitFlags.SDL_INIT_VIDEO); // Quit only what we initialized
             }
             // SDL.Quit(); // DO NOT CALL SDL.Quit() here, SDL does it after this callback.
         }
@@ -498,14 +501,14 @@ namespace AyanamisTower.NihilEx
         /// Implement cleanup for resources created in OnUserInitialize here.
         /// </summary>
         /// <param name="result">The result code that caused the application to quit.</param>
-        protected abstract void OnQuit(SDL.AppResult result);
-
+        protected abstract void OnQuit(SDL.SDL_AppResult result);
+        /*
         // --- Static Callback Wrappers (Called by SDL) ---
         // Temporary static handle used ONLY during the transition into EnterAppMainCallbacks
         // This is a workaround pattern for C APIs without explicit user_data in init.
         [ThreadStatic] // Use ThreadStatic if multiple App instances might run in parallel threads (unlikely for SDL main loop)
         private static GCHandle _pendingAppHandle;
-        private static SDL.AppResult StaticAppInit(IntPtr appstatePtrRef, int argc, string[] argv)
+        private static SDL.SDL_AppResult StaticAppInit(IntPtr appstatePtrRef, int argc, string[] argv)
         {
             // Retrieve the App instance via the GCHandle passed implicitly at first, then set state pointer
             GCHandle handle = default;
@@ -641,5 +644,6 @@ namespace AyanamisTower.NihilEx
                 // Don't re-throw, as we're already quitting.
             }
         }
+        */
     }
 }

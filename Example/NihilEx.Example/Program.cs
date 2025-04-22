@@ -120,23 +120,6 @@ public class ColorApp : App // Inherit from App
     }
 
     /// <summary>
-    /// Override OnEvent to handle application-specific events.
-    /// </summary>
-    protected override SDL.AppResult OnEvent(ref SDL.Event e)
-    {
-        // Handle window resize event specifically
-        if (e.Type == (uint)SDL.EventType.WindowResized)
-        {
-            SDL.LogInfo(SDL.LogCategory.Application, $"MyColorApp OnEvent: Window Resized (from event data) to: {Window?.Width} x {Window?.Height}");
-
-            return SDL.AppResult.Continue;
-        }
-
-        // Call the base OnEvent implementation to handle default events (like Quit)
-        return base.OnEvent(ref e);
-    }
-
-    /// <summary>
     /// Override OnQuit to clean up resources created in OnInit.
     /// </summary>
     protected override void OnQuit(SDL.AppResult result)

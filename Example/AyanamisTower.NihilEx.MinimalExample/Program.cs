@@ -16,9 +16,9 @@ public class MinimalApp : App // Inherit from App
     /// <summary>
     /// Override OnInit to create window, renderer, and initialize state.
     /// </summary>
-    protected override SDL.AppResult OnInit(string[] args)
+    protected override SDL.SDL_AppResult OnInit(string[] args)
     {
-        SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit started.");
+        //SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit started.");
 
         try
         {
@@ -26,9 +26,9 @@ public class MinimalApp : App // Inherit from App
         }
         catch (Exception)
         {
-            SDL.LogError(SDL.LogCategory.Application, $"MinimalApp OnInit: Error creating renderer: {SDL.GetError()}");
+            //SDL.LogError(SDL.LogCategory.Application, $"MinimalApp OnInit: Error creating renderer: {SDL.GetError()}");
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
-            return SDL.AppResult.Failure;
+            return SDL.SDL_AppResult.SDL_APP_FAILURE;
         }
 
         /* 
@@ -89,31 +89,17 @@ public class MinimalApp : App // Inherit from App
             Console.WriteLine($"Mouse leave the window at X:{windowMouseLeave.X} Y:{windowMouseLeave.Y}");
         });
 
-        SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit finished successfully.");
-        return SDL.AppResult.Continue; // Signal success
-    }
-
-    /*
-    We probably add some on event delegates, so people can subscribe to an event
-    like OnWindowResized. And here we simply fire the event.
-    */
-
-    /// <summary>
-    /// Override OnEvent to handle application-specific events.
-    /// </summary>
-    protected override SDL.AppResult OnEvent(ref SDL.Event e)
-    {
-        // Call the base OnEvent implementation to handle default events (like Quit)
-        return base.OnEvent(ref e);
+        //SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit finished successfully.");
+        return SDL.SDL_AppResult.SDL_APP_CONTINUE; // Signal success
     }
 
     /// <summary>
     /// Override OnQuit to clean up resources created in OnInit.
     /// </summary>
-    protected override void OnQuit(SDL.AppResult result)
+    protected override void OnQuit(SDL.SDL_AppResult result)
     {
-        SDL.LogInfo(SDL.LogCategory.Application, $"MinimalApp OnQuit started with result: {result}");
-        SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnQuit finished.");
+        //SDL.SDL_LogInfo(SDL.LogCategory.Application, $"MinimalApp OnQuit started with result: {result}");
+        //SDL.SDL_LogInfo(SDL.LogCategory.Application, "MinimalApp OnQuit finished.");
     }
 }
 

@@ -8,7 +8,7 @@ namespace AyanamisTower.NihilEx;
 /// </summary>
 public class Renderer(nint window, string? name = null) : IDisposable
 {
-    internal nint _renderer = SDL.CreateRenderer(window, name);
+    internal nint _renderer = SDL.SDL_CreateRenderer(window, name);
     /// <summary>
     /// Flag indicating whether the object's resources have been disposed.
     /// </summary>
@@ -36,7 +36,7 @@ public class Renderer(nint window, string? name = null) : IDisposable
             if (_drawColor != value)
             {
                 _drawColor = value;
-                SDL.SetRenderDrawColor(_renderer,
+                SDL.SDL_SetRenderDrawColor(_renderer,
                     r: value.R,
                     g: value.G,
                     b: value.B,
@@ -58,7 +58,7 @@ public class Renderer(nint window, string? name = null) : IDisposable
             if (_vSync != value)
             {
                 _vSync = value;
-                SDL.SetRenderVSync(_renderer, value ? 1 : 0);
+                SDL.SDL_SetRenderVSync(_renderer, value ? 1 : 0);
             }
         }
     }
@@ -72,7 +72,7 @@ public class Renderer(nint window, string? name = null) : IDisposable
     /// <param name="y2">The y-coordinate of the ending point.</param>
     public void RenderLine(float x1, float y1, float x2, float y2)
     {
-        SDL.RenderLine(_renderer, x1, y1, x2, y2);
+        SDL.SDL_RenderLine(_renderer, x1, y1, x2, y2);
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public class Renderer(nint window, string? name = null) : IDisposable
     /// </summary>
     public void Clear()
     {
-        SDL.RenderClear(_renderer);
+        SDL.SDL_RenderClear(_renderer);
     }
 
     /// <summary>
@@ -88,7 +88,7 @@ public class Renderer(nint window, string? name = null) : IDisposable
     /// </summary>
     public void Present()
     {
-        SDL.RenderPresent(_renderer);
+        SDL.SDL_RenderPresent(_renderer);
     }
 
     /// <summary>
@@ -99,7 +99,7 @@ public class Renderer(nint window, string? name = null) : IDisposable
     /// <param name="text">The text to render.</param>
     public void ShowDebugText(float x, float y, string text)
     {
-        SDL.RenderDebugText(_renderer, x, y, text);
+        SDL.SDL_RenderDebugText(_renderer, x, y, text);
     }
 
     /// <summary>
@@ -128,7 +128,7 @@ public class Renderer(nint window, string? name = null) : IDisposable
             // Free unmanaged resources (unmanaged objects) and override finalizer
             if (_renderer != IntPtr.Zero)
             {
-                SDL.DestroyRenderer(_renderer);
+                SDL.SDL_DestroyRenderer(_renderer);
                 _renderer = IntPtr.Zero; // Mark as destroyed
             }
             _isDisposed = true;

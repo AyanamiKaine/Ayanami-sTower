@@ -11,4 +11,4 @@ namespace AyanamisTower.NihilEx.ECS.Events;
 /// <param name="Y">The Y coordinate of the mouse cursor.</param>
 /// <param name="XRel">The relative motion in the X direction.</param>
 /// <param name="YRel">The relative motion in the Y direction.</param>
-public record struct MouseMotionEvent(MouseButtonFlags MouseState, float X, float Y, float XRel, float YRel);
+public record struct MouseMotionEvent(SDL_MouseButtonFlags MouseState, float X, float Y, float XRel, float YRel);

@@ -104,13 +104,13 @@ public class Window : IDisposable
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.Fullscreen);
+            return SDL.SDL_GetWindowFlags(_window).HasFlag(SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN);
         }
         set
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            SDL.SetWindowFullscreen(_window, value);
+            SDL.SDL_SetWindowFullscreen(_window, value);
         }
     }
 
@@ -128,13 +128,13 @@ public class Window : IDisposable
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.Borderless);
+            return SDL.SDL_GetWindowFlags(_window).HasFlag(SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS);
         }
         set
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            SDL.SetWindowBordered(_window, value);
+            SDL.SDL_SetWindowBordered(_window, value);
         }
     }
 
@@ -147,13 +147,13 @@ public class Window : IDisposable
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.Resizable);
+            return SDL.SDL_GetWindowFlags(_window).HasFlag(SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE);
         }
         set
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            SDL.SetWindowResizable(_window, value);
+            SDL.SDL_SetWindowResizable(_window, value);
         }
     }
 
@@ -176,15 +176,29 @@ public class Window : IDisposable
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.AlwaysOnTop);
+            return SDL.SDL_GetWindowFlags(_window).HasFlag(SDL.SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP);
         }
         set
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            SDL.SetWindowAlwaysOnTop(_window, value);
+            SDL.SDL_SetWindowAlwaysOnTop(_window, value);
         }
     }
+    /*
+    /// <summary>
+    /// Gets or Sets a value indicating whether the window was requested to be always on top.
+    /// </summary>
+    public Surface WindowSurface
+    {
+        get
+        {
+            if (_window == IntPtr.Zero)
+                throw new Exception("Window is null");
+            return new(SDL.SDL_GetWindowSurface(_window));
+        }
+    }
+    */
 
     /// <summary>
     /// Gets or Sets a value indicating whether the window was requested as a utility window.
@@ -215,13 +229,13 @@ public class Window : IDisposable
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            return SDL.GetWindowFlags(_window).HasFlag(SDL.WindowFlags.NotFocusable);
+            return SDL.SDL_GetWindowFlags(_window).HasFlag(SDL.SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE);
         }
         set
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            SDL.SetWindowFocusable(_window, value);
+            SDL.SDL_SetWindowFocusable(_window, value);
         }
     }
 
@@ -234,13 +248,13 @@ public class Window : IDisposable
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            SDL.GetWindowSize(_window, out int w, out _);
+            SDL.SDL_GetWindowSize(_window, out int w, out _);
             return w;
         }
         set
         {
             if (_window != IntPtr.Zero)
-                SDL.SetWindowSize(_window, value, Width);
+                SDL.SDL_SetWindowSize(_window, value, Width);
         }
     }
 
@@ -253,13 +267,13 @@ public class Window : IDisposable
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            SDL.GetWindowSize(_window, out _, out int h);
+            SDL.SDL_GetWindowSize(_window, out _, out int h);
             return h;
         }
         set
         {
             if (_window != IntPtr.Zero)
-                SDL.SetWindowSize(_window, Width, value);
+                SDL.SDL_SetWindowSize(_window, Width, value);
         }
     }
 
@@ -272,12 +286,12 @@ public class Window : IDisposable
         {
             if (_window == IntPtr.Zero)
                 throw new Exception("Window is null");
-            return SDL.GetWindowTitle(_window);
+            return SDL.SDL_GetWindowTitle(_window);
         }
         set
         {
             if (_window != IntPtr.Zero)
-                SDL.SetWindowTitle(_window, value);
+                SDL.SDL_SetWindowTitle(_window, value);
         }
     }
 
@@ -327,31 +341,31 @@ public class Window : IDisposable
         // Initialize SDL subsystems
         // Consider moving SDL.Init and SDL.Quit outside this class if managing multiple SDL components
         // or if you need finer control over subsystem initialization.
-        if (!SDL.Init(SDL.InitFlags.Video | SDL.InitFlags.Audio | SDL.InitFlags.Events | SDL.InitFlags.Sensor))
+        if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO | SDL.SDL_InitFlags.SDL_INIT_AUDIO | SDL.SDL_InitFlags.SDL_INIT_EVENTS | SDL.SDL_InitFlags.SDL_INIT_SENSOR))
         {
-            SDL.LogError(SDL.LogCategory.System, $"SDL could not initialize: {SDL.GetError()}");
+            SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_SYSTEM, $"SDL could not initialize: {SDL.SDL_GetError()}");
         }
 
         // Combine window flags based on properties
-        SDL.WindowFlags flags = 0; // Start with no flags
-        if (isFullscreen) flags |= SDL.WindowFlags.Fullscreen;
-        if (isHidden) flags |= SDL.WindowFlags.Hidden;
-        if (isBorderless) flags |= SDL.WindowFlags.Borderless;
-        if (isResizable) flags |= SDL.WindowFlags.Resizable;
-        if (isModal) flags |= SDL.WindowFlags.Modal;
-        if (isHighPixelDensity) flags |= SDL.WindowFlags.HighPixelDensity;
-        if (isAlwaysOnTop) flags |= SDL.WindowFlags.AlwaysOnTop;
-        if (isUtility) flags |= SDL.WindowFlags.Utility;
-        if (isTooltip) flags |= SDL.WindowFlags.Tooltip;
-        if (isPopupMenu) flags |= SDL.WindowFlags.PopupMenu;
-        if (isTransparent) flags |= SDL.WindowFlags.Transparent;
-        if (isNotFocusable) flags |= SDL.WindowFlags.NotFocusable;
+        SDL.SDL_WindowFlags flags = 0; // Start with no flags
+        if (isFullscreen) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
+        if (isHidden) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_HIDDEN;
+        if (isBorderless) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS;
+        if (isResizable) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
+        if (isModal) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_MODAL;
+        if (isHighPixelDensity) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        if (isAlwaysOnTop) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP;
+        if (isUtility) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_UTILITY;
+        if (isTooltip) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_TOOLTIP;
+        if (isPopupMenu) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_POPUP_MENU;
+        if (isTransparent) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_TRANSPARENT;
+        if (isNotFocusable) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE;
 
         // Create the SDL window
-        _window = SDL.CreateWindow(title, width, height, flags);
+        _window = SDL.SDL_CreateWindow(title, width, height, flags);
         if (_window == IntPtr.Zero) // Check against IntPtr.Zero
         {
-            SDL.LogError(SDL.LogCategory.Application, $"Error creating window: {SDL.GetError()}");
+            SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Error creating window: {SDL.SDL_GetError()}");
         }
     }
 
@@ -390,7 +404,7 @@ public class Window : IDisposable
             // Free unmanaged resources (unmanaged objects) and override finalizer
             if (_window != IntPtr.Zero)
             {
-                SDL.DestroyWindow(_window);
+                SDL.SDL_DestroyWindow(_window);
                 _window = IntPtr.Zero; // Mark as destroyed
             }
             _isDisposed = true;
