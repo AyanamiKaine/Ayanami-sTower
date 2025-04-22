@@ -14,10 +14,6 @@ namespace AyanamisTower.NihilEx
     /// </summary>
     public abstract class App
     {
-        // Static handle to the current running App instance.
-        // Limitation: This simple implementation assumes only one App instance runs via Run() at a time.
-        private static GCHandle _appHandle;
-
         private Entity _appEntity;
         /// <summary>
         /// Gets the Flecs Entity associated with this application instance.
@@ -135,41 +131,158 @@ namespace AyanamisTower.NihilEx
         /// <returns>The exit code of the application.</returns>
         public int Run(string[] args)
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                SDL.LogInfo(SDL.LogCategory.Application, "Detected Windows. Using EnterAppMainCallbacks.");
+                return RunWindowsCallbacks(args);
+            }
+            else
+            {
+                SDL.LogInfo(SDL.LogCategory.Application, "Detected Non-Windows OS. Using manual event loop.");
+                return RunManualLoop(args);
+            }
+        }
+
+        private int RunWindowsCallbacks(string[] args)
+        {
             int exitCode = 0;
+            GCHandle appHandle = default; // GCHandle is local to this method now
+
             try
             {
-                // Allocate the GCHandle for this instance *before* entering callbacks.
-                _appHandle = GCHandle.Alloc(this);
-                IntPtr appStatePtr = GCHandle.ToIntPtr(_appHandle);
-
+                // Allocate the GCHandle for this instance *only* for the callback mechanism.
+                appHandle = GCHandle.Alloc(this);
 
                 // Create delegates pointing to our static callback wrappers.
-                // Keep them alive for the duration of EnterAppMainCallbacks.
                 SDL.AppInitFunc initFunc = StaticAppInit;
                 SDL.AppIterateFunc iterateFunc = StaticAppIterate;
                 SDL.AppEventFunc eventFunc = StaticAppEvent;
                 SDL.AppQuitFunc quitFunc = StaticAppQuit;
 
                 SDL.LogInfo(SDL.LogCategory.Application, "Entering SDL Main Callbacks...");
+                // Pass the GCHandle's IntPtr via the initial state parameter mechanism
+                // (Note: SDL_EnterAppMainCallbacks expects the address of where to store the state pointer)
+                // We'll handle setting the state pointer inside StaticAppInit
                 exitCode = SDL.EnterAppMainCallbacks(args.Length, args, initFunc, iterateFunc, eventFunc, quitFunc);
                 SDL.LogInfo(SDL.LogCategory.Application, $"Exited SDL Main Callbacks with code: {exitCode}");
 
+                // Check for errors *after* returning, in case it exited immediately with an error
+                string sdlError = SDL.GetError();
+                if (!string.IsNullOrEmpty(sdlError))
+                {
+                    SDL.LogError(SDL.LogCategory.Application, $"SDL Error reported after Exit: {sdlError}");
+                    if (exitCode == 0 && !sdlError.Contains("No error")) // Avoid overriding valid non-zero exit codes
+                    {
+                        exitCode = 1; // Indicate error if exited cleanly but SDL has an error string
+                    }
+                }
             }
             catch (Exception ex)
             {
-                SDL.LogError(SDL.LogCategory.Application, $"Unhandled exception during App Run: {ex}");
+                SDL.LogError(SDL.LogCategory.Application, $"Unhandled exception during Windows RunCallbacks: {ex}");
                 exitCode = 1; // Indicate an error
             }
             finally
             {
                 // CRITICAL: Free the GCHandle after EnterAppMainCallbacks returns.
-                if (_appHandle.IsAllocated)
+                if (appHandle.IsAllocated)
                 {
-                    _appHandle.Free();
+                    appHandle.Free();
                     SDL.LogInfo(SDL.LogCategory.Application, "App GCHandle Freed.");
                 }
+                // NOTE: SDL automatically calls SDL_Quit() after the callbacks finish/return.
             }
             return exitCode;
+        }
+
+
+        // --- Manual Event Loop for Non-Windows Platforms ---
+        private int RunManualLoop(string[] args)
+        {
+            SDL.AppResult appResult = SDL.AppResult.Continue; // Track why the loop exits
+
+            try
+            {
+                // 1. Explicit Initialization
+                // Use flags appropriate for your application (Video is common)
+                if (!SDL.Init(SDL.InitFlags.Video | SDL.InitFlags.Events /* Add other flags as needed */))
+                {
+                    SDL.LogError(SDL.LogCategory.Application, $"Manual Loop: SDL.Init failed: {SDL.GetError()}");
+                    return 1; // Early exit on failure
+                }
+                SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDL.Init successful.");
+
+                // Call the same core initialization logic (creates Window, Renderer, calls user OnInit)
+                appResult = SDLInit(args);
+                if (appResult != SDL.AppResult.Continue)
+                {
+                    SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: SDLInit returned {appResult}. Exiting early.");
+                    // Need to call SDLQuit before SDL.Quit if init partially succeeded
+                    SDLQuit(appResult);
+                    SDL.Quit();
+                    return (appResult == SDL.AppResult.Success) ? 0 : 1;
+                }
+                SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDLInit successful.");
+
+                // Initialize DeltaTime manager (already done in SDLInit, but ensure it's ready)
+                _deltaTimeManager.Initialize(); // Safe to call again if already initialized
+
+                // 2. Main Loop
+                bool loop = true;
+                while (loop)
+                {
+                    // --- Calculate Delta Time ---
+                    _deltaTimeManager.Update();
+                    float deltaTime = _deltaTimeManager.DeltaSeconds;
+                    // --- End Delta Time ---
+
+                    // --- Event Handling ---
+                    while (SDL.PollEvent(out SDL.Event e))
+                    {
+                        // Call the user's event handler
+                        appResult = OnEvent(ref e);
+                        if (appResult != SDL.AppResult.Continue)
+                        {
+                            SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: OnEvent returned {appResult}. Exiting loop.");
+                            loop = false;
+                            break; // Exit inner event loop
+                        }
+                    }
+
+                    if (!loop) break; // Exit outer loop if event handling requested it
+
+                    // --- Update and Render ---
+                    // Call the user's update/render method
+                    appResult = OnIterate(deltaTime);
+                    if (appResult != SDL.AppResult.Continue)
+                    {
+                        SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: OnIterate returned {appResult}. Exiting loop.");
+                        loop = false;
+                    }
+
+                    // Note: OnIterate is assumed to handle rendering, including SDL.RenderPresent()
+                    // If not, add SDL.RenderPresent(Renderer); here.
+                }
+            }
+            catch (Exception ex)
+            {
+                SDL.LogError(SDL.LogCategory.Application, $"Unhandled exception during Manual Loop: {ex}");
+                appResult = SDL.AppResult.Failure; // Ensure cleanup happens correctly
+            }
+            finally
+            {
+                // 3. Cleanup
+                SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: Exited with result {appResult}. Cleaning up...");
+                // Call the user's cleanup logic (disposes Window/Renderer, calls user OnQuit)
+                SDLQuit(appResult);
+
+                // Explicitly Quit SDL for the manual loop
+                SDL.Quit();
+                SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDL.Quit() called.");
+            }
+
+            // Return 0 for success, 1 for failure
+            return (appResult == SDL.AppResult.Success) ? 0 : 1;
         }
 
         // --- Virtual methods for derived classes to override ---
@@ -388,27 +501,67 @@ namespace AyanamisTower.NihilEx
         protected abstract void OnQuit(SDL.AppResult result);
 
         // --- Static Callback Wrappers (Called by SDL) ---
+        // Temporary static handle used ONLY during the transition into EnterAppMainCallbacks
+        // This is a workaround pattern for C APIs without explicit user_data in init.
+        [ThreadStatic] // Use ThreadStatic if multiple App instances might run in parallel threads (unlikely for SDL main loop)
+        private static GCHandle _pendingAppHandle;
         private static SDL.AppResult StaticAppInit(IntPtr appstatePtrRef, int argc, string[] argv)
         {
+            // Retrieve the App instance via the GCHandle passed implicitly at first, then set state pointer
+            GCHandle handle = default;
+            App? instance = null;
             try
             {
-                // Retrieve the App instance from the static handle
-                if (!_appHandle.IsAllocated || _appHandle.Target is not App instance)
+                // On first call, appstatePtrRef might point to something temporary or null,
+                // we need to retrieve our handle passed during GCHandle.Alloc
+                // SDL's mechanism here can be tricky. Let's assume the *first* call needs us to
+                // find our handle and *tell* SDL what pointer to use subsequently.
+                // A common pattern is to pass the GCHandle.ToIntPtr() via the args or environment,
+                // but SDL_EnterAppMainCallbacks doesn't directly support that.
+                // The intended way is usually via the appstate pointer itself.
+
+                // We rely on GCHandle.Alloc happening *before* this call in RunWindowsCallbacks
+                // Find the *specific* handle we allocated just before the call.
+                // This is tricky and potentially fragile if multiple App instances exist.
+                // Reverting to the static handle idea might be necessary IF this proves unreliable,
+                // OR rethinking how the handle is passed.
+                // Let's *assume* for now that the GCHandle needs to be retrieved globally/statically
+                // for this mechanism to work robustly without modifying SDL's expected pattern.
+
+                // *** SAFER APPROACH: Use a temporary static variable during the callback setup ***
+                // This is a common workaround for C APIs lacking explicit user data pointers in init.
+                if (_pendingAppHandle.IsAllocated)
                 {
-                    SDL.LogError(SDL.LogCategory.Application, "StaticAppInit: Failed to get App instance from handle.");
+                    handle = _pendingAppHandle;
+                    instance = handle.Target as App;
+                    if (instance == null)
+                    {
+                        SDL.LogError(SDL.LogCategory.Application, "StaticAppInit: Failed to get App instance from pending handle.");
+                        return SDL.AppResult.Failure;
+                    }
+                    // IMPORTANT: Tell SDL which state pointer to use for subsequent callbacks.
+                    Marshal.WriteIntPtr(appstatePtrRef, GCHandle.ToIntPtr(handle));
+                    SDL.LogInfo(SDL.LogCategory.Application, "StaticAppInit: Set SDL app state pointer from pending handle.");
+                    _pendingAppHandle = default; // Clear the temporary static handle
+                }
+                else
+                {
+                    // This case should ideally not happen if called correctly by SDL via EnterAppMainCallbacks
+                    SDL.LogError(SDL.LogCategory.Application, "StaticAppInit: No pending App handle found!");
                     return SDL.AppResult.Failure;
                 }
 
-                // IMPORTANT: Tell SDL which state pointer to use for subsequent callbacks.
-                // We pass the IntPtr representation of the GCHandle we already created in Run().
-                Marshal.WriteIntPtr(appstatePtrRef, GCHandle.ToIntPtr(_appHandle));
 
-                // Call the virtual OnInit method on the specific App instance
-                return instance.SDLInit(argv);
+                SDL.LogInfo(SDL.LogCategory.Application, "StaticAppInit: Calling instance.SDLInit...");
+                SDL.AppResult initResult = instance.SDLInit(argv);
+                SDL.LogInfo(SDL.LogCategory.Application, $"StaticAppInit: instance.SDLInit returned: {initResult}");
+                return initResult;
             }
             catch (Exception ex)
             {
                 SDL.LogError(SDL.LogCategory.Application, $"Exception in StaticAppInit: {ex}");
+                // Clean up static handle if exception occurs after acquisition but before clearing
+                if (_pendingAppHandle.IsAllocated) _pendingAppHandle = default;
                 return SDL.AppResult.Failure;
             }
         }
