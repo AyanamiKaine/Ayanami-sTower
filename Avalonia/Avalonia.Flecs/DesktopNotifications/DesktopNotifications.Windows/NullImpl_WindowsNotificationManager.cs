@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-#pragma warning disable CS0067
+#pragma warning disable CS0067, CS1591
 
 namespace DesktopNotifications.Windows
 {
