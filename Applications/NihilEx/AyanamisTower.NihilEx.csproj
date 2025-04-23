@@ -24,7 +24,7 @@
     </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SDL3-CS\SDL3\SDL3.Core.csproj" />
+    <ProjectReference Include="../../NihilEx.SDL/AyanamisTower.NihilEx.SDLWrapper.csproj" />
     <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM.Flecs\AyanamisTower.SFPM.Flecs.csproj" />
     <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM\AyanamisTower.SFPM.csproj" />
   </ItemGroup>
