@@ -74,42 +74,9 @@ public class ColorApp : App // Inherit from App
         initialCamera.FieldOfViewRadians = initialFovRadians;
         World.Set(initialCamera); // Set as singleton
 
-
-        /*
-        // --- Create the Cube Entity ---
-        var cubeEntity = World.Entity("Custom Mesh Example");
-
-        // Define Geometry
-        Vector3[] baseVertices = [
-            new(-1, -1, -1), new( 1, -1, -1), new( 1,  1, -1), new(-1,  1, -1), // Back face
-                new(-1, -1,  1), new( 1, -1,  1), new( 1,  1,  1), new(-1,  1,  1)  // Front face
-        ];
-        Edge[] edges = [
-           // Back face
-           new(0, 1), new(1, 2), new(2, 3), new(3, 0),
-                // Front face
-                new(4, 5), new(5, 6), new(6, 7), new(7, 4),
-                // Connecting edges
-                new(0, 4), new(1, 5), new(2, 6), new(3, 7)
-        ];
-
-        
-        cubeEntity.Set(new MeshGeometry(baseVertices, edges))
-                  .Set(new ProjectedMesh { ProjectedVertices = new Vector2[baseVertices.Length] }) // Initialize array
-                  .Set(new Position3D(Vector3.Zero)) // Place cube at origin
-                  .Set(new Orientation(Quaternion.Identity)) // Start with no rotation
-                  .Set(new RotationSpeed3D(new Vector3( // Different speeds per axis (radians/sec)
-                      0.8f * 0.8f,
-                      0.8f * 1.0f,
-                      0.8f * 1.2f
-                  )))
-                  .Set(RgbaColor.Red); // Cube lines are white
-
-        */
-
         World.Entity("SpinningCube")
             .Add<Box>()                             // Add the Box tag
-            .Set(new Size3D(new Vector3(2, 2, 2)))  // Width=2, Height=2, Depth=2
+            .Set(new Size3D(new Vector3(2)))  // Width=2, Height=2, Depth=2
             .Set(new Position3D(new(0, 0, 0)))
             .Set(new Orientation(Quaternion.Identity))
             .Set(new RotationSpeed3D(new Vector3(0.8f * 0.8f, 0.8f * 1.0f, 0.8f * 1.2f)))
