@@ -168,7 +168,7 @@ namespace AyanamisTower.NihilEx
                 Renderer = Window.CreateRenderer();
                 Console.WriteLine($"Renderer created: {Renderer.Name}");
                 if (Renderer == null) throw new InvalidOperationException("Failed to create SDL Renderer.");
-                Renderer.DrawColor = new SDLWrapper.Color(255, 255, 255, 255); // White (using wrapper's Color)
+                Renderer.DrawColor = new Color(255, 255, 255, 255); // White (using wrapper's Color)
                 World.Set(Renderer); // Add Renderer as singleton resource
 
 
