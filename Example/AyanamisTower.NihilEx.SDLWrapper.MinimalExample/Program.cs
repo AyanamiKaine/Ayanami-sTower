@@ -25,7 +25,7 @@ public static class Program
         {
             // 1. Initialize SDL Video and Events subsystems
             // SdlHost handles initialization and throws on failure.
-            SdlHost.Init(SdlSubSystem.Everything);
+            SdlHost.Init(SdlSubSystem.Video);
             Console.WriteLine("SDL Initialized successfully.");
 
             // 2. Create a Window

@@ -45,7 +45,7 @@ public class ColorApp : App // Inherit from App
     /// <summary>
     /// Override OnInit to create window, renderer, and initialize state.
     /// </summary>
-    protected override SDL.SDL_AppResult OnInit(string[] args)
+    protected override bool OnInit(string[] args)
     {
         SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "MyColorApp OnInit started.");
 
@@ -57,7 +57,7 @@ public class ColorApp : App // Inherit from App
         {
             SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"MyColorApp OnInit: Error creating renderer: {SDL.SDL_GetError()}");
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
-            return SDL.SDL_AppResult.SDL_APP_FAILURE;
+            return false;
         }
         // --- Create Singletons ---
         // 1. Camera Singleton
@@ -116,16 +116,15 @@ public class ColorApp : App // Inherit from App
             .Set(RgbaColor.Red);
 
         SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "MyColorApp OnInit finished successfully.");
-        return SDL.SDL_AppResult.SDL_APP_CONTINUE; // Signal success
+        return true; // Signal success
     }
 
     /// <summary>
-    /// Override OnQuit to clean up resources created in OnInit.
+    /// Gets called when the app wants to quit
     /// </summary>
-    protected override void OnQuit(SDL.SDL_AppResult result)
+    protected override void OnQuit()
     {
-        SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"MyColorApp OnQuit started with result: {result}");
-        SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "MyColorApp OnQuit finished.");
+
     }
 }
 

@@ -16,7 +16,7 @@ public class MinimalApp : App // Inherit from App
     /// <summary>
     /// Override OnInit to create window, renderer, and initialize state.
     /// </summary>
-    protected override SDL.SDL_AppResult OnInit(string[] args)
+    protected override bool OnInit(string[] args)
     {
         //SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit started.");
 
@@ -28,7 +28,7 @@ public class MinimalApp : App // Inherit from App
         {
             //SDL.LogError(SDL.LogCategory.Application, $"MinimalApp OnInit: Error creating renderer: {SDL.GetError()}");
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
-            return SDL.SDL_AppResult.SDL_APP_FAILURE;
+            return false;
         }
 
         /* 
@@ -90,16 +90,16 @@ public class MinimalApp : App // Inherit from App
         });
 
         //SDL.LogInfo(SDL.LogCategory.Application, "MinimalApp OnInit finished successfully.");
-        return SDL.SDL_AppResult.SDL_APP_CONTINUE; // Signal success
+        return true; // Signal success
     }
 
     /// <summary>
-    /// Override OnQuit to clean up resources created in OnInit.
+    /// Override OnQuit to clean up resources when the application exits.
     /// </summary>
-    protected override void OnQuit(SDL.SDL_AppResult result)
+    protected override void OnQuit()
     {
-        //SDL.SDL_LogInfo(SDL.LogCategory.Application, $"MinimalApp OnQuit started with result: {result}");
-        //SDL.SDL_LogInfo(SDL.LogCategory.Application, "MinimalApp OnQuit finished.");
+        Console.WriteLine("MinimalApp OnQuit started");
+        Console.WriteLine("MinimalApp OnQuit finished.");
     }
 }
 
