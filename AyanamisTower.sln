@@ -93,6 +93,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.NihilEx.SDLWr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.NihilEx.SDLWrapper.MinimalExample", "Example\AyanamisTower.NihilEx.SDLWrapper.MinimalExample\AyanamisTower.NihilEx.SDLWrapper.MinimalExample.csproj", "{D17E0640-82B8-4C27-AA0D-ED155D24A8AE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.NihilEx.SDLWrapper.CallbackExample", "Example\AyanamisTower.NihilEx.SDLWrapper.CallbackExample\AyanamisTower.NihilEx.SDLWrapper.CallbackExample.csproj", "{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -427,6 +429,18 @@ Global
 		{D17E0640-82B8-4C27-AA0D-ED155D24A8AE}.Release|x64.Build.0 = Release|Any CPU
 		{D17E0640-82B8-4C27-AA0D-ED155D24A8AE}.Release|x86.ActiveCfg = Release|Any CPU
 		{D17E0640-82B8-4C27-AA0D-ED155D24A8AE}.Release|x86.Build.0 = Release|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Debug|x64.Build.0 = Debug|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Debug|x86.Build.0 = Debug|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Release|x64.ActiveCfg = Release|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Release|x64.Build.0 = Release|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Release|x86.ActiveCfg = Release|Any CPU
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -461,5 +475,6 @@ Global
 		{664BAC45-0214-4821-8E96-86B6560A9DC6} = {6F6B2227-7AC4-7DF0-65CB-3D433FF613CA}
 		{59E389FB-BEA9-4C72-9DAA-58E5F754D7D4} = {88AACB56-31A1-7AEA-164B-AEC6EE0B00FD}
 		{D17E0640-82B8-4C27-AA0D-ED155D24A8AE} = {1D587995-D2B1-D47C-23B4-E8E972FA15E9}
+		{E993AF30-E85F-4C1F-BEAC-E43B96B5AFA0} = {1D587995-D2B1-D47C-23B4-E8E972FA15E9}
 	EndGlobalSection
 EndGlobal
