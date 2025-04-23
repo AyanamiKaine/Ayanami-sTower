@@ -416,7 +416,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <returns>Exit code (0 for success, non-zero for failure).</returns>
         public static unsafe int RunApplication(AppInitHandler init, AppUpdateHandler update, AppEventHandler eventHandler, AppQuitHandler quit, string[]? args = null)
         {
-            Init(SdlSubSystem.Everything);
+            Init(SdlSubSystem.Video);
             // Ensure RunApplication is not called concurrently if that's an issue
             if (!_runLock.TryEnter()) // Assuming TryLock exists
             {
@@ -1988,6 +1988,14 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
             SdlHost.ThrowOnFailure(SDL_RenderLine(_rendererPtr, p1.X, p1.Y, p2.X, p2.Y), "Failed to draw line");
         }
+
+        public void DrawLine(float x1, float y1, float x2, float y2)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            SdlHost.ThrowOnFailure(SDL_RenderLine(_rendererPtr, x1, y1, x2, y2), "Failed to draw line");
+        }
+
 
         /// <summary>
         /// Draws a sequence of connected lines on the current rendering target.
