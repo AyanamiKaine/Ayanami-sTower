@@ -1,677 +1,469 @@
-
-using System.Drawing;
-using System.Runtime.InteropServices;
 using AyanamisTower.NihilEx.ECS;
 using AyanamisTower.NihilEx.ECS.Events;
+using AyanamisTower.NihilEx.SDLWrapper; // Assuming SdlHost, SdlEventArgs etc. are here
 using Flecs.NET.Core;
-using SDL3;
-
+using SDL3; // Keep for SDL enums like Keycode if needed by user code or ECS events
 
 namespace AyanamisTower.NihilEx
 {
     /// <summary>
-    /// Base class for creating SDL applications using the callback mechanism.
-    /// Inherit from this class and override the OnInitialize, OnUpdate, OnEvent, and OnQuit methods.
+    /// Base class for creating SDL applications using the SdlHost.RunApplication callback mechanism.
+    /// Inherit from this class and override the OnInit, OnUpdate, and OnQuit methods.
+    /// Event handling is managed internally and emits ECS events via the AppEntity.
     /// </summary>
     public abstract class App
     {
+        private bool _shouldQuit = false; // Flag to signal exit request
         private Entity _appEntity;
+
         /// <summary>
         /// Gets the Flecs Entity associated with this application instance.
         /// </summary>
         /// <remarks>
-        /// Use this entity to register observers for events. This provides a central point
-        /// for hooking into application-level or engine-level events managed by Flecs.
+        /// Use this entity to register observers for events emitted by the application's
+        /// HandleEvent method (e.g., WindowResize, KeyDownEvent).
         /// </remarks>
         /// <example>
-        /// The following code demonstrates how to register an observer for the <c>WindowResize</c> event
-        /// using the <c>AppEntity</c> property:
         /// <code><![CDATA[
-        /// // Get the application entity (assuming 'myApp' is an instance of your class)
-        /// var appEntity = myApp.AppEntity;
-        ///
-        /// // Register an observer for the WindowResize event.
-        /// // This lambda expression will be executed whenever the WindowResize event occurs.
-        /// appEntity.Observe<WindowResize>(() =>
+        /// // Inside your OnInit method or later:
+        /// AppEntity.Observe<WindowResize>(() =>
         /// {
-        ///     Console.WriteLine("Window resize event observed via AppEntity!");
+        ///     Console.WriteLine($"Window resize observed via AppEntity!");
+        /// });
+        /// AppEntity.Observe((ref KeyDownEvent evt) => // Use 'ref' for struct events
+        /// {
+        ///     if(evt.Keycode == SDL.SDL_Keycode.SDLK_SPACE)
+        ///         Console.WriteLine("Spacebar down!");
         /// });
         /// ]]></code>
         /// </example>
         /// <value>The application's root <see cref="Entity"/>.</value>
-        public Entity AppEntity { get => _appEntity; }
+        public Entity AppEntity => _appEntity; // Use expression body for brevity
 
-        // Instance of our new DeltaTime class
+        // Instance of our DeltaTime class
         private readonly DeltaTime _deltaTimeManager = new();
+
         /// <summary>
         /// Gets the SDL Renderer associated with this application instance.
-        /// This is typically created during the OnInit phase alongside the Window.
+        /// This is created during the Initialize phase.
         /// </summary>
         protected Renderer? Renderer { get; private set; }
         /// <summary>
         /// Gets the SDL Window associated with this application instance.
-        /// This is typically created during the OnInit phase.
+        /// This is created during the Initialize phase.
         /// </summary>
         protected Window? Window { get; private set; }
+
         /// <summary>
-        /// Height of the app
+        /// Gets or sets the current height of the application window.
         /// </summary>
         public int Height
         {
-            get
-            {
-                return Window?.Height ?? 0;
-            }
+            get => Window?.Size.Y ?? 0;
             set
             {
-                if (Window is null)
-                    return;
-
-                Window.Height = value;
+                if (Window != null) Window.Size = new(Width, value);
             }
         }
         /// <summary>
-        /// Width of the app
+        /// Gets or sets the current width of the application window.
         /// </summary>
         public int Width
         {
-            get
-            {
-                return Window?.Width ?? 0;
-            }
+            get => Window?.Size.X ?? 0;
             set
             {
-                if (Window is null)
-                    return;
-
-                Window.Width = value;
+                if (Window != null) Window.Size = new(value, Height);
             }
         }
         /// <summary>
-        /// Title of the app
+        /// Gets or sets the current title of the application window.
         /// </summary>
         public string Title
         {
-            get
-            {
-                return Window?.Title ?? "";
-            }
+            get => Window?.Title ?? "";
             set
             {
-                if (Window is null)
-                    return;
-
-                Window.Title = value;
+                if (Window != null) Window.Title = value;
             }
         }
 
         /// <summary>
-        /// Start height of the app
+        /// The initial height of the application window.
         /// </summary>
         public required int InitalHeight { init; get; }
         /// <summary>
-        /// Start width of the app
+        /// The initial width of the application window.
         /// </summary>
         public required int InitalWidth { init; get; }
         /// <summary>
-        /// Start title of the app
+        /// The initial title of the application window.
         /// </summary>
         public required string InitalTitle { init; get; }
+
         /// <summary>
-        /// ECS Flecs World
+        /// Gets the Flecs ECS World associated with this application.
         /// </summary>
-        public World World { get; } = World.Create();
+        public World World { get; } = World.Create(); // Initialize Flecs World
+
         /// <summary>
         /// Gets the Engine instance associated with this application.
         /// </summary>
         public Engine? Engine { get; private set; }
+
         /// <summary>
-        /// Runs the SDL application.
+        /// Runs the SDL application using the SdlHost callback mechanism.
         /// </summary>
         /// <param name="args">Command line arguments passed to the application.</param>
         /// <returns>The exit code of the application.</returns>
         public int Run(string[] args)
         {
+            Console.WriteLine("Starting SDL Application via SdlHost.RunApplication...");
 
-            /*
-            Why are we using the main callbacks when running on windows?
+            // SdlHost.RunApplication handles SDL_Init, SDL_Quit, and the event/update loop.
+            int exitCode = SdlHost.RunApplication(
+                Initialize, // Pass instance method directly
+                Update,     // Pass instance method directly
+                HandleEvent,// Pass instance method directly
+                Cleanup,    // Pass instance method directly
+                args        // Pass command line args
+            );
 
-            Because it allows us to render while events are happening automatic.
-            For example when we resize a window the native resize event that windows
-            dispatches blocks the event loop as long as you hold the window you 
-            are resizing the result is that the iteration loop never gets called.
-
-            When we would use the normal main loop we would have to call world.progress() 
-            in the resize event. I find this error prone. Its much simpler when we 
-            know that the iteration loop does not get blocked no matter what events 
-            are happening.
-            */
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Detected Windows. Using EnterAppMainCallbacks.");
-                return RunWindowsCallbacks(args);
-                throw new Exception("NOT IMPLEMENTED");
-            }
-            else
-            {
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Detected Non-Windows OS. Using manual event loop.");
-                return RunManualLoop(args);
-            }
-        }
-
-        private unsafe int RunWindowsCallbacks(string[] args)
-        {
-            int exitCode = 0;
-            GCHandle appHandle = default; // GCHandle is local to this method now
-
-            try
-            {
-                appHandle = GCHandle.Alloc(this);
-                IntPtr handlePtr = GCHandle.ToIntPtr(appHandle);
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-                    $"RunWindowsCallbacks: Thread {Environment.CurrentManagedThreadId}: Allocating handle {handlePtr:X}");
-
-                // --- Critical Section (Implicit) ---
-                // Set the shared static handle. ASSUMES no other thread is doing this concurrently.
-                _pendingAppHandle = appHandle;
-                // --- End Critical Section ---
-
-                bool isAllocatedAfterSet = _pendingAppHandle.IsAllocated;
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-                    $"RunWindowsCallbacks: Thread {Environment.CurrentManagedThreadId}: Set _pendingAppHandle. IsAllocated = {isAllocatedAfterSet}");
-
-
-                // Create delegates pointing to our static callback wrappers.
-                SDL.SDL_AppInit_func initFunc = StaticAppInit;
-                SDL.SDL_AppIterate_func iterateFunc = StaticAppIterate;
-                SDL.SDL_AppEvent_func eventFunc = StaticAppEvent;
-                SDL.SDL_AppQuit_func quitFunc = StaticAppQuit;
-
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Entering SDL Main Callbacks...");
-                // Pass the GCHandle's IntPtr via the initial state parameter mechanism
-                // (Note: SDL_EnterAppMainCallbacks expects the address of where to store the state pointer)
-                // We'll handle setting the state pointer inside StaticAppInit
-                exitCode = SDL.SDL_EnterAppMainCallbacks(args.Length, IntPtr.Zero, initFunc, iterateFunc, eventFunc, quitFunc);
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exited SDL Main Callbacks with code: {exitCode}");
-
-                // Check for errors *after* returning, in case it exited immediately with an error
-                string sdlError = SDL.SDL_GetError();
-                if (!string.IsNullOrEmpty(sdlError))
-                {
-                    SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"SDL Error reported after Exit: {sdlError}");
-                    if (exitCode == 0 && !sdlError.Contains("No error")) // Avoid overriding valid non-zero exit codes
-                    {
-                        exitCode = 1; // Indicate error if exited cleanly but SDL has an error string
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Unhandled exception during Windows RunCallbacks: {ex}");
-                exitCode = 1; // Indicate an error
-            }
-            finally
-            {
-                // CRITICAL: Free the GCHandle after EnterAppMainCallbacks returns.
-                if (appHandle.IsAllocated)
-                {
-                    appHandle.Free();
-                    //SDL.LogInfo(SDL.LogCategory.Application, "App GCHandle Freed.");
-                }
-                // NOTE: SDL automatically calls SDL_Quit() after the callbacks finish/return.
-            }
+            Console.WriteLine($"Application finished with exit code: {exitCode}");
             return exitCode;
         }
 
-
-        // --- Manual Event Loop for Non-Windows Platforms ---
-        private int RunManualLoop(string[] args)
-        {
-            SDL.SDL_AppResult appResult = SDL.SDL_AppResult.SDL_APP_CONTINUE; // Track why the loop exits
-
-            try
-            {
-                // 1. Explicit Initialization
-                // Use flags appropriate for your application (Video is common)
-                if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO | SDL.SDL_InitFlags.SDL_INIT_EVENTS /* Add other flags as needed */))
-                {
-                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Manual Loop: SDL.Init failed: {SDL.SDL_GetError()}");
-                    return 1; // Early exit on failure
-                }
-                //SDL.SDL_LogInfo(SDL.LogCategory.Application, "Manual Loop: SDL.Init successful.");
-
-                // Call the same core initialization logic (creates Window, Renderer, calls user OnInit)
-                appResult = SDLInit(args);
-                if (appResult != SDL.SDL_AppResult.SDL_APP_CONTINUE)
-                {
-                    //SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: SDLInit returned {appResult}. Exiting early.");
-                    // Need to call SDLQuit before SDL.Quit if init partially succeeded
-                    SDLQuit(appResult);
-                    SDL.SDL_Quit();
-                    return (appResult == SDL.SDL_AppResult.SDL_APP_SUCCESS) ? 0 : 1;
-                }
-                //SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDLInit successful.");
-
-                // Initialize DeltaTime manager (already done in SDLInit, but ensure it's ready)
-                _deltaTimeManager.Initialize(); // Safe to call again if already initialized
-
-                // 2. Main Loop
-                bool loop = true;
-                while (loop)
-                {
-                    // --- Calculate Delta Time ---
-                    _deltaTimeManager.Update();
-                    float deltaTime = _deltaTimeManager.DeltaSeconds;
-                    // --- End Delta Time ---
-
-                    // --- Event Handling ---
-                    while (SDL.SDL_PollEvent(out SDL.SDL_Event e))
-                    {
-                        // Call the user's event handler
-                        appResult = OnEvent(ref e);
-                        if (appResult != SDL.SDL_AppResult.SDL_APP_CONTINUE)
-                        {
-                            //SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: OnEvent returned {appResult}. Exiting loop.");
-                            loop = false;
-                            break; // Exit inner event loop
-                        }
-                    }
-
-                    if (!loop) break; // Exit outer loop if event handling requested it
-
-                    // --- Update and Render ---
-                    // Call the user's update/render method
-                    appResult = OnIterate(deltaTime);
-                    if (appResult != SDL.SDL_AppResult.SDL_APP_CONTINUE)
-                    {
-                        //SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: OnIterate returned {appResult}. Exiting loop.");
-                        loop = false;
-                    }
-
-                    // Note: OnIterate is assumed to handle rendering, including SDL.RenderPresent()
-                    // If not, add SDL.RenderPresent(Renderer); here.
-                }
-            }
-            catch (Exception)
-            {
-                //SDL.LogError(SDL.LogCategory.Application, $"Unhandled exception during Manual Loop: {ex}");
-                appResult = SDL.SDL_AppResult.SDL_APP_FAILURE; // Ensure cleanup happens correctly
-            }
-            finally
-            {
-                // 3. Cleanup
-                //SDL.LogInfo(SDL.LogCategory.Application, $"Manual Loop: Exited with result {appResult}. Cleaning up...");
-                // Call the user's cleanup logic (disposes Window/Renderer, calls user OnQuit)
-                SDLQuit(appResult);
-
-                // Explicitly Quit SDL for the manual loop
-                SDL.SDL_Quit();
-                //SDL.LogInfo(SDL.LogCategory.Application, "Manual Loop: SDL.Quit() called.");
-            }
-
-            // Return 0 for success, 1 for failure
-            return (appResult == SDL.SDL_AppResult.SDL_APP_SUCCESS) ? 0 : 1;
-        }
-
-        // --- Virtual methods for derived classes to override ---
+        // --- Instance methods matching SdlHost.RunApplication delegates ---
 
         /// <summary>
-        /// Called once during application initialization.
-        /// Perform SDL initialization, create windows/renderers, load resources here.
+        /// Core initialization logic called by SdlHost.RunApplication.
+        /// Creates Window, Renderer, Engine, ECS World, DeltaTime, etc.
+        /// Calls the user-defined OnInit method.
         /// </summary>
         /// <param name="args">Command line arguments.</param>
-        /// <returns>SDL.AppResult.Continue to proceed, or Success/Failure to exit early.</returns>
-        protected SDL.SDL_AppResult SDLInit(string[] args)
+        /// <returns>True to continue, False to exit immediately.</returns>
+        private bool Initialize(string[] args)
         {
-            Engine = new(World);
-            World.SetThreads(SDL.SDL_GetNumLogicalCPUCores());
+            Console.WriteLine($"App.Initialize: Thread {Environment.CurrentManagedThreadId}");
             try
             {
+                // SdlHost.RunApplication handles SDL.Init based on its internal needs.
+
                 // Initialize DeltaTime manager
                 _deltaTimeManager.Initialize();
-                // Register DeltaTime as a singleton component in the ECS world.
-                // This allows any system to easily query it using world.Get<DeltaTime>().
-                World.Set(_deltaTimeManager);
 
-                Window = new(
-                    title: InitalTitle,
-                    width: InitalWidth,
-                    height: InitalHeight,
-                    isResizable: true);
+                // Create Engine and configure World
+                Engine = new(World);
+                //World.SetThreads(SdlHost.GetNumLogicalCores()); // Use SdlHost or SDL directly if available
 
-                Renderer = Window?.CreateRenderer();
-                Renderer!.DrawColor = (RgbaColor)Color.White;
+                // Set singletons in the ECS world
+                World.Set(_deltaTimeManager); // Make DeltaTime accessible via ECS
 
-                _appEntity = World.Entity($"App: {Title}");
+                // Create Window and Renderer using the wrapper's classes
+                Window = new Window(InitalTitle, InitalWidth, InitalHeight, WindowFlags.Resizable); // Assuming WindowFlags enum exists
+                Console.WriteLine($"Window created with ID: {Window.Id}");
+                if (Window == null) throw new InvalidOperationException("Failed to create SDL Window.");
+                World.Set(Window); // Add Window as singleton resource
 
-                World.Set(Window);
-                World.Set(Renderer);
-                return OnInit(args);
+                Renderer = Window.CreateRenderer();
+                Console.WriteLine($"Renderer created: {Renderer.Name}");
+                if (Renderer == null) throw new InvalidOperationException("Failed to create SDL Renderer.");
+                Renderer.DrawColor = new SDLWrapper.Color(255, 255, 255, 255); // White (using wrapper's Color)
+                World.Set(Renderer); // Add Renderer as singleton resource
+
+
+                // Create the application's root entity for events
+                _appEntity = World.Entity($"App: {Title}"); // Use property, will fetch from Window
+
+                // Call user's initialization code
+                if (!OnInit(args))
+                {
+                    Console.Error.WriteLine("Application OnInit returned false. Shutting down.");
+                    _shouldQuit = true; // Signal immediate quit if OnInit fails
+                    return false;
+                }
+
+                Console.WriteLine("App.Initialize successful.");
+                return !_shouldQuit; // Return true to continue
             }
             catch (Exception ex)
             {
-                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_ERROR, ex.Message);
-                return SDL.SDL_AppResult.SDL_APP_FAILURE;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine($"Error during App.Initialize: {ex}");
+                Console.ResetColor();
+                _shouldQuit = true; // Ensure we signal quit on error
+                return false; // Return false on failure
             }
         }
 
         /// <summary>
-        /// Called after core SDL initialization (Window, Renderer, DeltaTime) is complete.
-        /// Implement application-specific setup here, such as loading resources,
-        /// configuring the Window/Renderer, and setting up ECS entities/systems.
+        /// Core update logic called repeatedly by SdlHost.RunApplication.
+        /// Calculates delta time, calls user OnUpdate, progresses ECS world, handles rendering.
+        /// </summary>
+        /// <returns>True to continue, False to request exit.</returns>
+        private bool Update()
+        {
+            if (_shouldQuit) return false; // Exit early if quit was requested
+
+            try
+            {
+                // Calculate Delta Time
+                _deltaTimeManager.Update();
+                float deltaTime = _deltaTimeManager.DeltaSeconds;
+
+                // Call user's update method
+                OnUpdate(deltaTime);
+
+                if (Renderer is not null)
+                    Renderer.DrawColor = System.Drawing.Color.PaleGoldenrod;
+
+                // Progress the ECS world (execute systems)
+                if (!World.IsDeferred()) // Basic check, might need more robust handling
+                {
+                    World.Progress(deltaTime);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine($"Error during App.Update: {ex}");
+                Console.ResetColor();
+                _shouldQuit = true; // Request quit on unhandled exception during update
+                return false;
+            }
+
+
+            return !_shouldQuit; // Return true to continue, false to quit
+        }
+
+        /// <summary>
+        /// Core event handling logic called by SdlHost.RunApplication.
+        /// Translates SdlEventArgs into ECS events emitted on the AppEntity.
+        /// Handles quit requests.
+        /// </summary>
+        /// <param name="evt">The SdlEventArgs object from the wrapper, or null.</param>
+        /// <returns>True to continue, False to request exit.</returns>
+        private bool HandleEvent(SdlEventArgs? evt)
+        {
+            if (evt == null) return !_shouldQuit; // Continue if event is null/unhandled
+
+            try
+            {
+                // Handle global quit event first
+                if (evt is QuitEventArgs)
+                {
+                    Console.WriteLine("Quit event received.");
+                    _shouldQuit = true;
+                    //AppEntity.Emit<QuitEvent>(); // Optionally emit an ECS event too
+                    return false; // Signal quit
+                }
+
+                // Handle window-specific events
+                if (evt is WindowEventArgs windowEvt)
+                {
+                    // Check if it's our main window (important if multiple windows exist)
+                    if (Window != null && windowEvt.WindowId == Window.Id)
+                    {
+                        switch (windowEvt.EventType)
+                        {
+                            case WindowEventType.CloseRequested:
+                                Console.WriteLine("Window close requested.");
+                                _shouldQuit = true;
+                                ////AppEntity.Emit(new WindowCloseEvent()); // Emit specific ECS event
+                                return false; // Signal quit
+
+                            case WindowEventType.Resized:
+                                AppEntity.Emit(new WindowResize(windowEvt.Data1, windowEvt.Data2));
+                                break;
+                            case WindowEventType.Moved:
+                                AppEntity.Emit(new WindowMovedEvent(windowEvt.Data1, windowEvt.Data2));
+                                break;
+                            case WindowEventType.FocusGained:
+                                //AppEntity.Emit(new WindowFocusGainedEvent());
+                                break;
+                            case WindowEventType.FocusLost:
+                                //AppEntity.Emit(new WindowFocusLostEvent());
+                                break;
+                            case WindowEventType.Shown:
+                                //AppEntity.Emit(new WindowShownEvent());
+                                break;
+                            case WindowEventType.Hidden:
+                                //AppEntity.Emit(new WindowHiddenEvent());
+                                break;
+                            case WindowEventType.Minimized:
+                                //AppEntity.Emit(new WindowMinimizedEvent());
+                                break;
+                            case WindowEventType.Maximized:
+                                //AppEntity.Emit(new WindowMaximizedEvent());
+                                break;
+                            case WindowEventType.Restored:
+                                //AppEntity.Emit(new WindowRestoredEvent());
+                                break;
+                            case WindowEventType.MouseEnter:
+                                // Assuming SdlHost provides global mouse state access if needed
+                                // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
+                                AppEntity.Emit(new WindowMouseEnterEvent(0, false, 0, 0, 0)); // TODO: Populate with real data if needed/available
+                                break;
+                            case WindowEventType.MouseLeave:
+                                // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
+                                AppEntity.Emit(new WindowMouseLeaveEvent(0, false, 0, 0, 0)); // TODO: Populate with real data if needed/available
+                                break;
+                                // Add other WindowEventType cases as needed
+                        }
+                    }
+                }
+                // Handle Keyboard events
+                else if (evt is KeyboardEventArgs keyEvt)
+                {
+                    // Example: Quit on Escape key press
+                    if (keyEvt.IsDown && keyEvt.Key == SDLWrapper.Key.Escape) // Use wrapper's Key enum
+                    {
+                        Console.WriteLine("Escape key pressed.");
+                        _shouldQuit = true;
+                        // Optionally emit EscapeKeyEvent or similar
+                        return false; // Signal quit
+                    }
+
+                    // Emit specific ECS events
+                    if (keyEvt.IsDown)
+                    {
+                        AppEntity.Emit(new KeyDownEvent(
+                            Keycode: (SDL.SDL_Keycode)keyEvt.Key, // Cast if necessary, depends on wrapper/ECS event types
+                            Modifiers: (SDL.SDL_Keymod)keyEvt.Modifiers, // Cast if necessary
+                            IsRepeat: keyEvt.IsRepeat
+                        ));
+                    }
+                    else // IsUp
+                    {
+                        AppEntity.Emit(new KeyUpEvent(
+                            Keycode: (SDL.SDL_Keycode)keyEvt.Key, // Cast if necessary
+                            Modifiers: (SDL.SDL_Keymod)keyEvt.Modifiers // Cast if necessary
+                        ));
+                    }
+                }
+                // Handle Mouse Button events
+                else if (evt is MouseButtonEventArgs buttonEvt)
+                {
+                    if (buttonEvt.IsDown)
+                    {
+                        AppEntity.Emit(new MouseButtonDownEvent(
+                           MouseButton: (SDL.SDL_MouseButtonFlags)buttonEvt.Button, // Cast based on your event definition
+                           X: buttonEvt.X,
+                           Y: buttonEvt.Y,
+                           Clicks: buttonEvt.Clicks
+                        ));
+                    }
+                    else // IsUp
+                    {
+                        AppEntity.Emit(new MouseButtonUpEvent(
+                             MouseButton: (SDL.SDL_MouseButtonFlags)buttonEvt.Button, // Cast based on your event definition
+                            X: buttonEvt.X,
+                            Y: buttonEvt.Y,
+                            Clicks: buttonEvt.Clicks // Clicks might be 0 on up, verify wrapper behavior
+                        ));
+                    }
+                }
+                // Handle Mouse Motion events
+                else if (evt is MouseMotionEventArgs motionEvt)
+                {
+                    AppEntity.Emit(new MouseMotionEvent(
+                       MouseState: motionEvt.State, // Cast based on your event definition
+                       X: motionEvt.X,
+                       Y: motionEvt.Y,
+                       XRel: motionEvt.XRel,
+                       YRel: motionEvt.YRel
+                    ));
+                }
+                // Handle Mouse Wheel events
+                else if (evt is MouseWheelEventArgs wheelEvt)
+                {
+                    AppEntity.Emit(new MouseWheelEvent(
+                       ScrollX: wheelEvt.ScrollX,
+                       ScrollY: wheelEvt.ScrollY,
+                       Direction: wheelEvt.Direction // Cast based on your event definition (e.g., SDL_MouseWheelDirection)
+                    ));
+                }
+                // Handle text input events (if your wrapper provides them)
+                else if (evt is TextInputEventArgs textEvt)
+                {
+                    //AppEntity.Emit(new TextInputEvent(textEvt.Text)); // Assuming simple text event
+                }
+
+                // Add handlers for other SdlEventArgs types as provided by your wrapper
+                // (e.g., Controller Events, Joystick Events, Drop Events, etc.)
+
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine($"Error during App.HandleEvent: {ex}");
+                Console.ResetColor();
+                _shouldQuit = true; // Request quit on unhandled exception during event processing
+                return false;
+            }
+
+            // Return true to continue processing, false if quit was requested
+            return !_shouldQuit;
+        }
+
+        /// <summary>
+        /// Core cleanup logic called by SdlHost.RunApplication just before exit.
+        /// Calls the user-defined OnQuit method and disposes resources.
+        /// </summary>
+        private void Cleanup()
+        {
+            Console.WriteLine($"App.Cleanup: Thread {Environment.CurrentManagedThreadId}");
+            Console.WriteLine("App.Cleanup started.");
+            try
+            {
+                // Call user's cleanup code first
+                OnQuit();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine($"Error during user OnQuit: {ex}");
+                Console.ResetColor();
+                // Continue with engine cleanup even if user code fails
+            }
+
+            Renderer?.Dispose();
+            Window?.Dispose(); // Dispose wrapper objects
+
+            Console.WriteLine("Window, Renderer, Engine, and World disposed.");
+            Console.WriteLine("App.Cleanup finished.");
+            // SdlHost.RunApplication handles SDL.Quit() automatically.
+        }
+
+
+        // --- Abstract / Virtual methods for derived classes ---
+
+        /// <summary>
+        /// Called once during application initialization after core components (Window, Renderer, ECS) are set up.
+        /// Implement application-specific setup here (e.g., load resources, create initial entities/systems).
         /// </summary>
         /// <param name="args">Command line arguments.</param>
-        /// <returns>SDL.AppResult.Continue to proceed, or Success/Failure to exit early.</returns>
-        protected abstract SDL.SDL_AppResult OnInit(string[] args);
+        /// <returns>True if initialization was successful, False otherwise (will cause immediate shutdown).</returns>
+        protected abstract bool OnInit(string[] args);
 
         /// <summary>
         /// Called repeatedly for each frame/iteration of the application loop.
-        /// Implement update logic and rendering here.
+        /// Implement update logic (e.g., game state, physics) here. Rendering is typically handled
+        /// by ECS systems invoked via World.Progress in the main Update loop, but direct rendering
+        /// can also be done here if needed.
         /// </summary>
-        /// <param name="deltaTime">Time elapsed since the last call to OnIterate, in seconds.</param>
-        /// <returns>SDL.AppResult.Continue to keep running, or Success/Failure to exit.</returns>
-        protected virtual SDL.SDL_AppResult OnIterate(float deltaTime)
+        /// <param name="deltaTime">Time elapsed since the last call to OnUpdate, in seconds.</param>
+        protected virtual void OnUpdate(float deltaTime)
         {
-            Renderer!.DrawColor = (RgbaColor)Color.White;
-            World.Progress(deltaTime);
-            return SDL.SDL_AppResult.SDL_APP_CONTINUE;
+            // Base implementation does nothing. Override in derived class.
+            // Example: base.OnUpdate(deltaTime); // Call if base class adds logic later
         }
 
         /// <summary>
-        /// Called whenever an SDL event occurs.
-        /// Handle input, window events, etc., here.
+        /// Called once just before the application terminates and before core resources (Window, Renderer) are disposed.
+        /// Implement cleanup for resources created in OnInit here.
         /// </summary>
-        /// <param name="e">The SDL_Event structure.</param>
-        /// <returns>SDL.AppResult.Continue to keep running, or Success/Failure to exit.</returns>
-        protected SDL.SDL_AppResult OnEvent(ref SDL.SDL_Event e)
-        {
-            if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_QUIT)
-            {
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Base OnEvent: Quit event received.");
-                return SDL.SDL_AppResult.SDL_APP_SUCCESS; // Signal graceful termination
-            }
-
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_RESIZED)
-            {
-                AppEntity.Emit(new WindowResize(e.display.data1, e.display.data2));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_KEY_DOWN)
-            {
-                AppEntity.Emit(new KeyDownEvent(
-                    Keycode: (SDL.SDL_Keycode)e.key.key,
-                    Modifiers: e.key.mod,
-                    IsRepeat: e.key.repeat
-                ));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_KEY_UP)
-            {
-                AppEntity.Emit(new KeyUpEvent(
-                    Keycode: (SDL.SDL_Keycode)e.key.key,
-                    Modifiers: e.key.mod
-                ));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN)
-            {
-                AppEntity.Emit(new MouseButtonDownEvent(
-                    MouseButton: SDL.SDL_GetMouseState(out float _, out float _),
-                    X: e.button.x,
-                    Y: e.button.y,
-                    Clicks: e.button.clicks
-                ));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP)
-            {
-                AppEntity.Emit(new MouseButtonUpEvent(
-                    MouseButton: SDL.SDL_GetMouseState(out float _, out float _),
-                    X: e.button.x,
-                    Y: e.button.y,
-                    Clicks: e.button.clicks
-                ));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_MOTION)
-            {
-                AppEntity.Emit(new MouseMotionEvent(
-                    MouseState: SDL.SDL_GetMouseState(out float _, out float _),
-                    X: e.motion.x,
-                    Y: e.motion.y,
-                    XRel: e.motion.xrel,
-                    YRel: e.motion.yrel));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_WHEEL)
-            {
-                AppEntity.Emit(new MouseWheelEvent(
-                    ScrollX: e.wheel.x,
-                    ScrollY: e.wheel.y,
-                    Direction: e.wheel.direction
-                ));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOVED)
-            {
-                uint windowId = e.window.windowID;
-                SDL.SDL_GetWindowPosition(SDL.SDL_GetWindowFromID(windowId), out int newWidth, out int newHeight); // Safer way
-
-                AppEntity.Emit(new WindowMovedEvent(
-                    X: newWidth,
-                    Y: newHeight
-                ));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER)
-            {
-                AppEntity.Emit(new WindowMouseEnterEvent(
-                    MouseButton: SDL.SDL_GetGlobalMouseState(out float X, out float Y),
-                    Down: e.button.down,
-                    X: X,
-                    Y: Y,
-                    Clicks: e.button.clicks));
-            }
-            else if (e.type == (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE)
-            {
-                AppEntity.Emit(new WindowMouseLeaveEvent(
-                    MouseButton: SDL.SDL_GetGlobalMouseState(out float X, out float Y),
-                    Down: e.button.down,
-                    X: X,
-                    Y: Y,
-                    Clicks: e.button.clicks));
-            }
-
-
-            return SDL.SDL_AppResult.SDL_APP_CONTINUE;
-        }
-
-        /// <summary>
-        /// Called once just before the application terminates.
-        /// Perform cleanup of resources created in OnInit here.
-        /// Note: SDL.Quit() is called automatically by SDL after this.
-        /// </summary>
-        /// <param name="result">The result code that caused the application to quit.</param>
-        protected void SDLQuit(SDL.SDL_AppResult result)
-        {
-
-            try
-            {
-                //SDL.LogInfo(SDL.LogCategory.Application, "Calling OnUserQuit...");
-                OnQuit(result); // Allow derived class to clean up its resources
-                //SDL.LogInfo(SDL.LogCategory.Application, "OnUserQuit finished.");
-            }
-            catch (Exception ex)
-            {
-                // Log error in user cleanup but continue with base cleanup
-                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception during OnUserQuit: {ex}");
-            }
-            if (Renderer != null)
-            {
-                Renderer.Dispose();
-                Renderer = null; // Set to null after disposal
-                //SDL.LogInfo(SDL.LogCategory.Application, "Renderer Disposed.");
-            }
-
-            // Dispose Window
-            if (Window != null)
-            {
-                Window.Dispose();
-                Window = null; // Set to null after disposal
-                //SDL.LogInfo(SDL.LogCategory.Application, "Window Disposed.");
-            }
-
-            //SDL.LogInfo(SDL.LogCategory.Application, $"Base OnQuit called with result: {result}");
-            // Base implementation can Quit initialized subsystems
-            if (SDL.SDL_WasInit(SDL.SDL_InitFlags.SDL_INIT_VIDEO) != 0) // Check if Video was initialized
-            {
-                SDL.SDL_QuitSubSystem(SDL.SDL_InitFlags.SDL_INIT_VIDEO); // Quit only what we initialized
-            }
-            // SDL.Quit(); // DO NOT CALL SDL.Quit() here, SDL does it after this callback.
-        }
-
-        /// <summary>
-        /// Called just before the application terminates and before core resources (Window, Renderer) are disposed.
-        /// Implement cleanup for resources created in OnUserInitialize here.
-        /// </summary>
-        /// <param name="result">The result code that caused the application to quit.</param>
-        protected abstract void OnQuit(SDL.SDL_AppResult result);
-
-        // --- Static Callback Wrappers (Called by SDL) ---
-        // Temporary static handle used ONLY during the transition into EnterAppMainCallbacks
-        // This is a workaround pattern for C APIs without explicit user_data in init.
-        private static GCHandle _pendingAppHandle;
-        private static SDL.SDL_AppResult StaticAppInit(IntPtr appstatePtrRef, int argc, IntPtr argv)
-        {
-            // Retrieve the App instance via the GCHandle passed implicitly at first, then set state pointer
-            GCHandle handle = default;
-            App? instance = null;
-            try
-            {
-                // On first call, appstatePtrRef might point to something temporary or null,
-                // we need to retrieve our handle passed during GCHandle.Alloc
-                // SDL's mechanism here can be tricky. Let's assume the *first* call needs us to
-                // find our handle and *tell* SDL what pointer to use subsequently.
-                // A common pattern is to pass the GCHandle.ToIntPtr() via the args or environment,
-                // but SDL_EnterAppMainCallbacks doesn't directly support that.
-                // The intended way is usually via the appstate pointer itself.
-
-                // We rely on GCHandle.Alloc happening *before* this call in RunWindowsCallbacks
-                // Find the *specific* handle we allocated just before the call.
-                // This is tricky and potentially fragile if multiple App instances exist.
-                // Reverting to the static handle idea might be necessary IF this proves unreliable,
-                // OR rethinking how the handle is passed.
-                // Let's *assume* for now that the GCHandle needs to be retrieved globally/statically
-                // for this mechanism to work robustly without modifying SDL's expected pattern.
-
-                // *** SAFER APPROACH: Use a temporary static variable during the callback setup ***
-                // This is a common workaround for C APIs lacking explicit user data pointers in init.
-                if (_pendingAppHandle.IsAllocated)
-                {
-                    handle = _pendingAppHandle;
-                    instance = handle.Target as App;
-                    if (instance == null)
-                    {
-                        SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppInit: Failed to get App instance from pending handle.");
-                        return SDL.SDL_AppResult.SDL_APP_FAILURE;
-                    }
-                    // IMPORTANT: Tell SDL which state pointer to use for subsequent callbacks.
-                    Marshal.WriteIntPtr(appstatePtrRef, GCHandle.ToIntPtr(handle));
-                    SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppInit: Set SDL app state pointer from pending handle.");
-                    _pendingAppHandle = default; // Clear the temporary static handle
-                }
-                else
-                {
-                    // This case should ideally not happen if called correctly by SDL via EnterAppMainCallbacks
-                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppInit: No pending App handle found!");
-                    return SDL.SDL_AppResult.SDL_APP_FAILURE;
-                }
-
-
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppInit: Calling instance.SDLInit...");
-                SDL.SDL_AppResult initResult = instance.SDLInit([]);
-                SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"StaticAppInit: instance.SDLInit returned: {initResult}");
-                return initResult;
-            }
-            catch (Exception ex)
-            {
-                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in StaticAppInit: {ex}");
-                // Clean up static handle if exception occurs after acquisition but before clearing
-                if (_pendingAppHandle.IsAllocated) _pendingAppHandle = default;
-                return SDL.SDL_AppResult.SDL_APP_FAILURE;
-            }
-        }
-
-        private static SDL.SDL_AppResult StaticAppIterate(IntPtr appstatePtr)
-        {
-            try
-            {
-                // Retrieve the App instance from the handle passed by SDL
-                if (appstatePtr == IntPtr.Zero) return SDL.SDL_AppResult.SDL_APP_FAILURE;
-                GCHandle handle = GCHandle.FromIntPtr(appstatePtr);
-                if (!handle.IsAllocated || handle.Target is not App instance)
-                {
-                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppIterate: Failed to get App instance from handle.");
-                    return SDL.SDL_AppResult.SDL_APP_FAILURE;
-                }
-
-                // --- Calculate Delta Time ---
-                instance._deltaTimeManager.Update();
-                float deltaTime = instance._deltaTimeManager.DeltaSeconds;
-                // --- End Delta Time ---
-
-                // Call the virtual OnIterate method
-                return instance.OnIterate(deltaTime);
-            }
-            catch (Exception ex)
-            {
-                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in StaticAppIterate: {ex}");
-                return SDL.SDL_AppResult.SDL_APP_FAILURE;
-            }
-        }
-
-        private static unsafe SDL.SDL_AppResult StaticAppEvent(nint appstatePtr, SDL.SDL_Event* e)
-        {
-            try
-            {
-                // Retrieve the App instance
-                if (appstatePtr == IntPtr.Zero) return SDL.SDL_AppResult.SDL_APP_FAILURE;
-                GCHandle handle = GCHandle.FromIntPtr(appstatePtr);
-                if (!handle.IsAllocated || handle.Target is not App instance)
-                {
-                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppEvent: Failed to get App instance from handle.");
-                    return SDL.SDL_AppResult.SDL_APP_FAILURE;
-                }
-
-                SDL.SDL_Event eventValue = *e;
-
-                // Call the virtual OnEvent method
-                return instance.OnEvent(ref eventValue);
-            }
-            catch (Exception ex)
-            {
-                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in StaticAppEvent: {ex}");
-                return SDL.SDL_AppResult.SDL_APP_FAILURE; // Or Continue depending on desired robustness
-            }
-        }
-
-        private static void StaticAppQuit(IntPtr appstatePtr, SDL.SDL_AppResult result)
-        {
-            try
-            {
-                // Retrieve the App instance
-                if (appstatePtr == IntPtr.Zero) return;
-                GCHandle handle = GCHandle.FromIntPtr(appstatePtr);
-                if (!handle.IsAllocated || handle.Target is not App instance)
-                {
-                    SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "StaticAppQuit: Failed to get App instance from handle.");
-                    return;
-                }
-
-                // Call the virtual OnQuit method
-                instance.SDLQuit(result);
-
-                // NOTE: Do not free the GCHandle here. The Run() method does it in its finally block.
-            }
-            catch (Exception ex)
-            {
-                SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in StaticAppQuit: {ex}");
-                // Don't re-throw, as we're already quitting.
-            }
-        }
+        protected abstract void OnQuit();
 
     }
 }
