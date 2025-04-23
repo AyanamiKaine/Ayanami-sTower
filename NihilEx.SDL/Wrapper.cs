@@ -85,14 +85,11 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 // SDL_Init returns SDL_FALSE (0) on success, SDL_TRUE (1) on error in SDL3
                 // The SDLBool struct handles the conversion implicitly.
                 // We need to check if the result is FALSE (success).
-                if (SDL_Init(flags)) // SDL_Init returns true on error
+                if (!SDL_Init(flags)) // SDL_Init returns true on error
                 {
                     throw new SDLException("Failed to initialize SDL subsystems.");
                 }
                 _isInitialized = true;
-
-                // Basic setup after init if needed
-                SDL_SetHint(SDL_HINT_WINDOWS_ENABLE_MESSAGELOOP, "0"); // Recommended for C#
             }
         }
 
@@ -182,7 +179,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="SDLException"></exception>
         internal static void ThrowOnFailure(SDLBool result, string message)
         {
-            if (result) // SDLBool is true on error
+            if (!result) // SDLBool is false on error
             {
                 throw new SDLException($"{message}: {GetError()}");
             }
@@ -308,6 +305,16 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public static implicit operator Color(SDL_Color c)
         {
             return new Color(c.r, c.g, c.b, c.a);
+        }
+
+        public static implicit operator Color(System.Drawing.Color c)
+        {
+            return new Color(c.R, c.G, c.B, c.A);
+        }
+
+        public static implicit operator System.Drawing.Color(Color c)
+        {
+            return System.Drawing.Color.FromArgb(c.A, c.R, c.G, c.B);
         }
 
         public static readonly Color Black = new(0, 0, 0);
