@@ -8,4 +8,4 @@ namespace AyanamisTower.NihilEx.ECS.Events;
 /// </summary>
 /// <param name="Keycode">The code of the released key.</param>
 /// <param name="Modifiers">The modifier keys active during the event.</param>
-public record struct KeyUpEvent(SDL.SDL_Keycode Keycode, SDL.SDL_Keymod Modifiers);
+public record struct KeyUpEvent(SDLWrapper.Key Keycode, SDLWrapper.KeyModifier Modifiers);

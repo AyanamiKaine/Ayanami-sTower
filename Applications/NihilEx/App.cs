@@ -273,10 +273,10 @@ namespace AyanamisTower.NihilEx
                                 return false; // Signal quit
 
                             case WindowEventType.Resized:
-                                AppEntity.Emit(new WindowResize(windowEvt.Data1, windowEvt.Data2));
+                                AppEntity.Emit(new WindowResize(Width: windowEvt.Data1, Height: windowEvt.Data2));
                                 break;
                             case WindowEventType.Moved:
-                                AppEntity.Emit(new WindowMovedEvent(windowEvt.Data1, windowEvt.Data2));
+                                AppEntity.Emit(new WindowMovedEvent(X: windowEvt.Data1, Y: windowEvt.Data2));
                                 break;
                             case WindowEventType.FocusGained:
                                 //AppEntity.Emit(new WindowFocusGainedEvent());
@@ -328,16 +328,16 @@ namespace AyanamisTower.NihilEx
                     if (keyEvt.IsDown)
                     {
                         AppEntity.Emit(new KeyDownEvent(
-                            Keycode: (SDL.SDL_Keycode)keyEvt.Key, // Cast if necessary, depends on wrapper/ECS event types
-                            Modifiers: (SDL.SDL_Keymod)keyEvt.Modifiers, // Cast if necessary
+                            Keycode: keyEvt.Key, // Cast if necessary, depends on wrapper/ECS event types
+                            Modifiers: keyEvt.Modifiers, // Cast if necessary
                             IsRepeat: keyEvt.IsRepeat
                         ));
                     }
                     else // IsUp
                     {
                         AppEntity.Emit(new KeyUpEvent(
-                            Keycode: (SDL.SDL_Keycode)keyEvt.Key, // Cast if necessary
-                            Modifiers: (SDL.SDL_Keymod)keyEvt.Modifiers // Cast if necessary
+                            Keycode: keyEvt.Key, // Cast if necessary
+                            Modifiers: keyEvt.Modifiers // Cast if necessary
                         ));
                     }
                 }
