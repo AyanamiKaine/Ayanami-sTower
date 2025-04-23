@@ -480,20 +480,15 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Window));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
+
                 // SDL_GetWindowTitle returns an SDL-owned string
                 string? title = SDL_GetWindowTitle(_windowPtr);
                 return title ?? string.Empty; // Return empty if null
             }
             set
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Window));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 SdlHost.ThrowOnFailure(SDL_SetWindowTitle(_windowPtr, value), "Failed to set window title");
             }
@@ -507,20 +502,15 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Window));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
+
 
                 SdlHost.ThrowOnFailure(SDL_GetWindowPosition(_windowPtr, out int x, out int y), "Failed to get window position");
                 return new Point(x, y);
             }
             set
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Window));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 SdlHost.ThrowOnFailure(SDL_SetWindowPosition(_windowPtr, value.X, value.Y), "Failed to set window position");
             }
@@ -534,20 +524,14 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Window));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 SdlHost.ThrowOnFailure(SDL_GetWindowSize(_windowPtr, out int w, out int h), "Failed to get window size");
                 return new Point(w, h);
             }
             set
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Window));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 SdlHost.ThrowOnFailure(SDL_SetWindowSize(_windowPtr, value.X, value.Y), "Failed to set window size");
             }
@@ -561,10 +545,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Window));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 SdlHost.ThrowOnFailure(SDL_GetWindowSizeInPixels(_windowPtr, out int w, out int h), "Failed to get window size in pixels");
                 return new Point(w, h);
@@ -591,10 +572,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Window));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
 
                 // SDL_GetDisplayForWindow returns 0 on error, check error state?
@@ -614,10 +592,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void Show()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Window));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_ShowWindow(_windowPtr), "Failed to show window");
         }
@@ -670,10 +645,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void Minimize()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Window));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_MinimizeWindow(_windowPtr), "Failed to minimize window");
         }
@@ -684,10 +656,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void Restore()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Window));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_RestoreWindow(_windowPtr), "Failed to restore window");
         }
@@ -699,10 +668,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void SetFullscreen(bool fullscreen)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Window));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_SetWindowFullscreen(_windowPtr, fullscreen),
                fullscreen ? "Failed to enter fullscreen" : "Failed to leave fullscreen");
@@ -715,10 +681,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void SetBordered(bool bordered)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Window));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_SetWindowBordered(_windowPtr, bordered), "Failed to set window border state");
         }
@@ -936,10 +899,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Texture));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
+
                 // Query access mode - SDL3 doesn't have a direct SDL_QueryTexture equivalent for access anymore?
                 // Need to check SDL_GetTextureProperties. Let's assume it's stored or inferred.
                 // Placeholder: Need a way to get this. Maybe store it during creation?
@@ -967,10 +928,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Texture));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 unsafe
                 {
@@ -992,10 +950,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Texture));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 unsafe
                 {
@@ -1024,10 +979,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void SetColorMod(Color color)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_SetTextureColorMod(_texturePtr, color.R, color.G, color.B), "Failed to set texture color mod");
         }
@@ -1039,10 +991,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public Color GetColorMod()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_GetTextureColorMod(_texturePtr, out byte r, out byte g, out byte b), "Failed to get texture color mod");
             return new Color(r, g, b);
@@ -1055,10 +1004,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void SetAlphaMod(byte alpha)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_SetTextureAlphaMod(_texturePtr, alpha), "Failed to set texture alpha mod");
         }
@@ -1070,10 +1016,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public byte GetAlphaMod()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_GetTextureAlphaMod(_texturePtr, out byte alpha), "Failed to get texture alpha mod");
             return alpha;
@@ -1086,10 +1029,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void SetScaleMode(SDL_ScaleMode scaleMode)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_SetTextureScaleMode(_texturePtr, scaleMode), "Failed to set texture scale mode");
         }
@@ -1101,10 +1041,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public SDL_ScaleMode GetScaleMode()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SdlHost.ThrowOnFailure(SDL_GetTextureScaleMode(_texturePtr, out SDL_ScaleMode scaleMode), "Failed to get texture scale mode");
             return scaleMode;
@@ -1120,10 +1057,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void UpdateTexture(Rect? rect, IntPtr pixels, int pitch)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SDL_Rect sdlRect = rect.HasValue ? rect.Value : default;
             SdlHost.ThrowOnFailure(SDL_UpdateTexture(_texturePtr, ref sdlRect, pixels, pitch), "Failed to update texture");
@@ -1143,10 +1077,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void UpdateYUVTexture(Rect? rect, IntPtr yPlane, int yPitch, IntPtr uPlane, int uPitch, IntPtr vPlane, int vPitch)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SDL_Rect sdlRect = rect.HasValue ? rect.Value : default;
             SdlHost.ThrowOnFailure(SDL_UpdateYUVTexture(_texturePtr, ref sdlRect, yPlane, yPitch, uPlane, uPitch, vPlane, vPitch), "Failed to update YUV texture");
@@ -1162,10 +1093,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void Lock(Rect? rect, out IntPtr pixels, out int pitch)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             SDL_Rect sdlRect = rect.HasValue ? rect.Value : default;
             SdlHost.ThrowOnFailure(SDL_LockTexture(_texturePtr, ref sdlRect, out pixels, out pitch), "Failed to lock texture");
@@ -1177,10 +1105,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public void Unlock()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
             // SDL_UnlockTexture returns void, no error check needed unless documented otherwise
             SDL_UnlockTexture(_texturePtr);
         }
@@ -1343,20 +1269,14 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Renderer));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 SdlHost.ThrowOnFailure(SDL_GetRenderDrawColor(_rendererPtr, out byte r, out byte g, out byte b, out byte a), "Failed to get draw color");
                 return new Color(r, g, b, a);
             }
             set
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Renderer));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 SdlHost.ThrowOnFailure(SDL_SetRenderDrawColor(_rendererPtr, value.R, value.G, value.B, value.A), "Failed to set draw color");
             }
@@ -1459,10 +1379,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Renderer));
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 if (!SDL_RenderClipEnabled(_rendererPtr))
                 {
@@ -1693,16 +1610,12 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-
             ArgumentNullException.ThrowIfNull(texture);
 
-            if (texture.IsDisposed)
-            {
-                throw new ObjectDisposedException(nameof(Texture));
-            }
+            ObjectDisposedException.ThrowIf(texture.IsDisposed, this);
 
-            SDL_FRect sdlSrcRect = srcRect.HasValue ? srcRect.Value : default;
-            SDL_FRect sdlDstRect = dstRect.HasValue ? dstRect.Value : default;
+            SDL_FRect sdlSrcRect = srcRect ?? default;
+            SDL_FRect sdlDstRect = dstRect ?? default;
 
             // SDL_RenderTexture takes pointers, need to handle nullability
             unsafe
