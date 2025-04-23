@@ -1802,6 +1802,384 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
     #endregion
 
+    #region Input Abstraction (Keyboard)
+
+    /// <summary>
+    /// Represents physical key locations on a keyboard, independent of layout.
+    /// Maps closely to SDL_Scancode.
+    /// </summary>
+    public enum Key
+    {
+        Unknown = SDL_Scancode.SDL_SCANCODE_UNKNOWN,
+
+        A = SDL_Scancode.SDL_SCANCODE_A,
+        B = SDL_Scancode.SDL_SCANCODE_B,
+        C = SDL_Scancode.SDL_SCANCODE_C,
+        D = SDL_Scancode.SDL_SCANCODE_D,
+        E = SDL_Scancode.SDL_SCANCODE_E,
+        F = SDL_Scancode.SDL_SCANCODE_F,
+        G = SDL_Scancode.SDL_SCANCODE_G,
+        H = SDL_Scancode.SDL_SCANCODE_H,
+        I = SDL_Scancode.SDL_SCANCODE_I,
+        J = SDL_Scancode.SDL_SCANCODE_J,
+        K = SDL_Scancode.SDL_SCANCODE_K,
+        L = SDL_Scancode.SDL_SCANCODE_L,
+        M = SDL_Scancode.SDL_SCANCODE_M,
+        N = SDL_Scancode.SDL_SCANCODE_N,
+        O = SDL_Scancode.SDL_SCANCODE_O,
+        P = SDL_Scancode.SDL_SCANCODE_P,
+        Q = SDL_Scancode.SDL_SCANCODE_Q,
+        R = SDL_Scancode.SDL_SCANCODE_R,
+        S = SDL_Scancode.SDL_SCANCODE_S,
+        T = SDL_Scancode.SDL_SCANCODE_T,
+        U = SDL_Scancode.SDL_SCANCODE_U,
+        V = SDL_Scancode.SDL_SCANCODE_V,
+        W = SDL_Scancode.SDL_SCANCODE_W,
+        X = SDL_Scancode.SDL_SCANCODE_X,
+        Y = SDL_Scancode.SDL_SCANCODE_Y,
+        Z = SDL_Scancode.SDL_SCANCODE_Z,
+
+        D1 = SDL_Scancode.SDL_SCANCODE_1,
+        D2 = SDL_Scancode.SDL_SCANCODE_2,
+        D3 = SDL_Scancode.SDL_SCANCODE_3,
+        D4 = SDL_Scancode.SDL_SCANCODE_4,
+        D5 = SDL_Scancode.SDL_SCANCODE_5,
+        D6 = SDL_Scancode.SDL_SCANCODE_6,
+        D7 = SDL_Scancode.SDL_SCANCODE_7,
+        D8 = SDL_Scancode.SDL_SCANCODE_8,
+        D9 = SDL_Scancode.SDL_SCANCODE_9,
+        D0 = SDL_Scancode.SDL_SCANCODE_0,
+
+        Return = SDL_Scancode.SDL_SCANCODE_RETURN,
+        Escape = SDL_Scancode.SDL_SCANCODE_ESCAPE,
+        Backspace = SDL_Scancode.SDL_SCANCODE_BACKSPACE,
+        Tab = SDL_Scancode.SDL_SCANCODE_TAB,
+        Space = SDL_Scancode.SDL_SCANCODE_SPACE,
+
+        Minus = SDL_Scancode.SDL_SCANCODE_MINUS,
+        Equals = SDL_Scancode.SDL_SCANCODE_EQUALS,
+        LeftBracket = SDL_Scancode.SDL_SCANCODE_LEFTBRACKET,
+        RightBracket = SDL_Scancode.SDL_SCANCODE_RIGHTBRACKET,
+        Backslash = SDL_Scancode.SDL_SCANCODE_BACKSLASH,
+        Semicolon = SDL_Scancode.SDL_SCANCODE_SEMICOLON,
+        Apostrophe = SDL_Scancode.SDL_SCANCODE_APOSTROPHE,
+        Grave = SDL_Scancode.SDL_SCANCODE_GRAVE, // Backtick `
+        Comma = SDL_Scancode.SDL_SCANCODE_COMMA,
+        Period = SDL_Scancode.SDL_SCANCODE_PERIOD,
+        Slash = SDL_Scancode.SDL_SCANCODE_SLASH,
+
+        CapsLock = SDL_Scancode.SDL_SCANCODE_CAPSLOCK,
+
+        F1 = SDL_Scancode.SDL_SCANCODE_F1,
+        F2 = SDL_Scancode.SDL_SCANCODE_F2,
+        F3 = SDL_Scancode.SDL_SCANCODE_F3,
+        F4 = SDL_Scancode.SDL_SCANCODE_F4,
+        F5 = SDL_Scancode.SDL_SCANCODE_F5,
+        F6 = SDL_Scancode.SDL_SCANCODE_F6,
+        F7 = SDL_Scancode.SDL_SCANCODE_F7,
+        F8 = SDL_Scancode.SDL_SCANCODE_F8,
+        F9 = SDL_Scancode.SDL_SCANCODE_F9,
+        F10 = SDL_Scancode.SDL_SCANCODE_F10,
+        F11 = SDL_Scancode.SDL_SCANCODE_F11,
+        F12 = SDL_Scancode.SDL_SCANCODE_F12,
+
+        PrintScreen = SDL_Scancode.SDL_SCANCODE_PRINTSCREEN,
+        ScrollLock = SDL_Scancode.SDL_SCANCODE_SCROLLLOCK,
+        Pause = SDL_Scancode.SDL_SCANCODE_PAUSE,
+        Insert = SDL_Scancode.SDL_SCANCODE_INSERT,
+        Home = SDL_Scancode.SDL_SCANCODE_HOME,
+        PageUp = SDL_Scancode.SDL_SCANCODE_PAGEUP,
+        Delete = SDL_Scancode.SDL_SCANCODE_DELETE,
+        End = SDL_Scancode.SDL_SCANCODE_END,
+        PageDown = SDL_Scancode.SDL_SCANCODE_PAGEDOWN,
+        Right = SDL_Scancode.SDL_SCANCODE_RIGHT,
+        Left = SDL_Scancode.SDL_SCANCODE_LEFT,
+        Down = SDL_Scancode.SDL_SCANCODE_DOWN,
+        Up = SDL_Scancode.SDL_SCANCODE_UP,
+
+        NumLockClear = SDL_Scancode.SDL_SCANCODE_NUMLOCKCLEAR,
+        KeypadDivide = SDL_Scancode.SDL_SCANCODE_KP_DIVIDE,
+        KeypadMultiply = SDL_Scancode.SDL_SCANCODE_KP_MULTIPLY,
+        KeypadMinus = SDL_Scancode.SDL_SCANCODE_KP_MINUS,
+        KeypadPlus = SDL_Scancode.SDL_SCANCODE_KP_PLUS,
+        KeypadEnter = SDL_Scancode.SDL_SCANCODE_KP_ENTER,
+        Keypad1 = SDL_Scancode.SDL_SCANCODE_KP_1,
+        Keypad2 = SDL_Scancode.SDL_SCANCODE_KP_2,
+        Keypad3 = SDL_Scancode.SDL_SCANCODE_KP_3,
+        Keypad4 = SDL_Scancode.SDL_SCANCODE_KP_4,
+        Keypad5 = SDL_Scancode.SDL_SCANCODE_KP_5,
+        Keypad6 = SDL_Scancode.SDL_SCANCODE_KP_6,
+        Keypad7 = SDL_Scancode.SDL_SCANCODE_KP_7,
+        Keypad8 = SDL_Scancode.SDL_SCANCODE_KP_8,
+        Keypad9 = SDL_Scancode.SDL_SCANCODE_KP_9,
+        Keypad0 = SDL_Scancode.SDL_SCANCODE_KP_0,
+        KeypadPeriod = SDL_Scancode.SDL_SCANCODE_KP_PERIOD,
+
+        Application = SDL_Scancode.SDL_SCANCODE_APPLICATION, // Menu key
+        Power = SDL_Scancode.SDL_SCANCODE_POWER,
+        KeypadEquals = SDL_Scancode.SDL_SCANCODE_KP_EQUALS,
+        F13 = SDL_Scancode.SDL_SCANCODE_F13,
+        F14 = SDL_Scancode.SDL_SCANCODE_F14,
+        F15 = SDL_Scancode.SDL_SCANCODE_F15,
+        F16 = SDL_Scancode.SDL_SCANCODE_F16,
+        F17 = SDL_Scancode.SDL_SCANCODE_F17,
+        F18 = SDL_Scancode.SDL_SCANCODE_F18,
+        F19 = SDL_Scancode.SDL_SCANCODE_F19,
+        F20 = SDL_Scancode.SDL_SCANCODE_F20,
+        F21 = SDL_Scancode.SDL_SCANCODE_F21,
+        F22 = SDL_Scancode.SDL_SCANCODE_F22,
+        F23 = SDL_Scancode.SDL_SCANCODE_F23,
+        F24 = SDL_Scancode.SDL_SCANCODE_F24,
+
+        Execute = SDL_Scancode.SDL_SCANCODE_EXECUTE,
+        Help = SDL_Scancode.SDL_SCANCODE_HELP,
+        Menu = SDL_Scancode.SDL_SCANCODE_MENU,
+        Select = SDL_Scancode.SDL_SCANCODE_SELECT,
+        Stop = SDL_Scancode.SDL_SCANCODE_STOP,
+        Again = SDL_Scancode.SDL_SCANCODE_AGAIN,
+        Undo = SDL_Scancode.SDL_SCANCODE_UNDO,
+        Cut = SDL_Scancode.SDL_SCANCODE_CUT,
+        Copy = SDL_Scancode.SDL_SCANCODE_COPY,
+        Paste = SDL_Scancode.SDL_SCANCODE_PASTE,
+        Find = SDL_Scancode.SDL_SCANCODE_FIND,
+        Mute = SDL_Scancode.SDL_SCANCODE_MUTE,
+        VolumeUp = SDL_Scancode.SDL_SCANCODE_VOLUMEUP,
+        VolumeDown = SDL_Scancode.SDL_SCANCODE_VOLUMEDOWN,
+
+        LeftCtrl = SDL_Scancode.SDL_SCANCODE_LCTRL,
+        LeftShift = SDL_Scancode.SDL_SCANCODE_LSHIFT,
+        LeftAlt = SDL_Scancode.SDL_SCANCODE_LALT, // Alt, Option
+        LeftGui = SDL_Scancode.SDL_SCANCODE_LGUI, // Windows, Command, Meta
+        RightCtrl = SDL_Scancode.SDL_SCANCODE_RCTRL,
+        RightShift = SDL_Scancode.SDL_SCANCODE_RSHIFT,
+        RightAlt = SDL_Scancode.SDL_SCANCODE_RALT, // Alt Gr, Option
+        RightGui = SDL_Scancode.SDL_SCANCODE_RGUI, // Windows, Command, Meta
+
+        // Add other keys as needed...
+        Mode = SDL_Scancode.SDL_SCANCODE_MODE, // AltGr, Mode switch
+
+        // Media keys
+        MediaPlay = SDL_Scancode.SDL_SCANCODE_MEDIA_PLAY,
+        MediaPause = SDL_Scancode.SDL_SCANCODE_MEDIA_PAUSE,
+        MediaRecord = SDL_Scancode.SDL_SCANCODE_MEDIA_RECORD,
+        MediaFastForward = SDL_Scancode.SDL_SCANCODE_MEDIA_FAST_FORWARD,
+        MediaRewind = SDL_Scancode.SDL_SCANCODE_MEDIA_REWIND,
+        MediaNextTrack = SDL_Scancode.SDL_SCANCODE_MEDIA_NEXT_TRACK,
+        MediaPreviousTrack = SDL_Scancode.SDL_SCANCODE_MEDIA_PREVIOUS_TRACK,
+        MediaStop = SDL_Scancode.SDL_SCANCODE_MEDIA_STOP,
+        MediaEject = SDL_Scancode.SDL_SCANCODE_MEDIA_EJECT,
+        MediaPlayPause = SDL_Scancode.SDL_SCANCODE_MEDIA_PLAY_PAUSE,
+        MediaSelect = SDL_Scancode.SDL_SCANCODE_MEDIA_SELECT,
+
+        // Application control keys
+        AppNew = SDL_Scancode.SDL_SCANCODE_AC_NEW,
+        AppOpen = SDL_Scancode.SDL_SCANCODE_AC_OPEN,
+        AppClose = SDL_Scancode.SDL_SCANCODE_AC_CLOSE,
+        AppExit = SDL_Scancode.SDL_SCANCODE_AC_EXIT,
+        AppSave = SDL_Scancode.SDL_SCANCODE_AC_SAVE,
+        AppPrint = SDL_Scancode.SDL_SCANCODE_AC_PRINT,
+        AppProperties = SDL_Scancode.SDL_SCANCODE_AC_PROPERTIES,
+        AppSearch = SDL_Scancode.SDL_SCANCODE_AC_SEARCH,
+        AppHome = SDL_Scancode.SDL_SCANCODE_AC_HOME,
+        AppBack = SDL_Scancode.SDL_SCANCODE_AC_BACK,
+        AppForward = SDL_Scancode.SDL_SCANCODE_AC_FORWARD,
+        AppStop = SDL_Scancode.SDL_SCANCODE_AC_STOP,
+        AppRefresh = SDL_Scancode.SDL_SCANCODE_AC_REFRESH,
+        AppBookmarks = SDL_Scancode.SDL_SCANCODE_AC_BOOKMARKS,
+
+        // Mobile keys
+        SoftLeft = SDL_Scancode.SDL_SCANCODE_SOFTLEFT,
+        SoftRight = SDL_Scancode.SDL_SCANCODE_SOFTRIGHT,
+        Call = SDL_Scancode.SDL_SCANCODE_CALL,
+        EndCall = SDL_Scancode.SDL_SCANCODE_ENDCALL,
+
+        // Total number of scancodes. Not a key itself.
+        Count = SDL_Scancode.SDL_SCANCODE_COUNT
+    }
+
+    /// <summary>
+    /// Represents keyboard modifier keys (Shift, Ctrl, Alt, Gui/Meta).
+    /// Maps directly to SDL_Keymod flags.
+    /// </summary>
+    [Flags]
+    public enum KeyModifier : ushort
+    {
+        None = SDL_Keymod.SDL_KMOD_NONE,
+        LeftShift = SDL_Keymod.SDL_KMOD_LSHIFT,
+        RightShift = SDL_Keymod.SDL_KMOD_RSHIFT,
+        Shift = SDL_Keymod.SDL_KMOD_SHIFT,
+        LeftCtrl = SDL_Keymod.SDL_KMOD_LCTRL,
+        RightCtrl = SDL_Keymod.SDL_KMOD_RCTRL,
+
+        // Combined flags for convenience
+        Ctrl = SDL_Keymod.SDL_KMOD_CTRL,
+        LeftAlt = SDL_Keymod.SDL_KMOD_LALT,
+        RightAlt = SDL_Keymod.SDL_KMOD_RALT,
+        Alt = SDL_Keymod.SDL_KMOD_ALT,
+        LeftGui = SDL_Keymod.SDL_KMOD_LGUI,     // Windows/Command/Meta key
+        RightGui = SDL_Keymod.SDL_KMOD_RGUI,    // Windows/Command/Meta key
+        Gui = SDL_Keymod.SDL_KMOD_GUI,
+        NumLock = SDL_Keymod.SDL_KMOD_NUM,
+        CapsLock = SDL_Keymod.SDL_KMOD_CAPS,
+        Mode = SDL_Keymod.SDL_KMOD_MODE,      // AltGr
+        ScrollLock = SDL_Keymod.SDL_KMOD_SCROLL
+    }
+
+    /// <summary>
+    /// Provides static methods for querying keyboard state.
+    /// </summary>
+    public static class Keyboard
+    {
+        private static readonly SDLBool[] _keyStates = new SDLBool[(int)SDL_Scancode.SDL_SCANCODE_COUNT];
+        private static readonly object _stateLock = new object(); // Lock for accessing shared state buffer
+
+        // Static constructor to ensure the mapping is built once.
+        static Keyboard()
+        {
+            // Pre-build mapping if needed, or do it on demand.
+            // For now, mapping is direct via enum values.
+        }
+
+        /// <summary>
+        /// Updates the internal keyboard state snapshot. Call this once per frame before checking keys.
+        /// </summary>
+        /// <remarks>
+        /// This is optional if SDL_PumpEvents is called elsewhere, as SDL_GetKeyboardState
+        /// uses an internal state updated by the event pump. However, calling this explicitly
+        /// ensures the state used by IsKeyDown/IsKeyUp is consistent for the frame.
+        /// </remarks>
+        public static void UpdateState()
+        {
+            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SDL_InitFlags.SDL_INIT_EVENTS) & SDL_InitFlags.SDL_INIT_EVENTS) == 0)
+            {
+                throw new InvalidOperationException("SDL Events subsystem not initialized.");
+            }
+
+            // Get the current state array from SDL
+            unsafe
+            {
+                // SDL_GetKeyboardState returns a pointer to an internal SDL state array.
+                // We need to copy its contents safely.
+                IntPtr statePtr = SDL_GetKeyboardState(out int numkeys);
+                if (statePtr == IntPtr.Zero)
+                {
+                    // This should not happen if EVENTS is initialized
+                    throw new SDLException("SDL_GetKeyboardState returned NULL.");
+                }
+
+                // Ensure our internal buffer is large enough (should match SDL_SCANCODE_COUNT)
+                if (numkeys > _keyStates.Length)
+                {
+                    // This indicates a mismatch between our enum and SDL's internal count. Problem!
+                    throw new InvalidOperationException($"SDL returned {numkeys} keys, expected <= {(int)Key.Count}.");
+                }
+
+                // Copy the state using Span for safety and efficiency
+                lock (_stateLock)
+                {
+                    var sourceSpan = new ReadOnlySpan<SDLBool>((void*)statePtr, numkeys);
+                    var destSpan = new Span<SDLBool>(_keyStates, 0, numkeys);
+                    sourceSpan.CopyTo(destSpan);
+
+                    // Zero out remaining elements if SDL returns fewer keys than our enum size (unlikely but possible)
+                    if (numkeys < _keyStates.Length)
+                    {
+                        Array.Clear(_keyStates, numkeys, _keyStates.Length - numkeys);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks if a specific physical key is currently held down.
+        /// Requires SDL_PumpEvents() or UpdateState() to have been called recently.
+        /// </summary>
+        /// <param name="key">The physical key to check.</param>
+        /// <returns>True if the key is down, false otherwise.</returns>
+        public static bool IsKeyDown(Key key)
+        {
+            if (key < 0 || (int)key >= _keyStates.Length) return false; // Bounds check
+
+            lock (_stateLock)
+            {
+                // Access the pre-copied state
+                // SDLBool implicitly converts to bool (true if non-zero/pressed)
+                return _keyStates[(int)key];
+            }
+        }
+
+        /// <summary>
+        /// Checks if a specific physical key is currently released.
+        /// Requires SDL_PumpEvents() or UpdateState() to have been called recently.
+        /// </summary>
+        /// <param name="key">The physical key to check.</param>
+        /// <returns>True if the key is up, false otherwise.</returns>
+        public static bool IsKeyUp(Key key)
+        {
+            return !IsKeyDown(key);
+        }
+
+        /// <summary>
+        /// Gets the current state of the modifier keys (Shift, Ctrl, Alt, Gui, CapsLock, NumLock, etc.).
+        /// </summary>
+        /// <returns>A KeyModifier flags enum representing the active modifiers.</returns>
+        public static KeyModifier GetModifiers()
+        {
+            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SDL_InitFlags.SDL_INIT_EVENTS) & SDL_InitFlags.SDL_INIT_EVENTS) == 0)
+            {
+                throw new InvalidOperationException("SDL Events subsystem not initialized.");
+            }
+            // SDL_GetModState returns the SDL_Keymod flags directly
+            return (KeyModifier)SDL_GetModState();
+        }
+
+        /// <summary>
+        /// Gets the wrapper Key enum value corresponding to an SDL Scancode.
+        /// </summary>
+        /// <param name="scancode">The SDL Scancode.</param>
+        /// <returns>The corresponding Key enum value.</returns>
+        public static Key GetKeyFromScancode(SDL_Scancode scancode)
+        {
+            // Direct cast is possible because we defined Key enum values based on SDL_Scancode
+            return (Key)scancode;
+        }
+
+        /// <summary>
+        /// Gets the SDL Scancode corresponding to a wrapper Key enum value.
+        /// </summary>
+        /// <param name="key">The wrapper Key enum value.</param>
+        /// <returns>The corresponding SDL Scancode.</returns>
+        public static SDL_Scancode GetScancodeFromKey(Key key)
+        {
+            // Direct cast is possible
+            return (SDL_Scancode)key;
+        }
+
+        /// <summary>
+        /// Gets the name of a key based on its physical location (scancode).
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>The name of the key, or an empty string if unknown.</returns>
+        public static string GetKeyName(Key key)
+        {
+            return SDL_GetScancodeName(GetScancodeFromKey(key)) ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Gets the key corresponding to the given physical key name.
+        /// </summary>
+        /// <param name="name">The name of the key (e.g., "A", "Return", "Space").</param>
+        /// <returns>The corresponding Key enum value.</returns>
+        public static Key GetKeyFromName(string name)
+        {
+            return GetKeyFromScancode(SDL_GetScancodeFromName(name));
+        }
+
+    }
+
+
+    #endregion
+
     #region Event Handling
 
     /// <summary>
@@ -1889,26 +2267,26 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
     /// <summary>
     /// Event arguments for keyboard key presses/releases.
+    /// Uses the wrapper's Key and KeyModifier enums.
     /// </summary>
     public class KeyboardEventArgs : SdlEventArgs
     {
         public uint WindowId { get; }
         public uint Which { get; } // Keyboard instance ID
-        public SDL_Scancode Scancode { get; }
-        public SDL_Keycode Keycode { get; }
-        public SDL_Keymod Modifiers { get; }
-        public ushort Raw { get; } // Platform-dependent scancode info
+        public Key Key { get; } // Wrapper Key enum (physical location)
+        public KeyModifier Modifiers { get; } // Wrapper KeyModifier enum
         public bool IsDown { get; }
         public bool IsRepeat { get; }
+        // Removed: Scancode, Keycode, Raw (can be derived if needed)
 
-        public KeyboardEventArgs(SDL_KeyboardEvent evt) : base(evt.type, evt.timestamp)
+        // FIX: Pass type and timestamp from the specific event struct, remove 'in'
+        // Map SDL enums to wrapper enums here.
+        public KeyboardEventArgs(SDL_KeyboardEvent evt) : base((SDL_EventType)evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
             Which = evt.which;
-            Scancode = evt.scancode;
-            Keycode = (SDL_Keycode)evt.key; // Cast uint to enum
-            Modifiers = evt.mod;
-            Raw = evt.raw;
+            Key = Keyboard.GetKeyFromScancode(evt.scancode); // Use mapping function
+            Modifiers = (KeyModifier)evt.mod; // Direct cast works for modifiers
             IsDown = evt.down;
             IsRepeat = evt.repeat;
         }
