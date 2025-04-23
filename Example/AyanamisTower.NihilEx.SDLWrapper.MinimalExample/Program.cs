@@ -142,8 +142,12 @@ public static class Program
 
                         // --- Add drawing code here ---
                         // Example: Draw a white rectangle
-                        // renderer.DrawColor = Color.White;
-                        // renderer.FillRect(new FRect(100, 100, 200, 150));
+                        renderer.DrawColor = Color.White;
+                        renderer.FillRect(new FRect(100, 100, 200, 150));
+
+                        renderer.DrawColor = Color.Red;
+                        renderer.DrawLine(new FPoint(0, 20), new FPoint(200, 500));
+
                         // -----------------------------
 
                         // Present the back buffer to the screen
