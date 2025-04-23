@@ -1,4 +1,6 @@
 using System;
+using AyanamisTower.NihilEx.SDLWrapper;
+using SDL3;
 
 namespace AyanamisTower.NihilEx.ECS;
 
@@ -74,23 +76,33 @@ public struct RgbaColor : IEquatable<RgbaColor>
     // --- Conversion Operators (Optional but helpful) ---
 
     /// <summary>
-    /// Explicitly converts a <see cref="System.Drawing.Color"/> to an <see cref="RgbaColor"/>.
+    /// Implicitly converts a <see cref="System.Drawing.Color"/> to an <see cref="RgbaColor"/>.
     /// </summary>
     /// <param name="color">The <see cref="System.Drawing.Color"/> to convert.</param>
     /// <returns>The equivalent <see cref="RgbaColor"/>.</returns>
-    public static explicit operator RgbaColor(System.Drawing.Color color)
+    public static implicit operator RgbaColor(System.Drawing.Color color)
     {
         return new RgbaColor(color.R, color.G, color.B, color.A);
     }
 
     /// <summary>
-    /// Explicitly converts an <see cref="RgbaColor"/> to a <see cref="System.Drawing.Color"/>.
+    /// Implicitly converts an <see cref="RgbaColor"/> to a <see cref="System.Drawing.Color"/>.
     /// </summary>
     /// <param name="color">The <see cref="RgbaColor"/> to convert.</param>
     /// <returns>The equivalent <see cref="System.Drawing.Color"/>.</returns>
-    public static explicit operator System.Drawing.Color(RgbaColor color)
+    public static implicit operator System.Drawing.Color(RgbaColor color)
     {
         return System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B);
+    }
+
+    /// <summary>
+    /// Implicitly converts an <see cref="RgbaColor"/> to a <see cref="Color"/>.
+    /// </summary>
+    /// <param name="color">The <see cref="RgbaColor"/> to convert.</param>
+    /// <returns>The equivalent <see cref="Color"/>.</returns>
+    public static implicit operator Color(RgbaColor color)
+    {
+        return new(color.R, color.G, color.B, color.A);
     }
 
     // --- Equality Checks and HashCode (Good practice for structs) ---
