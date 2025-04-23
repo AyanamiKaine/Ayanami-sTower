@@ -7,7 +7,8 @@ using System.Collections.Generic; // For event args lists
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 // Use the namespace from your bindings file
-using static SDL3.SDL; // Import static methods for easier access
+using static SDL3.SDL;
+using SDL3;
 
 namespace AyanamisTower.NihilEx.SDLWrapper
 {
@@ -74,13 +75,250 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     }
 
     /// <summary>
+    /// Delegate for application initialization.
+    /// </summary>
+    /// <param name="args">Command line arguments.</param>
+    /// <returns>True on success, false on failure (will cause application exit).</returns>
+    public delegate bool AppInitHandler(string[] args);
+
+    /// <summary>
+    /// Delegate for handling application events.
+    /// </summary>
+    /// <param name="eventArgs">The event arguments, or null if the event type is unhandled by the wrapper.</param>
+    /// <returns>True to continue running, false to request application exit.</returns>
+    public delegate bool AppEventHandler(SdlEventArgs? eventArgs);
+
+    /// <summary>
+    /// Delegate for the application's main update/iteration logic.
+    /// </summary>
+    /// <returns>True to continue running, false to request application exit.</returns>
+    public delegate bool AppUpdateHandler();
+
+    /// <summary>
+    /// Delegate for application cleanup before exiting.
+    /// </summary>
+    public delegate void AppQuitHandler();
+
+    /// <summary>
     /// Provides static methods for initializing, shutting down,
     /// and managing core SDL functionality.
     /// </summary>
     public static class SdlHost
     {
+        private class AppContext
+        {
+            public AppInitHandler? UserInit { get; set; }
+            public AppUpdateHandler? UserUpdate { get; set; }
+            public AppEventHandler? UserEvent { get; set; }
+            public AppQuitHandler? UserQuit { get; set; }
+            public Exception? LastException { get; set; } // To capture exceptions in callbacks
+        }
+
+        private static readonly SDL_AppInit_func _nativeInit = NativeAppInit;
+        private static readonly SDL_AppIterate_func _nativeIterate = NativeAppIterate;
+        private unsafe static readonly SDL_AppEvent_func _nativeEvent = NativeAppEvent;
+        private static readonly SDL_AppQuit_func _nativeQuit = NativeAppQuit;
+        private static GCHandle _pendingAppHandle;
+
+        private static readonly Lock _runLock = new(); // Assuming Lock is a valid locking mechanism
+        // Static native callback wrappers
+        private static SDL_AppResult NativeAppInit(IntPtr appstatePtrRef, int argc, IntPtr argv)
+        {
+            // This callback uses the temporary static handle mechanism to establish the state pointer with SDL.
+            GCHandle handle = default;
+            AppContext? context = null;
+            try
+            {
+                // Step 1: Retrieve the handle from the static field set in RunApplication
+                if (!_pendingAppHandle.IsAllocated)
+                {
+                    SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppInit: No pending AppContext handle found!");
+                    Console.Error.WriteLine("NativeAppInit: No pending AppContext handle found!");
+                    return SDL_AppResult.SDL_APP_FAILURE;
+                }
+
+                handle = _pendingAppHandle;
+                context = handle.Target as AppContext;
+
+                if (context == null)
+                {
+                    SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppInit: Failed to get AppContext from pending handle.");
+                    Console.Error.WriteLine("NativeAppInit: Failed to get AppContext from pending handle.");
+                    _pendingAppHandle = default; // Clear invalid static handle
+                    return SDL_AppResult.SDL_APP_FAILURE;
+                }
+
+                // Step 2: Write the *actual* handle pointer back to SDL via the appstatePtrRef (void**)
+                // This tells SDL which pointer to use for subsequent Iterate/Event/Quit calls.
+                IntPtr actualHandlePtr = GCHandle.ToIntPtr(handle);
+                Marshal.WriteIntPtr(appstatePtrRef, actualHandlePtr);
+                Console.WriteLine($"NativeAppInit: Thread {Environment.CurrentManagedThreadId}: Set SDL app state pointer to {actualHandlePtr:X} via appstatePtrRef {appstatePtrRef:X}.");
+
+
+                // Step 3: Clear the temporary static handle now that SDL knows the real one.
+                _pendingAppHandle = default;
+
+
+                // Step 4: Proceed with user initialization logic
+                if (context.UserInit == null)
+                {
+                    Console.WriteLine("NativeAppInit: No user init handler provided, continuing.");
+                    return SDL_AppResult.SDL_APP_SUCCESS; // Treat as success if no user init provided
+                }
+
+                // Marshal args (same as before)
+                string[] managedArgs = Array.Empty<string>();
+                if (argc > 0 && argv != IntPtr.Zero)
+                {
+                    managedArgs = new string[argc];
+                    unsafe
+                    {
+                        byte** nativeArgs = (byte**)argv;
+                        for (int i = 0; i < argc; i++)
+                        {
+                            // Assuming UTF8, adjust if needed
+                            managedArgs[i] = Marshal.PtrToStringUTF8((IntPtr)nativeArgs[i]) ?? string.Empty;
+                        }
+                    }
+                }
+                Console.WriteLine($"NativeAppInit: Calling UserInit with {managedArgs.Length} args...");
+                // Call user delegate
+                bool success = context.UserInit(managedArgs);
+                Console.WriteLine($"NativeAppInit: UserInit returned {success}.");
+                return success ? SDL_AppResult.SDL_APP_CONTINUE : SDL_AppResult.SDL_APP_FAILURE;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception in NativeAppInit: {ex}");
+                SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in NativeAppInit: {ex.Message}");
+                if (context != null) context.LastException = ex; // Store exception
+                                                                 // Ensure static handle is cleared on error
+                if (_pendingAppHandle.IsAllocated) _pendingAppHandle = default;
+                return SDL_AppResult.SDL_APP_FAILURE; // Signal failure
+            }
+        }
+
+        private static SDL_AppResult NativeAppIterate(IntPtr appstate)
+        {
+            AppContext? context = null;
+            try
+            {
+                // Retrieve context from the appstate pointer provided by SDL
+                if (appstate == IntPtr.Zero) return SDL_AppResult.SDL_APP_FAILURE;
+                GCHandle handle = GCHandle.FromIntPtr(appstate); // Use the pointer SDL gives us now
+                if (!handle.IsAllocated) return SDL_AppResult.SDL_APP_FAILURE; // Handle wasn't set or was freed early
+
+                context = handle.Target as AppContext;
+                if (context?.UserUpdate == null) return SDL_AppResult.SDL_APP_CONTINUE; // No user update, just continue
+
+                // Call user delegate
+                bool continueRunning = context.UserUpdate();
+                return continueRunning ? SDL_AppResult.SDL_APP_CONTINUE : SDL_AppResult.SDL_APP_SUCCESS; // Return SUCCESS to quit cleanly
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception in AppUpdate: {ex}");
+                if (context != null) context.LastException = ex;
+                return SDL_AppResult.SDL_APP_FAILURE; // Signal failure on exception
+            }
+        }
+
+        private static unsafe SDL_AppResult NativeAppEvent(IntPtr appstate, SDL_Event* evt)
+        {
+            AppContext? context = null;
+            try
+            {
+                // Retrieve context from the appstate pointer provided by SDL
+                if (appstate == IntPtr.Zero) return SDL_AppResult.SDL_APP_FAILURE;
+                GCHandle handle = GCHandle.FromIntPtr(appstate);
+                if (!handle.IsAllocated) return SDL_AppResult.SDL_APP_FAILURE;
+
+                context = handle.Target as AppContext;
+                if (context?.UserEvent == null) return SDL_AppResult.SDL_APP_CONTINUE; // No user event handler
+
+                // Map event (MapEvent takes SDL_Event by value, so dereference)
+                SdlEventArgs? managedEvent = Events.MapEvent(*evt);
+
+                // Call user delegate
+                bool continueRunning = context.UserEvent(managedEvent);
+                return continueRunning ? SDL_AppResult.SDL_APP_CONTINUE : SDL_AppResult.SDL_APP_SUCCESS; // Return SUCCESS to quit cleanly
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception in AppEvent: {ex}");
+                if (context != null) context.LastException = ex;
+                return SDL_AppResult.SDL_APP_FAILURE; // Signal failure on exception
+            }
+        }
+
+        private static void NativeAppQuit(IntPtr appstate, SDL_AppResult result)
+        {
+            AppContext? context = null;
+            GCHandle handle = default;
+            bool handleIsValid = false;
+            try
+            {
+                Console.WriteLine($"NativeAppQuit: Received appstate IntPtr value: {appstate.ToString("X")}. Result code: {result}"); // Log as Hex
+
+                // Retrieve context one last time using the appstate passed by SDL
+                if (appstate != IntPtr.Zero)
+                {
+                    handle = GCHandle.FromIntPtr(appstate);
+                    if (handle.IsAllocated)
+                    {
+                        handleIsValid = true; // Mark that we found a valid handle via appstate
+                        context = handle.Target as AppContext;
+                    }
+                    else
+                    {
+                        SDL.SDL_LogWarn((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppQuit: Received appstate pointer, but GCHandle was not allocated.");
+                    }
+                }
+                else
+                {
+                    SDL.SDL_LogWarn((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppQuit: Received null appstate pointer.");
+                }
+
+                context?.UserQuit?.Invoke(); // Call user quit delegate if provided and context was retrieved
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Exception in AppQuit: {ex}");
+                SDL.SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in NativeAppQuit: {ex.Message}");
+                // Don't store exception here as the app is already quitting
+            }
+            finally
+            {
+                // Clean up SDL subsystems (your existing logic is fine here)
+                if (_isInitialized)
+                {
+                    SDL_Quit();
+                    _isInitialized = false;
+                    Console.WriteLine("SDL Quit from NativeAppQuit.");
+                }
+
+                // Free the GCHandle that was keeping the context alive.
+                // This handle *MUST* be the one passed via appstate.
+                if (handleIsValid) // Only free if we successfully got a valid handle from appstate
+                {
+                    try
+                    {
+                        handle.Free();
+                        // Console.WriteLine("App GCHandle Freed in NativeAppQuit.");
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        // Handle case where handle might have been freed elsewhere (shouldn't happen ideally) or was invalid
+                        Console.Error.WriteLine($"Warning: Attempted to free GCHandle in NativeAppQuit, but it was invalid or already freed: {ex.Message}");
+                        SDL.SDL_LogWarn((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppQuit: Attempted to free GCHandle, but it was invalid or already freed.");
+                    }
+                }
+                // Removed the fallback for _pendingAppHandle as it's no longer used.
+            }
+        }
+
         private static bool _isInitialized = false;
-        private static readonly object _initLock = new object();
+        private static readonly Lock _initLock = new();
 
         /// <summary>
         /// Gets a value indicating whether any SDL subsystems have been initialized.
@@ -164,6 +402,150 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     _isInitialized = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Runs the SDL application using the provided lifecycle callbacks.
+        /// This method takes over the main loop and manages SDL initialization and shutdown.
+        /// </summary>
+        /// <param name="init">Initialization callback.</param>
+        /// <param name="update">Main loop iteration callback.</param>
+        /// <param name="eventHandler">Event processing callback.</param>
+        /// <param name="quit">Cleanup callback.</param>
+        /// <param name="args">Command line arguments passed to the init callback.</param>
+        /// <returns>Exit code (0 for success, non-zero for failure).</returns>
+        public static unsafe int RunApplication(AppInitHandler init, AppUpdateHandler update, AppEventHandler eventHandler, AppQuitHandler quit, string[]? args = null)
+        {
+            Init(SdlSubSystem.Everything);
+            // Ensure RunApplication is not called concurrently if that's an issue
+            if (!_runLock.TryEnter()) // Assuming TryLock exists
+            {
+                throw new InvalidOperationException("SdlHost.RunApplication is already running.");
+            }
+
+            // NOTE: SDL_EnterAppMainCallbacks handles SDL_Init and SDL_Quit internally.
+            // We do NOT call SdlHost.Init() or SdlHost.Quit() manually here.
+
+            // Prepare context
+            var context = new AppContext
+            {
+                UserInit = init,
+                UserUpdate = update,
+                UserEvent = eventHandler,
+                UserQuit = quit
+            };
+
+            GCHandle contextHandle = default; // Use default initialization
+            IntPtr argvPtr = IntPtr.Zero;
+            int argc = 0;
+            int result = -1; // Default to error
+
+            try
+            {
+                // Allocate handle for the context object
+                contextHandle = GCHandle.Alloc(context, GCHandleType.Normal);
+                IntPtr contextHandlePtr = GCHandle.ToIntPtr(contextHandle);
+                Console.WriteLine($"RunApplication: Thread {Environment.CurrentManagedThreadId}: Allocating GCHandle {contextHandlePtr:X} for AppContext.");
+
+                // --- CRITICAL STEP: Set the static handle for NativeAppInit to pick up ---
+                if (_pendingAppHandle.IsAllocated)
+                {
+                    // This should not happen if RunApplication is single-threaded as enforced by _runLock
+                    Console.Error.WriteLine("RunApplication Warning: _pendingAppHandle was already allocated!");
+                    _pendingAppHandle.Free(); // Attempt cleanup just in case
+                }
+                _pendingAppHandle = contextHandle;
+                Console.WriteLine($"RunApplication: Thread {Environment.CurrentManagedThreadId}: Assigned GCHandle to _pendingAppHandle. IsAllocated = {_pendingAppHandle.IsAllocated}");
+                // --- End Critical Step ---
+
+
+                // Marshal command line arguments (if provided) - same as before
+                if (args?.Length > 0)
+                {
+                    argc = args.Length;
+                    // Allocate unmanaged memory for the array of pointers (**char)
+                    argvPtr = Marshal.AllocHGlobal(IntPtr.Size * argc);
+                    byte** argv = (byte**)argvPtr; // Treat as byte** for UTF8 marshalling
+                    for (int i = 0; i < argc; i++)
+                    {
+                        // Allocate memory for each string and copy (null-terminated UTF8)
+                        byte[] utf8Bytes = Encoding.UTF8.GetBytes(args[i] + '\0');
+                        IntPtr argPtr = Marshal.AllocHGlobal(utf8Bytes.Length);
+                        Marshal.Copy(utf8Bytes, 0, argPtr, utf8Bytes.Length);
+                        argv[i] = (byte*)argPtr;
+                    }
+                    Console.WriteLine($"RunApplication: Marshalled {argc} arguments.");
+                }
+                else
+                {
+                    Console.WriteLine("RunApplication: No arguments to marshal.");
+                }
+
+                Console.WriteLine("RunApplication: Entering SDL_EnterAppMainCallbacks...");
+                // Call SDL's main entry point with the static delegate references
+                result = SDL_EnterAppMainCallbacks(argc, argvPtr, _nativeInit, _nativeIterate, _nativeEvent, _nativeQuit);
+                Console.WriteLine($"RunApplication: SDL_EnterAppMainCallbacks returned {result}.");
+
+
+                // Check if an exception occurred in a callback (stored in context)
+                if (context.LastException != null)
+                {
+                    Console.Error.WriteLine("RunApplication: Exiting due to unhandled exception in callback.");
+                    // Optionally re-throw or handle differently
+                    // throw new Exception("Exception occurred in SDL callback.", context.LastException);
+                    result = context.LastException.HResult != 0 ? context.LastException.HResult : -1; // Use HResult as exit code if available
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"RunApplication: Exception during setup or execution: {ex}");
+                SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"RunApplication Exception: {ex.Message}");
+                result = ex.HResult != 0 ? ex.HResult : -1;
+            }
+            finally
+            {
+                Console.WriteLine("RunApplication: Entering finally block.");
+                // Free marshaled arguments (same as before)
+                if (argvPtr != IntPtr.Zero)
+                {
+                    Console.WriteLine($"RunApplication: Freeing {argc} marshalled arguments...");
+                    byte** argv = (byte**)argvPtr;
+                    for (int i = 0; i < argc; i++)
+                    {
+                        if (argv[i] != null) Marshal.FreeHGlobal((IntPtr)argv[i]);
+                    }
+                    Marshal.FreeHGlobal(argvPtr);
+                    Console.WriteLine("RunApplication: Finished freeing arguments.");
+                }
+
+                // Free the GCHandle for the AppContext
+                if (contextHandle.IsAllocated)
+                {
+                    IntPtr freedHandlePtr = GCHandle.ToIntPtr(contextHandle);
+                    contextHandle.Free();
+                    Console.WriteLine($"RunApplication: Freed GCHandle {freedHandlePtr:X}. IsAllocated = {contextHandle.IsAllocated}");
+                }
+                else
+                {
+                    Console.WriteLine("RunApplication: Context GCHandle was not allocated or already freed.");
+                }
+
+                // Ensure pending handle is cleared if something went wrong very early
+                if (_pendingAppHandle.IsAllocated)
+                {
+                    Console.Error.WriteLine("RunApplication Warning: _pendingAppHandle was still allocated in finally block! Clearing.");
+                    _pendingAppHandle.Free();
+                    _pendingAppHandle = default;
+                }
+
+
+                // Release the lock
+                _runLock.Exit(); // Assuming Unlock exists
+
+                Console.WriteLine("RunApplication: Exiting finally block.");
+            }
+
+            return result; // Return the exit code from SDL or based on exceptions
         }
 
         /// <summary>
@@ -2596,7 +2978,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// </summary>
         /// <param name="sdlEvent">The raw SDL event.</param>
         /// <returns>A corresponding SdlEventArgs object, or null if the event type is unhandled.</returns>
-        private static SdlEventArgs? MapEvent(SDL_Event sdlEvent)
+        public static SdlEventArgs? MapEvent(SDL_Event sdlEvent)
         {
             SDL_EventType type = (SDL_EventType)sdlEvent.type;
             switch (type)
