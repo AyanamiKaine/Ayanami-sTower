@@ -2,10 +2,7 @@
 using System.Drawing;
 using System.Threading; // For Thread.Sleep
 
-// Include the wrapper namespace
-using AyanamisTower.NihilEx.SDLWrapper;
-using SDL3;
-using static SDL3.SDL;
+
 // Include the SDL bindings namespace for enums like SDL_InitFlags
 
 namespace AyanamisTower.NihilEx.SDLWrapper.MinimalExample;
@@ -28,13 +25,13 @@ public static class Program
         {
             // 1. Initialize SDL Video and Events subsystems
             // SdlHost handles initialization and throws on failure.
-            SdlHost.Init(SDL_InitFlags.SDL_INIT_VIDEO | SDL_InitFlags.SDL_INIT_EVENTS);
+            SdlHost.Init(SdlSubSystem.Everything);
             Console.WriteLine("SDL Initialized successfully.");
 
             // 2. Create a Window
             // The 'using' statement ensures window.Dispose() is called automatically
             // when exiting the block, which in turn calls SDL_DestroyWindow.
-            using (var window = new Window("My SDL3 Wrapper Window", 800, 600, SDL_WindowFlags.SDL_WINDOW_RESIZABLE))
+            using (var window = new Window("My SDL3 Wrapper Window", 800, 600, WindowFlags.Resizable))
             {
                 Console.WriteLine($"Window created with ID: {window.Id}");
 
@@ -44,15 +41,17 @@ public static class Program
                 using (var renderer = window.CreateRenderer())
                 {
                     Console.WriteLine($"Renderer created: {renderer.Name}");
+                    renderer.VSync = true;
 
                     // 3. Main Loop
                     bool running = true;
                     Console.WriteLine("Entering main loop...");
                     while (running)
                     {
-                        Events.PumpEvents();
+                        //Events.PumpEvents();
                         // 4. Process Events
                         // Poll for events and process them using the wrapper's event args.
+                        Keyboard.UpdateState();
                         while (Events.PollEvent(out SdlEventArgs? evt))
                         {
                             if (evt == null) break; // Should generally not happen if PollEvent returns true
@@ -66,24 +65,45 @@ public static class Program
                                     break;
 
                                 case WindowEventArgs windowEvt:
-                                    // Check if the close button was clicked for *our* window
-                                    if (windowEvt.Type == SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
+                                    // Use the wrapper WindowEventType enum
+                                    Console.WriteLine($"Window Event: {windowEvt.EventType} on Window {windowEvt.WindowId}");
+                                    if (windowEvt.EventType == WindowEventType.CloseRequested &&
                                         windowEvt.WindowId == window.Id)
                                     {
                                         Console.WriteLine("Window close requested.");
                                         running = false;
                                     }
-                                    Console.WriteLine($"Window Event: {windowEvt.Type} on Window {windowEvt.WindowId}");
+                                    // Handle other window events like Resized, Moved etc. using windowEvt.EventType
+                                    if (windowEvt.EventType == WindowEventType.Resized)
+                                    {
+                                        Console.WriteLine($"Window resized to {windowEvt.Data1}x{windowEvt.Data2}");
+                                    }
                                     break;
 
                                 case KeyboardEventArgs keyEvt:
-                                    // Example: Quit on Escape key press
-                                    if (keyEvt.IsDown && keyEvt.Keycode == SDL_Keycode.SDLK_ESCAPE)
+                                    // Use the new wrapper enums
+                                    if (keyEvt.IsDown) // Check if it's a key press event
                                     {
-                                        Console.WriteLine("Escape key pressed.");
-                                        running = false;
+                                        Console.WriteLine($"Key Down Event: Key={keyEvt.Key}, Modifiers={keyEvt.Modifiers}, Repeat={keyEvt.IsRepeat}");
+
+                                        // Example: Quit on Escape key press (using event args)
+                                        if (keyEvt.Key == Key.Escape)
+                                        {
+                                            Console.WriteLine("Escape key pressed (event).");
+                                            running = false;
+                                        }
+
+                                        // Example: Check for Ctrl+C combo (using event args)
+                                        if (keyEvt.Key == Key.C && keyEvt.Modifiers.HasFlag(KeyModifier.Ctrl))
+                                        {
+                                            Console.WriteLine("Ctrl+C pressed (event).");
+                                            // Note: This only triggers when C is pressed *while* Ctrl is held.
+                                        }
                                     }
-                                    Console.WriteLine($"Key Event: {keyEvt.Keycode} ({keyEvt.Scancode}) Mod: {keyEvt.Modifiers} Down: {keyEvt.IsDown} Repeat: {keyEvt.IsRepeat}");
+                                    else // Key Up event
+                                    {
+                                        Console.WriteLine($"Key Up Event: Key={keyEvt.Key}, Modifiers={keyEvt.Modifiers}");
+                                    }
                                     break;
 
                                 case MouseButtonEventArgs mouseBtnEvt:
@@ -97,6 +117,18 @@ public static class Program
                                     break;
                             }
                         } // End event polling loop
+
+                        if (Keyboard.IsKeyDown(Key.W) && Keyboard.IsKeyDown(Key.LeftShift))
+                        {
+                            //Console.WriteLine("W and Left Shift are currently held down (polling).");
+                        }
+
+                        // Example: Check current modifiers
+                        KeyModifier currentMods = Keyboard.GetModifiers();
+                        if (currentMods.HasFlag(KeyModifier.LeftAlt))
+                        {
+                            //Console.WriteLine("Alt is currently held down.");
+                        }
 
                         // 5. Add Application Logic Here (Update)
                         // (e.g., Update game state)
