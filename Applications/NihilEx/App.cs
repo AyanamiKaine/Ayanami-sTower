@@ -210,9 +210,7 @@ namespace AyanamisTower.NihilEx
                 // Calculate Delta Time
                 _deltaTimeManager.Update();
                 float deltaTime = _deltaTimeManager.DeltaSeconds;
-
-                // Call user's update method
-                OnUpdate(deltaTime);
+                Keyboard.UpdateState();
 
                 if (Renderer is not null)
                     Renderer.DrawColor = System.Drawing.Color.PaleGoldenrod;
@@ -436,7 +434,7 @@ namespace AyanamisTower.NihilEx
         }
 
 
-        // --- Abstract / Virtual methods for derived classes ---
+        // --- Abstract  methods for derived classes ---
 
         /// <summary>
         /// Called once during application initialization after core components (Window, Renderer, ECS) are set up.
@@ -447,23 +445,9 @@ namespace AyanamisTower.NihilEx
         protected abstract bool OnInit(string[] args);
 
         /// <summary>
-        /// Called repeatedly for each frame/iteration of the application loop.
-        /// Implement update logic (e.g., game state, physics) here. Rendering is typically handled
-        /// by ECS systems invoked via World.Progress in the main Update loop, but direct rendering
-        /// can also be done here if needed.
-        /// </summary>
-        /// <param name="deltaTime">Time elapsed since the last call to OnUpdate, in seconds.</param>
-        protected virtual void OnUpdate(float deltaTime)
-        {
-            // Base implementation does nothing. Override in derived class.
-            // Example: base.OnUpdate(deltaTime); // Call if base class adds logic later
-        }
-
-        /// <summary>
         /// Called once just before the application terminates and before core resources (Window, Renderer) are disposed.
         /// Implement cleanup for resources created in OnInit here.
         /// </summary>
         protected abstract void OnQuit();
-
     }
 }
