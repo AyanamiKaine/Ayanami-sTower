@@ -53,6 +53,26 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
     }
 
+
+    /// <summary>
+    /// Specifies SDL subsystems for initialization.
+    /// </summary>
+    [Flags]
+    public enum SdlSubSystem : uint
+    {
+        None = 0,
+        Timer = SDL_InitFlags.SDL_INIT_TIMER,
+        Audio = SDL_InitFlags.SDL_INIT_AUDIO,
+        Video = SDL_InitFlags.SDL_INIT_VIDEO,
+        Joystick = SDL_InitFlags.SDL_INIT_JOYSTICK,
+        Haptic = SDL_InitFlags.SDL_INIT_HAPTIC,
+        Gamepad = SDL_InitFlags.SDL_INIT_GAMEPAD,
+        Events = SDL_InitFlags.SDL_INIT_EVENTS,
+        Sensor = SDL_InitFlags.SDL_INIT_SENSOR,
+        Camera = SDL_InitFlags.SDL_INIT_CAMERA,
+        Everything = Timer | Audio | Video | Joystick | Haptic | Gamepad | Events | Sensor | Camera
+    }
+
     /// <summary>
     /// Provides static methods for initializing, shutting down,
     /// and managing core SDL functionality.
@@ -68,24 +88,22 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public static bool IsInitialized => _isInitialized;
 
         /// <summary>
-        /// Initializes SDL subsystems. Must be called before using most SDL functions.
+        /// Initializes SDL subsystems using the wrapper enum.
+        /// Must be called before using most SDL functions.
         /// </summary>
         /// <param name="flags">The subsystems to initialize.</param>
         /// <exception cref="SDLException">Thrown if SDL fails to initialize.</exception>
-        public static void Init(SDL_InitFlags flags)
+        public static void Init(SdlSubSystem flags) // Use wrapper enum
         {
             lock (_initLock)
             {
-                if (_isInitialized && SDL_WasInit(flags) == flags)
+                SDL_InitFlags sdlFlags = (SDL_InitFlags)flags; // Cast to SDL enum
+                if (_isInitialized && SDL_WasInit(sdlFlags) == sdlFlags)
                 {
-                    // Already initialized with these or more flags
                     return;
                 }
 
-                // SDL_Init returns SDL_FALSE (0) on success, SDL_TRUE (1) on error in SDL3
-                // The SDLBool struct handles the conversion implicitly.
-                // We need to check if the result is FALSE (success).
-                if (!SDL_Init(flags)) // SDL_Init returns true on error
+                if (!SDL_Init(sdlFlags)) // Call SDL with casted flags
                 {
                     throw new SDLException("Failed to initialize SDL subsystems.");
                 }
@@ -94,12 +112,11 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
 
         /// <summary>
-        /// Initializes specific SDL subsystems.
+        /// Initializes specific SDL subsystems using the wrapper enum.
         /// </summary>
         /// <param name="flags">The subsystems to initialize.</param>
         /// <exception cref="SDLException">Thrown if SDL fails to initialize the subsystem.</exception>
-        /// <exception cref="InvalidOperationException"></exception>
-        public static void InitSubSystem(SDL_InitFlags flags)
+        public static void InitSubSystem(SdlSubSystem flags) // Use wrapper enum
         {
             lock (_initLock)
             {
@@ -107,7 +124,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 {
                     throw new InvalidOperationException("SDL must be initialized with Init() first.");
                 }
-                if (SDL_InitSubSystem(flags)) // Returns true on error
+                SDL_InitFlags sdlFlags = (SDL_InitFlags)flags; // Cast to SDL enum
+                if (SDL_InitSubSystem(sdlFlags)) // Call SDL with casted flags
                 {
                     throw new SDLException($"Failed to initialize SDL subsystem: {flags}.");
                 }
@@ -115,16 +133,16 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
 
         /// <summary>
-        /// Shuts down specific SDL subsystems.
+        /// Shuts down specific SDL subsystems using the wrapper enum.
         /// </summary>
         /// <param name="flags">The subsystems to shut down.</param>
-        public static void QuitSubSystem(SDL_InitFlags flags)
+        public static void QuitSubSystem(SdlSubSystem flags) // Use wrapper enum
         {
             lock (_initLock)
             {
                 if (_isInitialized)
                 {
-                    SDL_QuitSubSystem(flags);
+                    SDL_QuitSubSystem((SDL_InitFlags)flags); // Cast to SDL enum
                 }
             }
         }
@@ -149,14 +167,14 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
 
         /// <summary>
-        /// Checks if specific SDL subsystems have been initialized.
+        /// Checks if specific SDL subsystems have been initialized using the wrapper enum.
         /// </summary>
         /// <param name="flags">The subsystems to check.</param>
         /// <returns>The flags for the subsystems that are currently initialized.</returns>
-        public static SDL_InitFlags WasInit(SDL_InitFlags flags)
+        public static SdlSubSystem WasInit(SdlSubSystem flags) // Use wrapper enum
         {
-            // No lock needed, read-only check
-            return SDL_WasInit(flags);
+            // Cast wrapper enum to SDL enum for the call, then cast result back
+            return (SdlSubSystem)SDL_WasInit((SDL_InitFlags)flags);
         }
 
         /// <summary>
@@ -383,6 +401,73 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     #region Window
 
     /// <summary>
+    /// Specifies window creation flags.
+    /// </summary>
+    [Flags]
+    public enum WindowFlags : ulong // Matches SDL_WindowFlags underlying type
+    {
+        None = 0,
+        Fullscreen = SDL_WindowFlags.SDL_WINDOW_FULLSCREEN,
+        OpenGL = SDL_WindowFlags.SDL_WINDOW_OPENGL,
+        Occluded = SDL_WindowFlags.SDL_WINDOW_OCCLUDED, // Read-only state flag
+        Hidden = SDL_WindowFlags.SDL_WINDOW_HIDDEN,
+        Borderless = SDL_WindowFlags.SDL_WINDOW_BORDERLESS,
+        Resizable = SDL_WindowFlags.SDL_WINDOW_RESIZABLE,
+        Minimized = SDL_WindowFlags.SDL_WINDOW_MINIMIZED,
+        Maximized = SDL_WindowFlags.SDL_WINDOW_MAXIMIZED,
+        MouseGrabbed = SDL_WindowFlags.SDL_WINDOW_MOUSE_GRABBED,
+        InputFocus = SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS, // Read-only state flag
+        MouseFocus = SDL_WindowFlags.SDL_WINDOW_MOUSE_FOCUS, // Read-only state flag
+        External = SDL_WindowFlags.SDL_WINDOW_EXTERNAL,
+        Modal = SDL_WindowFlags.SDL_WINDOW_MODAL,
+        HighPixelDensity = SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY,
+        MouseCapture = SDL_WindowFlags.SDL_WINDOW_MOUSE_CAPTURE, // Renamed from MOUSE_RELATIVE_MODE? Check SDL3 docs. Assuming this is intended capture.
+        AlwaysOnTop = SDL_WindowFlags.SDL_WINDOW_ALWAYS_ON_TOP,
+        Utility = SDL_WindowFlags.SDL_WINDOW_UTILITY,
+        Tooltip = SDL_WindowFlags.SDL_WINDOW_TOOLTIP,
+        PopupMenu = SDL_WindowFlags.SDL_WINDOW_POPUP_MENU,
+        KeyboardGrabbed = SDL_WindowFlags.SDL_WINDOW_KEYBOARD_GRABBED, // Read-only state flag
+        Vulkan = SDL_WindowFlags.SDL_WINDOW_VULKAN,
+        Metal = SDL_WindowFlags.SDL_WINDOW_METAL,
+        Transparent = SDL_WindowFlags.SDL_WINDOW_TRANSPARENT,
+        NotFocusable = SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE
+        // SDL_WINDOW_MOUSE_RELATIVE_MODE (0x8000) might need separate handling or a distinct flag if different from MouseCapture
+    }
+
+    /// <summary>
+    /// Specifies the type of a window event.
+    /// </summary>
+    public enum WindowEventType
+    {
+        None, // Default
+        Shown,
+        Hidden,
+        Exposed, // Window needs to be redrawn
+        Moved,
+        Resized, // Window size changed by user/system
+        PixelSizeChanged, // Window pixel size changed (e.g., DPI change)
+        Minimized,
+        Maximized,
+        Restored,
+        MouseEnter, // Mouse entered window
+        MouseLeave, // Mouse left window
+        FocusGained,
+        FocusLost,
+        CloseRequested, // User requested window close (e.g., clicked X)
+        HitTest, // Requires custom hit test callback
+        IccProfileChanged,
+        DisplayChanged, // Window moved to a different display
+        DisplayScaleChanged, // DPI scale changed
+        SafeAreaChanged,
+        Occluded, // Window obscured
+        EnterFullscreen,
+        LeaveFullscreen,
+        Destroyed, // Window was destroyed
+        HdrStateChanged
+        // Note: MetalViewResized might be too specific, handled by Resized/PixelSizeChanged?
+    }
+
+    /// <summary>
     /// Represents an SDL Window.
     /// </summary>
     public class Window : IDisposable
@@ -390,7 +475,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         private IntPtr _windowPtr;
         private bool _disposed = false;
         public bool IsDisposed { get => _disposed; }
-
         /// <summary>
         /// Gets the native SDL window handle. Use with caution.
         /// </summary>
@@ -417,23 +501,24 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
 
         /// <summary>
-        /// Creates a new SDL window.
-        /// SDL_INIT_VIDEO must be initialized before calling this.
+        /// Creates a new SDL window using wrapper flags.
+        /// SdlSubSystem.Video must be initialized before calling this.
         /// </summary>
         /// <param name="title">The title of the window.</param>
         /// <param name="width">The width of the window.</param>
         /// <param name="height">The height of the window.</param>
-        /// <param name="flags">Window creation flags.</param>
+        /// <param name="flags">Window creation flags (using wrapper enum).</param>
         /// <exception cref="SDLException">Thrown if the window cannot be created.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if SDL_INIT_VIDEO is not initialized.</exception>
-        public Window(string title, int width, int height, SDL_WindowFlags flags = 0)
+        /// <exception cref="InvalidOperationException">Thrown if SdlSubSystem.Video is not initialized.</exception>
+        public Window(string title, int width, int height, WindowFlags flags = WindowFlags.None) // Use wrapper enum
         {
-            if ((SdlHost.WasInit(SDL_InitFlags.SDL_INIT_VIDEO) & SDL_InitFlags.SDL_INIT_VIDEO) == 0)
+            if ((SdlHost.WasInit(SdlSubSystem.Video) & SdlSubSystem.Video) == 0)
             {
-                throw new InvalidOperationException("SDL_INIT_VIDEO must be initialized before creating a window.");
+                throw new InvalidOperationException("SdlSubSystem.Video must be initialized before creating a window.");
             }
 
-            _windowPtr = SDL_CreateWindow(title, width, height, flags);
+            // Cast wrapper flags to SDL flags for the underlying call
+            _windowPtr = SDL_CreateWindow(title, width, height, (SDL_WindowFlags)flags);
             SdlHost.ThrowOnNull(_windowPtr, "Failed to create window");
         }
 
@@ -447,7 +532,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <remarks>The caller is responsible for destroying the properties handle AFTER the window is created.</remarks>
         public Window(uint properties)
         {
-            if ((SdlHost.WasInit(SDL_InitFlags.SDL_INIT_VIDEO) & SDL_InitFlags.SDL_INIT_VIDEO) == 0)
+            if ((SdlHost.WasInit(SdlSubSystem.Video) & SdlSubSystem.Video) == 0)
             {
                 throw new InvalidOperationException("SDL_INIT_VIDEO must be initialized before creating a window.");
             }
@@ -1240,6 +1325,26 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
                 string? name = SDL_GetRendererName(_rendererPtr);
                 return name ?? string.Empty;
+            }
+        }
+
+        private bool _vSync;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether VSync is enabled for the renderer.
+        /// When set, updates the internal state and the SDL renderer's VSync setting.
+        /// </summary>
+        public bool VSync
+        {
+            get => _vSync;
+            set
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_vSync != value)
+                {
+                    _vSync = value;
+                    SdlHost.ThrowOnFailure(SDL_SetRenderVSync(_rendererPtr, value ? 1 : 0), "Failed to set window always on top state");
+                }
             }
         }
 
@@ -2050,7 +2155,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// </remarks>
         public static void UpdateState()
         {
-            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SDL_InitFlags.SDL_INIT_EVENTS) & SDL_InitFlags.SDL_INIT_EVENTS) == 0)
+            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0)
             {
                 throw new InvalidOperationException("SDL Events subsystem not initialized.");
             }
@@ -2125,7 +2230,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <returns>A KeyModifier flags enum representing the active modifiers.</returns>
         public static KeyModifier GetModifiers()
         {
-            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SDL_InitFlags.SDL_INIT_EVENTS) & SDL_InitFlags.SDL_INIT_EVENTS) == 0)
+            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0)
             {
                 throw new InvalidOperationException("SDL Events subsystem not initialized.");
             }
@@ -2235,17 +2340,20 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     }
 
     /// <summary>
-    /// Event arguments for window events.
+    /// Event arguments for window events. Includes abstracted event type.
     /// </summary>
     public class WindowEventArgs : SdlEventArgs
     {
         public uint WindowId { get; }
+        public WindowEventType EventType { get; } // Wrapper enum for specific window event type
         public int Data1 { get; } // Meaning depends on event type (e.g., width for resize)
         public int Data2 { get; } // Meaning depends on event type (e.g., height for resize)
 
-        public WindowEventArgs(SDL_WindowEvent evt) : base(evt.type, evt.timestamp)
+        // Internal constructor used by Events.MapEvent
+        internal WindowEventArgs(SDL_WindowEvent evt, WindowEventType type) : base(evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
+            EventType = type; // Set the wrapper enum type
             Data1 = evt.data1;
             Data2 = evt.data2;
         }
@@ -2517,31 +2625,32 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     return new DisplayEventArgs(sdlEvent.display);
 
                 // Window Events
-                case SDL_EventType.SDL_EVENT_WINDOW_SHOWN:
-                case SDL_EventType.SDL_EVENT_WINDOW_HIDDEN:
-                case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED:
-                case SDL_EventType.SDL_EVENT_WINDOW_MOVED:
-                case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
-                case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-                case SDL_EventType.SDL_EVENT_WINDOW_MINIMIZED:
-                case SDL_EventType.SDL_EVENT_WINDOW_MAXIMIZED:
-                case SDL_EventType.SDL_EVENT_WINDOW_RESTORED:
-                case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER:
-                case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE:
-                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
-                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_LOST:
-                case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                case SDL_EventType.SDL_EVENT_WINDOW_HIT_TEST: // Data1/2 might need special handling
-                case SDL_EventType.SDL_EVENT_WINDOW_ICCPROF_CHANGED:
-                case SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
-                case SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
-                case SDL_EventType.SDL_EVENT_WINDOW_OCCLUDED:
-                case SDL_EventType.SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
-                case SDL_EventType.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
-                case SDL_EventType.SDL_EVENT_WINDOW_DESTROYED:
-                case SDL_EventType.SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
-                case SDL_EventType.SDL_EVENT_WINDOW_HDR_STATE_CHANGED:
-                    return new WindowEventArgs(sdlEvent.window);
+                // Window Events - Map to specific WindowEventType
+                case SDL_EventType.SDL_EVENT_WINDOW_SHOWN: return new WindowEventArgs(sdlEvent.window, WindowEventType.Shown);
+                case SDL_EventType.SDL_EVENT_WINDOW_HIDDEN: return new WindowEventArgs(sdlEvent.window, WindowEventType.Hidden);
+                case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Exposed);
+                case SDL_EventType.SDL_EVENT_WINDOW_MOVED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Moved);
+                case SDL_EventType.SDL_EVENT_WINDOW_RESIZED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Resized);
+                case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.PixelSizeChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_MINIMIZED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Minimized);
+                case SDL_EventType.SDL_EVENT_WINDOW_MAXIMIZED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Maximized);
+                case SDL_EventType.SDL_EVENT_WINDOW_RESTORED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Restored);
+                case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER: return new WindowEventArgs(sdlEvent.window, WindowEventType.MouseEnter);
+                case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE: return new WindowEventArgs(sdlEvent.window, WindowEventType.MouseLeave);
+                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED: return new WindowEventArgs(sdlEvent.window, WindowEventType.FocusGained);
+                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_LOST: return new WindowEventArgs(sdlEvent.window, WindowEventType.FocusLost);
+                case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: return new WindowEventArgs(sdlEvent.window, WindowEventType.CloseRequested);
+                case SDL_EventType.SDL_EVENT_WINDOW_HIT_TEST: return new WindowEventArgs(sdlEvent.window, WindowEventType.HitTest);
+                case SDL_EventType.SDL_EVENT_WINDOW_ICCPROF_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.IccProfileChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.DisplayChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.DisplayScaleChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_OCCLUDED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Occluded);
+                case SDL_EventType.SDL_EVENT_WINDOW_ENTER_FULLSCREEN: return new WindowEventArgs(sdlEvent.window, WindowEventType.EnterFullscreen);
+                case SDL_EventType.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN: return new WindowEventArgs(sdlEvent.window, WindowEventType.LeaveFullscreen);
+                case SDL_EventType.SDL_EVENT_WINDOW_DESTROYED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Destroyed);
+                case SDL_EventType.SDL_EVENT_WINDOW_SAFE_AREA_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.SafeAreaChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_HDR_STATE_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.HdrStateChanged);
+
 
                 // Keyboard Events
                 case SDL_EventType.SDL_EVENT_KEYBOARD_ADDED:
