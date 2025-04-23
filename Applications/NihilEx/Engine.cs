@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using System.Numerics;
 using AyanamisTower.NihilEx.ECS;
+using AyanamisTower.NihilEx.SDLWrapper;
 using Flecs.NET.Bindings;
 using Flecs.NET.Core;
 
@@ -103,10 +104,10 @@ public class Engine
 
 
                 // Draw lines (same as before)
-                renderer.RenderLine(transformedCorners[0].X, transformedCorners[0].Y, transformedCorners[1].X, transformedCorners[1].Y);
-                renderer.RenderLine(transformedCorners[1].X, transformedCorners[1].Y, transformedCorners[2].X, transformedCorners[2].Y);
-                renderer.RenderLine(transformedCorners[2].X, transformedCorners[2].Y, transformedCorners[3].X, transformedCorners[3].Y);
-                renderer.RenderLine(transformedCorners[3].X, transformedCorners[3].Y, transformedCorners[0].X, transformedCorners[0].Y);
+                renderer.DrawLine(transformedCorners[0].X, transformedCorners[0].Y, transformedCorners[1].X, transformedCorners[1].Y);
+                renderer.DrawLine(transformedCorners[1].X, transformedCorners[1].Y, transformedCorners[2].X, transformedCorners[2].Y);
+                renderer.DrawLine(transformedCorners[2].X, transformedCorners[2].Y, transformedCorners[3].X, transformedCorners[3].Y);
+                renderer.DrawLine(transformedCorners[3].X, transformedCorners[3].Y, transformedCorners[0].X, transformedCorners[0].Y);
 
             });
 
@@ -147,7 +148,7 @@ public class Engine
                 // NOTE: This check should ideally happen when the window resizes, not every frame.
                 // We'll add logic in App.OnEvent later.
                 // For now, we assume the Camera singleton is updated elsewhere or is correct.
-                camera.AspectRatio = (float)windowSize.Width / windowSize.Height;
+                camera.AspectRatio = (float)windowSize.Size.X / windowSize.Size.Y;
                 camera.EnsureMatricesUpdated(); // Make sure ViewProjection is current
 
                 Matrix4x4 viewMatrix = camera.ViewMatrix;             // Get for logging
@@ -160,8 +161,8 @@ public class Engine
 
 
                 // 4. Transform and Project Vertices
-                float screenCenterX = windowSize.Width / 2.0f;
-                float screenCenterY = windowSize.Height / 2.0f;
+                float screenCenterX = windowSize.Size.X / 2.0f;
+                float screenCenterY = windowSize.Size.Y / 2.0f;
 
                 for (int i = 0; i < geometry.BaseVertices.Length; i++)
                 {
@@ -182,9 +183,9 @@ public class Engine
 
                     // 5. Viewport Transform (NDC to Screen Coordinates)
                     // NDC range is typically [-1, 1] for X and Y (OpenGL convention, adjust if different)
-                    float screenX = (ndcVertex.X + 1.0f) / 2.0f * windowSize.Width;
+                    float screenX = (ndcVertex.X + 1.0f) / 2.0f * windowSize.Size.X;
                     // Y is often inverted (NDC +1 is top, Screen +Y is bottom)
-                    float screenY = (1.0f - ndcVertex.Y) / 2.0f * windowSize.Height;
+                    float screenY = (1.0f - ndcVertex.Y) / 2.0f * windowSize.Size.Y;
 
                     projected.ProjectedVertices[i] = new Vector2(screenX, screenY);
                 }
@@ -229,8 +230,8 @@ public class Engine
                         vertexValid[i] = true;
                         Vector3 ndcVertex = new Vector3(clipSpaceVertex.X, clipSpaceVertex.Y, clipSpaceVertex.Z) / clipSpaceVertex.W;
                         screenVertices[i] = new Vector2(
-                            (ndcVertex.X + 1.0f) / 2.0f * window.Width,
-                            (1.0f - ndcVertex.Y) / 2.0f * window.Height // Flip Y
+                            (ndcVertex.X + 1.0f) / 2.0f * window.Size.X,
+                            (1.0f - ndcVertex.Y) / 2.0f * window.Size.Y // Flip Y
                         );
                     }
                     else
@@ -250,7 +251,7 @@ public class Engine
                     // Draw line only if both endpoints are valid (in front of near plane)
                     if (vertexValid[i1] && vertexValid[i2])
                     {
-                        renderer.RenderLine(screenVertices[i1].X, screenVertices[i1].Y, screenVertices[i2].X, screenVertices[i2].Y);
+                        renderer.DrawLine(screenVertices[i1].X, screenVertices[i1].Y, screenVertices[i2].X, screenVertices[i2].Y);
                     }
                 }
             });
@@ -277,7 +278,7 @@ public class Engine
                         // Avoid drawing lines with off-screen points if we marked them earlier
                         if (p1.X > float.MinValue && p1.Y > float.MinValue && p2.X > float.MinValue && p2.Y > float.MinValue)
                         {
-                            renderer.RenderLine(p1.X, p1.Y, p2.X, p2.Y);
+                            renderer.DrawLine(p1.X, p1.Y, p2.X, p2.Y);
                         }
                     }
                 }
