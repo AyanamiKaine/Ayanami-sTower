@@ -132,6 +132,21 @@ namespace AyanamisTower.NihilEx
         /// <returns>The exit code of the application.</returns>
         public int Run(string[] args)
         {
+
+            /*
+            Why are we using the main callbacks when running on windows?
+
+            Because it allows us to render while events are happening automatic.
+            For example when we resize a window the native resize event that windows
+            dispatches blocks the event loop as long as you hold the window you 
+            are resizing the result is that the iteration loop never gets called.
+
+            When we would use the normal main loop we would have to call world.progress() 
+            in the resize event. I find this error prone. Its much simpler when we 
+            know that the iteration loop does not get blocked no matter what events 
+            are happening.
+            */
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "Detected Windows. Using EnterAppMainCallbacks.");
