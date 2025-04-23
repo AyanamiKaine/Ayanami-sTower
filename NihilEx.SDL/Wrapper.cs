@@ -1059,7 +1059,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SDL_Rect sdlRect = rect.HasValue ? rect.Value : default;
+            SDL_Rect sdlRect = rect ?? default;
             SdlHost.ThrowOnFailure(SDL_UpdateTexture(_texturePtr, ref sdlRect, pixels, pitch), "Failed to update texture");
         }
 
@@ -1079,7 +1079,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SDL_Rect sdlRect = rect.HasValue ? rect.Value : default;
+            SDL_Rect sdlRect = rect ?? default;
             SdlHost.ThrowOnFailure(SDL_UpdateYUVTexture(_texturePtr, ref sdlRect, yPlane, yPitch, uPlane, uPitch, vPlane, vPitch), "Failed to update YUV texture");
         }
 
@@ -1095,7 +1095,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SDL_Rect sdlRect = rect.HasValue ? rect.Value : default;
+            SDL_Rect sdlRect = rect ?? default;
             SdlHost.ThrowOnFailure(SDL_LockTexture(_texturePtr, ref sdlRect, out pixels, out pitch), "Failed to lock texture");
         }
 
@@ -1396,7 +1396,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     throw new ObjectDisposedException(nameof(Renderer));
                 }
 
-                SDL_Rect rect = value.HasValue ? value.Value : default;
+                SDL_Rect rect = value ?? default;
                 SdlHost.ThrowOnFailure(SDL_SetRenderClipRect(_rendererPtr, ref rect), "Failed to set clip rect");
             }
         }
@@ -1657,9 +1657,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             ObjectDisposedException.ThrowIf(_disposed, this);
             ArgumentNullException.ThrowIfNull(texture);
 
-            SDL_FRect sdlSrcRect = srcRect.HasValue ? srcRect.Value : default;
-            SDL_FRect sdlDstRect = dstRect.HasValue ? dstRect.Value : default;
-            SDL_FPoint sdlCenter = center.HasValue ? center.Value : default; // Default might not be correct center
+            SDL_FRect sdlSrcRect = srcRect ?? default;
+            SDL_FRect sdlDstRect = dstRect ?? default;
+            SDL_FPoint sdlCenter = center ?? default; // Default might not be correct center
 
             // HACK: Handle null pointers similar to Copy method.
             if (!srcRect.HasValue)
