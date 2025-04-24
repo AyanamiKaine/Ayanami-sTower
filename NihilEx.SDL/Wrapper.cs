@@ -134,10 +134,12 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 if (!_pendingAppHandle.IsAllocated)
                 {
                     SDL_LogError(
-category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-fmt: "NativeAppInit: No pending AppContext handle found!"
+                        category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                        fmt: "NativeAppInit: No pending AppContext handle found!"
                     );
-                    Console.Error.WriteLine(value: "NativeAppInit: No pending AppContext handle found!");
+                    Console.Error.WriteLine(
+                        value: "NativeAppInit: No pending AppContext handle found!"
+                    );
                     return SDL_AppResult.SDL_APP_FAILURE;
                 }
 
@@ -147,11 +149,11 @@ fmt: "NativeAppInit: No pending AppContext handle found!"
                 if (context == null)
                 {
                     SDL_LogError(
-category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-fmt: "NativeAppInit: Failed to get AppContext from pending handle."
+                        category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                        fmt: "NativeAppInit: Failed to get AppContext from pending handle."
                     );
                     Console.Error.WriteLine(
-value: "NativeAppInit: Failed to get AppContext from pending handle."
+                        value: "NativeAppInit: Failed to get AppContext from pending handle."
                     );
                     _pendingAppHandle = default; // Clear invalid static handle
                     return SDL_AppResult.SDL_APP_FAILURE;
@@ -162,7 +164,7 @@ value: "NativeAppInit: Failed to get AppContext from pending handle."
                 IntPtr actualHandlePtr = GCHandle.ToIntPtr(value: handle);
                 Marshal.WriteIntPtr(ptr: appstatePtrRef, val: actualHandlePtr);
                 Console.WriteLine(
-value: $"NativeAppInit: Thread {Environment.CurrentManagedThreadId}: Set SDL app state pointer to {actualHandlePtr:X} via appstatePtrRef {appstatePtrRef:X}."
+                    value: $"NativeAppInit: Thread {Environment.CurrentManagedThreadId}: Set SDL app state pointer to {actualHandlePtr:X} via appstatePtrRef {appstatePtrRef:X}."
                 );
 
                 // Step 3: Clear the temporary static handle now that SDL knows the real one.
@@ -171,7 +173,9 @@ value: $"NativeAppInit: Thread {Environment.CurrentManagedThreadId}: Set SDL app
                 // Step 4: Proceed with user initialization logic
                 if (context.UserInit == null)
                 {
-                    Console.WriteLine(value: "NativeAppInit: No user init handler provided, continuing.");
+                    Console.WriteLine(
+                        value: "NativeAppInit: No user init handler provided, continuing."
+                    );
                     return SDL_AppResult.SDL_APP_SUCCESS; // Treat as success if no user init provided
                 }
 
@@ -192,7 +196,7 @@ value: $"NativeAppInit: Thread {Environment.CurrentManagedThreadId}: Set SDL app
                     }
                 }
                 Console.WriteLine(
-value: $"NativeAppInit: Calling UserInit with {managedArgs.Length} args..."
+                    value: $"NativeAppInit: Calling UserInit with {managedArgs.Length} args..."
                 );
                 // Call user delegate
                 bool success = context.UserInit(args: managedArgs);
@@ -203,8 +207,8 @@ value: $"NativeAppInit: Calling UserInit with {managedArgs.Length} args..."
             {
                 Console.Error.WriteLine(value: $"Exception in NativeAppInit: {ex}");
                 SDL_LogError(
-category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-fmt: $"Exception in NativeAppInit: {ex.Message}"
+                    category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                    fmt: $"Exception in NativeAppInit: {ex.Message}"
                 );
                 if (context != null)
                     context.LastException = ex; // Store exception
@@ -288,7 +292,7 @@ fmt: $"Exception in NativeAppInit: {ex.Message}"
             try
             {
                 Console.WriteLine(
-value: $"NativeAppQuit: Received appstate IntPtr value: {appstate.ToString(format: "X")}. Result code: {result}"
+                    value: $"NativeAppQuit: Received appstate IntPtr value: {appstate.ToString(format: "X")}. Result code: {result}"
                 ); // Log as Hex
 
                 // Retrieve context one last time using the appstate passed by SDL
@@ -303,16 +307,16 @@ value: $"NativeAppQuit: Received appstate IntPtr value: {appstate.ToString(forma
                     else
                     {
                         SDL.SDL_LogWarn(
-category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-fmt: "NativeAppQuit: Received appstate pointer, but GCHandle was not allocated."
+                            category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                            fmt: "NativeAppQuit: Received appstate pointer, but GCHandle was not allocated."
                         );
                     }
                 }
                 else
                 {
                     SDL.SDL_LogWarn(
-category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-fmt: "NativeAppQuit: Received null appstate pointer."
+                        category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                        fmt: "NativeAppQuit: Received null appstate pointer."
                     );
                 }
 
@@ -322,8 +326,8 @@ fmt: "NativeAppQuit: Received null appstate pointer."
             {
                 Console.Error.WriteLine(value: $"Exception in AppQuit: {ex}");
                 SDL.SDL_LogError(
-category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-fmt: $"Exception in NativeAppQuit: {ex.Message}"
+                    category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                    fmt: $"Exception in NativeAppQuit: {ex.Message}"
                 );
                 // Don't store exception here as the app is already quitting
             }
@@ -350,11 +354,11 @@ fmt: $"Exception in NativeAppQuit: {ex.Message}"
                     {
                         // Handle case where handle might have been freed elsewhere (shouldn't happen ideally) or was invalid
                         Console.Error.WriteLine(
-value: $"Warning: Attempted to free GCHandle in NativeAppQuit, but it was invalid or already freed: {ex.Message}"
+                            value: $"Warning: Attempted to free GCHandle in NativeAppQuit, but it was invalid or already freed: {ex.Message}"
                         );
                         SDL.SDL_LogWarn(
-category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-fmt: "NativeAppQuit: Attempted to free GCHandle, but it was invalid or already freed."
+                            category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                            fmt: "NativeAppQuit: Attempted to free GCHandle, but it was invalid or already freed."
                         );
                     }
                 }
@@ -499,7 +503,7 @@ fmt: "NativeAppQuit: Attempted to free GCHandle, but it was invalid or already f
                 contextHandle = GCHandle.Alloc(value: context, type: GCHandleType.Normal);
                 IntPtr contextHandlePtr = GCHandle.ToIntPtr(value: contextHandle);
                 Console.WriteLine(
-value: $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Allocating GCHandle {contextHandlePtr:X} for AppContext."
+                    value: $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Allocating GCHandle {contextHandlePtr:X} for AppContext."
                 );
 
                 // --- CRITICAL STEP: Set the static handle for NativeAppInit to pick up ---
@@ -507,13 +511,13 @@ value: $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Allocating
                 {
                     // This should not happen if RunApplication is single-threaded as enforced by _runLock
                     Console.Error.WriteLine(
-value: "RunApplication Warning: _pendingAppHandle was already allocated!"
+                        value: "RunApplication Warning: _pendingAppHandle was already allocated!"
                     );
                     _pendingAppHandle.Free(); // Attempt cleanup just in case
                 }
                 _pendingAppHandle = contextHandle;
                 Console.WriteLine(
-value: $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Assigned GCHandle to _pendingAppHandle. IsAllocated = {_pendingAppHandle.IsAllocated}"
+                    value: $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Assigned GCHandle to _pendingAppHandle. IsAllocated = {_pendingAppHandle.IsAllocated}"
                 );
                 // --- End Critical Step ---
 
@@ -529,7 +533,12 @@ value: $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Assigned G
                         // Allocate memory for each string and copy (null-terminated UTF8)
                         byte[] utf8Bytes = Encoding.UTF8.GetBytes(s: args[i] + '\0');
                         IntPtr argPtr = Marshal.AllocHGlobal(cb: utf8Bytes.Length);
-                        Marshal.Copy(source: utf8Bytes, startIndex: 0, destination: argPtr, length: utf8Bytes.Length);
+                        Marshal.Copy(
+                            source: utf8Bytes,
+                            startIndex: 0,
+                            destination: argPtr,
+                            length: utf8Bytes.Length
+                        );
                         argv[i] = (byte*)argPtr;
                     }
                     Console.WriteLine(value: $"RunApplication: Marshalled {argc} arguments.");
@@ -542,20 +551,22 @@ value: $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Assigned G
                 Console.WriteLine(value: "RunApplication: Entering SDL_EnterAppMainCallbacks...");
                 // Call SDL's main entry point with the static delegate references
                 result = SDL_EnterAppMainCallbacks(
-argc: argc,
-argv: argvPtr,
-appinit: _nativeInit,
-appiter: _nativeIterate,
-appevent: _nativeEvent,
-appquit: _nativeQuit
+                    argc: argc,
+                    argv: argvPtr,
+                    appinit: _nativeInit,
+                    appiter: _nativeIterate,
+                    appevent: _nativeEvent,
+                    appquit: _nativeQuit
                 );
-                Console.WriteLine(value: $"RunApplication: SDL_EnterAppMainCallbacks returned {result}.");
+                Console.WriteLine(
+                    value: $"RunApplication: SDL_EnterAppMainCallbacks returned {result}."
+                );
 
                 // Check if an exception occurred in a callback (stored in context)
                 if (context.LastException != null)
                 {
                     Console.Error.WriteLine(
-value: "RunApplication: Exiting due to unhandled exception in callback."
+                        value: "RunApplication: Exiting due to unhandled exception in callback."
                     );
                     // Optionally re-throw or handle differently
                     // throw new Exception("Exception occurred in SDL callback.", context.LastException);
@@ -566,11 +577,11 @@ value: "RunApplication: Exiting due to unhandled exception in callback."
             catch (Exception ex)
             {
                 Console.Error.WriteLine(
-value: $"RunApplication: Exception during setup or execution: {ex}"
+                    value: $"RunApplication: Exception during setup or execution: {ex}"
                 );
                 SDL_LogError(
-category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
-fmt: $"RunApplication Exception: {ex.Message}"
+                    category: (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                    fmt: $"RunApplication Exception: {ex.Message}"
                 );
                 result = ex.HResult != 0 ? ex.HResult : -1;
             }
@@ -580,7 +591,9 @@ fmt: $"RunApplication Exception: {ex.Message}"
                 // Free marshaled arguments (same as before)
                 if (argvPtr != IntPtr.Zero)
                 {
-                    Console.WriteLine(value: $"RunApplication: Freeing {argc} marshalled arguments...");
+                    Console.WriteLine(
+                        value: $"RunApplication: Freeing {argc} marshalled arguments..."
+                    );
                     byte** argv = (byte**)argvPtr;
                     for (int i = 0; i < argc; i++)
                     {
@@ -597,13 +610,13 @@ fmt: $"RunApplication Exception: {ex.Message}"
                     IntPtr freedHandlePtr = GCHandle.ToIntPtr(value: contextHandle);
                     contextHandle.Free();
                     Console.WriteLine(
-value: $"RunApplication: Freed GCHandle {freedHandlePtr:X}. IsAllocated = {contextHandle.IsAllocated}"
+                        value: $"RunApplication: Freed GCHandle {freedHandlePtr:X}. IsAllocated = {contextHandle.IsAllocated}"
                     );
                 }
                 else
                 {
                     Console.WriteLine(
-value: "RunApplication: Context GCHandle was not allocated or already freed."
+                        value: "RunApplication: Context GCHandle was not allocated or already freed."
                     );
                 }
 
@@ -611,7 +624,7 @@ value: "RunApplication: Context GCHandle was not allocated or already freed."
                 if (_pendingAppHandle.IsAllocated)
                 {
                     Console.Error.WriteLine(
-value: "RunApplication Warning: _pendingAppHandle was still allocated in finally block! Clearing."
+                        value: "RunApplication Warning: _pendingAppHandle was still allocated in finally block! Clearing."
                     );
                     _pendingAppHandle.Free();
                     _pendingAppHandle = default;
@@ -1013,7 +1026,12 @@ value: "RunApplication Warning: _pendingAppHandle was still allocated in finally
             }
 
             // Cast wrapper flags to SDL flags for the underlying call
-            _windowPtr = SDL_CreateWindow(title: title, w: width, h: height, flags: (SDL_WindowFlags)flags);
+            _windowPtr = SDL_CreateWindow(
+                title: title,
+                w: width,
+                h: height,
+                flags: (SDL_WindowFlags)flags
+            );
             SdlHost.ThrowOnNull(ptr: _windowPtr, message: "Failed to create window");
         }
 
@@ -1034,7 +1052,10 @@ value: "RunApplication Warning: _pendingAppHandle was still allocated in finally
                 );
             }
             _windowPtr = SDL_CreateWindowWithProperties(props: properties);
-            SdlHost.ThrowOnNull(ptr: _windowPtr, message: "Failed to create window with properties");
+            SdlHost.ThrowOnNull(
+                ptr: _windowPtr,
+                message: "Failed to create window with properties"
+            );
         }
 
         // Internal constructor for wrapping an existing handle (e.g., from GetWindowFromID)
@@ -1072,8 +1093,8 @@ value: "RunApplication Warning: _pendingAppHandle was still allocated in finally
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_SetWindowTitle(window: _windowPtr, title: value),
-message: "Failed to set window title"
+                    result: SDL_SetWindowTitle(window: _windowPtr, title: value),
+                    message: "Failed to set window title"
                 );
             }
         }
@@ -1089,8 +1110,8 @@ message: "Failed to set window title"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetWindowPosition(window: _windowPtr, x: out int x, y: out int y),
-message: "Failed to get window position"
+                    result: SDL_GetWindowPosition(window: _windowPtr, x: out int x, y: out int y),
+                    message: "Failed to get window position"
                 );
                 return new Point(x, y);
             }
@@ -1099,8 +1120,8 @@ message: "Failed to get window position"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_SetWindowPosition(window: _windowPtr, x: value.X, y: value.Y),
-message: "Failed to set window position"
+                    result: SDL_SetWindowPosition(window: _windowPtr, x: value.X, y: value.Y),
+                    message: "Failed to set window position"
                 );
             }
         }
@@ -1116,8 +1137,8 @@ message: "Failed to set window position"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetWindowSize(window: _windowPtr, w: out int w, h: out int h),
-message: "Failed to get window size"
+                    result: SDL_GetWindowSize(window: _windowPtr, w: out int w, h: out int h),
+                    message: "Failed to get window size"
                 );
                 return new Point(w, h);
             }
@@ -1126,8 +1147,8 @@ message: "Failed to get window size"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_SetWindowSize(window: _windowPtr, w: value.X, h: value.Y),
-message: "Failed to set window size"
+                    result: SDL_SetWindowSize(window: _windowPtr, w: value.X, h: value.Y),
+                    message: "Failed to set window size"
                 );
             }
         }
@@ -1143,8 +1164,12 @@ message: "Failed to set window size"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetWindowSizeInPixels(window: _windowPtr, w: out int w, h: out int h),
-message: "Failed to get window size in pixels"
+                    result: SDL_GetWindowSizeInPixels(
+                        window: _windowPtr,
+                        w: out int w,
+                        h: out int h
+                    ),
+                    message: "Failed to get window size in pixels"
                 );
                 return new Point(w, h);
             }
@@ -1192,7 +1217,10 @@ message: "Failed to get window size in pixels"
         {
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
-            SdlHost.ThrowOnFailure(result: SDL_ShowWindow(window: _windowPtr), message: "Failed to show window");
+            SdlHost.ThrowOnFailure(
+                result: SDL_ShowWindow(window: _windowPtr),
+                message: "Failed to show window"
+            );
         }
 
         /// <summary>
@@ -1206,7 +1234,10 @@ message: "Failed to get window size in pixels"
                 throw new ObjectDisposedException(nameof(Window));
             }
 
-            SdlHost.ThrowOnFailure(result: SDL_HideWindow(window: _windowPtr), message: "Failed to hide window");
+            SdlHost.ThrowOnFailure(
+                result: SDL_HideWindow(window: _windowPtr),
+                message: "Failed to hide window"
+            );
         }
 
         /// <summary>
@@ -1220,7 +1251,10 @@ message: "Failed to get window size in pixels"
                 throw new ObjectDisposedException(nameof(Window));
             }
 
-            SdlHost.ThrowOnFailure(result: SDL_RaiseWindow(window: _windowPtr), message: "Failed to raise window");
+            SdlHost.ThrowOnFailure(
+                result: SDL_RaiseWindow(window: _windowPtr),
+                message: "Failed to raise window"
+            );
         }
 
         /// <summary>
@@ -1234,7 +1268,10 @@ message: "Failed to get window size in pixels"
                 throw new ObjectDisposedException(nameof(Window));
             }
 
-            SdlHost.ThrowOnFailure(result: SDL_MaximizeWindow(window: _windowPtr), message: "Failed to maximize window");
+            SdlHost.ThrowOnFailure(
+                result: SDL_MaximizeWindow(window: _windowPtr),
+                message: "Failed to maximize window"
+            );
         }
 
         /// <summary>
@@ -1245,7 +1282,10 @@ message: "Failed to get window size in pixels"
         {
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
-            SdlHost.ThrowOnFailure(result: SDL_MinimizeWindow(window: _windowPtr), message: "Failed to minimize window");
+            SdlHost.ThrowOnFailure(
+                result: SDL_MinimizeWindow(window: _windowPtr),
+                message: "Failed to minimize window"
+            );
         }
 
         /// <summary>
@@ -1256,7 +1296,10 @@ message: "Failed to get window size in pixels"
         {
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
-            SdlHost.ThrowOnFailure(result: SDL_RestoreWindow(window: _windowPtr), message: "Failed to restore window");
+            SdlHost.ThrowOnFailure(
+                result: SDL_RestoreWindow(window: _windowPtr),
+                message: "Failed to restore window"
+            );
         }
 
         /// <summary>
@@ -1269,8 +1312,8 @@ message: "Failed to get window size in pixels"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_SetWindowFullscreen(window: _windowPtr, fullscreen: fullscreen),
-message: fullscreen ? "Failed to enter fullscreen" : "Failed to leave fullscreen"
+                result: SDL_SetWindowFullscreen(window: _windowPtr, fullscreen: fullscreen),
+                message: fullscreen ? "Failed to enter fullscreen" : "Failed to leave fullscreen"
             );
         }
 
@@ -1284,8 +1327,8 @@ message: fullscreen ? "Failed to enter fullscreen" : "Failed to leave fullscreen
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_SetWindowBordered(window: _windowPtr, bordered: bordered),
-message: "Failed to set window border state"
+                result: SDL_SetWindowBordered(window: _windowPtr, bordered: bordered),
+                message: "Failed to set window border state"
             );
         }
 
@@ -1302,8 +1345,8 @@ message: "Failed to set window border state"
             }
 
             SdlHost.ThrowOnFailure(
-result: SDL_SetWindowResizable(window: _windowPtr, resizable: resizable),
-message: "Failed to set window resizable state"
+                result: SDL_SetWindowResizable(window: _windowPtr, resizable: resizable),
+                message: "Failed to set window resizable state"
             );
         }
 
@@ -1320,8 +1363,8 @@ message: "Failed to set window resizable state"
             }
 
             SdlHost.ThrowOnFailure(
-result: SDL_SetWindowAlwaysOnTop(window: _windowPtr, on_top: onTop),
-message: "Failed to set window always on top state"
+                result: SDL_SetWindowAlwaysOnTop(window: _windowPtr, on_top: onTop),
+                message: "Failed to set window always on top state"
             );
         }
 
@@ -1449,7 +1492,13 @@ message: "Failed to set window always on top state"
 
             unsafe // SDL_CreateTexture returns SDL_Texture*
             {
-                SDL_Texture* texPtr = SDL_CreateTexture(renderer: renderer.Handle, format: format, access: access, w: w, h: h);
+                SDL_Texture* texPtr = SDL_CreateTexture(
+                    renderer: renderer.Handle,
+                    format: format,
+                    access: access,
+                    w: w,
+                    h: h
+                );
                 SdlHost.ThrowOnNull(ptr: (IntPtr)texPtr, message: "Failed to create texture");
                 _texturePtr = (IntPtr)texPtr;
             }
@@ -1475,8 +1524,14 @@ message: "Failed to set window always on top state"
 
             unsafe // SDL_CreateTextureFromSurface returns SDL_Texture*
             {
-                SDL_Texture* texPtr = SDL_CreateTextureFromSurface(renderer: renderer.Handle, surface: surfacePtr);
-                SdlHost.ThrowOnNull(ptr: (IntPtr)texPtr, message: "Failed to create texture from surface");
+                SDL_Texture* texPtr = SDL_CreateTextureFromSurface(
+                    renderer: renderer.Handle,
+                    surface: surfacePtr
+                );
+                SdlHost.ThrowOnNull(
+                    ptr: (IntPtr)texPtr,
+                    message: "Failed to create texture from surface"
+                );
                 _texturePtr = (IntPtr)texPtr;
             }
             // SDL_CreateTextureFromSurface documentation implies the surface is no longer needed
@@ -1533,13 +1588,16 @@ message: "Failed to set window always on top state"
                     // SDL_Texture struct doesn't contain access mode directly.
                     // Need to use SDL_GetTextureProperties
                     uint props = SDL_GetTextureProperties(texture: _texturePtr);
-                    SdlHost.ThrowOnFailure(result: props == 0, message: "Failed to get texture properties"); // Check if 0 is error
+                    SdlHost.ThrowOnFailure(
+                        result: props == 0,
+                        message: "Failed to get texture properties"
+                    ); // Check if 0 is error
 
                     // We don't destroy the props handle here, assume it's temporary or managed by SDL? Check SDL docs.
                     return (SDL_TextureAccess)SDL_GetNumberProperty(
-props: props,
-name: SDL_PROP_TEXTURE_ACCESS_NUMBER,
-default_value: (long)SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC
+                        props: props,
+                        name: SDL_PROP_TEXTURE_ACCESS_NUMBER,
+                        default_value: (long)SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC
                     );
                 }
             }
@@ -1606,8 +1664,13 @@ default_value: (long)SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_SetTextureColorMod(texture: _texturePtr, r: color.R, g: color.G, b: color.B),
-message: "Failed to set texture color mod"
+                result: SDL_SetTextureColorMod(
+                    texture: _texturePtr,
+                    r: color.R,
+                    g: color.G,
+                    b: color.B
+                ),
+                message: "Failed to set texture color mod"
             );
         }
 
@@ -1621,8 +1684,13 @@ message: "Failed to set texture color mod"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_GetTextureColorMod(texture: _texturePtr, r: out byte r, g: out byte g, b: out byte b),
-message: "Failed to get texture color mod"
+                result: SDL_GetTextureColorMod(
+                    texture: _texturePtr,
+                    r: out byte r,
+                    g: out byte g,
+                    b: out byte b
+                ),
+                message: "Failed to get texture color mod"
             );
             return new Color(r, g, b);
         }
@@ -1637,8 +1705,8 @@ message: "Failed to get texture color mod"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_SetTextureAlphaMod(texture: _texturePtr, alpha: alpha),
-message: "Failed to set texture alpha mod"
+                result: SDL_SetTextureAlphaMod(texture: _texturePtr, alpha: alpha),
+                message: "Failed to set texture alpha mod"
             );
         }
 
@@ -1652,8 +1720,8 @@ message: "Failed to set texture alpha mod"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_GetTextureAlphaMod(texture: _texturePtr, alpha: out byte alpha),
-message: "Failed to get texture alpha mod"
+                result: SDL_GetTextureAlphaMod(texture: _texturePtr, alpha: out byte alpha),
+                message: "Failed to get texture alpha mod"
             );
             return alpha;
         }
@@ -1668,8 +1736,8 @@ message: "Failed to get texture alpha mod"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_SetTextureScaleMode(texture: _texturePtr, scaleMode: scaleMode),
-message: "Failed to set texture scale mode"
+                result: SDL_SetTextureScaleMode(texture: _texturePtr, scaleMode: scaleMode),
+                message: "Failed to set texture scale mode"
             );
         }
 
@@ -1683,8 +1751,11 @@ message: "Failed to set texture scale mode"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_GetTextureScaleMode(texture: _texturePtr, scaleMode: out SDL_ScaleMode scaleMode),
-message: "Failed to get texture scale mode"
+                result: SDL_GetTextureScaleMode(
+                    texture: _texturePtr,
+                    scaleMode: out SDL_ScaleMode scaleMode
+                ),
+                message: "Failed to get texture scale mode"
             );
             return scaleMode;
         }
@@ -1703,8 +1774,13 @@ message: "Failed to get texture scale mode"
 
             SDL_Rect sdlRect = rect ?? default;
             SdlHost.ThrowOnFailure(
-result: SDL_UpdateTexture(texture: _texturePtr, rect: ref sdlRect, pixels: pixels, pitch: pitch),
-message: "Failed to update texture"
+                result: SDL_UpdateTexture(
+                    texture: _texturePtr,
+                    rect: ref sdlRect,
+                    pixels: pixels,
+                    pitch: pitch
+                ),
+                message: "Failed to update texture"
             );
         }
 
@@ -1734,17 +1810,17 @@ message: "Failed to update texture"
 
             SDL_Rect sdlRect = rect ?? default;
             SdlHost.ThrowOnFailure(
-result: SDL_UpdateYUVTexture(
-texture: _texturePtr,
-rect: ref sdlRect,
-Yplane: yPlane,
-Ypitch: yPitch,
-Uplane: uPlane,
-Upitch: uPitch,
-Vplane: vPlane,
-Vpitch: vPitch
+                result: SDL_UpdateYUVTexture(
+                    texture: _texturePtr,
+                    rect: ref sdlRect,
+                    Yplane: yPlane,
+                    Ypitch: yPitch,
+                    Uplane: uPlane,
+                    Upitch: uPitch,
+                    Vplane: vPlane,
+                    Vpitch: vPitch
                 ),
-message: "Failed to update YUV texture"
+                message: "Failed to update YUV texture"
             );
         }
 
@@ -1762,8 +1838,13 @@ message: "Failed to update YUV texture"
 
             SDL_Rect sdlRect = rect ?? default;
             SdlHost.ThrowOnFailure(
-result: SDL_LockTexture(texture: _texturePtr, rect: ref sdlRect, pixels: out pixels, pitch: out pitch),
-message: "Failed to lock texture"
+                result: SDL_LockTexture(
+                    texture: _texturePtr,
+                    rect: ref sdlRect,
+                    pixels: out pixels,
+                    pitch: out pitch
+                ),
+                message: "Failed to lock texture"
             );
         }
 
@@ -1862,8 +1943,8 @@ message: "Failed to lock texture"
 
             _rendererPtr = SDL_CreateRenderer(window: window.Handle, name: driverName);
             SdlHost.ThrowOnNull(
-ptr: _rendererPtr,
-message: $"Failed to create renderer{(driverName == null ? "" : $" with driver '{driverName}'")}"
+                ptr: _rendererPtr,
+                message: $"Failed to create renderer{(driverName == null ? "" : $" with driver '{driverName}'")}"
             );
         }
 
@@ -1876,12 +1957,15 @@ message: $"Failed to create renderer{(driverName == null ? "" : $" with driver '
         public Renderer(uint properties)
         {
             _rendererPtr = SDL_CreateRendererWithProperties(props: properties);
-            SdlHost.ThrowOnNull(ptr: _rendererPtr, message: "Failed to create renderer with properties");
+            SdlHost.ThrowOnNull(
+                ptr: _rendererPtr,
+                message: "Failed to create renderer with properties"
+            );
             // Try to get the associated window from properties if possible
             IntPtr windowHandle = SDL_GetPointerProperty(
-props: properties,
-name: SDL_PROP_RENDERER_CREATE_WINDOW_POINTER,
-default_value: IntPtr.Zero
+                props: properties,
+                name: SDL_PROP_RENDERER_CREATE_WINDOW_POINTER,
+                default_value: IntPtr.Zero
             );
             if (windowHandle != IntPtr.Zero)
             {
@@ -1933,8 +2017,8 @@ default_value: IntPtr.Zero
                 {
                     _vSync = value;
                     SdlHost.ThrowOnFailure(
-result: SDL_SetRenderVSync(renderer: _rendererPtr, vsync: value ? 1 : 0),
-message: "Failed to set window always on top state"
+                        result: SDL_SetRenderVSync(renderer: _rendererPtr, vsync: value ? 1 : 0),
+                        message: "Failed to set window always on top state"
                     );
                 }
             }
@@ -1954,8 +2038,12 @@ message: "Failed to set window always on top state"
                 }
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetRenderOutputSize(renderer: _rendererPtr, w: out int w, h: out int h),
-message: "Failed to get render output size"
+                    result: SDL_GetRenderOutputSize(
+                        renderer: _rendererPtr,
+                        w: out int w,
+                        h: out int h
+                    ),
+                    message: "Failed to get render output size"
                 );
                 return new Point(w, h);
             }
@@ -1972,14 +2060,14 @@ message: "Failed to get render output size"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetRenderDrawColor(
-renderer: _rendererPtr,
-r: out byte r,
-g: out byte g,
-b: out byte b,
-a: out byte a
+                    result: SDL_GetRenderDrawColor(
+                        renderer: _rendererPtr,
+                        r: out byte r,
+                        g: out byte g,
+                        b: out byte b,
+                        a: out byte a
                     ),
-message: "Failed to get draw color"
+                    message: "Failed to get draw color"
                 );
                 return new Color(r, g, b, a);
             }
@@ -1988,8 +2076,14 @@ message: "Failed to get draw color"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_SetRenderDrawColor(renderer: _rendererPtr, r: value.R, g: value.G, b: value.B, a: value.A),
-message: "Failed to set draw color"
+                    result: SDL_SetRenderDrawColor(
+                        renderer: _rendererPtr,
+                        r: value.R,
+                        g: value.G,
+                        b: value.B,
+                        a: value.A
+                    ),
+                    message: "Failed to set draw color"
                 );
             }
         }
@@ -2005,14 +2099,14 @@ message: "Failed to set draw color"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetRenderDrawColorFloat(
-renderer: _rendererPtr,
-r: out float r,
-g: out float g,
-b: out float b,
-a: out float a
+                    result: SDL_GetRenderDrawColorFloat(
+                        renderer: _rendererPtr,
+                        r: out float r,
+                        g: out float g,
+                        b: out float b,
+                        a: out float a
                     ),
-message: "Failed to get draw color float"
+                    message: "Failed to get draw color float"
                 );
                 return new FColor(r, g, b, a);
             }
@@ -2021,8 +2115,14 @@ message: "Failed to get draw color float"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_SetRenderDrawColorFloat(renderer: _rendererPtr, r: value.R, g: value.G, b: value.B, a: value.A),
-message: "Failed to set draw color float"
+                    result: SDL_SetRenderDrawColorFloat(
+                        renderer: _rendererPtr,
+                        r: value.R,
+                        g: value.G,
+                        b: value.B,
+                        a: value.A
+                    ),
+                    message: "Failed to set draw color float"
                 );
             }
         }
@@ -2039,13 +2139,13 @@ message: "Failed to set draw color float"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetRenderLogicalPresentation(
-renderer: _rendererPtr,
-w: out _,
-h: out _,
-mode: out SDL_RendererLogicalPresentation mode
+                    result: SDL_GetRenderLogicalPresentation(
+                        renderer: _rendererPtr,
+                        w: out _,
+                        h: out _,
+                        mode: out SDL_RendererLogicalPresentation mode
                     ),
-message: "Failed to get logical presentation"
+                    message: "Failed to get logical presentation"
                 );
                 return mode;
             }
@@ -2063,8 +2163,12 @@ message: "Failed to get logical presentation"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetRenderScale(renderer: _rendererPtr, scaleX: out float x, scaleY: out float y),
-message: "Failed to get render scale"
+                    result: SDL_GetRenderScale(
+                        renderer: _rendererPtr,
+                        scaleX: out float x,
+                        scaleY: out float y
+                    ),
+                    message: "Failed to get render scale"
                 );
                 return new FPoint(x, y);
             }
@@ -2073,8 +2177,12 @@ message: "Failed to get render scale"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_SetRenderScale(renderer: _rendererPtr, scaleX: value.X, scaleY: value.Y),
-message: "Failed to set render scale"
+                    result: SDL_SetRenderScale(
+                        renderer: _rendererPtr,
+                        scaleX: value.X,
+                        scaleY: value.Y
+                    ),
+                    message: "Failed to set render scale"
                 );
             }
         }
@@ -2090,8 +2198,8 @@ message: "Failed to set render scale"
                 ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetRenderViewport(renderer: _rendererPtr, rect: out SDL_Rect rect),
-message: "Failed to get viewport"
+                    result: SDL_GetRenderViewport(renderer: _rendererPtr, rect: out SDL_Rect rect),
+                    message: "Failed to get viewport"
                 );
                 return rect; // Implicit conversion
             }
@@ -2101,8 +2209,8 @@ message: "Failed to get viewport"
 
                 SDL_Rect rect = value; // Implicit conversion
                 SdlHost.ThrowOnFailure(
-result: SDL_SetRenderViewport(renderer: _rendererPtr, rect: ref rect),
-message: "Failed to set viewport"
+                    result: SDL_SetRenderViewport(renderer: _rendererPtr, rect: ref rect),
+                    message: "Failed to set viewport"
                 );
             }
         }
@@ -2124,8 +2232,8 @@ message: "Failed to set viewport"
                 }
 
                 SdlHost.ThrowOnFailure(
-result: SDL_GetRenderClipRect(renderer: _rendererPtr, rect: out SDL_Rect rect),
-message: "Failed to get clip rect"
+                    result: SDL_GetRenderClipRect(renderer: _rendererPtr, rect: out SDL_Rect rect),
+                    message: "Failed to get clip rect"
                 );
                 return rect;
             }
@@ -2138,8 +2246,8 @@ message: "Failed to get clip rect"
 
                 SDL_Rect rect = value ?? default;
                 SdlHost.ThrowOnFailure(
-result: SDL_SetRenderClipRect(renderer: _rendererPtr, rect: ref rect),
-message: "Failed to set clip rect"
+                    result: SDL_SetRenderClipRect(renderer: _rendererPtr, rect: ref rect),
+                    message: "Failed to set clip rect"
                 );
             }
         }
@@ -2168,7 +2276,10 @@ message: "Failed to set clip rect"
         {
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
-            SdlHost.ThrowOnFailure(result: SDL_RenderClear(renderer: _rendererPtr), message: "Failed to clear renderer");
+            SdlHost.ThrowOnFailure(
+                result: SDL_RenderClear(renderer: _rendererPtr),
+                message: "Failed to clear renderer"
+            );
         }
 
         /// <summary>
@@ -2179,7 +2290,10 @@ message: "Failed to set clip rect"
         {
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
-            SdlHost.ThrowOnFailure(result: SDL_RenderPresent(renderer: _rendererPtr), message: "Failed to present renderer");
+            SdlHost.ThrowOnFailure(
+                result: SDL_RenderPresent(renderer: _rendererPtr),
+                message: "Failed to present renderer"
+            );
         }
 
         /// <summary>
@@ -2192,7 +2306,10 @@ message: "Failed to set clip rect"
         {
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
-            SdlHost.ThrowOnFailure(result: SDL_FlushRenderer(renderer: _rendererPtr), message: "Failed to flush renderer");
+            SdlHost.ThrowOnFailure(
+                result: SDL_FlushRenderer(renderer: _rendererPtr),
+                message: "Failed to flush renderer"
+            );
         }
 
         /// <summary>
@@ -2205,8 +2322,8 @@ message: "Failed to set clip rect"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderPoint(renderer: _rendererPtr, x: point.X, y: point.Y),
-message: "Failed to draw point"
+                result: SDL_RenderPoint(renderer: _rendererPtr, x: point.X, y: point.Y),
+                message: "Failed to draw point"
             );
         }
 
@@ -2233,8 +2350,12 @@ message: "Failed to draw point"
             }
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderPoints(renderer: _rendererPtr, points: sdlPoints, count: points.Length),
-message: "Failed to draw points"
+                result: SDL_RenderPoints(
+                    renderer: _rendererPtr,
+                    points: sdlPoints,
+                    count: points.Length
+                ),
+                message: "Failed to draw points"
             );
         }
 
@@ -2249,8 +2370,14 @@ message: "Failed to draw points"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderLine(renderer: _rendererPtr, x1: p1.X, y1: p1.Y, x2: p2.X, y2: p2.Y),
-message: "Failed to draw line"
+                result: SDL_RenderLine(
+                    renderer: _rendererPtr,
+                    x1: p1.X,
+                    y1: p1.Y,
+                    x2: p2.X,
+                    y2: p2.Y
+                ),
+                message: "Failed to draw line"
             );
         }
 
@@ -2259,8 +2386,8 @@ message: "Failed to draw line"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderLine(renderer: _rendererPtr, x1: x1, y1: y1, x2: x2, y2: y2),
-message: "Failed to draw line"
+                result: SDL_RenderLine(renderer: _rendererPtr, x1: x1, y1: y1, x2: x2, y2: y2),
+                message: "Failed to draw line"
             );
         }
 
@@ -2285,8 +2412,12 @@ message: "Failed to draw line"
             }
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderLines(renderer: _rendererPtr, points: sdlPoints, count: points.Length),
-message: "Failed to draw lines"
+                result: SDL_RenderLines(
+                    renderer: _rendererPtr,
+                    points: sdlPoints,
+                    count: points.Length
+                ),
+                message: "Failed to draw lines"
             );
         }
 
@@ -2301,8 +2432,8 @@ message: "Failed to draw lines"
 
             SDL_FRect sdlRect = rect; // Implicit conversion
             SdlHost.ThrowOnFailure(
-result: SDL_RenderRect(renderer: _rendererPtr, rect: ref sdlRect),
-message: "Failed to draw rect"
+                result: SDL_RenderRect(renderer: _rendererPtr, rect: ref sdlRect),
+                message: "Failed to draw rect"
             );
         }
 
@@ -2327,8 +2458,12 @@ message: "Failed to draw rect"
             }
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderRects(renderer: _rendererPtr, rects: sdlRects, count: rects.Length),
-message: "Failed to draw rects"
+                result: SDL_RenderRects(
+                    renderer: _rendererPtr,
+                    rects: sdlRects,
+                    count: rects.Length
+                ),
+                message: "Failed to draw rects"
             );
         }
 
@@ -2343,8 +2478,8 @@ message: "Failed to draw rects"
 
             SDL_FRect sdlRect = rect; // Implicit conversion
             SdlHost.ThrowOnFailure(
-result: SDL_RenderFillRect(renderer: _rendererPtr, rect: ref sdlRect),
-message: "Failed to fill rect"
+                result: SDL_RenderFillRect(renderer: _rendererPtr, rect: ref sdlRect),
+                message: "Failed to fill rect"
             );
         }
 
@@ -2369,8 +2504,12 @@ message: "Failed to fill rect"
             }
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderFillRects(renderer: _rendererPtr, rects: sdlRects, count: rects.Length),
-message: "Failed to fill rects"
+                result: SDL_RenderFillRects(
+                    renderer: _rendererPtr,
+                    rects: sdlRects,
+                    count: rects.Length
+                ),
+                message: "Failed to fill rects"
             );
         }
 
@@ -2414,8 +2553,13 @@ message: "Failed to fill rects"
                 }
 
                 SdlHost.ThrowOnFailure(
-result: SDL_RenderTexture(renderer: _rendererPtr, texture: texture.Handle, srcrect: ref sdlSrcRect, dstrect: ref sdlDstRect),
-message: "Failed to copy texture"
+                    result: SDL_RenderTexture(
+                        renderer: _rendererPtr,
+                        texture: texture.Handle,
+                        srcrect: ref sdlSrcRect,
+                        dstrect: ref sdlDstRect
+                    ),
+                    message: "Failed to copy texture"
                 );
             }
         }
@@ -2470,16 +2614,16 @@ message: "Failed to copy texture"
             }
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderTextureRotated(
-renderer: _rendererPtr,
-texture: texture.Handle,
-srcrect: ref sdlSrcRect,
-dstrect: ref sdlDstRect,
-angle: angle,
-center: ref sdlCenter,
-flip: flip
+                result: SDL_RenderTextureRotated(
+                    renderer: _rendererPtr,
+                    texture: texture.Handle,
+                    srcrect: ref sdlSrcRect,
+                    dstrect: ref sdlDstRect,
+                    angle: angle,
+                    center: ref sdlCenter,
+                    flip: flip
                 ),
-message: "Failed to copy texture (ex)"
+                message: "Failed to copy texture (ex)"
             );
         }
 
@@ -2516,15 +2660,15 @@ message: "Failed to copy texture (ex)"
             int[]? indicesArray = indices.IsEmpty ? null : indices.ToArray(); // Convert Span to array if needed by binding
 
             SdlHost.ThrowOnFailure(
-result: SDL_RenderGeometry(
-renderer: _rendererPtr,
-texture: textureHandle,
-vertices: sdlVertices,
-num_vertices: vertices.Length,
-indices: indicesArray,
-num_indices: indices.Length
+                result: SDL_RenderGeometry(
+                    renderer: _rendererPtr,
+                    texture: textureHandle,
+                    vertices: sdlVertices,
+                    num_vertices: vertices.Length,
+                    indices: indicesArray,
+                    num_indices: indices.Length
                 ),
-message: "Failed to render geometry"
+                message: "Failed to render geometry"
             );
         }
 
@@ -2540,8 +2684,13 @@ message: "Failed to render geometry"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_SetRenderLogicalPresentation(renderer: _rendererPtr, w: w, h: h, mode: mode),
-message: "Failed to set logical presentation"
+                result: SDL_SetRenderLogicalPresentation(
+                    renderer: _rendererPtr,
+                    w: w,
+                    h: h,
+                    mode: mode
+                ),
+                message: "Failed to set logical presentation"
             );
         }
 
@@ -2561,8 +2710,13 @@ message: "Failed to set logical presentation"
             ObjectDisposedException.ThrowIf(condition: _disposed, instance: this);
 
             SdlHost.ThrowOnFailure(
-result: SDL_GetRenderLogicalPresentation(renderer: _rendererPtr, w: out w, h: out h, mode: out mode),
-message: "Failed to get logical presentation"
+                result: SDL_GetRenderLogicalPresentation(
+                    renderer: _rendererPtr,
+                    w: out w,
+                    h: out h,
+                    mode: out mode
+                ),
+                message: "Failed to get logical presentation"
             );
         }
 
@@ -2915,7 +3069,11 @@ message: "Failed to get logical presentation"
                     // Zero out remaining elements if SDL returns fewer keys than our enum size (unlikely but possible)
                     if (numkeys < _keyStates.Length)
                     {
-                        Array.Clear(array: _keyStates, index: numkeys, length: _keyStates.Length - numkeys);
+                        Array.Clear(
+                            array: _keyStates,
+                            index: numkeys,
+                            length: _keyStates.Length - numkeys
+                        );
                     }
                 }
             }
@@ -3016,25 +3174,42 @@ message: "Failed to get logical presentation"
     #region Input Abstraction (Mouse)
 
     /// <summary>
-    /// Represents mouse buttons.
+    /// Represents specific mouse buttons, corresponding to SDL button indices.
     /// </summary>
-    public enum MouseButton : byte
+    public enum MouseButton : byte // Using byte as the underlying type matches SDL_MouseButtonEvent.button
     {
-        /// <summary> Left mouse button. </summary>
-        Left = (byte)SDL_MouseButtonFlags.SDL_BUTTON_LMASK,
+        /// <summary>
+        /// Represents an unknown or unhandled mouse button.
+        /// </summary>
+        Unknown = 0, // Good practice to have a default/unknown value
 
-        /// <summary> Middle mouse button (wheel button). </summary>
-        Middle = (byte)SDL_MouseButtonFlags.SDL_BUTTON_MMASK,
+        /// <summary>
+        /// The left mouse button (SDL_BUTTON_LEFT).
+        /// </summary>
+        Left = 1,
 
-        /// <summary> Right mouse button. </summary>
-        Right = (byte)SDL_MouseButtonFlags.SDL_BUTTON_RMASK,
+        /// <summary>
+        /// The middle mouse button (SDL_BUTTON_MIDDLE).
+        /// </summary>
+        Middle = 2,
 
-        /// <summary> Extra mouse button 1 (typically "back"). </summary>
-        X1 = (byte)SDL_MouseButtonFlags.SDL_BUTTON_X1MASK,
+        /// <summary>
+        /// The right mouse button (SDL_BUTTON_RIGHT).
+        /// </summary>
+        Right = 3,
 
-        /// <summary> Extra mouse button 2 (typically "forward"). </summary>
-        X2 = (byte)SDL_MouseButtonFlags.SDL_BUTTON_X2MASK,
-        // SDL doesn't define more by default, but allows up to 32
+        /// <summary>
+        /// The first extra mouse button (typically "back") (SDL_BUTTON_X1).
+        /// </summary>
+        X1 = 4,
+
+        /// <summary>
+        /// The second extra mouse button (typically "forward") (SDL_BUTTON_X2).
+        /// </summary>
+        X2 = 5,
+
+        // You could potentially add more if SDL supports them in the future,
+        // but these are the standard ones.
     }
 
     /// <summary>
@@ -3175,8 +3350,8 @@ message: "Failed to get logical presentation"
         {
             EnsureEventsInitialized();
             SdlHost.ThrowOnFailure(
-result: SDL_SetWindowRelativeMouseMode(window: window.Handle, enabled: enabled),
-message: "Failed to set relative mouse mode"
+                result: SDL_SetWindowRelativeMouseMode(window: window.Handle, enabled: enabled),
+                message: "Failed to set relative mouse mode"
             );
         }
 
@@ -3253,7 +3428,10 @@ message: "Failed to set relative mouse mode"
         public static void WarpGlobal(float x, float y)
         {
             EnsureEventsInitialized();
-            SdlHost.ThrowOnFailure(result: SDL_WarpMouseGlobal(x: x, y: y), message: "Failed to warp mouse globally");
+            SdlHost.ThrowOnFailure(
+                result: SDL_WarpMouseGlobal(x: x, y: y),
+                message: "Failed to warp mouse globally"
+            );
         }
 
         /// <summary>
@@ -3265,7 +3443,10 @@ message: "Failed to set relative mouse mode"
         public static void CaptureMouse(bool enabled)
         {
             EnsureEventsInitialized();
-            SdlHost.ThrowOnFailure(result: SDL_CaptureMouse(enabled: enabled), message: "Failed to set mouse capture state");
+            SdlHost.ThrowOnFailure(
+                result: SDL_CaptureMouse(enabled: enabled),
+                message: "Failed to set mouse capture state"
+            );
         }
 
         /// <summary>
@@ -3734,7 +3915,9 @@ message: "Failed to set relative mouse mode"
 
                 default:
                     // Log unhandled event?
-                    Console.WriteLine(value: $"Warning: Unhandled SDL Event Type: {type} ({(uint)type})");
+                    Console.WriteLine(
+                        value: $"Warning: Unhandled SDL Event Type: {type} ({(uint)type})"
+                    );
                     return null; // Or return a generic SdlEventArgs(sdlEvent.common)?
             }
         }
