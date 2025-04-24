@@ -105,7 +105,7 @@ public class MinimalApp : App // Inherit from App
             (ref WindowMouseEnterEvent windowMouseEnter) =>
             {
                 Console.WriteLine(
-                    $"Mouse enter the window at X:{windowMouseEnter.X} Y:{windowMouseEnter.Y}"
+                    $"Mouse enter the window at X:{windowMouseEnter.GlobalX} Y:{windowMouseEnter.GlobalY}\nLocalX:{windowMouseEnter.LocalX} LocalY:{windowMouseEnter.LocalY}"
                 );
             }
         );
@@ -114,7 +114,7 @@ public class MinimalApp : App // Inherit from App
             (ref WindowMouseLeaveEvent windowMouseLeave) =>
             {
                 Console.WriteLine(
-                    $"Mouse leave the window at X:{windowMouseLeave.X} Y:{windowMouseLeave.Y}"
+                    $"Mouse leave the window at GlobalX:{windowMouseLeave.GlobalX} GlobalY:{windowMouseLeave.GlobalY}\nLocalX:{windowMouseLeave.LocalX} LocalY:{windowMouseLeave.LocalY} "
                 );
             }
         );
