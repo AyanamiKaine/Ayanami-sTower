@@ -2675,6 +2675,280 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
     #endregion
 
+    #region Input Abstraction (Mouse)
+
+    /// <summary>
+    /// Represents mouse buttons.
+    /// </summary>
+    public enum MouseButton : uint
+    {
+        /// <summary> Left mouse button. </summary>
+        Left = SDL_MouseButtonFlags.SDL_BUTTON_LMASK,
+        /// <summary> Middle mouse button (wheel button). </summary>
+        Middle = SDL_MouseButtonFlags.SDL_BUTTON_MMASK,
+        /// <summary> Right mouse button. </summary>
+        Right = SDL_MouseButtonFlags.SDL_BUTTON_RMASK,
+        /// <summary> Extra mouse button 1 (typically "back"). </summary>
+        X1 = SDL_MouseButtonFlags.SDL_BUTTON_X1MASK,
+        /// <summary> Extra mouse button 2 (typically "forward"). </summary>
+        X2 = SDL_MouseButtonFlags.SDL_BUTTON_X2MASK,
+        // SDL doesn't define more by default, but allows up to 32
+    }
+
+    /// <summary>
+    /// Provides static methods for querying and controlling the mouse state.
+    /// Requires the SDL Events subsystem to be initialized.
+    /// </summary>
+    public static class Mouse
+    {
+        /// <summary>
+        /// Gets the current position of the mouse cursor relative to the focused window.
+        /// Requires SDL_PumpEvents() to have been called recently.
+        /// </summary>
+        /// <param name="x">The x-coordinate of the mouse cursor.</param>
+        /// <param name="y">The y-coordinate of the mouse cursor.</param>
+        /// <returns>A bitmask of the current button state (SDL_BUTTON_LMASK, etc.). Use IsButtonDown for specific checks.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if there is an SDL error retrieving the state.</exception>
+        public static SDL_MouseButtonFlags GetPosition(out float x, out float y)
+        {
+            EnsureEventsInitialized();
+            
+            // SDL_GetMouseState doesn't typically fail unless SDL isn't initialized properly,
+            // which EnsureEventsInitialized should catch. We return the state directly.
+            return SDL_GetMouseState(out x, out y);
+        }
+
+        /// <summary>
+        /// Gets the current position of the mouse cursor relative to the focused window.
+        /// Requires SDL_PumpEvents() to have been called recently.
+        /// </summary>
+        /// <returns>An FPoint representing the cursor position.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if there is an SDL error retrieving the state.</exception>
+        public static FPoint GetPosition()
+        {
+            GetPosition(out float x, out float y);
+            return new FPoint(x, y);
+        }
+
+        /// <summary>
+        /// Gets the current position of the mouse cursor in global screen coordinates.
+        /// Requires SDL_PumpEvents() to have been called recently.
+        /// </summary>
+        /// <param name="x">The global x-coordinate of the mouse cursor.</param>
+        /// <param name="y">The global y-coordinate of the mouse cursor.</param>
+        /// <returns>A bitmask of the current button state (SDL_BUTTON_LMASK, etc.).</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if there is an SDL error retrieving the state.</exception>
+        public static SDL_MouseButtonFlags GetGlobalPosition(out float x, out float y)
+        {
+            EnsureEventsInitialized();
+            
+            // Similar to GetMouseState, errors are unlikely if initialized.
+            return SDL_GetGlobalMouseState(out x, out y);
+        }
+
+        /// <summary>
+        /// Gets the current position of the mouse cursor in global screen coordinates.
+        /// Requires SDL_PumpEvents() to have been called recently.
+        /// </summary>
+        /// <returns>An FPoint representing the global cursor position.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if there is an SDL error retrieving the state.</exception>
+        public static FPoint GetGlobalPosition()
+        {
+            GetGlobalPosition(out float x, out float y);
+            return new FPoint(x, y);
+        }
+
+
+        /// <summary>
+        /// Retrieves the relative motion of the mouse since the last call to PumpEvents or this function.
+        /// </summary>
+        /// <param name="xRel">The relative motion in the x-direction.</param>
+        /// <param name="yRel">The relative motion in the y-direction.</param>
+        /// <returns>A bitmask of the current button state.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        public static SDL_MouseButtonFlags GetRelativePosition(out float xRel, out float yRel)
+        {
+            EnsureEventsInitialized();
+            // Note: SDL_GetRelativeMouseState resets the relative motion state internally.
+            return SDL_GetRelativeMouseState(out xRel, out yRel);
+        }
+
+        /// <summary>
+        /// Checks if a specific mouse button is currently held down using predefined masks.
+        /// Requires SDL_PumpEvents() to have been called recently.
+        /// </summary>
+        /// <param name="button">The mouse button to check (e.g., MouseButton.Left).</param>
+        /// <returns>True if the button is down, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown if an unhandled MouseButton value is provided.</exception>
+        public static bool IsButtonDown(MouseButton button)
+        {
+            EnsureEventsInitialized();
+            // Get the current state bitmask
+            SDL_MouseButtonFlags state = SDL_GetMouseState(out _, out _);
+
+            // Get the correct mask constant based on the button enum value
+            var buttonMask = button switch
+            {
+                MouseButton.Left => SDL_MouseButtonFlags.SDL_BUTTON_LMASK,// Use the predefined mask
+                MouseButton.Middle => SDL_MouseButtonFlags.SDL_BUTTON_MMASK,// Use the predefined mask
+                MouseButton.Right => SDL_MouseButtonFlags.SDL_BUTTON_RMASK,// Use the predefined mask
+                MouseButton.X1 => SDL_MouseButtonFlags.SDL_BUTTON_X1MASK,// Use the predefined mask
+                MouseButton.X2 => SDL_MouseButtonFlags.SDL_BUTTON_X2MASK,// Use the predefined mask
+                _ => throw new ArgumentOutOfRangeException(nameof(button), $"Unsupported mouse button: {button}"),// Handle potential future buttons or invalid values if necessary
+                                                                                                                  // Option 1: Throw exception for unsupported buttons
+            };
+
+            // Check if the button's bit is set in the state mask
+            return (state & buttonMask) != 0;
+        }
+
+        /// <summary>
+        /// Checks if a specific mouse button is currently released.
+        /// Requires SDL_PumpEvents() to have been called recently.
+        /// </summary>
+        /// <param name="button">The mouse button to check.</param>
+        /// <returns>True if the button is up, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        public static bool IsButtonUp(MouseButton button)
+        {
+            return !IsButtonDown(button);
+        }
+
+        /// <summary>
+        /// Sets whether relative mouse mode is enabled.
+        /// When enabled, the cursor is hidden, and mouse motion provides relative changes (ideal for FPS controls).
+        /// </summary>
+        /// <param name="window">The window for which to set the relative mouse mode.</param>
+        /// <param name="enabled">True to enable relative mode, false to disable.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if SDL fails to set the mode.</exception>
+        public static void SetRelativeMode(Window window, bool enabled)
+        {
+            EnsureEventsInitialized();
+            SdlHost.ThrowOnFailure(SDL_SetWindowRelativeMouseMode(window.Handle, enabled), "Failed to set relative mouse mode");
+        }
+
+        /// <summary>
+        /// Gets whether relative mouse mode is currently enabled for the window.
+        /// </summary>
+        /// <returns>True if relative mode is enabled, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        public static bool GetRelativeModeEnabled(Window window)
+        {
+            EnsureEventsInitialized();
+            return SDL_GetWindowRelativeMouseMode(window.Handle);
+        }
+
+        /// <summary>
+        /// Shows the system cursor.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if SDL fails to show the cursor.</exception>
+        public static void ShowCursor()
+        {
+            EnsureEventsInitialized();
+            SdlHost.ThrowOnFailure(SDL_ShowCursor(), "Failed to show cursor");
+        }
+
+        /// <summary>
+        /// Hides the system cursor.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if SDL fails to hide the cursor.</exception>
+        public static void HideCursor()
+        {
+            EnsureEventsInitialized();
+            SdlHost.ThrowOnFailure(SDL_HideCursor(), "Failed to hide cursor");
+        }
+
+        /// <summary>
+        /// Gets whether the system cursor is currently shown.
+        /// </summary>
+        /// <returns>True if the cursor is shown, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        public static bool IsCursorShown()
+        {
+            EnsureEventsInitialized();
+            return SDL_CursorVisible();
+        }
+
+        /// <summary>
+        /// Moves the mouse cursor to the specified position within a window.
+        /// </summary>
+        /// <param name="window">The window to warp the cursor in.</param>
+        /// <param name="x">The x-coordinate within the window.</param>
+        /// <param name="y">The y-coordinate within the window.</param>
+        /// <exception cref="ArgumentNullException">Thrown if window is null.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the window is disposed.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if SDL fails to warp the mouse.</exception>
+        public static void WarpInWindow(Window window, float x, float y)
+        {
+            EnsureEventsInitialized();
+            ArgumentNullException.ThrowIfNull(window);
+            ObjectDisposedException.ThrowIf(window.IsDisposed, window);
+
+            SDL_WarpMouseInWindow(window.Handle, x, y);
+        }
+
+        /// <summary>
+        /// Moves the mouse cursor to the specified global screen coordinates.
+        /// </summary>
+        /// <param name="x">The global x-coordinate.</param>
+        /// <param name="y">The global y-coordinate.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if SDL fails to warp the mouse.</exception>
+        public static void WarpGlobal(float x, float y)
+        {
+            EnsureEventsInitialized();
+            SdlHost.ThrowOnFailure(SDL_WarpMouseGlobal(x, y), "Failed to warp mouse globally");
+        }
+
+        /// <summary>
+        /// Enables mouse capture, restricting the cursor to the window boundaries.
+        /// </summary>
+        /// <param name="enabled">True to capture the mouse, false to release.</param>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        /// <exception cref="SDLException">Thrown if SDL fails to set the capture state.</exception>
+        public static void CaptureMouse(bool enabled)
+        {
+            EnsureEventsInitialized();
+            SdlHost.ThrowOnFailure(SDL_CaptureMouse(enabled), "Failed to set mouse capture state");
+        }
+
+
+        /// <summary>
+        /// Gets whether the window captures mouse input.
+        /// </summary>
+        /// <returns>The boolean if the window currently captures the mouse</returns>
+        /// <exception cref="InvalidOperationException">Thrown if the SDL Events subsystem is not initialized.</exception>
+        public static bool GetMouseCaptureWindow(Window window)
+        {
+            EnsureEventsInitialized();
+            return SDL_GetWindowMouseGrab(window.Handle);
+        }
+
+
+        /// <summary>
+        /// Helper to ensure the Events subsystem is initialized.
+        /// </summary>
+        private static void EnsureEventsInitialized()
+        {
+            // Video subsystem often initializes Events, but check explicitly.
+            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0)
+            {
+                throw new InvalidOperationException("SDL Events subsystem not initialized. Call SdlHost.Init(SdlSubSystem.Events) or include it in your initial SdlHost.Init call.");
+            }
+        }
+    }
+
+    #endregion // Input Abstraction (Mouse)
+
     #region Event Handling
 
     /// <summary>
