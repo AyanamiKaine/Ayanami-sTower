@@ -48,6 +48,7 @@ namespace AyanamisTower.NihilEx
         /// This is created during the Initialize phase.
         /// </summary>
         protected Renderer? Renderer { get; private set; }
+
         /// <summary>
         /// Gets the SDL Window associated with this application instance.
         /// This is created during the Initialize phase.
@@ -62,9 +63,11 @@ namespace AyanamisTower.NihilEx
             get => Window?.Size.Y ?? 0;
             set
             {
-                if (Window != null) Window.Size = new(Width, value);
+                if (Window != null)
+                    Window.Size = new(Width, value);
             }
         }
+
         /// <summary>
         /// Gets or sets the current width of the application window.
         /// </summary>
@@ -73,9 +76,11 @@ namespace AyanamisTower.NihilEx
             get => Window?.Size.X ?? 0;
             set
             {
-                if (Window != null) Window.Size = new(value, Height);
+                if (Window != null)
+                    Window.Size = new(value, Height);
             }
         }
+
         /// <summary>
         /// Gets or sets the current title of the application window.
         /// </summary>
@@ -84,7 +89,8 @@ namespace AyanamisTower.NihilEx
             get => Window?.Title ?? "";
             set
             {
-                if (Window != null) Window.Title = value;
+                if (Window != null)
+                    Window.Title = value;
             }
         }
 
@@ -92,10 +98,12 @@ namespace AyanamisTower.NihilEx
         /// The initial height of the application window.
         /// </summary>
         public required int InitalHeight { init; get; }
+
         /// <summary>
         /// The initial width of the application window.
         /// </summary>
         public required int InitalWidth { init; get; }
+
         /// <summary>
         /// The initial title of the application window.
         /// </summary>
@@ -123,10 +131,10 @@ namespace AyanamisTower.NihilEx
             // SdlHost.RunApplication handles SDL_Init, SDL_Quit, and the event/update loop.
             int exitCode = SdlHost.RunApplication(
                 Initialize, // Pass instance method directly
-                Update,     // Pass instance method directly
-                HandleEvent,// Pass instance method directly
-                Cleanup,    // Pass instance method directly
-                args        // Pass command line args
+                Update, // Pass instance method directly
+                HandleEvent, // Pass instance method directly
+                Cleanup, // Pass instance method directly
+                args // Pass command line args
             );
 
             Console.WriteLine($"Application finished with exit code: {exitCode}");
@@ -162,15 +170,16 @@ namespace AyanamisTower.NihilEx
                 // Create Window and Renderer using the wrapper's classes
                 Window = new Window(InitalTitle, InitalWidth, InitalHeight, WindowFlags.Resizable); // Assuming WindowFlags enum exists
                 Console.WriteLine($"Window created with ID: {Window.Id}");
-                if (Window == null) throw new InvalidOperationException("Failed to create SDL Window.");
+                if (Window == null)
+                    throw new InvalidOperationException("Failed to create SDL Window.");
                 World.Set(Window); // Add Window as singleton resource
 
                 Renderer = Window.CreateRenderer();
                 Console.WriteLine($"Renderer created: {Renderer.Name}");
-                if (Renderer == null) throw new InvalidOperationException("Failed to create SDL Renderer.");
+                if (Renderer == null)
+                    throw new InvalidOperationException("Failed to create SDL Renderer.");
                 Renderer.DrawColor = new Color(255, 255, 255, 255); // White (using wrapper's Color)
                 World.Set(Renderer); // Add Renderer as singleton resource
-
 
                 // Create the application's root entity for events
                 _appEntity = World.Entity($"App: {Title}"); // Use property, will fetch from Window
@@ -203,7 +212,8 @@ namespace AyanamisTower.NihilEx
         /// <returns>True to continue, False to request exit.</returns>
         private bool Update()
         {
-            if (_shouldQuit) return false; // Exit early if quit was requested
+            if (_shouldQuit)
+                return false; // Exit early if quit was requested
 
             try
             {
@@ -230,7 +240,6 @@ namespace AyanamisTower.NihilEx
                 return false;
             }
 
-
             return !_shouldQuit; // Return true to continue, false to quit
         }
 
@@ -243,7 +252,8 @@ namespace AyanamisTower.NihilEx
         /// <returns>True to continue, False to request exit.</returns>
         private bool HandleEvent(SdlEventArgs? evt)
         {
-            if (evt == null) return !_shouldQuit; // Continue if event is null/unhandled
+            if (evt == null)
+                return !_shouldQuit; // Continue if event is null/unhandled
 
             try
             {
@@ -271,10 +281,17 @@ namespace AyanamisTower.NihilEx
                                 return false; // Signal quit
 
                             case WindowEventType.Resized:
-                                AppEntity.Emit(new WindowResize(Width: windowEvt.Data1, Height: windowEvt.Data2));
+                                AppEntity.Emit(
+                                    new WindowResize(
+                                        Width: windowEvt.Data1,
+                                        Height: windowEvt.Data2
+                                    )
+                                );
                                 break;
                             case WindowEventType.Moved:
-                                AppEntity.Emit(new WindowMovedEvent(X: windowEvt.Data1, Y: windowEvt.Data2));
+                                AppEntity.Emit(
+                                    new WindowMovedEvent(X: windowEvt.Data1, Y: windowEvt.Data2)
+                                );
                                 break;
                             case WindowEventType.FocusGained:
                                 //AppEntity.Emit(new WindowFocusGainedEvent());
@@ -306,7 +323,7 @@ namespace AyanamisTower.NihilEx
                                 // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
                                 AppEntity.Emit(new WindowMouseLeaveEvent(0, false, 0, 0, 0)); // TODO: Populate with real data if needed/available
                                 break;
-                                // Add other WindowEventType cases as needed
+                            // Add other WindowEventType cases as needed
                         }
                     }
                 }
@@ -325,18 +342,19 @@ namespace AyanamisTower.NihilEx
                     // Emit specific ECS events
                     if (keyEvt.IsDown)
                     {
-                        AppEntity.Emit(new KeyDownEvent(
-                            Keycode: keyEvt.Key, // Cast if necessary, depends on wrapper/ECS event types
-                            Modifiers: keyEvt.Modifiers, // Cast if necessary
-                            IsRepeat: keyEvt.IsRepeat
-                        ));
+                        AppEntity.Emit(
+                            new KeyDownEvent(
+                                Keycode: keyEvt.Key,
+                                Modifiers: keyEvt.Modifiers,
+                                IsRepeat: keyEvt.IsRepeat
+                            )
+                        );
                     }
                     else // IsUp
                     {
-                        AppEntity.Emit(new KeyUpEvent(
-                            Keycode: keyEvt.Key, // Cast if necessary
-                            Modifiers: keyEvt.Modifiers // Cast if necessary
-                        ));
+                        AppEntity.Emit(
+                            new KeyUpEvent(Keycode: keyEvt.Key, Modifiers: keyEvt.Modifiers)
+                        );
                     }
                 }
                 // Handle Mouse Button events
@@ -344,42 +362,50 @@ namespace AyanamisTower.NihilEx
                 {
                     if (buttonEvt.IsDown)
                     {
-                        AppEntity.Emit(new MouseButtonDownEvent(
-                           MouseButton: (SDL.SDL_MouseButtonFlags)buttonEvt.Button, // Cast based on your event definition
-                           X: buttonEvt.X,
-                           Y: buttonEvt.Y,
-                           Clicks: buttonEvt.Clicks
-                        ));
+                        AppEntity.Emit(
+                            new MouseButtonDownEvent(
+                                MouseButton: buttonEvt.Button,
+                                X: buttonEvt.X,
+                                Y: buttonEvt.Y,
+                                Clicks: buttonEvt.Clicks
+                            )
+                        );
                     }
                     else // IsUp
                     {
-                        AppEntity.Emit(new MouseButtonUpEvent(
-                             MouseButton: (SDL.SDL_MouseButtonFlags)buttonEvt.Button, // Cast based on your event definition
-                            X: buttonEvt.X,
-                            Y: buttonEvt.Y,
-                            Clicks: buttonEvt.Clicks // Clicks might be 0 on up, verify wrapper behavior
-                        ));
+                        AppEntity.Emit(
+                            new MouseButtonUpEvent(
+                                MouseButton: buttonEvt.Button,
+                                X: buttonEvt.X,
+                                Y: buttonEvt.Y,
+                                Clicks: buttonEvt.Clicks // Clicks might be 0 on up, verify wrapper behavior
+                            )
+                        );
                     }
                 }
                 // Handle Mouse Motion events
                 else if (evt is MouseMotionEventArgs motionEvt)
                 {
-                    AppEntity.Emit(new MouseMotionEvent(
-                       MouseState: motionEvt.State, // Cast based on your event definition
-                       X: motionEvt.X,
-                       Y: motionEvt.Y,
-                       XRel: motionEvt.XRel,
-                       YRel: motionEvt.YRel
-                    ));
+                    AppEntity.Emit(
+                        new MouseMotionEvent(
+                            MouseState: motionEvt.State,
+                            X: motionEvt.X,
+                            Y: motionEvt.Y,
+                            XRel: motionEvt.XRel,
+                            YRel: motionEvt.YRel
+                        )
+                    );
                 }
                 // Handle Mouse Wheel events
                 else if (evt is MouseWheelEventArgs wheelEvt)
                 {
-                    AppEntity.Emit(new MouseWheelEvent(
-                       ScrollX: wheelEvt.ScrollX,
-                       ScrollY: wheelEvt.ScrollY,
-                       Direction: wheelEvt.Direction // Cast based on your event definition (e.g., SDL_MouseWheelDirection)
-                    ));
+                    AppEntity.Emit(
+                        new MouseWheelEvent(
+                            ScrollX: wheelEvt.ScrollX,
+                            ScrollY: wheelEvt.ScrollY,
+                            Direction: wheelEvt.Direction // Cast based on your event definition (e.g., SDL_MouseWheelDirection)
+                        )
+                    );
                 }
                 // Handle text input events (if your wrapper provides them)
                 else if (evt is TextInputEventArgs textEvt)
@@ -389,7 +415,6 @@ namespace AyanamisTower.NihilEx
 
                 // Add handlers for other SdlEventArgs types as provided by your wrapper
                 // (e.g., Controller Events, Joystick Events, Drop Events, etc.)
-
             }
             catch (Exception ex)
             {
@@ -432,7 +457,6 @@ namespace AyanamisTower.NihilEx
             Console.WriteLine("App.Cleanup finished.");
             // SdlHost.RunApplication handles SDL.Quit() automatically.
         }
-
 
         // --- Abstract  methods for derived classes ---
 
