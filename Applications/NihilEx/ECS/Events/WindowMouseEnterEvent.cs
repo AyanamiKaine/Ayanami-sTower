@@ -1,4 +1,5 @@
 using System;
+using AyanamisTower.NihilEx.SDLWrapper;
 using static SDL3.SDL;
 
 namespace AyanamisTower.NihilEx.ECS.Events;
@@ -11,4 +12,10 @@ namespace AyanamisTower.NihilEx.ECS.Events;
 /// <param name="X">The X coordinate of the mouse cursor. Relative to the mouse position on the screen.</param>
 /// <param name="Y">The Y coordinate of the mouse cursor. Relative to the mouse position on the screen.</param>
 /// <param name="Clicks">The number of clicks performed.</param>
-public record struct WindowMouseEnterEvent(SDL_MouseButtonFlags MouseButton, bool Down, float X, float Y, byte Clicks);
+public record struct WindowMouseEnterEvent(
+    MouseButton MouseButton,
+    bool Down,
+    float X,
+    float Y,
+    byte Clicks
+);
