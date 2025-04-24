@@ -83,7 +83,7 @@
 	 <PackageVersion Include="Tmds.DBus" Version="0.20.0" />
 	 <!--END-->
 
-	 <!--Here go my projects that i uploaded to nuget-->
+	 <!--Here go my projects that I uploaded to nuget-->
 	 <PackageVersion Include="StellaFuzzyPatternMatcher" Version="1.0.3" />
 	 <!--END-->
 
