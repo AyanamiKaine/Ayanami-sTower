@@ -8,14 +8,14 @@ namespace AyanamisTower.NihilEx.ECS.Events;
 /// Represents an event that occurs when the mouse enters a window.
 /// </summary>
 /// <param name="MouseButton">The mouse button flags indicating which button was pressed.</param>
-/// <param name="Down">Indicates whether the button is pressed down.</param>
-/// <param name="X">The X coordinate of the mouse cursor. Relative to the mouse position on the screen.</param>
-/// <param name="Y">The Y coordinate of the mouse cursor. Relative to the mouse position on the screen.</param>
-/// <param name="Clicks">The number of clicks performed.</param>
+/// <param name="LocalX">The X coordinate of the mouse relative to the window.</param>
+/// <param name="LocalY">The Y coordinate of the mouse relative to the window.</param>
+/// <param name="GlobalX">The X coordinate of the mouse in screen coordinates.</param>
+/// <param name="GlobalY">The Y coordinate of the mouse in screen coordinates.</param>
 public record struct WindowMouseLeaveEvent(
     MouseButton MouseButton,
-    bool Down,
-    float X,
-    float Y,
-    byte Clicks
+    float LocalX,
+    float LocalY,
+    float GlobalX,
+    float GlobalY
 );
