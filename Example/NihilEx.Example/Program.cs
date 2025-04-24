@@ -7,6 +7,7 @@ using SDL3;
 namespace AyanamisTower.NihilEx.SpinningCubeExample;
 
 internal record struct Position2D(float X, float Y);
+
 internal class FPSCounter
 {
     private ulong _lastTime = SDL.SDL_GetPerformanceCounter();
@@ -19,7 +20,8 @@ internal class FPSCounter
         var currentTime = SDL.SDL_GetPerformanceCounter();
         var elapsedTime = (currentTime - _lastTime) / (double)SDL.SDL_GetPerformanceFrequency();
 
-        if (!(elapsedTime >= 0.1)) return;
+        if (!(elapsedTime >= 0.1))
+            return;
 
         _fps = _frameCount / elapsedTime;
         _frameCount = 0;
@@ -35,6 +37,7 @@ internal class FPSCounter
 public class ColorApp : App // Inherit from App
 {
     private readonly FPSCounter _fpsCounter = new();
+
     // Cube Geometry
     private Vector3[] _baseVertices = []; // Original cube vertices
     private Tuple<int, int>[] _edges = []; // Indices of vertices connected by edges
@@ -47,7 +50,10 @@ public class ColorApp : App // Inherit from App
     /// </summary>
     protected override bool OnInit(string[] args)
     {
-        SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "MyColorApp OnInit started.");
+        SDL.SDL_LogInfo(
+            (int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+            "MyColorApp OnInit started."
+        );
 
         try
         {
@@ -55,7 +61,10 @@ public class ColorApp : App // Inherit from App
         }
         catch (Exception)
         {
-            SDL.SDL_LogError((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"MyColorApp OnInit: Error creating renderer: {SDL.SDL_GetError()}");
+            SDL.SDL_LogError(
+                (int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                $"MyColorApp OnInit: Error creating renderer: {SDL.SDL_GetError()}"
+            );
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
             return false;
         }
@@ -64,35 +73,36 @@ public class ColorApp : App // Inherit from App
         float initialFovRadians = 60.0f * (MathF.PI / 180.0f); // e.g., 60 degrees FOV
         float aspectRatio = (float)InitalWidth / InitalHeight; // Use initial size
         var initialCamera = new Camera(
-            position: new Vector3(0, 0, 5),  // Move camera back along Z
-            lookAtTarget: Vector3.Zero,      // Look at the origin where the cube is
+            position: new Vector3(0, 0, 5), // Move camera back along Z
+            lookAtTarget: Vector3.Zero, // Look at the origin where the cube is
             worldUp: Vector3.UnitY,
             aspectRatio: aspectRatio,
             nearPlane: 0.1f,
-            farPlane: 100.0f                 // Adjust far plane as needed
+            farPlane: 100.0f // Adjust far plane as needed
         );
         initialCamera.FieldOfViewRadians = initialFovRadians;
         World.Set(initialCamera); // Set as singleton
 
-        World.Entity("SpinningCube")
-            .Add<Box>()                             // Add the Box tag
-            .Set(new Size3D(new Vector3(2)))  // Width=2, Height=2, Depth=2
+        World
+            .Entity("SpinningCube")
+            .Add<Box>() // Add the Box tag
+            .Set(new Size3D(new Vector3(2))) // Width=2, Height=2, Depth=2
             .Set(new Position3D(new(0, 0, 0)))
             .Set(new Orientation(Quaternion.Identity))
             .Set(new RotationSpeed3D(new Vector3(0.8f * 0.8f, 0.8f * 1.0f, 0.8f * 1.2f)))
             .Set(RgbaColor.Red);
 
-        SDL.SDL_LogInfo((int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "MyColorApp OnInit finished successfully.");
+        SDL.SDL_LogInfo(
+            (int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+            "MyColorApp OnInit finished successfully."
+        );
         return true; // Signal success
     }
 
     /// <summary>
     /// Gets called when the app wants to quit
     /// </summary>
-    protected override void OnQuit()
-    {
-
-    }
+    protected override void OnQuit() { }
 }
 
 internal static class Program
