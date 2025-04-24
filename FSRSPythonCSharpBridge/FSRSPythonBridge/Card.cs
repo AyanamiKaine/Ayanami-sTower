@@ -1,9 +1,8 @@
 using System.Globalization;
-using Python.Runtime;
 using NLog;
+using Python.Runtime;
 
 namespace FSRSPythonBridge;
-
 
 /// <summary>
 /// Represents the current state of a card used for the scheduler.
@@ -14,10 +13,12 @@ public enum CardState
     /// (==1) new card being studied for the first time
     /// </summary>
     Learning = 1,
+
     /// <summary>
     /// (==2) card that has "graduated" from the Learning state
     /// </summary>
     Review = 2,
+
     /// <summary>
     /// (==3) card that has "lapsed" from the Review state
     /// </summary>
@@ -50,17 +51,22 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                Logger.Debug("Setting card state from {OldState} to {NewState}",
-                    PyObject.state.As<int>(), (int)value);
+                Logger.Debug(
+                    "Setting card state from {OldState} to {NewState}",
+                    PyObject.state.As<int>(),
+                    (int)value
+                );
                 PyObject.state = ((int)value).ToPython();
             }
         }
     }
+
     /// <summary>
     /// Returns the underlying pyobject HANDLE WITH CARE!.
     /// SHOULD ONLY BE USED IN A PYTHON CONTEXT
     /// </summary>
     public dynamic PyObject { get; } = card;
+
     /// <summary>
     /// The id of the card. Defaults to the epoch miliseconds of when the card was created.
     /// </summary>
@@ -79,12 +85,16 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                Logger.Debug("Setting card ID from {OldID} to {NewID}",
-                    PyObject.card_id.As<long>(), value);
+                Logger.Debug(
+                    "Setting card ID from {OldID} to {NewID}",
+                    PyObject.card_id.As<long>(),
+                    value
+                );
                 PyObject.card_id = value.ToPython();
             }
         }
     }
+
     /// <summary>
     /// The card's current learning or relearning step or None if the card is in the Review state.
     /// </summary>
@@ -108,12 +118,16 @@ public class Card(dynamic card)
         {
             using (Py.GIL())
             {
-                var oldStep = PyObject.step == null || PyObject.step.IsNone() ? "null" : PyObject.step.As<long>().ToString();
+                var oldStep =
+                    PyObject.step == null || PyObject.step.IsNone()
+                        ? "null"
+                        : PyObject.step.As<long>().ToString();
                 Logger.Debug("Setting card step from {OldStep} to {NewStep}", oldStep, value);
                 PyObject.step = value.ToPython();
             }
         }
     }
+
     /// <summary>
     /// The date and time when the card is due next.
     /// </summary>
@@ -129,20 +143,38 @@ public class Card(dynamic card)
                     DateTime parsedDateTime;
 
                     // Try parsing with the first format (with fractional seconds)
-                    if (DateTime.TryParseExact(dueString, "yyyy-MM-dd HH:mm:ss.ffffffzzz", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
+                    if (
+                        DateTime.TryParseExact(
+                            dueString,
+                            "yyyy-MM-dd HH:mm:ss.ffffffzzz",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out parsedDateTime
+                        )
+                    )
                     {
                         Logger.Trace("Getting card due date: {Due}", parsedDateTime);
                         return parsedDateTime;
                     }
                     // Try parsing with the second format (without fractional seconds)
-                    else if (DateTime.TryParseExact(dueString, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
+                    else if (
+                        DateTime.TryParseExact(
+                            dueString,
+                            "yyyy-MM-dd HH:mm:ss",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out parsedDateTime
+                        )
+                    )
                     {
                         Logger.Trace("Getting card due date: {Due}", parsedDateTime);
                         return parsedDateTime;
                     }
                     else
                     {
-                        var ex = new FormatException($"Could not parse '{dueString}' as a valid DateTime with either of the expected formats.");
+                        var ex = new FormatException(
+                            $"Could not parse '{dueString}' as a valid DateTime with either of the expected formats."
+                        );
                         Logger.Error(ex, "Failed to parse due date '{DueString}'", dueString);
                         throw ex;
                     }
@@ -193,21 +225,43 @@ public class Card(dynamic card)
                     DateTime parsedDateTime;
 
                     // Try parsing with the first format (with fractional seconds)
-                    if (DateTime.TryParseExact(lastReviewString, "yyyy-MM-dd HH:mm:ss.ffffffzzz", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
+                    if (
+                        DateTime.TryParseExact(
+                            lastReviewString,
+                            "yyyy-MM-dd HH:mm:ss.ffffffzzz",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out parsedDateTime
+                        )
+                    )
                     {
                         Logger.Trace("Getting card last review: {LastReview}", parsedDateTime);
                         return parsedDateTime;
                     }
                     // Try parsing with the second format (without fractional seconds)
-                    else if (DateTime.TryParseExact(lastReviewString, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDateTime))
+                    else if (
+                        DateTime.TryParseExact(
+                            lastReviewString,
+                            "yyyy-MM-dd HH:mm:ss",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out parsedDateTime
+                        )
+                    )
                     {
                         Logger.Trace("Getting card last review: {LastReview}", parsedDateTime);
                         return parsedDateTime;
                     }
                     else
                     {
-                        var ex = new FormatException($"Could not parse '{lastReviewString}' as a valid DateTime with either of the expected formats.");
-                        Logger.Error(ex, "Failed to parse last review date '{LastReviewString}'", lastReviewString);
+                        var ex = new FormatException(
+                            $"Could not parse '{lastReviewString}' as a valid DateTime with either of the expected formats."
+                        );
+                        Logger.Error(
+                            ex,
+                            "Failed to parse last review date '{LastReviewString}'",
+                            lastReviewString
+                        );
                         throw ex;
                     }
                 }
@@ -275,8 +329,15 @@ public class Card(dynamic card)
             {
                 try
                 {
-                    var oldStability = PyObject.stability == null || PyObject.stability.IsNone() ? "null" : PyObject.stability.As<float>().ToString(CultureInfo.InvariantCulture);
-                    Logger.Debug("Setting card stability from {OldStability} to {NewStability}", oldStability, value);
+                    var oldStability =
+                        PyObject.stability == null || PyObject.stability.IsNone()
+                            ? "null"
+                            : PyObject.stability.As<float>().ToString(CultureInfo.InvariantCulture);
+                    Logger.Debug(
+                        "Setting card stability from {OldStability} to {NewStability}",
+                        oldStability,
+                        value
+                    );
                     PyObject.stability = value.ToPython();
                 }
                 catch (Exception ex)
@@ -322,8 +383,17 @@ public class Card(dynamic card)
             {
                 try
                 {
-                    var oldDifficulty = PyObject.difficulty == null || PyObject.difficulty.IsNone() ? "null" : PyObject.difficulty.As<float>().ToString(CultureInfo.InvariantCulture);
-                    Logger.Debug("Setting card difficulty from {OldDifficulty} to {NewDifficulty}", oldDifficulty, value);
+                    var oldDifficulty =
+                        PyObject.difficulty == null || PyObject.difficulty.IsNone()
+                            ? "null"
+                            : PyObject
+                                .difficulty.As<float>()
+                                .ToString(CultureInfo.InvariantCulture);
+                    Logger.Debug(
+                        "Setting card difficulty from {OldDifficulty} to {NewDifficulty}",
+                        oldDifficulty,
+                        value
+                    );
                     PyObject.difficulty = value.ToPython();
                 }
                 catch (Exception ex)
@@ -334,6 +404,7 @@ public class Card(dynamic card)
             }
         }
     }
+
     // Helper function to convert C# DateTime to Python datetime
     private PyObject ToPythonDateTime(DateTime dt)
     {
