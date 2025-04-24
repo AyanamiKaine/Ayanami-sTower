@@ -64,7 +64,7 @@ namespace AyanamisTower.NihilEx
             set
             {
                 if (Window != null)
-                    Window.Size = new(Width, value);
+                    Window.Size = new(x: Width,y: value);
             }
         }
 
@@ -77,7 +77,7 @@ namespace AyanamisTower.NihilEx
             set
             {
                 if (Window != null)
-                    Window.Size = new(value, Height);
+                    Window.Size = new(x: value,y: Height);
             }
         }
 
@@ -126,18 +126,18 @@ namespace AyanamisTower.NihilEx
         /// <returns>The exit code of the application.</returns>
         public int Run(string[] args)
         {
-            Console.WriteLine("Starting SDL Application via SdlHost.RunApplication...");
+            Console.WriteLine(value: "Starting SDL Application via SdlHost.RunApplication...");
 
             // SdlHost.RunApplication handles SDL_Init, SDL_Quit, and the event/update loop.
             int exitCode = SdlHost.RunApplication(
-                Initialize, // Pass instance method directly
-                Update, // Pass instance method directly
-                HandleEvent, // Pass instance method directly
-                Cleanup, // Pass instance method directly
-                args // Pass command line args
+                init: Initialize, // Pass instance method directly
+                update: Update, // Pass instance method directly
+                eventHandler: HandleEvent, // Pass instance method directly
+                quit: Cleanup, // Pass instance method directly
+                args: args // Pass command line args
             );
 
-            Console.WriteLine($"Application finished with exit code: {exitCode}");
+            Console.WriteLine(value: $"Application finished with exit code: {exitCode}");
             return exitCode;
         }
 
@@ -152,7 +152,9 @@ namespace AyanamisTower.NihilEx
         /// <returns>True to continue, False to exit immediately.</returns>
         private bool Initialize(string[] args)
         {
-            Console.WriteLine($"App.Initialize: Thread {Environment.CurrentManagedThreadId}");
+            Console.WriteLine(
+                value: $"App.Initialize: Thread {Environment.CurrentManagedThreadId}"
+            );
             try
             {
                 // SdlHost.RunApplication handles SDL.Init based on its internal needs.
@@ -161,44 +163,51 @@ namespace AyanamisTower.NihilEx
                 _deltaTimeManager.Initialize();
 
                 // Create Engine and configure World
-                Engine = new(World);
+                Engine = new(world: World);
                 //World.SetThreads(SdlHost.GetNumLogicalCores()); // Use SdlHost or SDL directly if available
 
                 // Set singletons in the ECS world
-                World.Set(_deltaTimeManager); // Make DeltaTime accessible via ECS
+                World.Set(data: _deltaTimeManager); // Make DeltaTime accessible via ECS
 
                 // Create Window and Renderer using the wrapper's classes
-                Window = new Window(InitalTitle, InitalWidth, InitalHeight, WindowFlags.Resizable); // Assuming WindowFlags enum exists
-                Console.WriteLine($"Window created with ID: {Window.Id}");
+                Window = new Window(
+                    title: InitalTitle,
+                    width: InitalWidth,
+                    height: InitalHeight,
+                    flags: WindowFlags.Resizable
+                ); // Assuming WindowFlags enum exists
+                Console.WriteLine(value: $"Window created with ID: {Window.Id}");
                 if (Window == null)
-                    throw new InvalidOperationException("Failed to create SDL Window.");
-                World.Set(Window); // Add Window as singleton resource
+                    throw new InvalidOperationException(message: "Failed to create SDL Window.");
+                World.Set(data: Window); // Add Window as singleton resource
 
                 Renderer = Window.CreateRenderer();
-                Console.WriteLine($"Renderer created: {Renderer.Name}");
+                Console.WriteLine(value: $"Renderer created: {Renderer.Name}");
                 if (Renderer == null)
-                    throw new InvalidOperationException("Failed to create SDL Renderer.");
-                Renderer.DrawColor = new Color(255, 255, 255, 255); // White (using wrapper's Color)
-                World.Set(Renderer); // Add Renderer as singleton resource
+                    throw new InvalidOperationException(message: "Failed to create SDL Renderer.");
+                Renderer.DrawColor = new Color(r: 255,g: 255,b: 255,a: 255); // White (using wrapper's Color)
+                World.Set(data: Renderer); // Add Renderer as singleton resource
 
                 // Create the application's root entity for events
-                _appEntity = World.Entity($"App: {Title}"); // Use property, will fetch from Window
+                _appEntity = World.Entity(name: $"App: {Title}"); // Use property, will fetch from Window
 
                 // Call user's initialization code
-                if (!OnInit(args))
+                if (!OnInit(args: args))
                 {
-                    Console.Error.WriteLine("Application OnInit returned false. Shutting down.");
+                    Console.Error.WriteLine(
+                        value: "Application OnInit returned false. Shutting down."
+                    );
                     _shouldQuit = true; // Signal immediate quit if OnInit fails
                     return false;
                 }
 
-                Console.WriteLine("App.Initialize successful.");
+                Console.WriteLine(value: "App.Initialize successful.");
                 return !_shouldQuit; // Return true to continue
             }
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.WriteLine($"Error during App.Initialize: {ex}");
+                Console.Error.WriteLine(value: $"Error during App.Initialize: {ex}");
                 Console.ResetColor();
                 _shouldQuit = true; // Ensure we signal quit on error
                 return false; // Return false on failure
@@ -228,13 +237,13 @@ namespace AyanamisTower.NihilEx
                 // Progress the ECS world (execute systems)
                 if (!World.IsDeferred()) // Basic check, might need more robust handling
                 {
-                    World.Progress(deltaTime);
+                    World.Progress(deltaTime: deltaTime);
                 }
             }
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.WriteLine($"Error during App.Update: {ex}");
+                Console.Error.WriteLine(value: $"Error during App.Update: {ex}");
                 Console.ResetColor();
                 _shouldQuit = true; // Request quit on unhandled exception during update
                 return false;
@@ -260,7 +269,7 @@ namespace AyanamisTower.NihilEx
                 // Handle global quit event first
                 if (evt is QuitEventArgs)
                 {
-                    Console.WriteLine("Quit event received.");
+                    Console.WriteLine(value: "Quit event received.");
                     _shouldQuit = true;
                     //AppEntity.Emit<QuitEvent>(); // Optionally emit an ECS event too
                     return false; // Signal quit
@@ -275,14 +284,14 @@ namespace AyanamisTower.NihilEx
                         switch (windowEvt.EventType)
                         {
                             case WindowEventType.CloseRequested:
-                                Console.WriteLine("Window close requested.");
+                                Console.WriteLine(value: "Window close requested.");
                                 _shouldQuit = true;
                                 ////AppEntity.Emit(new WindowCloseEvent()); // Emit specific ECS event
                                 return false; // Signal quit
 
                             case WindowEventType.Resized:
                                 AppEntity.Emit(
-                                    new WindowResize(
+                                    payload: new WindowResize(
                                         Width: windowEvt.Data1,
                                         Height: windowEvt.Data2
                                     )
@@ -290,7 +299,10 @@ namespace AyanamisTower.NihilEx
                                 break;
                             case WindowEventType.Moved:
                                 AppEntity.Emit(
-                                    new WindowMovedEvent(X: windowEvt.Data1, Y: windowEvt.Data2)
+                                    payload: new WindowMovedEvent(
+                                        X: windowEvt.Data1,
+                                        Y: windowEvt.Data2
+                                    )
                                 );
                                 break;
                             case WindowEventType.FocusGained:
@@ -317,11 +329,15 @@ namespace AyanamisTower.NihilEx
                             case WindowEventType.MouseEnter:
                                 // Assuming SdlHost provides global mouse state access if needed
                                 // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
-                                AppEntity.Emit(new WindowMouseEnterEvent(0, false, 0, 0, 0)); // TODO: Populate with real data if needed/available
+                                AppEntity.Emit(
+                                    payload: new WindowMouseEnterEvent(MouseButton: 0, Down: false,X: 0,Y: 0,Clicks: 0)
+                                ); // TODO: Populate with real data if needed/available
                                 break;
                             case WindowEventType.MouseLeave:
                                 // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
-                                AppEntity.Emit(new WindowMouseLeaveEvent(0, false, 0, 0, 0)); // TODO: Populate with real data if needed/available
+                                AppEntity.Emit(
+                                    payload: new WindowMouseLeaveEvent(MouseButton: 0, Down: false,X: 0,Y: 0,Clicks: 0)
+                                ); // TODO: Populate with real data if needed/available
                                 break;
                             // Add other WindowEventType cases as needed
                         }
@@ -333,7 +349,7 @@ namespace AyanamisTower.NihilEx
                     // Example: Quit on Escape key press
                     if (keyEvt.IsDown && keyEvt.Key == SDLWrapper.Key.Escape) // Use wrapper's Key enum
                     {
-                        Console.WriteLine("Escape key pressed.");
+                        Console.WriteLine(value: "Escape key pressed.");
                         _shouldQuit = true;
                         // Optionally emit EscapeKeyEvent or similar
                         return false; // Signal quit
@@ -343,7 +359,7 @@ namespace AyanamisTower.NihilEx
                     if (keyEvt.IsDown)
                     {
                         AppEntity.Emit(
-                            new KeyDownEvent(
+                            payload: new KeyDownEvent(
                                 Keycode: keyEvt.Key,
                                 Modifiers: keyEvt.Modifiers,
                                 IsRepeat: keyEvt.IsRepeat
@@ -353,7 +369,10 @@ namespace AyanamisTower.NihilEx
                     else // IsUp
                     {
                         AppEntity.Emit(
-                            new KeyUpEvent(Keycode: keyEvt.Key, Modifiers: keyEvt.Modifiers)
+                            payload: new KeyUpEvent(
+                                Keycode: keyEvt.Key,
+                                Modifiers: keyEvt.Modifiers
+                            )
                         );
                     }
                 }
@@ -363,7 +382,7 @@ namespace AyanamisTower.NihilEx
                     if (buttonEvt.IsDown)
                     {
                         AppEntity.Emit(
-                            new MouseButtonDownEvent(
+                            payload: new MouseButtonDownEvent(
                                 MouseButton: buttonEvt.Button,
                                 X: buttonEvt.X,
                                 Y: buttonEvt.Y,
@@ -374,7 +393,7 @@ namespace AyanamisTower.NihilEx
                     else // IsUp
                     {
                         AppEntity.Emit(
-                            new MouseButtonUpEvent(
+                            payload: new MouseButtonUpEvent(
                                 MouseButton: buttonEvt.Button,
                                 X: buttonEvt.X,
                                 Y: buttonEvt.Y,
@@ -387,7 +406,7 @@ namespace AyanamisTower.NihilEx
                 else if (evt is MouseMotionEventArgs motionEvt)
                 {
                     AppEntity.Emit(
-                        new MouseMotionEvent(
+                        payload: new MouseMotionEvent(
                             MouseState: motionEvt.State,
                             X: motionEvt.X,
                             Y: motionEvt.Y,
@@ -400,7 +419,7 @@ namespace AyanamisTower.NihilEx
                 else if (evt is MouseWheelEventArgs wheelEvt)
                 {
                     AppEntity.Emit(
-                        new MouseWheelEvent(
+                        payload: new MouseWheelEvent(
                             ScrollX: wheelEvt.ScrollX,
                             ScrollY: wheelEvt.ScrollY,
                             Direction: wheelEvt.Direction // Cast based on your event definition (e.g., SDL_MouseWheelDirection)
@@ -419,7 +438,7 @@ namespace AyanamisTower.NihilEx
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.WriteLine($"Error during App.HandleEvent: {ex}");
+                Console.Error.WriteLine(value: $"Error during App.HandleEvent: {ex}");
                 Console.ResetColor();
                 _shouldQuit = true; // Request quit on unhandled exception during event processing
                 return false;
@@ -435,8 +454,8 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         private void Cleanup()
         {
-            Console.WriteLine($"App.Cleanup: Thread {Environment.CurrentManagedThreadId}");
-            Console.WriteLine("App.Cleanup started.");
+            Console.WriteLine(value: $"App.Cleanup: Thread {Environment.CurrentManagedThreadId}");
+            Console.WriteLine(value: "App.Cleanup started.");
             try
             {
                 // Call user's cleanup code first
@@ -445,7 +464,7 @@ namespace AyanamisTower.NihilEx
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.Error.WriteLine($"Error during user OnQuit: {ex}");
+                Console.Error.WriteLine(value: $"Error during user OnQuit: {ex}");
                 Console.ResetColor();
                 // Continue with engine cleanup even if user code fails
             }
@@ -453,8 +472,8 @@ namespace AyanamisTower.NihilEx
             Renderer?.Dispose();
             Window?.Dispose(); // Dispose wrapper objects
 
-            Console.WriteLine("Window, Renderer, Engine, and World disposed.");
-            Console.WriteLine("App.Cleanup finished.");
+            Console.WriteLine(value: "Window, Renderer, Engine, and World disposed.");
+            Console.WriteLine(value: "App.Cleanup finished.");
             // SdlHost.RunApplication handles SDL.Quit() automatically.
         }
 
