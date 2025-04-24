@@ -3,7 +3,6 @@ using System.Threading; // For Thread.Sleep (might not be needed with callbacks)
 
 namespace AyanamisTower.NihilEx.SDLWrapper.CallbackExample;
 
-
 /// <summary>
 /// Basic example using callbacks instead of the mainloop
 /// </summary>
@@ -53,7 +52,8 @@ public class CallbackApplication
     public bool HandleEvent(SdlEventArgs? evt)
     {
         // If evt is null, it's an unhandled event type by the wrapper, continue running
-        if (evt == null) return !_shouldQuit;
+        if (evt == null)
+            return !_shouldQuit;
 
         // Process known events
         switch (evt)
@@ -65,9 +65,12 @@ public class CallbackApplication
 
             case WindowEventArgs windowEvt:
                 // Check if the close button was clicked for *our* window
-                if (windowEvt.EventType == WindowEventType.CloseRequested &&
-                    _window != null && // Ensure window exists
-                    windowEvt.WindowId == _window.Id)
+                if (
+                    windowEvt.EventType == WindowEventType.CloseRequested
+                    && _window != null
+                    && // Ensure window exists
+                    windowEvt.WindowId == _window.Id
+                )
                 {
                     Console.WriteLine("Window close requested.");
                     _shouldQuit = true;
@@ -89,8 +92,7 @@ public class CallbackApplication
                 // Console.WriteLine($"Key Event: Key={keyEvt.Key}, Mod={keyEvt.Modifiers}, Down={keyEvt.IsDown}");
                 break;
 
-                // Add other event handlers as needed
-
+            // Add other event handlers as needed
         }
 
         // Return false to signal quit, true to continue
@@ -134,6 +136,7 @@ public class CallbackApplication
         // SdlHost.Quit() is called automatically by the RunApplication wrapper's NativeAppQuit
     }
 }
+
 /// <summary>
 /// Program
 /// </summary>
