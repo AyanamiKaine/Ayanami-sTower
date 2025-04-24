@@ -92,7 +92,7 @@ public struct RgbaColor : IEquatable<RgbaColor>
     /// <returns>The equivalent <see cref="System.Drawing.Color"/>.</returns>
     public static implicit operator System.Drawing.Color(RgbaColor color)
     {
-        return System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B);
+        return System.Drawing.Color.FromArgb(alpha: color.A, red: color.R, green: color.G, blue: color.B);
     }
 
     /// <summary>
@@ -114,7 +114,7 @@ public struct RgbaColor : IEquatable<RgbaColor>
     /// <returns><c>true</c> if the specified object is an <see cref="RgbaColor"/> and has the same RGBA values as the current instance; otherwise, <c>false</c>.</returns>
     public override bool Equals(object? obj)
     {
-        return obj is RgbaColor other && Equals(other);
+        return obj is RgbaColor other && Equals(other: other);
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ public struct RgbaColor : IEquatable<RgbaColor>
     /// <returns>A 32-bit signed integer hash code.</returns>
     public override int GetHashCode()
     {
-        return HashCode.Combine(R, G, B, A);
+        return HashCode.Combine(value1: R, value2: G, value3: B, value4: A);
     }
 
     /// <summary>
@@ -144,7 +144,7 @@ public struct RgbaColor : IEquatable<RgbaColor>
     /// <returns><c>true</c> if the values of <paramref name="left"/> and <paramref name="right"/> are equal; otherwise, <c>false</c>.</returns>
     public static bool operator ==(RgbaColor left, RgbaColor right)
     {
-        return left.Equals(right);
+        return left.Equals(other: right);
     }
 
     /// <summary>
@@ -180,7 +180,7 @@ public struct RgbaColor : IEquatable<RgbaColor>
     /// <returns>The interpolated <see cref="RgbaColor"/>.</returns>
     public static RgbaColor Lerp(RgbaColor a, RgbaColor b, float t)
     {
-        t = Math.Clamp(t, 0.0f, 1.0f); // Ensure t is in [0, 1] range
+        t = Math.Clamp(value: t, min: 0.0f, max: 1.0f); // Ensure t is in [0, 1] range
         byte r = (byte)(a.R + (b.R - a.R) * t);
         byte g = (byte)(a.G + (b.G - a.G) * t);
         byte bl = (byte)(a.B + (b.B - a.B) * t); // Renamed 'b' parameter to 'bl' to avoid conflict
