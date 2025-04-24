@@ -64,7 +64,7 @@ namespace AyanamisTower.NihilEx
             set
             {
                 if (Window != null)
-                    Window.Size = new(x: Width,y: value);
+                    Window.Size = new(x: Width, y: value);
             }
         }
 
@@ -77,7 +77,7 @@ namespace AyanamisTower.NihilEx
             set
             {
                 if (Window != null)
-                    Window.Size = new(x: value,y: Height);
+                    Window.Size = new(x: value, y: Height);
             }
         }
 
@@ -185,7 +185,7 @@ namespace AyanamisTower.NihilEx
                 Console.WriteLine(value: $"Renderer created: {Renderer.Name}");
                 if (Renderer == null)
                     throw new InvalidOperationException(message: "Failed to create SDL Renderer.");
-                Renderer.DrawColor = new Color(r: 255,g: 255,b: 255,a: 255); // White (using wrapper's Color)
+                Renderer.DrawColor = new Color(r: 255, g: 255, b: 255, a: 255); // White (using wrapper's Color)
                 World.Set(data: Renderer); // Add Renderer as singleton resource
 
                 // Create the application's root entity for events
@@ -330,13 +330,25 @@ namespace AyanamisTower.NihilEx
                                 // Assuming SdlHost provides global mouse state access if needed
                                 // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
                                 AppEntity.Emit(
-                                    payload: new WindowMouseEnterEvent(MouseButton: 0, Down: false,X: 0,Y: 0,Clicks: 0)
+                                    payload: new WindowMouseEnterEvent(
+                                        MouseButton: 0,
+                                        Down: false,
+                                        X: 0,
+                                        Y: 0,
+                                        Clicks: 0
+                                    )
                                 ); // TODO: Populate with real data if needed/available
                                 break;
                             case WindowEventType.MouseLeave:
                                 // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
                                 AppEntity.Emit(
-                                    payload: new WindowMouseLeaveEvent(MouseButton: 0, Down: false,X: 0,Y: 0,Clicks: 0)
+                                    payload: new WindowMouseLeaveEvent(
+                                        MouseButton: 0,
+                                        Down: false,
+                                        X: 0,
+                                        Y: 0,
+                                        Clicks: 0
+                                    )
                                 ); // TODO: Populate with real data if needed/available
                                 break;
                             // Add other WindowEventType cases as needed
