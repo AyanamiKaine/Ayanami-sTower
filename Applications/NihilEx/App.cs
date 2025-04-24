@@ -327,27 +327,28 @@ namespace AyanamisTower.NihilEx
                                 //AppEntity.Emit(new WindowRestoredEvent());
                                 break;
                             case WindowEventType.MouseEnter:
-                                // Assuming SdlHost provides global mouse state access if needed
-                                // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
+                                SDL.SDL_GetGlobalMouseState(out float globalX1, out float globalY1);
                                 AppEntity.Emit(
                                     payload: new WindowMouseEnterEvent(
-                                        MouseButton: 0,
-                                        Down: false,
-                                        X: 0,
-                                        Y: 0,
-                                        Clicks: 0
+                                        MouseButton: (MouseButton)
+                                            Mouse.GetPosition(out float localX1, out float localY1),
+                                        LocalX: localX1,
+                                        LocalY: localY1,
+                                        GlobalX: globalX1,
+                                        GlobalY: globalY1
                                     )
                                 ); // TODO: Populate with real data if needed/available
                                 break;
                             case WindowEventType.MouseLeave:
-                                // SDL.SDL_GetGlobalMouseState(out float globalX, out float globalY);
+                                SDL.SDL_GetGlobalMouseState(out float globalX2, out float globalY2);
                                 AppEntity.Emit(
                                     payload: new WindowMouseLeaveEvent(
-                                        MouseButton: 0,
-                                        Down: false,
-                                        X: 0,
-                                        Y: 0,
-                                        Clicks: 0
+                                        MouseButton: (MouseButton)
+                                            Mouse.GetPosition(out float localX2, out float localY2),
+                                        LocalX: localX2,
+                                        LocalY: localY2,
+                                        GlobalX: globalX2,
+                                        GlobalY: globalY2
                                     )
                                 ); // TODO: Populate with real data if needed/available
                                 break;
