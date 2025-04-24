@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Text; // Required for StringBuilder
-using System.Collections.Generic; // For event args lists
-
+using SDL3;
 //THIS SHOULD BE REMOVED AT SOME POINT
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 // Use the namespace from your bindings file
 using static SDL3.SDL;
-using SDL3;
 
 namespace AyanamisTower.NihilEx.SDLWrapper
 {
@@ -22,13 +20,15 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <summary>
         /// Initializes a new instance of the <see cref="SDLException"/> class with the last SDL error message.
         /// </summary>
-        public SDLException() : base(GetSDLError()) { }
+        public SDLException()
+            : base(GetSDLError()) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SDLException"/> class with a specified error message.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
-        public SDLException(string message) : base(message) { }
+        public SDLException(string message)
+            : base(message) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SDLException"/> class with a specified error message
@@ -36,7 +36,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="inner">The exception that is the cause of the current exception.</param>
-        public SDLException(string message, Exception inner) : base(message, inner) { }
+        public SDLException(string message, Exception inner)
+            : base(message, inner) { }
 
         /// <summary>
         /// Helper to get the last SDL error message.
@@ -54,7 +55,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
     }
 
-
     /// <summary>
     /// Specifies SDL subsystems for initialization.
     /// </summary>
@@ -71,7 +71,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         Events = SDL_InitFlags.SDL_INIT_EVENTS,
         Sensor = SDL_InitFlags.SDL_INIT_SENSOR,
         Camera = SDL_InitFlags.SDL_INIT_CAMERA,
-        Everything = Timer | Audio | Video | Joystick | Haptic | Gamepad | Events | Sensor | Camera
+        Everything = Timer | Audio | Video | Joystick | Haptic | Gamepad | Events | Sensor | Camera,
     }
 
     /// <summary>
@@ -116,11 +116,12 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
         private static readonly SDL_AppInit_func _nativeInit = NativeAppInit;
         private static readonly SDL_AppIterate_func _nativeIterate = NativeAppIterate;
-        private unsafe static readonly SDL_AppEvent_func _nativeEvent = NativeAppEvent;
+        private static readonly unsafe SDL_AppEvent_func _nativeEvent = NativeAppEvent;
         private static readonly SDL_AppQuit_func _nativeQuit = NativeAppQuit;
         private static GCHandle _pendingAppHandle;
 
         private static readonly Lock _runLock = new(); // Assuming Lock is a valid locking mechanism
+
         // Static native callback wrappers
         private static SDL_AppResult NativeAppInit(IntPtr appstatePtrRef, int argc, IntPtr argv)
         {
@@ -132,7 +133,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 // Step 1: Retrieve the handle from the static field set in RunApplication
                 if (!_pendingAppHandle.IsAllocated)
                 {
-                    SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppInit: No pending AppContext handle found!");
+                    SDL_LogError(
+                        (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                        "NativeAppInit: No pending AppContext handle found!"
+                    );
                     Console.Error.WriteLine("NativeAppInit: No pending AppContext handle found!");
                     return SDL_AppResult.SDL_APP_FAILURE;
                 }
@@ -142,8 +146,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
                 if (context == null)
                 {
-                    SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppInit: Failed to get AppContext from pending handle.");
-                    Console.Error.WriteLine("NativeAppInit: Failed to get AppContext from pending handle.");
+                    SDL_LogError(
+                        (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                        "NativeAppInit: Failed to get AppContext from pending handle."
+                    );
+                    Console.Error.WriteLine(
+                        "NativeAppInit: Failed to get AppContext from pending handle."
+                    );
                     _pendingAppHandle = default; // Clear invalid static handle
                     return SDL_AppResult.SDL_APP_FAILURE;
                 }
@@ -152,12 +161,12 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 // This tells SDL which pointer to use for subsequent Iterate/Event/Quit calls.
                 IntPtr actualHandlePtr = GCHandle.ToIntPtr(handle);
                 Marshal.WriteIntPtr(appstatePtrRef, actualHandlePtr);
-                Console.WriteLine($"NativeAppInit: Thread {Environment.CurrentManagedThreadId}: Set SDL app state pointer to {actualHandlePtr:X} via appstatePtrRef {appstatePtrRef:X}.");
-
+                Console.WriteLine(
+                    $"NativeAppInit: Thread {Environment.CurrentManagedThreadId}: Set SDL app state pointer to {actualHandlePtr:X} via appstatePtrRef {appstatePtrRef:X}."
+                );
 
                 // Step 3: Clear the temporary static handle now that SDL knows the real one.
                 _pendingAppHandle = default;
-
 
                 // Step 4: Proceed with user initialization logic
                 if (context.UserInit == null)
@@ -177,11 +186,14 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                         for (int i = 0; i < argc; i++)
                         {
                             // Assuming UTF8, adjust if needed
-                            managedArgs[i] = Marshal.PtrToStringUTF8((IntPtr)nativeArgs[i]) ?? string.Empty;
+                            managedArgs[i] =
+                                Marshal.PtrToStringUTF8((IntPtr)nativeArgs[i]) ?? string.Empty;
                         }
                     }
                 }
-                Console.WriteLine($"NativeAppInit: Calling UserInit with {managedArgs.Length} args...");
+                Console.WriteLine(
+                    $"NativeAppInit: Calling UserInit with {managedArgs.Length} args..."
+                );
                 // Call user delegate
                 bool success = context.UserInit(managedArgs);
                 Console.WriteLine($"NativeAppInit: UserInit returned {success}.");
@@ -190,10 +202,15 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Exception in NativeAppInit: {ex}");
-                SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in NativeAppInit: {ex.Message}");
-                if (context != null) context.LastException = ex; // Store exception
-                                                                 // Ensure static handle is cleared on error
-                if (_pendingAppHandle.IsAllocated) _pendingAppHandle = default;
+                SDL_LogError(
+                    (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                    $"Exception in NativeAppInit: {ex.Message}"
+                );
+                if (context != null)
+                    context.LastException = ex; // Store exception
+                // Ensure static handle is cleared on error
+                if (_pendingAppHandle.IsAllocated)
+                    _pendingAppHandle = default;
                 return SDL_AppResult.SDL_APP_FAILURE; // Signal failure
             }
         }
@@ -204,21 +221,27 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             try
             {
                 // Retrieve context from the appstate pointer provided by SDL
-                if (appstate == IntPtr.Zero) return SDL_AppResult.SDL_APP_FAILURE;
+                if (appstate == IntPtr.Zero)
+                    return SDL_AppResult.SDL_APP_FAILURE;
                 GCHandle handle = GCHandle.FromIntPtr(appstate); // Use the pointer SDL gives us now
-                if (!handle.IsAllocated) return SDL_AppResult.SDL_APP_FAILURE; // Handle wasn't set or was freed early
+                if (!handle.IsAllocated)
+                    return SDL_AppResult.SDL_APP_FAILURE; // Handle wasn't set or was freed early
 
                 context = handle.Target as AppContext;
-                if (context?.UserUpdate == null) return SDL_AppResult.SDL_APP_CONTINUE; // No user update, just continue
+                if (context?.UserUpdate == null)
+                    return SDL_AppResult.SDL_APP_CONTINUE; // No user update, just continue
 
                 // Call user delegate
                 bool continueRunning = context.UserUpdate();
-                return continueRunning ? SDL_AppResult.SDL_APP_CONTINUE : SDL_AppResult.SDL_APP_SUCCESS; // Return SUCCESS to quit cleanly
+                return continueRunning
+                    ? SDL_AppResult.SDL_APP_CONTINUE
+                    : SDL_AppResult.SDL_APP_SUCCESS; // Return SUCCESS to quit cleanly
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Exception in AppUpdate: {ex}");
-                if (context != null) context.LastException = ex;
+                if (context != null)
+                    context.LastException = ex;
                 return SDL_AppResult.SDL_APP_FAILURE; // Signal failure on exception
             }
         }
@@ -229,24 +252,30 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             try
             {
                 // Retrieve context from the appstate pointer provided by SDL
-                if (appstate == IntPtr.Zero) return SDL_AppResult.SDL_APP_FAILURE;
+                if (appstate == IntPtr.Zero)
+                    return SDL_AppResult.SDL_APP_FAILURE;
                 GCHandle handle = GCHandle.FromIntPtr(appstate);
-                if (!handle.IsAllocated) return SDL_AppResult.SDL_APP_FAILURE;
+                if (!handle.IsAllocated)
+                    return SDL_AppResult.SDL_APP_FAILURE;
 
                 context = handle.Target as AppContext;
-                if (context?.UserEvent == null) return SDL_AppResult.SDL_APP_CONTINUE; // No user event handler
+                if (context?.UserEvent == null)
+                    return SDL_AppResult.SDL_APP_CONTINUE; // No user event handler
 
                 // Map event (MapEvent takes SDL_Event by value, so dereference)
                 SdlEventArgs? managedEvent = Events.MapEvent(*evt);
 
                 // Call user delegate
                 bool continueRunning = context.UserEvent(managedEvent);
-                return continueRunning ? SDL_AppResult.SDL_APP_CONTINUE : SDL_AppResult.SDL_APP_SUCCESS; // Return SUCCESS to quit cleanly
+                return continueRunning
+                    ? SDL_AppResult.SDL_APP_CONTINUE
+                    : SDL_AppResult.SDL_APP_SUCCESS; // Return SUCCESS to quit cleanly
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Exception in AppEvent: {ex}");
-                if (context != null) context.LastException = ex;
+                if (context != null)
+                    context.LastException = ex;
                 return SDL_AppResult.SDL_APP_FAILURE; // Signal failure on exception
             }
         }
@@ -258,7 +287,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             bool handleIsValid = false;
             try
             {
-                Console.WriteLine($"NativeAppQuit: Received appstate IntPtr value: {appstate.ToString("X")}. Result code: {result}"); // Log as Hex
+                Console.WriteLine(
+                    $"NativeAppQuit: Received appstate IntPtr value: {appstate.ToString("X")}. Result code: {result}"
+                ); // Log as Hex
 
                 // Retrieve context one last time using the appstate passed by SDL
                 if (appstate != IntPtr.Zero)
@@ -271,12 +302,18 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     }
                     else
                     {
-                        SDL.SDL_LogWarn((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppQuit: Received appstate pointer, but GCHandle was not allocated.");
+                        SDL.SDL_LogWarn(
+                            (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                            "NativeAppQuit: Received appstate pointer, but GCHandle was not allocated."
+                        );
                     }
                 }
                 else
                 {
-                    SDL.SDL_LogWarn((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppQuit: Received null appstate pointer.");
+                    SDL.SDL_LogWarn(
+                        (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                        "NativeAppQuit: Received null appstate pointer."
+                    );
                 }
 
                 context?.UserQuit?.Invoke(); // Call user quit delegate if provided and context was retrieved
@@ -284,7 +321,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Exception in AppQuit: {ex}");
-                SDL.SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"Exception in NativeAppQuit: {ex.Message}");
+                SDL.SDL_LogError(
+                    (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                    $"Exception in NativeAppQuit: {ex.Message}"
+                );
                 // Don't store exception here as the app is already quitting
             }
             finally
@@ -309,8 +349,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     catch (InvalidOperationException ex)
                     {
                         // Handle case where handle might have been freed elsewhere (shouldn't happen ideally) or was invalid
-                        Console.Error.WriteLine($"Warning: Attempted to free GCHandle in NativeAppQuit, but it was invalid or already freed: {ex.Message}");
-                        SDL.SDL_LogWarn((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, "NativeAppQuit: Attempted to free GCHandle, but it was invalid or already freed.");
+                        Console.Error.WriteLine(
+                            $"Warning: Attempted to free GCHandle in NativeAppQuit, but it was invalid or already freed: {ex.Message}"
+                        );
+                        SDL.SDL_LogWarn(
+                            (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                            "NativeAppQuit: Attempted to free GCHandle, but it was invalid or already freed."
+                        );
                     }
                 }
                 // Removed the fallback for _pendingAppHandle as it's no longer used.
@@ -360,7 +405,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 if (!_isInitialized)
                 {
-                    throw new InvalidOperationException("SDL must be initialized with Init() first.");
+                    throw new InvalidOperationException(
+                        "SDL must be initialized with Init() first."
+                    );
                 }
                 SDL_InitFlags sdlFlags = (SDL_InitFlags)flags; // Cast to SDL enum
                 if (SDL_InitSubSystem(sdlFlags)) // Call SDL with casted flags
@@ -384,7 +431,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 }
             }
         }
-
 
         /// <summary>
         /// Cleans up all initialized SDL subsystems.
@@ -414,7 +460,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <param name="quit">Cleanup callback.</param>
         /// <param name="args">Command line arguments passed to the init callback.</param>
         /// <returns>Exit code (0 for success, non-zero for failure).</returns>
-        public static unsafe int RunApplication(AppInitHandler init, AppUpdateHandler update, AppEventHandler eventHandler, AppQuitHandler quit, string[]? args = null)
+        public static unsafe int RunApplication(
+            AppInitHandler init,
+            AppUpdateHandler update,
+            AppEventHandler eventHandler,
+            AppQuitHandler quit,
+            string[]? args = null
+        )
         {
             Init(SdlSubSystem.Video);
             // Ensure RunApplication is not called concurrently if that's an issue
@@ -432,7 +484,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 UserInit = init,
                 UserUpdate = update,
                 UserEvent = eventHandler,
-                UserQuit = quit
+                UserQuit = quit,
             };
 
             GCHandle contextHandle = default; // Use default initialization
@@ -445,19 +497,24 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 // Allocate handle for the context object
                 contextHandle = GCHandle.Alloc(context, GCHandleType.Normal);
                 IntPtr contextHandlePtr = GCHandle.ToIntPtr(contextHandle);
-                Console.WriteLine($"RunApplication: Thread {Environment.CurrentManagedThreadId}: Allocating GCHandle {contextHandlePtr:X} for AppContext.");
+                Console.WriteLine(
+                    $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Allocating GCHandle {contextHandlePtr:X} for AppContext."
+                );
 
                 // --- CRITICAL STEP: Set the static handle for NativeAppInit to pick up ---
                 if (_pendingAppHandle.IsAllocated)
                 {
                     // This should not happen if RunApplication is single-threaded as enforced by _runLock
-                    Console.Error.WriteLine("RunApplication Warning: _pendingAppHandle was already allocated!");
+                    Console.Error.WriteLine(
+                        "RunApplication Warning: _pendingAppHandle was already allocated!"
+                    );
                     _pendingAppHandle.Free(); // Attempt cleanup just in case
                 }
                 _pendingAppHandle = contextHandle;
-                Console.WriteLine($"RunApplication: Thread {Environment.CurrentManagedThreadId}: Assigned GCHandle to _pendingAppHandle. IsAllocated = {_pendingAppHandle.IsAllocated}");
+                Console.WriteLine(
+                    $"RunApplication: Thread {Environment.CurrentManagedThreadId}: Assigned GCHandle to _pendingAppHandle. IsAllocated = {_pendingAppHandle.IsAllocated}"
+                );
                 // --- End Critical Step ---
-
 
                 // Marshal command line arguments (if provided) - same as before
                 if (args?.Length > 0)
@@ -483,23 +540,37 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
                 Console.WriteLine("RunApplication: Entering SDL_EnterAppMainCallbacks...");
                 // Call SDL's main entry point with the static delegate references
-                result = SDL_EnterAppMainCallbacks(argc, argvPtr, _nativeInit, _nativeIterate, _nativeEvent, _nativeQuit);
+                result = SDL_EnterAppMainCallbacks(
+                    argc,
+                    argvPtr,
+                    _nativeInit,
+                    _nativeIterate,
+                    _nativeEvent,
+                    _nativeQuit
+                );
                 Console.WriteLine($"RunApplication: SDL_EnterAppMainCallbacks returned {result}.");
-
 
                 // Check if an exception occurred in a callback (stored in context)
                 if (context.LastException != null)
                 {
-                    Console.Error.WriteLine("RunApplication: Exiting due to unhandled exception in callback.");
+                    Console.Error.WriteLine(
+                        "RunApplication: Exiting due to unhandled exception in callback."
+                    );
                     // Optionally re-throw or handle differently
                     // throw new Exception("Exception occurred in SDL callback.", context.LastException);
-                    result = context.LastException.HResult != 0 ? context.LastException.HResult : -1; // Use HResult as exit code if available
+                    result =
+                        context.LastException.HResult != 0 ? context.LastException.HResult : -1; // Use HResult as exit code if available
                 }
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"RunApplication: Exception during setup or execution: {ex}");
-                SDL_LogError((int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION, $"RunApplication Exception: {ex.Message}");
+                Console.Error.WriteLine(
+                    $"RunApplication: Exception during setup or execution: {ex}"
+                );
+                SDL_LogError(
+                    (int)SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                    $"RunApplication Exception: {ex.Message}"
+                );
                 result = ex.HResult != 0 ? ex.HResult : -1;
             }
             finally
@@ -512,7 +583,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     byte** argv = (byte**)argvPtr;
                     for (int i = 0; i < argc; i++)
                     {
-                        if (argv[i] != null) Marshal.FreeHGlobal((IntPtr)argv[i]);
+                        if (argv[i] != null)
+                            Marshal.FreeHGlobal((IntPtr)argv[i]);
                     }
                     Marshal.FreeHGlobal(argvPtr);
                     Console.WriteLine("RunApplication: Finished freeing arguments.");
@@ -523,21 +595,26 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 {
                     IntPtr freedHandlePtr = GCHandle.ToIntPtr(contextHandle);
                     contextHandle.Free();
-                    Console.WriteLine($"RunApplication: Freed GCHandle {freedHandlePtr:X}. IsAllocated = {contextHandle.IsAllocated}");
+                    Console.WriteLine(
+                        $"RunApplication: Freed GCHandle {freedHandlePtr:X}. IsAllocated = {contextHandle.IsAllocated}"
+                    );
                 }
                 else
                 {
-                    Console.WriteLine("RunApplication: Context GCHandle was not allocated or already freed.");
+                    Console.WriteLine(
+                        "RunApplication: Context GCHandle was not allocated or already freed."
+                    );
                 }
 
                 // Ensure pending handle is cleared if something went wrong very early
                 if (_pendingAppHandle.IsAllocated)
                 {
-                    Console.Error.WriteLine("RunApplication Warning: _pendingAppHandle was still allocated in finally block! Clearing.");
+                    Console.Error.WriteLine(
+                        "RunApplication Warning: _pendingAppHandle was still allocated in finally block! Clearing."
+                    );
                     _pendingAppHandle.Free();
                     _pendingAppHandle = default;
                 }
-
 
                 // Release the lock
                 _runLock.Exit(); // Assuming Unlock exists
@@ -659,7 +736,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
         public static implicit operator SDL_Rect(Rect r)
         {
-            return new SDL_Rect { x = r.X, y = r.Y, w = r.W, h = r.H };
+            return new SDL_Rect
+            {
+                x = r.X,
+                y = r.Y,
+                w = r.W,
+                h = r.H,
+            };
         }
 
         public static implicit operator Rect(SDL_Rect r)
@@ -680,7 +763,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
         public static implicit operator SDL_FRect(FRect r)
         {
-            return new SDL_FRect { x = r.X, y = r.Y, w = r.W, h = r.H };
+            return new SDL_FRect
+            {
+                x = r.X,
+                y = r.Y,
+                w = r.W,
+                h = r.H,
+            };
         }
 
         public static implicit operator FRect(SDL_FRect r)
@@ -699,7 +788,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
         public static implicit operator SDL_Color(Color c)
         {
-            return new SDL_Color { r = c.R, g = c.G, b = c.B, a = c.A };
+            return new SDL_Color
+            {
+                r = c.R,
+                g = c.G,
+                b = c.B,
+                a = c.A,
+            };
         }
 
         public static implicit operator Color(SDL_Color c)
@@ -738,7 +833,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
         public static implicit operator SDL_FColor(FColor c)
         {
-            return new SDL_FColor { r = c.R, g = c.G, b = c.B, a = c.A };
+            return new SDL_FColor
+            {
+                r = c.R,
+                g = c.G,
+                b = c.B,
+                a = c.A,
+            };
         }
 
         public static implicit operator FColor(SDL_FColor c)
@@ -768,7 +869,12 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
         public static implicit operator SDL_Vertex(Vertex v)
         {
-            return new SDL_Vertex { position = v.Position, color = v.Color, tex_coord = v.TexCoord };
+            return new SDL_Vertex
+            {
+                position = v.Position,
+                color = v.Color,
+                tex_coord = v.TexCoord,
+            };
         }
 
         public static implicit operator Vertex(SDL_Vertex v)
@@ -776,7 +882,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             return new Vertex(v.position, v.color, v.tex_coord);
         }
     }
-
 
     #endregion
 
@@ -812,7 +917,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         Vulkan = SDL_WindowFlags.SDL_WINDOW_VULKAN,
         Metal = SDL_WindowFlags.SDL_WINDOW_METAL,
         Transparent = SDL_WindowFlags.SDL_WINDOW_TRANSPARENT,
-        NotFocusable = SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE
+        NotFocusable = SDL_WindowFlags.SDL_WINDOW_NOT_FOCUSABLE,
         // SDL_WINDOW_MOUSE_RELATIVE_MODE (0x8000) might need separate handling or a distinct flag if different from MouseCapture
     }
 
@@ -845,7 +950,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         EnterFullscreen,
         LeaveFullscreen,
         Destroyed, // Window was destroyed
-        HdrStateChanged
+        HdrStateChanged,
         // Note: MetalViewResized might be too specific, handled by Resized/PixelSizeChanged?
     }
 
@@ -856,7 +961,11 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     {
         private IntPtr _windowPtr;
         private bool _disposed = false;
-        public bool IsDisposed { get => _disposed; }
+        public bool IsDisposed
+        {
+            get => _disposed;
+        }
+
         /// <summary>
         /// Gets the native SDL window handle. Use with caution.
         /// </summary>
@@ -877,10 +986,11 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                return _disposed ? throw new ObjectDisposedException(nameof(Window)) : SDL_GetWindowID(_windowPtr);
+                return _disposed
+                    ? throw new ObjectDisposedException(nameof(Window))
+                    : SDL_GetWindowID(_windowPtr);
             }
         }
-
 
         /// <summary>
         /// Creates a new SDL window using wrapper flags.
@@ -896,7 +1006,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             if ((SdlHost.WasInit(SdlSubSystem.Video) & SdlSubSystem.Video) == 0)
             {
-                throw new InvalidOperationException("SdlSubSystem.Video must be initialized before creating a window.");
+                throw new InvalidOperationException(
+                    "SdlSubSystem.Video must be initialized before creating a window."
+                );
             }
 
             // Cast wrapper flags to SDL flags for the underlying call
@@ -916,7 +1028,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             if ((SdlHost.WasInit(SdlSubSystem.Video) & SdlSubSystem.Video) == 0)
             {
-                throw new InvalidOperationException("SDL_INIT_VIDEO must be initialized before creating a window.");
+                throw new InvalidOperationException(
+                    "SDL_INIT_VIDEO must be initialized before creating a window."
+                );
             }
             _windowPtr = SDL_CreateWindowWithProperties(properties);
             SdlHost.ThrowOnNull(_windowPtr, "Failed to create window with properties");
@@ -935,7 +1049,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             // This might need adjustment based on specific use cases. Consider adding an 'owned' flag.
             _disposed = true; // Mark as disposed immediately to prevent SDL_DestroyWindow call
         }
-
 
         // --- Window Properties ---
 
@@ -957,7 +1070,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-                SdlHost.ThrowOnFailure(SDL_SetWindowTitle(_windowPtr, value), "Failed to set window title");
+                SdlHost.ThrowOnFailure(
+                    SDL_SetWindowTitle(_windowPtr, value),
+                    "Failed to set window title"
+                );
             }
         }
 
@@ -971,15 +1087,20 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-                SdlHost.ThrowOnFailure(SDL_GetWindowPosition(_windowPtr, out int x, out int y), "Failed to get window position");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetWindowPosition(_windowPtr, out int x, out int y),
+                    "Failed to get window position"
+                );
                 return new Point(x, y);
             }
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-                SdlHost.ThrowOnFailure(SDL_SetWindowPosition(_windowPtr, value.X, value.Y), "Failed to set window position");
+                SdlHost.ThrowOnFailure(
+                    SDL_SetWindowPosition(_windowPtr, value.X, value.Y),
+                    "Failed to set window position"
+                );
             }
         }
 
@@ -993,14 +1114,20 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-                SdlHost.ThrowOnFailure(SDL_GetWindowSize(_windowPtr, out int w, out int h), "Failed to get window size");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetWindowSize(_windowPtr, out int w, out int h),
+                    "Failed to get window size"
+                );
                 return new Point(w, h);
             }
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-                SdlHost.ThrowOnFailure(SDL_SetWindowSize(_windowPtr, value.X, value.Y), "Failed to set window size");
+                SdlHost.ThrowOnFailure(
+                    SDL_SetWindowSize(_windowPtr, value.X, value.Y),
+                    "Failed to set window size"
+                );
             }
         }
 
@@ -1014,7 +1141,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-                SdlHost.ThrowOnFailure(SDL_GetWindowSizeInPixels(_windowPtr, out int w, out int h), "Failed to get window size in pixels");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetWindowSizeInPixels(_windowPtr, out int w, out int h),
+                    "Failed to get window size in pixels"
+                );
                 return new Point(w, h);
             }
         }
@@ -1027,7 +1157,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                return _disposed ? throw new ObjectDisposedException(nameof(Window)) : SDL_GetWindowFlags(_windowPtr);
+                return _disposed
+                    ? throw new ObjectDisposedException(nameof(Window))
+                    : SDL_GetWindowFlags(_windowPtr);
             }
         }
 
@@ -1041,7 +1173,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
                 // SDL_GetDisplayForWindow returns 0 on error, check error state?
                 // SDL3 doc says returns a valid display ID or 0 if the window is invalid.
                 // Assuming 0 is a valid ID for the primary display if only one exists,
@@ -1049,7 +1180,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 return SDL_GetDisplayForWindow(_windowPtr);
             }
         }
-
 
         // --- Window Methods ---
 
@@ -1137,8 +1267,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_SetWindowFullscreen(_windowPtr, fullscreen),
-               fullscreen ? "Failed to enter fullscreen" : "Failed to leave fullscreen");
+            SdlHost.ThrowOnFailure(
+                SDL_SetWindowFullscreen(_windowPtr, fullscreen),
+                fullscreen ? "Failed to enter fullscreen" : "Failed to leave fullscreen"
+            );
         }
 
         /// <summary>
@@ -1150,7 +1282,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_SetWindowBordered(_windowPtr, bordered), "Failed to set window border state");
+            SdlHost.ThrowOnFailure(
+                SDL_SetWindowBordered(_windowPtr, bordered),
+                "Failed to set window border state"
+            );
         }
 
         /// <summary>
@@ -1165,7 +1300,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 throw new ObjectDisposedException(nameof(Window));
             }
 
-            SdlHost.ThrowOnFailure(SDL_SetWindowResizable(_windowPtr, resizable), "Failed to set window resizable state");
+            SdlHost.ThrowOnFailure(
+                SDL_SetWindowResizable(_windowPtr, resizable),
+                "Failed to set window resizable state"
+            );
         }
 
         /// <summary>
@@ -1180,7 +1318,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 throw new ObjectDisposedException(nameof(Window));
             }
 
-            SdlHost.ThrowOnFailure(SDL_SetWindowAlwaysOnTop(_windowPtr, onTop), "Failed to set window always on top state");
+            SdlHost.ThrowOnFailure(
+                SDL_SetWindowAlwaysOnTop(_windowPtr, onTop),
+                "Failed to set window always on top state"
+            );
         }
 
         /// <summary>
@@ -1192,7 +1333,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <exception cref="ObjectDisposedException"></exception>
         public Renderer CreateRenderer(string? driverName = null)
         {
-            return _disposed ? throw new ObjectDisposedException(nameof(Window)) : new Renderer(this, driverName);
+            return _disposed
+                ? throw new ObjectDisposedException(nameof(Window))
+                : new Renderer(this, driverName);
         }
 
         /// <summary>
@@ -1206,7 +1349,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             IntPtr handle = SDL_GetWindowFromID(id);
             return handle == IntPtr.Zero ? null : new Window(handle);
         }
-
 
         // --- IDisposable Implementation ---
 
@@ -1267,7 +1409,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     {
         private IntPtr _texturePtr;
         private bool _disposed = false;
-        public bool IsDisposed { get => _disposed; }
+        public bool IsDisposed
+        {
+            get => _disposed;
+        }
 
         /// <summary>
         /// Gets the native SDL texture handle. Use with caution.
@@ -1287,7 +1432,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public Renderer Renderer { get; }
 
         // Internal constructor for wrapping SDL_CreateTexture and SDL_CreateTextureFromSurface
-        internal Texture(Renderer renderer, SDL_PixelFormat format, SDL_TextureAccess access, int w, int h)
+        internal Texture(
+            Renderer renderer,
+            SDL_PixelFormat format,
+            SDL_TextureAccess access,
+            int w,
+            int h
+        )
         {
             Renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
             if (renderer.IsDisposed)
@@ -1305,7 +1456,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
         // Internal constructor for wrapping SDL_CreateTextureFromSurface
         // NOTE: Requires Surface class to be implemented. Placeholder for now.
-        internal Texture(Renderer renderer, /* Surface surface */ IntPtr surfacePtr)
+        internal Texture(
+            Renderer renderer, /* Surface surface */
+            IntPtr surfacePtr
+        )
         {
             Renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
             if (renderer.IsDisposed)
@@ -1380,9 +1534,12 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     uint props = SDL_GetTextureProperties(_texturePtr);
                     SdlHost.ThrowOnFailure(props == 0, "Failed to get texture properties"); // Check if 0 is error
 
-
                     // We don't destroy the props handle here, assume it's temporary or managed by SDL? Check SDL docs.
-                    return (SDL_TextureAccess)SDL_GetNumberProperty(props, SDL_PROP_TEXTURE_ACCESS_NUMBER, (long)SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC);
+                    return (SDL_TextureAccess)SDL_GetNumberProperty(
+                        props,
+                        SDL_PROP_TEXTURE_ACCESS_NUMBER,
+                        (long)SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC
+                    );
                 }
             }
         }
@@ -1436,7 +1593,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// </summary>
         public Point Size => new Point(Width, Height);
 
-
         // --- Texture Manipulation ---
 
         /// <summary>
@@ -1448,7 +1604,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_SetTextureColorMod(_texturePtr, color.R, color.G, color.B), "Failed to set texture color mod");
+            SdlHost.ThrowOnFailure(
+                SDL_SetTextureColorMod(_texturePtr, color.R, color.G, color.B),
+                "Failed to set texture color mod"
+            );
         }
 
         /// <summary>
@@ -1460,7 +1619,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_GetTextureColorMod(_texturePtr, out byte r, out byte g, out byte b), "Failed to get texture color mod");
+            SdlHost.ThrowOnFailure(
+                SDL_GetTextureColorMod(_texturePtr, out byte r, out byte g, out byte b),
+                "Failed to get texture color mod"
+            );
             return new Color(r, g, b);
         }
 
@@ -1473,7 +1635,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_SetTextureAlphaMod(_texturePtr, alpha), "Failed to set texture alpha mod");
+            SdlHost.ThrowOnFailure(
+                SDL_SetTextureAlphaMod(_texturePtr, alpha),
+                "Failed to set texture alpha mod"
+            );
         }
 
         /// <summary>
@@ -1485,7 +1650,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_GetTextureAlphaMod(_texturePtr, out byte alpha), "Failed to get texture alpha mod");
+            SdlHost.ThrowOnFailure(
+                SDL_GetTextureAlphaMod(_texturePtr, out byte alpha),
+                "Failed to get texture alpha mod"
+            );
             return alpha;
         }
 
@@ -1498,7 +1666,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_SetTextureScaleMode(_texturePtr, scaleMode), "Failed to set texture scale mode");
+            SdlHost.ThrowOnFailure(
+                SDL_SetTextureScaleMode(_texturePtr, scaleMode),
+                "Failed to set texture scale mode"
+            );
         }
 
         /// <summary>
@@ -1510,7 +1681,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_GetTextureScaleMode(_texturePtr, out SDL_ScaleMode scaleMode), "Failed to get texture scale mode");
+            SdlHost.ThrowOnFailure(
+                SDL_GetTextureScaleMode(_texturePtr, out SDL_ScaleMode scaleMode),
+                "Failed to get texture scale mode"
+            );
             return scaleMode;
         }
 
@@ -1527,7 +1701,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             SDL_Rect sdlRect = rect ?? default;
-            SdlHost.ThrowOnFailure(SDL_UpdateTexture(_texturePtr, ref sdlRect, pixels, pitch), "Failed to update texture");
+            SdlHost.ThrowOnFailure(
+                SDL_UpdateTexture(_texturePtr, ref sdlRect, pixels, pitch),
+                "Failed to update texture"
+            );
         }
 
         /// <summary>
@@ -1542,12 +1719,32 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <param name="vPlane">Pointer to the V plane data.</param>
         /// <param name="vPitch">Pitch of the V plane data.</param>
         /// <exception cref="ObjectDisposedException"></exception>
-        public void UpdateYUVTexture(Rect? rect, IntPtr yPlane, int yPitch, IntPtr uPlane, int uPitch, IntPtr vPlane, int vPitch)
+        public void UpdateYUVTexture(
+            Rect? rect,
+            IntPtr yPlane,
+            int yPitch,
+            IntPtr uPlane,
+            int uPitch,
+            IntPtr vPlane,
+            int vPitch
+        )
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             SDL_Rect sdlRect = rect ?? default;
-            SdlHost.ThrowOnFailure(SDL_UpdateYUVTexture(_texturePtr, ref sdlRect, yPlane, yPitch, uPlane, uPitch, vPlane, vPitch), "Failed to update YUV texture");
+            SdlHost.ThrowOnFailure(
+                SDL_UpdateYUVTexture(
+                    _texturePtr,
+                    ref sdlRect,
+                    yPlane,
+                    yPitch,
+                    uPlane,
+                    uPitch,
+                    vPlane,
+                    vPitch
+                ),
+                "Failed to update YUV texture"
+            );
         }
 
         /// <summary>
@@ -1563,7 +1760,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             SDL_Rect sdlRect = rect ?? default;
-            SdlHost.ThrowOnFailure(SDL_LockTexture(_texturePtr, ref sdlRect, out pixels, out pitch), "Failed to lock texture");
+            SdlHost.ThrowOnFailure(
+                SDL_LockTexture(_texturePtr, ref sdlRect, out pixels, out pitch),
+                "Failed to lock texture"
+            );
         }
 
         /// <summary>
@@ -1577,7 +1777,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             // SDL_UnlockTexture returns void, no error check needed unless documented otherwise
             SDL_UnlockTexture(_texturePtr);
         }
-
 
         // --- IDisposable Implementation ---
 
@@ -1617,7 +1816,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
     }
 
-
     /// <summary>
     /// Represents an SDL Renderer, used for drawing operations.
     /// </summary>
@@ -1634,7 +1832,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                return _disposed ? throw new ObjectDisposedException(nameof(Renderer)) : _rendererPtr;
+                return _disposed
+                    ? throw new ObjectDisposedException(nameof(Renderer))
+                    : _rendererPtr;
             }
         }
 
@@ -1660,7 +1860,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             }
 
             _rendererPtr = SDL_CreateRenderer(window.Handle, driverName);
-            SdlHost.ThrowOnNull(_rendererPtr, $"Failed to create renderer{(driverName == null ? "" : $" with driver '{driverName}'")}");
+            SdlHost.ThrowOnNull(
+                _rendererPtr,
+                $"Failed to create renderer{(driverName == null ? "" : $" with driver '{driverName}'")}"
+            );
         }
 
         /// <summary>
@@ -1674,7 +1877,11 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             _rendererPtr = SDL_CreateRendererWithProperties(properties);
             SdlHost.ThrowOnNull(_rendererPtr, "Failed to create renderer with properties");
             // Try to get the associated window from properties if possible
-            IntPtr windowHandle = SDL_GetPointerProperty(properties, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, IntPtr.Zero);
+            IntPtr windowHandle = SDL_GetPointerProperty(
+                properties,
+                SDL_PROP_RENDERER_CREATE_WINDOW_POINTER,
+                IntPtr.Zero
+            );
             if (windowHandle != IntPtr.Zero)
             {
                 AssociatedWindow = Window.GetFromId(SDL_GetWindowID(windowHandle));
@@ -1683,7 +1890,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
 
         // TODO: Add constructor for software renderer SDL_CreateSoftwareRenderer(Surface surface) when Surface is wrapped.
-
 
         // --- Renderer Properties ---
 
@@ -1725,7 +1931,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 if (_vSync != value)
                 {
                     _vSync = value;
-                    SdlHost.ThrowOnFailure(SDL_SetRenderVSync(_rendererPtr, value ? 1 : 0), "Failed to set window always on top state");
+                    SdlHost.ThrowOnFailure(
+                        SDL_SetRenderVSync(_rendererPtr, value ? 1 : 0),
+                        "Failed to set window always on top state"
+                    );
                 }
             }
         }
@@ -1743,7 +1952,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     throw new ObjectDisposedException(nameof(Renderer));
                 }
 
-                SdlHost.ThrowOnFailure(SDL_GetRenderOutputSize(_rendererPtr, out int w, out int h), "Failed to get render output size");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetRenderOutputSize(_rendererPtr, out int w, out int h),
+                    "Failed to get render output size"
+                );
                 return new Point(w, h);
             }
         }
@@ -1758,14 +1970,26 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-                SdlHost.ThrowOnFailure(SDL_GetRenderDrawColor(_rendererPtr, out byte r, out byte g, out byte b, out byte a), "Failed to get draw color");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetRenderDrawColor(
+                        _rendererPtr,
+                        out byte r,
+                        out byte g,
+                        out byte b,
+                        out byte a
+                    ),
+                    "Failed to get draw color"
+                );
                 return new Color(r, g, b, a);
             }
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-                SdlHost.ThrowOnFailure(SDL_SetRenderDrawColor(_rendererPtr, value.R, value.G, value.B, value.A), "Failed to set draw color");
+                SdlHost.ThrowOnFailure(
+                    SDL_SetRenderDrawColor(_rendererPtr, value.R, value.G, value.B, value.A),
+                    "Failed to set draw color"
+                );
             }
         }
 
@@ -1779,16 +2003,26 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-                SdlHost.ThrowOnFailure(SDL_GetRenderDrawColorFloat(_rendererPtr, out float r, out float g, out float b, out float a), "Failed to get draw color float");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetRenderDrawColorFloat(
+                        _rendererPtr,
+                        out float r,
+                        out float g,
+                        out float b,
+                        out float a
+                    ),
+                    "Failed to get draw color float"
+                );
                 return new FColor(r, g, b, a);
             }
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-                SdlHost.ThrowOnFailure(SDL_SetRenderDrawColorFloat(_rendererPtr, value.R, value.G, value.B, value.A), "Failed to set draw color float");
+                SdlHost.ThrowOnFailure(
+                    SDL_SetRenderDrawColorFloat(_rendererPtr, value.R, value.G, value.B, value.A),
+                    "Failed to set draw color float"
+                );
             }
         }
 
@@ -1803,8 +2037,15 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-                SdlHost.ThrowOnFailure(SDL_GetRenderLogicalPresentation(_rendererPtr, out _, out _, out SDL_RendererLogicalPresentation mode), "Failed to get logical presentation");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetRenderLogicalPresentation(
+                        _rendererPtr,
+                        out _,
+                        out _,
+                        out SDL_RendererLogicalPresentation mode
+                    ),
+                    "Failed to get logical presentation"
+                );
                 return mode;
             }
             // Setting requires width/height, so use the SetRenderLogicalPresentation method instead.
@@ -1820,16 +2061,20 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-                SdlHost.ThrowOnFailure(SDL_GetRenderScale(_rendererPtr, out float x, out float y), "Failed to get render scale");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetRenderScale(_rendererPtr, out float x, out float y),
+                    "Failed to get render scale"
+                );
                 return new FPoint(x, y);
             }
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-                SdlHost.ThrowOnFailure(SDL_SetRenderScale(_rendererPtr, value.X, value.Y), "Failed to set render scale");
+                SdlHost.ThrowOnFailure(
+                    SDL_SetRenderScale(_rendererPtr, value.X, value.Y),
+                    "Failed to set render scale"
+                );
             }
         }
 
@@ -1843,17 +2088,21 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-                SdlHost.ThrowOnFailure(SDL_GetRenderViewport(_rendererPtr, out SDL_Rect rect), "Failed to get viewport");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetRenderViewport(_rendererPtr, out SDL_Rect rect),
+                    "Failed to get viewport"
+                );
                 return rect; // Implicit conversion
             }
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
 
-
                 SDL_Rect rect = value; // Implicit conversion
-                SdlHost.ThrowOnFailure(SDL_SetRenderViewport(_rendererPtr, ref rect), "Failed to set viewport");
+                SdlHost.ThrowOnFailure(
+                    SDL_SetRenderViewport(_rendererPtr, ref rect),
+                    "Failed to set viewport"
+                );
             }
         }
 
@@ -1873,7 +2122,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     return null;
                 }
 
-                SdlHost.ThrowOnFailure(SDL_GetRenderClipRect(_rendererPtr, out SDL_Rect rect), "Failed to get clip rect");
+                SdlHost.ThrowOnFailure(
+                    SDL_GetRenderClipRect(_rendererPtr, out SDL_Rect rect),
+                    "Failed to get clip rect"
+                );
                 return rect;
             }
             set
@@ -1884,7 +2136,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 }
 
                 SDL_Rect rect = value ?? default;
-                SdlHost.ThrowOnFailure(SDL_SetRenderClipRect(_rendererPtr, ref rect), "Failed to set clip rect");
+                SdlHost.ThrowOnFailure(
+                    SDL_SetRenderClipRect(_rendererPtr, ref rect),
+                    "Failed to set clip rect"
+                );
             }
         }
 
@@ -1896,10 +2151,11 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             get
             {
-                return _disposed ? throw new ObjectDisposedException(nameof(Renderer)) : SDL_RenderClipEnabled(_rendererPtr);
+                return _disposed
+                    ? throw new ObjectDisposedException(nameof(Renderer))
+                    : SDL_RenderClipEnabled(_rendererPtr);
             }
         }
-
 
         // --- Renderer Methods ---
 
@@ -1947,7 +2203,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_RenderPoint(_rendererPtr, point.X, point.Y), "Failed to draw point");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderPoint(_rendererPtr, point.X, point.Y),
+                "Failed to draw point"
+            );
         }
 
         /// <summary>
@@ -1958,7 +2217,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public void DrawPoints(ReadOnlySpan<FPoint> points)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-
 
             if (points.IsEmpty)
             {
@@ -1973,7 +2231,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 sdlPoints[i] = points[i];
             }
 
-            SdlHost.ThrowOnFailure(SDL_RenderPoints(_rendererPtr, sdlPoints, points.Length), "Failed to draw points");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderPoints(_rendererPtr, sdlPoints, points.Length),
+                "Failed to draw points"
+            );
         }
 
         /// <summary>
@@ -1986,16 +2247,21 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_RenderLine(_rendererPtr, p1.X, p1.Y, p2.X, p2.Y), "Failed to draw line");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderLine(_rendererPtr, p1.X, p1.Y, p2.X, p2.Y),
+                "Failed to draw line"
+            );
         }
 
         public void DrawLine(float x1, float y1, float x2, float y2)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            SdlHost.ThrowOnFailure(SDL_RenderLine(_rendererPtr, x1, y1, x2, y2), "Failed to draw line");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderLine(_rendererPtr, x1, y1, x2, y2),
+                "Failed to draw line"
+            );
         }
-
 
         /// <summary>
         /// Draws a sequence of connected lines on the current rendering target.
@@ -2017,7 +2283,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 sdlPoints[i] = points[i];
             }
 
-            SdlHost.ThrowOnFailure(SDL_RenderLines(_rendererPtr, sdlPoints, points.Length), "Failed to draw lines");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderLines(_rendererPtr, sdlPoints, points.Length),
+                "Failed to draw lines"
+            );
         }
 
         /// <summary>
@@ -2030,7 +2299,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             SDL_FRect sdlRect = rect; // Implicit conversion
-            SdlHost.ThrowOnFailure(SDL_RenderRect(_rendererPtr, ref sdlRect), "Failed to draw rect");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderRect(_rendererPtr, ref sdlRect),
+                "Failed to draw rect"
+            );
         }
 
         /// <summary>
@@ -2053,7 +2325,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 sdlRects[i] = rects[i];
             }
 
-            SdlHost.ThrowOnFailure(SDL_RenderRects(_rendererPtr, sdlRects, rects.Length), "Failed to draw rects");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderRects(_rendererPtr, sdlRects, rects.Length),
+                "Failed to draw rects"
+            );
         }
 
         /// <summary>
@@ -2066,7 +2341,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             SDL_FRect sdlRect = rect; // Implicit conversion
-            SdlHost.ThrowOnFailure(SDL_RenderFillRect(_rendererPtr, ref sdlRect), "Failed to fill rect");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderFillRect(_rendererPtr, ref sdlRect),
+                "Failed to fill rect"
+            );
         }
 
         /// <summary>
@@ -2077,7 +2355,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public void FillRects(ReadOnlySpan<FRect> rects)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-
 
             if (rects.IsEmpty)
             {
@@ -2090,7 +2367,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 sdlRects[i] = rects[i];
             }
 
-            SdlHost.ThrowOnFailure(SDL_RenderFillRects(_rendererPtr, sdlRects, rects.Length), "Failed to fill rects");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderFillRects(_rendererPtr, sdlRects, rects.Length),
+                "Failed to fill rects"
+            );
         }
 
         /// <summary>
@@ -2132,7 +2412,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     sdlDstRect = default;
                 }
 
-                SdlHost.ThrowOnFailure(SDL_RenderTexture(_rendererPtr, texture.Handle, ref sdlSrcRect, ref sdlDstRect), "Failed to copy texture");
+                SdlHost.ThrowOnFailure(
+                    SDL_RenderTexture(_rendererPtr, texture.Handle, ref sdlSrcRect, ref sdlDstRect),
+                    "Failed to copy texture"
+                );
             }
         }
 
@@ -2147,7 +2430,14 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <param name="flip">Flip mode.</param>
         /// <exception cref="ObjectDisposedException"></exception>
         /// <exception cref="ArgumentNullException"><paramref name="texture"/> is <c>null</c>.</exception>
-        public void CopyEx(Texture texture, FRect? srcRect, FRect? dstRect, double angle, FPoint? center, SDL_FlipMode flip)
+        public void CopyEx(
+            Texture texture,
+            FRect? srcRect,
+            FRect? dstRect,
+            double angle,
+            FPoint? center,
+            SDL_FlipMode flip
+        )
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             ArgumentNullException.ThrowIfNull(texture);
@@ -2178,7 +2468,18 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 sdlCenter = default; // Or throw?
             }
 
-            SdlHost.ThrowOnFailure(SDL_RenderTextureRotated(_rendererPtr, texture.Handle, ref sdlSrcRect, ref sdlDstRect, angle, ref sdlCenter, flip), "Failed to copy texture (ex)");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderTextureRotated(
+                    _rendererPtr,
+                    texture.Handle,
+                    ref sdlSrcRect,
+                    ref sdlDstRect,
+                    angle,
+                    ref sdlCenter,
+                    flip
+                ),
+                "Failed to copy texture (ex)"
+            );
         }
 
         /// <summary>
@@ -2188,10 +2489,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <param name="vertices">The vertices defining the geometry.</param>
         /// <param name="indices">The indices mapping vertices to triangles, or null if vertices are already ordered triangles.</param>
         /// <exception cref="ObjectDisposedException"></exception>
-        public void RenderGeometry(Texture? texture, ReadOnlySpan<Vertex> vertices, ReadOnlySpan<int> indices = default)
+        public void RenderGeometry(
+            Texture? texture,
+            ReadOnlySpan<Vertex> vertices,
+            ReadOnlySpan<int> indices = default
+        )
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-
 
             if (vertices.IsEmpty)
             {
@@ -2199,7 +2503,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             }
 
             IntPtr textureHandle = texture != null ? texture.Handle : IntPtr.Zero;
-
 
             // Convert Vertex[] to SDL_Vertex[] - Inefficient, consider unsafe or direct SDL_Vertex usage
             var sdlVertices = new SDL_Vertex[vertices.Length];
@@ -2211,7 +2514,17 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             // Check if indices are provided
             int[]? indicesArray = indices.IsEmpty ? null : indices.ToArray(); // Convert Span to array if needed by binding
 
-            SdlHost.ThrowOnFailure(SDL_RenderGeometry(_rendererPtr, textureHandle, sdlVertices, vertices.Length, indicesArray, indices.Length), "Failed to render geometry");
+            SdlHost.ThrowOnFailure(
+                SDL_RenderGeometry(
+                    _rendererPtr,
+                    textureHandle,
+                    sdlVertices,
+                    vertices.Length,
+                    indicesArray,
+                    indices.Length
+                ),
+                "Failed to render geometry"
+            );
         }
 
         /// <summary>
@@ -2225,8 +2538,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-            SdlHost.ThrowOnFailure(SDL_SetRenderLogicalPresentation(_rendererPtr, w, h, mode), "Failed to set logical presentation");
+            SdlHost.ThrowOnFailure(
+                SDL_SetRenderLogicalPresentation(_rendererPtr, w, h, mode),
+                "Failed to set logical presentation"
+            );
         }
 
         /// <summary>
@@ -2236,12 +2551,18 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <param name="h">Outputs the logical height.</param>
         /// <param name="mode">Outputs the presentation mode.</param>
         /// <exception cref="ObjectDisposedException"></exception>
-        public void GetLogicalPresentation(out int w, out int h, out SDL_RendererLogicalPresentation mode)
+        public void GetLogicalPresentation(
+            out int w,
+            out int h,
+            out SDL_RendererLogicalPresentation mode
+        )
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-
-            SdlHost.ThrowOnFailure(SDL_GetRenderLogicalPresentation(_rendererPtr, out w, out h, out mode), "Failed to get logical presentation");
+            SdlHost.ThrowOnFailure(
+                SDL_GetRenderLogicalPresentation(_rendererPtr, out w, out h, out mode),
+                "Failed to get logical presentation"
+            );
         }
 
         /// <summary>
@@ -2253,9 +2574,16 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <param name="height">The height of the texture.</param>
         /// <returns>A new Texture instance.</returns>
         /// <exception cref="ObjectDisposedException"></exception>
-        public Texture CreateTexture(SDL_PixelFormat format, SDL_TextureAccess access, int width, int height)
+        public Texture CreateTexture(
+            SDL_PixelFormat format,
+            SDL_TextureAccess access,
+            int width,
+            int height
+        )
         {
-            return _disposed ? throw new ObjectDisposedException(nameof(Renderer)) : new Texture(this, format, access, width, height);
+            return _disposed
+                ? throw new ObjectDisposedException(nameof(Renderer))
+                : new Texture(this, format, access, width, height);
         }
 
         // --- IDisposable Implementation ---
@@ -2489,7 +2817,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         EndCall = SDL_Scancode.SDL_SCANCODE_ENDCALL,
 
         // Total number of scancodes. Not a key itself.
-        Count = SDL_Scancode.SDL_SCANCODE_COUNT
+        Count = SDL_Scancode.SDL_SCANCODE_COUNT,
     }
 
     /// <summary>
@@ -2511,13 +2839,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         LeftAlt = SDL_Keymod.SDL_KMOD_LALT,
         RightAlt = SDL_Keymod.SDL_KMOD_RALT,
         Alt = SDL_Keymod.SDL_KMOD_ALT,
-        LeftGui = SDL_Keymod.SDL_KMOD_LGUI,     // Windows/Command/Meta key
-        RightGui = SDL_Keymod.SDL_KMOD_RGUI,    // Windows/Command/Meta key
+        LeftGui = SDL_Keymod.SDL_KMOD_LGUI, // Windows/Command/Meta key
+        RightGui = SDL_Keymod.SDL_KMOD_RGUI, // Windows/Command/Meta key
         Gui = SDL_Keymod.SDL_KMOD_GUI,
         NumLock = SDL_Keymod.SDL_KMOD_NUM,
         CapsLock = SDL_Keymod.SDL_KMOD_CAPS,
-        Mode = SDL_Keymod.SDL_KMOD_MODE,      // AltGr
-        ScrollLock = SDL_Keymod.SDL_KMOD_SCROLL
+        Mode = SDL_Keymod.SDL_KMOD_MODE, // AltGr
+        ScrollLock = SDL_Keymod.SDL_KMOD_SCROLL,
     }
 
     /// <summary>
@@ -2525,7 +2853,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     /// </summary>
     public static class Keyboard
     {
-        private static readonly SDLBool[] _keyStates = new SDLBool[(int)SDL_Scancode.SDL_SCANCODE_COUNT];
+        private static readonly SDLBool[] _keyStates = new SDLBool[
+            (int)SDL_Scancode.SDL_SCANCODE_COUNT
+        ];
         private static readonly object _stateLock = new object(); // Lock for accessing shared state buffer
 
         // Static constructor to ensure the mapping is built once.
@@ -2545,7 +2875,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// </remarks>
         public static void UpdateState()
         {
-            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0)
+            if (
+                !SdlHost.IsInitialized
+                || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0
+            )
             {
                 throw new InvalidOperationException("SDL Events subsystem not initialized.");
             }
@@ -2566,7 +2899,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 if (numkeys > _keyStates.Length)
                 {
                     // This indicates a mismatch between our enum and SDL's internal count. Problem!
-                    throw new InvalidOperationException($"SDL returned {numkeys} keys, expected <= {(int)Key.Count}.");
+                    throw new InvalidOperationException(
+                        $"SDL returned {numkeys} keys, expected <= {(int)Key.Count}."
+                    );
                 }
 
                 // Copy the state using Span for safety and efficiency
@@ -2593,7 +2928,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <returns>True if the key is down, false otherwise.</returns>
         public static bool IsKeyDown(Key key)
         {
-            if (key < 0 || (int)key >= _keyStates.Length) return false; // Bounds check
+            if (key < 0 || (int)key >= _keyStates.Length)
+                return false; // Bounds check
 
             lock (_stateLock)
             {
@@ -2620,7 +2956,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <returns>A KeyModifier flags enum representing the active modifiers.</returns>
         public static KeyModifier GetModifiers()
         {
-            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0)
+            if (
+                !SdlHost.IsInitialized
+                || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0
+            )
             {
                 throw new InvalidOperationException("SDL Events subsystem not initialized.");
             }
@@ -2669,9 +3008,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             return GetKeyFromScancode(SDL_GetScancodeFromName(name));
         }
-
     }
-
 
     #endregion
 
@@ -2680,18 +3017,22 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     /// <summary>
     /// Represents mouse buttons.
     /// </summary>
-    public enum MouseButton : uint
+    public enum MouseButton : byte
     {
         /// <summary> Left mouse button. </summary>
-        Left = SDL_MouseButtonFlags.SDL_BUTTON_LMASK,
+        Left = (byte)SDL_MouseButtonFlags.SDL_BUTTON_LMASK,
+
         /// <summary> Middle mouse button (wheel button). </summary>
-        Middle = SDL_MouseButtonFlags.SDL_BUTTON_MMASK,
+        Middle = (byte)SDL_MouseButtonFlags.SDL_BUTTON_MMASK,
+
         /// <summary> Right mouse button. </summary>
-        Right = SDL_MouseButtonFlags.SDL_BUTTON_RMASK,
+        Right = (byte)SDL_MouseButtonFlags.SDL_BUTTON_RMASK,
+
         /// <summary> Extra mouse button 1 (typically "back"). </summary>
-        X1 = SDL_MouseButtonFlags.SDL_BUTTON_X1MASK,
+        X1 = (byte)SDL_MouseButtonFlags.SDL_BUTTON_X1MASK,
+
         /// <summary> Extra mouse button 2 (typically "forward"). </summary>
-        X2 = SDL_MouseButtonFlags.SDL_BUTTON_X2MASK,
+        X2 = (byte)SDL_MouseButtonFlags.SDL_BUTTON_X2MASK,
         // SDL doesn't define more by default, but allows up to 32
     }
 
@@ -2713,7 +3054,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public static SDL_MouseButtonFlags GetPosition(out float x, out float y)
         {
             EnsureEventsInitialized();
-            
+
             // SDL_GetMouseState doesn't typically fail unless SDL isn't initialized properly,
             // which EnsureEventsInitialized should catch. We return the state directly.
             return SDL_GetMouseState(out x, out y);
@@ -2744,7 +3085,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public static SDL_MouseButtonFlags GetGlobalPosition(out float x, out float y)
         {
             EnsureEventsInitialized();
-            
+
             // Similar to GetMouseState, errors are unlikely if initialized.
             return SDL_GetGlobalMouseState(out x, out y);
         }
@@ -2761,7 +3102,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             GetGlobalPosition(out float x, out float y);
             return new FPoint(x, y);
         }
-
 
         /// <summary>
         /// Retrieves the relative motion of the mouse since the last call to PumpEvents or this function.
@@ -2794,13 +3134,16 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             // Get the correct mask constant based on the button enum value
             var buttonMask = button switch
             {
-                MouseButton.Left => SDL_MouseButtonFlags.SDL_BUTTON_LMASK,// Use the predefined mask
-                MouseButton.Middle => SDL_MouseButtonFlags.SDL_BUTTON_MMASK,// Use the predefined mask
-                MouseButton.Right => SDL_MouseButtonFlags.SDL_BUTTON_RMASK,// Use the predefined mask
-                MouseButton.X1 => SDL_MouseButtonFlags.SDL_BUTTON_X1MASK,// Use the predefined mask
-                MouseButton.X2 => SDL_MouseButtonFlags.SDL_BUTTON_X2MASK,// Use the predefined mask
-                _ => throw new ArgumentOutOfRangeException(nameof(button), $"Unsupported mouse button: {button}"),// Handle potential future buttons or invalid values if necessary
-                                                                                                                  // Option 1: Throw exception for unsupported buttons
+                MouseButton.Left => SDL_MouseButtonFlags.SDL_BUTTON_LMASK, // Use the predefined mask
+                MouseButton.Middle => SDL_MouseButtonFlags.SDL_BUTTON_MMASK, // Use the predefined mask
+                MouseButton.Right => SDL_MouseButtonFlags.SDL_BUTTON_RMASK, // Use the predefined mask
+                MouseButton.X1 => SDL_MouseButtonFlags.SDL_BUTTON_X1MASK, // Use the predefined mask
+                MouseButton.X2 => SDL_MouseButtonFlags.SDL_BUTTON_X2MASK, // Use the predefined mask
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(button),
+                    $"Unsupported mouse button: {button}"
+                ), // Handle potential future buttons or invalid values if necessary
+                // Option 1: Throw exception for unsupported buttons
             };
 
             // Check if the button's bit is set in the state mask
@@ -2830,7 +3173,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public static void SetRelativeMode(Window window, bool enabled)
         {
             EnsureEventsInitialized();
-            SdlHost.ThrowOnFailure(SDL_SetWindowRelativeMouseMode(window.Handle, enabled), "Failed to set relative mouse mode");
+            SdlHost.ThrowOnFailure(
+                SDL_SetWindowRelativeMouseMode(window.Handle, enabled),
+                "Failed to set relative mouse mode"
+            );
         }
 
         /// <summary>
@@ -2921,7 +3267,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             SdlHost.ThrowOnFailure(SDL_CaptureMouse(enabled), "Failed to set mouse capture state");
         }
 
-
         /// <summary>
         /// Gets whether the window captures mouse input.
         /// </summary>
@@ -2933,16 +3278,20 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             return SDL_GetWindowMouseGrab(window.Handle);
         }
 
-
         /// <summary>
         /// Helper to ensure the Events subsystem is initialized.
         /// </summary>
         private static void EnsureEventsInitialized()
         {
             // Video subsystem often initializes Events, but check explicitly.
-            if (!SdlHost.IsInitialized || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0)
+            if (
+                !SdlHost.IsInitialized
+                || (SdlHost.WasInit(SdlSubSystem.Events) & SdlSubSystem.Events) == 0
+            )
             {
-                throw new InvalidOperationException("SDL Events subsystem not initialized. Call SdlHost.Init(SdlSubSystem.Events) or include it in your initial SdlHost.Init call.");
+                throw new InvalidOperationException(
+                    "SDL Events subsystem not initialized. Call SdlHost.Init(SdlSubSystem.Events) or include it in your initial SdlHost.Init call."
+                );
             }
         }
     }
@@ -2974,7 +3323,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     /// </summary>
     public class QuitEventArgs : SdlEventArgs
     {
-        public QuitEventArgs(SDL_QuitEvent evt) : base(evt.type, evt.timestamp) { }
+        public QuitEventArgs(SDL_QuitEvent evt)
+            : base(evt.type, evt.timestamp) { }
     }
 
     /// <summary>
@@ -2983,7 +3333,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     public class AppLifecycleEventArgs : SdlEventArgs
     {
         // No specific data beyond type and timestamp in SDL_CommonEvent
-        public AppLifecycleEventArgs(SDL_CommonEvent common) : base((SDL_EventType)common.type, common.timestamp) { }
+        public AppLifecycleEventArgs(SDL_CommonEvent common)
+            : base((SDL_EventType)common.type, common.timestamp) { }
     }
 
     /// <summary>
@@ -2995,7 +3346,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public int Data1 { get; } // Meaning depends on event type
         public int Data2 { get; } // Meaning depends on event type
 
-        public DisplayEventArgs(SDL_DisplayEvent evt) : base(evt.type, evt.timestamp)
+        public DisplayEventArgs(SDL_DisplayEvent evt)
+            : base(evt.type, evt.timestamp)
         {
             DisplayId = evt.displayID;
             Data1 = evt.data1;
@@ -3014,7 +3366,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public int Data2 { get; } // Meaning depends on event type (e.g., height for resize)
 
         // Internal constructor used by Events.MapEvent
-        internal WindowEventArgs(SDL_WindowEvent evt, WindowEventType type) : base(evt.type, evt.timestamp)
+        internal WindowEventArgs(SDL_WindowEvent evt, WindowEventType type)
+            : base(evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
             EventType = type; // Set the wrapper enum type
@@ -3030,12 +3383,12 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     {
         public uint Which { get; } // Instance ID
 
-        public KeyboardDeviceEventArgs(SDL_KeyboardDeviceEvent evt) : base(evt.type, evt.timestamp)
+        public KeyboardDeviceEventArgs(SDL_KeyboardDeviceEvent evt)
+            : base(evt.type, evt.timestamp)
         {
             Which = evt.which;
         }
     }
-
 
     /// <summary>
     /// Event arguments for keyboard key presses/releases.
@@ -3049,11 +3402,13 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public KeyModifier Modifiers { get; } // Wrapper KeyModifier enum
         public bool IsDown { get; }
         public bool IsRepeat { get; }
+
         // Removed: Scancode, Keycode, Raw (can be derived if needed)
 
         // FIX: Pass type and timestamp from the specific event struct, remove 'in'
         // Map SDL enums to wrapper enums here.
-        public KeyboardEventArgs(SDL_KeyboardEvent evt) : base((SDL_EventType)evt.type, evt.timestamp)
+        public KeyboardEventArgs(SDL_KeyboardEvent evt)
+            : base((SDL_EventType)evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
             Which = evt.which;
@@ -3072,7 +3427,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public uint WindowId { get; }
         public string Text { get; }
 
-        public unsafe TextInputEventArgs(SDL_TextInputEvent evt) : base(evt.type, evt.timestamp)
+        public unsafe TextInputEventArgs(SDL_TextInputEvent evt)
+            : base(evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
             Text = Marshal.PtrToStringUTF8((IntPtr)evt.text) ?? string.Empty;
@@ -3089,7 +3445,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public int Start { get; }
         public int Length { get; }
 
-        public unsafe TextEditingEventArgs(SDL_TextEditingEvent evt) : base(evt.type, evt.timestamp)
+        public unsafe TextEditingEventArgs(SDL_TextEditingEvent evt)
+            : base(evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
             Text = Marshal.PtrToStringUTF8((IntPtr)evt.text) ?? string.Empty;
@@ -3105,7 +3462,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     {
         public uint Which { get; } // Instance ID
 
-        public MouseDeviceEventArgs(SDL_MouseDeviceEvent evt) : base(evt.type, evt.timestamp)
+        public MouseDeviceEventArgs(SDL_MouseDeviceEvent evt)
+            : base(evt.type, evt.timestamp)
         {
             Which = evt.which;
         }
@@ -3118,17 +3476,18 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     {
         public uint WindowId { get; }
         public uint Which { get; } // Mouse instance ID
-        public SDL_MouseButtonFlags State { get; }
+        public MouseButton State { get; }
         public float X { get; }
         public float Y { get; }
         public float XRel { get; }
         public float YRel { get; }
 
-        public MouseMotionEventArgs(SDL_MouseMotionEvent evt) : base(evt.type, evt.timestamp)
+        public MouseMotionEventArgs(SDL_MouseMotionEvent evt)
+            : base(evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
             Which = evt.which;
-            State = evt.state;
+            State = (MouseButton)evt.state;
             X = evt.x;
             Y = evt.y;
             XRel = evt.xrel;
@@ -3143,17 +3502,18 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     {
         public uint WindowId { get; }
         public uint Which { get; } // Mouse instance ID
-        public byte Button { get; } // Button index (1=left, 2=middle, 3=right, etc.)
+        public MouseButton Button { get; } // Button index (1=left, 2=middle, 3=right, etc.)
         public bool IsDown { get; }
         public byte Clicks { get; } // 1 for single-click, 2 for double-click, etc.
         public float X { get; }
         public float Y { get; }
 
-        public MouseButtonEventArgs(SDL_MouseButtonEvent evt) : base(evt.type, evt.timestamp)
+        public MouseButtonEventArgs(SDL_MouseButtonEvent evt)
+            : base(evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
             Which = evt.which;
-            Button = evt.button;
+            Button = (MouseButton)evt.button;
             IsDown = evt.down;
             Clicks = evt.clicks;
             X = evt.x;
@@ -3174,7 +3534,8 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         public float MouseX { get; } // Precise mouse coordinates at time of scroll
         public float MouseY { get; } // Precise mouse coordinates at time of scroll
 
-        public MouseWheelEventArgs(SDL_MouseWheelEvent evt) : base(evt.type, evt.timestamp)
+        public MouseWheelEventArgs(SDL_MouseWheelEvent evt)
+            : base(evt.type, evt.timestamp)
         {
             WindowId = evt.windowID;
             Which = evt.which;
@@ -3254,7 +3615,6 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             return false;
         }
 
-
         /// <summary>
         /// Maps the raw SDL_Event structure to a managed SdlEventArgs object.
         /// </summary>
@@ -3290,31 +3650,57 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
                 // Window Events
                 // Window Events - Map to specific WindowEventType
-                case SDL_EventType.SDL_EVENT_WINDOW_SHOWN: return new WindowEventArgs(sdlEvent.window, WindowEventType.Shown);
-                case SDL_EventType.SDL_EVENT_WINDOW_HIDDEN: return new WindowEventArgs(sdlEvent.window, WindowEventType.Hidden);
-                case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Exposed);
-                case SDL_EventType.SDL_EVENT_WINDOW_MOVED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Moved);
-                case SDL_EventType.SDL_EVENT_WINDOW_RESIZED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Resized);
-                case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.PixelSizeChanged);
-                case SDL_EventType.SDL_EVENT_WINDOW_MINIMIZED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Minimized);
-                case SDL_EventType.SDL_EVENT_WINDOW_MAXIMIZED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Maximized);
-                case SDL_EventType.SDL_EVENT_WINDOW_RESTORED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Restored);
-                case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER: return new WindowEventArgs(sdlEvent.window, WindowEventType.MouseEnter);
-                case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE: return new WindowEventArgs(sdlEvent.window, WindowEventType.MouseLeave);
-                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED: return new WindowEventArgs(sdlEvent.window, WindowEventType.FocusGained);
-                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_LOST: return new WindowEventArgs(sdlEvent.window, WindowEventType.FocusLost);
-                case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED: return new WindowEventArgs(sdlEvent.window, WindowEventType.CloseRequested);
-                case SDL_EventType.SDL_EVENT_WINDOW_HIT_TEST: return new WindowEventArgs(sdlEvent.window, WindowEventType.HitTest);
-                case SDL_EventType.SDL_EVENT_WINDOW_ICCPROF_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.IccProfileChanged);
-                case SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.DisplayChanged);
-                case SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.DisplayScaleChanged);
-                case SDL_EventType.SDL_EVENT_WINDOW_OCCLUDED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Occluded);
-                case SDL_EventType.SDL_EVENT_WINDOW_ENTER_FULLSCREEN: return new WindowEventArgs(sdlEvent.window, WindowEventType.EnterFullscreen);
-                case SDL_EventType.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN: return new WindowEventArgs(sdlEvent.window, WindowEventType.LeaveFullscreen);
-                case SDL_EventType.SDL_EVENT_WINDOW_DESTROYED: return new WindowEventArgs(sdlEvent.window, WindowEventType.Destroyed);
-                case SDL_EventType.SDL_EVENT_WINDOW_SAFE_AREA_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.SafeAreaChanged);
-                case SDL_EventType.SDL_EVENT_WINDOW_HDR_STATE_CHANGED: return new WindowEventArgs(sdlEvent.window, WindowEventType.HdrStateChanged);
-
+                case SDL_EventType.SDL_EVENT_WINDOW_SHOWN:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Shown);
+                case SDL_EventType.SDL_EVENT_WINDOW_HIDDEN:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Hidden);
+                case SDL_EventType.SDL_EVENT_WINDOW_EXPOSED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Exposed);
+                case SDL_EventType.SDL_EVENT_WINDOW_MOVED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Moved);
+                case SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Resized);
+                case SDL_EventType.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.PixelSizeChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_MINIMIZED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Minimized);
+                case SDL_EventType.SDL_EVENT_WINDOW_MAXIMIZED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Maximized);
+                case SDL_EventType.SDL_EVENT_WINDOW_RESTORED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Restored);
+                case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_ENTER:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.MouseEnter);
+                case SDL_EventType.SDL_EVENT_WINDOW_MOUSE_LEAVE:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.MouseLeave);
+                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_GAINED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.FocusGained);
+                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_LOST:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.FocusLost);
+                case SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.CloseRequested);
+                case SDL_EventType.SDL_EVENT_WINDOW_HIT_TEST:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.HitTest);
+                case SDL_EventType.SDL_EVENT_WINDOW_ICCPROF_CHANGED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.IccProfileChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.DisplayChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+                    return new WindowEventArgs(
+                        sdlEvent.window,
+                        WindowEventType.DisplayScaleChanged
+                    );
+                case SDL_EventType.SDL_EVENT_WINDOW_OCCLUDED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Occluded);
+                case SDL_EventType.SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.EnterFullscreen);
+                case SDL_EventType.SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.LeaveFullscreen);
+                case SDL_EventType.SDL_EVENT_WINDOW_DESTROYED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.Destroyed);
+                case SDL_EventType.SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.SafeAreaChanged);
+                case SDL_EventType.SDL_EVENT_WINDOW_HDR_STATE_CHANGED:
+                    return new WindowEventArgs(sdlEvent.window, WindowEventType.HdrStateChanged);
 
                 // Keyboard Events
                 case SDL_EventType.SDL_EVENT_KEYBOARD_ADDED:
@@ -3399,5 +3785,4 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     }
 
     #endregion
-
 } // namespace SDL3.Wrapper
