@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
-using Python.Runtime;
 using NLog;
+using Python.Runtime;
+
 namespace FSRSPythonBridge;
 
 /// <summary>
@@ -12,14 +13,17 @@ public enum Rating
     /// Rating.Again (==1) forgot the card
     /// </summary>
     Again = 1,
+
     /// <summary>
     /// Rating.Hard (==2) remembered the card with serious difficulty
     /// </summary>
     Hard = 2,
+
     /// <summary>
     /// Rating.Good (==3) remembered the card after a hesitation
     /// </summary>
     Good = 3,
+
     /// <summary>
     /// Rating.Easy (==4) remembered the card easily
     /// </summary>
@@ -56,8 +60,8 @@ public static class FSRS
             SettingUpModulePath();
 
             /*
-            All calls to python should be inside a 
-            using (Py.GIL()) 
+            All calls to python should be inside a
+            using (Py.GIL())
             {/Your code here }block.
             */
 
@@ -79,11 +83,17 @@ public static class FSRS
                         checkedPathsForModules += path.ToString() + Environment.NewLine;
                         Logger.Debug("Python path: {PythonPath}", path.ToString());
                     }
-                    throw new Exception("Could not import fsrs module in the following paths:" + Environment.NewLine + checkedPathsForModules);
+                    throw new Exception(
+                        "Could not import fsrs module in the following paths:"
+                            + Environment.NewLine
+                            + checkedPathsForModules
+                    );
                 }
 
                 Logger.Debug("Creating FSRS Scheduler");
-                _scheduler = _fsrsModule.Scheduler() ?? throw new Exception("Could not create scheduler object");
+                _scheduler =
+                    _fsrsModule.Scheduler()
+                    ?? throw new Exception("Could not create scheduler object");
                 Logger.Info("FSRS Python Bridge initialized successfully");
             }
         }
@@ -131,10 +141,12 @@ public static class FSRS
             else
             {
                 Logger.Error("Could not find libpython3.so at /lib64/libpython3.so");
-                throw new DllNotFoundException("Could not find libpython3.so at /lib64/libpython3.so");
+                throw new DllNotFoundException(
+                    "Could not find libpython3.so at /lib64/libpython3.so"
+                );
             }
         }
-        // For Windows we ship the python313.dll with the application. 
+        // For Windows we ship the python313.dll with the application.
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             Logger.Debug("Running on Windows, using bundled Python DLL");
@@ -145,7 +157,10 @@ public static class FSRS
 
             if (!File.Exists(Runtime.PythonDLL))
             {
-                Logger.Error("Python DLL not found at expected location: {PythonDLL}", Runtime.PythonDLL);
+                Logger.Error(
+                    "Python DLL not found at expected location: {PythonDLL}",
+                    Runtime.PythonDLL
+                );
             }
         }
         else
