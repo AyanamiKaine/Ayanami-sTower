@@ -1,6 +1,7 @@
 ## Monorepo of Ayanami
 
 ## Short Summary
+
 - The main idea behind this monorepo is the creation of software capital.
 - Applications dont refrence other applications (no inter-dependency between them).
 - Applications have longer english like names.
@@ -15,3 +16,9 @@
 
 To facicilate reuse and creation of cross application libraries. Not only for reuse between same languages but also for reuse of patterns across languages.
 
+## C# Defaults
+
+see:
+
+- Directory.Build.props
+- Directory.Packages.props
