@@ -9,7 +9,6 @@ namespace AyanamisTower.NihilEx;
 /// </summary>
 public class Surface
 {
-
     /// <summary>
     /// Gets the native SDL surface handler
     /// </summary>
