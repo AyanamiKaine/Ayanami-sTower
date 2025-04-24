@@ -81,7 +81,7 @@ namespace AyanamisTower.NihilEx.ECS
             set
             {
                 // Normalize to ensure it remains a valid rotation quaternion
-                var normalizedValue = Quaternion.Normalize(value);
+                var normalizedValue = Quaternion.Normalize(value: value);
                 if (_orientation != normalizedValue)
                 {
                     _orientation = normalizedValue;
@@ -101,7 +101,7 @@ namespace AyanamisTower.NihilEx.ECS
             set
             {
                 // Normalize for safety, although typically unit vectors are used
-                var normalizedValue = Vector3.Normalize(value);
+                var normalizedValue = Vector3.Normalize(value: value);
                 if (_worldUpDirection != normalizedValue)
                 {
                     _worldUpDirection = normalizedValue;
@@ -138,7 +138,7 @@ namespace AyanamisTower.NihilEx.ECS
             set
             {
                 // Convert degrees to radians for storing
-                float radians = Math.Clamp(value, 1.0f, 179.0f) * (MathF.PI / 180.0f);
+                float radians = Math.Clamp(value: value, min: 1.0f, max: 179.0f) * (MathF.PI / 180.0f);
                 if (_fieldOfViewRadians != radians)
                 {
                     _fieldOfViewRadians = radians;
@@ -157,7 +157,7 @@ namespace AyanamisTower.NihilEx.ECS
             set
             {
                 // Clamp values to prevent issues
-                float clampedRadians = Math.Clamp(value, 0.01f, MathF.PI - 0.01f);
+                float clampedRadians = Math.Clamp(value: value, min: 0.01f, max: MathF.PI - 0.01f);
                 if (_fieldOfViewRadians != clampedRadians)
                 {
                     _fieldOfViewRadians = clampedRadians;
@@ -230,19 +230,19 @@ namespace AyanamisTower.NihilEx.ECS
         /// Gets the camera's forward direction vector in world space, derived from its orientation.
         /// Assumes a right-handed coordinate system where -Z is forward in view space.
         /// </summary>
-        public readonly Vector3 Forward => Vector3.Normalize(Vector3.Transform(-Vector3.UnitZ, _orientation));
+        public readonly Vector3 Forward => Vector3.Normalize(value: Vector3.Transform(value: -Vector3.UnitZ, rotation: _orientation));
 
         /// <summary>
         /// Gets the camera's right direction vector in world space, derived from its orientation.
         /// Assumes a right-handed coordinate system where +X is right in view space.
         /// </summary>
-        public readonly Vector3 Right => Vector3.Normalize(Vector3.Transform(Vector3.UnitX, _orientation));
+        public readonly Vector3 Right => Vector3.Normalize(value: Vector3.Transform(value: Vector3.UnitX, rotation: _orientation));
 
         /// <summary>
         /// Gets the camera's local up direction vector in world space, derived from its orientation.
         /// Assumes a right-handed coordinate system where +Y is up in view space.
         /// </summary>
-        public readonly Vector3 Up => Vector3.Normalize(Vector3.Transform(Vector3.UnitY, _orientation));
+        public readonly Vector3 Up => Vector3.Normalize(value: Vector3.Transform(value: Vector3.UnitY, rotation: _orientation));
 
         #endregion
 
@@ -290,7 +290,7 @@ namespace AyanamisTower.NihilEx.ECS
                     if (_projectionDirty) UpdateProjectionMatrix();
 
                     // Calculate the combined matrix (Order is important: View * Projection)
-                    _viewProjectionMatrix = Matrix4x4.Multiply(_viewMatrix, _projectionMatrix);
+                    _viewProjectionMatrix = Matrix4x4.Multiply(value1: _viewMatrix, value2: _projectionMatrix);
                 }
                 return _viewProjectionMatrix;
             }
@@ -310,7 +310,7 @@ namespace AyanamisTower.NihilEx.ECS
             Vector3 lookAtTarget = _position + Forward;
 
             // Create the view matrix
-            _viewMatrix = Matrix4x4.CreateLookAt(_position, lookAtTarget, _worldUpDirection);
+            _viewMatrix = Matrix4x4.CreateLookAt(cameraPosition: _position, cameraTarget: lookAtTarget, cameraUpVector: _worldUpDirection);
 
             // Mark as clean
             _viewDirty = false;
@@ -326,10 +326,10 @@ namespace AyanamisTower.NihilEx.ECS
             {
                 case ProjectionType.Perspective:
                     _projectionMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
-                        _fieldOfViewRadians,
-                        _aspectRatio,
-                        _nearPlaneDistance,
-                        _farPlaneDistance);
+fieldOfView: _fieldOfViewRadians,
+aspectRatio: _aspectRatio,
+nearPlaneDistance: _nearPlaneDistance,
+farPlaneDistance: _farPlaneDistance);
                     break;
 
                 case ProjectionType.Orthographic:
@@ -341,7 +341,7 @@ namespace AyanamisTower.NihilEx.ECS
 
                     // Placeholder: Use Identity or throw if Orthographic is selected but not fully supported yet
                     _projectionMatrix = Matrix4x4.Identity;
-                    Console.Error.WriteLine("Warning: Orthographic projection not fully implemented in Camera.UpdateProjectionMatrix(). Using Identity.");
+                    Console.Error.WriteLine(value: "Warning: Orthographic projection not fully implemented in Camera.UpdateProjectionMatrix(). Using Identity.");
                     // Or throw new NotImplementedException("Orthographic projection calculation not implemented.");
                     break;
                 default:
@@ -393,11 +393,11 @@ namespace AyanamisTower.NihilEx.ECS
         public Camera(Vector3 position, Vector3 lookAtTarget, Vector3 worldUp, float aspectRatio, float fovDegrees = 45.0f, float nearPlane = 0.1f, float farPlane = 1000.0f)
         {
             _position = position;
-            _worldUpDirection = Vector3.Normalize(worldUp);
+            _worldUpDirection = Vector3.Normalize(value: worldUp);
 
             // Calculate initial orientation based on look-at target
-            Matrix4x4 lookAtMatrix = Matrix4x4.CreateLookAt(position, lookAtTarget, worldUp);
-            _orientation = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(Matrix4x4.Transpose(lookAtMatrix))); // Transpose needed as CreateLookAt creates the View matrix
+            Matrix4x4 lookAtMatrix = Matrix4x4.CreateLookAt(cameraPosition: position, cameraTarget: lookAtTarget, cameraUpVector: worldUp);
+            _orientation = Quaternion.Normalize(value: Quaternion.CreateFromRotationMatrix(matrix: Matrix4x4.Transpose(matrix: lookAtMatrix))); // Transpose needed as CreateLookAt creates the View matrix
 
             _aspectRatio = aspectRatio;
             FieldOfViewDegrees = fovDegrees; // Use property setter for conversion/clamping
