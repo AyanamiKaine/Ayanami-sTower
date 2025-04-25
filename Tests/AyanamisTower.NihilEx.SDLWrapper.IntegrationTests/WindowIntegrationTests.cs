@@ -161,4 +161,90 @@ public class IntegrationTests : IDisposable // Implement IDisposable for cleanup
             Assert.Fail($"Unexpected exception during test: {ex}");
         }
     }
+
+    /// <summary>
+    /// Setting the title property of a window should update the windows
+    /// title using the native sdl functions.
+    /// </summary>
+    [Fact]
+    public void WindowSetTitleUpdatesTitleProperty()
+    {
+        // Arrange
+        const int width = 100,
+            height = 100;
+        const string newTitle = "Changed Title";
+        try
+        {
+            _windowUnderTest = new Window(
+                "Title Test",
+                width,
+                height,
+                WindowFlags.Hidden | WindowFlags.Borderless
+            );
+            Assert.NotNull(_windowUnderTest);
+
+            // Act - Set title
+            _windowUnderTest.Title = newTitle;
+
+            // Read back title
+            string finalTitle = _windowUnderTest.Title;
+
+            // Assert
+            Assert.Equal(newTitle, finalTitle);
+        }
+        catch (SDLException ex)
+        {
+            Assert.Fail(
+                $"SDL operation failed during test: {ex.Message} - SDL Error: {SdlHost.GetError()}"
+            );
+        }
+        catch (Exception ex)
+        {
+            Assert.Fail($"Unexpected exception during test: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// We should be able to create an valid renderer using a window
+    /// </summary>
+    [Fact]
+    public void WindowCreateRenderer()
+    {
+        // Arrange
+        const int width = 100,
+            height = 100;
+
+        Renderer? renderer = null;
+
+        try
+        {
+            _windowUnderTest = new Window(
+                "Title Test",
+                width,
+                height,
+                WindowFlags.Hidden | WindowFlags.Borderless
+            );
+            Assert.NotNull(_windowUnderTest);
+
+            // Act - Set title
+            renderer = _windowUnderTest.CreateRenderer();
+
+            // Assert
+            Assert.NotEqual(IntPtr.Zero, renderer.Handle);
+        }
+        catch (SDLException ex)
+        {
+            Assert.Fail(
+                $"SDL operation failed during test: {ex.Message} - SDL Error: {SdlHost.GetError()}"
+            );
+        }
+        catch (Exception ex)
+        {
+            Assert.Fail($"Unexpected exception during test: {ex}");
+        }
+        finally
+        {
+            renderer?.Dispose();
+        }
+    }
 }
