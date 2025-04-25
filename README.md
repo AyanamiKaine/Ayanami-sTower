@@ -22,3 +22,4 @@ see:
 
 - Directory.Build.props
 - Directory.Packages.props
+- CSharpy Formater
