@@ -1,6 +1,7 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -16,23 +17,26 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             world.Module<ECSToggleButton>();
 
-            world.Component<ToggleButton>("ToggleButton")
-                .OnSet((Entity e, ref ToggleButton toggleButton) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<ToggleButton>("ToggleButton")
+                .OnSet(
+                    (Entity e, ref ToggleButton toggleButton) =>
                     {
-                        e.Set<object>(toggleButton);
-                    }
-                    else if (e.Get<object>().GetType() == typeof(ToggleButton))
-                    {
-                        e.Set<object>(toggleButton);
-                    }
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(toggleButton);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(ToggleButton))
+                        {
+                            e.Set<object>(toggleButton);
+                        }
 
-                    // We set the contentControl component so systems and queries in general can more easily
-                    // access the generic .content property of the button.
-                    // This is good so queries can be more generic and not have to check for every possible control type.
-                    e.Set<Button>(toggleButton);
-                })
+                        // We set the contentControl component so systems and queries in general can more easily
+                        // access the generic .content property of the button.
+                        // This is good so queries can be more generic and not have to check for every possible control type.
+                        e.Set<Button>(toggleButton);
+                    }
+                )
                 .OnRemove((Entity e, ref ToggleButton toggleButton) => e.Remove<Button>());
         }
     }

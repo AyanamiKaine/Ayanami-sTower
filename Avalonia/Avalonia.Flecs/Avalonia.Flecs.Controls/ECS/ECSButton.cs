@@ -1,5 +1,6 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,23 +16,26 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             world.Module<ECSButton>();
 
-            world.Component<Button>("Button")
-                .OnSet((Entity e, ref Button button) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<Button>("Button")
+                .OnSet(
+                    (Entity e, ref Button button) =>
                     {
-                        e.Set<object>(button);
-                    }
-                    else if (e.Get<object>().GetType() == typeof(Button))
-                    {
-                        e.Set<object>(button);
-                    }
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(button);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(Button))
+                        {
+                            e.Set<object>(button);
+                        }
 
-                    // We set the contentControl component so systems and queries in general can more easily
-                    // access the generic .content property of the button.
-                    // This is good so queries can be more generic and not have to check for every possible control type.
-                    e.Set<ContentControl>(button);
-                })
+                        // We set the contentControl component so systems and queries in general can more easily
+                        // access the generic .content property of the button.
+                        // This is good so queries can be more generic and not have to check for every possible control type.
+                        e.Set<ContentControl>(button);
+                    }
+                )
                 .OnRemove((Entity e, ref Button _) => e.Remove<ContentControl>());
         }
     }

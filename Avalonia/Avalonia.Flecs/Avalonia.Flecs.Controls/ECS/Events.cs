@@ -1,20 +1,20 @@
-using Avalonia.Controls;
-using Avalonia.Interactivity;
-using Avalonia.LogicalTree;
-using Avalonia.Input;
-using Avalonia.Layout;
-using Avalonia.Controls.Primitives;
-using Avalonia.Input.TextInput;
 using System.ComponentModel;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Input.TextInput;
+using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.LogicalTree;
+
 namespace Avalonia.Flecs.Controls.ECS.Events
 {
-
     /* IMPORTANT
     ALL OBERSERVES RUN IN A NON-UI THREAD THIS IS THE DEFAULT BEHAVIOR IN AVALONIA
     ANY CODE EXECUTED IN AN OBSERVE THAT MODIFIES THE UI MUST BE DISPATCHED TO THE UI THREAD
-    THIS CAN BE DONE BY USING THE 
+    THIS CAN BE DONE BY USING THE
     Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => {  UI CODE HERE  });
-    THIS ALSO MATTER FOR ALL FUNCTIONS 
+    THIS ALSO MATTER FOR ALL FUNCTIONS
     THAT WANT TO USE THE ECS WORLD FOUND IN MAIN THE APPLICATION
     */
 
@@ -32,18 +32,21 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     /// <param name="Sender"></param>
     /// <param name="Args"></param>
     public record struct Checked(object? Sender, RoutedEventArgs Args);
+
     /// <summary>
     /// Represents a Unchecked event in the ECS system.
     /// </summary>
     /// <param name="Sender"></param>
     /// <param name="Args"></param>
     public record struct Unchecked(object? Sender, RoutedEventArgs Args);
+
     /// <summary>
     /// Represents a Indeterminate event in the ECS system.
     /// </summary>
     /// <param name="Sender"></param>
     /// <param name="Args"></param>
     public record struct Indeterminate(object? Sender, RoutedEventArgs Args);
+
     /// <summary>
     /// Represents a IsCheckedChanged event in the ECS system.
     /// </summary>
@@ -112,7 +115,10 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     /// </summary>
     /// <param name="Sender"></param>
     /// <param name="Args"></param>
-    public record struct DetachedFromLogicalTree(object? Sender, LogicalTreeAttachmentEventArgs Args);
+    public record struct DetachedFromLogicalTree(
+        object? Sender,
+        LogicalTreeAttachmentEventArgs Args
+    );
 
     /// <summary>
     /// Represents a DetachedFromVisualTree event in the ECS system.
@@ -133,7 +139,10 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     /// </summary>
     /// <param name="Sender"></param>
     /// <param name="Args"></param>
-    public record struct EffectiveViewportChanged(object? Sender, EffectiveViewportChangedEventArgs Args);
+    public record struct EffectiveViewportChanged(
+        object? Sender,
+        EffectiveViewportChangedEventArgs Args
+    );
 
     /// <summary>
     /// Represents a GotFocus event in the ECS system.
@@ -294,5 +303,8 @@ namespace Avalonia.Flecs.Controls.ECS.Events
     /// </summary>
     /// <param name="Sender"></param>
     /// <param name="Args"></param>
-    public record struct TextInputMethodClientRequested(object? Sender, TextInputMethodClientRequestedEventArgs Args);
+    public record struct TextInputMethodClientRequested(
+        object? Sender,
+        TextInputMethodClientRequestedEventArgs Args
+    );
 }

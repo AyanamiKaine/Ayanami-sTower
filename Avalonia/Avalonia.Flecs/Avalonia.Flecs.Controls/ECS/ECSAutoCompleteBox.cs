@@ -1,6 +1,7 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,20 +16,23 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSAutoCompleteBox>();
-            world.Component<AutoCompleteBox>("AutoCompleteBox")
-                .OnSet((Entity e, ref AutoCompleteBox autoCompleteBox) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<AutoCompleteBox>("AutoCompleteBox")
+                .OnSet(
+                    (Entity e, ref AutoCompleteBox autoCompleteBox) =>
                     {
-                        e.Set<object>(autoCompleteBox);
-                    }
-                    else if (e.Get<object>().GetType() == typeof(AutoCompleteBox))
-                    {
-                        e.Set<object>(autoCompleteBox);
-                    }
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(autoCompleteBox);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(AutoCompleteBox))
+                        {
+                            e.Set<object>(autoCompleteBox);
+                        }
 
-                    e.Set<TemplatedControl>(autoCompleteBox);
-                })
+                        e.Set<TemplatedControl>(autoCompleteBox);
+                    }
+                )
                 .OnRemove((Entity e, ref AutoCompleteBox _) => e.Remove<TemplatedControl>());
         }
     }

@@ -63,5 +63,4 @@ namespace Avalonia.Flecs.Controls.ECS
             return world;
         }
     }
-
 }

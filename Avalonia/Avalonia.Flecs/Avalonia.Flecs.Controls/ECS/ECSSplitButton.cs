@@ -1,5 +1,6 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,19 +16,22 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             world.Module<ECSSplitButton>();
 
-            world.Component<SplitButton>("SplitButton")
-                .OnSet((Entity e, ref SplitButton splitButton) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<SplitButton>("SplitButton")
+                .OnSet(
+                    (Entity e, ref SplitButton splitButton) =>
                     {
-                        e.Set<object>(splitButton);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(splitButton);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(SplitButton))
+                        {
+                            e.Set<object>(splitButton);
+                        }
+                        e.Set<ContentControl>(splitButton);
                     }
-                    else if (e.Get<object>().GetType() == typeof(SplitButton))
-                    {
-                        e.Set<object>(splitButton);
-                    }
-                    e.Set<ContentControl>(splitButton);
-                })
+                )
                 .OnRemove((Entity e, ref SplitButton splitButton) => e.Remove<ContentControl>());
         }
     }

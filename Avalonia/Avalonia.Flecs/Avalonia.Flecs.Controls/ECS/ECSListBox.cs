@@ -1,6 +1,7 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,19 +16,22 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSListBox>();
-            world.Component<ListBox>("ListBox")
-                .OnSet((Entity e, ref ListBox listBox) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<ListBox>("ListBox")
+                .OnSet(
+                    (Entity e, ref ListBox listBox) =>
                     {
-                        e.Set<object>(listBox);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(listBox);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(ListBox))
+                        {
+                            e.Set<object>(listBox);
+                        }
+                        e.Set<SelectingItemsControl>(listBox);
                     }
-                    else if (e.Get<object>().GetType() == typeof(ListBox))
-                    {
-                        e.Set<object>(listBox);
-                    }
-                    e.Set<SelectingItemsControl>(listBox);
-                })
+                )
                 .OnRemove((Entity e, ref ListBox listBox) => e.Remove<SelectingItemsControl>());
         }
     }

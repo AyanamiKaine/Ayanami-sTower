@@ -1,5 +1,6 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -14,19 +15,22 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSViewbox>();
-            world.Component<Viewbox>("Viewbox")
-                .OnSet((Entity e, ref Viewbox viewbox) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<Viewbox>("Viewbox")
+                .OnSet(
+                    (Entity e, ref Viewbox viewbox) =>
                     {
-                        e.Set<object>(viewbox);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(viewbox);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(Viewbox))
+                        {
+                            e.Set<object>(viewbox);
+                        }
+                        e.Set<Control>(viewbox);
                     }
-                    else if (e.Get<object>().GetType() == typeof(Viewbox))
-                    {
-                        e.Set<object>(viewbox);
-                    }
-                    e.Set<Control>(viewbox);
-                })
+                )
                 .OnRemove((Entity e, ref Viewbox viewbox) => e.Remove<Control>());
         }
     }

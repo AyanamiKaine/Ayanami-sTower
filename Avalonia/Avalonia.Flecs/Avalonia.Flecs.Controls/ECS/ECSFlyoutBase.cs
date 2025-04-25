@@ -1,6 +1,7 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,44 +16,48 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSFlyoutBase>();
-            world.Component<FlyoutBase>("FlyoutBase")
-                .OnSet((Entity e, ref FlyoutBase flyoutBase) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<FlyoutBase>("FlyoutBase")
+                .OnSet(
+                    (Entity e, ref FlyoutBase flyoutBase) =>
                     {
-                        e.Set<object>(flyoutBase);
-                    }
-                    else if (e.Get<object>().GetType() == typeof(FlyoutBase))
-                    {
-                        e.Set<object>(flyoutBase);
-                    }
-                    e.Set<AvaloniaObject>(flyoutBase);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(flyoutBase);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(FlyoutBase))
+                        {
+                            e.Set<object>(flyoutBase);
+                        }
+                        e.Set<AvaloniaObject>(flyoutBase);
 
-                    var parent = e.Parent();
-                    if (parent == 0)
-                    {
-                        return;
+                        var parent = e.Parent();
+                        if (parent == 0)
+                        {
+                            return;
+                        }
+                        if (parent.Has<Control>())
+                        {
+                            parent.Get<Control>().ContextFlyout = flyoutBase;
+                        }
                     }
-                    if (parent.Has<Control>())
+                )
+                .OnRemove(
+                    (Entity e, ref FlyoutBase _) =>
                     {
-                        parent.Get<Control>().ContextFlyout = flyoutBase;
-                    }
-                })
-                .OnRemove((Entity e, ref FlyoutBase _) =>
-                {
-                    e.Remove<AvaloniaObject>();
+                        e.Remove<AvaloniaObject>();
 
-                    var parent = e.Parent();
-                    if (parent == 0)
-                    {
-                        return;
+                        var parent = e.Parent();
+                        if (parent == 0)
+                        {
+                            return;
+                        }
+                        if (parent.Has<Control>())
+                        {
+                            parent.Get<Control>().ContextFlyout = null;
+                        }
                     }
-                    if (parent.Has<Control>())
-                    {
-                        parent.Get<Control>().ContextFlyout = null;
-                    }
-
-                });
+                );
         }
     }
 }

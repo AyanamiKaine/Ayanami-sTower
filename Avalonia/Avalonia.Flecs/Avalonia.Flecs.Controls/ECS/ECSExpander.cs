@@ -1,6 +1,7 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,19 +16,23 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSExpander>();
-            world.Component<Expander>("Expander")
-                .OnSet((Entity e, ref Expander expander) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<Expander>("Expander")
+                .OnSet(
+                    (Entity e, ref Expander expander) =>
                     {
-                        e.Set<object>(expander);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(expander);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(Expander))
+                        {
+                            e.Set<object>(expander);
+                        }
+                        e.Set<HeaderedContentControl>(expander);
                     }
-                    else if (e.Get<object>().GetType() == typeof(Expander))
-                    {
-                        e.Set<object>(expander);
-                    }
-                    e.Set<HeaderedContentControl>(expander);
-                }).OnRemove((Entity e, ref Expander _) => e.Remove<HeaderedContentControl>());
+                )
+                .OnRemove((Entity e, ref Expander _) => e.Remove<HeaderedContentControl>());
         }
     }
 }

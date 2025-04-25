@@ -4,7 +4,6 @@ using Avalonia.Threading;
 
 namespace Avalonia.Flecs.Controls;
 
-
 /*
 We need the avalonia scheduler class for using System.Reactive
 in our automatic subscribe, unsubscribe for events in our components.
@@ -38,12 +37,14 @@ public sealed class AvaloniaScheduler : LocalScheduler
     /// <summary>
     /// Initializes a new instance of the <see cref="AvaloniaScheduler"/> class.
     /// </summary>
-    private AvaloniaScheduler()
-    {
-    }
+    private AvaloniaScheduler() { }
 
     /// <inheritdoc/>
-    public override IDisposable Schedule<TState>(TState state, TimeSpan dueTime, Func<IScheduler, TState, IDisposable> action)
+    public override IDisposable Schedule<TState>(
+        TState state,
+        TimeSpan dueTime,
+        Func<IScheduler, TState, IDisposable> action
+    )
     {
         IDisposable PostOnDispatcher()
         {
@@ -51,13 +52,16 @@ public sealed class AvaloniaScheduler : LocalScheduler
 
             var cancellation = new CancellationDisposable();
 
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (!cancellation.Token.IsCancellationRequested)
+            Dispatcher.UIThread.Post(
+                () =>
                 {
-                    composite.Add(action(this, state));
-                }
-            }, DispatcherPriority.Background);
+                    if (!cancellation.Token.IsCancellationRequested)
+                    {
+                        composite.Add(action(this, state));
+                    }
+                },
+                DispatcherPriority.Background
+            );
 
             composite.Add(cancellation);
 
@@ -93,7 +97,9 @@ public sealed class AvaloniaScheduler : LocalScheduler
         {
             var composite = new CompositeDisposable(2);
 
-            composite.Add(DispatcherTimer.RunOnce(() => composite.Add(action(this, state)), dueTime));
+            composite.Add(
+                DispatcherTimer.RunOnce(() => composite.Add(action(this, state)), dueTime)
+            );
 
             return composite;
         }

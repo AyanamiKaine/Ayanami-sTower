@@ -1,6 +1,7 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,19 +16,22 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSSeparator>();
-            world.Component<Separator>("Separator")
-                .OnSet((Entity e, ref Separator separator) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<Separator>("Separator")
+                .OnSet(
+                    (Entity e, ref Separator separator) =>
                     {
-                        e.Set<object>(separator);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(separator);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(Separator))
+                        {
+                            e.Set<object>(separator);
+                        }
+                        e.Set<TemplatedControl>(separator);
                     }
-                    else if (e.Get<object>().GetType() == typeof(Separator))
-                    {
-                        e.Set<object>(separator);
-                    }
-                    e.Set<TemplatedControl>(separator);
-                })
+                )
                 .OnRemove((Entity e, ref Separator separator) => e.Remove<Separator>());
         }
     }

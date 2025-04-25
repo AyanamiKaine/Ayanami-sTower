@@ -1,6 +1,7 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -16,23 +17,26 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             world.Module<ECSRadioButton>();
 
-            world.Component<RadioButton>("RadioButton")
-                .OnSet((Entity e, ref RadioButton radioButton) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<RadioButton>("RadioButton")
+                .OnSet(
+                    (Entity e, ref RadioButton radioButton) =>
                     {
-                        e.Set<object>(radioButton);
-                    }
-                    else if (e.Get<object>().GetType() == typeof(RadioButton))
-                    {
-                        e.Set<object>(radioButton);
-                    }
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(radioButton);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(RadioButton))
+                        {
+                            e.Set<object>(radioButton);
+                        }
 
-                    // We set the contentControl component so systems and queries in general can more easily
-                    // access the generic .content property of the button.
-                    // This is good so queries can be more generic and not have to check for every possible control type.
-                    e.Set<ToggleButton>(radioButton);
-                })
+                        // We set the contentControl component so systems and queries in general can more easily
+                        // access the generic .content property of the button.
+                        // This is good so queries can be more generic and not have to check for every possible control type.
+                        e.Set<ToggleButton>(radioButton);
+                    }
+                )
                 .OnRemove((Entity e, ref RadioButton radioButton) => e.Remove<ToggleButton>());
         }
     }

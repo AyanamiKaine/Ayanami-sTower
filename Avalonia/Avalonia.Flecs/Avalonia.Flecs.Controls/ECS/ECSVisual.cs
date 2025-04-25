@@ -1,4 +1,5 @@
 using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -13,18 +14,21 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSVisual>();
-            world.Component<Visual>("Visual")
-                .OnSet((Entity e, ref Visual _) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<Visual>("Visual")
+                .OnSet(
+                    (Entity e, ref Visual _) =>
                     {
-                        e.Set<object>(new Visual());
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(new Visual());
+                        }
+                        else if (e.Get<object>().GetType() == typeof(Visual))
+                        {
+                            e.Set<object>(new Visual());
+                        }
                     }
-                    else if (e.Get<object>().GetType() == typeof(Visual))
-                    {
-                        e.Set<object>(new Visual());
-                    }
-                });
+                );
         }
     }
 }

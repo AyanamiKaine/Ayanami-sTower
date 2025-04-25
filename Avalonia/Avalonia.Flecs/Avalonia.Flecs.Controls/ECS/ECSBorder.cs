@@ -1,5 +1,6 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,20 +16,23 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             world.Module<ECSBorder>();
 
-            world.Component<Border>("Border")
-                .OnSet((Entity e, ref Border border) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<Border>("Border")
+                .OnSet(
+                    (Entity e, ref Border border) =>
                     {
-                        e.Set<object>(border);
-                    }
-                    else if (e.Get<object>().GetType() == typeof(Border))
-                    {
-                        e.Set<object>(border);
-                    }
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(border);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(Border))
+                        {
+                            e.Set<object>(border);
+                        }
 
-                    e.Set<Decorator>(border);
-                })
+                        e.Set<Decorator>(border);
+                    }
+                )
                 .OnRemove((Entity e, ref Border _) => e.Remove<Decorator>());
         }
     }

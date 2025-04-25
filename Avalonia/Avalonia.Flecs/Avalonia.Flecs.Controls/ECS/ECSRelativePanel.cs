@@ -1,5 +1,6 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -14,19 +15,23 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSRelativePanel>();
-            world.Component<RelativePanel>("RelativePanel")
-                .OnSet((Entity e, ref RelativePanel relativePanel) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<RelativePanel>("RelativePanel")
+                .OnSet(
+                    (Entity e, ref RelativePanel relativePanel) =>
                     {
-                        e.Set<object>(relativePanel);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(relativePanel);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(RelativePanel))
+                        {
+                            e.Set<object>(relativePanel);
+                        }
+                        e.Set<Panel>(relativePanel);
                     }
-                    else if (e.Get<object>().GetType() == typeof(RelativePanel))
-                    {
-                        e.Set<object>(relativePanel);
-                    }
-                    e.Set<Panel>(relativePanel);
-                }).OnRemove((Entity e, ref RelativePanel relativePanel) => e.Remove<Panel>());
+                )
+                .OnRemove((Entity e, ref RelativePanel relativePanel) => e.Remove<Panel>());
         }
     }
 }

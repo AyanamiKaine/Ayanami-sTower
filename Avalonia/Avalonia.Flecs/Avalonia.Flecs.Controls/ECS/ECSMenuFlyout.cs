@@ -1,6 +1,7 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -15,19 +16,22 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSMenuFlyout>();
-            world.Component<MenuFlyout>("MenuFlyout")
-                .OnSet((Entity e, ref MenuFlyout menuFlyout) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<MenuFlyout>("MenuFlyout")
+                .OnSet(
+                    (Entity e, ref MenuFlyout menuFlyout) =>
                     {
-                        e.Set<object>(menuFlyout);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(menuFlyout);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(MenuFlyout))
+                        {
+                            e.Set<object>(menuFlyout);
+                        }
+                        e.Set<PopupFlyoutBase>(menuFlyout);
                     }
-                    else if (e.Get<object>().GetType() == typeof(MenuFlyout))
-                    {
-                        e.Set<object>(menuFlyout);
-                    }
-                    e.Set<PopupFlyoutBase>(menuFlyout);
-                })
+                )
                 .OnRemove((Entity e, ref MenuFlyout menuFlyout) => e.Remove<PopupFlyoutBase>());
         }
     }

@@ -1,5 +1,6 @@
-using Flecs.NET.Core;
 using Avalonia.Controls.Shapes;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -14,19 +15,22 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSRectangle>();
-            world.Component<Rectangle>("Rectangle")
-                .OnSet((Entity e, ref Rectangle rectangle) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<Rectangle>("Rectangle")
+                .OnSet(
+                    (Entity e, ref Rectangle rectangle) =>
                     {
-                        e.Set<object>(rectangle);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(rectangle);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(Rectangle))
+                        {
+                            e.Set<object>(rectangle);
+                        }
+                        e.Set<Shape>(rectangle);
                     }
-                    else if (e.Get<object>().GetType() == typeof(Rectangle))
-                    {
-                        e.Set<object>(rectangle);
-                    }
-                    e.Set<Shape>(rectangle);
-                })
+                )
                 .OnRemove((Entity e, ref Rectangle shape) => e.Remove<Shape>());
         }
     }

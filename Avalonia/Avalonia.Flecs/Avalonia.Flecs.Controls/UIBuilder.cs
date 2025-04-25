@@ -54,7 +54,6 @@ public struct SubscriptionListComponent() : IDisposable
     /// </summary>
     public List<IDisposable> Subscriptions { get; private set; } = [];
 
-
     /// <summary>
     /// Method to add a subscription
     /// </summary>
@@ -90,17 +89,16 @@ public struct SubscriptionListComponent() : IDisposable
     }
 }
 
-
 /*
 TODO: Highly Experimental, the goal of this module is to improve the way
-we create a UI in code. Its all about making it more obvious how the UI is 
+we create a UI in code. Its all about making it more obvious how the UI is
 structured. We take insperation how its done in Flutter.
 */
 
 /*
 Also this UI Builder class should become a really deep class with a rather small interface.
 One way we reduce the interface is by putting many methods related to specific avalonia classes
-to generic with their type. So they are only exposed when working with the type itself. This 
+to generic with their type. So they are only exposed when working with the type itself. This
 shows information where its needed and hides it where it doesnt.
 */
 
@@ -111,14 +109,13 @@ shows information where its needed and hides it where it doesnt.
 /// </summary>
 public static class UIBuilderExtensions
 {
-
     /*
     Note regarding the AsBaseBuilder method. The problem we face is the following, we want that our
     display right item simply returns a avalonia control class that gets used as a children. But
     our various content displayers, return UIBuilder<MoreSpecificType> like a stack panel. The caller
     shouldnt care for what more specific type gets returned only the base control type matters.
 
-    Calling AsBaseBuilder uses the same underlying entity and fields with the only difference being 
+    Calling AsBaseBuilder uses the same underlying entity and fields with the only difference being
     that the UIBuilder gets converted from the type UIBuilder<StackPanel> => UIBuilder<Control>.
     */
 
@@ -132,24 +129,34 @@ public static class UIBuilderExtensions
     /// <exception cref="ArgumentNullException">Thrown if derivedBuilder is null.</exception>
     /// <exception cref="ArgumentException">Thrown if derivedBuilder's entity is invalid or dead.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the entity does not have a component of type TBase.</exception>
-    public static UIBuilder<TBase> AsBaseBuilder<TBase, TDerived>(this UIBuilder<TDerived> derivedBuilder)
+    public static UIBuilder<TBase> AsBaseBuilder<TBase, TDerived>(
+        this UIBuilder<TDerived> derivedBuilder
+    )
         where TDerived : AvaloniaObject, TBase // Ensure Derived inherits from Base
         where TBase : AvaloniaObject
     {
         if (derivedBuilder == null)
-            throw new ArgumentNullException(nameof(derivedBuilder), "Cannot convert a null builder.");
+            throw new ArgumentNullException(
+                nameof(derivedBuilder),
+                "Cannot convert a null builder."
+            );
 
         var entity = derivedBuilder.Entity;
 
         if (!entity.IsValid() || !entity.IsAlive())
-            throw new ArgumentException("Cannot convert a builder with an invalid or dead entity.", nameof(derivedBuilder));
+            throw new ArgumentException(
+                "Cannot convert a builder with an invalid or dead entity.",
+                nameof(derivedBuilder)
+            );
 
         // Check if the entity has the base component type. Crucial!
         // Use Has<TBase>() because Get<TBase>() might throw if it doesn't exist.
         if (!entity.Has<TBase>())
         {
             // This could happen if the component was removed after the derived builder was created.
-            throw new InvalidOperationException($"Entity {entity.Id} ({entity.Name()}) does not have the required base component {typeof(TBase).Name} for conversion.");
+            throw new InvalidOperationException(
+                $"Entity {entity.Id} ({entity.Name()}) does not have the required base component {typeof(TBase).Name} for conversion."
+            );
         }
 
         // Get the world instance safely from the entity
@@ -169,10 +176,12 @@ public static class UIBuilderExtensions
     public static FuncDataTemplate<TData> CreateTemplate<TData, TControl>(
         this World world,
         Action<UIBuilder<TControl>, TData> configure,
-        bool shouldBeCleanedUp = true)
+        bool shouldBeCleanedUp = true
+    )
         where TControl : Control, new()
     {
-        return new FuncDataTemplate<TData>((item, _) =>
+        return new FuncDataTemplate<TData>(
+            (item, _) =>
             {
                 // Create the entity and builder FIRST
                 var entity = world.UI<TControl>(builder =>
@@ -183,18 +192,21 @@ public static class UIBuilderExtensions
                     // *Conditionally* attach the cleanup handler
                     if (shouldBeCleanedUp)
                     {
-                        builder.OnDetachedFromVisualTreeTracked((sender, e) => // Use the tracked method
-                        {
-                            if (builder.Entity.InValid())
-                                return;
+                        builder.OnDetachedFromVisualTreeTracked(
+                            (sender, e) => // Use the tracked method
+                            {
+                                if (builder.Entity.InValid())
+                                    return;
 
-                            builder.Entity.Destruct();
-                        });
+                                builder.Entity.Destruct();
+                            }
+                        );
                     }
                 });
 
                 return entity.Get<TControl>(); // Get the control associated with the entity
-            });
+            }
+        );
     }
 
     /// <summary>
@@ -205,7 +217,8 @@ public static class UIBuilderExtensions
     /// <param name="world">The Flecs world.</param>
     /// <param name="configure">Action to configure the entity and its children using the builder.</param>
     /// <returns>The builder for the created entity.</returns> // CHANGED RETURN TYPE
-    public static UIBuilder<T> UI<T>(this World world, Action<UIBuilder<T>> configure) where T : AvaloniaObject, new()
+    public static UIBuilder<T> UI<T>(this World world, Action<UIBuilder<T>> configure)
+        where T : AvaloniaObject, new()
     {
         var entity = world.Entity().Set(new T());
         var builder = new UIBuilder<T>(world, entity);
@@ -221,7 +234,11 @@ public static class UIBuilderExtensions
     /// <param name="parentBuilder">The builder for the parent entity.</param> // CHANGED PARAMETER TYPE (for consistency, though Entity also works)
     /// <param name="configure">Action to configure the entity and its children using the builder.</param>
     /// <returns>The builder for the created child entity.</returns> // CHANGED RETURN TYPE
-    public static UIBuilder<T> UI<T>(this UIBuilder<AvaloniaObject> parentBuilder, Action<UIBuilder<T>> configure) where T : Control, new() // Generic parent type might be needed
+    public static UIBuilder<T> UI<T>(
+        this UIBuilder<AvaloniaObject> parentBuilder,
+        Action<UIBuilder<T>> configure
+    )
+        where T : Control, new() // Generic parent type might be needed
     {
         var world = parentBuilder.Entity.CsWorld(); // Get world from parent builder's entity
         var parentEntity = parentBuilder.Entity;
@@ -239,7 +256,8 @@ public static class UIBuilderExtensions
     /// <param name="parent">The parent entity.</param>
     /// <param name="configure">Action to configure the entity and its children using the builder.</param>
     /// <returns>The builder for the created child entity.</returns> // CHANGED RETURN TYPE
-    public static UIBuilder<T> UI<T>(this Entity parent, Action<UIBuilder<T>> configure) where T : Control, new()
+    public static UIBuilder<T> UI<T>(this Entity parent, Action<UIBuilder<T>> configure)
+        where T : Control, new()
     {
         var world = parent.CsWorld();
         var entity = world.Entity().ChildOf(parent).Set(new T());
@@ -273,7 +291,11 @@ public static class UIBuilderExtensions
         // --> Using a dedicated list component like SubscriptionListComponent is cleaner.
     }
 
-    private static IDisposable CreateHandlerRemovalDisposable(InputElement control, RoutedEvent routedEvent, Delegate handler)
+    private static IDisposable CreateHandlerRemovalDisposable(
+        InputElement control,
+        RoutedEvent routedEvent,
+        Delegate handler
+    )
     {
         // Capture the specific delegate instance to remove
         var handlerToRemove = handler;
@@ -288,7 +310,9 @@ public static class UIBuilderExtensions
             catch (Exception ex)
             {
                 // Log potential errors during removal, although RemoveHandler is generally safe
-                Console.WriteLine($"UIBuilder: Error removing handler for {routedEvent.Name}: {ex.Message}");
+                Console.WriteLine(
+                    $"UIBuilder: Error removing handler for {routedEvent.Name}: {ex.Message}"
+                );
             }
         });
     }
@@ -299,7 +323,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="column"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetColumn<T>(this UIBuilder<T> builder, int column) where T : Control, new()
+    public static UIBuilder<T> SetColumn<T>(this UIBuilder<T> builder, int column)
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -315,7 +340,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="row"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetRow<T>(this UIBuilder<T> builder, int row) where T : Control, new()
+    public static UIBuilder<T> SetRow<T>(this UIBuilder<T> builder, int row)
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -331,7 +357,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="flyout"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, UIBuilder<FlyoutBase> flyout) where T : Button
+    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, UIBuilder<FlyoutBase> flyout)
+        where T : Button
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -347,7 +374,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="flyout"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, UIBuilder<MenuFlyout> flyout) where T : Button
+    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, UIBuilder<MenuFlyout> flyout)
+        where T : Button
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -363,7 +391,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="entityFlyout">The entity with a flyoutbase component</param>
     /// <returns></returns>
-    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, Entity entityFlyout) where T : Button
+    public static UIBuilder<T> SetFlyout<T>(this UIBuilder<T> builder, Entity entityFlyout)
+        where T : Button
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -380,7 +409,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="columnSpan"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetColumnSpan<T>(this UIBuilder<T> builder, int columnSpan) where T : Control, new()
+    public static UIBuilder<T> SetColumnSpan<T>(this UIBuilder<T> builder, int columnSpan)
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -409,7 +439,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static int GetColumnSpan<T>(this UIBuilder<T> builder) where T : Control, new()
+    public static int GetColumnSpan<T>(this UIBuilder<T> builder)
+        where T : Control, new()
     {
         return Grid.GetColumnSpan(builder.Get<Control>());
     }
@@ -422,7 +453,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="rowSpan"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetRowSpan<T>(this UIBuilder<T> builder, int rowSpan) where T : Control, new()
+    public static UIBuilder<T> SetRowSpan<T>(this UIBuilder<T> builder, int rowSpan)
+        where T : Control, new()
     {
         Grid.SetRowSpan(builder.Get<Control>(), rowSpan);
         return builder;
@@ -434,7 +466,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static int GetRowSpan<T>(this UIBuilder<T> builder) where T : Control, new()
+    public static int GetRowSpan<T>(this UIBuilder<T> builder)
+        where T : Control, new()
     {
         return Grid.GetRowSpan(builder.Get<Control>());
     }
@@ -453,7 +486,7 @@ public static class UIBuilderExtensions
 
     /// <summary>
     /// Sets the text of a button control by adding a textblock control to it.
-    /// This is done so you can easily say button.SetFontSize() and changing the 
+    /// This is done so you can easily say button.SetFontSize() and changing the
     /// text size of the textblock
     /// </summary>
     public static UIBuilder<Button> SetText(this UIBuilder<Button> builder, string text)
@@ -461,10 +494,12 @@ public static class UIBuilderExtensions
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Child<TextBlock>((t) =>
-        {
-            t.SetText(text);
-        });
+        builder.Child<TextBlock>(
+            (t) =>
+            {
+                t.SetText(text);
+            }
+        );
         return builder;
     }
 
@@ -502,7 +537,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T">The type of Interactive control</typeparam>
     /// <param name="builder">The UI builder</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> AllowDrop<T>(this UIBuilder<T> builder) where T : Interactive
+    public static UIBuilder<T> AllowDrop<T>(this UIBuilder<T> builder)
+        where T : Interactive
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -517,7 +553,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T">The type of Interactive control</typeparam>
     /// <param name="builder">The UI builder</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> DisallowDrop<T>(this UIBuilder<T> builder) where T : Interactive
+    public static UIBuilder<T> DisallowDrop<T>(this UIBuilder<T> builder)
+        where T : Interactive
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -533,7 +570,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="brush">The brush to set as the foreground</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetForeground<T>(this UIBuilder<T> builder, IBrush brush) where T : TemplatedControl
+    public static UIBuilder<T> SetForeground<T>(this UIBuilder<T> builder, IBrush brush)
+        where T : TemplatedControl
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -541,13 +579,17 @@ public static class UIBuilderExtensions
         builder.Entity.Get<T>().Foreground = brush;
         return builder;
     }
+
     /// <summary>
     /// Sets the foreground brush of a TextBlock.
     /// </summary>
     /// <param name="builder">The UI builder</param>
     /// <param name="brush">The brush to set as the foreground</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<TextBlock> SetForeground(this UIBuilder<TextBlock> builder, IBrush brush)
+    public static UIBuilder<TextBlock> SetForeground(
+        this UIBuilder<TextBlock> builder,
+        IBrush brush
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -557,7 +599,7 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Attaches an tooltip to an control, and automatically diposes it 
+    /// Attaches an tooltip to an control, and automatically diposes it
     /// when detached from visual tree
     /// </summary>
     /// <typeparam name="T"></typeparam>
@@ -565,12 +607,16 @@ public static class UIBuilderExtensions
     /// <param name="toolTip"></param>
     /// <param name="IsPartOfATemplate">When set to true the tooltip gets destroyed when it becomes detached from the visual tree. This is done so they become freed and dont leak memory mostly when using templates that get created and destroyed on the fly. THIS SHOULD NOT BE DONE WHEN YOU REUSE THE SAME TOOLTIP OTHERWISE IT WILL CRASH. For example when using flyouts you want to set this to false. THIS SHOULD BE SET TO TRUE WHEN USED IN TEMPLATES!</param>
     /// <returns></returns>
-    public static UIBuilder<T> AttachToolTip<T>(this UIBuilder<T> builder, UIBuilder<ToolTip> toolTip, bool IsPartOfATemplate = false) where T : Control, new()
+    public static UIBuilder<T> AttachToolTip<T>(
+        this UIBuilder<T> builder,
+        UIBuilder<ToolTip> toolTip,
+        bool IsPartOfATemplate = false
+    )
+        where T : Control, new()
     {
         // Standard validation
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
             return builder;
-
 
         // Get the control instance ONCE
         var control = builder.Get<Control>();
@@ -583,20 +629,22 @@ public static class UIBuilderExtensions
         if (!IsPartOfATemplate)
             return builder;
 
-        builder.OnDetachedFromVisualTreeTracked((sender, e) => // Use the tracked method
-                         {
-                             if (builder.Entity.IsValid() && builder.Entity.IsAlive())
-                             {
-                                 ToolTip.SetTip(control, null);
-                                 toolTip.Entity.Remove<ToolTip>();
+        builder.OnDetachedFromVisualTreeTracked(
+            (sender, e) => // Use the tracked method
+            {
+                if (builder.Entity.IsValid() && builder.Entity.IsAlive())
+                {
+                    ToolTip.SetTip(control, null);
+                    toolTip.Entity.Remove<ToolTip>();
 
-                                 if (toolTip.Entity.InValid())
-                                 {
-                                     return;
-                                 }
-                                 toolTip.Entity.Destruct();
-                             }
-                         });
+                    if (toolTip.Entity.InValid())
+                    {
+                        return;
+                    }
+                    toolTip.Entity.Destruct();
+                }
+            }
+        );
 
         return builder;
     }
@@ -608,7 +656,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="isVisible">Whether the control should be visible (default: true)</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> Visible<T>(this UIBuilder<T> builder, bool isVisible = true) where T : Visual, new()
+    public static UIBuilder<T> Visible<T>(this UIBuilder<T> builder, bool isVisible = true)
+        where T : Visual, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -623,7 +672,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T">The type of Visual control</typeparam>
     /// <param name="builder">The UI builder</param>
     /// <returns>True if the control is visible, false otherwise</returns>
-    public static bool IsVisible<T>(this UIBuilder<T> builder) where T : Visual, new()
+    public static bool IsVisible<T>(this UIBuilder<T> builder)
+        where T : Visual, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return false;
@@ -661,7 +711,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="flyoutShowMode"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetShowMode<T>(this UIBuilder<T> builder, FlyoutShowMode flyoutShowMode) where T : MenuFlyout
+    public static UIBuilder<T> SetShowMode<T>(
+        this UIBuilder<T> builder,
+        FlyoutShowMode flyoutShowMode
+    )
+        where T : MenuFlyout
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -676,7 +730,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="placeholderText"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetWatermark(this UIBuilder<TextBox> builder, string placeholderText)
+    public static UIBuilder<TextBox> SetWatermark(
+        this UIBuilder<TextBox> builder,
+        string placeholderText
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -691,7 +748,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="placeholderText"></param>
     /// <returns></returns>
-    public static UIBuilder<AutoCompleteBox> SetWatermark(this UIBuilder<AutoCompleteBox> builder, string placeholderText)
+    public static UIBuilder<AutoCompleteBox> SetWatermark(
+        this UIBuilder<AutoCompleteBox> builder,
+        string placeholderText
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -706,7 +766,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="textWrapping"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBlock> SetTextWrapping(this UIBuilder<TextBlock> builder, TextWrapping textWrapping)
+    public static UIBuilder<TextBlock> SetTextWrapping(
+        this UIBuilder<TextBlock> builder,
+        TextWrapping textWrapping
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -714,13 +777,17 @@ public static class UIBuilderExtensions
         builder.Get<TextBlock>().TextWrapping = textWrapping;
         return builder;
     }
+
     /// <summary>
     /// Set the trimming of the text
     /// </summary>
     /// <param name="builder"></param>
     /// <param name="textTrimming"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBlock> SetTextTrimming(this UIBuilder<TextBlock> builder, TextTrimming textTrimming)
+    public static UIBuilder<TextBlock> SetTextTrimming(
+        this UIBuilder<TextBlock> builder,
+        TextTrimming textTrimming
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -735,7 +802,10 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="textAlignment">The text alignment to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<TextBlock> SetTextAlignment(this UIBuilder<TextBlock> builder, TextAlignment textAlignment)
+    public static UIBuilder<TextBlock> SetTextAlignment(
+        this UIBuilder<TextBlock> builder,
+        TextAlignment textAlignment
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -744,22 +814,26 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Set the wrapping of the text of a button
     /// </summary>
     /// <param name="builder"></param>
     /// <param name="textWrapping"></param>
     /// <returns></returns>
-    public static UIBuilder<Button> SetTextWrapping(this UIBuilder<Button> builder, TextWrapping textWrapping)
+    public static UIBuilder<Button> SetTextWrapping(
+        this UIBuilder<Button> builder,
+        TextWrapping textWrapping
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Child<TextBlock>((t) =>
-        {
-            t.SetTextWrapping(textWrapping);
-        });
+        builder.Child<TextBlock>(
+            (t) =>
+            {
+                t.SetTextWrapping(textWrapping);
+            }
+        );
         return builder;
     }
 
@@ -769,7 +843,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="textWrapping"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetTextWrapping(this UIBuilder<TextBox> builder, TextWrapping textWrapping)
+    public static UIBuilder<TextBox> SetTextWrapping(
+        this UIBuilder<TextBox> builder,
+        TextWrapping textWrapping
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -784,7 +861,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="fill"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetFill<T>(this UIBuilder<T> builder, IBrush fill) where T : Shape
+    public static UIBuilder<T> SetFill<T>(this UIBuilder<T> builder, IBrush fill)
+        where T : Shape
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -799,7 +877,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="stroke"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetStroke<T>(this UIBuilder<T> builder, IBrush stroke) where T : Shape
+    public static UIBuilder<T> SetStroke<T>(this UIBuilder<T> builder, IBrush stroke)
+        where T : Shape
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -814,7 +893,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="strokeThickness"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetStrokeThickness<T>(this UIBuilder<T> builder, double strokeThickness) where T : Shape
+    public static UIBuilder<T> SetStrokeThickness<T>(
+        this UIBuilder<T> builder,
+        double strokeThickness
+    )
+        where T : Shape
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -823,7 +906,6 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Helper function to set the orientation of a StackPanel.
     /// </summary>
@@ -831,7 +913,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="orientation"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetOrientation<T>(this UIBuilder<T> builder, Orientation orientation) where T : StackPanel
+    public static UIBuilder<T> SetOrientation<T>(this UIBuilder<T> builder, Orientation orientation)
+        where T : StackPanel
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -847,7 +930,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="height">The height value to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetHeight<T>(this UIBuilder<T> builder, double height) where T : Layoutable
+    public static UIBuilder<T> SetHeight<T>(this UIBuilder<T> builder, double height)
+        where T : Layoutable
     {
         builder.Get<T>().Height = height;
         return builder;
@@ -860,7 +944,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="minHeigth">The minimum height value to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetMinHeigth<T>(this UIBuilder<T> builder, double minHeigth) where T : Layoutable
+    public static UIBuilder<T> SetMinHeigth<T>(this UIBuilder<T> builder, double minHeigth)
+        where T : Layoutable
     {
         builder.Get<T>().MinHeight = minHeigth;
         return builder;
@@ -873,7 +958,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="maxHeigth">The maximum height value to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetMaxHeigth<T>(this UIBuilder<T> builder, double maxHeigth) where T : Layoutable
+    public static UIBuilder<T> SetMaxHeigth<T>(this UIBuilder<T> builder, double maxHeigth)
+        where T : Layoutable
     {
         builder.Get<T>().MaxHeight = maxHeigth;
         return builder;
@@ -886,7 +972,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="minWidth">The minimum width value to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetMinWidth<T>(this UIBuilder<T> builder, double minWidth) where T : Layoutable
+    public static UIBuilder<T> SetMinWidth<T>(this UIBuilder<T> builder, double minWidth)
+        where T : Layoutable
     {
         builder.Get<T>().MinWidth = minWidth;
         return builder;
@@ -899,7 +986,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="maxWidth">The maximum width value to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetMaxWidth<T>(this UIBuilder<T> builder, double maxWidth) where T : Layoutable
+    public static UIBuilder<T> SetMaxWidth<T>(this UIBuilder<T> builder, double maxWidth)
+        where T : Layoutable
     {
         builder.Get<T>().MaxWidth = maxWidth;
         return builder;
@@ -912,7 +1000,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="width">The width value to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetWidth<T>(this UIBuilder<T> builder, double width) where T : Layoutable
+    public static UIBuilder<T> SetWidth<T>(this UIBuilder<T> builder, double width)
+        where T : Layoutable
     {
         builder.Get<T>().Width = width;
         return builder;
@@ -925,7 +1014,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="background">The brush to set as the background</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetBackground<T>(this UIBuilder<T> builder, IBrush background) where T : Panel
+    public static UIBuilder<T> SetBackground<T>(this UIBuilder<T> builder, IBrush background)
+        where T : Panel
     {
         builder.Get<T>().Background = background;
         return builder;
@@ -961,7 +1051,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T">The type of Panel</typeparam>
     /// <param name="builder">The UI builder</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> RemoveBackground<T>(this UIBuilder<T> builder) where T : Panel
+    public static UIBuilder<T> RemoveBackground<T>(this UIBuilder<T> builder)
+        where T : Panel
     {
         builder.Get<T>().Background = null;
         return builder;
@@ -974,7 +1065,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="spacing"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetSpacing<T>(this UIBuilder<T> builder, double spacing) where T : StackPanel
+    public static UIBuilder<T> SetSpacing<T>(this UIBuilder<T> builder, double spacing)
+        where T : StackPanel
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -983,14 +1075,14 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Enables the control element
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static UIBuilder<T> Enable<T>(this UIBuilder<T> builder) where T : InputElement
+    public static UIBuilder<T> Enable<T>(this UIBuilder<T> builder)
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1005,7 +1097,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static UIBuilder<T> Disable<T>(this UIBuilder<T> builder) where T : InputElement
+    public static UIBuilder<T> Disable<T>(this UIBuilder<T> builder)
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1021,7 +1114,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="source"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetSource<T>(this UIBuilder<T> builder, IImage? source) where T : Image
+    public static UIBuilder<T> SetSource<T>(this UIBuilder<T> builder, IImage? source)
+        where T : Image
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1030,7 +1124,6 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Sets the IsHitTestVisible property of an InputElement.
     /// </summary>
@@ -1038,7 +1131,11 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="isHitTestVisible">Whether the element should be hit test visible</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetIsHitTestVisible<T>(this UIBuilder<T> builder, bool isHitTestVisible) where T : InputElement
+    public static UIBuilder<T> SetIsHitTestVisible<T>(
+        this UIBuilder<T> builder,
+        bool isHitTestVisible
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1053,7 +1150,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveSource<T>(this UIBuilder<T> builder) where T : Image
+    public static UIBuilder<T> RemoveSource<T>(this UIBuilder<T> builder)
+        where T : Image
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1068,7 +1166,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static IImage? GetSource<T>(this UIBuilder<T> builder) where T : Image
+    public static IImage? GetSource<T>(this UIBuilder<T> builder)
+        where T : Image
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return null;
@@ -1083,7 +1182,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerPressed"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerPressed<T>(this UIBuilder<T> builder, EventHandler<PointerPressedEventArgs>? onPointerPressed) where T : InputElement
+    public static UIBuilder<T> OnPointerPressed<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerPressedEventArgs>? onPointerPressed
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1091,6 +1194,7 @@ public static class UIBuilderExtensions
         builder.Get<InputElement>().PointerPressed += onPointerPressed;
         return builder;
     }
+
     /// <summary>
     /// Removes an on pointer pressed event to the input element
     /// </summary>
@@ -1098,7 +1202,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerPressed"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerPressed<T>(this UIBuilder<T> builder, EventHandler<PointerPressedEventArgs>? onPointerPressed) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerPressed<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerPressedEventArgs>? onPointerPressed
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1114,7 +1222,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerMoved"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerMoved<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPointerMoved) where T : InputElement
+    public static UIBuilder<T> OnPointerMoved<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerEventArgs>? onPointerMoved
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1122,6 +1234,7 @@ public static class UIBuilderExtensions
         builder.Get<InputElement>().PointerMoved += onPointerMoved;
         return builder;
     }
+
     /// <summary>
     /// Adds an on pointer moved event to the input element
     /// </summary>
@@ -1129,7 +1242,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerMoved"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerMoved<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPointerMoved) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerMoved<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerEventArgs>? onPointerMoved
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1145,7 +1262,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerRelease"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerReleased<T>(this UIBuilder<T> builder, EventHandler<PointerReleasedEventArgs>? onPointerRelease) where T : InputElement
+    public static UIBuilder<T> OnPointerReleased<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerReleasedEventArgs>? onPointerRelease
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1161,7 +1282,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerRelease"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerReleased<T>(this UIBuilder<T> builder, EventHandler<PointerReleasedEventArgs>? onPointerRelease) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerReleased<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerReleasedEventArgs>? onPointerRelease
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1177,7 +1302,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerEntered"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerEntered<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPointerEntered) where T : InputElement
+    public static UIBuilder<T> OnPointerEntered<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerEventArgs>? onPointerEntered
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1195,7 +1324,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPoninterExited"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerExited<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPoninterExited) where T : InputElement
+    public static UIBuilder<T> OnPointerExited<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerEventArgs>? onPoninterExited
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1211,7 +1344,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerEntered"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerEntered<T>(this UIBuilder<T> builder, EventHandler<PointerEventArgs>? onPointerEntered) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerEntered<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerEventArgs>? onPointerEntered
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1227,7 +1364,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerCaptureLost"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnPointerCaptureLost<T>(this UIBuilder<T> builder, EventHandler<PointerCaptureLostEventArgs>? onPointerCaptureLost) where T : InputElement
+    public static UIBuilder<T> OnPointerCaptureLost<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerCaptureLostEventArgs>? onPointerCaptureLost
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1243,7 +1384,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="onPointerCaptureLost"></param>
     /// <returns></returns>
-    public static UIBuilder<T> RemoveOnPointerCaptureLost<T>(this UIBuilder<T> builder, EventHandler<PointerCaptureLostEventArgs>? onPointerCaptureLost) where T : InputElement
+    public static UIBuilder<T> RemoveOnPointerCaptureLost<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerCaptureLostEventArgs>? onPointerCaptureLost
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1259,7 +1404,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="fontWeight"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetFontWeight<T>(this UIBuilder<T> builder, FontWeight fontWeight) where T : TextBlock
+    public static UIBuilder<T> SetFontWeight<T>(this UIBuilder<T> builder, FontWeight fontWeight)
+        where T : TextBlock
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1275,7 +1421,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="fontSize">The size to set for the font</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetFontSize<T>(this UIBuilder<T> builder, double fontSize) where T : TextBlock
+    public static UIBuilder<T> SetFontSize<T>(this UIBuilder<T> builder, double fontSize)
+        where T : TextBlock
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1295,11 +1442,13 @@ public static class UIBuilderExtensions
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
-        builder.Entity.Children((child) =>
-        {
-            if (child.Has<TextBlock>())
-                child.Get<TextBlock>().FontSize = fontSize;
-        });
+        builder.Entity.Children(
+            (child) =>
+            {
+                if (child.Has<TextBlock>())
+                    child.Get<TextBlock>().FontSize = fontSize;
+            }
+        );
 
         return builder;
     }
@@ -1310,7 +1459,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="cornerRadius"></param>
     /// <returns></returns>
-    public static UIBuilder<Border> SetCornerRadius(this UIBuilder<Border> builder, double cornerRadius)
+    public static UIBuilder<Border> SetCornerRadius(
+        this UIBuilder<Border> builder,
+        double cornerRadius
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1326,7 +1478,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="cornerRadius"></param>
     /// <returns></returns>
-    public static UIBuilder<Border> SetCornerRadius(this UIBuilder<Border> builder, CornerRadius cornerRadius)
+    public static UIBuilder<Border> SetCornerRadius(
+        this UIBuilder<Border> builder,
+        CornerRadius cornerRadius
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1357,7 +1512,10 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="acceptsReturn"></param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<TextBox> AcceptsReturn(this UIBuilder<TextBox> builder, bool acceptsReturn = true)
+    public static UIBuilder<TextBox> AcceptsReturn(
+        this UIBuilder<TextBox> builder,
+        bool acceptsReturn = true
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1378,16 +1536,17 @@ public static class UIBuilderExtensions
 
     /*
     DESIGN HINT:
-    When a control element shares a common interface like margin here, we should create a generic. 
+    When a control element shares a common interface like margin here, we should create a generic.
     Why? This ensure that automatically any type that uses Control as a base type works without any
-    needed special code. When no common interface exists we can simply write the special code like 
+    needed special code. When no common interface exists we can simply write the special code like
     with SetText.
     */
 
     /// <summary>
     /// Sets the margin of a control.
     /// </summary>
-    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, Thickness margin) where T : Control, new()
+    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, Thickness margin)
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1404,7 +1563,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="text"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetPlaceholderText<T>(this UIBuilder<T> builder, string text) where T : ComboBox, new()
+    public static UIBuilder<T> SetPlaceholderText<T>(this UIBuilder<T> builder, string text)
+        where T : ComboBox, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1413,6 +1573,7 @@ public static class UIBuilderExtensions
 
         return builder;
     }
+
     /// <summary>
     /// Helper function to set the title of a window
     /// </summary>
@@ -1443,6 +1604,7 @@ public static class UIBuilderExtensions
 
         return builder;
     }
+
     /// <summary>
     /// Set padding
     /// </summary>
@@ -1482,7 +1644,11 @@ public static class UIBuilderExtensions
     /// <param name="horizontalPadding"></param>
     /// <param name="verticalPadding"></param>
     /// <returns></returns>
-    public static UIBuilder<Border> SetPadding(this UIBuilder<Border> builder, double horizontalPadding, double verticalPadding)
+    public static UIBuilder<Border> SetPadding(
+        this UIBuilder<Border> builder,
+        double horizontalPadding,
+        double verticalPadding
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1491,7 +1657,6 @@ public static class UIBuilderExtensions
 
         return builder;
     }
-
 
     /// <summary>
     /// Set padding
@@ -1502,7 +1667,13 @@ public static class UIBuilderExtensions
     /// <param name="right"></param>
     /// <param name="bottom"></param>
     /// <returns></returns>
-    public static UIBuilder<Border> SetPadding(this UIBuilder<Border> builder, double left, double top, double right, double bottom)
+    public static UIBuilder<Border> SetPadding(
+        this UIBuilder<Border> builder,
+        double left,
+        double top,
+        double right,
+        double bottom
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1534,7 +1705,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="padding"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double padding) where T : TemplatedControl, new()
+    public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double padding)
+        where T : TemplatedControl, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1550,7 +1722,12 @@ public static class UIBuilderExtensions
     /// <param name="horizontalPadding"></param>
     /// <param name="verticalPadding"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double horizontalPadding, double verticalPadding) where T : TemplatedControl, new()
+    public static UIBuilder<T> SetPadding<T>(
+        this UIBuilder<T> builder,
+        double horizontalPadding,
+        double verticalPadding
+    )
+        where T : TemplatedControl, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1567,7 +1744,11 @@ public static class UIBuilderExtensions
     /// <param name="horizontalPadding"></param>
     /// <param name="verticalPadding"></param>
     /// <returns></returns>
-    public static UIBuilder<Decorator> SetPadding(this UIBuilder<Decorator> builder, double horizontalPadding, double verticalPadding)
+    public static UIBuilder<Decorator> SetPadding(
+        this UIBuilder<Decorator> builder,
+        double horizontalPadding,
+        double verticalPadding
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1587,9 +1768,21 @@ public static class UIBuilderExtensions
     /// <param name="rightPadding"></param>
     /// <param name="bottomPadding"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetPadding<T>(this UIBuilder<T> builder, double leftPadding, double topPadding, double rightPadding, double bottomPadding) where T : TemplatedControl, new()
+    public static UIBuilder<T> SetPadding<T>(
+        this UIBuilder<T> builder,
+        double leftPadding,
+        double topPadding,
+        double rightPadding,
+        double bottomPadding
+    )
+        where T : TemplatedControl, new()
     {
-        builder.Get<T>().Padding = new Thickness(leftPadding, topPadding, rightPadding, bottomPadding);
+        builder.Get<T>().Padding = new Thickness(
+            leftPadding,
+            topPadding,
+            rightPadding,
+            bottomPadding
+        );
         return builder;
     }
 
@@ -1620,6 +1813,7 @@ public static class UIBuilderExtensions
         builder.Get<Window>().Width = width;
         return builder;
     }
+
     /// <summary>
     /// Set the height
     /// </summary>
@@ -1638,7 +1832,10 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="alwaysOnTop">True to make the window always on top, false otherwise</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<Window> AlwaysOnTop(this UIBuilder<Window> builder, bool alwaysOnTop = true)
+    public static UIBuilder<Window> AlwaysOnTop(
+        this UIBuilder<Window> builder,
+        bool alwaysOnTop = true
+    )
     {
         builder.Get<Window>().Topmost = alwaysOnTop;
         return builder;
@@ -1647,7 +1844,8 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the margin of a control.
     /// </summary>
-    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double margin) where T : Control, new()
+    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double margin)
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1659,7 +1857,12 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the horizontal and vertial margin of a control.
     /// </summary>
-    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double hMargin, double vMargin) where T : Control, new()
+    public static UIBuilder<T> SetMargin<T>(
+        this UIBuilder<T> builder,
+        double hMargin,
+        double vMargin
+    )
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1672,7 +1875,14 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the left, top, right, bottom margin of a control.
     /// </summary>
-    public static UIBuilder<T> SetMargin<T>(this UIBuilder<T> builder, double lMargin, double tMargin, double rMargin, double bMargin) where T : Control, new()
+    public static UIBuilder<T> SetMargin<T>(
+        this UIBuilder<T> builder,
+        double lMargin,
+        double tMargin,
+        double rMargin,
+        double bMargin
+    )
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1685,7 +1895,10 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the column definitions of a Grid control.
     /// </summary>
-    public static UIBuilder<Grid> SetColumnDefinitions(this UIBuilder<Grid> builder, string columnDefinitions)
+    public static UIBuilder<Grid> SetColumnDefinitions(
+        this UIBuilder<Grid> builder,
+        string columnDefinitions
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1697,7 +1910,10 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the row definitions of a Grid control.
     /// </summary>
-    public static UIBuilder<Grid> SetRowDefinitions(this UIBuilder<Grid> builder, string rowDefinitions)
+    public static UIBuilder<Grid> SetRowDefinitions(
+        this UIBuilder<Grid> builder,
+        string rowDefinitions
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1706,13 +1922,15 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Adds an event handler that gets invoked when the Closing event happens. For Windows this happens
     /// BEFORE the window is fully closed but AFTER the window tries to close. When the
     /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
-    public static UIBuilder<Window> OnClosing(this UIBuilder<Window> builder, EventHandler<WindowClosingEventArgs> handler)
+    public static UIBuilder<Window> OnClosing(
+        this UIBuilder<Window> builder,
+        EventHandler<WindowClosingEventArgs> handler
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1720,9 +1938,10 @@ public static class UIBuilderExtensions
         var window = builder.Get<Window>();
 
         // Create an observable from the Closing event
-        var closingObservable = Observable.FromEventPattern<EventHandler<WindowClosingEventArgs>, WindowClosingEventArgs>(
-            h => window.Closing += h,
-            h => window.Closing -= h);
+        var closingObservable = Observable.FromEventPattern<
+            EventHandler<WindowClosingEventArgs>,
+            WindowClosingEventArgs
+        >(h => window.Closing += h, h => window.Closing -= h);
 
         // Subscribe the lambda and get the disposable token
         var subscription = closingObservable
@@ -1749,7 +1968,8 @@ public static class UIBuilderExtensions
         // Create an observable from the Opened event
         var openedObservable = Observable.FromEventPattern<RoutedEventArgs>(
             addHandler => window.Opened += handler,
-            removeHandler => window.Opened -= handler);
+            removeHandler => window.Opened -= handler
+        );
 
         // Subscribe the lambda and get the disposable token
         var subscription = openedObservable
@@ -1776,7 +1996,8 @@ public static class UIBuilderExtensions
         // Create an observable from the Closed event
         var closedObservable = Observable.FromEventPattern<RoutedEventArgs>(
             addHandler => window.Closed += handler,
-            removeHandler => window.Closed -= handler);
+            removeHandler => window.Closed -= handler
+        );
 
         // Subscribe the lambda and get the disposable token
         var subscription = closedObservable
@@ -1792,7 +2013,10 @@ public static class UIBuilderExtensions
     /// Adds an event handler that gets invoked when the Click event happens, when the
     /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
-    public static UIBuilder<Button> OnClick(this UIBuilder<Button> builder, Action<object?, RoutedEventArgs> handler)
+    public static UIBuilder<Button> OnClick(
+        this UIBuilder<Button> builder,
+        Action<object?, RoutedEventArgs> handler
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1802,7 +2026,8 @@ public static class UIBuilderExtensions
         // Create an observable from the Click event
         var clickObservable = Observable.FromEventPattern<RoutedEventArgs>(
             addHandler => control.Click += addHandler,
-            removeHandler => control.Click -= removeHandler);
+            removeHandler => control.Click -= removeHandler
+        );
 
         // Subscribe the lambda and get the disposable token
         var subscription = clickObservable
@@ -1815,7 +2040,6 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Adds an event handler that gets invoked when the DragOver routed event occurs
     /// for this element. The underlying entity's destruction automatically removes
@@ -1827,7 +2051,12 @@ public static class UIBuilderExtensions
     /// <param name="handler">The action to execute when DragOver occurs. Typically checks e.Data and sets e.DragEffects.</param>
     /// <param name="routes">The routing strategies to listen on (default is Bubble).</param>
     /// <returns>The builder for method chaining.</returns>
-    public static UIBuilder<T> OnDragOver<T>(this UIBuilder<T> builder, Action<object?, DragEventArgs> handler, RoutingStrategies routes = RoutingStrategies.Bubble) where T : InputElement
+    public static UIBuilder<T> OnDragOver<T>(
+        this UIBuilder<T> builder,
+        Action<object?, DragEventArgs> handler,
+        RoutingStrategies routes = RoutingStrategies.Bubble
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
             return builder; // Basic validation
@@ -1841,7 +2070,11 @@ public static class UIBuilderExtensions
         control.AddHandler(DragDrop.DragOverEvent, typedHandler, routes);
 
         // Create and add the disposable token that will call RemoveHandler
-        var removalDisposable = CreateHandlerRemovalDisposable(control, DragDrop.DragOverEvent, typedHandler);
+        var removalDisposable = CreateHandlerRemovalDisposable(
+            control,
+            DragDrop.DragOverEvent,
+            typedHandler
+        );
         AddDisposableSubscription(builder.Entity, removalDisposable);
 
         return builder; // Return the builder for fluent chaining
@@ -1859,7 +2092,12 @@ public static class UIBuilderExtensions
     /// <param name="handler">The action to execute when Drop occurs. Typically retrieves data from e.Data and performs an action.</param>
     /// <param name="routes">The routing strategies to listen on (default is Bubble).</param>
     /// <returns>The builder for method chaining.</returns>
-    public static UIBuilder<T> OnDrop<T>(this UIBuilder<T> builder, Action<object?, DragEventArgs> handler, RoutingStrategies routes = RoutingStrategies.Bubble) where T : InputElement
+    public static UIBuilder<T> OnDrop<T>(
+        this UIBuilder<T> builder,
+        Action<object?, DragEventArgs> handler,
+        RoutingStrategies routes = RoutingStrategies.Bubble
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
             return builder; // Basic validation
@@ -1873,7 +2111,11 @@ public static class UIBuilderExtensions
         control.AddHandler(DragDrop.DropEvent, typedHandler, routes);
 
         // Create and add the disposable token that will call RemoveHandler
-        var removalDisposable = CreateHandlerRemovalDisposable(control, DragDrop.DropEvent, typedHandler);
+        var removalDisposable = CreateHandlerRemovalDisposable(
+            control,
+            DragDrop.DropEvent,
+            typedHandler
+        );
         AddDisposableSubscription(builder.Entity, removalDisposable);
 
         return builder; // Return the builder for fluent chaining
@@ -1887,7 +2129,11 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="handler">The action to execute when the control is double-tapped</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> OnDoubleTapped<T>(this UIBuilder<T> builder, Action<object?, TappedEventArgs> handler) where T : InputElement
+    public static UIBuilder<T> OnDoubleTapped<T>(
+        this UIBuilder<T> builder,
+        Action<object?, TappedEventArgs> handler
+    )
+        where T : InputElement
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -1896,7 +2142,8 @@ public static class UIBuilderExtensions
 
         var checkedChangedObservable = Observable.FromEventPattern<TappedEventArgs>(
             addHandler => listBox.DoubleTapped += addHandler,
-            removeHandler => listBox.DoubleTapped -= removeHandler);
+            removeHandler => listBox.DoubleTapped -= removeHandler
+        );
 
         var subscription = checkedChangedObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -1906,7 +2153,6 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Adds an event handler that gets invoked when a container is prepared for an item in a ListBox.
     /// When the underlying entity gets destroyed, it automatically disposes the event handler.
@@ -1914,16 +2160,21 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder for the ListBox</param>
     /// <param name="handler">The event handler to invoke when a container is prepared</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<ListBox> OnContainerPrepared(this UIBuilder<ListBox> builder, Action<object?, ContainerPreparedEventArgs> handler)
+    public static UIBuilder<ListBox> OnContainerPrepared(
+        this UIBuilder<ListBox> builder,
+        Action<object?, ContainerPreparedEventArgs> handler
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
         var listBox = builder.Get<ListBox>();
 
-        var containerMaterializedObservable = Observable.FromEventPattern<ContainerPreparedEventArgs>(
-            addHandler => listBox.ContainerPrepared += addHandler,
-            removeHandler => listBox.ContainerPrepared -= removeHandler);
+        var containerMaterializedObservable =
+            Observable.FromEventPattern<ContainerPreparedEventArgs>(
+                addHandler => listBox.ContainerPrepared += addHandler,
+                removeHandler => listBox.ContainerPrepared -= removeHandler
+            );
 
         var subscription = containerMaterializedObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -1940,16 +2191,21 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder for the ListBox</param>
     /// <param name="handler">The event handler to invoke when a container is being cleared</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<ListBox> OnContainerClearing(this UIBuilder<ListBox> builder, Action<object?, ContainerClearingEventArgs> handler)
+    public static UIBuilder<ListBox> OnContainerClearing(
+        this UIBuilder<ListBox> builder,
+        Action<object?, ContainerClearingEventArgs> handler
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
         var listBox = builder.Get<ListBox>();
 
-        var containerMaterializedObservable = Observable.FromEventPattern<ContainerClearingEventArgs>(
-            addHandler => listBox.ContainerClearing += addHandler,
-            removeHandler => listBox.ContainerClearing -= removeHandler);
+        var containerMaterializedObservable =
+            Observable.FromEventPattern<ContainerClearingEventArgs>(
+                addHandler => listBox.ContainerClearing += addHandler,
+                removeHandler => listBox.ContainerClearing -= removeHandler
+            );
 
         var subscription = containerMaterializedObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -1967,16 +2223,22 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="handler">The action to execute when the control is detached from the visual tree</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> OnDetachedFromVisualTree<T>(this UIBuilder<T> builder, Action<object?, VisualTreeAttachmentEventArgs> handler) where T : Control
+    public static UIBuilder<T> OnDetachedFromVisualTree<T>(
+        this UIBuilder<T> builder,
+        Action<object?, VisualTreeAttachmentEventArgs> handler
+    )
+        where T : Control
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
 
         var control = builder.Get<Control>();
 
-        var containerMaterializedObservable = Observable.FromEventPattern<VisualTreeAttachmentEventArgs>(
-            addHandler => control.DetachedFromVisualTree += addHandler,
-            removeHandler => control.DetachedFromVisualTree -= removeHandler);
+        var containerMaterializedObservable =
+            Observable.FromEventPattern<VisualTreeAttachmentEventArgs>(
+                addHandler => control.DetachedFromVisualTree += addHandler,
+                removeHandler => control.DetachedFromVisualTree -= removeHandler
+            );
 
         var subscription = containerMaterializedObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -1990,7 +2252,10 @@ public static class UIBuilderExtensions
     /// Adds an event handler that gets invoked when the OnClick event happens, when the
     /// underlying entity gets destroyed it automatically disposes the event handler.
     /// </summary>
-    public static UIBuilder<MenuItem> OnClick(this UIBuilder<MenuItem> builder, Action<object?, RoutedEventArgs> handler)
+    public static UIBuilder<MenuItem> OnClick(
+        this UIBuilder<MenuItem> builder,
+        Action<object?, RoutedEventArgs> handler
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2000,7 +2265,8 @@ public static class UIBuilderExtensions
         // Create an observable from the Click event
         var clickObservable = Observable.FromEventPattern<RoutedEventArgs>(
             addHandler => control.Click += addHandler,
-            removeHandler => control.Click -= removeHandler);
+            removeHandler => control.Click -= removeHandler
+        );
 
         // Subscribe the lambda and get the disposable token
         var subscription = clickObservable
@@ -2020,7 +2286,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="handler"></param>
     /// <returns></returns>
-    public static UIBuilder<ComboBox> OnSelectionChanged(this UIBuilder<ComboBox> builder, Action<object?, SelectionChangedEventArgs> handler)
+    public static UIBuilder<ComboBox> OnSelectionChanged(
+        this UIBuilder<ComboBox> builder,
+        Action<object?, SelectionChangedEventArgs> handler
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2029,7 +2298,8 @@ public static class UIBuilderExtensions
 
         var checkedChangedObservable = Observable.FromEventPattern<SelectionChangedEventArgs>(
             addHandler => control.SelectionChanged += addHandler,
-            removeHandler => control.SelectionChanged -= removeHandler);
+            removeHandler => control.SelectionChanged -= removeHandler
+        );
 
         var subscription = checkedChangedObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -2046,7 +2316,10 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="handler">The event handler to invoke when selection changes</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<ListBox> OnSelectionChanged(this UIBuilder<ListBox> builder, Action<object?, SelectionChangedEventArgs> handler)
+    public static UIBuilder<ListBox> OnSelectionChanged(
+        this UIBuilder<ListBox> builder,
+        Action<object?, SelectionChangedEventArgs> handler
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2055,7 +2328,8 @@ public static class UIBuilderExtensions
 
         var checkedChangedObservable = Observable.FromEventPattern<SelectionChangedEventArgs>(
             addHandler => control.SelectionChanged += addHandler,
-            removeHandler => control.SelectionChanged -= removeHandler);
+            removeHandler => control.SelectionChanged -= removeHandler
+        );
 
         var subscription = checkedChangedObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -2066,13 +2340,17 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// add an callback for the on opened event for a flyout. 
+    /// add an callback for the on opened event for a flyout.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <param name="handler"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnOpened<T>(this UIBuilder<T> builder, Action<object?, EventArgs> handler) where T : FlyoutBase
+    public static UIBuilder<T> OnOpened<T>(
+        this UIBuilder<T> builder,
+        Action<object?, EventArgs> handler
+    )
+        where T : FlyoutBase
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2087,7 +2365,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static UIBuilder<T> Hide<T>(this UIBuilder<T> builder) where T : FlyoutBase
+    public static UIBuilder<T> Hide<T>(this UIBuilder<T> builder)
+        where T : FlyoutBase
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2102,7 +2381,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="ItemType"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static ItemType GetSelectedItem<ItemType>(this UIBuilder<ListBox> builder) where ItemType : new()
+    public static ItemType GetSelectedItem<ItemType>(this UIBuilder<ListBox> builder)
+        where ItemType : new()
     {
         return builder.Get<ListBox>().SelectedItem is ItemType item ? item : new ItemType();
     }
@@ -2114,7 +2394,11 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder for the ListBox</param>
     /// <param name="ToBeSelected">The item to set as selected</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<ListBox> SetSelectedItem<ItemType>(this UIBuilder<ListBox> builder, ItemType ToBeSelected) where ItemType : new()
+    public static UIBuilder<ListBox> SetSelectedItem<ItemType>(
+        this UIBuilder<ListBox> builder,
+        ItemType ToBeSelected
+    )
+        where ItemType : new()
     {
         builder.Get<ListBox>().SelectedItem = ToBeSelected;
         return builder;
@@ -2136,14 +2420,14 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Checks if a item list with the selectedItem property has an item selected, if so returns true otherwise false
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static bool HasItemSelected<T>(this UIBuilder<T> builder) where T : ListBox
+    public static bool HasItemSelected<T>(this UIBuilder<T> builder)
+        where T : ListBox
     {
         return builder.Get<ListBox>().SelectedItem is not null;
     }
@@ -2155,7 +2439,11 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="borderThickness">The thickness to set for the border</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetBorderThickness<T>(this UIBuilder<T> builder, Thickness borderThickness) where T : TemplatedControl
+    public static UIBuilder<T> SetBorderThickness<T>(
+        this UIBuilder<T> builder,
+        Thickness borderThickness
+    )
+        where T : TemplatedControl
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2170,7 +2458,10 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="borderThickness">The thickness to set for the border</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<Border> SetBorderThickness(this UIBuilder<Border> builder, Thickness borderThickness)
+    public static UIBuilder<Border> SetBorderThickness(
+        this UIBuilder<Border> builder,
+        Thickness borderThickness
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2186,7 +2477,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="brush">The brush to set as the border</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetBorderBrush<T>(this UIBuilder<T> builder, IBrush brush) where T : TemplatedControl
+    public static UIBuilder<T> SetBorderBrush<T>(this UIBuilder<T> builder, IBrush brush)
+        where T : TemplatedControl
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2213,7 +2505,11 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Adds an event handler that gets invoked when the OnKeyDown event happens
     /// </summary>
-    public static UIBuilder<T> OnKeyDown<T>(this UIBuilder<T> builder, Action<object?, KeyEventArgs> handler) where T : Control, new()
+    public static UIBuilder<T> OnKeyDown<T>(
+        this UIBuilder<T> builder,
+        Action<object?, KeyEventArgs> handler
+    )
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2222,7 +2518,8 @@ public static class UIBuilderExtensions
 
         var keyDownObservable = Observable.FromEventPattern<KeyEventArgs>(
             addHandler => control.KeyDown += addHandler,
-            removeHandler => control.KeyDown -= removeHandler);
+            removeHandler => control.KeyDown -= removeHandler
+        );
 
         var subscription = keyDownObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -2231,6 +2528,7 @@ public static class UIBuilderExtensions
         AddDisposableSubscription(builder.Entity, subscription);
         return builder;
     }
+
     /// <summary>
     /// Occurs asynchronously after text changes and the new text is rendered.
     /// </summary>
@@ -2238,7 +2536,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="handler"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnTextChanged<T>(this UIBuilder<T> builder, Action<object?, TextChangedEventArgs> handler) where T : TextBox, new()
+    public static UIBuilder<T> OnTextChanged<T>(
+        this UIBuilder<T> builder,
+        Action<object?, TextChangedEventArgs> handler
+    )
+        where T : TextBox, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2247,7 +2549,8 @@ public static class UIBuilderExtensions
 
         var textChangedObservable = Observable.FromEventPattern<TextChangedEventArgs>(
             addHandler => textBox.TextChanged += addHandler,
-            removeHandler => textBox.TextChanged -= removeHandler);
+            removeHandler => textBox.TextChanged -= removeHandler
+        );
 
         var subscription = textChangedObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -2264,7 +2567,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="handler"></param>
     /// <returns></returns>
-    public static UIBuilder<T> OnIsCheckedChanged<T>(this UIBuilder<T> builder, Action<object?, RoutedEventArgs> handler) where T : ToggleButton, new()
+    public static UIBuilder<T> OnIsCheckedChanged<T>(
+        this UIBuilder<T> builder,
+        Action<object?, RoutedEventArgs> handler
+    )
+        where T : ToggleButton, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2273,7 +2580,8 @@ public static class UIBuilderExtensions
 
         var checkedChangedObservable = Observable.FromEventPattern<RoutedEventArgs>(
             addHandler => toggleButton.IsCheckedChanged += addHandler,
-            removeHandler => toggleButton.IsCheckedChanged -= removeHandler);
+            removeHandler => toggleButton.IsCheckedChanged -= removeHandler
+        );
 
         var subscription = checkedChangedObservable
             .ObserveOn(AvaloniaScheduler.Instance) // Ensure execution on UI thread
@@ -2289,7 +2597,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="template"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetItemTemplate<T>(this UIBuilder<T> builder, IDataTemplate template) where T : ItemsControl
+    public static UIBuilder<T> SetItemTemplate<T>(this UIBuilder<T> builder, IDataTemplate template)
+        where T : ItemsControl
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2300,14 +2609,18 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
-    /// Sets the inner right content of a TextBox control with 
+    /// Sets the inner right content of a TextBox control with
     /// a control element
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <param name="content"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetInnerRightContent<T>(this UIBuilder<TextBox> builder, T content) where T : Control, new()
+    public static UIBuilder<TextBox> SetInnerRightContent<T>(
+        this UIBuilder<TextBox> builder,
+        T content
+    )
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2325,7 +2638,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="content">The object component found in the entity</param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetInnerRightContent(this UIBuilder<TextBox> builder, Entity content)
+    public static UIBuilder<TextBox> SetInnerRightContent(
+        this UIBuilder<TextBox> builder,
+        Entity content
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2342,7 +2658,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="content"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetInnerRightContent<T>(this UIBuilder<TextBox> builder, UIBuilder<T> content) where T : AvaloniaObject
+    public static UIBuilder<TextBox> SetInnerRightContent<T>(
+        this UIBuilder<TextBox> builder,
+        UIBuilder<T> content
+    )
+        where T : AvaloniaObject
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2360,7 +2680,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="content">The object component found in the entity</param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetInnerLeftContent(this UIBuilder<TextBox> builder, Entity content)
+    public static UIBuilder<TextBox> SetInnerLeftContent(
+        this UIBuilder<TextBox> builder,
+        Entity content
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2376,7 +2699,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="content"></param>
     /// <returns></returns>
-    public static UIBuilder<TextBox> SetInnerLeftContent<T>(this UIBuilder<TextBox> builder, UIBuilder<T> content) where T : AvaloniaObject
+    public static UIBuilder<TextBox> SetInnerLeftContent<T>(
+        this UIBuilder<TextBox> builder,
+        UIBuilder<T> content
+    )
+        where T : AvaloniaObject
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2415,7 +2742,8 @@ public static class UIBuilderExtensions
     /// </summary>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static ItemCollection GetItems<T>(this UIBuilder<T> builder) where T : ItemsControl, new()
+    public static ItemCollection GetItems<T>(this UIBuilder<T> builder)
+        where T : ItemsControl, new()
     {
         return builder.Get<ItemsControl>().Items;
     }
@@ -2427,7 +2755,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="verticalAlignment"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetVerticalAlignment<T>(this UIBuilder<T> builder, VerticalAlignment verticalAlignment) where T : Layoutable, new()
+    public static UIBuilder<T> SetVerticalAlignment<T>(
+        this UIBuilder<T> builder,
+        VerticalAlignment verticalAlignment
+    )
+        where T : Layoutable, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2442,7 +2774,10 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="scrollBarVisibility">The visibility mode for the horizontal scrollbar</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<ScrollViewer> SetHorizontalScrollBarVisibility(this UIBuilder<ScrollViewer> builder, ScrollBarVisibility scrollBarVisibility)
+    public static UIBuilder<ScrollViewer> SetHorizontalScrollBarVisibility(
+        this UIBuilder<ScrollViewer> builder,
+        ScrollBarVisibility scrollBarVisibility
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2450,7 +2785,6 @@ public static class UIBuilderExtensions
         builder.Entity.Get<ScrollViewer>().HorizontalScrollBarVisibility = scrollBarVisibility;
         return builder;
     }
-
 
     /// <summary>
     /// Sets the stretch mode of an Image control.
@@ -2473,7 +2807,10 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="scrollBarVisibility">The visibility mode for the vertical scrollbar</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<ScrollViewer> SetVerticalScrollBarVisibility(this UIBuilder<ScrollViewer> builder, ScrollBarVisibility scrollBarVisibility)
+    public static UIBuilder<ScrollViewer> SetVerticalScrollBarVisibility(
+        this UIBuilder<ScrollViewer> builder,
+        ScrollBarVisibility scrollBarVisibility
+    )
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2489,7 +2826,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="dock">The dock position (Top, Left, Right, Bottom)</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetDock<T>(this UIBuilder<T> builder, Dock dock) where T : Control, new()
+    public static UIBuilder<T> SetDock<T>(this UIBuilder<T> builder, Dock dock)
+        where T : Control, new()
     {
         DockPanel.SetDock(builder.Entity.Get<T>(), dock);
         return builder;
@@ -2502,7 +2840,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="horizontalAlignment"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetHorizontalAlignment<T>(this UIBuilder<T> builder, HorizontalAlignment horizontalAlignment) where T : Layoutable, new()
+    public static UIBuilder<T> SetHorizontalAlignment<T>(
+        this UIBuilder<T> builder,
+        HorizontalAlignment horizontalAlignment
+    )
+        where T : Layoutable, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2511,7 +2853,6 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Sets the opacity of a Visual element.
     /// </summary>
@@ -2519,7 +2860,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="opacity">The opacity value to set (between 0.0 and 1.0)</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetOpacity<T>(this UIBuilder<T> builder, double opacity) where T : Visual, new()
+    public static UIBuilder<T> SetOpacity<T>(this UIBuilder<T> builder, double opacity)
+        where T : Visual, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2535,7 +2877,11 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="collection"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetItemsSource<T>(this UIBuilder<T> builder, System.Collections.IEnumerable collection) where T : ItemsControl
+    public static UIBuilder<T> SetItemsSource<T>(
+        this UIBuilder<T> builder,
+        System.Collections.IEnumerable collection
+    )
+        where T : ItemsControl
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2544,7 +2890,6 @@ public static class UIBuilderExtensions
         return builder;
     }
 
-
     /// <summary>
     /// Sets the header of a HeaderedItemsControl.
     /// </summary>
@@ -2552,7 +2897,8 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder</param>
     /// <param name="header">The header content to set</param>
     /// <returns>The builder for method chaining</returns>
-    public static UIBuilder<T> SetHeader<T>(this UIBuilder<T> builder, object header) where T : HeaderedItemsControl
+    public static UIBuilder<T> SetHeader<T>(this UIBuilder<T> builder, object header)
+        where T : HeaderedItemsControl
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2573,10 +2919,13 @@ public static class UIBuilderExtensions
     public static UIBuilder<TControl> SetBinding<TControl>(
         this UIBuilder<TControl> builder,
         AvaloniaProperty targetProperty, // e.g., TextBlock.TextProperty
-        string sourcePropertyPath,      // e.g., "Name"
-        BindingMode mode = BindingMode.OneWay) where TControl : AvaloniaObject
+        string sourcePropertyPath, // e.g., "Name"
+        BindingMode mode = BindingMode.OneWay
+    )
+        where TControl : AvaloniaObject
     {
-        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive()) return builder;
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
+            return builder;
 
         var control = builder.Entity.Get<TControl>(); // Get the Avalonia control
         var binding = new Binding(sourcePropertyPath) { Mode = mode };
@@ -2601,7 +2950,9 @@ public static class UIBuilderExtensions
     public static UIBuilder<TControl> SetBinding<TControl>(
         this UIBuilder<TControl> builder,
         AvaloniaProperty targetProperty,
-        Binding binding) where TControl : AvaloniaObject
+        Binding binding
+    )
+        where TControl : AvaloniaObject
     {
         var control = builder.Entity.Get<TControl>();
         control.Bind(targetProperty, binding); // Apply the binding
@@ -2620,7 +2971,8 @@ public static class UIBuilderExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <returns></returns>
-    public static System.Collections.IEnumerable GetItemsSource<T>(this UIBuilder<T> builder) where T : ItemsControl
+    public static System.Collections.IEnumerable GetItemsSource<T>(this UIBuilder<T> builder)
+        where T : ItemsControl
     {
         return builder.Entity.Get<T>().ItemsSource!;
     }
@@ -2632,7 +2984,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="mode"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetSelectionMode<T>(this UIBuilder<T> builder, SelectionMode mode) where T : ListBox
+    public static UIBuilder<T> SetSelectionMode<T>(this UIBuilder<T> builder, SelectionMode mode)
+        where T : ListBox
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2640,6 +2993,7 @@ public static class UIBuilderExtensions
 
         return builder;
     }
+
     /// <summary>
     /// Sets the context flyout of a control component
     /// </summary>
@@ -2647,7 +3001,8 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="content"></param>
     /// <returns></returns>
-    public static UIBuilder<T> SetContextFlyout<T>(this UIBuilder<T> builder, FlyoutBase content) where T : Control, new()
+    public static UIBuilder<T> SetContextFlyout<T>(this UIBuilder<T> builder, FlyoutBase content)
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2655,13 +3010,18 @@ public static class UIBuilderExtensions
         builder.Entity.Get<T>().ContextFlyout = content;
         return builder;
     }
+
     /// <summary>
     /// Sets the context flyout of a control component
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="builder"></param>
     /// <param name="contextFlyoutEntity"></param>
-    public static UIBuilder<T> SetContextFlyout<T>(this UIBuilder<T> builder, Entity contextFlyoutEntity) where T : Control, new()
+    public static UIBuilder<T> SetContextFlyout<T>(
+        this UIBuilder<T> builder,
+        Entity contextFlyoutEntity
+    )
+        where T : Control, new()
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2678,7 +3038,12 @@ public static class UIBuilderExtensions
     /// <param name="builder">The UI builder for the control</param>
     /// <param name="flyoutBuilder">The UI builder for the flyout</param>
     /// <returns>The UI builder for the control, for method chaining</returns>
-    public static UIBuilder<T> SetContextFlyout<T, flyoutType>(this UIBuilder<T> builder, UIBuilder<flyoutType> flyoutBuilder) where T : Control, new() where flyoutType : FlyoutBase
+    public static UIBuilder<T> SetContextFlyout<T, flyoutType>(
+        this UIBuilder<T> builder,
+        UIBuilder<flyoutType> flyoutBuilder
+    )
+        where T : Control, new()
+        where flyoutType : FlyoutBase
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
             return builder;
@@ -2693,7 +3058,10 @@ public static class UIBuilderExtensions
     /// <param name="builder"></param>
     /// <param name="content"></param>
     /// <returns></returns>
-    public static UIBuilder<ListBox> SetContextFlyout(this UIBuilder<ListBox> builder, FlyoutBase content)
+    public static UIBuilder<ListBox> SetContextFlyout(
+        this UIBuilder<ListBox> builder,
+        FlyoutBase content
+    )
     {
         builder.Get<ListBox>().ContextFlyout = content;
         return builder;
@@ -2703,7 +3071,9 @@ public static class UIBuilderExtensions
     private static UIBuilder<T> AddStyleInternal<T>(
         this UIBuilder<T> builder,
         Func<Selector?, Selector> selectorBuilder, // Function to build the selector
-        IEnumerable<(AvaloniaProperty Property, object Value)> setters) where T : Control // Use Control constraint for Styles
+        IEnumerable<(AvaloniaProperty Property, object Value)> setters
+    )
+        where T : Control // Use Control constraint for Styles
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
             return builder;
@@ -2731,7 +3101,9 @@ public static class UIBuilderExtensions
     /// </summary>
     public static UIBuilder<T> SetBaseStyle<T>(
         this UIBuilder<T> builder,
-        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+        params (AvaloniaProperty Property, object Value)[] setters
+    )
+        where T : Control
     {
         // Selector for the base type: s => s.OfType<T>()
         return builder.AddStyleInternal(s => s.OfType<T>(), setters);
@@ -2747,7 +3119,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining.</returns>
     public static UIBuilder<T> SetPointerOverStyle<T>(
         this UIBuilder<T> builder,
-        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+        params (AvaloniaProperty Property, object Value)[] setters
+    )
+        where T : Control
     {
         // Selector: s => s.OfType<T>().Class(":pointerover")
         return builder.AddStyleInternal(s => s.OfType<T>().Class(":pointerover"), setters);
@@ -2763,7 +3137,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining.</returns>
     public static UIBuilder<T> SetPressedStyle<T>(
         this UIBuilder<T> builder,
-        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+        params (AvaloniaProperty Property, object Value)[] setters
+    )
+        where T : Control
     {
         // Selector: s => s.OfType<T>().Class(":pressed")
         return builder.AddStyleInternal(s => s.OfType<T>().Class(":pressed"), setters);
@@ -2779,7 +3155,9 @@ public static class UIBuilderExtensions
     /// <returns>The builder for method chaining.</returns>
     public static UIBuilder<T> SetDisabledStyle<T>(
         this UIBuilder<T> builder,
-        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+        params (AvaloniaProperty Property, object Value)[] setters
+    )
+        where T : Control
     {
         // Selector: s => s.OfType<T>().Class(":disabled")
         return builder.AddStyleInternal(s => s.OfType<T>().Class(":disabled"), setters);
@@ -2797,11 +3175,16 @@ public static class UIBuilderExtensions
     public static UIBuilder<T> SetClassStyle<T>(
         this UIBuilder<T> builder,
         string className, // e.g., ":pointerover", ":pressed", "custom-class"
-        params (AvaloniaProperty Property, object Value)[] setters) where T : Control
+        params (AvaloniaProperty Property, object Value)[] setters
+    )
+        where T : Control
     {
         if (string.IsNullOrEmpty(className))
         {
-            throw new ArgumentException("Class name cannot be null or empty for SetClassStyle.", nameof(className));
+            throw new ArgumentException(
+                "Class name cannot be null or empty for SetClassStyle.",
+                nameof(className)
+            );
         }
         // Selector: s => s.OfType<T>().Class(className)
         return builder.AddStyleInternal(s => s.OfType<T>().Class(className), setters);
@@ -2816,7 +3199,12 @@ public static class UIBuilderExtensions
     /// <param name="className">The class name to add or remove.</param>
     /// <param name="add">True to add the class, false to remove it.</param>
     /// <returns>The builder for method chaining.</returns>
-    public static UIBuilder<T> SetClass<T>(this UIBuilder<T> builder, string className, bool add = true) where T : Control
+    public static UIBuilder<T> SetClass<T>(
+        this UIBuilder<T> builder,
+        string className,
+        bool add = true
+    )
+        where T : Control
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive())
             return builder;
@@ -2832,6 +3220,7 @@ public static class UIBuilderExtensions
         }
         return builder;
     }
+
     /// <summary>
     /// Applies a style targeting a specific named part within the control's template
     /// when a specific class (pseudo-class or custom) is active on the main control.
@@ -2854,7 +3243,8 @@ public static class UIBuilderExtensions
         this UIBuilder<T> builder,
         string className,
         string? partName, // Allow null for targeting only by type within template
-        params (AvaloniaProperty Property, object Value)[] setters)
+        params (AvaloniaProperty Property, object Value)[] setters
+    )
         where T : Control // Main control constraint
         where TPart : Control // Template part constraint
     {
@@ -2887,7 +3277,11 @@ public static class UIBuilderExtensions
     /// Convenience method to set the controls's :pointerover background,
     /// correctly targeting the PART_ContentPresenter to override default themes.
     /// </summary>
-    public static UIBuilder<T> SetPointerOverBackground<T>(this UIBuilder<T> builder, IBrush background) where T : Control
+    public static UIBuilder<T> SetPointerOverBackground<T>(
+        this UIBuilder<T> builder,
+        IBrush background
+    )
+        where T : Control
     {
         return builder.SetClassTemplatePartStyle<T, ContentPresenter>(
             ":pointerover",
@@ -2896,12 +3290,14 @@ public static class UIBuilderExtensions
         );
     }
 
-
     /// <summary>
     /// Convenience method to set the Button's :pressed background,
     /// correctly targeting the PART_ContentPresenter to override default themes.
     /// </summary>
-    public static UIBuilder<Button> SetButtonPressedBackground(this UIBuilder<Button> builder, IBrush background)
+    public static UIBuilder<Button> SetButtonPressedBackground(
+        this UIBuilder<Button> builder,
+        IBrush background
+    )
     {
         return builder.SetClassTemplatePartStyle<Button, ContentPresenter>(
             ":pressed",
@@ -2913,16 +3309,18 @@ public static class UIBuilderExtensions
 
 /// <summary>
 /// A fluent builder for constructing hierarchical UI components as Flecs entities.
-/// Provides a clean, nested syntax that visually represents the UI hierarchy. Events 
+/// Provides a clean, nested syntax that visually represents the UI hierarchy. Events
 /// attached to ui builders are being disposed when the underlying entity of the ui
 /// builder gets destroyed. There is no need to manaully remove event handlers from
 /// avalonia objects when they are added that way.
 /// </summary>
 /// <typeparam name="T">The type of Avalonia control this builder is configuring.</typeparam>
 [Experimental("UIBuilder")]
-public class UIBuilder<T> where T : AvaloniaObject
+public class UIBuilder<T>
+    where T : AvaloniaObject
 {
     private readonly World _world;
+
     /// <summary>
     /// Underlying entity
     /// </summary>
@@ -2946,7 +3344,6 @@ public class UIBuilder<T> where T : AvaloniaObject
         _control = entity.Get<T>();
     }
 
-
     /// <summary>
     /// Provides direct access to the underlying control to configure its properties and methods,
     /// then returns the builder for continued method chaining.
@@ -2959,9 +3356,8 @@ public class UIBuilder<T> where T : AvaloniaObject
         return this;
     }
 
-
     //TODO: We probably want a way to add childrens without the need
-    // to first configure them, this is especially helpful when 
+    // to first configure them, this is especially helpful when
     // we defined our own components.
 
     /// <summary>
@@ -2969,7 +3365,8 @@ public class UIBuilder<T> where T : AvaloniaObject
     /// </summary>
     /// <typeparam name="TChild">The type of child control to create.</typeparam>
     /// <returns>The builder for the newly created child entity.</returns>
-    public UIBuilder<TChild> Child<TChild>(Action<UIBuilder<TChild>> configure) where TChild : Control, new()
+    public UIBuilder<TChild> Child<TChild>(Action<UIBuilder<TChild>> configure)
+        where TChild : Control, new()
     {
         return _entity.UI(configure);
     }
@@ -2980,12 +3377,12 @@ public class UIBuilder<T> where T : AvaloniaObject
     /// <typeparam name="TChild"></typeparam>
     /// <param name="childBuilder"></param>
     /// <returns></returns>
-    public UIBuilder<T> Child<TChild>(UIBuilder<TChild> childBuilder) where TChild : AvaloniaObject
+    public UIBuilder<T> Child<TChild>(UIBuilder<TChild> childBuilder)
+        where TChild : AvaloniaObject
     {
         childBuilder._entity.ChildOf(_entity);
         return this;
     }
-
 
     /// <summary>
     /// Attaches an ui component as a child. If they are implemented IDisposable
@@ -3008,7 +3405,9 @@ public class UIBuilder<T> where T : AvaloniaObject
             // Ensure the component's root entity is valid and alive
             if (uIComponent.Root.IsValid() && uIComponent.Root.IsAlive())
             {
-                uIComponent.Root.Set(new DisposableComponentHandle { Target = disposableComponent });
+                uIComponent.Root.Set(
+                    new DisposableComponentHandle { Target = disposableComponent }
+                );
             }
         }
         return this;
@@ -3024,12 +3423,14 @@ public class UIBuilder<T> where T : AvaloniaObject
         child.ChildOf(Entity);
         return this;
     }
+
     /// <summary>
     /// Attaches an ui component as a child.
     /// </summary>
     /// <param name="component"></param>
     /// <returns></returns>
-    public UIBuilder<T> SetComponent<ComponentType>(ComponentType component) where ComponentType : new()
+    public UIBuilder<T> SetComponent<ComponentType>(ComponentType component)
+        where ComponentType : new()
     {
         Entity.Set(component);
         return this;
@@ -3039,7 +3440,8 @@ public class UIBuilder<T> where T : AvaloniaObject
     /// Attaches an tag to an entity
     /// </summary>
     /// <returns></returns>
-    public UIBuilder<T> Add<ComponentType>() where ComponentType : new()
+    public UIBuilder<T> Add<ComponentType>()
+        where ComponentType : new()
     {
         Entity.Add<ComponentType>();
         return this;
@@ -3056,9 +3458,10 @@ public class UIBuilder<T> where T : AvaloniaObject
         Entity.Observe<EventTypeToObserve>(callback);
         return this;
     }
+
     /// <summary>
     /// Emits an event asynchrounsly on the UIThread.
-    /// By default it runs events on the UI thread otherwise 
+    /// By default it runs events on the UI thread otherwise
     /// strange behavior may occur.
     /// </summary>
     /// <typeparam name="Event"></typeparam>
@@ -3093,7 +3496,9 @@ public class UIBuilder<T> where T : AvaloniaObject
     /// </summary>
     /// <param name="handlerAction">The action to execute when the control is detached from the visual tree</param>
     /// <returns>The builder for method chaining</returns>
-    public UIBuilder<T> OnDetachedFromVisualTreeTracked(EventHandler<VisualTreeAttachmentEventArgs> handlerAction)
+    public UIBuilder<T> OnDetachedFromVisualTreeTracked(
+        EventHandler<VisualTreeAttachmentEventArgs> handlerAction
+    )
     {
         if (_control is not Control control) // Ensure it's a Control
             return this;
@@ -3106,18 +3511,21 @@ public class UIBuilder<T> where T : AvaloniaObject
         ref var subList = ref Entity.GetMut<SubscriptionListComponent>(); // Need mutability
 
         // Create the handler
-        EventHandler<VisualTreeAttachmentEventArgs> handler = (sender, e) => handlerAction(sender, e);
+        EventHandler<VisualTreeAttachmentEventArgs> handler = (sender, e) =>
+            handlerAction(sender, e);
 
         // Subscribe
         control.DetachedFromVisualTree += handler;
 
         // Add token to list for auto-unsubscribe on entity destruction
-        subList.Add(new EventSubscriptionToken(() =>
-        {
-            if (control != null) // Check if control still exists (might be disposed)
-                control.DetachedFromVisualTree -= handler;
-            //Console.WriteLine($"EventSubscriptionToken: Unsubscribed DetachedFromVisualTree for Entity {Entity.Id}"); // Logging
-        }));
+        subList.Add(
+            new EventSubscriptionToken(() =>
+            {
+                if (control != null) // Check if control still exists (might be disposed)
+                    control.DetachedFromVisualTree -= handler;
+                //Console.WriteLine($"EventSubscriptionToken: Unsubscribed DetachedFromVisualTree for Entity {Entity.Id}"); // Logging
+            })
+        );
 
         return this;
     }

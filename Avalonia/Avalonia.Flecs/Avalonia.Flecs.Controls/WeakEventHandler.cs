@@ -6,7 +6,8 @@ namespace Avalonia.Flecs.Controls;
 /// Custom weak event handler class
 /// </summary>
 /// <typeparam name="TEventArgs"></typeparam>
-public class WeakEventHandler<TEventArgs> where TEventArgs : EventArgs
+public class WeakEventHandler<TEventArgs>
+    where TEventArgs : EventArgs
 {
     private readonly WeakReference _targetRef;
     private readonly MethodInfo _method;
@@ -20,6 +21,7 @@ public class WeakEventHandler<TEventArgs> where TEventArgs : EventArgs
         _targetRef = new WeakReference(callback.Target);
         _method = callback.Method;
     }
+
     /// <summary>
     /// s
     /// </summary>
@@ -28,13 +30,13 @@ public class WeakEventHandler<TEventArgs> where TEventArgs : EventArgs
         get
         {
             return (sender, e) =>
-        {
-            var target = _targetRef.Target;
-            if (target != null)
             {
-                _method.Invoke(target, new object[] { sender!, e });
-            }
-        };
+                var target = _targetRef.Target;
+                if (target != null)
+                {
+                    _method.Invoke(target, new object[] { sender!, e });
+                }
+            };
         }
     }
 }

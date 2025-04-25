@@ -1,5 +1,6 @@
 using Avalonia.Input;
 using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -20,7 +21,11 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<InputElement>().IsEnabled = true;
                 return entity;
             }
-            throw new ComponentNotFoundException(entity, typeof(InputElement), nameof(EnableInputElement));
+            throw new ComponentNotFoundException(
+                entity,
+                typeof(InputElement),
+                nameof(EnableInputElement)
+            );
         }
 
         /// <summary>
@@ -36,7 +41,11 @@ namespace Avalonia.Flecs.Controls.ECS
                 entity.Get<InputElement>().IsEnabled = false;
                 return entity;
             }
-            throw new ComponentNotFoundException(entity, typeof(InputElement), nameof(EnableInputElement));
+            throw new ComponentNotFoundException(
+                entity,
+                typeof(InputElement),
+                nameof(EnableInputElement)
+            );
         }
 
         /// <summary>
@@ -69,10 +78,7 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             var inputString = entity.Type().Str();
             string[] components = inputString.Split(',');
-            string formattedString = string.Join(
-                ",\n  ",
-                components.Select(c => c.Trim())
-            );
+            string formattedString = string.Join(",\n  ", components.Select(c => c.Trim()));
             return formattedString;
         }
 
@@ -99,6 +105,7 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             return entity != 0;
         }
+
         /// <summary>
         /// Checks if an entity is invalid
         /// </summary>

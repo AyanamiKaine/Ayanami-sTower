@@ -1,5 +1,6 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -14,53 +15,58 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSItemsControl>();
-            world.Component<ItemsControl>("ItemsControl")
-                .OnSet((Entity e, ref ItemsControl itemsControl) =>
-                {
-                    if (!e.Has<object>())
+            world
+                .Component<ItemsControl>("ItemsControl")
+                .OnSet(
+                    (Entity e, ref ItemsControl itemsControl) =>
                     {
-                        e.Set<object>(itemsControl);
-                    }
-                    else if (e.Get<object>().GetType() == typeof(ItemsControl))
-                    {
-                        e.Set<object>(itemsControl);
-                    }
-                    e.Set<Control>(itemsControl);
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(itemsControl);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(ItemsControl))
+                        {
+                            e.Set<object>(itemsControl);
+                        }
+                        e.Set<Control>(itemsControl);
 
-                    var parent = e.Parent();
-                    if (parent == 0)
-                    {
-                        return;
-                    }
-                    if (parent.Has<Panel>())
-                    {
-                        if (parent.Get<Panel>().Children.Contains(itemsControl))
+                        var parent = e.Parent();
+                        if (parent == 0)
                         {
                             return;
                         }
-                        parent.Get<Panel>().Children.Add(itemsControl);
+                        if (parent.Has<Panel>())
+                        {
+                            if (parent.Get<Panel>().Children.Contains(itemsControl))
+                            {
+                                return;
+                            }
+                            parent.Get<Panel>().Children.Add(itemsControl);
+                        }
+                        else if (parent.Has<ContentControl>())
+                        {
+                            parent.Get<ContentControl>().Content = itemsControl;
+                        }
                     }
-                    else if (parent.Has<ContentControl>())
+                )
+                .OnRemove(
+                    (Entity e, ref ItemsControl itemsControl) =>
                     {
-                        parent.Get<ContentControl>().Content = itemsControl;
+                        var parent = e.Parent();
+                        if (parent == 0)
+                        {
+                            return;
+                        }
+                        if (parent.Has<Panel>())
+                        {
+                            parent.Get<Panel>().Children.Remove(itemsControl);
+                        }
+                        if (parent.Has<ContentControl>())
+                        {
+                            parent.Get<ContentControl>().Content = null;
+                        }
                     }
-                })
-                .OnRemove((Entity e, ref ItemsControl itemsControl) =>
-                {
-                    var parent = e.Parent();
-                    if (parent == 0)
-                    {
-                        return;
-                    }
-                    if (parent.Has<Panel>())
-                    {
-                        parent.Get<Panel>().Children.Remove(itemsControl);
-                    }
-                    if (parent.Has<ContentControl>())
-                    {
-                        parent.Get<ContentControl>().Content = null;
-                    }
-                });
+                );
         }
     }
 }

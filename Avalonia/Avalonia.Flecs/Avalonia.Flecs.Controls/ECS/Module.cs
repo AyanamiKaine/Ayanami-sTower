@@ -1,8 +1,9 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
-using Avalonia.Flecs.Controls.ECS.Events;
 using Avalonia.Controls.Primitives;
+using Avalonia.Flecs.Controls.ECS.Events;
+using Flecs.NET.Core;
 using NLog;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     // Modules need to implement the IFlecsModule interface
@@ -18,44 +19,42 @@ namespace Avalonia.Flecs.Controls.ECS
         /// Entity tag showing that the entity is a content control.
         /// </summary>
         public struct InnerRightContent { };
+
         /// <summary>
         /// Entity tag showing that the entity is a content control.
         /// </summary>
         public struct InnerLeftContent { };
+
         /// <summary>
         /// Entity tag showing that the entity is a content control.
         /// </summary>
         public struct KeyBindings { };
+
         /// <summary>
-        /// Entity tag showing that the 
+        /// Entity tag showing that the
         /// entity is a page. A page represents
         /// a root component in the UI hierarchy.
         /// Only one page entity can be a child of a parent.
         /// If you add a new page to a parent othe page of the parent is removed.
-        /// An entity marked with a page tag wont get automatically destroyed when 
+        /// An entity marked with a page tag wont get automatically destroyed when
         /// its parent child relationship is removed.
         /// </summary>
-        public struct Page
-        {
-        }
+        public struct Page { }
+
         /// <summary>
         /// Inidactes that the entity is a page that is being removed.
         /// </summary>
-        public struct OldPage
-        {
-        }
+        public struct OldPage { }
+
         /// <summary>
         /// Inidactes that the entity is a page that is being added.
         /// </summary>
-        public struct NewPage
-        {
-        }
+        public struct NewPage { }
+
         /// <summary>
         /// Entity tag showing that the entity is the current page.
         /// </summary>
-        public record struct CurrentPage
-        {
-        }
+        public record struct CurrentPage { }
 
         /// <summary>
         /// Initializes the module
@@ -129,8 +128,6 @@ namespace Avalonia.Flecs.Controls.ECS
             RemoveControlComponentObserver(world);
             SetupFlecsDisposalHooks(world);
             //AddPageObserver(world);
-
-
         }
 
         /// <summary>
@@ -141,43 +138,45 @@ namespace Avalonia.Flecs.Controls.ECS
         {
             Logger.Debug("Adding UI component tags to world");
             world.Component<Page>("Page");
-            world.Component<CurrentPage>("CurrentPage")
-                .Add(Ecs.Exclusive)
-                .Add(Ecs.Relationship);
+            world.Component<CurrentPage>("CurrentPage").Add(Ecs.Exclusive).Add(Ecs.Relationship);
             Logger.Debug("UI component tags added successfully");
         }
 
         /// <summary>
         /// This observer adds the flyout to the control
-        /// when a child has the flyout component and 
+        /// when a child has the flyout component and
         /// is attached to a parent control.
         /// </summary>
         /// <param name="world"></param>
         public static void AddFlyoutToControlObserver(World world)
         {
             Logger.Debug("Registering FlyoutToControl observer");
-            world.Observer("FlyoutToControl")
+            world
+                .Observer("FlyoutToControl")
                 .Event(Ecs.OnAdd)
                 .Event(Ecs.OnSet)
                 .With(Ecs.ChildOf, Ecs.Wildcard)
-                .Each((Entity child) =>
-                {
-
-                    if (child == 0)
-                        return;
-
-                    if (child.Has<FlyoutBase>())
+                .Each(
+                    (Entity child) =>
                     {
-                        var parent = child.Parent();
-                        if (parent.Has<Control>())
+                        if (child == 0)
+                            return;
+
+                        if (child.Has<FlyoutBase>())
                         {
-                            Logger.Debug("Adding flyout from child {ChildEntity} to parent control {ParentEntity}",
-                                child.Name() ?? child.ToString(),
-                                parent.Name() ?? parent.ToString());
-                            parent.Get<Control>().ContextFlyout = child.Get<FlyoutBase>();
+                            var parent = child.Parent();
+                            if (parent.Has<Control>())
+                            {
+                                Logger.Debug(
+                                    "Adding flyout from child {ChildEntity} to parent control {ParentEntity}",
+                                    child.Name() ?? child.ToString(),
+                                    parent.Name() ?? parent.ToString()
+                                );
+                                parent.Get<Control>().ContextFlyout = child.Get<FlyoutBase>();
+                            }
                         }
                     }
-                });
+                );
             Logger.Debug("FlyoutToControl observer registered successfully");
         }
 
@@ -191,61 +190,71 @@ namespace Avalonia.Flecs.Controls.ECS
             //This Observer handles the functionality adding entity as children of other
             //and correctly adding the control element to the parent event if the parent
             //child relation was created later than the component control where attached.
-            world.Observer("ControlToParentAdder")
+            world
+                .Observer("ControlToParentAdder")
                 .Event(Ecs.OnAdd)
                 .Event(Ecs.OnSet)
                 .With(Ecs.ChildOf, Ecs.Wildcard)
-                .Each((Entity child) =>
-                {
-                    var parent = child.Parent();
-
-
-                    if (parent == 0)
-                        return;
-
-                    if (child.Has<Control>())
+                .Each(
+                    (Entity child) =>
                     {
-                        var control = child.Get<Control>();
-                        if (parent.Has<Panel>())
+                        var parent = child.Parent();
+
+                        if (parent == 0)
+                            return;
+
+                        if (child.Has<Control>())
                         {
-                            //We dont want to add the control twice,
-                            //This otherwise throws an exception
-                            if (parent.Get<Panel>().Children.Contains(control))
+                            var control = child.Get<Control>();
+                            if (parent.Has<Panel>())
                             {
-                                Logger.Debug("Control {ControlEntity} already exists in parent panel {PanelEntity}, skipping addition",
+                                //We dont want to add the control twice,
+                                //This otherwise throws an exception
+                                if (parent.Get<Panel>().Children.Contains(control))
+                                {
+                                    Logger.Debug(
+                                        "Control {ControlEntity} already exists in parent panel {PanelEntity}, skipping addition",
+                                        child.Name() ?? child.ToString(),
+                                        parent.Name() ?? parent.ToString()
+                                    );
+                                    return;
+                                }
+                                Logger.Debug(
+                                    "Adding control {ControlEntity} to parent panel {PanelEntity}",
                                     child.Name() ?? child.ToString(),
-                                    parent.Name() ?? parent.ToString());
-                                return;
+                                    parent.Name() ?? parent.ToString()
+                                );
+                                parent.Get<Panel>().Children.Add(control);
                             }
-                            Logger.Debug("Adding control {ControlEntity} to parent panel {PanelEntity}",
-                                child.Name() ?? child.ToString(),
-                                parent.Name() ?? parent.ToString());
-                            parent.Get<Panel>().Children.Add(control);
-                        }
-                        else if (parent.Has<ContentControl>())
-                        {
-                            if (parent.Get<ContentControl>().Content == control)
+                            else if (parent.Has<ContentControl>())
                             {
-                                Logger.Debug("Control {ControlEntity} already set as content for parent {ContentControlEntity}, skipping",
+                                if (parent.Get<ContentControl>().Content == control)
+                                {
+                                    Logger.Debug(
+                                        "Control {ControlEntity} already set as content for parent {ContentControlEntity}, skipping",
+                                        child.Name() ?? child.ToString(),
+                                        parent.Name() ?? parent.ToString()
+                                    );
+                                    return;
+                                }
+                                Logger.Debug(
+                                    "Setting control {ControlEntity} as content for parent {ContentControlEntity}",
                                     child.Name() ?? child.ToString(),
-                                    parent.Name() ?? parent.ToString());
-                                return;
+                                    parent.Name() ?? parent.ToString()
+                                );
+                                parent.Get<ContentControl>().Content = control;
                             }
-                            Logger.Debug("Setting control {ControlEntity} as content for parent {ContentControlEntity}",
-                                child.Name() ?? child.ToString(),
-                                parent.Name() ?? parent.ToString());
-                            parent.Get<ContentControl>().Content = control;
-                        }
-                        else if (parent.Has<Viewbox>())
-                        {
-                            parent.Get<Viewbox>().Child = control;
-                        }
-                        else if (parent.Has<Border>())
-                        {
-                            parent.Get<Border>().Child = control;
+                            else if (parent.Has<Viewbox>())
+                            {
+                                parent.Get<Viewbox>().Child = control;
+                            }
+                            else if (parent.Has<Border>())
+                            {
+                                parent.Get<Border>().Child = control;
+                            }
                         }
                     }
-                });
+                );
             Logger.Debug("ControlToParentAdder observer registered successfully");
         }
 
@@ -256,87 +265,103 @@ namespace Avalonia.Flecs.Controls.ECS
         public static void RemoveControlComponentObserver(World world)
         {
             Logger.Debug("Registering ControlComponentRemover observer");
-            world.Observer<Control>("ControlComponentRemover")
+            world
+                .Observer<Control>("ControlComponentRemover")
                 .Event(Ecs.OnRemove)
-                .Each((Entity entity, ref Control control) =>
-                {
-                    // The control is already being removed, but we need to clean up parent references
-                    if (entity.Has(Ecs.ChildOf, Ecs.Wildcard))
+                .Each(
+                    (Entity entity, ref Control control) =>
                     {
-                        var parent = entity.Parent();
-
-                        if (parent == 0)
-                            return;
-
-                        if (parent.Has<Panel>())
+                        // The control is already being removed, but we need to clean up parent references
+                        if (entity.Has(Ecs.ChildOf, Ecs.Wildcard))
                         {
-                            var panel = parent.Get<Panel>();
-                            if (panel.Children.Contains(control))
+                            var parent = entity.Parent();
+
+                            if (parent == 0)
+                                return;
+
+                            if (parent.Has<Panel>())
                             {
-                                Logger.Debug("Removing control from panel due to Control component removal on entity {EntityId}", entity.ToString());
-                                panel.Children.Remove(control);
+                                var panel = parent.Get<Panel>();
+                                if (panel.Children.Contains(control))
+                                {
+                                    Logger.Debug(
+                                        "Removing control from panel due to Control component removal on entity {EntityId}",
+                                        entity.ToString()
+                                    );
+                                    panel.Children.Remove(control);
+                                }
                             }
-                        }
-                        else if (parent.Has<ContentControl>())
-                        {
-                            var contentControl = parent.Get<ContentControl>();
-                            if (contentControl.Content == control)
+                            else if (parent.Has<ContentControl>())
                             {
-                                Logger.Debug("Clearing control from content control due to Control component removal on entity {EntityId}", entity.ToString());
-                                contentControl.Content = null;
+                                var contentControl = parent.Get<ContentControl>();
+                                if (contentControl.Content == control)
+                                {
+                                    Logger.Debug(
+                                        "Clearing control from content control due to Control component removal on entity {EntityId}",
+                                        entity.ToString()
+                                    );
+                                    contentControl.Content = null;
+                                }
                             }
                         }
                     }
-                });
+                );
             Logger.Debug("ControlComponentRemover observer registered successfully");
         }
 
         /// <summary>
-        /// The main idea is the following, sometimes an entity hierarchy represents a ui component 
+        /// The main idea is the following, sometimes an entity hierarchy represents a ui component
         /// with various unmanaged ressources we must manages ourselves this could include event delegates
         /// and correctly destroying avalonia objects. When an entity gets destroyed it removes all components
-        /// when an entity has a disposale component removed it should start calling its dipose method. 
+        /// when an entity has a disposale component removed it should start calling its dipose method.
         /// This ensure we dont forget to manually call it. As this will automatic call it when needed.
         /// </summary>
         /// <param name="world"></param>
         public static void SetupFlecsDisposalHooks(World world)
         {
-            world.Observer<DisposableComponentHandle>()
+            world
+                .Observer<DisposableComponentHandle>()
                 .Event(Ecs.OnRemove) // Trigger when the DisposableComponentHandle is removed
-                .Each((Entity entity, ref DisposableComponentHandle handle) =>
-                {
-                    // Check if the target hasn't already been disposed elsewhere
-                    if (handle.Target != null)
+                .Each(
+                    (Entity entity, ref DisposableComponentHandle handle) =>
                     {
-                        //Console.WriteLine($"Flecs OnRemove: Disposing component via handle on entity {entity.Id} ({handle.Target.GetType().Name}).");
-                        try
+                        // Check if the target hasn't already been disposed elsewhere
+                        if (handle.Target != null)
                         {
-                            handle.Target.Dispose();
+                            //Console.WriteLine($"Flecs OnRemove: Disposing component via handle on entity {entity.Id} ({handle.Target.GetType().Name}).");
+                            try
+                            {
+                                handle.Target.Dispose();
+                            }
+                            catch (Exception ex)
+                            {
+                                // Log disposal errors
+                                Console.WriteLine(
+                                    $"Error disposing component {handle.Target.GetType().Name} via Flecs hook: {ex.Message}"
+                                );
+                            }
+                            // Optional: Nullify the target to prevent double disposal if somehow
+                            // the handle reference persists and is triggered again (shouldn't happen with OnRemove).
+                            // handle.Target = null;
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            // Log disposal errors
-                            Console.WriteLine($"Error disposing component {handle.Target.GetType().Name} via Flecs hook: {ex.Message}");
+                            //Console.WriteLine($"Flecs OnRemove: Target was null for handle on entity {entity.Id}. Already disposed?");
                         }
-                        // Optional: Nullify the target to prevent double disposal if somehow
-                        // the handle reference persists and is triggered again (shouldn't happen with OnRemove).
-                        // handle.Target = null;
                     }
-                    else
-                    {
-                        //Console.WriteLine($"Flecs OnRemove: Target was null for handle on entity {entity.Id}. Already disposed?");
-                    }
-                });
+                );
 
-            world.Observer<SubscriptionListComponent>("SubscriptionListRemover")
+            world
+                .Observer<SubscriptionListComponent>("SubscriptionListRemover")
                 .Event(Ecs.OnRemove) // Trigger when the component is removed
-                .Each((Entity entity, ref SubscriptionListComponent subList) =>
-                {
-                    if (entity == 0)
-                        return;
-                    subList.Dispose();
-
-                });
+                .Each(
+                    (Entity entity, ref SubscriptionListComponent subList) =>
+                    {
+                        if (entity == 0)
+                            return;
+                        subList.Dispose();
+                    }
+                );
         }
 
         /// <summary>
@@ -346,59 +371,66 @@ namespace Avalonia.Flecs.Controls.ECS
         public static void RemoveControlFromParentObserver(World world)
         {
             Logger.Debug("Registering ControlFromParentRemover observer");
-            world.Observer("ControlFromParentRemover")
+            world
+                .Observer("ControlFromParentRemover")
                 .Event(Ecs.OnRemove)
                 // Why without page?, Because sometimes we want to keep pages cached so we dont create them everytime, we switch to them
                 // and instead have only one instance that is swapped with other pages.
                 .Without<Page>()
                 .With(Ecs.ChildOf, Ecs.Wildcard)
-                .Each((child) =>
-                {
-                    // When the ChildOf relationship is removed, the second entity is the parent
-                    var parent = child.Parent();
-
-                    if (parent == 0)
-                        return;
-
-                    if (child.Has<Control>())
+                .Each(
+                    (child) =>
                     {
-                        var control = child.Get<Control>();
-                        if (parent.Has<Panel>())
+                        // When the ChildOf relationship is removed, the second entity is the parent
+                        var parent = child.Parent();
+
+                        if (parent == 0)
+                            return;
+
+                        if (child.Has<Control>())
                         {
-                            var panel = parent.Get<Panel>();
-                            if (panel.Children.Contains(control))
+                            var control = child.Get<Control>();
+                            if (parent.Has<Panel>())
                             {
-                                Logger.Debug("Removing control {ControlEntity} from parent panel {PanelEntity}",
-                                    child.Name() ?? child.ToString(),
-                                    parent.Name() ?? parent.ToString());
-                                panel.Children.Remove(control);
+                                var panel = parent.Get<Panel>();
+                                if (panel.Children.Contains(control))
+                                {
+                                    Logger.Debug(
+                                        "Removing control {ControlEntity} from parent panel {PanelEntity}",
+                                        child.Name() ?? child.ToString(),
+                                        parent.Name() ?? parent.ToString()
+                                    );
+                                    panel.Children.Remove(control);
+                                }
                             }
-                        }
-                        else if (parent.Has<ContentControl>())
-                        {
-                            var contentControl = parent.Get<ContentControl>();
-                            if (contentControl.Content == control)
+                            else if (parent.Has<ContentControl>())
                             {
-                                Logger.Debug("Clearing control {ControlEntity} from parent content control {ContentControlEntity}",
-                                    child.Name() ?? child.ToString(),
-                                    parent.Name() ?? parent.ToString());
-                                contentControl.Content = null;
+                                var contentControl = parent.Get<ContentControl>();
+                                if (contentControl.Content == control)
+                                {
+                                    Logger.Debug(
+                                        "Clearing control {ControlEntity} from parent content control {ContentControlEntity}",
+                                        child.Name() ?? child.ToString(),
+                                        parent.Name() ?? parent.ToString()
+                                    );
+                                    contentControl.Content = null;
+                                }
                             }
                         }
                     }
-                });
+                );
             Logger.Debug("ControlFromParentRemover observer registered successfully");
         }
 
         /*
         Design NOTE:
 
-        Maybe we want to refactor this. Here we have the idea of a page. A hierarchy of entities that represent something more 
-        similar to a react component. The thing is that in react we have a single root component that is the page. 
+        Maybe we want to refactor this. Here we have the idea of a page. A hierarchy of entities that represent something more
+        similar to a react component. The thing is that in react we have a single root component that is the page.
 
         So a page is more of a root component. So maybe calling it differently would be better.
 
-        We have a conceptual overlap and a mental model mismatch. 
+        We have a conceptual overlap and a mental model mismatch.
         */
         /// <summary>
         /// Adds the page observer.
@@ -415,55 +447,69 @@ namespace Avalonia.Flecs.Controls.ECS
             We cannot count on the order of the entities in the list. Sometimes the first page added
             is not the first child ecounterd with the page tag !
             */
-            world.Observer("EnsureEntityHasOnlyOnePageChild")
+            world
+                .Observer("EnsureEntityHasOnlyOnePageChild")
                 .Event(Ecs.OnAdd)
                 .Event(Ecs.OnSet)
                 .With(Ecs.ChildOf, Ecs.Wildcard)
-                .Each((Entity child) =>
-                {
-                    var parent = child.Parent();
-                    //When we select a new page to display we remove 
-                    //all currently attached childrens that are pages
-                    //So we can only have one page displayed at a time.
-                    //so the ControlToParentAdder observer runs.
-
-                    if (parent == 0)
+                .Each(
+                    (Entity child) =>
                     {
-                        Logger.Debug("Page {PageEntity} has no parent, skipping page check",
-                            child.Name() ?? child.ToString());
-                        return;
-                    }
+                        var parent = child.Parent();
+                        //When we select a new page to display we remove
+                        //all currently attached childrens that are pages
+                        //So we can only have one page displayed at a time.
+                        //so the ControlToParentAdder observer runs.
 
-                    if (child.Has<Page>())
-                    {
-                        Logger.Debug("Found Page {PageEntity} attached to parent {ParentEntity}, checking for other pages",
-                            child.Name() ?? child.ToString(),
-                            parent.Name() ?? parent.ToString());
-
-                        List<Entity> pages = [];
-                        parent.Children((Entity child) =>
+                        if (parent == 0)
                         {
-                            if (child.Has<Page>())
-                            {
-                                pages.Add(child);
-                                Logger.Debug("Found additional page {PageEntity} under parent {ParentEntity}",
-                                    child.Name() ?? child.ToString(),
-                                    parent.Name() ?? parent.ToString());
-                            }
-                            if (pages.Count > 1)
-                            {
-                                Logger.Warn("Multiple pages found under parent {ParentEntity}, but unable to remove due to ordering issue",
-                                    parent.Name() ?? parent.ToString());
-                                // This does not work because we cannot count on the order
-                                // of the entities in the list. Sometimes the first page added 
-                                // is not the first child ecounterd with the page tag !
-                                //pages[0].Remove(Ecs.ChildOf, Ecs.Wildcard);
-                            }
-                        });
+                            Logger.Debug(
+                                "Page {PageEntity} has no parent, skipping page check",
+                                child.Name() ?? child.ToString()
+                            );
+                            return;
+                        }
+
+                        if (child.Has<Page>())
+                        {
+                            Logger.Debug(
+                                "Found Page {PageEntity} attached to parent {ParentEntity}, checking for other pages",
+                                child.Name() ?? child.ToString(),
+                                parent.Name() ?? parent.ToString()
+                            );
+
+                            List<Entity> pages = [];
+                            parent.Children(
+                                (Entity child) =>
+                                {
+                                    if (child.Has<Page>())
+                                    {
+                                        pages.Add(child);
+                                        Logger.Debug(
+                                            "Found additional page {PageEntity} under parent {ParentEntity}",
+                                            child.Name() ?? child.ToString(),
+                                            parent.Name() ?? parent.ToString()
+                                        );
+                                    }
+                                    if (pages.Count > 1)
+                                    {
+                                        Logger.Warn(
+                                            "Multiple pages found under parent {ParentEntity}, but unable to remove due to ordering issue",
+                                            parent.Name() ?? parent.ToString()
+                                        );
+                                        // This does not work because we cannot count on the order
+                                        // of the entities in the list. Sometimes the first page added
+                                        // is not the first child ecounterd with the page tag !
+                                        //pages[0].Remove(Ecs.ChildOf, Ecs.Wildcard);
+                                    }
+                                }
+                            );
+                        }
                     }
-                });
+                );
             Logger.Debug("EnsureEntityHasOnlyOnePageChild observer registered successfully");
         }
+
         /// <summary>
         /// Registers the event data components.
         /// </summary>

@@ -1,5 +1,6 @@
-using Flecs.NET.Core;
 using Avalonia.Controls;
+using Flecs.NET.Core;
+
 namespace Avalonia.Flecs.Controls.ECS
 {
     /// <summary>
@@ -14,22 +15,25 @@ namespace Avalonia.Flecs.Controls.ECS
         public void InitModule(World world)
         {
             world.Module<ECSScrollViewer>();
-            world.Component<ScrollViewer>("ScrollViewer")
-                            .OnSet((Entity e, ref ScrollViewer scrollViewer) =>
-                            {
-                                if (!e.Has<object>())
-                                {
-                                    e.Set<object>(scrollViewer);
-                                }
-                                else if (e.Get<object>().GetType() == typeof(ScrollViewer))
-                                {
-                                    e.Set<object>(scrollViewer);
-                                }
-                                e.Set<ContentControl>(scrollViewer);
-                                // Adding event handlers
-                                // https://reference.avaloniaui.net/api/Avalonia.Controls.ScrollViewer/#Events
-
-                            }).OnRemove((Entity e, ref ScrollViewer scrollViewer) => e.Remove<ContentControl>());
+            world
+                .Component<ScrollViewer>("ScrollViewer")
+                .OnSet(
+                    (Entity e, ref ScrollViewer scrollViewer) =>
+                    {
+                        if (!e.Has<object>())
+                        {
+                            e.Set<object>(scrollViewer);
+                        }
+                        else if (e.Get<object>().GetType() == typeof(ScrollViewer))
+                        {
+                            e.Set<object>(scrollViewer);
+                        }
+                        e.Set<ContentControl>(scrollViewer);
+                        // Adding event handlers
+                        // https://reference.avaloniaui.net/api/Avalonia.Controls.ScrollViewer/#Events
+                    }
+                )
+                .OnRemove((Entity e, ref ScrollViewer scrollViewer) => e.Remove<ContentControl>());
         }
     }
 }

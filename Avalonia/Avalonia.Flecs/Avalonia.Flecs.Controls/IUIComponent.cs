@@ -3,7 +3,6 @@ using Flecs.NET.Core;
 
 namespace Avalonia.Flecs.Controls;
 
-
 // TODO: Think about removing the interface in favor of the UIBuilder.
 
 /// <summary>
@@ -44,6 +43,7 @@ public interface IUIComponent
     {
         Root.Get<Control>().Margin = margin;
     }
+
     /// <summary>
     /// Gets the margin of the underlying control element
     /// </summary>
