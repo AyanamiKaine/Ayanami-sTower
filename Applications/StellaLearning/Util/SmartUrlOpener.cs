@@ -21,6 +21,7 @@ using System.Net.Http;
 using System.Threading.Tasks; // Required for async operations
 
 namespace AyanamisTower.StellaLearning.Util;
+
 /// <summary>
 /// Class to handle the smart URL opening logic
 /// </summary>
@@ -58,7 +59,9 @@ public static class SmartUrlOpener
         }
         else
         {
-            Console.WriteLine("URL was not reachable or timed out. Constructing Wayback Machine fallback URL...");
+            Console.WriteLine(
+                "URL was not reachable or timed out. Constructing Wayback Machine fallback URL..."
+            );
             // Construct the Wayback Machine URL: https://web.archive.org/web/*/YOUR_URL
             string waybackUrl = $"https://web.archive.org/web/*/{url}";
             Console.WriteLine($"Attempting to open via Wayback Machine: {waybackUrl}");
@@ -75,8 +78,10 @@ public static class SmartUrlOpener
     private static async Task<bool> IsUrlReachableAsync(string url)
     {
         // Basic URL validation
-        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult)
-            || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps))
+        if (
+            !Uri.TryCreate(url, UriKind.Absolute, out Uri? uriResult)
+            || (uriResult.Scheme != Uri.UriSchemeHttp && uriResult.Scheme != Uri.UriSchemeHttps)
+        )
         {
             Console.WriteLine($"Invalid URL format provided: {url}");
             return false;
@@ -92,13 +97,20 @@ public static class SmartUrlOpener
             var request = new HttpRequestMessage(HttpMethod.Get, url);
 
             // Optional: Add a User-Agent header to mimic a browser, some sites might require it.
-            request.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36");
+            request.Headers.UserAgent.ParseAdd(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36"
+            );
 
-            Console.WriteLine($"Checking reachability for {url} using GET (Timeout: {DefaultTimeout.TotalSeconds}s)...");
+            Console.WriteLine(
+                $"Checking reachability for {url} using GET (Timeout: {DefaultTimeout.TotalSeconds}s)..."
+            );
 
             // Send the request, but we only care about the response *status*, not the full content completion.
             // The timeout should prevent waiting indefinitely for large pages.
-            HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead); // Optimization: Stop after headers are read
+            HttpResponseMessage response = await client.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead
+            ); // Optimization: Stop after headers are read
 
             // Consider success (2xx) or redirects (3xx) as "reachable" for the purpose of opening in browser.
             bool isSuccess = response.IsSuccessStatusCode; // Status code 200-299
@@ -106,13 +118,17 @@ public static class SmartUrlOpener
 
             if (isSuccess || isRedirect)
             {
-                Console.WriteLine($"URL check successful. Status: {response.StatusCode} ({(int)response.StatusCode})");
+                Console.WriteLine(
+                    $"URL check successful. Status: {response.StatusCode} ({(int)response.StatusCode})"
+                );
                 return true;
             }
             else
             {
                 // Any other status code (4xx client errors, 5xx server errors) means it's not reachable in the desired way.
-                Console.WriteLine($"URL check failed. Status: {response.StatusCode} ({(int)response.StatusCode})");
+                Console.WriteLine(
+                    $"URL check failed. Status: {response.StatusCode} ({(int)response.StatusCode})"
+                );
                 return false;
             }
         }
@@ -131,12 +147,16 @@ public static class SmartUrlOpener
         catch (TaskCanceledException ex)
         {
             // Catches general cancellation, could also be a timeout if configured differently.
-            Console.WriteLine($"Operation canceled while checking URL '{url}'. Might be a timeout. {ex.Message}");
+            Console.WriteLine(
+                $"Operation canceled while checking URL '{url}'. Might be a timeout. {ex.Message}"
+            );
             return false;
         }
         catch (Exception ex) // Catch-all for other unexpected issues
         {
-            Console.WriteLine($"An unexpected error occurred while checking URL '{url}': {ex.Message}");
+            Console.WriteLine(
+                $"An unexpected error occurred while checking URL '{url}': {ex.Message}"
+            );
             return false;
         }
     }
@@ -154,7 +174,7 @@ public static class SmartUrlOpener
             {
                 // IMPORTANT: UseShellExecute must be true to use the OS's default application for the URL protocol (http/https).
                 // If false, it would try to execute the URL string as a file path, which fails.
-                UseShellExecute = true
+                UseShellExecute = true,
             };
             Process.Start(psi);
             Console.WriteLine($"Successfully initiated opening '{url}' in the default browser.");
@@ -166,17 +186,23 @@ public static class SmartUrlOpener
             // Other codes might exist depending on the exact OS/failure.
             if (noBrowser.ErrorCode == -2147467259)
             {
-                Console.WriteLine($"Error: Could not open '{url}'. No default web browser seems to be configured or the system could not find it.");
+                Console.WriteLine(
+                    $"Error: Could not open '{url}'. No default web browser seems to be configured or the system could not find it."
+                );
             }
             else
             {
-                Console.WriteLine($"A Win32 error occurred opening URL '{url}': {noBrowser.Message} (Code: {noBrowser.ErrorCode})");
+                Console.WriteLine(
+                    $"A Win32 error occurred opening URL '{url}': {noBrowser.Message} (Code: {noBrowser.ErrorCode})"
+                );
             }
         }
         catch (Exception ex)
         {
             // Handles other potential errors like invalid URL format for Process.Start, permissions issues etc.
-            Console.WriteLine($"An unexpected error occurred while trying to open the URL '{url}' in the browser: {ex.Message}");
+            Console.WriteLine(
+                $"An unexpected error occurred while trying to open the URL '{url}' in the browser: {ex.Message}"
+            );
         }
     }
 }

@@ -17,8 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using AyanamisTower.StellaLearning.Data; // Required for JsonNode
 
 // Make sure this namespace matches where your LiteratureSourceItem and derived classes are
@@ -46,6 +46,7 @@ public class LiteratureSourceItemConverter : JsonConverter<LiteratureSourceItem>
         // This converter handles the base class and any class inheriting from it.
         return typeof(LiteratureSourceItem).IsAssignableFrom(typeToConvert);
     }
+
     /// <summary>
     /// Reads the JSON representation of the object.
     /// </summary>
@@ -53,7 +54,11 @@ public class LiteratureSourceItemConverter : JsonConverter<LiteratureSourceItem>
     /// <param name="typeToConvert">The type expected (will be LiteratureSourceItem).</param>
     /// <param name="options">The serializer options.</param>
     /// <returns>The deserialized LiteratureSourceItem (as one of its derived types).</returns>
-    public override LiteratureSourceItem? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    public override LiteratureSourceItem? Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options
+    )
     {
         // Check for null JSON token
         if (reader.TokenType == JsonTokenType.Null)
@@ -82,7 +87,9 @@ public class LiteratureSourceItemConverter : JsonConverter<LiteratureSourceItem>
         else
         {
             // Log or handle the unlikely case where the converter isn't found
-            Console.Error.WriteLine($"Warning: {nameof(LiteratureSourceItemConverter)} could not find itself in the options during Read setup. Deserialization might proceed normally, but this is unexpected.");
+            Console.Error.WriteLine(
+                $"Warning: {nameof(LiteratureSourceItemConverter)} could not find itself in the options during Read setup. Deserialization might proceed normally, but this is unexpected."
+            );
             // Consider throwing if this state is invalid:
             // throw new InvalidOperationException($"{nameof(LiteratureSourceItemConverter)} could not find itself in the options during Read operation.");
         }
@@ -99,11 +106,16 @@ public class LiteratureSourceItemConverter : JsonConverter<LiteratureSourceItem>
             return null; // Handle cases where parsing results in null
         }
 
-
         // Determine the Concrete Type using the Discriminator
-        if (!node.AsObject().TryGetPropertyValue(DiscriminatorPropertyName, out JsonNode? discriminatorNode) || discriminatorNode == null)
+        if (
+            !node.AsObject()
+                .TryGetPropertyValue(DiscriminatorPropertyName, out JsonNode? discriminatorNode)
+            || discriminatorNode == null
+        )
         {
-            throw new JsonException($"Required discriminator property '{DiscriminatorPropertyName}' not found or is null in JSON: {node.ToJsonString()}");
+            throw new JsonException(
+                $"Required discriminator property '{DiscriminatorPropertyName}' not found or is null in JSON: {node.ToJsonString()}"
+            );
         }
 
         LiteratureSourceType sourceType;
@@ -114,25 +126,37 @@ public class LiteratureSourceItemConverter : JsonConverter<LiteratureSourceItem>
             {
                 if (!Enum.TryParse(discriminatorElement.GetString(), true, out sourceType))
                 {
-                    throw new JsonException($"Invalid string value '{discriminatorElement.GetString()}' for discriminator '{DiscriminatorPropertyName}'.");
+                    throw new JsonException(
+                        $"Invalid string value '{discriminatorElement.GetString()}' for discriminator '{DiscriminatorPropertyName}'."
+                    );
                 }
             }
             else if (discriminatorElement.ValueKind == JsonValueKind.Number)
             {
-                if (!discriminatorElement.TryGetInt32(out int enumIntValue) || !Enum.IsDefined(typeof(LiteratureSourceType), enumIntValue))
+                if (
+                    !discriminatorElement.TryGetInt32(out int enumIntValue)
+                    || !Enum.IsDefined(typeof(LiteratureSourceType), enumIntValue)
+                )
                 {
-                    throw new JsonException($"Invalid integer value for discriminator '{DiscriminatorPropertyName}'. Value: {discriminatorElement.GetRawText()}");
+                    throw new JsonException(
+                        $"Invalid integer value for discriminator '{DiscriminatorPropertyName}'. Value: {discriminatorElement.GetRawText()}"
+                    );
                 }
                 sourceType = (LiteratureSourceType)enumIntValue;
             }
             else
             {
-                throw new JsonException($"Discriminator '{DiscriminatorPropertyName}' must be a string or number, but was {discriminatorElement.ValueKind}.");
+                throw new JsonException(
+                    $"Discriminator '{DiscriminatorPropertyName}' must be a string or number, but was {discriminatorElement.ValueKind}."
+                );
             }
         }
         catch (Exception ex) when (ex is not JsonException)
         {
-            throw new JsonException($"Error parsing discriminator property '{DiscriminatorPropertyName}'. See inner exception.", ex);
+            throw new JsonException(
+                $"Error parsing discriminator property '{DiscriminatorPropertyName}'. See inner exception.",
+                ex
+            );
         }
 
         // Deserialize to the Specific Derived Type using the INNER options
@@ -146,17 +170,22 @@ public class LiteratureSourceItemConverter : JsonConverter<LiteratureSourceItem>
             // *** Add cases for Book, JournalArticle, etc. using innerOptions ***
             // LiteratureSourceType.Book => node.Deserialize<BookSourceItem>(innerOptions),
 
-            _ => throw new JsonException($"Unsupported LiteratureSourceType '{sourceType}' encountered during deserialization.")
+            _ => throw new JsonException(
+                $"Unsupported LiteratureSourceType '{sourceType}' encountered during deserialization."
+            ),
         };
 
         return result;
     }
 
-
     /// <summary>
     /// Writes the JSON representation of the object, handling potential recursion.
     /// </summary>
-    public override void Write(Utf8JsonWriter writer, LiteratureSourceItem value, JsonSerializerOptions options)
+    public override void Write(
+        Utf8JsonWriter writer,
+        LiteratureSourceItem value,
+        JsonSerializerOptions options
+    )
     {
         if (value == null)
         {
@@ -190,11 +219,12 @@ public class LiteratureSourceItemConverter : JsonConverter<LiteratureSourceItem>
         {
             // This case should ideally not happen if the Write method was called through this converter,
             // but adding a safeguard or log might be useful depending on the scenario.
-            Console.Error.WriteLine($"Warning: {nameof(LiteratureSourceItemConverter)} could not find itself in the options. Serialization might proceed normally, but this is unexpected.");
+            Console.Error.WriteLine(
+                $"Warning: {nameof(LiteratureSourceItemConverter)} could not find itself in the options. Serialization might proceed normally, but this is unexpected."
+            );
             // Or potentially throw an exception if this state is considered invalid:
             // throw new InvalidOperationException($"{nameof(LiteratureSourceItemConverter)} could not find itself in the options during Write operation.");
         }
-
 
         // Now, serialize using the modified 'innerOptions' that lack this converter.
         // This forces System.Text.Json to use its default serialization logic for the

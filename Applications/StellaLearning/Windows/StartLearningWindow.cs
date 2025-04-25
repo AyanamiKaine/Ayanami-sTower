@@ -30,16 +30,16 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using AyanamisTower.StellaLearning.Data;
+using AyanamisTower.StellaLearning.Util;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using FsrsSharp;
-using AyanamisTower.StellaLearning.Data;
-using AyanamisTower.StellaLearning.Util;
 
 namespace AyanamisTower.StellaLearning.Windows;
 
 /*
-TODO: Currently the file reaches over 1300 LOC, its a clear sign that many different not related things 
+TODO: Currently the file reaches over 1300 LOC, its a clear sign that many different not related things
 are written together and can be refactored into their own components like the different learning content
 for each SRType. We could also simply refactor them into free standing functions not classes.
 */
@@ -51,9 +51,11 @@ public class StartLearningWindow : IUIComponent, IDisposable
 {
     private bool isDisposed = false;
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
     private World _world;
+
     /// <summary>
     /// Cram mode determines if we simply learn all items based on the priority and ignore review dates
     /// </summary>
@@ -61,17 +63,20 @@ public class StartLearningWindow : IUIComponent, IDisposable
     private UIBuilder<Control>? _contentContainer;
     private UIBuilder<Control>? _currentContent;
     private readonly ObservableCollection<SpacedRepetitionItem> _spacedRepetitionItems;
+
     /// <summary>
     /// Temporary list holding items for the current cram session pass.
     /// It's a shallow copy of references, shuffled. Items are removed as they are shown.
     /// </summary>
     private List<SpacedRepetitionItem>? _cramSessionItems;
+
     /// <summary>
     /// Random number generator for shuffling the cram session list.
     /// </summary>
     private readonly Random _random = new();
+
     /// <summary>
-    /// Represents the item that is or should be currently be 
+    /// Represents the item that is or should be currently be
     /// displayed.
     /// </summary>
     private SpacedRepetitionItem? _itemToBeLearnedField;
@@ -84,7 +89,9 @@ public class StartLearningWindow : IUIComponent, IDisposable
 
             //When the UI is not fully constructed dont update the content display
             if (_root == 0 || _contentContainer is null || _currentContent is null)
-            { return; }
+            {
+                return;
+            }
 
             UpdateContentDisplay();
         }
@@ -112,42 +119,56 @@ public class StartLearningWindow : IUIComponent, IDisposable
             // Original logic: Get the next item due for review based on SR schedule
             ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
         }
-        _root = world.UI<Window>((window) =>
-        {
-            window
-                 .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
-                 .SetTitle("Start Learning")
-                 .SetWidth(400)
-                 .SetHeight(400)
-                 .Child<ScrollViewer>((scrollViewer) =>
-                 {
-                     scrollViewer
-                         .SetRow(1)
-                         .SetColumnSpan(3)
-                         .Child(CreateWindowContents());
-                 });
+        _root = world
+            .UI<Window>(
+                (window) =>
+                {
+                    window
+                        .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
+                        .SetTitle("Start Learning")
+                        .SetWidth(400)
+                        .SetHeight(400)
+                        .Child<ScrollViewer>(
+                            (scrollViewer) =>
+                            {
+                                scrollViewer
+                                    .SetRow(1)
+                                    .SetColumnSpan(3)
+                                    .Child(CreateWindowContents());
+                            }
+                        );
 
-            window.OnOpened(async (_, _) =>
-            {
-                if (ItemToBeLearned is not null && !cramMode)
-                    await StatsTracker.Instance.StartStudySession();
-            });
+                    window.OnOpened(
+                        async (_, _) =>
+                        {
+                            if (ItemToBeLearned is not null && !cramMode)
+                                await StatsTracker.Instance.StartStudySession();
+                        }
+                    );
 
-            window.OnClosing(async (_, _) =>
-            {
-                Dispose();
-                await StatsTracker.Instance.EndStudySession();
-            });
-            window.Show();
-        }).Entity;
+                    window.OnClosing(
+                        async (_, _) =>
+                        {
+                            Dispose();
+                            await StatsTracker.Instance.EndStudySession();
+                        }
+                    );
+                    window.Show();
+                }
+            )
+            .Entity;
     }
+
     private UIBuilder<Control> CreateWindowContents()
     {
-        _contentContainer = _world.UI<ContentControl>(container =>
-        {
-            container.SetVerticalAlignment(VerticalAlignment.Stretch)
-                     .SetHorizontalAlignment(HorizontalAlignment.Stretch);
-        }).AsBaseBuilder<Control, ContentControl>();
+        _contentContainer = _world
+            .UI<ContentControl>(container =>
+            {
+                container
+                    .SetVerticalAlignment(VerticalAlignment.Stretch)
+                    .SetHorizontalAlignment(HorizontalAlignment.Stretch);
+            })
+            .AsBaseBuilder<Control, ContentControl>();
 
         // Single event handler per item that handles all property change needs
         foreach (var item in _spacedRepetitionItems)
@@ -166,578 +187,705 @@ public class StartLearningWindow : IUIComponent, IDisposable
     {
         var file = (SpacedRepetitionFile)ItemToBeLearned!;
 
-        return _world.UI<StackPanel>((layout) =>
-        {
-
-            UIBuilder<Button>? easyButton = null;
-            UIBuilder<Button>? goodButton = null;
-            UIBuilder<Button>? hardButton = null;
-            UIBuilder<Button>? againButton = null;
-
-
-            layout
-                .SetOrientation(Orientation.Vertical)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetSpacing(10)
-                .SetMargin(20);
-
-            layout.Child<TextBlock>((textBlock) =>
+        return _world.UI<StackPanel>(
+            (layout) =>
             {
-                textBlock
-                .SetText(file.Name)
-                .SetTextWrapping(TextWrapping.Wrap)
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetVerticalAlignment(VerticalAlignment.Center);
-            });
+                UIBuilder<Button>? easyButton = null;
+                UIBuilder<Button>? goodButton = null;
+                UIBuilder<Button>? hardButton = null;
+                UIBuilder<Button>? againButton = null;
 
-            layout.Child<Separator>((separatorUI) =>
-            {
-                separatorUI
-                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                    .SetBorderBrush(Brushes.Black);
-            });
-
-            layout.Child<TextBlock>((question) =>
-            {
-                question
-                    .SetVerticalAlignment(VerticalAlignment.Center)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .SetMargin(0, 20)
-                    .SetText(file.Question);
-
-                question.Get<TextBlock>().TextWrapping = TextWrapping.Wrap;
-            });
-
-            layout.Child<TextBlock>((content) =>
-            {
-                content
-                    .SetVerticalAlignment(VerticalAlignment.Center)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .SetMargin(0, 10)
-                    .SetText(file.FilePath);
-
-                content.Get<TextBlock>().TextWrapping = TextWrapping.Wrap;
-            });
-
-            layout.Child<Button>((button) =>
-            {
-                button
-                    .SetText("Open File")
-                    .SetMargin(0, 10)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .OnClick((sender, e) =>
-                    {
-                        try
-                        {
-                            easyButton!.Enable();
-                            hardButton!.Enable();
-                            againButton!.Enable();
-                            goodButton!.Enable();
-
-                            /*
-                            When the user tries to open an executable file instead of data that gets openend with
-                            a program like a .png. We want to warn
-                            him that he is currently tries to execute
-                            a program.
-                            */
-                            if (ExecutableDetector.IsExecutable(file.FilePath))
-                            {
-                                var cd = new ContentDialog()
-                                {
-                                    Title = "Opening an Executable?",
-                                    Content = "You are currently trying to run an executable program. Do you wish to continue?",
-                                    PrimaryButtonText = "Confirm",
-                                    SecondaryButtonText = "Deny",
-                                    IsPrimaryButtonEnabled = true,
-                                    IsSecondaryButtonEnabled = true,
-                                };
-                                cd.PrimaryButtonClick += (_, _) => FileOpener.OpenFileWithDefaultProgram(file.FilePath);
-
-                                cd.ShowAsync();
-                            }
-                            else if (_world.Has<Settings>() && file.FilePath.EndsWith(".md"))
-                            {
-                                string ObsidianPath = _world.Get<Settings>().ObsidianPath;
-                                FileOpener.OpenMarkdownFileWithObsidian(file.FilePath, ObsidianPath);
-                            }
-                            else
-                            {
-                                FileOpener.OpenFileWithDefaultProgram(file.FilePath);
-                            }
-                        }
-                        catch (FileNotFoundException ex)
-                        {
-                            MessageDialog.ShowErrorDialog($"{ex.Message}, {ex.FileName}");
-                        }
-                    });
-            });
-
-            layout.Child<Grid>((grid) =>
-            {
-                grid
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .SetVerticalAlignment(VerticalAlignment.Center)
-                    .SetColumnDefinitions("*, *, *, *")
-                    .SetRowDefinitions("auto");
-
-                grid.Child<Button>((button) =>
-                {
-                    easyButton = button;
-                    button
-                        .SetText("Easy")
-                        .SetMargin(10, 0)
-                        .SetColumn(0)
-                        .OnClick(async (_, _) =>
-                        {
-                            // When we are in cram mode we simply want to get the next item.
-                            if (_cramMode)
-                            {
-                                ItemToBeLearned = GetNextCramItem();
-                            }
-
-                            await StatsTracker.Instance.RecordReview(file, Rating.Easy);
-                            file.EasyReview();
-                            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                        });
-
-                    button.Disable();
-                });
-
-                grid.Child<Button>((button) =>
-                {
-                    goodButton = button;
-                    button
-                        .SetText("Good")
-                        .SetMargin(10, 0)
-                        .SetColumn(1)
-                        .OnClick(async (_, _) =>
-                        {
-
-                            if (_cramMode)
-                            {
-                                ItemToBeLearned = GetNextCramItem();
-                                return;
-                            }
-
-                            await StatsTracker.Instance.RecordReview(file, Rating.Good);
-                            file.GoodReview();
-                            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                        });
-
-                    button.Disable();
-                });
-
-                grid.Child<Button>((button) =>
-                {
-                    hardButton = button;
-                    button
-                        .SetText("Hard")
-                        .SetMargin(10, 0)
-                        .SetColumn(2)
-                        .OnClick(async (_, _) =>
-                        {
-
-                            if (_cramMode)
-                            {
-                                ItemToBeLearned = GetNextCramItem();
-                                return;
-                            }
-
-                            await StatsTracker.Instance.RecordReview(file, Rating.Hard);
-                            file.HardReview();
-                            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                        });
-
-                    button.Disable();
-                });
-
-                grid.Child<Button>((button) =>
-                {
-                    againButton = button;
-                    button
-                        .SetText("Again")
-                        .SetMargin(10, 0)
-                        .SetColumn(3)
-                        .OnClick(async (_, _) =>
-                        {
-
-                            if (_cramMode)
-                            {
-                                ItemToBeLearned = GetNextCramItem();
-                                return;
-                            }
-
-                            await StatsTracker.Instance.RecordReview(file, Rating.Again);
-                            file.AgainReview();
-                            ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-
-                        });
-
-                    button.Disable();
-                });
-            });
-        });
-
-    }
-
-    private UIBuilder<StackPanel> LearnQuizContent()
-    {
-        var quiz = (SpacedRepetitionQuiz)ItemToBeLearned!;
-        var buttons = new List<UIBuilder<Button>>();
-        return _world.UI<StackPanel>((layout) =>
-        {
-            layout
-                .SetOrientation(Orientation.Vertical)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetSpacing(10)
-                .SetMargin(20);
-
-            layout.Child<TextBlock>((question) =>
-            {
-                question
-                    .SetVerticalAlignment(VerticalAlignment.Center)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .SetMargin(0, 20)
-                    .SetText(quiz.Name)
-                    .SetTextWrapping(TextWrapping.Wrap);
-            });
-
-            layout.Child<TextBlock>((content) =>
-            {
-                content
-                    .SetVerticalAlignment(VerticalAlignment.Center)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .SetMargin(0, 10)
-                    .SetText(quiz.Question)
-                    .SetTextWrapping(TextWrapping.Wrap);
-            });
-
-            layout.Child<WrapPanel>((wrapPanel) =>
-            {
-                wrapPanel
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center);
-
-
-
-                for (int i = 0; i < quiz.Answers.Count; i++)
-                {
-                    int index = i; // Capture the index for the lambda
-                    var button = wrapPanel.Child<Button>((button) =>
-                    {
-                        button.Child<TextBlock>((textBlock) =>
-                        {
-                            textBlock
-                            .SetText(quiz.Answers[index])
-                            .SetTextWrapping(TextWrapping.Wrap);
-                        });
-
-                        button
-                        .SetVerticalAlignment(VerticalAlignment.Center)
-                        .SetHorizontalAlignment(HorizontalAlignment.Center)
-                        .SetMargin(10, 10)
-                        .OnClick(async (sender, args) =>
-                        {
-                            if (quiz.CorrectAnswerIndex == index)
-                            {
-                                // We first remove the correct button so it does not turn red.
-                                buttons.RemoveAt(index);
-                                foreach (var button in buttons)
-                                {
-                                    button.SetBackground(Brushes.Red);
-                                    button.SetPointerOverBackground(Brushes.Red);
-                                }
-
-                                button.SetBackground(Brushes.Green);
-                                button.SetPointerOverBackground(Brushes.Green);
-
-                                await StatsTracker.Instance.RecordReview(quiz, Rating.Good);
-                                await Task.Delay(2000);
-
-                                if (_cramMode)
-                                {
-                                    ItemToBeLearned = GetNextCramItem();
-                                    return;
-                                }
-
-                                quiz.GoodReview();
-                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                            }
-                            else
-                            {
-                                button.SetPointerOverBackground(Brushes.Red);
-                                button.SetBackground(Brushes.Red);
-
-                                foreach (var button in buttons)
-                                {
-                                    button.SetBackground(Brushes.Red);
-                                    button.SetPointerOverBackground(Brushes.Red);
-                                }
-                                // At this point all buttons are red, we now want to turn
-                                // the correct anwser green.
-                                buttons[quiz.CorrectAnswerIndex].SetBackground(Brushes.Green);
-                                buttons[quiz.CorrectAnswerIndex].SetPointerOverBackground(Brushes.Green);
-
-                                await StatsTracker.Instance.RecordReview(quiz, Rating.Again);
-                                await Task.Delay(2000);
-
-                                if (_cramMode)
-                                {
-                                    ItemToBeLearned = GetNextCramItem();
-                                    return;
-                                }
-
-                                quiz.AgainReview();
-                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                            }
-
-                        });
-
-                    });
-                    buttons.Add(button);
-                }
-
-
-            });
-        });
-    }
-
-    private UIBuilder<StackPanel> LearnFlashcardContent()
-    {
-        var flashcard = (SpacedRepetitionFlashcard)ItemToBeLearned!;
-
-        return _world.UI<StackPanel>((stackPanel) =>
-                {
-                    UIBuilder<TextBlock>? flashcardBackText = null;
-                    UIBuilder<Button>? easyButton = null;
-                    UIBuilder<Button>? goodButton = null;
-                    UIBuilder<Button>? hardButton = null;
-                    UIBuilder<Button>? againButton = null;
-
-                    stackPanel
+                layout
                     .SetOrientation(Orientation.Vertical)
                     .SetVerticalAlignment(VerticalAlignment.Center)
                     .SetHorizontalAlignment(HorizontalAlignment.Center)
                     .SetSpacing(10)
                     .SetMargin(20);
 
-                    stackPanel.Child<TextBlock>((textBlock) =>
+                layout.Child<TextBlock>(
+                    (textBlock) =>
                     {
                         textBlock
-                        .SetText(flashcard.Name)
-                        .SetTextWrapping(TextWrapping.Wrap)
-                        .SetHorizontalAlignment(HorizontalAlignment.Center)
-                        .SetVerticalAlignment(VerticalAlignment.Center);
-                    });
+                            .SetText(file.Name)
+                            .SetTextWrapping(TextWrapping.Wrap)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center);
+                    }
+                );
 
-                    stackPanel.Child<Separator>((separatorUI) =>
+                layout.Child<Separator>(
+                    (separatorUI) =>
                     {
                         separatorUI
-                        .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                        .SetBorderBrush(Brushes.Black);
-                    });
+                            .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                            .SetBorderBrush(Brushes.Black);
+                    }
+                );
 
-                    stackPanel.Child<TextBlock>((textBlock) =>
+                layout.Child<TextBlock>(
+                    (question) =>
                     {
-                        textBlock
-                        .SetText(flashcard.Front)
-                        .SetTextWrapping(TextWrapping.Wrap);
+                        question
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetMargin(0, 20)
+                            .SetText(file.Question);
 
-                    });
+                        question.Get<TextBlock>().TextWrapping = TextWrapping.Wrap;
+                    }
+                );
 
-                    stackPanel.Child<Separator>((separatorUI) =>
+                layout.Child<TextBlock>(
+                    (content) =>
                     {
-                        separatorUI
-                        .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                        .SetBorderBrush(Brushes.Black);
-                    });
+                        content
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetMargin(0, 10)
+                            .SetText(file.FilePath);
 
-                    stackPanel.Child<TextBlock>((textBlock) =>
-                    {
-                        flashcardBackText = textBlock
-                        .Visible(false)
-                        .SetText(flashcard.Back)
-                        .SetTextWrapping(TextWrapping.Wrap);
-                    });
+                        content.Get<TextBlock>().TextWrapping = TextWrapping.Wrap;
+                    }
+                );
 
-                    stackPanel.Child<Button>((button) =>
+                layout.Child<Button>(
+                    (button) =>
                     {
                         button
-                        .SetText("Reveal")
-                        .SetMargin(0, 20)
-                        .SetVerticalAlignment(VerticalAlignment.Center)
-                        .SetHorizontalAlignment(HorizontalAlignment.Center)
-                        .OnClick((_, _) =>
+                            .SetText("Open File")
+                            .SetMargin(0, 10)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .OnClick(
+                                (sender, e) =>
+                                {
+                                    try
+                                    {
+                                        easyButton!.Enable();
+                                        hardButton!.Enable();
+                                        againButton!.Enable();
+                                        goodButton!.Enable();
+
+                                        /*
+                                        When the user tries to open an executable file instead of data that gets openend with
+                                        a program like a .png. We want to warn
+                                        him that he is currently tries to execute
+                                        a program.
+                                        */
+                                        if (ExecutableDetector.IsExecutable(file.FilePath))
                                         {
-                                            flashcardBackText!.Visible();
-                                            againButton!.Enable();
-                                            hardButton!.Enable();
-                                            goodButton!.Enable();
-                                            easyButton!.Enable();
-                                        });
-                    });
+                                            var cd = new ContentDialog()
+                                            {
+                                                Title = "Opening an Executable?",
+                                                Content =
+                                                    "You are currently trying to run an executable program. Do you wish to continue?",
+                                                PrimaryButtonText = "Confirm",
+                                                SecondaryButtonText = "Deny",
+                                                IsPrimaryButtonEnabled = true,
+                                                IsSecondaryButtonEnabled = true,
+                                            };
+                                            cd.PrimaryButtonClick += (_, _) =>
+                                                FileOpener.OpenFileWithDefaultProgram(
+                                                    file.FilePath
+                                                );
 
+                                            cd.ShowAsync();
+                                        }
+                                        else if (
+                                            _world.Has<Settings>() && file.FilePath.EndsWith(".md")
+                                        )
+                                        {
+                                            string ObsidianPath = _world
+                                                .Get<Settings>()
+                                                .ObsidianPath;
+                                            FileOpener.OpenMarkdownFileWithObsidian(
+                                                file.FilePath,
+                                                ObsidianPath
+                                            );
+                                        }
+                                        else
+                                        {
+                                            FileOpener.OpenFileWithDefaultProgram(file.FilePath);
+                                        }
+                                    }
+                                    catch (FileNotFoundException ex)
+                                    {
+                                        MessageDialog.ShowErrorDialog(
+                                            $"{ex.Message}, {ex.FileName}"
+                                        );
+                                    }
+                                }
+                            );
+                    }
+                );
 
-
-                    stackPanel.Child<Grid>((grid) =>
+                layout.Child<Grid>(
+                    (grid) =>
                     {
-                        grid
-                        .SetColumnDefinitions("*, *, *, *")
-                        .SetRowDefinitions("auto");
+                        grid.SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetColumnDefinitions("*, *, *, *")
+                            .SetRowDefinitions("auto");
 
-                        grid.Child<Button>((button) =>
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                easyButton = button;
+                                button
+                                    .SetText("Easy")
+                                    .SetMargin(10, 0)
+                                    .SetColumn(0)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            // When we are in cram mode we simply want to get the next item.
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                file,
+                                                Rating.Easy
+                                            );
+                                            file.EasyReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+
+                                button.Disable();
+                            }
+                        );
+
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                goodButton = button;
+                                button
+                                    .SetText("Good")
+                                    .SetMargin(10, 0)
+                                    .SetColumn(1)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                file,
+                                                Rating.Good
+                                            );
+                                            file.GoodReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+
+                                button.Disable();
+                            }
+                        );
+
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                hardButton = button;
+                                button
+                                    .SetText("Hard")
+                                    .SetMargin(10, 0)
+                                    .SetColumn(2)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                file,
+                                                Rating.Hard
+                                            );
+                                            file.HardReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+
+                                button.Disable();
+                            }
+                        );
+
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                againButton = button;
+                                button
+                                    .SetText("Again")
+                                    .SetMargin(10, 0)
+                                    .SetColumn(3)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                file,
+                                                Rating.Again
+                                            );
+                                            file.AgainReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+
+                                button.Disable();
+                            }
+                        );
+                    }
+                );
+            }
+        );
+    }
+
+    private UIBuilder<StackPanel> LearnQuizContent()
+    {
+        var quiz = (SpacedRepetitionQuiz)ItemToBeLearned!;
+        var buttons = new List<UIBuilder<Button>>();
+        return _world.UI<StackPanel>(
+            (layout) =>
+            {
+                layout
+                    .SetOrientation(Orientation.Vertical)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetSpacing(10)
+                    .SetMargin(20);
+
+                layout.Child<TextBlock>(
+                    (question) =>
+                    {
+                        question
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetMargin(0, 20)
+                            .SetText(quiz.Name)
+                            .SetTextWrapping(TextWrapping.Wrap);
+                    }
+                );
+
+                layout.Child<TextBlock>(
+                    (content) =>
+                    {
+                        content
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetMargin(0, 10)
+                            .SetText(quiz.Question)
+                            .SetTextWrapping(TextWrapping.Wrap);
+                    }
+                );
+
+                layout.Child<WrapPanel>(
+                    (wrapPanel) =>
+                    {
+                        wrapPanel
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center);
+
+                        for (int i = 0; i < quiz.Answers.Count; i++)
                         {
-                            easyButton = button
-                            .SetText("Easy")
-                            .Disable()
-                            .SetMargin(10, 0)
-                            .SetColumn(0)
-                            .OnClick(async (_, _) =>
-                            {
-                                if (_cramMode)
+                            int index = i; // Capture the index for the lambda
+                            var button = wrapPanel.Child<Button>(
+                                (button) =>
                                 {
-                                    ItemToBeLearned = GetNextCramItem();
-                                    return;
+                                    button.Child<TextBlock>(
+                                        (textBlock) =>
+                                        {
+                                            textBlock
+                                                .SetText(quiz.Answers[index])
+                                                .SetTextWrapping(TextWrapping.Wrap);
+                                        }
+                                    );
+
+                                    button
+                                        .SetVerticalAlignment(VerticalAlignment.Center)
+                                        .SetHorizontalAlignment(HorizontalAlignment.Center)
+                                        .SetMargin(10, 10)
+                                        .OnClick(
+                                            async (sender, args) =>
+                                            {
+                                                if (quiz.CorrectAnswerIndex == index)
+                                                {
+                                                    // We first remove the correct button so it does not turn red.
+                                                    buttons.RemoveAt(index);
+                                                    foreach (var button in buttons)
+                                                    {
+                                                        button.SetBackground(Brushes.Red);
+                                                        button.SetPointerOverBackground(
+                                                            Brushes.Red
+                                                        );
+                                                    }
+
+                                                    button.SetBackground(Brushes.Green);
+                                                    button.SetPointerOverBackground(Brushes.Green);
+
+                                                    await StatsTracker.Instance.RecordReview(
+                                                        quiz,
+                                                        Rating.Good
+                                                    );
+                                                    await Task.Delay(2000);
+
+                                                    if (_cramMode)
+                                                    {
+                                                        ItemToBeLearned = GetNextCramItem();
+                                                        return;
+                                                    }
+
+                                                    quiz.GoodReview();
+                                                    ItemToBeLearned =
+                                                        _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                                }
+                                                else
+                                                {
+                                                    button.SetPointerOverBackground(Brushes.Red);
+                                                    button.SetBackground(Brushes.Red);
+
+                                                    foreach (var button in buttons)
+                                                    {
+                                                        button.SetBackground(Brushes.Red);
+                                                        button.SetPointerOverBackground(
+                                                            Brushes.Red
+                                                        );
+                                                    }
+                                                    // At this point all buttons are red, we now want to turn
+                                                    // the correct anwser green.
+                                                    buttons[quiz.CorrectAnswerIndex]
+                                                        .SetBackground(Brushes.Green);
+                                                    buttons[quiz.CorrectAnswerIndex]
+                                                        .SetPointerOverBackground(Brushes.Green);
+
+                                                    await StatsTracker.Instance.RecordReview(
+                                                        quiz,
+                                                        Rating.Again
+                                                    );
+                                                    await Task.Delay(2000);
+
+                                                    if (_cramMode)
+                                                    {
+                                                        ItemToBeLearned = GetNextCramItem();
+                                                        return;
+                                                    }
+
+                                                    quiz.AgainReview();
+                                                    ItemToBeLearned =
+                                                        _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                                }
+                                            }
+                                        );
                                 }
+                            );
+                            buttons.Add(button);
+                        }
+                    }
+                );
+            }
+        );
+    }
 
-                                await StatsTracker.Instance.RecordReview(flashcard, Rating.Easy);
-                                flashcard.EasyReview();
-                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                            });
+    private UIBuilder<StackPanel> LearnFlashcardContent()
+    {
+        var flashcard = (SpacedRepetitionFlashcard)ItemToBeLearned!;
 
-                            button.Child<TextBlock>((textBlock) =>
-                            {
-                                textBlock.SetText("Easy");
-                            });
-                        });
+        return _world.UI<StackPanel>(
+            (stackPanel) =>
+            {
+                UIBuilder<TextBlock>? flashcardBackText = null;
+                UIBuilder<Button>? easyButton = null;
+                UIBuilder<Button>? goodButton = null;
+                UIBuilder<Button>? hardButton = null;
+                UIBuilder<Button>? againButton = null;
 
-                        grid.Child<Button>((button) =>
-                        {
-                            goodButton = button
-                            .SetText("Good")
-                            .Disable()
-                            .SetMargin(10, 0)
-                            .SetColumn(1)
-                            .OnClick(async (_, _) =>
-                            {
-                                if (_cramMode)
+                stackPanel
+                    .SetOrientation(Orientation.Vertical)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetSpacing(10)
+                    .SetMargin(20);
+
+                stackPanel.Child<TextBlock>(
+                    (textBlock) =>
+                    {
+                        textBlock
+                            .SetText(flashcard.Name)
+                            .SetTextWrapping(TextWrapping.Wrap)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center);
+                    }
+                );
+
+                stackPanel.Child<Separator>(
+                    (separatorUI) =>
+                    {
+                        separatorUI
+                            .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                            .SetBorderBrush(Brushes.Black);
+                    }
+                );
+
+                stackPanel.Child<TextBlock>(
+                    (textBlock) =>
+                    {
+                        textBlock.SetText(flashcard.Front).SetTextWrapping(TextWrapping.Wrap);
+                    }
+                );
+
+                stackPanel.Child<Separator>(
+                    (separatorUI) =>
+                    {
+                        separatorUI
+                            .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                            .SetBorderBrush(Brushes.Black);
+                    }
+                );
+
+                stackPanel.Child<TextBlock>(
+                    (textBlock) =>
+                    {
+                        flashcardBackText = textBlock
+                            .Visible(false)
+                            .SetText(flashcard.Back)
+                            .SetTextWrapping(TextWrapping.Wrap);
+                    }
+                );
+
+                stackPanel.Child<Button>(
+                    (button) =>
+                    {
+                        button
+                            .SetText("Reveal")
+                            .SetMargin(0, 20)
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .OnClick(
+                                (_, _) =>
                                 {
-                                    ItemToBeLearned = GetNextCramItem();
-                                    return;
+                                    flashcardBackText!.Visible();
+                                    againButton!.Enable();
+                                    hardButton!.Enable();
+                                    goodButton!.Enable();
+                                    easyButton!.Enable();
                                 }
+                            );
+                    }
+                );
 
-                                await StatsTracker.Instance.RecordReview(flashcard, Rating.Good);
-                                flashcard.GoodReview();
-                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                            });
-                        });
+                stackPanel.Child<Grid>(
+                    (grid) =>
+                    {
+                        grid.SetColumnDefinitions("*, *, *, *").SetRowDefinitions("auto");
 
-                        grid.Child<Button>((button) =>
-                        {
-                            hardButton = button
-                            .SetText("Hard")
-                            .Disable()
-                            .SetMargin(10, 0)
-                            .SetColumn(2)
-                            .OnClick(async (_, _) =>
+                        grid.Child<Button>(
+                            (button) =>
                             {
-                                if (_cramMode)
-                                {
-                                    ItemToBeLearned = GetNextCramItem();
-                                    return;
-                                }
+                                easyButton = button
+                                    .SetText("Easy")
+                                    .Disable()
+                                    .SetMargin(10, 0)
+                                    .SetColumn(0)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
 
-                                await StatsTracker.Instance.RecordReview(flashcard, Rating.Hard);
-                                flashcard.HardReview();
-                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                            });
-                        });
+                                            await StatsTracker.Instance.RecordReview(
+                                                flashcard,
+                                                Rating.Easy
+                                            );
+                                            flashcard.EasyReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
 
-                        grid.Child<Button>((button) =>
-                        {
-                            againButton = button
-                            .SetText("Again")
-                            .Disable()
-                            .SetMargin(10, 0)
-                            .SetColumn(3)
-                            .OnClick(async (_, _) =>
+                                button.Child<TextBlock>(
+                                    (textBlock) =>
+                                    {
+                                        textBlock.SetText("Easy");
+                                    }
+                                );
+                            }
+                        );
+
+                        grid.Child<Button>(
+                            (button) =>
                             {
-                                if (_cramMode)
-                                {
-                                    ItemToBeLearned = GetNextCramItem();
-                                    return;
-                                }
+                                goodButton = button
+                                    .SetText("Good")
+                                    .Disable()
+                                    .SetMargin(10, 0)
+                                    .SetColumn(1)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
 
-                                await StatsTracker.Instance.RecordReview(flashcard, Rating.Again);
-                                flashcard.AgainReview();
-                                ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                            });
-                        });
-                    });
-                });
+                                            await StatsTracker.Instance.RecordReview(
+                                                flashcard,
+                                                Rating.Good
+                                            );
+                                            flashcard.GoodReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
+
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                hardButton = button
+                                    .SetText("Hard")
+                                    .Disable()
+                                    .SetMargin(10, 0)
+                                    .SetColumn(2)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                flashcard,
+                                                Rating.Hard
+                                            );
+                                            flashcard.HardReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
+
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                againButton = button
+                                    .SetText("Again")
+                                    .Disable()
+                                    .SetMargin(10, 0)
+                                    .SetColumn(3)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                flashcard,
+                                                Rating.Again
+                                            );
+                                            flashcard.AgainReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
+                    }
+                );
+            }
+        );
     }
 
     private UIBuilder<StackPanel> LearnClozeContent()
     {
         var cloze = (SpacedRepetitionCloze)ItemToBeLearned!;
-        return _world.UI<StackPanel>((stackPanel) =>
-        {
-            UIBuilder<TextBlock> clozeText;
-            UIBuilder<Button>? easyButton = null;
-            UIBuilder<Button>? goodButton = null;
-            UIBuilder<Button>? hardButton = null;
-            UIBuilder<Button>? againButton = null;
-
-            stackPanel
-            .SetOrientation(Orientation.Vertical)
-            .SetVerticalAlignment(VerticalAlignment.Center)
-            .SetHorizontalAlignment(HorizontalAlignment.Center)
-            .SetSpacing(10)
-            .SetMargin(20);
-
-            stackPanel.Child<TextBlock>((textBlock) =>
+        return _world.UI<StackPanel>(
+            (stackPanel) =>
             {
-                textBlock
-                .SetText(cloze.Name)
-                .SetTextWrapping(TextWrapping.Wrap)
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetVerticalAlignment(VerticalAlignment.Center);
-            });
+                UIBuilder<TextBlock> clozeText;
+                UIBuilder<Button>? easyButton = null;
+                UIBuilder<Button>? goodButton = null;
+                UIBuilder<Button>? hardButton = null;
+                UIBuilder<Button>? againButton = null;
 
-            stackPanel.Child<Separator>((separatorUI) =>
-            {
-                separatorUI
-                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                    .SetBorderBrush(Brushes.Black);
-            });
+                stackPanel
+                    .SetOrientation(Orientation.Vertical)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetSpacing(10)
+                    .SetMargin(20);
 
-            clozeText = stackPanel.Child<TextBlock>((textBlock) =>
-            {
-                StringBuilder sb = new(cloze.FullText);
-                foreach (string word in cloze.ClozeWords)
-                {
-                    sb.Replace(word, "[...]");
-                }
+                stackPanel.Child<TextBlock>(
+                    (textBlock) =>
+                    {
+                        textBlock
+                            .SetText(cloze.Name)
+                            .SetTextWrapping(TextWrapping.Wrap)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center);
+                    }
+                );
 
-                string clozeRemovedText = sb.ToString();
+                stackPanel.Child<Separator>(
+                    (separatorUI) =>
+                    {
+                        separatorUI
+                            .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                            .SetBorderBrush(Brushes.Black);
+                    }
+                );
 
-                textBlock
-                .SetText(clozeRemovedText)
-                .SetTextWrapping(TextWrapping.Wrap);
-            });
+                clozeText = stackPanel.Child<TextBlock>(
+                    (textBlock) =>
+                    {
+                        StringBuilder sb = new(cloze.FullText);
+                        foreach (string word in cloze.ClozeWords)
+                        {
+                            sb.Replace(word, "[...]");
+                        }
 
-            stackPanel.Child<Button>((button) =>
-            {
-                button
-                .SetText("Show")
-                .SetMargin(15)
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .OnClick((_, _) =>
+                        string clozeRemovedText = sb.ToString();
+
+                        textBlock.SetText(clozeRemovedText).SetTextWrapping(TextWrapping.Wrap);
+                    }
+                );
+
+                stackPanel.Child<Button>(
+                    (button) =>
+                    {
+                        button
+                            .SetText("Show")
+                            .SetMargin(15)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .OnClick(
+                                (_, _) =>
                                 {
                                     // Disable the show button after it revealed its clozes
                                     button.Disable();
@@ -746,317 +894,419 @@ public class StartLearningWindow : IUIComponent, IDisposable
                                     hardButton!.Enable();
                                     goodButton!.Enable();
                                     easyButton!.Enable();
+                                }
+                            );
+                    }
+                );
 
-                                });
-            });
-
-            stackPanel.Child<Grid>((grid) =>
-            {
-                grid
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetColumnDefinitions("*, *, *, *")
-                .SetRowDefinitions("auto");
-
-                grid.Child<Button>((button) =>
-                {
-                    easyButton = button
-                    .SetText("Easy")
-                    .Disable()
-                    .SetMargin(10, 0)
-                    .SetColumn(0)
-                    .OnClick(async (_, _) =>
+                stackPanel.Child<Grid>(
+                    (grid) =>
                     {
-                        if (_cramMode)
-                        {
-                            ItemToBeLearned = GetNextCramItem();
-                            return;
-                        }
+                        grid.SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetColumnDefinitions("*, *, *, *")
+                            .SetRowDefinitions("auto");
 
-                        await StatsTracker.Instance.RecordReview(cloze, Rating.Easy);
-                        cloze.EasyReview();
-                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                    });
-                });
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                easyButton = button
+                                    .SetText("Easy")
+                                    .Disable()
+                                    .SetMargin(10, 0)
+                                    .SetColumn(0)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
 
-                grid.Child<Button>((button) =>
-                {
-                    goodButton = button
-                    .SetText("Good")
-                    .Disable()
-                    .SetMargin(10, 0)
-                    .SetColumn(1)
-                    .OnClick(async (_, _) =>
-                    {
-                        if (_cramMode)
-                        {
-                            ItemToBeLearned = GetNextCramItem();
-                            return;
-                        }
+                                            await StatsTracker.Instance.RecordReview(
+                                                cloze,
+                                                Rating.Easy
+                                            );
+                                            cloze.EasyReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
 
-                        await StatsTracker.Instance.RecordReview(cloze, Rating.Good);
-                        cloze.GoodReview();
-                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                    });
-                });
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                goodButton = button
+                                    .SetText("Good")
+                                    .Disable()
+                                    .SetMargin(10, 0)
+                                    .SetColumn(1)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
 
-                grid.Child<Button>((button) =>
-                {
-                    hardButton = button
-                    .SetText("Hard")
-                    .Disable()
-                    .SetMargin(10, 0)
-                    .SetColumn(2)
-                    .OnClick(async (_, _) =>
-                    {
-                        if (_cramMode)
-                        {
-                            ItemToBeLearned = GetNextCramItem();
-                            return;
-                        }
+                                            await StatsTracker.Instance.RecordReview(
+                                                cloze,
+                                                Rating.Good
+                                            );
+                                            cloze.GoodReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
 
-                        await StatsTracker.Instance.RecordReview(cloze, Rating.Hard);
-                        cloze.HardReview();
-                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                    });
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                hardButton = button
+                                    .SetText("Hard")
+                                    .Disable()
+                                    .SetMargin(10, 0)
+                                    .SetColumn(2)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
 
-                });
+                                            await StatsTracker.Instance.RecordReview(
+                                                cloze,
+                                                Rating.Hard
+                                            );
+                                            cloze.HardReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
 
-                grid.Child<Button>((button) =>
-                {
-                    againButton = button
-                    .SetText("Again")
-                    .Disable()
-                    .SetMargin(10, 0)
-                    .SetColumn(3)
-                    .OnClick(async (_, _) =>
-                    {
-                        if (_cramMode)
-                        {
-                            ItemToBeLearned = GetNextCramItem();
-                            return;
-                        }
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                againButton = button
+                                    .SetText("Again")
+                                    .Disable()
+                                    .SetMargin(10, 0)
+                                    .SetColumn(3)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
 
-                        await StatsTracker.Instance.RecordReview(cloze, Rating.Again);
-                        cloze.AgainReview();
-                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                    });
-                });
-            });
-        });
+                                            await StatsTracker.Instance.RecordReview(
+                                                cloze,
+                                                Rating.Again
+                                            );
+                                            cloze.AgainReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
+                    }
+                );
+            }
+        );
     }
 
     private UIBuilder<StackPanel> LearnImageClozeContent()
     {
         var imageCloze = (SpacedRepetitionImageCloze)ItemToBeLearned!;
 
-        return _world.UI<StackPanel>((stackPanel) =>
-        {
-            UIBuilder<Button>? easyButton = null;
-            UIBuilder<Button>? goodButton = null;
-            UIBuilder<Button>? hardButton = null;
-            UIBuilder<Button>? againButton = null;
-
-            stackPanel
-                .SetOrientation(Orientation.Vertical)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetSpacing(10)
-                .SetMargin(20);
-
-            stackPanel.Child<TextBlock>((textBlock) =>
+        return _world.UI<StackPanel>(
+            (stackPanel) =>
             {
-                textBlock
-                    .SetText(imageCloze.Name)
-                    .SetTextWrapping(TextWrapping.Wrap)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .SetFontWeight(FontWeight.Bold)
-                    .SetMargin(0, 0, 0, 10);
-            });
+                UIBuilder<Button>? easyButton = null;
+                UIBuilder<Button>? goodButton = null;
+                UIBuilder<Button>? hardButton = null;
+                UIBuilder<Button>? againButton = null;
 
-            // Container for the image and cloze areas
-            stackPanel.Child<Grid>((grid) =>
-            {
-                grid.SetHorizontalAlignment(HorizontalAlignment.Stretch);
-                grid.SetVerticalAlignment(VerticalAlignment.Stretch);
-                // Set a reasonable size constraint
-                //grid.SetMaxWidth(600);
-                //grid.SetMaxHeight(400);
-
-
-                // Add a Viewbox to contain and scale the image properly
-                grid.Child<Viewbox>((viewbox) =>
-                {
-                    //viewbox.SetStretch(Stretch.Uniform);
-                    viewbox.SetHorizontalAlignment(HorizontalAlignment.Stretch);
-                    viewbox.SetVerticalAlignment(VerticalAlignment.Stretch);
-
-                    // Add a Canvas inside the Viewbox for positioning elements
-                    viewbox.Child<Canvas>((canvas) =>
-                    {
-                        //viewbox.With((w) => { w.Child = canvas.Get<Canvas>(); });
-                        // Add the image to the canvas
-                        canvas.Child<Image>((image) =>
-                        {
-
-                            if (imageCloze.ImagePath.Length != 0)
-                            {
-                                try
-                                {
-                                    var bitmap = new Bitmap(File.OpenRead(imageCloze.ImagePath));
-                                    image.SetSource(bitmap);
-
-                                    // Set the canvas size to match the image's natural size
-                                    canvas.SetWidth(bitmap.Size.Width);
-                                    canvas.SetHeight(bitmap.Size.Height);
-                                }
-                                catch (FileNotFoundException ex)
-                                {
-                                    var cd = new ContentDialog()
-                                    {
-                                        Title = "Picture not found",
-                                        Content = $"The picture couldn't not be found at path: {ex.FileName}",
-                                        PrimaryButtonText = "Ok",
-                                        DefaultButton = ContentDialogButton.Primary,
-                                        IsSecondaryButtonEnabled = true,
-                                    };
-                                    cd.ShowAsync();
-                                }
-                            }
-                        });
-
-                        // Create rectangles for each cloze area
-                        foreach (var area in imageCloze.ClozeAreas)
-                        {
-                            canvas.Child<Rectangle>((rect) =>
-                            {
-                                rect.SetWidth(area.Width);
-                                rect.SetHeight(area.Height);
-                                rect.SetFill(new SolidColorBrush(Color.FromArgb(
-                                    a: 255,
-                                    r: 221,
-                                    g: 176,
-                                    b: 55)));
-
-                                // Set the position
-                                Canvas.SetLeft(rect.Get<Rectangle>(), area.X);
-                                Canvas.SetTop(rect.Get<Rectangle>(), area.Y);
-
-                                var menu = _world.UI<MenuFlyout>((menu) =>
-                                    {
-                                        menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
-                                        menu.Child<MenuItem>((menuItem) =>
-                                        {
-                                            menuItem
-                                            .SetHeader("Reveal")
-                                            .OnClick((_, _) =>
-                                            {
-                                                rect.SetFill(new SolidColorBrush(Color.FromArgb(
-                                                  a: 55,
-                                                  r: 221,
-                                                  g: 176,
-                                                  b: 55)));
-                                            });
-                                        });
-                                    });
-
-                                rect.SetContextFlyout(menu);
-                            });
-                        }
-                    });
-                });
-            });
-
-            // Rating buttons
-            stackPanel.Child<Grid>((grid) =>
-            {
-                grid
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                stackPanel
+                    .SetOrientation(Orientation.Vertical)
                     .SetVerticalAlignment(VerticalAlignment.Center)
-                    .SetColumnDefinitions("*, *, *, *")
-                    .SetRowDefinitions("auto");
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetSpacing(10)
+                    .SetMargin(20);
 
-                grid.Child<Button>((button) =>
-                {
-                    easyButton = button
-                    .SetText("Easy")
-                    .SetMargin(10, 0)
-                    .SetColumn(0)
-                    .OnClick(async (_, _) =>
+                stackPanel.Child<TextBlock>(
+                    (textBlock) =>
                     {
-                        if (_cramMode)
-                        {
-                            ItemToBeLearned = GetNextCramItem();
-                            return;
-                        }
+                        textBlock
+                            .SetText(imageCloze.Name)
+                            .SetTextWrapping(TextWrapping.Wrap)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetFontWeight(FontWeight.Bold)
+                            .SetMargin(0, 0, 0, 10);
+                    }
+                );
 
-                        await StatsTracker.Instance.RecordReview(imageCloze, Rating.Easy);
-                        imageCloze.EasyReview();
-                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                    });
-                });
-
-                grid.Child<Button>((button) =>
-                {
-                    goodButton = button
-                    .SetText("Good")
-                    .SetMargin(10, 0)
-                    .SetColumn(1)
-                    .OnClick(async (_, _) =>
+                // Container for the image and cloze areas
+                stackPanel.Child<Grid>(
+                    (grid) =>
                     {
-                        if (_cramMode)
-                        {
-                            ItemToBeLearned = GetNextCramItem();
-                            return;
-                        }
+                        grid.SetHorizontalAlignment(HorizontalAlignment.Stretch);
+                        grid.SetVerticalAlignment(VerticalAlignment.Stretch);
+                        // Set a reasonable size constraint
+                        //grid.SetMaxWidth(600);
+                        //grid.SetMaxHeight(400);
 
-                        await StatsTracker.Instance.RecordReview(imageCloze, Rating.Good);
-                        imageCloze.GoodReview();
-                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                    });
-                });
 
-                grid.Child<Button>((button) =>
-                {
-                    hardButton = button
-                    .SetText("Hard")
-                    .SetMargin(10, 0)
-                    .SetColumn(2)
-                    .OnClick(async (_, _) =>
+                        // Add a Viewbox to contain and scale the image properly
+                        grid.Child<Viewbox>(
+                            (viewbox) =>
+                            {
+                                //viewbox.SetStretch(Stretch.Uniform);
+                                viewbox.SetHorizontalAlignment(HorizontalAlignment.Stretch);
+                                viewbox.SetVerticalAlignment(VerticalAlignment.Stretch);
+
+                                // Add a Canvas inside the Viewbox for positioning elements
+                                viewbox.Child<Canvas>(
+                                    (canvas) =>
+                                    {
+                                        //viewbox.With((w) => { w.Child = canvas.Get<Canvas>(); });
+                                        // Add the image to the canvas
+                                        canvas.Child<Image>(
+                                            (image) =>
+                                            {
+                                                if (imageCloze.ImagePath.Length != 0)
+                                                {
+                                                    try
+                                                    {
+                                                        var bitmap = new Bitmap(
+                                                            File.OpenRead(imageCloze.ImagePath)
+                                                        );
+                                                        image.SetSource(bitmap);
+
+                                                        // Set the canvas size to match the image's natural size
+                                                        canvas.SetWidth(bitmap.Size.Width);
+                                                        canvas.SetHeight(bitmap.Size.Height);
+                                                    }
+                                                    catch (FileNotFoundException ex)
+                                                    {
+                                                        var cd = new ContentDialog()
+                                                        {
+                                                            Title = "Picture not found",
+                                                            Content =
+                                                                $"The picture couldn't not be found at path: {ex.FileName}",
+                                                            PrimaryButtonText = "Ok",
+                                                            DefaultButton =
+                                                                ContentDialogButton.Primary,
+                                                            IsSecondaryButtonEnabled = true,
+                                                        };
+                                                        cd.ShowAsync();
+                                                    }
+                                                }
+                                            }
+                                        );
+
+                                        // Create rectangles for each cloze area
+                                        foreach (var area in imageCloze.ClozeAreas)
+                                        {
+                                            canvas.Child<Rectangle>(
+                                                (rect) =>
+                                                {
+                                                    rect.SetWidth(area.Width);
+                                                    rect.SetHeight(area.Height);
+                                                    rect.SetFill(
+                                                        new SolidColorBrush(
+                                                            Color.FromArgb(
+                                                                a: 255,
+                                                                r: 221,
+                                                                g: 176,
+                                                                b: 55
+                                                            )
+                                                        )
+                                                    );
+
+                                                    // Set the position
+                                                    Canvas.SetLeft(rect.Get<Rectangle>(), area.X);
+                                                    Canvas.SetTop(rect.Get<Rectangle>(), area.Y);
+
+                                                    var menu = _world.UI<MenuFlyout>(
+                                                        (menu) =>
+                                                        {
+                                                            menu.SetShowMode(
+                                                                FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+                                                            );
+                                                            menu.Child<MenuItem>(
+                                                                (menuItem) =>
+                                                                {
+                                                                    menuItem
+                                                                        .SetHeader("Reveal")
+                                                                        .OnClick(
+                                                                            (_, _) =>
+                                                                            {
+                                                                                rect.SetFill(
+                                                                                    new SolidColorBrush(
+                                                                                        Color.FromArgb(
+                                                                                            a: 55,
+                                                                                            r: 221,
+                                                                                            g: 176,
+                                                                                            b: 55
+                                                                                        )
+                                                                                    )
+                                                                                );
+                                                                            }
+                                                                        );
+                                                                }
+                                                            );
+                                                        }
+                                                    );
+
+                                                    rect.SetContextFlyout(menu);
+                                                }
+                                            );
+                                        }
+                                    }
+                                );
+                            }
+                        );
+                    }
+                );
+
+                // Rating buttons
+                stackPanel.Child<Grid>(
+                    (grid) =>
                     {
-                        if (_cramMode)
-                        {
-                            ItemToBeLearned = GetNextCramItem();
-                            return;
-                        }
+                        grid.SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetColumnDefinitions("*, *, *, *")
+                            .SetRowDefinitions("auto");
 
-                        await StatsTracker.Instance.RecordReview(imageCloze, Rating.Hard);
-                        imageCloze.HardReview();
-                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                    });
-                });
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                easyButton = button
+                                    .SetText("Easy")
+                                    .SetMargin(10, 0)
+                                    .SetColumn(0)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
 
-                grid.Child<Button>((button) =>
-                {
-                    againButton = button
-                    .SetText("Again")
-                    .SetMargin(10, 0)
-                    .SetColumn(3)
-                    .OnClick(async (_, _) =>
-                    {
-                        if (_cramMode)
-                        {
-                            ItemToBeLearned = GetNextCramItem();
-                            return;
-                        }
+                                            await StatsTracker.Instance.RecordReview(
+                                                imageCloze,
+                                                Rating.Easy
+                                            );
+                                            imageCloze.EasyReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
 
-                        await StatsTracker.Instance.RecordReview(imageCloze, Rating.Again);
-                        imageCloze.AgainReview();
-                        ItemToBeLearned = _spacedRepetitionItems.GetNextItemToBeReviewed();
-                    });
-                });
-            });
-        });
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                goodButton = button
+                                    .SetText("Good")
+                                    .SetMargin(10, 0)
+                                    .SetColumn(1)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                imageCloze,
+                                                Rating.Good
+                                            );
+                                            imageCloze.GoodReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
+
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                hardButton = button
+                                    .SetText("Hard")
+                                    .SetMargin(10, 0)
+                                    .SetColumn(2)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                imageCloze,
+                                                Rating.Hard
+                                            );
+                                            imageCloze.HardReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
+
+                        grid.Child<Button>(
+                            (button) =>
+                            {
+                                againButton = button
+                                    .SetText("Again")
+                                    .SetMargin(10, 0)
+                                    .SetColumn(3)
+                                    .OnClick(
+                                        async (_, _) =>
+                                        {
+                                            if (_cramMode)
+                                            {
+                                                ItemToBeLearned = GetNextCramItem();
+                                                return;
+                                            }
+
+                                            await StatsTracker.Instance.RecordReview(
+                                                imageCloze,
+                                                Rating.Again
+                                            );
+                                            imageCloze.AgainReview();
+                                            ItemToBeLearned =
+                                                _spacedRepetitionItems.GetNextItemToBeReviewed();
+                                        }
+                                    );
+                            }
+                        );
+                    }
+                );
+            }
+        );
     }
 
     private void UpdateContentDisplay()
@@ -1086,7 +1336,10 @@ public class StartLearningWindow : IUIComponent, IDisposable
     }
 
     // Event handler for item property changes
-    private void OnItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void OnItemPropertyChanged(
+        object? sender,
+        System.ComponentModel.PropertyChangedEventArgs e
+    )
     {
         if (e.PropertyName == nameof(SpacedRepetitionItem.NextReview) || e == null)
         {
@@ -1126,8 +1379,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
     {
         // 1. Create a new list containing references to the items in the main collection.
         _cramSessionItems = _spacedRepetitionItems
-                                .Where(item => item != null) // Filter out nulls
-                                .ToList();
+            .Where(item => item != null) // Filter out nulls
+            .ToList();
 
         // If random flag is set, completely shuffle the list without considering priority
         if (random)
@@ -1166,7 +1419,8 @@ public class StartLearningWindow : IUIComponent, IDisposable
         {
             //Console.WriteLine("Error: Cram session item list is null. Re-initializing."); // Debugging
             InitializeCramSession(); // Attempt recovery
-            if (_cramSessionItems == null) return null; // If still null, something is wrong
+            if (_cramSessionItems == null)
+                return null; // If still null, something is wrong
         }
 
         // If the temporary list is empty, it means we've gone through all items in this pass.
@@ -1206,31 +1460,34 @@ public class StartLearningWindow : IUIComponent, IDisposable
         {
             return ItemToBeLearned switch
             {
-
                 /*
                 Note regarding the AsBaseBuilder method. The problem we face is the following, we want that our
                 display right item simply returns a avalonia control class that gets used as a children. But
                 our various content displayers, return UIBuilder<MoreSpecificType> like a stack panel. The caller
                 shouldnt care for what more specific type gets returned only the base control type matters.
 
-                Calling AsBaseBuilder uses the same underlying entity and fields with the only difference being 
+                Calling AsBaseBuilder uses the same underlying entity and fields with the only difference being
                 that the UIBuilder gets converted from the type UIBuilder<StackPanel> => UIBuilder<Control>.
 
                 For better clarity you can imagine this as a simple type cast.
                 */
 
                 SpacedRepetitionQuiz => LearnQuizContent().AsBaseBuilder<Control, StackPanel>(),
-                SpacedRepetitionFlashcard => LearnFlashcardContent().AsBaseBuilder<Control, StackPanel>(),
+                SpacedRepetitionFlashcard => LearnFlashcardContent()
+                    .AsBaseBuilder<Control, StackPanel>(),
                 SpacedRepetitionFile => LearnFileContent().AsBaseBuilder<Control, StackPanel>(),
                 SpacedRepetitionCloze => LearnClozeContent().AsBaseBuilder<Control, StackPanel>(),
-                SpacedRepetitionImageCloze => LearnImageClozeContent().AsBaseBuilder<Control, StackPanel>(),
+                SpacedRepetitionImageCloze => LearnImageClozeContent()
+                    .AsBaseBuilder<Control, StackPanel>(),
                 _ => NoMoreItemToBeReviewedContent().AsBaseBuilder<Control, TextBlock>(),
             };
         }
         catch (NotImplementedException)
         {
             //Console.WriteLine(e.Message);
-            return _world.UI<TextBox>((t) => t.SetText("Somethin Went Wrong!")).AsBaseBuilder<Control, TextBox>();
+            return _world
+                .UI<TextBox>((t) => t.SetText("Somethin Went Wrong!"))
+                .AsBaseBuilder<Control, TextBox>();
         }
     }
 
@@ -1257,26 +1514,29 @@ public class StartLearningWindow : IUIComponent, IDisposable
                 // This case means there are items, but none have a future review date set (e.g., all new)
                 // Or, more likely, the GetNextItemToBeReviewed already handles new items.
                 // Let's assume it means genuinely nothing due now or later according to the SR logic.
-                text = "Congratulations! No items due for review right now.\n\nCheck back later or add new items.";
+                text =
+                    "Congratulations! No items due for review right now.\n\nCheck back later or add new items.";
             }
             else
             {
                 // Found an item due later
-                text = $"No items due right now.\nNext review: '{futureItem.Name}'\nDue: {futureItem.NextReview.ToLocalTime():dd/MM/yyyy HH:mm}";
+                text =
+                    $"No items due right now.\nNext review: '{futureItem.Name}'\nDue: {futureItem.NextReview.ToLocalTime():dd/MM/yyyy HH:mm}";
             }
         }
 
-
-        return _world.UI<TextBlock>((textBlock) =>
-        {
-            textBlock
-                .SetTextWrapping(TextWrapping.Wrap)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                .SetTextAlignment(TextAlignment.Center) // Center align text
-                .SetMargin(20)
-                .SetText(text);
-        });
+        return _world.UI<TextBlock>(
+            (textBlock) =>
+            {
+                textBlock
+                    .SetTextWrapping(TextWrapping.Wrap)
+                    .SetVerticalAlignment(VerticalAlignment.Center)
+                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                    .SetTextAlignment(TextAlignment.Center) // Center align text
+                    .SetMargin(20)
+                    .SetText(text);
+            }
+        );
     }
 
     /// <summary>
@@ -1292,7 +1552,7 @@ public class StartLearningWindow : IUIComponent, IDisposable
     /// Releases unmanaged and - optionally - managed resources.
     /// </summary>
     /// <param name="disposing">
-    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>true</c> to release both managed and unmanaged resources;
     /// <c>false</c> to release only unmanaged resources.
     /// </param>
     protected virtual void Dispose(bool disposing)

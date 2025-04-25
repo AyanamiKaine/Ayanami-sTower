@@ -19,15 +19,15 @@ namespace AyanamisTower.StellaLearning.Data;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Avalonia.Media;
+using AyanamisTower.StellaLearning.Converters;
 using CommunityToolkit.Mvvm.ComponentModel;
 using NLog;
-using System.Collections.ObjectModel;
-using System.Linq;
-using Avalonia.Media;
-using System.Text.Json;
-using System.IO;
-using System.Threading.Tasks;
-using AyanamisTower.StellaLearning.Converters;
 
 /// <summary>
 /// Provides extension methods for ObservableCollection of SpacedRepetitionItem objects.
@@ -58,7 +58,9 @@ public static class SpacedRepetitionObservableCollectionExtensions
     /// </summary>
     /// <param name="spacedRepetitionItems">The collection of spaced repetition items to search through.</param>
     /// <returns>The next item due for review, or null if no items are due or the collection is empty.</returns>
-    public static SpacedRepetitionItem? GetNextItemToBeReviewed(this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    public static SpacedRepetitionItem? GetNextItemToBeReviewed(
+        this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems
+    )
     {
         if (spacedRepetitionItems?.Any() != true)
         {
@@ -71,18 +73,21 @@ public static class SpacedRepetitionObservableCollectionExtensions
 
         // Filter using DateTimeOffset
         return spacedRepetitionItems
-                .Where(item => item.NextReview <= now)      // Filter for items that are due (compare DateTimeOffset)
-                .OrderByDescending(item => item.Priority)  // Order by priority
-                .Take(25)                                  // Take top 25 priority items
-                .OrderBy(item => random.Next())            // Randomize these top 25
-                .FirstOrDefault();                         // Return the first (random) item
+            .Where(item => item.NextReview <= now) // Filter for items that are due (compare DateTimeOffset)
+            .OrderByDescending(item => item.Priority) // Order by priority
+            .Take(25) // Take top 25 priority items
+            .OrderBy(item => random.Next()) // Randomize these top 25
+            .FirstOrDefault(); // Return the first (random) item
     }
+
     /// <summary>
     /// Saves the spaced repetition items to disk asynchronously
     /// </summary>
     /// <param name="spacedRepetitionItems">The collection of items to save</param>
     /// <returns>A task representing the asynchronous operation</returns>
-    public static async Task SaveSpaceRepetitionItemsToDiskAsync(this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    public static async Task SaveSpaceRepetitionItemsToDiskAsync(
+        this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems
+    )
     {
         try
         {
@@ -94,7 +99,11 @@ public static class SpacedRepetitionObservableCollectionExtensions
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true, // For pretty-printing the JSON
-                Converters = { new SpacedRepetitionItemConverter() } // Register the custom converter
+                Converters =
+                {
+                    new SpacedRepetitionItemConverter(),
+                } // Register the custom converter
+                ,
             };
 
             string jsonString = JsonSerializer.Serialize(spacedRepetitionItems, options);
@@ -107,12 +116,13 @@ public static class SpacedRepetitionObservableCollectionExtensions
         }
     }
 
-
     /// <summary>
     /// Returns the next item to be reviewed that has its due date in the future.
     /// </summary>
     /// <returns>The earliest item due in the future, or null if none exist.</returns>
-    public static SpacedRepetitionItem? NextItemToBeReviewedInFuture(this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    public static SpacedRepetitionItem? NextItemToBeReviewedInFuture(
+        this ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems
+    )
     {
         if (spacedRepetitionItems?.Any() != true)
         {
@@ -120,9 +130,7 @@ public static class SpacedRepetitionObservableCollectionExtensions
         }
 
         // Order by DateTimeOffset
-        return spacedRepetitionItems
-                .OrderBy(item => item.NextReview)
-                .FirstOrDefault();
+        return spacedRepetitionItems.OrderBy(item => item.NextReview).FirstOrDefault();
     }
 }
 
@@ -146,7 +154,9 @@ public static class SchedulerService
             if (_instance == null)
             {
                 Logger.Error("SchedulerService accessed before initialization.");
-                throw new InvalidOperationException("SchedulerService has not been initialized. Call Initialize() first.");
+                throw new InvalidOperationException(
+                    "SchedulerService has not been initialized. Call Initialize() first."
+                );
             }
             return _instance;
         }
@@ -195,46 +205,57 @@ public enum SpacedRepetitionItemType
     /// Cloze
     /// </summary>
     Cloze,
+
     /// <summary>
     /// Image
     /// </summary>
     Image,
+
     /// <summary>
     /// ImageCloze
     /// </summary>
     ImageCloze,
+
     /// <summary>
     /// Video
     /// </summary>
     Video,
+
     /// <summary>
     /// Audio
     /// </summary>
     Audio,
+
     /// <summary>
     /// Quiz
     /// </summary>
     Quiz,
+
     /// <summary>
     /// Flashcard
     /// </summary>
     Flashcard,
+
     /// <summary>
     /// Text
     /// </summary>
     Text,
+
     /// <summary>
     /// Exercise
     /// </summary>
     Exercise,
+
     /// <summary>
     /// File
     /// </summary>
     File,
+
     /// <summary>
     /// PDF
     /// </summary>
     PDF,
+
     /// <summary>
     /// Executable
     /// </summary>
@@ -250,18 +271,21 @@ public enum SpacedRepetitionState
     /// The item has not been reviewed yet.
     /// </summary>
     New = 0, // Added to match FsrsSharp.State
+
     /// <summary>
     /// The item is in the learning state.
     /// </summary>
     Learning = 1,
+
     /// <summary>
     /// The item has graduated from learning.
     /// </summary>
     Review = 2,
+
     /// <summary>
     /// The item was forgotten and is being relearned.
     /// </summary>
-    Relearning = 3
+    Relearning = 3,
 }
 
 ///<summary>
@@ -309,6 +333,7 @@ public partial class SpacedRepetitionItem : ObservableObject
     // These properties seem less directly related to FSRS state, keeping them as int
     [ObservableProperty]
     private int _elapsedDays;
+
     [ObservableProperty]
     private int _scheduledDays;
 
@@ -333,7 +358,10 @@ public partial class SpacedRepetitionItem : ObservableObject
             // If _card is null, try to recreate it from the item's properties
             if (_card == null)
             {
-                Logger.Warn("FsrsSharp.Card reference was null. Recreating from SpacedRepetitionItem properties. Item ID: {Uid}", Uid);
+                Logger.Warn(
+                    "FsrsSharp.Card reference was null. Recreating from SpacedRepetitionItem properties. Item ID: {Uid}",
+                    Uid
+                );
                 CreateCardFromSpacedRepetitionData();
             }
             // The non-null forgiveness operator (!) assumes CreateCardFromSpacedRepetitionData always succeeds in setting _card.
@@ -356,7 +384,10 @@ public partial class SpacedRepetitionItem : ObservableObject
                     return;
                 }
 
-                Logger.Debug("Setting FsrsSharp.Card reference and updating properties from it. Card ID: {CardID}", value.CardId);
+                Logger.Debug(
+                    "Setting FsrsSharp.Card reference and updating properties from it. Card ID: {CardID}",
+                    value.CardId
+                );
                 _card = value;
 
                 // Update Observable Properties from the FsrsSharp.Card
@@ -368,12 +399,22 @@ public partial class SpacedRepetitionItem : ObservableObject
                 NextReview = _card.Due; // DateTimeOffset to DateTimeOffset
                 Step = _card.Step; // int? to int?
 
-                Logger.Debug("Updated properties from Card: State={State}, Stability={Stability}, Difficulty={Difficulty}, Step={Step}, NextReview={NextReview:O}",
-                    SpacedRepetitionState, Stability, Difficulty, Step, NextReview);
+                Logger.Debug(
+                    "Updated properties from Card: State={State}, Stability={Stability}, Difficulty={Difficulty}, Step={Step}, NextReview={NextReview:O}",
+                    SpacedRepetitionState,
+                    Stability,
+                    Difficulty,
+                    Step,
+                    NextReview
+                );
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Error setting FsrsSharp.Card reference and updating properties for Item ID: {Uid}", Uid);
+                Logger.Error(
+                    ex,
+                    "Error setting FsrsSharp.Card reference and updating properties for Item ID: {Uid}",
+                    Uid
+                );
                 // Decide if re-throwing is appropriate or if the application can recover
                 // throw;
             }
@@ -386,7 +427,10 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// </summary>
     public SpacedRepetitionItem()
     {
-        Logger.Trace("Creating new SpacedRepetitionItem with new FsrsSharp.Card. Item ID: {Uid}", Uid);
+        Logger.Trace(
+            "Creating new SpacedRepetitionItem with new FsrsSharp.Card. Item ID: {Uid}",
+            Uid
+        );
         // Create a new native C# Card (defaults to State.New)
         // Set the internal card and update observable properties
         Card = new FsrsSharp.Card(); // Use the property setter to update all fields
@@ -398,7 +442,8 @@ public partial class SpacedRepetitionItem : ObservableObject
     /// will be set by the deserializer, and the FSRS card will be reconstructed later if needed.
     /// </summary>
     /// <param name="isDeserializing">Flag indicating if this constructor is called during deserialization.</param>
-    public SpacedRepetitionItem(bool isDeserializing) : this() // Chain to default constructor initially
+    public SpacedRepetitionItem(bool isDeserializing)
+        : this() // Chain to default constructor initially
     {
         // If deserializing, we don't want the default new card state from the
         // chained constructor to overwrite deserialized values immediately.
@@ -409,10 +454,13 @@ public partial class SpacedRepetitionItem : ObservableObject
         // from the deserialized properties when it's first accessed.
         if (isDeserializing)
         {
-            Logger.Trace("Creating SpacedRepetitionItem instance for deserialization. Item ID: {Uid}", Uid);
+            Logger.Trace(
+                "Creating SpacedRepetitionItem instance for deserialization. Item ID: {Uid}",
+                Uid
+            );
             _card = null; // Ensure card is null, properties will be set by deserializer.
-                          // Reset observable properties that might have been set by chained constructor,
-                          // allowing deserializer to set the correct values.
+            // Reset observable properties that might have been set by chained constructor,
+            // allowing deserializer to set the correct values.
             _stability = null;
             _difficulty = null;
             _step = null;
@@ -432,7 +480,10 @@ public partial class SpacedRepetitionItem : ObservableObject
     {
         try
         {
-            Logger.Trace("Reconstructing FsrsSharp.Card from SpacedRepetitionItem properties. Item ID: {Uid}", Uid);
+            Logger.Trace(
+                "Reconstructing FsrsSharp.Card from SpacedRepetitionItem properties. Item ID: {Uid}",
+                Uid
+            );
             // Create a new card object and populate it from the item's properties
             var reconstructedCard = new FsrsSharp.Card(
                 // Assuming Uid doesn't directly map to Fsrs CardId, generate new or handle mapping if needed
@@ -449,11 +500,18 @@ public partial class SpacedRepetitionItem : ObservableObject
             // Assign the reconstructed card back using the property setter
             // This ensures consistency if the setter has additional logic.
             Card = reconstructedCard;
-            Logger.Debug("Successfully reconstructed FsrsSharp.Card. Card ID: {CardId}", _card?.CardId);
+            Logger.Debug(
+                "Successfully reconstructed FsrsSharp.Card. Card ID: {CardId}",
+                _card?.CardId
+            );
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error reconstructing FsrsSharp.Card from SpacedRepetitionItem properties. Item ID: {Uid}", Uid);
+            Logger.Error(
+                ex,
+                "Error reconstructing FsrsSharp.Card from SpacedRepetitionItem properties. Item ID: {Uid}",
+                Uid
+            );
             // Decide on error handling: throw, log, or attempt recovery?
             // For now, log the error. The _card might remain null or in an inconsistent state.
         }
@@ -539,7 +597,10 @@ public partial class SpacedRepetitionItem : ObservableObject
     {
         if (scheduler == null)
         {
-            Logger.Error("Scheduler instance provided to RateCardInternal was null. Item ID: {Uid}", Uid);
+            Logger.Error(
+                "Scheduler instance provided to RateCardInternal was null. Item ID: {Uid}",
+                Uid
+            );
             throw new ArgumentNullException(nameof(scheduler));
         }
 
@@ -548,7 +609,12 @@ public partial class SpacedRepetitionItem : ObservableObject
             // Ensure the internal card object exists before rating
             FsrsSharp.Card currentFsrsCard = Card; // Access via property getter to ensure it's initialized
 
-            Logger.Info("Rating card as {Rating} for item: {ItemName} (ID: {Uid}) using FsrsSharp", rating, Name, Uid);
+            Logger.Info(
+                "Rating card as {Rating} for item: {ItemName} (ID: {Uid}) using FsrsSharp",
+                rating,
+                Name,
+                Uid
+            );
 
             // Use the native C# scheduler's ReviewCard method
             // It returns a *new* card object (a clone with updated state)
@@ -559,12 +625,21 @@ public partial class SpacedRepetitionItem : ObservableObject
             Card = reviewResult.UpdatedCard;
 
             NumberOfTimesSeen++;
-            Logger.Debug("Card rated as {Rating}. New state: {State}, Next review: {NextReview:O}",
-                rating, SpacedRepetitionState, NextReview);
+            Logger.Debug(
+                "Card rated as {Rating}. New state: {State}, Next review: {NextReview:O}",
+                rating,
+                SpacedRepetitionState,
+                NextReview
+            );
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error rating card as {Rating} using FsrsSharp for Item ID: {Uid}", rating, Uid);
+            Logger.Error(
+                ex,
+                "Error rating card as {Rating} using FsrsSharp for Item ID: {Uid}",
+                rating,
+                Uid
+            );
             // Consider if re-throwing is appropriate for the application context
             throw;
         }
@@ -584,34 +659,58 @@ public partial class SpacedRepetitionItem : ObservableObject
         }
         catch (InvalidOperationException ex)
         {
-            Logger.Error(ex, "Failed to rate card because SchedulerService is not initialized. Item ID: {Uid}", Uid);
+            Logger.Error(
+                ex,
+                "Failed to rate card because SchedulerService is not initialized. Item ID: {Uid}",
+                Uid
+            );
             // Decide how to handle this - maybe throw a more specific exception or return early?
-            throw new InvalidOperationException("Cannot review item because the FSRS Scheduler has not been initialized.", ex);
+            throw new InvalidOperationException(
+                "Cannot review item because the FSRS Scheduler has not been initialized.",
+                ex
+            );
         }
         catch (Exception ex) // Catch other potential exceptions during retrieval
         {
-            Logger.Error(ex, "An unexpected error occurred while retrieving the scheduler instance. Item ID: {Uid}", Uid);
+            Logger.Error(
+                ex,
+                "An unexpected error occurred while retrieving the scheduler instance. Item ID: {Uid}",
+                Uid
+            );
             throw; // Re-throw other exceptions
         }
-
 
         try
         {
             FsrsSharp.Card currentFsrsCard = Card;
 
-            Logger.Info("Rating card as {Rating} for item: {ItemName} (ID: {Uid}) using FsrsSharp", rating, Name, Uid);
+            Logger.Info(
+                "Rating card as {Rating} for item: {ItemName} (ID: {Uid}) using FsrsSharp",
+                rating,
+                Name,
+                Uid
+            );
 
             var reviewResult = scheduler.ReviewCard(currentFsrsCard, rating, DateTimeOffset.UtcNow);
 
             Card = reviewResult.UpdatedCard; // Assign back using property setter
 
             NumberOfTimesSeen++;
-            Logger.Debug("Card rated as {Rating}. New state: {State}, Next review: {NextReview:O}",
-                rating, SpacedRepetitionState, NextReview);
+            Logger.Debug(
+                "Card rated as {Rating}. New state: {State}, Next review: {NextReview:O}",
+                rating,
+                SpacedRepetitionState,
+                NextReview
+            );
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Error rating card as {Rating} using FsrsSharp for Item ID: {Uid}", rating, Uid);
+            Logger.Error(
+                ex,
+                "Error rating card as {Rating} using FsrsSharp for Item ID: {Uid}",
+                rating,
+                Uid
+            );
             throw;
         }
     }
@@ -630,10 +729,13 @@ public class SpacedRepetitionQuiz : SpacedRepetitionItem
     /// Question
     /// </summary>
     public string Question { get; set; } = "Lorem Ispusm";
+
     /// <summary>
     /// Answers you can select
     /// </summary>
-    public List<string> Answers { get; set; } = ["Lorem Ispusm", "Lorem Ispusmiusm Dorema", "Anwser3", "Anwser4"];
+    public List<string> Answers { get; set; } =
+        ["Lorem Ispusm", "Lorem Ispusmiusm Dorema", "Anwser3", "Anwser4"];
+
     /// <summary>
     /// Index number for the answer list
     /// </summary>
@@ -649,6 +751,7 @@ public class SpacedRepetitionCloze : SpacedRepetitionItem
     /// Full text
     /// </summary>
     public string FullText = "Lorem Ispusm";
+
     /// <summary>
     /// Clozes
     /// </summary>
@@ -664,6 +767,7 @@ public class SpacedRepetitionFlashcard : SpacedRepetitionItem
     /// Front text
     /// </summary>
     public string Front { get; set; } = "Front";
+
     /// <summary>
     /// Back text
     /// </summary>
@@ -690,11 +794,13 @@ public class SpacedRepetitionFile : SpacedRepetitionItem
     /// Question
     /// </summary>
     public string Question { get; set; } = "Lorum Ipsum";
+
     /// <summary>
     /// Filepath
     /// </summary>
     public string FilePath { get; set; } = "C:/Users/YOUR_USERNAME/Documents/EXAMPLE_FILE.txt";
 }
+
 /// <summary>
 /// Represents an exercise item for spaced repetition
 /// </summary>
@@ -704,6 +810,7 @@ public class SpacedRepetitionExercise : SpacedRepetitionItem
     /// Problem
     /// </summary>
     public string Problem { get; set; } = "Lorem Ipsum";
+
     /// <summary>
     /// Solution
     /// </summary>
@@ -719,6 +826,7 @@ public class SpacedRepetitionImageCloze : SpacedRepetitionItem
     /// Image path used to find the image when to be displayed.
     /// </summary>
     public string ImagePath { get; set; } = string.Empty;
+
     /// <summary>
     /// List of areas to be covered.
     /// </summary>
@@ -734,22 +842,27 @@ public class ImageClozeArea
     /// X Position
     /// </summary>
     public double X { get; set; }
+
     /// <summary>
     /// Y Position
     /// </summary>
     public double Y { get; set; }
+
     /// <summary>
     /// Width
     /// </summary>
     public double Width { get; set; }
+
     /// <summary>
     /// Height
     /// </summary>
     public double Height { get; set; }
+
     /// <summary>
     /// Text
     /// </summary>
     public string Text { get; set; } = string.Empty;
+
     /// <summary>
     /// Color stored as a string (e.g., "#AARRGGBB").
     /// This is safe for serialization from any thread.

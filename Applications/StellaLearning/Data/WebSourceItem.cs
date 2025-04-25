@@ -49,7 +49,8 @@ public partial class WebSourceItem : LiteratureSourceItem
     /// This constructor is intended for JSON deserialization.
     /// </summary>
     [JsonConstructor]
-    public WebSourceItem() : base(LiteratureSourceType.Website)
+    public WebSourceItem()
+        : base(LiteratureSourceType.Website)
     {
         _url = string.Empty;
     }
@@ -61,7 +62,12 @@ public partial class WebSourceItem : LiteratureSourceItem
     /// <param name="type">The type of the literature source. Defaults to Website.</param>
     /// <param name="name">Used as a name when the item gets displayed.</param>
     /// <exception cref="ArgumentException">Thrown when the URL is null or whitespace.</exception>
-    public WebSourceItem(string url, LiteratureSourceType type = LiteratureSourceType.Website, string name = "") : base(type)
+    public WebSourceItem(
+        string url,
+        LiteratureSourceType type = LiteratureSourceType.Website,
+        string name = ""
+    )
+        : base(type)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(url, nameof(url));
         // Basic URL validation (can be improved)
@@ -73,7 +79,6 @@ public partial class WebSourceItem : LiteratureSourceItem
         _url = url;
         Name = name;
         Title = name;
-
     }
 
     /// <summary>
@@ -97,7 +102,10 @@ public partial class WebSourceItem : LiteratureSourceItem
         {
             string formattedTitle = Title.Trim().TrimEnd('.');
             // Italicize standalone works like web pages or reports
-            if (SourceType == LiteratureSourceType.Website || SourceType == LiteratureSourceType.Report)
+            if (
+                SourceType == LiteratureSourceType.Website
+                || SourceType == LiteratureSourceType.Report
+            )
             {
                 sb.Append('*').Append(formattedTitle).Append("*");
             }
@@ -128,4 +136,3 @@ public partial class WebSourceItem : LiteratureSourceItem
         }
     }
 }
-

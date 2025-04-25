@@ -21,16 +21,16 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Reactive.Disposables;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
-using AyanamisTower.StellaLearning.Data; // Required for StatsTracker, SpacedRepetitionItem, etc.
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using AyanamisTower.StellaLearning.Data; // Required for StatsTracker, SpacedRepetitionItem, etc.
 using Flecs.NET.Core;
 using NLog;
 using static Avalonia.Flecs.Controls.ECS.Module;
-using Avalonia;
 
 namespace AyanamisTower.StellaLearning.Pages; // Adjust namespace if needed
 
@@ -58,6 +58,7 @@ public class StatisticsPage : IUIComponent, IDisposable
     private UIBuilder<TextBlock>? _lastUpdatedTextBlock;
     private UIBuilder<ItemsControl>? _itemTypeStatsItemsControl;
     private UIBuilder<ItemsControl>? _tagStatsItemsControl;
+
     // Add references for Forecast and Difficult Items if implemented
 
     /// <summary>
@@ -76,162 +77,247 @@ public class StatisticsPage : IUIComponent, IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Warn(ex, "Failed to get SpacedRepetitionItem collection in Stats Page. Some stats might be unavailable.");
+            Logger.Warn(
+                ex,
+                "Failed to get SpacedRepetitionItem collection in Stats Page. Some stats might be unavailable."
+            );
             _allItems = null;
         }
-
 
         // --- Define Data Templates ---
 
         // Template for Daily Stats
-        var dailyStatsTemplate = world.CreateTemplate<DailyStats, Border>((borderBuilder, dailyStat) =>
-        {
-            borderBuilder
-                .SetPadding(5)
-                .SetMargin(0, 2)
-                .SetBorderBrush(Brushes.LightGray) // Default
-                .SetBorderThickness(new Thickness(0, 0, 0, 1)) // Bottom border
-                .Child<Grid>(grid =>
-                {
-                    grid.SetColumnDefinitions("Auto, *, Auto, Auto") // Date, Spacer, Reviews, Accuracy, Time
-                        .SetRowDefinitions("Auto");
+        var dailyStatsTemplate = world.CreateTemplate<DailyStats, Border>(
+            (borderBuilder, dailyStat) =>
+            {
+                borderBuilder
+                    .SetPadding(5)
+                    .SetMargin(0, 2)
+                    .SetBorderBrush(Brushes.LightGray) // Default
+                    .SetBorderThickness(new Thickness(0, 0, 0, 1)) // Bottom border
+                    .Child<Grid>(grid =>
+                    {
+                        grid.SetColumnDefinitions("Auto, *, Auto, Auto") // Date, Spacer, Reviews, Accuracy, Time
+                            .SetRowDefinitions("Auto");
 
-                    // Date
-                    grid.Child<TextBlock>(tb => tb.SetColumn(0).SetText($"{dailyStat.Date:yyyy-MM-dd}").SetVerticalAlignment(VerticalAlignment.Center));
+                        // Date
+                        grid.Child<TextBlock>(tb =>
+                            tb.SetColumn(0)
+                                .SetText($"{dailyStat.Date:yyyy-MM-dd}")
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                        );
 
-                    // Reviews
-                    grid.Child<TextBlock>(tb => tb.SetColumn(2).SetText($"Reviews: {dailyStat.TotalReviews}").SetMargin(10, 0).SetVerticalAlignment(VerticalAlignment.Center));
+                        // Reviews
+                        grid.Child<TextBlock>(tb =>
+                            tb.SetColumn(2)
+                                .SetText($"Reviews: {dailyStat.TotalReviews}")
+                                .SetMargin(10, 0)
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                        );
 
-                    // Accuracy
-                    grid.Child<TextBlock>(tb => tb.SetColumn(3).SetText($"Accuracy: {dailyStat.Accuracy:F1}%").SetMargin(10, 0).SetVerticalAlignment(VerticalAlignment.Center));
+                        // Accuracy
+                        grid.Child<TextBlock>(tb =>
+                            tb.SetColumn(3)
+                                .SetText($"Accuracy: {dailyStat.Accuracy:F1}%")
+                                .SetMargin(10, 0)
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                        );
 
-                    // Time
-                    grid.Child<TextBlock>(tb => tb.SetColumn(4).SetText($"Time: {dailyStat.TotalTimeMinutes} min").SetMargin(10, 0).SetVerticalAlignment(VerticalAlignment.Center));
-                });
-        });
+                        // Time
+                        grid.Child<TextBlock>(tb =>
+                            tb.SetColumn(4)
+                                .SetText($"Time: {dailyStat.TotalTimeMinutes} min")
+                                .SetMargin(10, 0)
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                        );
+                    });
+            }
+        );
 
         // Template for Item Type Stats (using KeyValuePair)
-        var itemTypeStatsTemplate = world.CreateTemplate<KeyValuePair<SpacedRepetitionItemType, ItemTypeStats>, Grid>((gridBuilder, kvp) =>
-        {
-            var itemType = kvp.Key;
-            var stats = kvp.Value;
+        var itemTypeStatsTemplate = world.CreateTemplate<
+            KeyValuePair<SpacedRepetitionItemType, ItemTypeStats>,
+            Grid
+        >(
+            (gridBuilder, kvp) =>
+            {
+                var itemType = kvp.Key;
+                var stats = kvp.Value;
 
-            gridBuilder
-                .SetColumnDefinitions("*, Auto, Auto") // Type, Reviews, Accuracy
-                .SetMargin(0, 1);
+                gridBuilder
+                    .SetColumnDefinitions("*, Auto, Auto") // Type, Reviews, Accuracy
+                    .SetMargin(0, 1);
 
-            gridBuilder.Child<TextBlock>(tb => tb.SetColumn(0).SetText(itemType.ToString()).SetFontWeight(FontWeight.Bold));
-            gridBuilder.Child<TextBlock>(tb => tb.SetColumn(1).SetText($"Reviews: {stats.TotalReviews}").SetMargin(10, 0));
-            gridBuilder.Child<TextBlock>(tb => tb.SetColumn(2).SetText($"Accuracy: {stats.AccuracyRate:F1}%").SetHorizontalAlignment(HorizontalAlignment.Right));
-        });
+                gridBuilder.Child<TextBlock>(tb =>
+                    tb.SetColumn(0).SetText(itemType.ToString()).SetFontWeight(FontWeight.Bold)
+                );
+                gridBuilder.Child<TextBlock>(tb =>
+                    tb.SetColumn(1).SetText($"Reviews: {stats.TotalReviews}").SetMargin(10, 0)
+                );
+                gridBuilder.Child<TextBlock>(tb =>
+                    tb.SetColumn(2)
+                        .SetText($"Accuracy: {stats.AccuracyRate:F1}%")
+                        .SetHorizontalAlignment(HorizontalAlignment.Right)
+                );
+            }
+        );
 
         // Template for Tag Stats (using KeyValuePair)
-        var tagStatsTemplate = world.CreateTemplate<KeyValuePair<string, TagStats>, Grid>((gridBuilder, kvp) =>
-        {
-            var tag = kvp.Key;
-            var stats = kvp.Value;
+        var tagStatsTemplate = world.CreateTemplate<KeyValuePair<string, TagStats>, Grid>(
+            (gridBuilder, kvp) =>
+            {
+                var tag = kvp.Key;
+                var stats = kvp.Value;
 
-            gridBuilder
-                .SetColumnDefinitions("*, Auto, Auto") // Tag, Reviews, Accuracy
-                .SetMargin(0, 1);
+                gridBuilder
+                    .SetColumnDefinitions("*, Auto, Auto") // Tag, Reviews, Accuracy
+                    .SetMargin(0, 1);
 
-            gridBuilder.Child<TextBlock>(tb => tb.SetColumn(0).SetText(tag).SetFontWeight(FontWeight.Bold));
-            gridBuilder.Child<TextBlock>(tb => tb.SetColumn(1).SetText($"Reviews: {stats.TotalReviews}").SetMargin(10, 0));
-            gridBuilder.Child<TextBlock>(tb => tb.SetColumn(2).SetText($"Accuracy: {stats.AccuracyRate:F1}%").SetHorizontalAlignment(HorizontalAlignment.Right));
-        });
-
+                gridBuilder.Child<TextBlock>(tb =>
+                    tb.SetColumn(0).SetText(tag).SetFontWeight(FontWeight.Bold)
+                );
+                gridBuilder.Child<TextBlock>(tb =>
+                    tb.SetColumn(1).SetText($"Reviews: {stats.TotalReviews}").SetMargin(10, 0)
+                );
+                gridBuilder.Child<TextBlock>(tb =>
+                    tb.SetColumn(2)
+                        .SetText($"Accuracy: {stats.AccuracyRate:F1}%")
+                        .SetHorizontalAlignment(HorizontalAlignment.Right)
+                );
+            }
+        );
 
         // --- Build the UI ---
-        Root = world.UI<ScrollViewer>(scrollViewer =>
-        {
-            scrollViewer.Child<StackPanel>(mainPanel =>
+        Root = world
+            .UI<ScrollViewer>(scrollViewer =>
             {
-                mainPanel
-                .SetSpacing(15) // Add some padding around the page content
-                .SetMargin(5, 5, 10, 5);
-
-                // --- Overall Stats Section ---
-                mainPanel.Child<TextBlock>(header => header.SetText("Overall Statistics").SetFontSize(18).SetFontWeight(FontWeight.Bold));
-                mainPanel.Child<Border>(border => // Wrap in border for visual separation
+                scrollViewer.Child<StackPanel>(mainPanel =>
                 {
-                    var settings = world.Get<Settings>();
+                    mainPanel
+                        .SetSpacing(15) // Add some padding around the page content
+                        .SetMargin(5, 5, 10, 5);
 
-                    if (settings.IsDarkMode)
+                    // --- Overall Stats Section ---
+                    mainPanel.Child<TextBlock>(header =>
+                        header
+                            .SetText("Overall Statistics")
+                            .SetFontSize(18)
+                            .SetFontWeight(FontWeight.Bold)
+                    );
+                    mainPanel.Child<Border>(border => // Wrap in border for visual separation
                     {
-                        border.SetBackground(new SolidColorBrush(new Color(255, 45, 45, 45)));
-                    }
-                    else
-                    {
-                        border.SetBackground(Brushes.WhiteSmoke);
-                    }
+                        var settings = world.Get<Settings>();
 
-                    border.SetPadding(10).SetCornerRadius(5); // Light background
-                    border.Child<StackPanel>(overallStatsPanel =>
-                    {
-                        overallStatsPanel.SetSpacing(5);
+                        if (settings.IsDarkMode)
+                        {
+                            border.SetBackground(new SolidColorBrush(new Color(255, 45, 45, 45)));
+                        }
+                        else
+                        {
+                            border.SetBackground(Brushes.WhiteSmoke);
+                        }
 
-                        _totalStudyTimeTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Total Study Time: {FormatTime((long)(_statsTracker.TotalStudyTimeSeconds / 60))}"));
-                        _totalReviewsTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Total Reviews: {_statsTracker.TotalReviews}"));
-                        _overallAccuracyTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Overall Accuracy: {_statsTracker.OverallAccuracy:F1}%"));
-                        _currentStreakTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Current Streak: {_statsTracker.CurrentStreak} days"));
-                        _longestStreakTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Longest Streak: {_statsTracker.LongestStreak} days"));
-                        _lastUpdatedTextBlock = overallStatsPanel.Child<TextBlock>(tb => tb.SetText($"Last Updated: {_statsTracker.LastUpdated:g}").SetFontSize(10).SetForeground(Brushes.Gray).SetMargin(0, 5, 0, 0));
+                        border.SetPadding(10).SetCornerRadius(5); // Light background
+                        border.Child<StackPanel>(overallStatsPanel =>
+                        {
+                            overallStatsPanel.SetSpacing(5);
+
+                            _totalStudyTimeTextBlock = overallStatsPanel.Child<TextBlock>(tb =>
+                                tb.SetText(
+                                    $"Total Study Time: {FormatTime((long)(_statsTracker.TotalStudyTimeSeconds / 60))}"
+                                )
+                            );
+                            _totalReviewsTextBlock = overallStatsPanel.Child<TextBlock>(tb =>
+                                tb.SetText($"Total Reviews: {_statsTracker.TotalReviews}")
+                            );
+                            _overallAccuracyTextBlock = overallStatsPanel.Child<TextBlock>(tb =>
+                                tb.SetText($"Overall Accuracy: {_statsTracker.OverallAccuracy:F1}%")
+                            );
+                            _currentStreakTextBlock = overallStatsPanel.Child<TextBlock>(tb =>
+                                tb.SetText($"Current Streak: {_statsTracker.CurrentStreak} days")
+                            );
+                            _longestStreakTextBlock = overallStatsPanel.Child<TextBlock>(tb =>
+                                tb.SetText($"Longest Streak: {_statsTracker.LongestStreak} days")
+                            );
+                            _lastUpdatedTextBlock = overallStatsPanel.Child<TextBlock>(tb =>
+                                tb.SetText($"Last Updated: {_statsTracker.LastUpdated:g}")
+                                    .SetFontSize(10)
+                                    .SetForeground(Brushes.Gray)
+                                    .SetMargin(0, 5, 0, 0)
+                            );
+                        });
+
+                        settings.PropertyChanged += (sender, e) =>
+                        {
+                            if (e.PropertyName == nameof(Settings.IsDarkMode))
+                            {
+                                if (settings.IsDarkMode)
+                                {
+                                    border.SetBackground(
+                                        new SolidColorBrush(new Color(255, 45, 45, 45))
+                                    );
+                                }
+                                else
+                                {
+                                    border.SetBackground(Brushes.WhiteSmoke);
+                                }
+                            }
+                        };
                     });
 
-                    settings.PropertyChanged += (sender, e) =>
+                    // --- Item Type Stats Section ---
+                    mainPanel.Child<TextBlock>(header =>
+                        header
+                            .SetText("Performance by Type")
+                            .SetFontSize(16)
+                            .SetFontWeight(FontWeight.Bold)
+                            .SetMargin(0, 15, 0, 5)
+                    );
+                    _itemTypeStatsItemsControl = mainPanel.Child<ItemsControl>(ic =>
                     {
-                        if (e.PropertyName == nameof(Settings.IsDarkMode))
-                        {
-                            if (settings.IsDarkMode)
-                            {
-                                border.SetBackground(new SolidColorBrush(new Color(255, 45, 45, 45)));
-                            }
-                            else
-                            {
-                                border.SetBackground(Brushes.WhiteSmoke);
-                            }
-                        }
-                    };
+                        // Bind to the dictionary directly. The template handles KeyValuePair.
+                        ic.SetItemsSource(
+                                _statsTracker.ItemTypeStats.OrderBy(kvp => kvp.Key.ToString())
+                            )
+                            .SetItemTemplate(itemTypeStatsTemplate);
+                    });
+
+                    // --- Tag Stats Section ---
+                    mainPanel.Child<TextBlock>(header =>
+                        header
+                            .SetText("Performance by Tag")
+                            .SetFontSize(16)
+                            .SetFontWeight(FontWeight.Bold)
+                            .SetMargin(0, 15, 0, 5)
+                    );
+                    _tagStatsItemsControl = mainPanel.Child<ItemsControl>(ic =>
+                    {
+                        // Bind to the dictionary directly.
+                        ic.SetItemsSource(_statsTracker.TagStats.OrderBy(kvp => kvp.Key))
+                            .SetItemTemplate(tagStatsTemplate);
+                        // Optional: Set MaxHeight if the list can get very long
+                        // ic.SetMaxHeight(400);
+                    });
+
+                    // --- Placeholder for Forecast Section ---
+                    // TODO: Implement if needed, requires _allItems
+                    // mainPanel.Child<TextBlock>(header => header.SetText("Review Forecast (Next 14 Days)").SetFontSize(16).SetFontWeight(FontWeight.Bold).SetMargin(0, 15, 0, 5));
+                    // ... Add ItemsControl for forecast ...
+
+                    // --- Placeholder for Difficult Items Section ---
+                    // TODO: Implement if needed, requires _allItems
+                    // mainPanel.Child<TextBlock>(header => header.SetText("Most Difficult Items").SetFontSize(16).SetFontWeight(FontWeight.Bold).SetMargin(0, 15, 0, 5));
+                    // ... Add ItemsControl for difficult items ...
                 });
-
-                // --- Item Type Stats Section ---
-                mainPanel.Child<TextBlock>(header => header.SetText("Performance by Type").SetFontSize(16).SetFontWeight(FontWeight.Bold).SetMargin(0, 15, 0, 5));
-                _itemTypeStatsItemsControl = mainPanel.Child<ItemsControl>(ic =>
-                {
-                    // Bind to the dictionary directly. The template handles KeyValuePair.
-                    ic.SetItemsSource(_statsTracker.ItemTypeStats.OrderBy(kvp => kvp.Key.ToString()))
-                      .SetItemTemplate(itemTypeStatsTemplate);
-                });
-
-                // --- Tag Stats Section ---
-                mainPanel.Child<TextBlock>(header => header.SetText("Performance by Tag").SetFontSize(16).SetFontWeight(FontWeight.Bold).SetMargin(0, 15, 0, 5));
-                _tagStatsItemsControl = mainPanel.Child<ItemsControl>(ic =>
-                {
-                    // Bind to the dictionary directly.
-                    ic.SetItemsSource(_statsTracker.TagStats.OrderBy(kvp => kvp.Key))
-                      .SetItemTemplate(tagStatsTemplate);
-                    // Optional: Set MaxHeight if the list can get very long
-                    // ic.SetMaxHeight(400);
-                });
-
-                // --- Placeholder for Forecast Section ---
-                // TODO: Implement if needed, requires _allItems
-                // mainPanel.Child<TextBlock>(header => header.SetText("Review Forecast (Next 14 Days)").SetFontSize(16).SetFontWeight(FontWeight.Bold).SetMargin(0, 15, 0, 5));
-                // ... Add ItemsControl for forecast ...
-
-                // --- Placeholder for Difficult Items Section ---
-                // TODO: Implement if needed, requires _allItems
-                // mainPanel.Child<TextBlock>(header => header.SetText("Most Difficult Items").SetFontSize(16).SetFontWeight(FontWeight.Bold).SetMargin(0, 15, 0, 5));
-                // ... Add ItemsControl for difficult items ...
-
-            });
-        })
-        .Add<Page>() // Add Page tag if necessary for navigation/styling
-        .Entity;
+            })
+            .Add<Page>() // Add Page tag if necessary for navigation/styling
+            .Entity;
 
         // --- Subscribe to StatsTracker Property Changes ---
         _statsTracker.PropertyChanged += StatsTracker_PropertyChanged;
-        _disposables.Add(Disposable.Create(() => _statsTracker.PropertyChanged -= StatsTracker_PropertyChanged));
+        _disposables.Add(
+            Disposable.Create(() => _statsTracker.PropertyChanged -= StatsTracker_PropertyChanged)
+        );
 
         // --- Add Default Styling (Optional, based on SpacedRepetitionPage example) ---
         //Root.AddDefaultStyling((statsPage) => { /* Add styling adjustments if needed */ });
@@ -247,7 +333,8 @@ public class StatisticsPage : IUIComponent, IDisposable
         // Ensure updates happen on the UI thread
         Dispatcher.UIThread.InvokeAsync(() =>
         {
-            if (_isDisposed) return; // Don't update if disposed
+            if (_isDisposed)
+                return; // Don't update if disposed
 
             Logger.Trace($"StatsTracker property changed: {e.PropertyName}");
 
@@ -256,22 +343,34 @@ public class StatisticsPage : IUIComponent, IDisposable
                 switch (e.PropertyName)
                 {
                     case nameof(StatsTracker.TotalStudyTimeSeconds):
-                        _totalStudyTimeTextBlock?.SetText($"Total Study Time: {FormatTime((long)(_statsTracker.TotalStudyTimeSeconds / 60))}");
+                        _totalStudyTimeTextBlock?.SetText(
+                            $"Total Study Time: {FormatTime((long)(_statsTracker.TotalStudyTimeSeconds / 60))}"
+                        );
                         break;
                     case nameof(StatsTracker.TotalReviews):
-                        _totalReviewsTextBlock?.SetText($"Total Reviews: {_statsTracker.TotalReviews}");
+                        _totalReviewsTextBlock?.SetText(
+                            $"Total Reviews: {_statsTracker.TotalReviews}"
+                        );
                         break;
                     case nameof(StatsTracker.OverallAccuracy):
-                        _overallAccuracyTextBlock?.SetText($"Overall Accuracy: {_statsTracker.OverallAccuracy:F1}%");
+                        _overallAccuracyTextBlock?.SetText(
+                            $"Overall Accuracy: {_statsTracker.OverallAccuracy:F1}%"
+                        );
                         break;
                     case nameof(StatsTracker.CurrentStreak):
-                        _currentStreakTextBlock?.SetText($"Current Streak: {_statsTracker.CurrentStreak} days");
+                        _currentStreakTextBlock?.SetText(
+                            $"Current Streak: {_statsTracker.CurrentStreak} days"
+                        );
                         break;
                     case nameof(StatsTracker.LongestStreak):
-                        _longestStreakTextBlock?.SetText($"Longest Streak: {_statsTracker.LongestStreak} days");
+                        _longestStreakTextBlock?.SetText(
+                            $"Longest Streak: {_statsTracker.LongestStreak} days"
+                        );
                         break;
                     case nameof(StatsTracker.LastUpdated):
-                        _lastUpdatedTextBlock?.SetText($"Last Updated: {_statsTracker.LastUpdated:g}");
+                        _lastUpdatedTextBlock?.SetText(
+                            $"Last Updated: {_statsTracker.LastUpdated:g}"
+                        );
                         break;
 
                     // For collections/dictionaries, ObservableCollection/Dictionary changes might
@@ -287,14 +386,18 @@ public class StatisticsPage : IUIComponent, IDisposable
                     case nameof(StatsTracker.ItemTypeStats):
                         // Dictionaries don't raise CollectionChanged. If items are added/removed,
                         // the ItemsSource needs to be reset.
-                        _itemTypeStatsItemsControl?.SetItemsSource(_statsTracker.ItemTypeStats.OrderBy(kvp => kvp.Key.ToString()));
+                        _itemTypeStatsItemsControl?.SetItemsSource(
+                            _statsTracker.ItemTypeStats.OrderBy(kvp => kvp.Key.ToString())
+                        );
                         break;
                     case nameof(StatsTracker.TagStats):
                         // Dictionaries don't raise CollectionChanged.
-                        _tagStatsItemsControl?.SetItemsSource(_statsTracker.TagStats.OrderBy(kvp => kvp.Key));
+                        _tagStatsItemsControl?.SetItemsSource(
+                            _statsTracker.TagStats.OrderBy(kvp => kvp.Key)
+                        );
                         break;
 
-                        // Add cases for Forecast/Difficult Items if implemented
+                    // Add cases for Forecast/Difficult Items if implemented
                 }
             }
             catch (Exception ex)
@@ -310,8 +413,10 @@ public class StatisticsPage : IUIComponent, IDisposable
     /// </summary>
     private static string FormatTime(long totalMinutes)
     {
-        if (totalMinutes < 0) return "N/A";
-        if (totalMinutes == 0) return "0m";
+        if (totalMinutes < 0)
+            return "N/A";
+        if (totalMinutes == 0)
+            return "0m";
 
         var timeSpan = TimeSpan.FromMinutes(totalMinutes);
         int hours = (int)timeSpan.TotalHours;
@@ -377,4 +482,3 @@ public class StatisticsPage : IUIComponent, IDisposable
         Dispose(disposing: false);
     }
 }
-

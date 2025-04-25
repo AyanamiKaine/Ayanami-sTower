@@ -15,10 +15,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-using PdfSharp.Pdf;
-using PdfSharp.Pdf.IO;
 using System;
 using System.IO;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
 
 namespace AyanamisTower.StellaLearning.Util;
 
@@ -65,7 +65,6 @@ public static class PdfSharpMetadataExtractor
             metadataInfo.CreationDateTime = info.CreationDate;
             metadataInfo.ModificationDateTime = info.ModificationDate;
 
-
             Console.WriteLine($"Successfully extracted metadata from {pdfFilePath}");
         }
 
@@ -107,6 +106,7 @@ public class PdfMetadata
     /// Gets or sets the producer of the PDF document.
     /// </summary>
     public string Producer { get; set; } = "";
+
     /// <summary>
     /// Gets or sets the page count of the PDF document.
     /// </summary>

@@ -16,38 +16,37 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
-using Avalonia.Controls;
-using Avalonia.Layout;
-using Flecs.NET.Core;
-using static Avalonia.Flecs.Controls.ECS.Module; // If Page tag is defined here
-using Avalonia.Data;
-using Avalonia.Controls.Templates;
-using Avalonia.Media;
-using Avalonia.Input; // For DragEventArgs, KeyEventArgs
-using Avalonia.Platform.Storage; // For FilePicker
-using Avalonia.Threading; // For Dispatcher
-using AyanamisTower.StellaLearning.Data; // Where LiteratureSourceItem etc. reside
-using AyanamisTower.StellaLearning.Util; // For MessageDialog (assuming it's here)
-using Avalonia.Flecs.Controls; // For UIBuilderExtensions
-using System.Text.Json; // For saving/loading (will need converters)
-using System.Reactive.Disposables; // For CompositeDisposable
-using NLog;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using AyanamisTower.StellaLearning.Windows;
+using System.IO;
+using System.Linq;
+using System.Reactive.Disposables; // For CompositeDisposable
+using System.Text.Json; // For saving/loading (will need converters)
+using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Flecs.Controls; // For UIBuilderExtensions
+using Avalonia.Input; // For DragEventArgs, KeyEventArgs
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Platform.Storage; // For FilePicker
+using Avalonia.Threading; // For Dispatcher
 using AyanamisTower.StellaLearning.Converters;
-using FluentAvalonia.UI.Controls;
-using AyanamisTower.StellaLearning.Util.NoteHandler;
+using AyanamisTower.StellaLearning.Data; // Where LiteratureSourceItem etc. reside
 using AyanamisTower.StellaLearning.Extensions; // Assuming you use NLog like in SpacedRepetitionPage
+using AyanamisTower.StellaLearning.Util; // For MessageDialog (assuming it's here)
+using AyanamisTower.StellaLearning.Util.NoteHandler;
+using AyanamisTower.StellaLearning.Windows;
+using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
+using NLog;
+using static Avalonia.Flecs.Controls.ECS.Module; // If Page tag is defined here
 
 namespace AyanamisTower.StellaLearning.Pages;
-
 
 /// <summary>
 /// Represents the UI page for managing literature sources.
@@ -59,18 +58,20 @@ public class LiteraturePage : IUIComponent, IDisposable
         AvaloniaProperty.RegisterAttached<LiteraturePage, Control, Entity>("ContainerEntity");
     private readonly World _world;
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
 
     private bool _isDisposed = false;
     private readonly CompositeDisposable _disposables = [];
 
-
-    private readonly Dictionary<Guid, PropertyChangedEventHandler> _itemPropertyChangedHandlers = [];
+    private readonly Dictionary<Guid, PropertyChangedEventHandler> _itemPropertyChangedHandlers =
+    [];
 
     // --- Data Collections ---
     // The master list of all literature items
     private readonly ObservableCollection<LiteratureSourceItem> _baseLiteratureItems;
+
     // The currently displayed list (after filtering/sorting) - ListBox ItemsSource will point to a filtered version
     // We don't necessarily need a separate collection field if ApplyFilterAndSort creates a new one each time.
 
@@ -102,15 +103,23 @@ public class LiteraturePage : IUIComponent, IDisposable
 
         // Subscribe to collection changes for saving and UI updates
         _baseLiteratureItems.CollectionChanged += OnBaseCollectionChanged;
-        _disposables.Add(Disposable.Create(() => _baseLiteratureItems.CollectionChanged -= OnBaseCollectionChanged));
+        _disposables.Add(
+            Disposable.Create(
+                () => _baseLiteratureItems.CollectionChanged -= OnBaseCollectionChanged
+            )
+        );
 
         // Build the UI
-        _root = _world.UI<Grid>(BuildLiteraturePageUI)
-                      .Add<Page>() // Add the Page tag
-                      .Entity;
+        _root = _world
+            .UI<Grid>(BuildLiteraturePageUI)
+            .Add<Page>() // Add the Page tag
+            .Entity;
 
         // Initial filter/sort application
-        Dispatcher.UIThread.Post(() => ApplyFilterAndSort(string.Empty), DispatcherPriority.Background);
+        Dispatcher.UIThread.Post(
+            () => ApplyFilterAndSort(string.Empty),
+            DispatcherPriority.Background
+        );
 
         // Setup auto-save timer (similar to SpacedRepetitionPage)
         // var autoSaveTimer = CreateAutoSaveTimer(_baseLiteratureItems);
@@ -132,7 +141,10 @@ public class LiteraturePage : IUIComponent, IDisposable
     {
         try
         {
-            string literaturePath = Path.Combine(Directory.GetCurrentDirectory(), LITERATURE_FOLDER_NAME);
+            string literaturePath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                LITERATURE_FOLDER_NAME
+            );
             Directory.CreateDirectory(literaturePath);
         }
         catch (Exception ex)
@@ -154,32 +166,51 @@ public class LiteraturePage : IUIComponent, IDisposable
         grid.Child<TextBox>(textBox =>
         {
             _searchTextBoxBuilder = textBox;
-            textBox.SetColumn(0)
-                   .SetWatermark("Search by Name, Title, Author, Summary, Tags...")
-                   .SetMargin(5)
-                   .OnTextChanged((sender, args) =>
-                   {
-                       ApplyFilterAndSort(_searchTextBoxBuilder?.GetText() ?? string.Empty);
-                   });
-            textBox.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText("Search across item names, titles, authors, and tags."))));
+            textBox
+                .SetColumn(0)
+                .SetWatermark("Search by Name, Title, Author, Summary, Tags...")
+                .SetMargin(5)
+                .OnTextChanged(
+                    (sender, args) =>
+                    {
+                        ApplyFilterAndSort(_searchTextBoxBuilder?.GetText() ?? string.Empty);
+                    }
+                );
+            textBox.AttachToolTip(
+                _world.UI<ToolTip>(tooltip =>
+                    tooltip.Child<TextBlock>(tb =>
+                        tb.SetText("Search across item names, titles, authors, and tags.")
+                    )
+                )
+            );
         });
 
         grid.Child<TextBlock>(textBlock =>
         {
             _itemCountTextBlockBuilder = textBlock;
-            textBlock.SetColumn(1)
-                     .SetVerticalAlignment(VerticalAlignment.Center)
-                     .SetMargin(5)
-                     .SetText($"Items: {_baseLiteratureItems.Count}"); // Initial count
+            textBlock
+                .SetColumn(1)
+                .SetVerticalAlignment(VerticalAlignment.Center)
+                .SetMargin(5)
+                .SetText($"Items: {_baseLiteratureItems.Count}"); // Initial count
         });
 
         grid.Child<Button>(button => // Placeholder for Add/Sort
         {
-            button.SetColumn(2)
-                  .SetMargin(5)
-                  .SetText("Add Source...")
-                  .OnClick(async (s, e) => await AddSourceAsync()); // Implement AddSourceAsync
-            button.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText("Add a new literature source (File or URL). You can also drag & drop them onto the list. Try it! This copies the file to the local literature folder."))));
+            button
+                .SetColumn(2)
+                .SetMargin(5)
+                .SetText("Add Source...")
+                .OnClick(async (s, e) => await AddSourceAsync()); // Implement AddSourceAsync
+            button.AttachToolTip(
+                _world.UI<ToolTip>(tooltip =>
+                    tooltip.Child<TextBlock>(tb =>
+                        tb.SetText(
+                            "Add a new literature source (File or URL). You can also drag & drop them onto the list. Try it! This copies the file to the local literature folder."
+                        )
+                    )
+                )
+            );
 
             // TODO: Add MenuFlyout for choosing File/URL if desired
         });
@@ -187,9 +218,10 @@ public class LiteraturePage : IUIComponent, IDisposable
         // --- Row 1: Literature List ---
         grid.Child<ScrollViewer>(scrollViewer =>
         {
-            scrollViewer.SetRow(1)
-                        .SetColumnSpan(3) // Span all columns
-                        .SetMargin(5, 0, 5, 0);
+            scrollViewer
+                .SetRow(1)
+                .SetColumnSpan(3) // Span all columns
+                .SetMargin(5, 0, 5, 0);
 
             scrollViewer.Child<ListBox>(listBox =>
             {
@@ -198,249 +230,334 @@ public class LiteraturePage : IUIComponent, IDisposable
                 // Context Menu Setup
                 var contextFlyout = _world.UI<MenuFlyout>(menuFlyout =>
                 {
-                    menuFlyout.OnOpened((sender, e) =>
-                    {
-                        if (!listBox.HasItemSelected())
+                    menuFlyout.OnOpened(
+                        (sender, e) =>
                         {
-                            menuFlyout.Hide();
-                        }
-                    });
-
-                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Open").OnClick((_, _) =>
-                    {
-                        var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
-                        if (selectedLiteratureItem is LocalFileSourceItem localFile)
-                        {
-                            if (Path.GetExtension(localFile.FilePath) == ".md")
+                            if (!listBox.HasItemSelected())
                             {
-                                FileOpener.OpenMarkdownFileWithObsidian(localFile.FilePath, _world.Get<Settings>().ObsidianPath);
+                                menuFlyout.Hide();
                             }
-                            FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
                         }
-                        else if (selectedLiteratureItem is WebSourceItem webSourceItem)
-                        {
-                            SmartUrlOpener.OpenUrlIntelligently(webSourceItem.Url);
-                        }
-                        else
-                        {
-                            throw new NotImplementedException("Opening this source type is not implemented yet.");
-                        }
-                    })
-                    .AttachToolTip(_world.UI<ToolTip>((tooltip) =>
-                    {
-                        tooltip.Child<TextBlock>((textBlock) =>
-                        {
-                            textBlock.SetText("You can also double click to open it.");
-                        });
-                    }), false));
+                    );
 
-                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Edit Details...").OnClick((_, _) =>
-                    {
-                        var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
-                        new EditLiteratureSource(_world, selectedLiteratureItem);
-                    }));
-
-                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Generate Metadata").OnClick(async (_, _) =>
-                    {
-                        var selectedLiteratureItem = listBox.GetSelectedItem<LiteratureSourceItem>();
-
-                        if (selectedLiteratureItem is LocalFileSourceItem localFile)
-                        {
-                            ContentMetadata? metaData = null;
-
-                            if (Path.GetExtension(localFile.FilePath) == ".pdf")
-                            {
-                                try
+                    menuFlyout.Child<MenuItem>(item =>
+                        item.SetHeader("Open")
+                            .OnClick(
+                                (_, _) =>
                                 {
-                                    PdfMetadata info = PdfSharpMetadataExtractor.ExtractMetadata(localFile.FilePath);
-                                    localFile.PageCount = info.PageCount;
+                                    var selectedLiteratureItem =
+                                        listBox.GetSelectedItem<LiteratureSourceItem>();
+                                    if (selectedLiteratureItem is LocalFileSourceItem localFile)
+                                    {
+                                        if (Path.GetExtension(localFile.FilePath) == ".md")
+                                        {
+                                            FileOpener.OpenMarkdownFileWithObsidian(
+                                                localFile.FilePath,
+                                                _world.Get<Settings>().ObsidianPath
+                                            );
+                                        }
+                                        FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
+                                    }
+                                    else if (selectedLiteratureItem is WebSourceItem webSourceItem)
+                                    {
+                                        SmartUrlOpener.OpenUrlIntelligently(webSourceItem.Url);
+                                    }
+                                    else
+                                    {
+                                        throw new NotImplementedException(
+                                            "Opening this source type is not implemented yet."
+                                        );
+                                    }
                                 }
-                                catch (Exception ex)
-                                {
-                                    Logger.Info($"Exception was thrown {ex}");
-                                }
+                            )
+                            .AttachToolTip(
+                                _world.UI<ToolTip>(
+                                    (tooltip) =>
+                                    {
+                                        tooltip.Child<TextBlock>(
+                                            (textBlock) =>
+                                            {
+                                                textBlock.SetText(
+                                                    "You can also double click to open it."
+                                                );
+                                            }
+                                        );
+                                    }
+                                ),
+                                false
+                            )
+                    );
 
-                                if (localFile.PageCount >= 1000)
+                    menuFlyout.Child<MenuItem>(item =>
+                        item.SetHeader("Edit Details...")
+                            .OnClick(
+                                (_, _) =>
                                 {
-                                    MessageDialog.ShowWarningDialog($"Only pdfs smaller than 1000 pages can be used to generate metadata via a LLM");
+                                    var selectedLiteratureItem =
+                                        listBox.GetSelectedItem<LiteratureSourceItem>();
+                                    new EditLiteratureSource(_world, selectedLiteratureItem);
                                 }
-                                else
-                                {
-                                    // Here we are passing a pdf that is smaller than 1000 pages
-                                    metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(localFile.FilePath);
-                                }
-                            }
-                            else
-                            {
-                                metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(localFile.FilePath);
-                            }
+                            )
+                    );
 
-                            localFile.SourceType = LiteratureSourceType.LocalFile;
-                            localFile.Author = metaData?.Author ?? "";
-                            localFile.Tags = metaData?.Tags ?? [];
-                            localFile.Summary = metaData?.Summary ?? "";
-                        }
-                    }));
+                    menuFlyout.Child<MenuItem>(item =>
+                        item.SetHeader("Generate Metadata")
+                            .OnClick(
+                                async (_, _) =>
+                                {
+                                    var selectedLiteratureItem =
+                                        listBox.GetSelectedItem<LiteratureSourceItem>();
+
+                                    if (selectedLiteratureItem is LocalFileSourceItem localFile)
+                                    {
+                                        ContentMetadata? metaData = null;
+
+                                        if (Path.GetExtension(localFile.FilePath) == ".pdf")
+                                        {
+                                            try
+                                            {
+                                                PdfMetadata info =
+                                                    PdfSharpMetadataExtractor.ExtractMetadata(
+                                                        localFile.FilePath
+                                                    );
+                                                localFile.PageCount = info.PageCount;
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                Logger.Info($"Exception was thrown {ex}");
+                                            }
+
+                                            if (localFile.PageCount >= 1000)
+                                            {
+                                                MessageDialog.ShowWarningDialog(
+                                                    $"Only pdfs smaller than 1000 pages can be used to generate metadata via a LLM"
+                                                );
+                                            }
+                                            else
+                                            {
+                                                // Here we are passing a pdf that is smaller than 1000 pages
+                                                metaData =
+                                                    await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
+                                                        localFile.FilePath
+                                                    );
+                                            }
+                                        }
+                                        else
+                                        {
+                                            metaData =
+                                                await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
+                                                    localFile.FilePath
+                                                );
+                                        }
+
+                                        localFile.SourceType = LiteratureSourceType.LocalFile;
+                                        localFile.Author = metaData?.Author ?? "";
+                                        localFile.Tags = metaData?.Tags ?? [];
+                                        localFile.Summary = metaData?.Summary ?? "";
+                                    }
+                                }
+                            )
+                    );
 
                     menuFlyout.Child<Separator>((_) => { });
-                    menuFlyout.Child<MenuItem>(item => item.SetHeader("Remove").OnClick(async (sender, e) =>
-                    {
-
-                        if (listBox == null) return;
-
-                        var itemToRemove = listBox.GetSelectedItem<LiteratureSourceItem>();
-                        UIBuilder<ToggleSwitch>? toogleSwitch = null;
-                        var stack = _world.UI<StackPanel>((stack) =>
-                        {
-                            stack.Child<TextBlock>((text) =>
-                            {
-                                text.SetText(
-                                    $"""
-                                    Do you want to remove: "{itemToRemove.Title}" from the list?.
-                                    """)
-                                    .SetTextWrapping(TextWrapping.Wrap);
-                            });
-                            if (itemToRemove is LocalFileSourceItem file)
-                            {
-                                stack.Child<DockPanel>((dockPanel) =>
+                    menuFlyout.Child<MenuItem>(item =>
+                        item.SetHeader("Remove")
+                            .OnClick(
+                                async (sender, e) =>
                                 {
+                                    if (listBox == null)
+                                        return;
 
-                                    dockPanel.Child<TextBlock>((textBlock) =>
-                                    {
-
-                                        textBlock.SetVerticalAlignment(VerticalAlignment.Center)
-                                        .SetText("Delete Underlying File?")
-                                        .SetTextWrapping(TextWrapping.Wrap);
-                                    });
-
-                                    dockPanel.Child<ToggleSwitch>((toggleSwitch) =>
-                                    {
-                                        toogleSwitch = toggleSwitch
-                                        .SetDock(Dock.Right)
-                                        .SetHorizontalAlignment(HorizontalAlignment.Right);
-
-                                        toggleSwitch.With((toggleSwitch) =>
+                                    var itemToRemove =
+                                        listBox.GetSelectedItem<LiteratureSourceItem>();
+                                    UIBuilder<ToggleSwitch>? toogleSwitch = null;
+                                    var stack = _world.UI<StackPanel>(
+                                        (stack) =>
                                         {
-                                            // toggleSwitch.IsChecked = _world.Get<Settings>().EnableNotifications;
-                                        });
+                                            stack.Child<TextBlock>(
+                                                (text) =>
+                                                {
+                                                    text.SetText(
+                                                            $"""
+                                                            Do you want to remove: "{itemToRemove.Title}" from the list?.
+                                                            """
+                                                        )
+                                                        .SetTextWrapping(TextWrapping.Wrap);
+                                                }
+                                            );
+                                            if (itemToRemove is LocalFileSourceItem file)
+                                            {
+                                                stack.Child<DockPanel>(
+                                                    (dockPanel) =>
+                                                    {
+                                                        dockPanel.Child<TextBlock>(
+                                                            (textBlock) =>
+                                                            {
+                                                                textBlock
+                                                                    .SetVerticalAlignment(
+                                                                        VerticalAlignment.Center
+                                                                    )
+                                                                    .SetText(
+                                                                        "Delete Underlying File?"
+                                                                    )
+                                                                    .SetTextWrapping(
+                                                                        TextWrapping.Wrap
+                                                                    );
+                                                            }
+                                                        );
 
-                                        toggleSwitch.OnIsCheckedChanged((sender, args) =>
-                                        {
-                                            //((ToggleSwitch)sender!).IsChecked;
-                                        });
-                                    });
+                                                        dockPanel.Child<ToggleSwitch>(
+                                                            (toggleSwitch) =>
+                                                            {
+                                                                toogleSwitch = toggleSwitch
+                                                                    .SetDock(Dock.Right)
+                                                                    .SetHorizontalAlignment(
+                                                                        HorizontalAlignment.Right
+                                                                    );
 
+                                                                toggleSwitch.With(
+                                                                    (toggleSwitch) => {
+                                                                        // toggleSwitch.IsChecked = _world.Get<Settings>().EnableNotifications;
+                                                                    }
+                                                                );
 
-                                    dockPanel.AttachToolTip(_world.UI<ToolTip>((toolTip) =>
+                                                                toggleSwitch.OnIsCheckedChanged(
+                                                                    (sender, args) => {
+                                                                        //((ToggleSwitch)sender!).IsChecked;
+                                                                    }
+                                                                );
+                                                            }
+                                                        );
+
+                                                        dockPanel.AttachToolTip(
+                                                            _world.UI<ToolTip>(
+                                                                (toolTip) =>
+                                                                {
+                                                                    toolTip.Child<TextBlock>(
+                                                                        (textBlock) =>
+                                                                        {
+                                                                            textBlock.SetText(
+                                                                                """
+                                                                                When enabled the associated file will also be deleted. If you
+                                                                                just want to remove the item from the list leave it unchecked! 
+                                                                                """
+                                                                            );
+                                                                        }
+                                                                    );
+                                                                }
+                                                            )
+                                                        );
+                                                    }
+                                                );
+                                            }
+                                        }
+                                    );
+
+                                    var cd = new ContentDialog()
                                     {
-                                        toolTip.Child<TextBlock>((textBlock) =>
+                                        Title = "Attention",
+                                        Content = stack.Get<Control>(),
+                                        PrimaryButtonText = "Yes",
+                                        SecondaryButtonText = "No",
+                                        DefaultButton = ContentDialogButton.Secondary,
+                                        IsSecondaryButtonEnabled = true,
+                                    };
+
+                                    var result = await cd.ShowAsync();
+                                    if (result == ContentDialogResult.Secondary)
+                                    {
+                                        return;
+                                    }
+
+                                    if (
+                                        itemToRemove != null
+                                        && itemToRemove is LocalFileSourceItem localFile
+                                    )
+                                    {
+                                        string filePath = localFile.FilePath;
+                                        string displayName = localFile.Title; // For use in messages
+
+                                        // Basic validation
+                                        if (string.IsNullOrEmpty(filePath))
                                         {
-                                            textBlock.SetText(
-                                            """
-                                        When enabled the associated file will also be deleted. If you
-                                        just want to remove the item from the list leave it unchecked! 
-                                        """);
-                                        });
-                                    }));
-                                });
-                            }
-                        });
+                                            MessageDialog.ShowErrorDialog(
+                                                $"Error: File path is missing for item '{displayName}'. Cannot delete."
+                                            );
+                                            return;
+                                        }
 
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Attention",
-                            Content = stack.Get<Control>(),
-                            PrimaryButtonText = "Yes",
-                            SecondaryButtonText = "No",
-                            DefaultButton = ContentDialogButton.Secondary,
-                            IsSecondaryButtonEnabled = true,
-                        };
+                                        // --- RECOMMENDED: Insert Confirmation Dialog Here ---
+                                        // Example (requires a dialog implementation):
+                                        // var dialogService = GetSomeDialogService(); // Get your dialog service instance
+                                        // bool confirmed = await dialogService.ShowConfirmationAsync(
+                                        //    "Confirm Deletion",
+                                        //    $"Are you sure you want to permanently delete the reference file '{displayName}'?\n\nThis action cannot be undone.");
+                                        //
+                                        // if (!confirmed)
+                                        // {
+                                        //     Console.WriteLine("Deletion cancelled by user.");
+                                        //     return; // Stop if user cancels
+                                        // }
+                                        // --- End Confirmation Dialog Placeholder ---
 
-                        var result = await cd.ShowAsync();
-                        if (result == ContentDialogResult.Secondary)
-                        {
-                            return;
-                        }
+                                        try
+                                        {
+                                            if (toogleSwitch?.IsChecked() ?? false)
+                                                File.Delete(filePath);
 
+                                            _baseLiteratureItems.Remove(itemToRemove);
+                                        }
+                                        catch (IOException ex) // Catch specific IO exceptions
+                                        {
+                                            MessageDialog.ShowErrorDialog(ex.Message);
+                                        }
+                                        catch (UnauthorizedAccessException authEx) // Catch permissions errors
+                                        {
+                                            MessageDialog.ShowErrorDialog(authEx.Message);
+                                        }
+                                        catch (Exception ex) // Catch any other unexpected errors
+                                        {
+                                            MessageDialog.ShowErrorDialog(
+                                                $"An unexpected error occurred while deleting file '{filePath}' for item '{displayName}': {ex.Message}"
+                                            );
+                                        }
+                                    }
 
-
-                        if (itemToRemove != null && itemToRemove is LocalFileSourceItem localFile)
-                        {
-                            string filePath = localFile.FilePath;
-                            string displayName = localFile.Title; // For use in messages
-
-                            // Basic validation
-                            if (string.IsNullOrEmpty(filePath))
-                            {
-                                MessageDialog.ShowErrorDialog($"Error: File path is missing for item '{displayName}'. Cannot delete.");
-                                return;
-                            }
-
-                            // --- RECOMMENDED: Insert Confirmation Dialog Here ---
-                            // Example (requires a dialog implementation):
-                            // var dialogService = GetSomeDialogService(); // Get your dialog service instance
-                            // bool confirmed = await dialogService.ShowConfirmationAsync(
-                            //    "Confirm Deletion",
-                            //    $"Are you sure you want to permanently delete the reference file '{displayName}'?\n\nThis action cannot be undone.");
-                            //
-                            // if (!confirmed)
-                            // {
-                            //     Console.WriteLine("Deletion cancelled by user.");
-                            //     return; // Stop if user cancels
-                            // }
-                            // --- End Confirmation Dialog Placeholder ---
-
-                            try
-                            {
-                                if (toogleSwitch?.IsChecked() ?? false)
-                                    File.Delete(filePath);
-
-                                _baseLiteratureItems.Remove(itemToRemove);
-
-                            }
-                            catch (IOException ex) // Catch specific IO exceptions
-                            {
-                                MessageDialog.ShowErrorDialog(ex.Message);
-                            }
-                            catch (UnauthorizedAccessException authEx) // Catch permissions errors
-                            {
-                                MessageDialog.ShowErrorDialog(authEx.Message);
-                            }
-                            catch (Exception ex) // Catch any other unexpected errors
-                            {
-                                MessageDialog.ShowErrorDialog($"An unexpected error occurred while deleting file '{filePath}' for item '{displayName}': {ex.Message}");
-                            }
-
-                        }
-
-                        if (itemToRemove is WebSourceItem webSourceItem)
-                        {
-                            _baseLiteratureItems.Remove(itemToRemove);
-                        }
-                        // To Clean up the ui, avoid memory leak
-                        stack.Entity.Destruct();
-                    })); // Implement RemoveSelectedItem
+                                    if (itemToRemove is WebSourceItem webSourceItem)
+                                    {
+                                        _baseLiteratureItems.Remove(itemToRemove);
+                                    }
+                                    // To Clean up the ui, avoid memory leak
+                                    stack.Entity.Destruct();
+                                }
+                            )
+                    ); // Implement RemoveSelectedItem
                 });
 
-                listBox.SetItemsSource(_baseLiteratureItems) // Bind to the base list initially
-                       .SetItemTemplate(CreateLiteratureItemTemplate())
-                       .SetSelectionMode(SelectionMode.Single)
-                       .SetContextFlyout(contextFlyout)
-                       .AllowDrop() // Enable dropping files
-                       .OnDragOver(HandleLiteratureListDragOver) // Handle hover effect
-                       .OnDrop(HandleLiteratureListDropAsync)
-                        .OnDoubleTapped((sender, e) =>
+                listBox
+                    .SetItemsSource(_baseLiteratureItems) // Bind to the base list initially
+                    .SetItemTemplate(CreateLiteratureItemTemplate())
+                    .SetSelectionMode(SelectionMode.Single)
+                    .SetContextFlyout(contextFlyout)
+                    .AllowDrop() // Enable dropping files
+                    .OnDragOver(HandleLiteratureListDragOver) // Handle hover effect
+                    .OnDrop(HandleLiteratureListDropAsync)
+                    .OnDoubleTapped(
+                        (sender, e) =>
                         {
                             if (sender is ListBox listBox)
                             {
-                                var selectedLiteratureItem = listBox.SelectedItem as LiteratureSourceItem;
+                                var selectedLiteratureItem =
+                                    listBox.SelectedItem as LiteratureSourceItem;
                                 if (selectedLiteratureItem is LocalFileSourceItem localFile)
                                 {
                                     if (Path.GetExtension(localFile.FilePath) == ".md")
                                     {
-                                        FileOpener.OpenMarkdownFileWithObsidian(localFile.FilePath, _world.Get<Settings>().ObsidianPath);
+                                        FileOpener.OpenMarkdownFileWithObsidian(
+                                            localFile.FilePath,
+                                            _world.Get<Settings>().ObsidianPath
+                                        );
                                     }
-
                                     else
                                     {
                                         FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
@@ -452,7 +569,8 @@ public class LiteraturePage : IUIComponent, IDisposable
                                 }
                                 e.Handled = true;
                             }
-                        });
+                        }
+                    );
             });
         });
     }
@@ -462,187 +580,264 @@ public class LiteraturePage : IUIComponent, IDisposable
     /// </summary>
     private FuncDataTemplate<LiteratureSourceItem> CreateLiteratureItemTemplate()
     {
-
         /*
-        TODO: THIS LEAKS MEMORY ALL OVER THE PLACE BECAUSE THE BINDINGS ARE NOT CORRECTLY REMOVED FROM THE 
+        TODO: THIS LEAKS MEMORY ALL OVER THE PLACE BECAUSE THE BINDINGS ARE NOT CORRECTLY REMOVED FROM THE
         AVALONIA OBJECTS SO THEY WILL ALWAYS BE REFRENCED AND NEVER GARBAGED COLLECTED, THIS NEEDS TO BE FIXED
         ASAP.
         */
 
-        return _world.CreateTemplate<LiteratureSourceItem, Grid>((grid, item) =>
-        {
-            if (item is null)
-                return;
-
-            /*
-            When the underlying template ui becomes detached from the list box we also 
-            destroy the related entities.
-            */
-
-            grid.SetColumnDefinitions("Auto, *, Auto") // Icon(Type), Main Info, Tags
-                .SetRowDefinitions("Auto, Auto")    // Row 0: Name/Title, Row 1: Author/Year + Tags
-                .SetMargin(5);
-
-            // Row 0, Col 0: Icon based on SourceType (Placeholder)
-            grid.Child<TextBlock>(icon =>
+        return _world.CreateTemplate<LiteratureSourceItem, Grid>(
+            (grid, item) =>
             {
-                // Add Tooltip for icon maybe?
-                icon.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetText(item.SourceType.ToString()!))), true);
-            });
+                if (item is null)
+                    return;
 
-            // Row 0, Col 1: Name / Title
-            grid.Child<TextBlock>(nameTitle =>
-            {
-                nameTitle.SetColumn(1).SetRow(0)
-                         .SetColumnSpan(2)
-                         .SetFontWeight(FontWeight.Bold)
-                         .SetTextWrapping(TextWrapping.NoWrap)
-                         .SetTextTrimming(TextTrimming.CharacterEllipsis)
-                         .SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Title)) // Bind to Title primarily
-                         {
-                             // Fallback to Name if Title is null/empty
-                             FallbackValue = item.Name, // Show Name if Title is unset
-                             TargetNullValue = item.Name // Show Name if Title becomes null
-                         });
-                // Tooltip showing full Title or Name
-                nameTitle.AttachToolTip(_world.UI<ToolTip>(
-                    tooltip =>
-                    {
-                        tooltip.Child<StackPanel>((stackPanel) =>
-                        {
-                            stackPanel.SetSpacing(10);
+                /*
+                When the underlying template ui becomes detached from the list box we also
+                destroy the related entities.
+                */
 
-                            stackPanel.Child<TextBlock>(tb => tb.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Title))
-                            {
-                                FallbackValue = item.Name,
-                                TargetNullValue = item.Name
-                            }));
+                grid.SetColumnDefinitions("Auto, *, Auto") // Icon(Type), Main Info, Tags
+                    .SetRowDefinitions("Auto, Auto") // Row 0: Name/Title, Row 1: Author/Year + Tags
+                    .SetMargin(5);
 
-                            stackPanel.Child<TextBlock>((tb) =>
-                                {
-                                    tb
-                                    .SetFontWeight(FontWeight.Normal)
-                                    .SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Summary)));
-                                });
-
-                            stackPanel.Child<ItemsControl>(tagsList =>
-                            {
-                                tagsList.SetColumn(2).SetRow(1)
-                                        .SetHorizontalAlignment(HorizontalAlignment.Right)
-                                        .SetItemsSource(item.Tags) // Bind to the item's Tags collection
-                                                                   //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
-                                        .SetItemTemplate(_world.CreateTemplate<string, Border>((border, tagText) => // Simple tag template
-                                        {
-                                            border.SetBackground(Brushes.LightGray)
-                                                  .SetCornerRadius(3)
-                                                  .SetPadding(4, 1)
-                                                  .SetMargin(2)
-                                                .Child<StackPanel>(stackPanel =>
-                                                {
-                                                    stackPanel
-                                                        .SetOrientation(Orientation.Horizontal)
-                                                        .SetSpacing(5)
-                                                        .SetVerticalAlignment(VerticalAlignment.Center);
-
-                                                    stackPanel.Child<TextBlock>(textBlock =>
-                                                    {
-                                                        textBlock
-                                                            .SetTextWrapping(TextWrapping.NoWrap)
-                                                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
-                                                            .SetText(tagText)
-                                                            .SetVerticalAlignment(VerticalAlignment.Center);
-                                                    });
-
-
-                                                });
-                                            /*
-                                            There is no need to clean up this template because the when the ItemTemplate
-                                            gets cleaned all child templates get cleaned too, we want to avoid an double free.
-
-                                            THIS IS STILL BUGGED AND RESULTS IN A MEMORY LEAK, THE SECOND NESTED TEMPLATE NEVER GETS DESTROYED AND I DONT KNOW WHY!
-
-                                            I tracked down the problem to flecs. It seems to occur when we delete an entity and
-                                            something in anohter thread? runs and we get entity_index.c: 72: assert: r->dense < index->alive_count INVALID_PARAMETER.
-
-                                            ###################### THIS PROBLEM IS FIXED !!!! ##########################
-                                            Using the newest version of flecs.net 4.0.4 fixed the problem, using 4.0.3 results again in the crash. 
-                                            */
-                                        }))
-                                        .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
-                            });
-                        });
-
-                    }), true);
-
-            });
-
-            // Row 1, Col 1: Author / Year
-            grid.Child<TextBlock>(authorYear =>
-            {
-                authorYear.SetColumn(1).SetRow(1)
-                          .SetFontSize(11)
-                          .SetForeground(Brushes.Gray)
-                          .SetTextTrimming(TextTrimming.CharacterEllipsis);
-
-                // Combine Author and Year - requires a MultiBinding or custom converter,
-                // or just display Author for simplicity for now.
-                authorYear.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Author))
+                // Row 0, Col 0: Icon based on SourceType (Placeholder)
+                grid.Child<TextBlock>(icon =>
                 {
-                    TargetNullValue = "No Author", // Placeholder if author is null
-                    FallbackValue = "No Author"
+                    // Add Tooltip for icon maybe?
+                    icon.AttachToolTip(
+                        _world.UI<ToolTip>(tooltip =>
+                            tooltip.Child<TextBlock>(tb => tb.SetText(item.SourceType.ToString()!))
+                        ),
+                        true
+                    );
                 });
-                // TODO: Improve this display to include year, possibly using a converter.
-                authorYear.AttachToolTip(_world.UI<ToolTip>(tooltip => tooltip.Child<TextBlock>(tb => tb.SetBinding(TextBlock.TextProperty, new Binding(nameof(LiteratureSourceItem.Author)) { TargetNullValue = "No Author", FallbackValue = "No Author" }))), true);
-            });
 
-            // Row 1, Col 2: Tags (using ItemsControl or similar)
-            grid.Child<ItemsControl>(tagsList =>
-            {
-                tagsList.SetColumn(2).SetRow(1)
+                // Row 0, Col 1: Name / Title
+                grid.Child<TextBlock>(nameTitle =>
+                {
+                    nameTitle
+                        .SetColumn(1)
+                        .SetRow(0)
+                        .SetColumnSpan(2)
+                        .SetFontWeight(FontWeight.Bold)
+                        .SetTextWrapping(TextWrapping.NoWrap)
+                        .SetTextTrimming(TextTrimming.CharacterEllipsis)
+                        .SetBinding(
+                            TextBlock.TextProperty,
+                            new Binding(nameof(LiteratureSourceItem.Title)) // Bind to Title primarily
+                            {
+                                // Fallback to Name if Title is null/empty
+                                FallbackValue = item.Name, // Show Name if Title is unset
+                                TargetNullValue =
+                                    item.Name // Show Name if Title becomes null
+                                ,
+                            }
+                        );
+                    // Tooltip showing full Title or Name
+                    nameTitle.AttachToolTip(
+                        _world.UI<ToolTip>(tooltip =>
+                        {
+                            tooltip.Child<StackPanel>(
+                                (stackPanel) =>
+                                {
+                                    stackPanel.SetSpacing(10);
+
+                                    stackPanel.Child<TextBlock>(tb =>
+                                        tb.SetBinding(
+                                            TextBlock.TextProperty,
+                                            new Binding(nameof(LiteratureSourceItem.Title))
+                                            {
+                                                FallbackValue = item.Name,
+                                                TargetNullValue = item.Name,
+                                            }
+                                        )
+                                    );
+
+                                    stackPanel.Child<TextBlock>(
+                                        (tb) =>
+                                        {
+                                            tb.SetFontWeight(FontWeight.Normal)
+                                                .SetBinding(
+                                                    TextBlock.TextProperty,
+                                                    new Binding(
+                                                        nameof(LiteratureSourceItem.Summary)
+                                                    )
+                                                );
+                                        }
+                                    );
+
+                                    stackPanel.Child<ItemsControl>(tagsList =>
+                                    {
+                                        tagsList
+                                            .SetColumn(2)
+                                            .SetRow(1)
+                                            .SetHorizontalAlignment(HorizontalAlignment.Right)
+                                            .SetItemsSource(item.Tags) // Bind to the item's Tags collection
+                                            //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                                            .SetItemTemplate(
+                                                _world.CreateTemplate<string, Border>(
+                                                    (border, tagText) => // Simple tag template
+                                                    {
+                                                        border
+                                                            .SetBackground(Brushes.LightGray)
+                                                            .SetCornerRadius(3)
+                                                            .SetPadding(4, 1)
+                                                            .SetMargin(2)
+                                                            .Child<StackPanel>(stackPanel =>
+                                                            {
+                                                                stackPanel
+                                                                    .SetOrientation(
+                                                                        Orientation.Horizontal
+                                                                    )
+                                                                    .SetSpacing(5)
+                                                                    .SetVerticalAlignment(
+                                                                        VerticalAlignment.Center
+                                                                    );
+
+                                                                stackPanel.Child<TextBlock>(
+                                                                    textBlock =>
+                                                                    {
+                                                                        textBlock
+                                                                            .SetTextWrapping(
+                                                                                TextWrapping.NoWrap
+                                                                            )
+                                                                            .SetTextTrimming(
+                                                                                TextTrimming.CharacterEllipsis
+                                                                            )
+                                                                            .SetText(tagText)
+                                                                            .SetVerticalAlignment(
+                                                                                VerticalAlignment.Center
+                                                                            );
+                                                                    }
+                                                                );
+                                                            });
+                                                        /*
+                                                        There is no need to clean up this template because the when the ItemTemplate
+                                                        gets cleaned all child templates get cleaned too, we want to avoid an double free.
+            
+                                                        THIS IS STILL BUGGED AND RESULTS IN A MEMORY LEAK, THE SECOND NESTED TEMPLATE NEVER GETS DESTROYED AND I DONT KNOW WHY!
+            
+                                                        I tracked down the problem to flecs. It seems to occur when we delete an entity and
+                                                        something in anohter thread? runs and we get entity_index.c: 72: assert: r->dense < index->alive_count INVALID_PARAMETER.
+            
+                                                        ###################### THIS PROBLEM IS FIXED !!!! ##########################
+                                                        Using the newest version of flecs.net 4.0.4 fixed the problem, using 4.0.3 results again in the crash.
+                                                        */
+                                                    }
+                                                )
+                                            )
+                                            .With(ic =>
+                                                ic.ItemsPanel = new FuncTemplate<Panel>(
+                                                    () =>
+                                                        new WrapPanel
+                                                        {
+                                                            Orientation = Orientation.Horizontal,
+                                                        }
+                                                )!
+                                            );
+                                    });
+                                }
+                            );
+                        }),
+                        true
+                    );
+                });
+
+                // Row 1, Col 1: Author / Year
+                grid.Child<TextBlock>(authorYear =>
+                {
+                    authorYear
+                        .SetColumn(1)
+                        .SetRow(1)
+                        .SetFontSize(11)
+                        .SetForeground(Brushes.Gray)
+                        .SetTextTrimming(TextTrimming.CharacterEllipsis);
+
+                    // Combine Author and Year - requires a MultiBinding or custom converter,
+                    // or just display Author for simplicity for now.
+                    authorYear.SetBinding(
+                        TextBlock.TextProperty,
+                        new Binding(nameof(LiteratureSourceItem.Author))
+                        {
+                            TargetNullValue = "No Author", // Placeholder if author is null
+                            FallbackValue = "No Author",
+                        }
+                    );
+                    // TODO: Improve this display to include year, possibly using a converter.
+                    authorYear.AttachToolTip(
+                        _world.UI<ToolTip>(tooltip =>
+                            tooltip.Child<TextBlock>(tb =>
+                                tb.SetBinding(
+                                    TextBlock.TextProperty,
+                                    new Binding(nameof(LiteratureSourceItem.Author))
+                                    {
+                                        TargetNullValue = "No Author",
+                                        FallbackValue = "No Author",
+                                    }
+                                )
+                            )
+                        ),
+                        true
+                    );
+                });
+
+                // Row 1, Col 2: Tags (using ItemsControl or similar)
+                grid.Child<ItemsControl>(tagsList =>
+                {
+                    tagsList
+                        .SetColumn(2)
+                        .SetRow(1)
                         .SetOpacity(1)
                         .SetHorizontalAlignment(HorizontalAlignment.Right)
                         .SetItemsSource(item.Tags) // Bind to the item's Tags collection
-                                                   //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
-                        .SetItemTemplate(_world.CreateTemplate<string, Border>((border, tagText) => // Simple tag template
-                        {
-                            border.SetBackground(Brushes.LightGray)
-                                  .SetCornerRadius(3)
-                                  .SetPadding(4, 1)
-                                  .SetMargin(2, 0)
-                                .Child<StackPanel>(stackPanel =>
+                        //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                        .SetItemTemplate(
+                            _world.CreateTemplate<string, Border>(
+                                (border, tagText) => // Simple tag template
                                 {
-                                    stackPanel
-                                        .SetOrientation(Orientation.Horizontal)
-                                        .SetSpacing(5)
-                                        .SetVerticalAlignment(VerticalAlignment.Center);
+                                    border
+                                        .SetBackground(Brushes.LightGray)
+                                        .SetCornerRadius(3)
+                                        .SetPadding(4, 1)
+                                        .SetMargin(2, 0)
+                                        .Child<StackPanel>(stackPanel =>
+                                        {
+                                            stackPanel
+                                                .SetOrientation(Orientation.Horizontal)
+                                                .SetSpacing(5)
+                                                .SetVerticalAlignment(VerticalAlignment.Center);
 
-                                    stackPanel.Child<TextBlock>(textBlock =>
-                                    {
-                                        textBlock
-                                            .SetText(tagText)
-                                            .SetVerticalAlignment(VerticalAlignment.Center);
-                                    });
-
-
-                                });
-                            /*
-                            There is no need to clean up this template because the when the ItemTemplate
-                            gets cleaned all child templates get cleaned too, we want to avoid an double free.
-
-                            THIS IS STILL BUGGED AND RESULTS IN A MEMORY LEAK, THE SECOND NESTED TEMPLATE NEVER GETS DESTROYED AND I DONT KNOW WHY!
-
-                            I tracked down the problem to flecs. It seems to occur when we delete an entity and
-                            something in anohter thread? runs and we get entity_index.c: 72: assert: r->dense < index->alive_count INVALID_PARAMETER.
-
-                            ###################### THIS PROBLEM IS FIXED !!!! ##########################
-                            Using the newest version of flecs.net 4.0.4 fixed the problem, using 4.0.3 results again in the crash. 
-                            */
-                        }))
-                        .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
-            });
-
-
-        });
+                                            stackPanel.Child<TextBlock>(textBlock =>
+                                            {
+                                                textBlock
+                                                    .SetText(tagText)
+                                                    .SetVerticalAlignment(VerticalAlignment.Center);
+                                            });
+                                        });
+                                    /*
+                                    There is no need to clean up this template because the when the ItemTemplate
+                                    gets cleaned all child templates get cleaned too, we want to avoid an double free.
+        
+                                    THIS IS STILL BUGGED AND RESULTS IN A MEMORY LEAK, THE SECOND NESTED TEMPLATE NEVER GETS DESTROYED AND I DONT KNOW WHY!
+        
+                                    I tracked down the problem to flecs. It seems to occur when we delete an entity and
+                                    something in anohter thread? runs and we get entity_index.c: 72: assert: r->dense < index->alive_count INVALID_PARAMETER.
+        
+                                    ###################### THIS PROBLEM IS FIXED !!!! ##########################
+                                    Using the newest version of flecs.net 4.0.4 fixed the problem, using 4.0.3 results again in the crash.
+                                    */
+                                }
+                            )
+                        )
+                        .With(ic =>
+                            ic.ItemsPanel = new FuncTemplate<Panel>(
+                                () => new WrapPanel { Orientation = Orientation.Horizontal }
+                            )!
+                        );
+                });
+            }
+        );
     }
 
     /// <summary>
@@ -668,7 +863,8 @@ public class LiteraturePage : IUIComponent, IDisposable
 
     private void SubscribeToAllItemChanges(IEnumerable<LiteratureSourceItem>? items)
     {
-        if (items == null) return;
+        if (items == null)
+            return;
         foreach (var item in items)
         {
             SubscribeToItemChanges(item);
@@ -686,10 +882,13 @@ public class LiteraturePage : IUIComponent, IDisposable
         item.PropertyChanged += handler;
         _itemPropertyChangedHandlers[item.Uid] = handler; // Store the specific handler instance
     }
+
     private void HandleItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (_isDisposed) return; // Don't handle if page is disposed
-        if (sender is not LiteratureSourceItem changedItem) return;
+        if (_isDisposed)
+            return; // Don't handle if page is disposed
+        if (sender is not LiteratureSourceItem changedItem)
+            return;
 
         // Check if the changed property is relevant for filtering or sorting
         bool needsRefresh = e.PropertyName switch
@@ -699,19 +898,25 @@ public class LiteraturePage : IUIComponent, IDisposable
             nameof(LiteratureSourceItem.Author) => true,
             nameof(LiteratureSourceItem.Tags) => true,
             nameof(LiteratureSourceItem.SourceType) => true,
-            _ => false
+            _ => false,
         };
 
         if (needsRefresh)
         {
-            Logger.Trace($"Relevant property '{e.PropertyName}' changed for item '{changedItem.Name}', triggering list refresh.");
+            Logger.Trace(
+                $"Relevant property '{e.PropertyName}' changed for item '{changedItem.Name}', triggering list refresh."
+            );
             // Refresh the list on the UI thread. Use Post for better responsiveness if updates are frequent.
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (_isDisposed) return; // Double check dispose state
-                string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
-                ApplyFilterAndSort(searchText);
-            }, DispatcherPriority.Background); // Lower priority for UI updates
+            Dispatcher.UIThread.Post(
+                () =>
+                {
+                    if (_isDisposed)
+                        return; // Double check dispose state
+                    string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
+                    ApplyFilterAndSort(searchText);
+                },
+                DispatcherPriority.Background
+            ); // Lower priority for UI updates
         }
     }
 
@@ -779,8 +984,10 @@ public class LiteraturePage : IUIComponent, IDisposable
         }
 
         // Attempt 1: Try parsing as an absolute URI directly (handles existing http/https)
-        if (Uri.TryCreate(text, UriKind.Absolute, out var initialUri) &&
-            (initialUri.Scheme == Uri.UriSchemeHttp || initialUri.Scheme == Uri.UriSchemeHttps))
+        if (
+            Uri.TryCreate(text, UriKind.Absolute, out var initialUri)
+            && (initialUri.Scheme == Uri.UriSchemeHttp || initialUri.Scheme == Uri.UriSchemeHttps)
+        )
         {
             validUri = initialUri;
             return true;
@@ -815,7 +1022,6 @@ public class LiteraturePage : IUIComponent, IDisposable
             }
         }
 
-
         if (e.Data.Contains(DataFormats.Text))
         {
             var droppedText = e.Data.Get(DataFormats.Text) as string;
@@ -828,8 +1034,13 @@ public class LiteraturePage : IUIComponent, IDisposable
 
                 // 1. First attempt: Try parsing as an absolute URI directly.
                 // This handles cases where the scheme (http/https) is already present.
-                if (Uri.TryCreate(droppedText, UriKind.Absolute, out var initialUri)
-                    && (initialUri.Scheme == Uri.UriSchemeHttp || initialUri.Scheme == Uri.UriSchemeHttps))
+                if (
+                    Uri.TryCreate(droppedText, UriKind.Absolute, out var initialUri)
+                    && (
+                        initialUri.Scheme == Uri.UriSchemeHttp
+                        || initialUri.Scheme == Uri.UriSchemeHttps
+                    )
+                )
                 {
                     // Successfully parsed as a valid HTTP or HTTPS absolute URI
                     uriResult = initialUri;
@@ -842,13 +1053,15 @@ public class LiteraturePage : IUIComponent, IDisposable
                 if (isValidWebUrl && uriResult != null)
                 {
                     dataFound = true; // Mark that we found processable data
-                                      // Add the processing task using the validated, absolute URI
+                    // Add the processing task using the validated, absolute URI
                     processingTasks.Add(ProcessDroppedUrlAsync(uriResult.AbsoluteUri));
                 }
                 else
                 {
                     // Log if the dropped text couldn't be interpreted as a valid web URL
-                    Logger.Info($"Dropped text is not a valid HTTP/HTTPS URL or recognized schemeless URL: '{droppedText}'");
+                    Logger.Info(
+                        $"Dropped text is not a valid HTTP/HTTPS URL or recognized schemeless URL: '{droppedText}'"
+                    );
                     // Optionally, handle other types of text drops here
                 }
             }
@@ -864,7 +1077,9 @@ public class LiteraturePage : IUIComponent, IDisposable
             e.DragEffects = DragDropEffects.Copy; // Confirm the effect (should match DragOver)
             e.Handled = true; // Crucial: Mark the event as handled
 
-            Logger.Info($"Processing {processingTasks.Count} total dropped items (files and/or URLs)...");
+            Logger.Info(
+                $"Processing {processingTasks.Count} total dropped items (files and/or URLs)..."
+            );
 
             try
             {
@@ -880,8 +1095,11 @@ public class LiteraturePage : IUIComponent, IDisposable
             {
                 Logger.Error(ex, "Error occurred while processing dropped items.");
                 // Use Dispatcher if ShowWarningDialog needs to run on UI thread from background task exception
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                    MessageDialog.ShowWarningDialog($"An error occurred while processing dropped items: {ex.Message}")
+                await Dispatcher.UIThread.InvokeAsync(
+                    () =>
+                        MessageDialog.ShowWarningDialog(
+                            $"An error occurred while processing dropped items: {ex.Message}"
+                        )
                 );
             }
         }
@@ -891,7 +1109,6 @@ public class LiteraturePage : IUIComponent, IDisposable
             Logger.Info("Drop event received, but no compatible files or text URLs found.");
             e.Handled = false; // Let the event bubble up or indicate failure.
         }
-
     }
 
     private class LLMDATA
@@ -909,8 +1126,8 @@ public class LiteraturePage : IUIComponent, IDisposable
 
         var llm = LargeLanguageManager.Instance;
 
-
-        var prompt = $"Generate me a title and a list of (A MAXIMUM OF 4)tags to categorize the content on the website({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE, PUBLISHER, AUTHOR, THE TAGS AND A SHORT SUMMARY AS JSON WITH THE KEYS 'Tags' AND 'Title', 'Publisher', 'Author', 'Summary'";
+        var prompt =
+            $"Generate me a title and a list of (A MAXIMUM OF 4)tags to categorize the content on the website({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE, PUBLISHER, AUTHOR, THE TAGS AND A SHORT SUMMARY AS JSON WITH THE KEYS 'Tags' AND 'Title', 'Publisher', 'Author', 'Summary'";
         var output = await llm.GetResponseFromUrlAsync(url, prompt);
 
         var newItem = new WebSourceItem(url, name: output?.Title ?? url)
@@ -934,7 +1151,9 @@ public class LiteraturePage : IUIComponent, IDisposable
         ContentMetadata? metaData = null;
         if (string.IsNullOrEmpty(sourcePath))
         {
-            Logger.Warn($"Could not get local path for dropped file: {storageFile.Name}. Skipping.");
+            Logger.Warn(
+                $"Could not get local path for dropped file: {storageFile.Name}. Skipping."
+            );
             return;
         }
 
@@ -975,12 +1194,16 @@ public class LiteraturePage : IUIComponent, IDisposable
 
                 if (newItem.PageCount >= 1000)
                 {
-                    MessageDialog.ShowWarningDialog($"Only pdfs smaller than 1000 pages can be used to generate metadata via a LLM");
+                    MessageDialog.ShowWarningDialog(
+                        $"Only pdfs smaller than 1000 pages can be used to generate metadata via a LLM"
+                    );
                 }
                 else
                 {
                     // Here we are passing a pdf that is smaller than 1000 pages
-                    metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(newPath);
+                    metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
+                        newPath
+                    );
                 }
             }
             else
@@ -993,7 +1216,6 @@ public class LiteraturePage : IUIComponent, IDisposable
             newItem.Author = metaData?.Author ?? "";
             newItem.Tags = metaData?.Tags ?? [];
             newItem.Summary = metaData?.Summary ?? "";
-
 
             // You might want to add default tags or prompt user later
 
@@ -1010,11 +1232,12 @@ public class LiteraturePage : IUIComponent, IDisposable
             // Show error to user on UI thread
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                MessageDialog.ShowErrorDialog($"Error adding file '{Path.GetFileName(sourcePath)}': {ex.Message}");
+                MessageDialog.ShowErrorDialog(
+                    $"Error adding file '{Path.GetFileName(sourcePath)}': {ex.Message}"
+                );
             });
         }
     }
-
 
     /// <summary>
     /// Copies a file to the application's literature folder, ensuring a unique name.
@@ -1024,7 +1247,10 @@ public class LiteraturePage : IUIComponent, IDisposable
     {
         try
         {
-            string literaturePath = Path.Combine(Directory.GetCurrentDirectory(), LITERATURE_FOLDER_NAME);
+            string literaturePath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                LITERATURE_FOLDER_NAME
+            );
             string destinationFileName = Path.GetFileName(sourcePath);
             string destinationPath = Path.Combine(literaturePath, destinationFileName);
 
@@ -1068,7 +1294,8 @@ public class LiteraturePage : IUIComponent, IDisposable
             }
         }
 
-        if (_isDisposed) return; // Double check dispose state
+        if (_isDisposed)
+            return; // Double check dispose state
 
         // Handle the UI updates asynchronously
         _ = Dispatcher.UIThread.InvokeAsync(async () =>
@@ -1087,7 +1314,6 @@ public class LiteraturePage : IUIComponent, IDisposable
         });
     }
 
-
     // --- Actions (Implement Logic) ---
 
     private async Task AddSourceAsync()
@@ -1100,8 +1326,8 @@ public class LiteraturePage : IUIComponent, IDisposable
         {
             Title = "Select Literature File",
             AllowMultiple = true, // Allow adding multiple files at once
-                                  // Add FileTypeFilter if you want to restrict (e.g., PDFs only)
-                                  // FileTypeFilter = [ new FilePickerFileType("PDF Documents") { Patterns = ["*.pdf"] } ]
+            // Add FileTypeFilter if you want to restrict (e.g., PDFs only)
+            // FileTypeFilter = [ new FilePickerFileType("PDF Documents") { Patterns = ["*.pdf"] } ]
         };
 
         var result = await App.GetMainWindow().StorageProvider.OpenFilePickerAsync(options);
@@ -1119,7 +1345,9 @@ public class LiteraturePage : IUIComponent, IDisposable
             catch (Exception ex)
             {
                 Logger.Error(ex, "Error occurred while adding selected files.");
-                MessageDialog.ShowWarningDialog($"An error occurred while adding files: {ex.Message}");
+                MessageDialog.ShowWarningDialog(
+                    $"An error occurred while adding files: {ex.Message}"
+                );
             }
         }
         else
@@ -1149,19 +1377,67 @@ public class LiteraturePage : IUIComponent, IDisposable
             filteredItems = _baseLiteratureItems.Where(item =>
             {
                 // Check Name
-                if (item.Name?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) return true;
+                if (
+                    item.Name?.Contains(
+                        lowerSearchText,
+                        StringComparison.InvariantCultureIgnoreCase
+                    ) ?? false
+                )
+                    return true;
                 // Check Title
-                if (item.Title?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) return true;
+                if (
+                    item.Title?.Contains(
+                        lowerSearchText,
+                        StringComparison.InvariantCultureIgnoreCase
+                    ) ?? false
+                )
+                    return true;
                 // Check Author
-                if (item.Author?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) return true;
+                if (
+                    item.Author?.Contains(
+                        lowerSearchText,
+                        StringComparison.InvariantCultureIgnoreCase
+                    ) ?? false
+                )
+                    return true;
                 // Check Summary
-                if (item.Summary?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) return true;
+                if (
+                    item.Summary?.Contains(
+                        lowerSearchText,
+                        StringComparison.InvariantCultureIgnoreCase
+                    ) ?? false
+                )
+                    return true;
                 // Check Tags
-                if (item.Tags?.Any(tag => tag?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false) return true;
+                if (
+                    item.Tags?.Any(tag =>
+                        tag?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase)
+                        ?? false
+                    ) ?? false
+                )
+                    return true;
                 // Check FilePath (if applicable)
-                if (item is LocalFileSourceItem fileItem && (fileItem.FilePath?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false)) return true;
+                if (
+                    item is LocalFileSourceItem fileItem
+                    && (
+                        fileItem.FilePath?.Contains(
+                            lowerSearchText,
+                            StringComparison.InvariantCultureIgnoreCase
+                        ) ?? false
+                    )
+                )
+                    return true;
                 // Check URL (if applicable)
-                if (item is WebSourceItem webItem && (webItem.Url?.Contains(lowerSearchText, StringComparison.InvariantCultureIgnoreCase) ?? false)) return true;
+                if (
+                    item is WebSourceItem webItem
+                    && (
+                        webItem.Url?.Contains(
+                            lowerSearchText,
+                            StringComparison.InvariantCultureIgnoreCase
+                        ) ?? false
+                    )
+                )
+                    return true;
 
                 return false;
             });
@@ -1169,33 +1445,45 @@ public class LiteraturePage : IUIComponent, IDisposable
 
         // TODO: Add Sorting Logic if needed (using _sortComboBoxBuilder)
         // IEnumerable<LiteratureSourceItem> sortedAndFilteredItems = ApplySorting(filteredItems);
-        IEnumerable<LiteratureSourceItem> sortedAndFilteredItems = filteredItems.OrderBy(item => item.Name); // Default sort by Name
+        IEnumerable<LiteratureSourceItem> sortedAndFilteredItems = filteredItems.OrderBy(item =>
+            item.Name
+        ); // Default sort by Name
 
         // Update the ListBox ItemsSource on the UI thread
-        var finalCollection = new ObservableCollection<LiteratureSourceItem>(sortedAndFilteredItems);
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (_literatureListBuilder?.Entity.IsAlive() == true)
+        var finalCollection = new ObservableCollection<LiteratureSourceItem>(
+            sortedAndFilteredItems
+        );
+        Dispatcher.UIThread.Post(
+            () =>
             {
-                _literatureListBuilder.SetItemsSource(finalCollection);
-                Logger.Trace($"ListBox updated. Filter: '{searchText}', Items displayed: {finalCollection.Count}");
-
-                if (itemToSelect != null && finalCollection.Contains(itemToSelect)) // Check it's in the filtered list
+                if (_literatureListBuilder?.Entity.IsAlive() == true)
                 {
-                    _literatureListBuilder.SetSelectedItem(itemToSelect);
+                    _literatureListBuilder.SetItemsSource(finalCollection);
+                    Logger.Trace(
+                        $"ListBox updated. Filter: '{searchText}', Items displayed: {finalCollection.Count}"
+                    );
 
-                    // Optional: Scroll the newly selected item into view
-                    var listBoxControl = _literatureListBuilder.Get<ListBox>();
-                    Dispatcher.UIThread.Post(() => // Post again ensure layout is updated before scrolling
+                    if (itemToSelect != null && finalCollection.Contains(itemToSelect)) // Check it's in the filtered list
                     {
-                        if (listBoxControl?.IsVisible == true) listBoxControl.ScrollIntoView(itemToSelect);
-                    }, DispatcherPriority.Loaded); // Use Loaded priority for scrolling after layout
+                        _literatureListBuilder.SetSelectedItem(itemToSelect);
 
-                    Logger.Info($"Item '{itemToSelect.Name}' selected after filter/sort.");
+                        // Optional: Scroll the newly selected item into view
+                        var listBoxControl = _literatureListBuilder.Get<ListBox>();
+                        Dispatcher.UIThread.Post(
+                            () => // Post again ensure layout is updated before scrolling
+                            {
+                                if (listBoxControl?.IsVisible == true)
+                                    listBoxControl.ScrollIntoView(itemToSelect);
+                            },
+                            DispatcherPriority.Loaded
+                        ); // Use Loaded priority for scrolling after layout
+
+                        Logger.Info($"Item '{itemToSelect.Name}' selected after filter/sort.");
+                    }
                 }
-
-            }
-        }, DispatcherPriority.Background);
+            },
+            DispatcherPriority.Background
+        );
     }
 
     /// <summary>
@@ -1245,10 +1533,16 @@ public class LiteraturePage : IUIComponent, IDisposable
     /// </summary>
     private ObservableCollection<LiteratureSourceItem> LoadLiteratureItemsFromDisk()
     {
-        string filePath = Path.Combine(Directory.GetCurrentDirectory(), LITERATURE_FOLDER_NAME, LITERATURE_SAVE_FILE);
+        string filePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            LITERATURE_FOLDER_NAME,
+            LITERATURE_SAVE_FILE
+        );
         if (!File.Exists(filePath))
         {
-            Logger.Info($"Literature save file not found ('{filePath}'). Starting with empty collection.");
+            Logger.Info(
+                $"Literature save file not found ('{filePath}'). Starting with empty collection."
+            );
             return [];
         }
 
@@ -1260,18 +1554,30 @@ public class LiteraturePage : IUIComponent, IDisposable
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true, // Match saving format
-                                      // *** IMPORTANT: Add converter for abstract base class ***
-                Converters = { new LiteratureSourceItemConverter() } // You need to create this converter
+                // *** IMPORTANT: Add converter for abstract base class ***
+                Converters =
+                {
+                    new LiteratureSourceItemConverter(),
+                } // You need to create this converter
+                ,
             };
 
-            var items = JsonSerializer.Deserialize<ObservableCollection<LiteratureSourceItem>>(jsonString, options);
+            var items = JsonSerializer.Deserialize<ObservableCollection<LiteratureSourceItem>>(
+                jsonString,
+                options
+            );
             Logger.Info($"Successfully loaded {items?.Count ?? 0} literature items.");
             return items ?? [];
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, $"Error loading literature items from '{filePath}'. Returning empty collection.");
-            MessageDialog.ShowErrorDialog($"Error loading literature data: {ex.Message}\n\nA new empty list will be used.");
+            Logger.Error(
+                ex,
+                $"Error loading literature items from '{filePath}'. Returning empty collection."
+            );
+            MessageDialog.ShowErrorDialog(
+                $"Error loading literature data: {ex.Message}\n\nA new empty list will be used."
+            );
             return [];
         }
     }
@@ -1279,11 +1585,17 @@ public class LiteraturePage : IUIComponent, IDisposable
     /// <summary>
     /// Saves the current literature items to the JSON save file.
     /// </summary>
-    public static async Task SaveLiteratureItemsToDiskAsync(ObservableCollection<LiteratureSourceItem> items)
+    public static async Task SaveLiteratureItemsToDiskAsync(
+        ObservableCollection<LiteratureSourceItem> items
+    )
     {
-        if (items == null) return;
+        if (items == null)
+            return;
 
-        string directoryPath = Path.Combine(Directory.GetCurrentDirectory(), LITERATURE_FOLDER_NAME);
+        string directoryPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            LITERATURE_FOLDER_NAME
+        );
         string filePath = Path.Combine(directoryPath, LITERATURE_SAVE_FILE);
 
         try
@@ -1295,7 +1607,11 @@ public class LiteraturePage : IUIComponent, IDisposable
             {
                 WriteIndented = true,
                 // *** IMPORTANT: Add converter for abstract base class ***
-                Converters = { new LiteratureSourceItemConverter() } // You need to create this converter
+                Converters =
+                {
+                    new LiteratureSourceItemConverter(),
+                } // You need to create this converter
+                ,
             };
 
             string jsonString = JsonSerializer.Serialize(items, options);
@@ -1316,6 +1632,7 @@ public class LiteraturePage : IUIComponent, IDisposable
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     /// <summary>
     /// Disposable
     /// </summary>
@@ -1336,7 +1653,8 @@ public class LiteraturePage : IUIComponent, IDisposable
                 var mainWindow = App.GetMainWindow();
                 if (mainWindow != null)
                 {
-                    mainWindow.Closing -= async (_, _) => await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems!);
+                    mainWindow.Closing -= async (_, _) =>
+                        await SaveLiteratureItemsToDiskAsync(_baseLiteratureItems!);
                 }
 
                 // Dispose internal disposables (includes timer entities if added)
@@ -1405,4 +1723,3 @@ public class LiteratureSourceItemConverter : System.Text.Json.Serialization.Json
     // public override bool CanConvert(Type typeToConvert) => typeof(LiteratureSourceItem).IsAssignableFrom(typeToConvert);
 }
 */
-

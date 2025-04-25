@@ -65,7 +65,7 @@ public enum LiteratureSourceType
     /// <summary>
     /// Represents a literature source that doesn't fit into any of the predefined categories.
     /// </summary>
-    Other
+    Other,
 }
 
 /// <summary>
@@ -169,10 +169,7 @@ public partial class LiteratureSourceItem : ObservableObject
     /// <summary>
     /// Initializes a new instance of the <see cref="LiteratureSourceItem"/> class with default values.
     /// </summary>
-    public LiteratureSourceItem()
-    {
-
-    }
+    public LiteratureSourceItem() { }
 
     /// <inheritdoc/>
     public override string ToString()

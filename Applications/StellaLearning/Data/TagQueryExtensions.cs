@@ -54,7 +54,11 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison type to use (defaults to OrdinalIgnoreCase).</param>
     /// <returns>true if a tag with the specified name is found using the specified comparison; otherwise, false.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
-    public static bool ContainsTagNamed(this IEnumerable<Tag> tags, string tagName, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public static bool ContainsTagNamed(
+        this IEnumerable<Tag> tags,
+        string tagName,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(tagName);
@@ -90,7 +94,11 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison type to use (e.g., OrdinalIgnoreCase).</param>
     /// <returns>An IEnumerable Tag containing tags that match the specified name under the given comparison.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
-    public static IEnumerable<Tag> FindTagsNamed(this IEnumerable<Tag> tags, string tagName, StringComparison comparisonType)
+    public static IEnumerable<Tag> FindTagsNamed(
+        this IEnumerable<Tag> tags,
+        string tagName,
+        StringComparison comparisonType
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(tagName);
@@ -106,12 +114,17 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison type to use (defaults to OrdinalIgnoreCase).</param>
     /// <returns>An IEnumerable Tag containing tags whose names contain the substring.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or substring is null.</exception>
-    public static IEnumerable<Tag> FindTagsContaining(this IEnumerable<Tag> tags, string substring, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public static IEnumerable<Tag> FindTagsContaining(
+        this IEnumerable<Tag> tags,
+        string substring,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(substring);
         // Handle empty substring if needed, currently returns all tags
-        if (substring.Length == 0) return tags;
+        if (substring.Length == 0)
+            return tags;
         return tags.Where(tag => tag.Name.Contains(substring, comparisonType));
     }
 
@@ -123,11 +136,16 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison type to use (defaults to OrdinalIgnoreCase).</param>
     /// <returns>An IEnumerable Tag containing tags whose names start with the prefix.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or prefix is null.</exception>
-    public static IEnumerable<Tag> FindTagsStartingWith(this IEnumerable<Tag> tags, string prefix, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public static IEnumerable<Tag> FindTagsStartingWith(
+        this IEnumerable<Tag> tags,
+        string prefix,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(prefix);
-        if (prefix.Length == 0) return tags; // Or return Enumerable.Empty<Tag>() if that's preferred
+        if (prefix.Length == 0)
+            return tags; // Or return Enumerable.Empty<Tag>() if that's preferred
 
         return tags.Where(tag => tag.Name.StartsWith(prefix, comparisonType));
     }
@@ -140,11 +158,16 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison type to use (defaults to OrdinalIgnoreCase).</param>
     /// <returns>An IEnumerable Tag  containing tags whose names end with the suffix.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or suffix is null.</exception>
-    public static IEnumerable<Tag> FindTagsEndingWith(this IEnumerable<Tag> tags, string suffix, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public static IEnumerable<Tag> FindTagsEndingWith(
+        this IEnumerable<Tag> tags,
+        string suffix,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(suffix);
-        if (suffix.Length == 0) return tags; // Or return Enumerable.Empty<Tag>() if that's preferred
+        if (suffix.Length == 0)
+            return tags; // Or return Enumerable.Empty<Tag>() if that's preferred
 
         return tags.Where(tag => tag.Name.EndsWith(suffix, comparisonType));
     }
@@ -156,7 +179,10 @@ public static class TagQueryExtensions
     /// <param name="namesToMatch">A collection of tag names to search for.</param>
     /// <returns>An IEnumerable Tag  containing tags whose names match any in the provided list.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or namesToMatch is null.</exception>
-    public static IEnumerable<Tag> FindTagsMatchingAny(this IEnumerable<Tag> tags, IEnumerable<string> namesToMatch)
+    public static IEnumerable<Tag> FindTagsMatchingAny(
+        this IEnumerable<Tag> tags,
+        IEnumerable<string> namesToMatch
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(namesToMatch);
@@ -174,7 +200,11 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison type to use.</param>
     /// <returns>An IEnumerable Tag  containing tags whose names match any in the provided list.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or namesToMatch is null.</exception>
-    public static IEnumerable<Tag> FindTagsMatchingAny(this IEnumerable<Tag> tags, IEnumerable<string> namesToMatch, StringComparison comparisonType)
+    public static IEnumerable<Tag> FindTagsMatchingAny(
+        this IEnumerable<Tag> tags,
+        IEnumerable<string> namesToMatch,
+        StringComparison comparisonType
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(namesToMatch);
@@ -183,7 +213,6 @@ public static class TagQueryExtensions
         var nameSet = new HashSet<string>(namesToMatch, GetStringComparer(comparisonType));
         return tags.Where(tag => nameSet.Contains(tag.Name));
     }
-
 
     // --- Counting ---
 
@@ -211,7 +240,11 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison type to use.</param>
     /// <returns>The number of tags matching the name under the given comparison.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or tagName is null.</exception>
-    public static int CountTagsNamed(this IEnumerable<Tag> tags, string tagName, StringComparison comparisonType)
+    public static int CountTagsNamed(
+        this IEnumerable<Tag> tags,
+        string tagName,
+        StringComparison comparisonType
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(tagName);
@@ -227,14 +260,18 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison type to use (defaults to OrdinalIgnoreCase).</param>
     /// <returns>The number of tags whose names contain the substring.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags or substring is null.</exception>
-    public static int CountTagsContaining(this IEnumerable<Tag> tags, string substring, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public static int CountTagsContaining(
+        this IEnumerable<Tag> tags,
+        string substring,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
         ArgumentNullException.ThrowIfNull(substring);
-        if (substring.Length == 0) return tags.Count(); // Count all if substring is empty
+        if (substring.Length == 0)
+            return tags.Count(); // Count all if substring is empty
         return tags.Count(tag => tag.Name.Contains(substring, comparisonType));
     }
-
 
     // --- Utility Methods ---
 
@@ -245,12 +282,14 @@ public static class TagQueryExtensions
     /// <param name="comparisonType">The string comparison to use for determining uniqueness (defaults to OrdinalIgnoreCase).</param>
     /// <returns>An IEnumerable string containing the distinct tag names.</returns>
     /// <exception cref="ArgumentNullException">Thrown if tags is null.</exception>
-    public static IEnumerable<string> GetDistinctTagNames(this IEnumerable<Tag> tags, StringComparison comparisonType = StringComparison.OrdinalIgnoreCase)
+    public static IEnumerable<string> GetDistinctTagNames(
+        this IEnumerable<Tag> tags,
+        StringComparison comparisonType = StringComparison.OrdinalIgnoreCase
+    )
     {
         ArgumentNullException.ThrowIfNull(tags);
 
-        return tags.Select(tag => tag.Name)
-                   .Distinct(GetStringComparer(comparisonType));
+        return tags.Select(tag => tag.Name).Distinct(GetStringComparer(comparisonType));
     }
 
     // --- Helper for String Comparison ---
@@ -261,10 +300,14 @@ public static class TagQueryExtensions
             StringComparison.CurrentCulture => StringComparer.CurrentCulture,
             StringComparison.CurrentCultureIgnoreCase => StringComparer.CurrentCultureIgnoreCase,
             StringComparison.InvariantCulture => StringComparer.InvariantCulture,
-            StringComparison.InvariantCultureIgnoreCase => StringComparer.InvariantCultureIgnoreCase,
+            StringComparison.InvariantCultureIgnoreCase =>
+                StringComparer.InvariantCultureIgnoreCase,
             StringComparison.Ordinal => StringComparer.Ordinal,
             StringComparison.OrdinalIgnoreCase => StringComparer.OrdinalIgnoreCase,
-            _ => throw new ArgumentOutOfRangeException(nameof(comparisonType), "Unsupported string comparison type."),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(comparisonType),
+                "Unsupported string comparison type."
+            ),
         };
     }
 }

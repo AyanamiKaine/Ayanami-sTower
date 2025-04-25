@@ -15,6 +15,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -27,29 +34,21 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage; // For FilePicker
 using Avalonia.Threading;
+using AyanamisTower.StellaLearning.Util;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Flecs.NET.Core;
-using AyanamisTower.StellaLearning.Util;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
 using static Avalonia.Flecs.Controls.ECS.Module; // If Page tag is defined here
-
 
 namespace AyanamisTower.StellaLearning.Pages;
 
 /*
-TODO: Currently the file reaches over 1300 LOC this indicates that we can probably refactor somethings into 
+TODO: Currently the file reaches over 1300 LOC this indicates that we can probably refactor somethings into
 their own components. Making this smaller and more maintainable.
 */
 
 /*
 
-We want to be able to easily right click on a refrence to copy it to the clip 
+We want to be able to easily right click on a refrence to copy it to the clip
 board so we can past it into our drawing program.
 
 We should be able to open our refrence folder in the app, as well as other folders.
@@ -100,6 +99,7 @@ public partial class ReferencePaintingItem : ObservableObject
     /// </summary>
     [ObservableProperty]
     private Bitmap? _thumbnail; // Cache thumbnail for performance
+
     [ObservableProperty]
     private ObservableCollection<string> _tags = [];
 }
@@ -157,7 +157,7 @@ public enum StudyType
     /// <summary>
     /// Any other type of art study not covered by the specific categories.
     /// </summary>
-    Other
+    Other,
 }
 
 // --- ArtPage Component ---
@@ -196,7 +196,15 @@ public class ArtPage : IUIComponent, IDisposable
     private ReferencePaintingItem? _currentHoveredItem = null;
     private const int PREVIEW_MAX_SIZE = 400; // Max width/height for preview image pixels
     private static readonly string[] SupportedImageExtensions =
-            { ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp" };
+    {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".bmp",
+        ".gif",
+        ".webp",
+    };
+
     /// <inheritdoc/>
     public Entity Root => _root;
 
@@ -213,9 +221,10 @@ public class ArtPage : IUIComponent, IDisposable
         // Load existing data (Placeholder)
         LoadReferencePaintings(); // Implement this method
 
-        _root = _world.UI<Grid>(BuildArtPageUI)
-                      .Add<Page>() // Add the Page tag
-                      .Entity;
+        _root = _world
+            .UI<Grid>(BuildArtPageUI)
+            .Add<Page>() // Add the Page tag
+            .Entity;
 
         App.GetMainWindow().Closing += async (_, _) => await SaveReferenceMetadataAsync();
     }
@@ -226,7 +235,6 @@ public class ArtPage : IUIComponent, IDisposable
     private void BuildArtPageUI(UIBuilder<Grid> grid)
     {
         grid.SetRowDefinitions("Auto, Auto, *");
-
 
         grid.Child<StackPanel>(buttonsPanel =>
         {
@@ -239,23 +247,33 @@ public class ArtPage : IUIComponent, IDisposable
 
             buttonsPanel.Child<Button>(button =>
             {
-                button.SetText("Add Reference...")
-                      .AttachToolTip(_world.UI<ToolTip>((toolTip) =>
-                      {
-                          toolTip.Child<TextBlock>((textBlock) =>
-                          {
-                              textBlock.SetText("You can also drag and drop images directly in the list");
-                          });
-                      }))
-                      .OnClick(async (s, e) => await AddReferencePainting());
+                button
+                    .SetText("Add Reference...")
+                    .AttachToolTip(
+                        _world.UI<ToolTip>(
+                            (toolTip) =>
+                            {
+                                toolTip.Child<TextBlock>(
+                                    (textBlock) =>
+                                    {
+                                        textBlock.SetText(
+                                            "You can also drag and drop images directly in the list"
+                                        );
+                                    }
+                                );
+                            }
+                        )
+                    )
+                    .OnClick(async (s, e) => await AddReferencePainting());
             });
 
             buttonsPanel.Child<Button>(button =>
             {
                 // Disable initially until a reference is selected
-                button.SetText("Add Study/Sketch...")
-                      .Disable() // Start disabled
-                      .OnClick(async (s, e) => await AddArtStudy());
+                button
+                    .SetText("Add Study/Sketch...")
+                    .Disable() // Start disabled
+                    .OnClick(async (s, e) => await AddArtStudy());
 
                 // Store builder reference to enable/disable later
                 // (Requires a way to access/update the button entity's InputElement component)
@@ -277,188 +295,241 @@ public class ArtPage : IUIComponent, IDisposable
         // --- ScrollViewer for the List (Row 2, takes remaining space *) ---
         grid.Child<ScrollViewer>(scrollViewer =>
         {
-            scrollViewer
-            .SetMargin(5)
-            .SetRow(2);
+            scrollViewer.SetMargin(5).SetRow(2);
 
             // ListBox
             scrollViewer.Child<ListBox>(listBox =>
             {
                 _referenceListBuilder = listBox; // Store builder reference
 
+                var contextFlyout = _world.UI<MenuFlyout>(
+                    (menuFlyout) =>
+                    {
+                        menuFlyout.OnOpened(
+                            (sender, e) =>
+                            {
+                                if (!listBox.HasItemSelected())
+                                {
+                                    menuFlyout.Hide();
+                                }
+                            }
+                        );
 
-                var contextFlyout = _world.UI<MenuFlyout>((menuFlyout) =>
-                                    {
-                                        menuFlyout.OnOpened((sender, e) =>
+                        menuFlyout.Child<MenuItem>(
+                            (item) =>
+                            {
+                                // Renames the list entry and its file name
+                                item.SetHeader("Open")
+                                    .OnClick(
+                                        (sender, _) =>
                                         {
-                                            if (!listBox.HasItemSelected())
+                                            var item =
+                                                listBox.GetSelectedItem<ReferencePaintingItem>();
+
+                                            try
                                             {
-                                                menuFlyout.Hide();
+                                                FileOpener.OpenFileWithDefaultProgram(
+                                                    item.ImagePath
+                                                );
                                             }
-                                        });
-
-                                        menuFlyout.Child<MenuItem>((item) =>
-                                        {
-                                            // Renames the list entry and its file name
-                                            item.SetHeader("Open")
-                                            .OnClick((sender, _) =>
+                                            catch (Exception ex)
                                             {
-                                                var item = listBox.GetSelectedItem<ReferencePaintingItem>();
+                                                Console.Error.WriteLine(
+                                                    $"Something went wrong {ex.Message}"
+                                                );
+                                            }
+                                        }
+                                    );
+
+                                item.AttachToolTip(
+                                    _world.UI<ToolTip>(
+                                        (toolTip) =>
+                                        {
+                                            toolTip.Child<TextBlock>(
+                                                (textBlock) =>
+                                                {
+                                                    textBlock.SetText(
+                                                        "You can also double click on the item to open it!"
+                                                    );
+                                                }
+                                            );
+                                        }
+                                    )
+                                );
+                            }
+                        );
+
+                        menuFlyout.Child<MenuItem>(
+                            (item) =>
+                            {
+                                // Renames the list entry and its file name
+                                item.SetHeader("Rename")
+                                    .OnClick(
+                                        (sender, _) =>
+                                        {
+                                            var item =
+                                                listBox.GetSelectedItem<ReferencePaintingItem>();
+
+                                            // Ensure we have the ListBox control instance
+                                            if (listBox == null)
+                                                return;
+
+                                            // Get the item associated with the context menu click
+                                            // The DataContext of the MenuItem should be the ReferencePaintingItem
+                                            var itemToRename =
+                                                (sender as Control)?.DataContext
+                                                    as ReferencePaintingItem
+                                                ?? listBox.GetSelectedItem<ReferencePaintingItem>(); // Fallback
+
+                                            if (itemToRename == null)
+                                                return;
+
+                                            // Find the ListBoxItem container for positioning the flyout
+                                            var container = listBox
+                                                .Get<ListBox>()
+                                                .ContainerFromItem(itemToRename);
+                                            if (container is Control targetControl)
+                                            {
+                                                ShowRenameFlyout(targetControl, itemToRename);
+                                            }
+                                            else
+                                            {
+                                                // Fallback: Show attached to the ListBox itself if container not found
+                                                ShowRenameFlyout(
+                                                    listBox.Get<ListBox>(),
+                                                    itemToRename
+                                                );
+                                            }
+                                        }
+                                    );
+                            }
+                        );
+
+                        menuFlyout.Child<MenuItem>(
+                            (item) =>
+                            {
+                                // Uses a large language model to autogenerate tags.
+                                item.SetHeader("Generate Tags")
+                                    .OnClick(
+                                        async (sender, _) =>
+                                        {
+                                            var item =
+                                                listBox.GetSelectedItem<ReferencePaintingItem>();
+
+                                            var llm = LargeLanguageManager.Instance;
+                                            // Get the new tags (assuming this returns List<string> or similar)
+                                            var newTagsList = await llm.GetImageTagsAsync(
+                                                item.ImagePath,
+                                                6
+                                            );
+
+                                            // --- Modification Start ---
+                                            // Instead of: item.Tags = newTagsList ?? [];
+
+                                            // Modify the existing ObservableCollection:
+                                            item.Tags.Clear(); // Clear the current tags
+
+                                            if (newTagsList != null) // Check if LLM returned tags
+                                            {
+                                                foreach (var tag in newTagsList)
+                                                {
+                                                    item.Tags.Add(tag); // Add new tags one by one
+                                                }
+                                            }
+                                            await SaveReferenceMetadataAsync();
+                                        }
+                                    );
+                            }
+                        );
+
+                        menuFlyout.Child<MenuItem>(
+                            (item) =>
+                            {
+                                //Removes the refrence from the list
+                                //Should not delete the file!
+                                item.SetHeader("Remove")
+                                    .OnClick(
+                                        async (_, _) => // Make the lambda async if you plan to add async dialogs
+                                        {
+                                            if (listBox == null)
+                                                return;
+
+                                            var itemToRemove =
+                                                listBox.GetSelectedItem<ReferencePaintingItem>();
+                                            if (itemToRemove != null)
+                                            {
+                                                string filePath = itemToRemove.ImagePath;
+                                                string displayName = itemToRemove.Name; // For use in messages
+
+                                                // Basic validation
+                                                if (string.IsNullOrEmpty(filePath))
+                                                {
+                                                    MessageDialog.ShowErrorDialog(
+                                                        $"Error: ImagePath is missing for item '{displayName}'. Cannot delete."
+                                                    );
+                                                    return;
+                                                }
+
+                                                // --- RECOMMENDED: Insert Confirmation Dialog Here ---
+                                                // Example (requires a dialog implementation):
+                                                // var dialogService = GetSomeDialogService(); // Get your dialog service instance
+                                                // bool confirmed = await dialogService.ShowConfirmationAsync(
+                                                //    "Confirm Deletion",
+                                                //    $"Are you sure you want to permanently delete the reference file '{displayName}'?\n\nThis action cannot be undone.");
+                                                //
+                                                // if (!confirmed)
+                                                // {
+                                                //     Console.WriteLine("Deletion cancelled by user.");
+                                                //     return; // Stop if user cancels
+                                                // }
+                                                // --- End Confirmation Dialog Placeholder ---
+
 
                                                 try
                                                 {
-                                                    FileOpener.OpenFileWithDefaultProgram(item.ImagePath);
-                                                }
-                                                catch (Exception ex)
-                                                {
-                                                    Console.Error.WriteLine($"Something went wrong {ex.Message}");
-                                                }
-                                            });
+                                                    // 1. Attempt to delete the file from disk FIRST
+                                                    File.Delete(filePath);
+                                                    //Console.WriteLine($"Successfully deleted file: {filePath}");
 
-                                            item.AttachToolTip(_world.UI<ToolTip>((toolTip) =>
-                                            {
-                                                toolTip.Child<TextBlock>((textBlock) =>
-                                                {
-                                                    textBlock.SetText("You can also double click on the item to open it!");
-                                                });
-                                            }));
-                                        });
-
-                                        menuFlyout.Child<MenuItem>((item) =>
-                                        {
-                                            // Renames the list entry and its file name
-                                            item.SetHeader("Rename")
-                                            .OnClick((sender, _) =>
-                                            {
-                                                var item = listBox.GetSelectedItem<ReferencePaintingItem>();
-
-                                                // Ensure we have the ListBox control instance
-                                                if (listBox == null) return;
-
-                                                // Get the item associated with the context menu click
-                                                // The DataContext of the MenuItem should be the ReferencePaintingItem
-                                                var itemToRename = (sender as Control)?.DataContext as ReferencePaintingItem ??
-                                                                   listBox.GetSelectedItem<ReferencePaintingItem>(); // Fallback
-
-                                                if (itemToRename == null) return;
-
-                                                // Find the ListBoxItem container for positioning the flyout
-                                                var container = listBox.Get<ListBox>().ContainerFromItem(itemToRename);
-                                                if (container is Control targetControl)
-                                                {
-                                                    ShowRenameFlyout(targetControl, itemToRename);
-                                                }
-                                                else
-                                                {
-                                                    // Fallback: Show attached to the ListBox itself if container not found
-                                                    ShowRenameFlyout(listBox.Get<ListBox>(), itemToRename);
-                                                }
-
-                                            });
-                                        });
-
-                                        menuFlyout.Child<MenuItem>((item) =>
-                                        {
-                                            // Uses a large language model to autogenerate tags.
-                                            item.SetHeader("Generate Tags")
-                                            .OnClick(async (sender, _) =>
-                                            {
-                                                var item = listBox.GetSelectedItem<ReferencePaintingItem>();
-
-                                                var llm = LargeLanguageManager.Instance;
-                                                // Get the new tags (assuming this returns List<string> or similar)
-                                                var newTagsList = await llm.GetImageTagsAsync(item.ImagePath, 6);
-
-                                                // --- Modification Start ---
-                                                // Instead of: item.Tags = newTagsList ?? [];
-
-                                                // Modify the existing ObservableCollection:
-                                                item.Tags.Clear(); // Clear the current tags
-
-                                                if (newTagsList != null) // Check if LLM returned tags
-                                                {
-                                                    foreach (var tag in newTagsList)
+                                                    // 2. If file deletion succeeded, THEN update UI and collection
+                                                    // Clear details view if the deleted item was the selected one
+                                                    if (
+                                                        ReferenceEquals(
+                                                            _selectedReference,
+                                                            itemToRemove
+                                                        )
+                                                    )
                                                     {
-                                                        item.Tags.Add(tag); // Add new tags one by one
+                                                        _selectedReference = null;
+                                                        _currentStudies.Clear();
+                                                        // TODO: Consider disabling "Add Study" button state here
                                                     }
+
+                                                    // Remove the item from the observable collection
+                                                    _referencePaintings.Remove(itemToRemove);
+                                                    await SaveReferenceMetadataAsync();
                                                 }
-                                                await SaveReferenceMetadataAsync();
-                                            });
-                                        });
-
-                                        menuFlyout.Child<MenuItem>((item) =>
-                                        {
-                                            //Removes the refrence from the list
-                                            //Should not delete the file!
-                                            item.SetHeader("Remove")
-                                                .OnClick(async (_, _) => // Make the lambda async if you plan to add async dialogs
+                                                catch (IOException ex) // Catch specific IO exceptions
                                                 {
-                                                    if (listBox == null) return;
-
-                                                    var itemToRemove = listBox.GetSelectedItem<ReferencePaintingItem>();
-                                                    if (itemToRemove != null)
-                                                    {
-                                                        string filePath = itemToRemove.ImagePath;
-                                                        string displayName = itemToRemove.Name; // For use in messages
-
-                                                        // Basic validation
-                                                        if (string.IsNullOrEmpty(filePath))
-                                                        {
-                                                            MessageDialog.ShowErrorDialog($"Error: ImagePath is missing for item '{displayName}'. Cannot delete.");
-                                                            return;
-                                                        }
-
-                                                        // --- RECOMMENDED: Insert Confirmation Dialog Here ---
-                                                        // Example (requires a dialog implementation):
-                                                        // var dialogService = GetSomeDialogService(); // Get your dialog service instance
-                                                        // bool confirmed = await dialogService.ShowConfirmationAsync(
-                                                        //    "Confirm Deletion",
-                                                        //    $"Are you sure you want to permanently delete the reference file '{displayName}'?\n\nThis action cannot be undone.");
-                                                        //
-                                                        // if (!confirmed)
-                                                        // {
-                                                        //     Console.WriteLine("Deletion cancelled by user.");
-                                                        //     return; // Stop if user cancels
-                                                        // }
-                                                        // --- End Confirmation Dialog Placeholder ---
-
-
-                                                        try
-                                                        {
-                                                            // 1. Attempt to delete the file from disk FIRST
-                                                            File.Delete(filePath);
-                                                            //Console.WriteLine($"Successfully deleted file: {filePath}");
-
-                                                            // 2. If file deletion succeeded, THEN update UI and collection
-                                                            // Clear details view if the deleted item was the selected one
-                                                            if (ReferenceEquals(_selectedReference, itemToRemove))
-                                                            {
-                                                                _selectedReference = null;
-                                                                _currentStudies.Clear();
-                                                                // TODO: Consider disabling "Add Study" button state here
-                                                            }
-
-                                                            // Remove the item from the observable collection
-                                                            _referencePaintings.Remove(itemToRemove);
-                                                            await SaveReferenceMetadataAsync();
-
-                                                        }
-                                                        catch (IOException ex) // Catch specific IO exceptions
-                                                        {
-                                                            MessageDialog.ShowErrorDialog(ex.Message);
-                                                        }
-                                                        catch (UnauthorizedAccessException authEx) // Catch permissions errors
-                                                        {
-                                                            MessageDialog.ShowErrorDialog(authEx.Message);
-                                                        }
-                                                        catch (Exception ex) // Catch any other unexpected errors
-                                                        {
-                                                            MessageDialog.ShowErrorDialog($"An unexpected error occurred while deleting file '{filePath}' for item '{displayName}': {ex.Message}");
-                                                        }
-                                                    }
-                                                });
-                                        });
-                                    });
+                                                    MessageDialog.ShowErrorDialog(ex.Message);
+                                                }
+                                                catch (UnauthorizedAccessException authEx) // Catch permissions errors
+                                                {
+                                                    MessageDialog.ShowErrorDialog(authEx.Message);
+                                                }
+                                                catch (Exception ex) // Catch any other unexpected errors
+                                                {
+                                                    MessageDialog.ShowErrorDialog(
+                                                        $"An unexpected error occurred while deleting file '{filePath}' for item '{displayName}': {ex.Message}"
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    );
+                            }
+                        );
+                    }
+                );
                 listBox
                     .SetItemsSource(_referencePaintings)
                     .SetItemTemplate(CreateReferenceItemTemplate())
@@ -468,20 +539,21 @@ public class ArtPage : IUIComponent, IDisposable
                     .AllowDrop()
                     .OnDragOver(HandleReferenceListDragOver)
                     .OnDrop(HandleReferenceListDropAsync)
-                    .OnDoubleTapped((_, _) =>
-                    {
-                        var item = listBox.GetSelectedItem<ReferencePaintingItem>();
-
-                        try
+                    .OnDoubleTapped(
+                        (_, _) =>
                         {
-                            FileOpener.OpenFileWithDefaultProgram(item.ImagePath);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.Error.WriteLine($"Something went wrong {ex.Message}");
-                        }
+                            var item = listBox.GetSelectedItem<ReferencePaintingItem>();
 
-                    });
+                            try
+                            {
+                                FileOpener.OpenFileWithDefaultProgram(item.ImagePath);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.Error.WriteLine($"Something went wrong {ex.Message}");
+                            }
+                        }
+                    );
                 // DockPanel fills remaining space by default
             });
         });
@@ -491,88 +563,93 @@ public class ArtPage : IUIComponent, IDisposable
 
     private FuncDataTemplate<ReferencePaintingItem> CreateReferenceItemTemplate()
     {
-        return _world.CreateTemplate<ReferencePaintingItem, Grid>((grid, item) =>
-        {
-            if (item is null)
-                return;
-            grid
-                .SetColumnDefinitions("Auto, *, Auto")
-                .SetRowDefinitions("Auto")
-                .SetMargin(5);
-
-
-            if (item.Thumbnail != null)
+        return _world.CreateTemplate<ReferencePaintingItem, Grid>(
+            (grid, item) =>
             {
-                // Thumbnail Image
-                grid.Child<Image>(img =>
+                if (item is null)
+                    return;
+                grid.SetColumnDefinitions("Auto, *, Auto").SetRowDefinitions("Auto").SetMargin(5);
+
+                if (item.Thumbnail != null)
                 {
-                    img
-                        .SetColumn(0)
-                       .SetBinding(Image.SourceProperty, nameof(ReferencePaintingItem.Thumbnail))
-                       .SetWidth(THUMBNAIL_SIZE / 2.0) // Smaller thumbnail in list
-                       .SetHeight(THUMBNAIL_SIZE / 2.0)
-                       .SetStretch(Stretch.UniformToFill)
-                       .SetVerticalAlignment(VerticalAlignment.Center)
-                        .SetHorizontalAlignment(HorizontalAlignment.Left)
-                        //TODO: There is a big chance that a tooltip with a image attached 
-                        // is much closer to the thing we want.
-                        .OnPointerEntered(HandleItemPointerEntered)
-                        .SetIsHitTestVisible(true);
-                    // Name TextBlock
-                    grid.Child<TextBlock>(txt =>
+                    // Thumbnail Image
+                    grid.Child<Image>(img =>
                     {
-                        txt
-                        .SetTextWrapping(TextWrapping.NoWrap)
-                        .SetTextTrimming(TextTrimming.CharacterEllipsis)
-                        .SetColumn(1)
-                        .SetMargin(10, 0, 0, 0)
-                        .SetBinding(TextBlock.TextProperty, nameof(ReferencePaintingItem.Name))
-                        .SetVerticalAlignment(VerticalAlignment.Center)
-                        .SetHorizontalAlignment(HorizontalAlignment.Left)
-                        .SetIsHitTestVisible(false);
+                        img.SetColumn(0)
+                            .SetBinding(
+                                Image.SourceProperty,
+                                nameof(ReferencePaintingItem.Thumbnail)
+                            )
+                            .SetWidth(THUMBNAIL_SIZE / 2.0) // Smaller thumbnail in list
+                            .SetHeight(THUMBNAIL_SIZE / 2.0)
+                            .SetStretch(Stretch.UniformToFill)
+                            .SetVerticalAlignment(VerticalAlignment.Center)
+                            .SetHorizontalAlignment(HorizontalAlignment.Left)
+                            //TODO: There is a big chance that a tooltip with a image attached
+                            // is much closer to the thing we want.
+                            .OnPointerEntered(HandleItemPointerEntered)
+                            .SetIsHitTestVisible(true);
+                        // Name TextBlock
+                        grid.Child<TextBlock>(txt =>
+                        {
+                            txt.SetTextWrapping(TextWrapping.NoWrap)
+                                .SetTextTrimming(TextTrimming.CharacterEllipsis)
+                                .SetColumn(1)
+                                .SetMargin(10, 0, 0, 0)
+                                .SetBinding(
+                                    TextBlock.TextProperty,
+                                    nameof(ReferencePaintingItem.Name)
+                                )
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                                .SetHorizontalAlignment(HorizontalAlignment.Left)
+                                .SetIsHitTestVisible(false);
+                        });
                     });
+                }
 
-                });
-
-            }
-
-
-            // Row 1, Col 2: Tags (using ItemsControl or similar)
-            grid.Child<ItemsControl>(tagsList =>
-            {
-                tagsList
-                    .SetColumn(2)
-                    .SetHorizontalAlignment(HorizontalAlignment.Right)
-                    .SetVerticalAlignment(VerticalAlignment.Center)
-                    .SetItemsSource(item.Tags) // Bind to the item's Tags collection
-                                               //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
-                    .SetItemTemplate(_world.CreateTemplate<string, Border>((border, tagText) => // Simple tag template
-                    {
-                        border.SetBackground(Brushes.LightGray)
-                              .SetCornerRadius(3)
-                              .SetPadding(4, 1)
-                              .SetMargin(2)
-                            .Child<StackPanel>(stackPanel =>
-                            {
-                                stackPanel
-                                    .SetOrientation(Orientation.Horizontal)
-                                    .SetSpacing(5)
-                                    .SetVerticalAlignment(VerticalAlignment.Center);
-
-                                stackPanel.Child<TextBlock>(textBlock =>
+                // Row 1, Col 2: Tags (using ItemsControl or similar)
+                grid.Child<ItemsControl>(tagsList =>
+                {
+                    tagsList
+                        .SetColumn(2)
+                        .SetHorizontalAlignment(HorizontalAlignment.Right)
+                        .SetVerticalAlignment(VerticalAlignment.Center)
+                        .SetItemsSource(item.Tags) // Bind to the item's Tags collection
+                        //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                        .SetItemTemplate(
+                            _world.CreateTemplate<string, Border>(
+                                (border, tagText) => // Simple tag template
                                 {
-                                    textBlock
-                                        .SetText(tagText)
-                                        .SetVerticalAlignment(VerticalAlignment.Center);
-                                });
+                                    border
+                                        .SetBackground(Brushes.LightGray)
+                                        .SetCornerRadius(3)
+                                        .SetPadding(4, 1)
+                                        .SetMargin(2)
+                                        .Child<StackPanel>(stackPanel =>
+                                        {
+                                            stackPanel
+                                                .SetOrientation(Orientation.Horizontal)
+                                                .SetSpacing(5)
+                                                .SetVerticalAlignment(VerticalAlignment.Center);
 
-
-                            });
-                    }))
-                    .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
-            });
-
-        });
+                                            stackPanel.Child<TextBlock>(textBlock =>
+                                            {
+                                                textBlock
+                                                    .SetText(tagText)
+                                                    .SetVerticalAlignment(VerticalAlignment.Center);
+                                            });
+                                        });
+                                }
+                            )
+                        )
+                        .With(ic =>
+                            ic.ItemsPanel = new FuncTemplate<Panel>(
+                                () => new WrapPanel { Orientation = Orientation.Horizontal }
+                            )!
+                        );
+                });
+            }
+        );
     }
 
     /// <summary>
@@ -586,8 +663,8 @@ public class ArtPage : IUIComponent, IDisposable
         var renameTextBox = new TextBox
         {
             Text = itemToRename.Name, // Pre-populate with current name
-            MinWidth = 150,        // Give it some initial width
-            AcceptsReturn = false,   // Prevent multi-line names
+            MinWidth = 150, // Give it some initial width
+            AcceptsReturn = false, // Prevent multi-line names
         };
 
         // Create the Flyout to host the TextBox
@@ -595,7 +672,9 @@ public class ArtPage : IUIComponent, IDisposable
         {
             Content = renameTextBox,
             Placement = PlacementMode.BottomEdgeAlignedLeft, // Position it nicely below the item
-            ShowMode = FlyoutShowMode.Transient // Hide when clicking outside
+            ShowMode =
+                FlyoutShowMode.Transient // Hide when clicking outside
+            ,
         };
 
         // --- Event Handlers for Confirmation/Cancellation ---
@@ -651,11 +730,14 @@ public class ArtPage : IUIComponent, IDisposable
 
         // --- Focus the TextBox after the Flyout opens ---
         // Use Dispatcher.UIThread.Post to ensure the flyout is ready
-        Dispatcher.UIThread.Post(() =>
-        {
-            renameTextBox.Focus();
-            renameTextBox.SelectAll(); // Select existing text for easy replacement
-        }, DispatcherPriority.Input);
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                renameTextBox.Focus();
+                renameTextBox.SelectAll(); // Select existing text for easy replacement
+            },
+            DispatcherPriority.Input
+        );
     }
 
     /// <summary>
@@ -707,7 +789,9 @@ public class ArtPage : IUIComponent, IDisposable
 
         if (File.Exists(newPath))
         {
-            MessageDialog.ShowErrorDialog($"Error: Cannot rename. File already exists at {newPath}");
+            MessageDialog.ShowErrorDialog(
+                $"Error: Cannot rename. File already exists at {newPath}"
+            );
             return;
         }
 
@@ -722,14 +806,16 @@ public class ArtPage : IUIComponent, IDisposable
             await Dispatcher.UIThread.InvokeAsync(async () =>
             {
                 item.ImagePath = newPath; // Update the stored path
-                item.Name = newName;      // Update the observable property (UI will refresh)
-                                          //Console.WriteLine($"Successfully renamed '{Path.GetFileName(oldPath)}' to '{newFileName}'");
+                item.Name = newName; // Update the observable property (UI will refresh)
+                //Console.WriteLine($"Successfully renamed '{Path.GetFileName(oldPath)}' to '{newFileName}'");
                 await SaveReferenceMetadataAsync();
             });
         }
         catch (Exception ex)
         {
-            MessageDialog.ShowErrorDialog($"Error renaming file from '{oldPath}' to '{newPath}': {ex.Message}");
+            MessageDialog.ShowErrorDialog(
+                $"Error renaming file from '{oldPath}' to '{newPath}': {ex.Message}"
+            );
         }
     }
 
@@ -738,36 +824,44 @@ public class ArtPage : IUIComponent, IDisposable
     /// </summary>
     private IDataTemplate CreateStudyItemTemplate()
     {
-        return _world.CreateTemplate<ArtStudyItem, StackPanel>((builder, item) =>
-        {
-            builder.SetOrientation(Orientation.Horizontal)
-                   .SetSpacing(5);
-
-            // Thumbnail Image
-            builder.Child<Image>(img =>
+        return _world.CreateTemplate<ArtStudyItem, StackPanel>(
+            (builder, item) =>
             {
-                img.SetWidth(THUMBNAIL_SIZE)
-                   .SetHeight(THUMBNAIL_SIZE)
-                   .SetStretch(Stretch.UniformToFill)
-                   .SetBinding(Image.SourceProperty, nameof(ReferencePaintingItem.Thumbnail))
-                   .SetVerticalAlignment(VerticalAlignment.Center);
-            });
+                builder.SetOrientation(Orientation.Horizontal).SetSpacing(5);
 
-            // Details (Name, Type)
-            builder.Child<StackPanel>(details =>
-            {
-                details.SetOrientation(Orientation.Vertical)
-                       .SetVerticalAlignment(VerticalAlignment.Center);
-
-                details.Child<TextBlock>(nameTxt => nameTxt.SetBinding(TextBlock.TextProperty, nameof(ReferencePaintingItem.Name)));
-                details.Child<TextBlock>(typeTxt =>
+                // Thumbnail Image
+                builder.Child<Image>(img =>
                 {
-                    typeTxt.SetText(item.Type.ToString()) // Display study type
-                           .SetFontSize(10)
-                           .SetForeground(Brushes.Gray);
+                    img.SetWidth(THUMBNAIL_SIZE)
+                        .SetHeight(THUMBNAIL_SIZE)
+                        .SetStretch(Stretch.UniformToFill)
+                        .SetBinding(Image.SourceProperty, nameof(ReferencePaintingItem.Thumbnail))
+                        .SetVerticalAlignment(VerticalAlignment.Center);
                 });
-            });
-        });
+
+                // Details (Name, Type)
+                builder.Child<StackPanel>(details =>
+                {
+                    details
+                        .SetOrientation(Orientation.Vertical)
+                        .SetVerticalAlignment(VerticalAlignment.Center);
+
+                    details.Child<TextBlock>(nameTxt =>
+                        nameTxt.SetBinding(
+                            TextBlock.TextProperty,
+                            nameof(ReferencePaintingItem.Name)
+                        )
+                    );
+                    details.Child<TextBlock>(typeTxt =>
+                    {
+                        typeTxt
+                            .SetText(item.Type.ToString()) // Display study type
+                            .SetFontSize(10)
+                            .SetForeground(Brushes.Gray);
+                    });
+                });
+            }
+        );
     }
 
     // --- Event Handlers ---
@@ -796,7 +890,6 @@ public class ArtPage : IUIComponent, IDisposable
         }
     }
 
-
     // --- Actions (Implement Logic) ---
 
     private async Task AddReferencePainting()
@@ -808,7 +901,8 @@ public class ArtPage : IUIComponent, IDisposable
             Console.WriteLine($"Selected file: {filePath}");
             // 1. Copy file to the 'art/references' directory
             var newPath = CopyFileToArtFolder(filePath, REFERENCES_SUBFOLDER);
-            if (string.IsNullOrEmpty(newPath)) return; // Copy failed
+            if (string.IsNullOrEmpty(newPath))
+                return; // Copy failed
 
             // 2. Create ReferencePaintingItem
             var newItem = new ReferencePaintingItem
@@ -816,7 +910,7 @@ public class ArtPage : IUIComponent, IDisposable
                 Name = Path.GetFileNameWithoutExtension(filePath),
                 ImagePath = newPath,
                 // Generate thumbnail (implement LoadThumbnail)
-                Thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE)
+                Thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE),
             };
 
             _referencePaintings.Add(newItem);
@@ -825,7 +919,8 @@ public class ArtPage : IUIComponent, IDisposable
 
     private async Task AddArtStudy()
     {
-        if (_selectedReference == null) return; // Should be disabled, but double-check
+        if (_selectedReference == null)
+            return; // Should be disabled, but double-check
 
         Console.WriteLine($"Add Study/Sketch for: {_selectedReference.Name}");
         var filePath = await PickImageFileAsync("Select Study/Sketch Image");
@@ -834,7 +929,8 @@ public class ArtPage : IUIComponent, IDisposable
             Console.WriteLine($"Selected file: {filePath}");
             // 1. Copy file to the 'art/studies' directory
             var newPath = CopyFileToArtFolder(filePath, STUDIES_SUBFOLDER);
-            if (string.IsNullOrEmpty(newPath)) return; // Copy failed
+            if (string.IsNullOrEmpty(newPath))
+                return; // Copy failed
 
             // 2. Determine Study Type (e.g., show a dialog)
             const StudyType studyType = StudyType.MasterCopy; // Placeholder
@@ -845,7 +941,7 @@ public class ArtPage : IUIComponent, IDisposable
                 Name = Path.GetFileNameWithoutExtension(newPath),
                 ImagePath = newPath,
                 Type = studyType,
-                Thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE)
+                Thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE),
             };
 
             // 4. Add to current studies collection (and save metadata)
@@ -877,21 +973,29 @@ public class ArtPage : IUIComponent, IDisposable
                 {
                     ImagePath = item.ImagePath,
                     Name = item.Name,
-                    Tags = [.. item.Tags] // Directly use the Tags list
+                    Tags =
+                    [
+                        .. item.Tags,
+                    ] // Directly use the Tags list
+                    ,
                 })
                 .ToList();
 
             // 2. Configure JSON serializer options (optional, for readability)
             var options = new JsonSerializerOptions
             {
-                WriteIndented = true // Makes the JSON file human-readable
+                WriteIndented =
+                    true // Makes the JSON file human-readable
+                ,
             };
 
             // 3. Serialize the list to JSON and write to the file asynchronously
             // Use FileStream for async writing
             await using FileStream createStream = File.Create(filePath);
             await JsonSerializer.SerializeAsync(createStream, metadataList, options);
-            Console.WriteLine($"Successfully saved metadata for {_referencePaintings.Count} items."); // Debug
+            Console.WriteLine(
+                $"Successfully saved metadata for {_referencePaintings.Count} items."
+            ); // Debug
         }
         catch (Exception ex)
         {
@@ -941,7 +1045,11 @@ public class ArtPage : IUIComponent, IDisposable
         {
             Title = title,
             AllowMultiple = false,
-            FileTypeFilter = [FilePickerFileTypes.ImageAll] // Use predefined image types
+            FileTypeFilter =
+            [
+                FilePickerFileTypes.ImageAll,
+            ] // Use predefined image types
+            ,
         };
 
         var result = await App.GetMainWindow().StorageProvider.OpenFilePickerAsync(options);
@@ -957,7 +1065,8 @@ public class ArtPage : IUIComponent, IDisposable
         {
             try
             {
-                if (!File.Exists(imagePath)) return null;
+                if (!File.Exists(imagePath))
+                    return null;
 
                 using var stream = File.OpenRead(imagePath);
                 // Decode the bitmap with a specified decode size for efficiency
@@ -972,6 +1081,7 @@ public class ArtPage : IUIComponent, IDisposable
             }
         });
     }
+
     /// <summary>
     /// Extracts a user-friendly display name from a filename,
     /// removing a leading "GUID_" prefix if present.
@@ -987,8 +1097,11 @@ public class ArtPage : IUIComponent, IDisposable
         int underscoreIndex = nameWithoutExtension.IndexOf('_');
 
         // If an underscore exists and the part before it looks like a GUID
-        if (underscoreIndex > 0 && // Ensure underscore is not the first character
-            Guid.TryParse(nameWithoutExtension.Substring(0, underscoreIndex), out _))
+        if (
+            underscoreIndex > 0
+            && // Ensure underscore is not the first character
+            Guid.TryParse(nameWithoutExtension.Substring(0, underscoreIndex), out _)
+        )
         {
             // Return the part *after* the first underscore
             return nameWithoutExtension.Substring(underscoreIndex + 1);
@@ -999,6 +1112,7 @@ public class ArtPage : IUIComponent, IDisposable
             return nameWithoutExtension;
         }
     }
+
     /// <summary>
     /// Loads reference painting metadata from the JSON file, verifies files exist,
     /// generates thumbnails, and populates the _referencePaintings collection.
@@ -1012,7 +1126,9 @@ public class ArtPage : IUIComponent, IDisposable
 
         if (!File.Exists(filePath))
         {
-            Console.WriteLine($"Metadata file not found ({filePath}). No references loaded initially.");
+            Console.WriteLine(
+                $"Metadata file not found ({filePath}). No references loaded initially."
+            );
             // Optionally: You could fall back to scanning the directory here if you want
             // to automatically import files found when no metadata exists.
             // LoadReferencesFromDirectoryFallback(); // Example call to a fallback method
@@ -1024,7 +1140,9 @@ public class ArtPage : IUIComponent, IDisposable
         {
             // Read and deserialize the JSON file asynchronously
             await using FileStream openStream = File.OpenRead(filePath);
-            metadataList = await JsonSerializer.DeserializeAsync<List<ReferencePaintingMetadata>>(openStream);
+            metadataList = await JsonSerializer.DeserializeAsync<List<ReferencePaintingMetadata>>(
+                openStream
+            );
 
             if (metadataList == null)
             {
@@ -1037,7 +1155,9 @@ public class ArtPage : IUIComponent, IDisposable
         catch (JsonException jsonEx)
         {
             Console.WriteLine($"Error deserializing metadata file {filePath}: {jsonEx.Message}");
-            MessageDialog.ShowErrorDialog($"Error reading reference metadata file:\n{jsonEx.Message}\n\nPlease check or delete the file '{METADATA_FILE_NAME}' in the '{ART_FOLDER_NAME}' directory.");
+            MessageDialog.ShowErrorDialog(
+                $"Error reading reference metadata file:\n{jsonEx.Message}\n\nPlease check or delete the file '{METADATA_FILE_NAME}' in the '{ART_FOLDER_NAME}' directory."
+            );
             return; // Stop loading if file is corrupt
         }
         catch (Exception ex)
@@ -1052,42 +1172,48 @@ public class ArtPage : IUIComponent, IDisposable
         foreach (var metadata in metadataList)
         {
             // Use Task.Run to parallelize file checking and thumbnail loading
-            loadTasks.Add(Task.Run(async () =>
-            {
-                // Validate ImagePath
-                if (string.IsNullOrWhiteSpace(metadata.ImagePath))
+            loadTasks.Add(
+                Task.Run(async () =>
                 {
-                    Console.WriteLine($"Warning: Skipping item with missing ImagePath in metadata.");
-                    return; // Skip this item
-                }
+                    // Validate ImagePath
+                    if (string.IsNullOrWhiteSpace(metadata.ImagePath))
+                    {
+                        Console.WriteLine(
+                            $"Warning: Skipping item with missing ImagePath in metadata."
+                        );
+                        return; // Skip this item
+                    }
 
-                // Check if the referenced file actually still exists
-                if (!File.Exists(metadata.ImagePath))
-                {
-                    Console.WriteLine($"Warning: Image file not found for '{metadata.Name}' at '{metadata.ImagePath}'. Skipping.");
-                    // Optional: Show a warning to the user later, maybe aggregate these?
-                    return; // Skip this item
-                }
+                    // Check if the referenced file actually still exists
+                    if (!File.Exists(metadata.ImagePath))
+                    {
+                        Console.WriteLine(
+                            $"Warning: Image file not found for '{metadata.Name}' at '{metadata.ImagePath}'. Skipping."
+                        );
+                        // Optional: Show a warning to the user later, maybe aggregate these?
+                        return; // Skip this item
+                    }
 
-                // Generate thumbnail
-                Bitmap? thumbnail = await LoadThumbnail(metadata.ImagePath, THUMBNAIL_SIZE);
-                // Note: LoadThumbnail already handles its own errors, returning null
+                    // Generate thumbnail
+                    Bitmap? thumbnail = await LoadThumbnail(metadata.ImagePath, THUMBNAIL_SIZE);
+                    // Note: LoadThumbnail already handles its own errors, returning null
 
-                // Create the ReferencePaintingItem
-                var newItem = new ReferencePaintingItem
-                {
-                    ImagePath = metadata.ImagePath,
-                    Name = metadata.Name, // Use the name from metadata
-                    Tags = new ObservableCollection<string>(metadata.Tags ?? []), // <-- Ensure this conversion
-                    Thumbnail = thumbnail
-                };
+                    // Create the ReferencePaintingItem
+                    var newItem = new ReferencePaintingItem
+                    {
+                        ImagePath = metadata.ImagePath,
+                        Name = metadata.Name, // Use the name from metadata
+                        Tags = new ObservableCollection<string>(metadata.Tags ?? []), // <-- Ensure this conversion
+                        Thumbnail = thumbnail,
+                    };
 
-                // Add to the collection on the UI thread
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    _referencePaintings.Add(newItem);
-                });
-            }));
+                    // Add to the collection on the UI thread
+                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        _referencePaintings.Add(newItem);
+                    });
+                })
+            );
         }
 
         // Wait for all loading tasks (optional, but good for knowing when loading is complete)
@@ -1099,8 +1225,12 @@ public class ArtPage : IUIComponent, IDisposable
         catch (Exception ex)
         {
             // This catch is for potential errors within the Task.Run delegates that weren't caught inside.
-            Console.WriteLine($"An error occurred during the processing of loaded references: {ex.Message}");
-            MessageDialog.ShowWarningDialog($"An error occurred while loading reference details:\n{ex.Message}");
+            Console.WriteLine(
+                $"An error occurred during the processing of loaded references: {ex.Message}"
+            );
+            MessageDialog.ShowWarningDialog(
+                $"An error occurred while loading reference details:\n{ex.Message}"
+            );
         }
 
         _world.Set(metadataList);
@@ -1131,14 +1261,14 @@ public class ArtPage : IUIComponent, IDisposable
             MaxWidth = PREVIEW_MAX_SIZE,
             MaxHeight = PREVIEW_MAX_SIZE,
             Stretch = Stretch.Uniform,
-            Margin = new Thickness(5)
+            Margin = new Thickness(5),
         };
         _previewFlyout = new Flyout
         {
             Content = _previewImage,
             Placement = PlacementMode.LeftEdgeAlignedTop,
             // Keep this mode, it handles dismissal nicely if pointer moves away
-            ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+            ShowMode = FlyoutShowMode.TransientWithDismissOnPointerMoveAway,
         };
 
         _previewFlyout.Closed += PreviewFlyout_Closed;
@@ -1154,7 +1284,8 @@ public class ArtPage : IUIComponent, IDisposable
             _flyoutTargetControl = null; // Clear the stored target
         }
         // Optional: Clear the image to free memory sooner
-        if (_previewImage != null) _previewImage.Source = null;
+        if (_previewImage != null)
+            _previewImage.Source = null;
 
         // Also clear hover state just in case Exited didn't fire correctly (e.g., window closed)
         _currentHoveredImage = null;
@@ -1164,7 +1295,12 @@ public class ArtPage : IUIComponent, IDisposable
 
     private async void HandleItemPointerEntered(object? sender, PointerEventArgs e)
     {
-        if (sender is not Image hoveredImage || hoveredImage.DataContext is not ReferencePaintingItem item || _previewFlyout == null || _previewImage == null)
+        if (
+            sender is not Image hoveredImage
+            || hoveredImage.DataContext is not ReferencePaintingItem item
+            || _previewFlyout == null
+            || _previewImage == null
+        )
         {
             // If sender is not the image or context is wrong, ensure any existing flyout is hidden
             _previewFlyout?.Hide();
@@ -1183,10 +1319,10 @@ public class ArtPage : IUIComponent, IDisposable
         // Entering a new image, hide any previous flyout immediately
         _previewFlyout.Hide(); // Hides flyout attached to previous target
         _currentHoveredImage = hoveredImage; // Set new target image
-        _currentHoveredItem = item;         // Set new target item
-                                            // _previewLoadCts?.Cancel(); // Cancel previous load if using CTS
-                                            // _previewLoadCts = new CancellationTokenSource(); // Create new token if using CTS
-                                            // var cancellationToken = _previewLoadCts.Token; // Get token if using CTS
+        _currentHoveredItem = item; // Set new target item
+        // _previewLoadCts?.Cancel(); // Cancel previous load if using CTS
+        // _previewLoadCts = new CancellationTokenSource(); // Create new token if using CTS
+        // var cancellationToken = _previewLoadCts.Token; // Get token if using CTS
 
         //Console.WriteLine($"Pointer Entered Image for: {item.Name}. Loading preview..."); // Debug
 
@@ -1197,7 +1333,8 @@ public class ArtPage : IUIComponent, IDisposable
             fullBitmap = await Task.Run(async () => // Make inner lambda async if needed
             {
                 // cancellationToken.ThrowIfCancellationRequested(); // Check cancellation if using CTS
-                if (!File.Exists(item.ImagePath)) return null;
+                if (!File.Exists(item.ImagePath))
+                    return null;
                 try
                 {
                     await using var stream = File.OpenRead(item.ImagePath);
@@ -1207,18 +1344,23 @@ public class ArtPage : IUIComponent, IDisposable
                 }
                 catch (Exception decodeEx)
                 {
-
-                    Console.WriteLine($"Error DECODING image for preview ({item.ImagePath}): {decodeEx.Message}");
+                    Console.WriteLine(
+                        $"Error DECODING image for preview ({item.ImagePath}): {decodeEx.Message}"
+                    );
                     return null;
                 }
-            }/*, cancellationToken*/); // Pass token if using CTS
+            } /*, cancellationToken*/
+            ); // Pass token if using CTS
 
             // --- Post-Load Check ---
             // ThrowIfCancellationRequested(); // Check cancellation if using CTS
 
             // Check if we are STILL hovering over the SAME image after the async load completed
-            if (!ReferenceEquals(_currentHoveredImage, hoveredImage) || // Target changed?
-                !hoveredImage.IsPointerOver)                          // Pointer left?
+            if (
+                !ReferenceEquals(_currentHoveredImage, hoveredImage)
+                || // Target changed?
+                !hoveredImage.IsPointerOver
+            ) // Pointer left?
             {
                 fullBitmap?.Dispose(); // IMPORTANT: Dispose the unused bitmap
                 return; // Don't show the flyout
@@ -1238,10 +1380,12 @@ public class ArtPage : IUIComponent, IDisposable
             }
             else
             {
-                MessageDialog.ShowErrorDialog($"Failed to load/decode bitmap for preview: {item.Name}");
+                MessageDialog.ShowErrorDialog(
+                    $"Failed to load/decode bitmap for preview: {item.Name}"
+                );
 
                 _previewImage.Source = null; // Clear image source
-                                             // Clear target state if loading failed
+                // Clear target state if loading failed
                 if (ReferenceEquals(_currentHoveredImage, hoveredImage))
                 {
                     _currentHoveredImage = null;
@@ -1256,10 +1400,12 @@ public class ArtPage : IUIComponent, IDisposable
         // }
         catch (Exception ex)
         {
-            MessageDialog.ShowErrorDialog($"Error loading full image for preview ({item.ImagePath}): {ex.Message}");
+            MessageDialog.ShowErrorDialog(
+                $"Error loading full image for preview ({item.ImagePath}): {ex.Message}"
+            );
 
             _previewImage.Source = null; // Clear previous image on error
-                                         // Clear target state on error
+            // Clear target state on error
             if (ReferenceEquals(_currentHoveredImage, hoveredImage))
             {
                 _currentHoveredImage = null;
@@ -1290,12 +1436,14 @@ public class ArtPage : IUIComponent, IDisposable
         {
             // Get the extension from the item's Name
             var extension = Path.GetExtension(file.Name);
-            return !string.IsNullOrEmpty(extension) &&
-                   SupportedImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
+            return !string.IsNullOrEmpty(extension)
+                && SupportedImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
         }
         catch (ArgumentException) // Path.GetExtension can throw on invalid chars
         {
-            MessageDialog.ShowWarningDialog($"Could not determine extension for file name: {file.Name}");
+            MessageDialog.ShowWarningDialog(
+                $"Could not determine extension for file name: {file.Name}"
+            );
             return false;
         }
     }
@@ -1366,61 +1514,69 @@ public class ArtPage : IUIComponent, IDisposable
             }
 
             // Add a task to process this specific file
-            processingTasks.Add(Task.Run(async () =>
-            {
-                string? filePath = storageFile.TryGetLocalPath();
-
-                if (string.IsNullOrEmpty(filePath))
+            processingTasks.Add(
+                Task.Run(async () =>
                 {
-                    // Log that we couldn't get a usable path and skip
-                    MessageDialog.ShowWarningDialog($"Skipping file '{storageFile.Name}': Could not retrieve a local file system path.");
-                    return; // Stop processing this specific file
-                }
+                    string? filePath = storageFile.TryGetLocalPath();
 
-                try
-                {
-                    //Console.WriteLine($"Processing dropped file: {filePath}");
-
-                    // 1. Copy file to the 'art/references' directory (using your existing method)
-                    // This method already handles potential exceptions during copy
-                    var newPath = CopyFileToArtFolder(filePath, REFERENCES_SUBFOLDER);
-                    if (string.IsNullOrEmpty(newPath))
+                    if (string.IsNullOrEmpty(filePath))
                     {
-                        // Copy failed, error message should have been printed by CopyFileToArtFolder
-                        return; // Stop processing this file
+                        // Log that we couldn't get a usable path and skip
+                        MessageDialog.ShowWarningDialog(
+                            $"Skipping file '{storageFile.Name}': Could not retrieve a local file system path."
+                        );
+                        return; // Stop processing this specific file
                     }
 
-                    // 2. Generate thumbnail (using your existing async method)
-                    var thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE);
-                    if (thumbnail == null)
+                    try
                     {
-                        MessageDialog.ShowWarningDialog($"Warning: Failed to generate thumbnail for {newPath}");
-                        // Continue without a thumbnail or decide how to handle this
+                        //Console.WriteLine($"Processing dropped file: {filePath}");
+
+                        // 1. Copy file to the 'art/references' directory (using your existing method)
+                        // This method already handles potential exceptions during copy
+                        var newPath = CopyFileToArtFolder(filePath, REFERENCES_SUBFOLDER);
+                        if (string.IsNullOrEmpty(newPath))
+                        {
+                            // Copy failed, error message should have been printed by CopyFileToArtFolder
+                            return; // Stop processing this file
+                        }
+
+                        // 2. Generate thumbnail (using your existing async method)
+                        var thumbnail = await LoadThumbnail(newPath, THUMBNAIL_SIZE);
+                        if (thumbnail == null)
+                        {
+                            MessageDialog.ShowWarningDialog(
+                                $"Warning: Failed to generate thumbnail for {newPath}"
+                            );
+                            // Continue without a thumbnail or decide how to handle this
+                        }
+
+                        // 3. Get display name (using your existing helper)
+                        var displayName = GetDisplayNameFromFileName(Path.GetFileName(newPath));
+
+                        // 4. Create ReferencePaintingItem
+                        var newItem = new ReferencePaintingItem
+                        {
+                            Name = displayName,
+                            ImagePath = newPath,
+                            Thumbnail = thumbnail,
+                        };
+
+                        // 5. Add to collection *on the UI thread*
+                        await Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            _referencePaintings.Add(newItem);
+                            //Console.WriteLine($"Added reference from drop: {newItem.Name}");
+                        });
                     }
-
-                    // 3. Get display name (using your existing helper)
-                    var displayName = GetDisplayNameFromFileName(Path.GetFileName(newPath));
-
-                    // 4. Create ReferencePaintingItem
-                    var newItem = new ReferencePaintingItem
+                    catch (Exception ex)
                     {
-                        Name = displayName,
-                        ImagePath = newPath,
-                        Thumbnail = thumbnail
-                    };
-
-                    // 5. Add to collection *on the UI thread*
-                    await Dispatcher.UIThread.InvokeAsync(() =>
-                    {
-                        _referencePaintings.Add(newItem);
-                        //Console.WriteLine($"Added reference from drop: {newItem.Name}");
-                    });
-                }
-                catch (Exception ex)
-                {
-                    MessageDialog.ShowErrorDialog($"Error processing dropped file '{storageFile}': {ex.Message}");
-                }
-            }));
+                        MessageDialog.ShowErrorDialog(
+                            $"Error processing dropped file '{storageFile}': {ex.Message}"
+                        );
+                    }
+                })
+            );
         }
 
         // --- Wait for all processing tasks to complete (optional) ---
@@ -1435,18 +1591,23 @@ public class ArtPage : IUIComponent, IDisposable
         }
         catch (Exception ex)
         {
-            MessageDialog.ShowWarningDialog($"An error occurred while waiting for file processing tasks: {ex.Message}");
+            MessageDialog.ShowWarningDialog(
+                $"An error occurred while waiting for file processing tasks: {ex.Message}"
+            );
         }
     }
+
     /// <summary>
     /// Gets the full path to the main art directory.
     /// </summary>
-    private static string GetArtFolderPath() => Path.Combine(Directory.GetCurrentDirectory(), ART_FOLDER_NAME);
+    private static string GetArtFolderPath() =>
+        Path.Combine(Directory.GetCurrentDirectory(), ART_FOLDER_NAME);
 
     /// <summary>
     /// Gets the full path to the metadata file.
     /// </summary>
-    private static string GetMetadataFilePath() => Path.Combine(GetArtFolderPath(), METADATA_FILE_NAME);
+    private static string GetMetadataFilePath() =>
+        Path.Combine(GetArtFolderPath(), METADATA_FILE_NAME);
 
     // --- IDisposable Implementation ---
 
@@ -1456,6 +1617,7 @@ public class ArtPage : IUIComponent, IDisposable
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     /// <summary>
     /// Disposes the managed data
     /// </summary>

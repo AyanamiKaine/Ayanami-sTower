@@ -36,19 +36,23 @@ public static class MessageDialog
     /// <param name="message">The message to display in the dialog.</param>
     public static void ShowDialog(string title, string message)
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            var cd = new ContentDialog()
+        Dispatcher.UIThread.InvokeAsync(
+            () =>
             {
-                Title = title,
-                Content = message,
-                PrimaryButtonText = "Ok",
-                DefaultButton = ContentDialogButton.Primary,
-                IsSecondaryButtonEnabled = true,
-            };
-            cd.ShowAsync();
-        }, DispatcherPriority.Background);
+                var cd = new ContentDialog()
+                {
+                    Title = title,
+                    Content = message,
+                    PrimaryButtonText = "Ok",
+                    DefaultButton = ContentDialogButton.Primary,
+                    IsSecondaryButtonEnabled = true,
+                };
+                cd.ShowAsync();
+            },
+            DispatcherPriority.Background
+        );
     }
+
     /// <summary>
     /// Shows an error dialog with the specified message.
     /// This method runs on the UI thread with background priority.
@@ -56,22 +60,21 @@ public static class MessageDialog
     /// <param name="message">The error message to display in the dialog.</param>
     public static void ShowErrorDialog(string message)
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            var cd = new ContentDialog()
+        Dispatcher.UIThread.InvokeAsync(
+            () =>
             {
-                Title = new TextBlock()
+                var cd = new ContentDialog()
                 {
-                    Text = "Error!",
-                    Foreground = Brushes.Red
-                },
-                Content = message,
-                PrimaryButtonText = "Ok",
-                DefaultButton = ContentDialogButton.Primary,
-                IsSecondaryButtonEnabled = true,
-            };
-            cd.ShowAsync();
-        }, DispatcherPriority.Background);
+                    Title = new TextBlock() { Text = "Error!", Foreground = Brushes.Red },
+                    Content = message,
+                    PrimaryButtonText = "Ok",
+                    DefaultButton = ContentDialogButton.Primary,
+                    IsSecondaryButtonEnabled = true,
+                };
+                cd.ShowAsync();
+            },
+            DispatcherPriority.Background
+        );
     }
 
     /// <summary>
@@ -81,22 +84,21 @@ public static class MessageDialog
     /// <param name="message">The warning message to display in the dialog.</param>
     public static void ShowWarningDialog(string message)
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            var cd = new ContentDialog()
+        Dispatcher.UIThread.InvokeAsync(
+            () =>
             {
-                Title = new TextBlock()
+                var cd = new ContentDialog()
                 {
-                    Text = "Warning",
-                    Foreground = Brushes.Goldenrod
-                },
-                Content = message,
-                PrimaryButtonText = "Ok",
-                DefaultButton = ContentDialogButton.Primary,
-                IsSecondaryButtonEnabled = true,
-            };
-            cd.ShowAsync();
-        }, DispatcherPriority.Background);
+                    Title = new TextBlock() { Text = "Warning", Foreground = Brushes.Goldenrod },
+                    Content = message,
+                    PrimaryButtonText = "Ok",
+                    DefaultButton = ContentDialogButton.Primary,
+                    IsSecondaryButtonEnabled = true,
+                };
+                cd.ShowAsync();
+            },
+            DispatcherPriority.Background
+        );
     }
 
     /// <summary>
@@ -106,20 +108,24 @@ public static class MessageDialog
     /// <param name="title">The title of the dialog.</param>
     /// <param name="uiBuilder">The UI builder that creates the content for the dialog.</param>
     /// <typeparam name="T">The type of control created by the UI builder.</typeparam>
-    public static void ShowDialog<T>(string title, UIBuilder<T> uiBuilder) where T : Control
+    public static void ShowDialog<T>(string title, UIBuilder<T> uiBuilder)
+        where T : Control
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            var cd = new ContentDialog()
+        Dispatcher.UIThread.InvokeAsync(
+            () =>
             {
-                Title = title,
-                Content = uiBuilder.Get<T>(),
-                PrimaryButtonText = "Ok",
-                DefaultButton = ContentDialogButton.Primary,
-                IsSecondaryButtonEnabled = true,
-            };
-            cd.ShowAsync();
-        }, DispatcherPriority.Background);
+                var cd = new ContentDialog()
+                {
+                    Title = title,
+                    Content = uiBuilder.Get<T>(),
+                    PrimaryButtonText = "Ok",
+                    DefaultButton = ContentDialogButton.Primary,
+                    IsSecondaryButtonEnabled = true,
+                };
+                cd.ShowAsync();
+            },
+            DispatcherPriority.Background
+        );
     }
 
     /// <summary>
@@ -128,24 +134,24 @@ public static class MessageDialog
     /// </summary>
     /// <param name="uiBuilder">The UI builder that creates the content for the dialog.</param>
     /// <typeparam name="T">The type of control created by the UI builder.</typeparam>
-    public static void ShowErrorDialog<T>(UIBuilder<T> uiBuilder) where T : Control
+    public static void ShowErrorDialog<T>(UIBuilder<T> uiBuilder)
+        where T : Control
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            var cd = new ContentDialog()
+        Dispatcher.UIThread.InvokeAsync(
+            () =>
             {
-                Title = new TextBlock()
+                var cd = new ContentDialog()
                 {
-                    Text = "Error!",
-                    Foreground = Brushes.Red
-                },
-                Content = uiBuilder.Get<T>(),
-                PrimaryButtonText = "Ok",
-                DefaultButton = ContentDialogButton.Primary,
-                IsSecondaryButtonEnabled = true,
-            };
-            cd.ShowAsync();
-        }, DispatcherPriority.Background);
+                    Title = new TextBlock() { Text = "Error!", Foreground = Brushes.Red },
+                    Content = uiBuilder.Get<T>(),
+                    PrimaryButtonText = "Ok",
+                    DefaultButton = ContentDialogButton.Primary,
+                    IsSecondaryButtonEnabled = true,
+                };
+                cd.ShowAsync();
+            },
+            DispatcherPriority.Background
+        );
     }
 
     /// <summary>
@@ -154,24 +160,23 @@ public static class MessageDialog
     /// </summary>
     /// <param name="uiBuilder">The UI builder that creates the content for the dialog.</param>
     /// <typeparam name="T">The type of control created by the UI builder.</typeparam>
-    public static void ShowWarningDialog<T>(UIBuilder<T> uiBuilder) where T : Control
+    public static void ShowWarningDialog<T>(UIBuilder<T> uiBuilder)
+        where T : Control
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            var cd = new ContentDialog()
+        Dispatcher.UIThread.InvokeAsync(
+            () =>
             {
-                Title = new TextBlock()
+                var cd = new ContentDialog()
                 {
-                    Text = "Warning",
-                    Foreground = Brushes.Goldenrod
-                },
-                Content = uiBuilder.Get<T>(),
-                PrimaryButtonText = "Ok",
-                DefaultButton = ContentDialogButton.Primary,
-                IsSecondaryButtonEnabled = true,
-            };
-            cd.ShowAsync();
-        }, DispatcherPriority.Background);
+                    Title = new TextBlock() { Text = "Warning", Foreground = Brushes.Goldenrod },
+                    Content = uiBuilder.Get<T>(),
+                    PrimaryButtonText = "Ok",
+                    DefaultButton = ContentDialogButton.Primary,
+                    IsSecondaryButtonEnabled = true,
+                };
+                cd.ShowAsync();
+            },
+            DispatcherPriority.Background
+        );
     }
-
 }

@@ -25,9 +25,12 @@ public class MinimalApp : App // Inherit from App
         }
         catch (Exception)
         {
-            //SDL.LogError(SDL.LogCategory.Application, $"MinimalApp OnInit: Error creating renderer: {SDL.GetError()}");
+            SDL.SDL_LogError(
+                (int)SDL.SDL_LogCategory.SDL_LOG_CATEGORY_APPLICATION,
+                $"MinimalApp OnInit: Error creating renderer: {SDL.SDL_GetError()}"
+            );
             // No need to call SDL.Quit() here, base.OnQuit will handle subsystem cleanup if necessary.
-            return false;
+            //return false;
         }
 
         /*

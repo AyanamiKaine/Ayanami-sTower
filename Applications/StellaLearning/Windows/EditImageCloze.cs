@@ -36,12 +36,12 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Clowd.Clipboard;
-using Flecs.NET.Core;
-using FluentAvalonia.UI.Controls;
 using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.UiComponents;
 using AyanamisTower.StellaLearning.Util;
+using Clowd.Clipboard;
+using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 using Path = System.IO.Path;
 
 namespace AyanamisTower.StellaLearning.Windows;
@@ -62,12 +62,8 @@ public class EditImageCloze : IUIComponent, IDisposable
         public double Height { get; set; }
         public string Text { get; set; } = string.Empty;
 
-        public IBrush FillColor { get; set; } = new SolidColorBrush(Color.FromArgb(
-                    a: 180,
-                    r: 221,
-                    g: 176,
-                    b: 55));
-
+        public IBrush FillColor { get; set; } =
+            new SolidColorBrush(Color.FromArgb(a: 180, r: 221, g: 176, b: 55));
     }
 
     /// <summary>
@@ -78,6 +74,7 @@ public class EditImageCloze : IUIComponent, IDisposable
     private UIBuilder<TextBox>? nameTextBox = null;
     private UIBuilder<Image>? image = null;
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
     private readonly ObservableCollection<string> clozes = [];
@@ -92,9 +89,11 @@ public class EditImageCloze : IUIComponent, IDisposable
 
     // Replace the simple string field with a BehaviorSubject
     private readonly BehaviorSubject<string> _imagePathSubject = new(string.Empty);
+
     // Property to access the current value
     private string ImagePath => _imagePathSubject.Value;
     private SpacedRepetitionImageCloze _spacedRepetitionImageCloze;
+
     /// <summary>
     /// Create the Add Cloze Window
     /// </summary>
@@ -105,46 +104,55 @@ public class EditImageCloze : IUIComponent, IDisposable
     {
         _spacedRepetitionImageCloze = spacedRepetitionImageCloze;
 
-        _disposables.Add(_imagePathSubject
-            .Skip(1) // Skip the initial empty value
-            .Subscribe(path =>
-            {
-                ImagePathChanged();
-            }));
-
+        _disposables.Add(
+            _imagePathSubject
+                .Skip(1) // Skip the initial empty value
+                .Subscribe(path =>
+                {
+                    ImagePathChanged();
+                })
+        );
 
         // Convert List<ImageClozeArea> to ObservableCollection<ClozeArea>
         foreach (var area in _spacedRepetitionImageCloze.ClozeAreas)
         {
-            clozeAreas.Add(new ClozeArea
-            {
-                X = area.X,
-                Y = area.Y,
-                Width = area.Width,
-                Height = area.Height,
-                Text = area.Text
-            });
+            clozeAreas.Add(
+                new ClozeArea
+                {
+                    X = area.X,
+                    Y = area.Y,
+                    Width = area.Width,
+                    Height = area.Height,
+                    Text = area.Text,
+                }
+            );
         }
 
-        _root = world.UI<Window>((window) =>
-        {
-            window
-            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
-            .OnKeyDown(Window_KeyDown)
-            .SetTitle($"Edit Image Cloze: {_spacedRepetitionImageCloze.Name}")
-            .SetWidth(400)
-            .SetHeight(400)
-            .Child<ScrollViewer>((scrollViewer) =>
-            {
-                scrollViewer
-                .SetRow(1)
-                .SetColumnSpan(3)
-                .Child(DefineWindowContents(world));
-            });
+        _root = world
+            .UI<Window>(
+                (window) =>
+                {
+                    window
+                        .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
+                        .OnKeyDown(Window_KeyDown)
+                        .SetTitle($"Edit Image Cloze: {_spacedRepetitionImageCloze.Name}")
+                        .SetWidth(400)
+                        .SetHeight(400)
+                        .Child<ScrollViewer>(
+                            (scrollViewer) =>
+                            {
+                                scrollViewer
+                                    .SetRow(1)
+                                    .SetColumnSpan(3)
+                                    .Child(DefineWindowContents(world));
+                            }
+                        );
 
-            window.OnClosed((sender, args) => Dispose());
-            window.Show();
-        }).Entity;
+                    window.OnClosed((sender, args) => Dispose());
+                    window.Show();
+                }
+            )
+            .Entity;
         // We want to change the image path AFTER the ui is constructed.
         // Because the handler expects ui elements to exit.
         _imagePathSubject.OnNext(_spacedRepetitionImageCloze.ImagePath);
@@ -153,205 +161,252 @@ public class EditImageCloze : IUIComponent, IDisposable
 
     private Entity DefineWindowContents(World world)
     {
-
         var comparePriority = new ComparePriority(world);
         _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
         var calculatedPriority = comparePriority.CalculatedPriorityEntity;
         // Here we set the inital priority
         calculatedPriority.Set(_spacedRepetitionImageCloze.Priority);
 
-        return world.UI<StackPanel>((stackPanel) =>
-        {
-            stackPanel
-            .SetOrientation(Orientation.Vertical)
-            .SetSpacing(10)
-            .SetMargin(20);
-
-            stackPanel.Child<TextBox>((textBox) =>
-            {
-                nameTextBox = textBox;
-                textBox
-                .SetWatermark("Name")
-                .SetText(_spacedRepetitionImageCloze.Name)
-                .OnKeyDown((sender, args) =>
+        return world
+            .UI<StackPanel>(
+                (stackPanel) =>
                 {
-                    if (args.Key == Key.Enter)
-                    {
-                        createButtonClickedHandler!.Invoke(sender, args);
-                    }
-                });
-            });
+                    stackPanel.SetOrientation(Orientation.Vertical).SetSpacing(10).SetMargin(20);
 
-            stackPanel.Child(world.UI<Button>((button) =>
-                                {
-                                    button.Child<TextBlock>((t) => t.SetText("Select Image"));
-                                    button.OnClick(async (e, args) =>
+                    stackPanel.Child<TextBox>(
+                        (textBox) =>
+                        {
+                            nameTextBox = textBox;
+                            textBox
+                                .SetWatermark("Name")
+                                .SetText(_spacedRepetitionImageCloze.Name)
+                                .OnKeyDown(
+                                    (sender, args) =>
+                                    {
+                                        if (args.Key == Key.Enter)
+                                        {
+                                            createButtonClickedHandler!.Invoke(sender, args);
+                                        }
+                                    }
+                                );
+                        }
+                    );
+
+                    stackPanel.Child(
+                        world.UI<Button>(
+                            (button) =>
+                            {
+                                button.Child<TextBlock>((t) => t.SetText("Select Image"));
+                                button.OnClick(
+                                    async (e, args) =>
                                     {
                                         var path = await FilePickerAsync();
                                         _imagePathSubject.OnNext(path); // Update using OnNext instead of assignment
-                                    });
-                                }));
+                                    }
+                                );
+                            }
+                        )
+                    );
 
-            stackPanel.Child<Grid>((grid) =>
-            {
-
-                grid.SetHorizontalAlignment(HorizontalAlignment.Stretch);
-                grid.SetVerticalAlignment(VerticalAlignment.Stretch);
-                grid.SetMinHeigth(250); // Set a reasonable minimum height
-
-                // Add a Viewbox to contain and scale the image properly
-                grid.Child<Viewbox>((viewbox) =>
-                {
-                    //viewbox.SetStretch(Stretch.Uniform);
-                    viewbox.SetHorizontalAlignment(HorizontalAlignment.Stretch);
-                    viewbox.SetVerticalAlignment(VerticalAlignment.Stretch);
-
-                    // Add a Canvas inside the Viewbox for positioning elements
-                    viewbox.Child<Canvas>((canvas) =>
-                    {
-                        canvasEntity = canvas.Entity;
-
-                        //viewbox.With((w) => { w.Child = canvas.Get<Canvas>(); });
-                        // Add the image to the canvas
-                        canvas.Child<Image>((image) =>
+                    stackPanel.Child<Grid>(
+                        (grid) =>
                         {
-                            this.image = image;
+                            grid.SetHorizontalAlignment(HorizontalAlignment.Stretch);
+                            grid.SetVerticalAlignment(VerticalAlignment.Stretch);
+                            grid.SetMinHeigth(250); // Set a reasonable minimum height
 
-                            if (ImagePath.Length != 0)
-                            {
-                                try
+                            // Add a Viewbox to contain and scale the image properly
+                            grid.Child<Viewbox>(
+                                (viewbox) =>
                                 {
-                                    var bitmap = new Bitmap(File.OpenRead(ImagePath));
-                                    image.SetSource(bitmap);
+                                    //viewbox.SetStretch(Stretch.Uniform);
+                                    viewbox.SetHorizontalAlignment(HorizontalAlignment.Stretch);
+                                    viewbox.SetVerticalAlignment(VerticalAlignment.Stretch);
 
-                                    // Set the canvas size to match the image's natural size
-                                    canvas.SetWidth(bitmap.Size.Width);
-                                    canvas.SetHeight(bitmap.Size.Height);
+                                    // Add a Canvas inside the Viewbox for positioning elements
+                                    viewbox.Child<Canvas>(
+                                        (canvas) =>
+                                        {
+                                            canvasEntity = canvas.Entity;
+
+                                            //viewbox.With((w) => { w.Child = canvas.Get<Canvas>(); });
+                                            // Add the image to the canvas
+                                            canvas.Child<Image>(
+                                                (image) =>
+                                                {
+                                                    this.image = image;
+
+                                                    if (ImagePath.Length != 0)
+                                                    {
+                                                        try
+                                                        {
+                                                            var bitmap = new Bitmap(
+                                                                File.OpenRead(ImagePath)
+                                                            );
+                                                            image.SetSource(bitmap);
+
+                                                            // Set the canvas size to match the image's natural size
+                                                            canvas.SetWidth(bitmap.Size.Width);
+                                                            canvas.SetHeight(bitmap.Size.Height);
+                                                        }
+                                                        catch (FileNotFoundException ex)
+                                                        {
+                                                            var cd = new ContentDialog()
+                                                            {
+                                                                Title = "Picture not found",
+                                                                Content =
+                                                                    $"The picture couldn't not be found at path: {ex.FileName}",
+                                                                PrimaryButtonText = "Ok",
+                                                                DefaultButton =
+                                                                    ContentDialogButton.Primary,
+                                                                IsSecondaryButtonEnabled = true,
+                                                            };
+                                                            cd.ShowAsync();
+                                                        }
+                                                    }
+
+                                                    image
+                                                        .OnPointerMoved(Image_PointerMoved)
+                                                        .OnPointerPressed(Image_PointerPressed)
+                                                        .OnPointerReleased(Image_PointerReleased);
+
+                                                    _disposables.Add(
+                                                        Disposable.Create(() =>
+                                                        {
+                                                            if (image.Entity.IsValid())
+                                                            {
+                                                                image
+                                                                    .RemoveOnPointerMoved(
+                                                                        Image_PointerMoved
+                                                                    )
+                                                                    .RemoveOnPointerPressed(
+                                                                        Image_PointerPressed
+                                                                    )
+                                                                    .RemoveOnPointerReleased(
+                                                                        Image_PointerReleased
+                                                                    );
+                                                            }
+                                                        })
+                                                    );
+                                                }
+                                            );
+                                        }
+                                    );
                                 }
-                                catch (FileNotFoundException ex)
+                            );
+                        }
+                    );
+
+                    stackPanel.Child<TextBlock>(
+                        (textBlock) =>
+                        {
+                            textBlock.SetTextWrapping(TextWrapping.Wrap);
+                            textBlock.SetText(
+                                "Mark a area in the image to create a cloze for it. To delete it again simply right click and select remove"
+                            );
+                            textBlock.SetFontSize(12);
+                            textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
+                        }
+                    );
+
+                    stackPanel.Child<Separator>(
+                        (separator) =>
+                        {
+                            separator
+                                .SetMargin(0, 0, 0, 10)
+                                .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                                .SetBorderBrush(Brushes.Black);
+                        }
+                    );
+
+                    var tagManager = new TagComponent(world, _spacedRepetitionImageCloze.Tags);
+                    stackPanel.Child(tagManager); // Add the tag manager UI
+                    stackPanel.Child(comparePriority);
+
+                    // Create button
+                    stackPanel.Child<Button>(
+                        (button) =>
+                        {
+                            createButton = button;
+                            button
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                                .SetHorizontalAlignment(HorizontalAlignment.Stretch);
+                            button.Child<TextBlock>(
+                                (textBlock) =>
+                                {
+                                    textBlock.SetText("Save Changes");
+                                }
+                            );
+
+                            createButtonClickedHandler = (_, _) =>
+                            {
+                                if (nameTextBox is null)
+                                {
+                                    return;
+                                }
+
+                                if (
+                                    string.IsNullOrEmpty(nameTextBox.GetText())
+                                    || string.IsNullOrEmpty(ImagePath)
+                                )
+                                {
+                                    nameTextBox!.SetWatermark("Name");
+                                    return;
+                                }
+
+                                if (clozeAreas.Count == 0)
                                 {
                                     var cd = new ContentDialog()
                                     {
-                                        Title = "Picture not found",
-                                        Content = $"The picture couldn't not be found at path: {ex.FileName}",
+                                        Title = "Missing Areas",
+                                        Content =
+                                            "Your image does not currently have hidding any areas defined, they are required",
                                         PrimaryButtonText = "Ok",
                                         DefaultButton = ContentDialogButton.Primary,
                                         IsSecondaryButtonEnabled = true,
                                     };
                                     cd.ShowAsync();
+                                    return;
                                 }
-                            }
 
-                            image
-                            .OnPointerMoved(Image_PointerMoved)
-                            .OnPointerPressed(Image_PointerPressed)
-                            .OnPointerReleased(Image_PointerReleased);
-
-                            _disposables.Add(Disposable.Create(() =>
-                            {
-                                if (image.Entity.IsValid())
+                                if (_root.IsValid())
                                 {
-                                    image
-                                    .RemoveOnPointerMoved(Image_PointerMoved)
-                                    .RemoveOnPointerPressed(Image_PointerPressed)
-                                    .RemoveOnPointerReleased(Image_PointerReleased);
+                                    // Create a list of ImageClozeArea objects from our clozeAreas collection
+                                    var imageClozeAreas = clozeAreas
+                                        .Select(area => new ImageClozeArea
+                                        {
+                                            X = area.X,
+                                            Y = area.Y,
+                                            Width = area.Width,
+                                            Height = area.Height,
+                                            Text = area.Text,
+                                        })
+                                        .ToList();
+
+                                    _spacedRepetitionImageCloze.Name = nameTextBox.GetText();
+                                    _spacedRepetitionImageCloze.ImagePath = ImagePath;
+                                    _spacedRepetitionImageCloze.ClozeAreas = imageClozeAreas;
+                                    _spacedRepetitionImageCloze.Tags = [.. tagManager.Tags];
+                                    _spacedRepetitionImageCloze.Priority =
+                                        calculatedPriority.Get<int>();
+
+                                    Dispatcher.UIThread.InvokeAsync(async () =>
+                                    {
+                                        await StatsTracker.Instance.UpdateTagsForItemAsync(
+                                            _spacedRepetitionImageCloze.Uid,
+                                            _spacedRepetitionImageCloze.Tags
+                                        );
+                                    });
+                                    _root.Get<Window>().Close();
                                 }
-                            }));
-                        });
-                    });
-                });
-            });
+                            };
 
-            stackPanel.Child<TextBlock>((textBlock) =>
-            {
-                textBlock.SetTextWrapping(TextWrapping.Wrap);
-                textBlock.SetText("Mark a area in the image to create a cloze for it. To delete it again simply right click and select remove");
-                textBlock.SetFontSize(12);
-                textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
-            });
-
-            stackPanel.Child<Separator>((separator) =>
-            {
-                separator
-                    .SetMargin(0, 0, 0, 10)
-                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                    .SetBorderBrush(Brushes.Black);
-            });
-
-            var tagManager = new TagComponent(world, _spacedRepetitionImageCloze.Tags);
-            stackPanel.Child(tagManager); // Add the tag manager UI
-            stackPanel.Child(comparePriority);
-
-            // Create button
-            stackPanel.Child<Button>((button) =>
-            {
-                createButton = button;
-                button
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Stretch);
-                button.Child<TextBlock>((textBlock) =>
-                {
-                    textBlock.SetText("Save Changes");
-                });
-
-
-                createButtonClickedHandler = (_, _) =>
-                {
-                    if (nameTextBox is null)
-                    {
-                        return;
-                    }
-
-                    if (string.IsNullOrEmpty(nameTextBox.GetText()) || string.IsNullOrEmpty(ImagePath))
-                    {
-                        nameTextBox!.SetWatermark("Name");
-                        return;
-                    }
-
-                    if (clozeAreas.Count == 0)
-                    {
-                        var cd = new ContentDialog()
-                        {
-                            Title = "Missing Areas",
-                            Content = "Your image does not currently have hidding any areas defined, they are required",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
-
-                    if (_root.IsValid())
-                    {
-                        // Create a list of ImageClozeArea objects from our clozeAreas collection
-                        var imageClozeAreas = clozeAreas.Select(area => new ImageClozeArea
-                        {
-                            X = area.X,
-                            Y = area.Y,
-                            Width = area.Width,
-                            Height = area.Height,
-                            Text = area.Text
-                        }).ToList();
-
-
-                        _spacedRepetitionImageCloze.Name = nameTextBox.GetText();
-                        _spacedRepetitionImageCloze.ImagePath = ImagePath;
-                        _spacedRepetitionImageCloze.ClozeAreas = imageClozeAreas;
-                        _spacedRepetitionImageCloze.Tags = [.. tagManager.Tags];
-                        _spacedRepetitionImageCloze.Priority = calculatedPriority.Get<int>();
-
-                        Dispatcher.UIThread.InvokeAsync(async () =>
-                        {
-                            await StatsTracker.Instance.UpdateTagsForItemAsync(_spacedRepetitionImageCloze.Uid, _spacedRepetitionImageCloze.Tags);
-                        });
-                        _root.Get<Window>().Close();
-                    }
-                };
-
-                button.With((b) => b.Click += createButtonClickedHandler);
-            });
-        }).Entity;
+                            button.With((b) => b.Click += createButtonClickedHandler);
+                        }
+                    );
+                }
+            )
+            .Entity;
     }
 
     /// <summary>
@@ -367,7 +422,7 @@ public class EditImageCloze : IUIComponent, IDisposable
     /// Releases unmanaged and - optionally - managed resources.
     /// </summary>
     /// <param name="disposing">
-    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>true</c> to release both managed and unmanaged resources;
     /// <c>false</c> to release only unmanaged resources.
     /// </param>
     protected virtual void Dispose(bool disposing)
@@ -376,7 +431,6 @@ public class EditImageCloze : IUIComponent, IDisposable
         {
             if (disposing)
             {
-
                 if (createButton is not null && createButtonClickedHandler is not null)
                 {
                     createButton.With((b) => b.Click -= createButtonClickedHandler);
@@ -406,15 +460,19 @@ public class EditImageCloze : IUIComponent, IDisposable
             dragStartPoint = e.GetPosition(canvasEntity.Get<Canvas>());
             isDragging = true;
 
-            selectionRectangle = canvasEntity.CsWorld().UI<Rectangle>((rect) =>
-            {
-                rect
-                .SetStroke(new SolidColorBrush(Colors.Red))
-                .SetStrokeThickness(2)
-                .SetFill(new SolidColorBrush(Color.FromArgb(50, 255, 0, 0)))
-                .SetWidth(0)
-                .SetHeight(0);
-            }).Entity;
+            selectionRectangle = canvasEntity
+                .CsWorld()
+                .UI<Rectangle>(
+                    (rect) =>
+                    {
+                        rect.SetStroke(new SolidColorBrush(Colors.Red))
+                            .SetStrokeThickness(2)
+                            .SetFill(new SolidColorBrush(Color.FromArgb(50, 255, 0, 0)))
+                            .SetWidth(0)
+                            .SetHeight(0);
+                    }
+                )
+                .Entity;
 
             canvasEntity.Get<Canvas>().Children.Add(selectionRectangle.Get<Rectangle>());
         }
@@ -484,59 +542,69 @@ public class EditImageCloze : IUIComponent, IDisposable
         double top = Canvas.GetTop(rect);
         double width = rect.Width;
         double height = rect.Height;
-        var rectColor = new SolidColorBrush(Color.FromArgb(
-            a: 180,
-            r: 221,
-            g: 176,
-            b: 55));
+        var rectColor = new SolidColorBrush(Color.FromArgb(a: 180, r: 221, g: 176, b: 55));
 
         // Only create a cloze area if it has a reasonable size
         if (width > 10 && height > 10)
         {
             // Create a TextBox at the selection position
             var world = canvasEntity.CsWorld();
-            var rectangleEntity = world.UI<Rectangle>((rect) =>
-            {
+            var rectangleEntity = world.UI<Rectangle>(
+                (rect) =>
+                {
+                    rect.SetWidth(width).SetHeight(height).SetFill(rectColor);
 
+                    //textBox.SetBackground(new SolidColorBrush(Color.FromArgb(150, 255, 255, 255)));
 
-                rect
-                .SetWidth(width)
-                .SetHeight(height)
-                .SetFill(rectColor);
-
-                //textBox.SetBackground(new SolidColorBrush(Color.FromArgb(150, 255, 255, 255)));
-
-                var menu = world.UI<MenuFlyout>((menu) =>
-                    {
-                        menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
-                        menu.Child<MenuItem>((menuItem) =>
+                    var menu = world.UI<MenuFlyout>(
+                        (menu) =>
                         {
-                            menuItem
-                            .SetHeader("Remove")
-                            .OnClick((_, _) =>
-                            {
-                                canvasEntity.Get<Canvas>().Children.Remove(rect.Get<Rectangle>());
-
-                                // Remove the corresponding cloze area
-                                var clozeToRemove = clozeAreas.FirstOrDefault(ca =>
-                                    Math.Abs(ca.X - Canvas.GetLeft(rect.Get<Rectangle>())) < 0.1 &&
-                                    Math.Abs(ca.Y - Canvas.GetTop(rect.Get<Rectangle>())) < 0.1 &&
-                                    Math.Abs(ca.Width - rect.Get<Rectangle>().Width) < 0.1 &&
-                                    Math.Abs(ca.Height - rect.Get<Rectangle>().Height) < 0.1);
-
-                                if (clozeToRemove != null)
+                            menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
+                            menu.Child<MenuItem>(
+                                (menuItem) =>
                                 {
-                                    clozeAreas.Remove(clozeToRemove);
+                                    menuItem
+                                        .SetHeader("Remove")
+                                        .OnClick(
+                                            (_, _) =>
+                                            {
+                                                canvasEntity
+                                                    .Get<Canvas>()
+                                                    .Children.Remove(rect.Get<Rectangle>());
+
+                                                // Remove the corresponding cloze area
+                                                var clozeToRemove = clozeAreas.FirstOrDefault(ca =>
+                                                    Math.Abs(
+                                                        ca.X - Canvas.GetLeft(rect.Get<Rectangle>())
+                                                    ) < 0.1
+                                                    && Math.Abs(
+                                                        ca.Y - Canvas.GetTop(rect.Get<Rectangle>())
+                                                    ) < 0.1
+                                                    && Math.Abs(
+                                                        ca.Width - rect.Get<Rectangle>().Width
+                                                    ) < 0.1
+                                                    && Math.Abs(
+                                                        ca.Height - rect.Get<Rectangle>().Height
+                                                    ) < 0.1
+                                                );
+
+                                                if (clozeToRemove != null)
+                                                {
+                                                    clozeAreas.Remove(clozeToRemove);
+                                                }
+
+                                                // Destroy the entity
+                                                rect.Entity.Destruct();
+                                            }
+                                        );
                                 }
+                            );
+                        }
+                    );
 
-                                // Destroy the entity
-                                rect.Entity.Destruct();
-                            });
-                        });
-                    });
-
-                rect.SetContextFlyout(menu);
-            });
+                    rect.SetContextFlyout(menu);
+                }
+            );
 
             var rectangle = rectangleEntity.Get<Rectangle>();
             Canvas.SetLeft(rectangle, left);
@@ -551,9 +619,8 @@ public class EditImageCloze : IUIComponent, IDisposable
                 Width = width,
                 Height = height,
                 FillColor = rectColor,
-                Text = ""
+                Text = "",
             };
-
 
             clozeAreas.Add(clozeArea);
         }
@@ -570,11 +637,12 @@ public class EditImageCloze : IUIComponent, IDisposable
         {
             Title = "Select an image",
             AllowMultiple = false, // Set to true if you want to allow multiple file selections
-            FileTypeFilter = [CustomFilePickerTypes.ImageFileType]
+            FileTypeFilter = [CustomFilePickerTypes.ImageFileType],
         };
 
         // Create an OpenFileDialog instance
-        IReadOnlyList<IStorageFile> result = await App.GetMainWindow().StorageProvider.OpenFilePickerAsync(options);
+        IReadOnlyList<IStorageFile> result = await App.GetMainWindow()
+            .StorageProvider.OpenFilePickerAsync(options);
 
         if (result?.Count > 0)
         {
@@ -617,7 +685,9 @@ public class EditImageCloze : IUIComponent, IDisposable
                 // Create a persistent directory for storing images
                 string appDataPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "StellaLearning", "Images");
+                    "StellaLearning",
+                    "Images"
+                );
 
                 // Ensure the directory exists
                 Directory.CreateDirectory(appDataPath);
@@ -658,35 +728,42 @@ public class EditImageCloze : IUIComponent, IDisposable
 
         foreach (var clozeArea in clozeAreas)
         {
-            var rectangleEntity = world.UI<Rectangle>((rect) =>
-            {
-                rect
-                .SetWidth(clozeArea.Width)
-                .SetHeight(clozeArea.Height)
-                .SetFill(clozeArea.FillColor);
-
-                var menu = world.UI<MenuFlyout>((menu) =>
+            var rectangleEntity = world.UI<Rectangle>(
+                (rect) =>
                 {
-                    menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("Remove")
-                        .OnClick((_, _) =>
+                    rect.SetWidth(clozeArea.Width)
+                        .SetHeight(clozeArea.Height)
+                        .SetFill(clozeArea.FillColor);
+
+                    var menu = world.UI<MenuFlyout>(
+                        (menu) =>
                         {
-                            canvas.Children.Remove(rect.Get<Rectangle>());
+                            menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
+                            menu.Child<MenuItem>(
+                                (menuItem) =>
+                                {
+                                    menuItem
+                                        .SetHeader("Remove")
+                                        .OnClick(
+                                            (_, _) =>
+                                            {
+                                                canvas.Children.Remove(rect.Get<Rectangle>());
 
-                            // Remove the corresponding cloze area
-                            clozeAreas.Remove(clozeArea);
+                                                // Remove the corresponding cloze area
+                                                clozeAreas.Remove(clozeArea);
 
-                            // Destroy the entity
-                            rect.Entity.Destruct();
-                        });
-                    });
-                });
+                                                // Destroy the entity
+                                                rect.Entity.Destruct();
+                                            }
+                                        );
+                                }
+                            );
+                        }
+                    );
 
-                rect.SetContextFlyout(menu);
-            });
+                    rect.SetContextFlyout(menu);
+                }
+            );
 
             var rectangle = rectangleEntity.Get<Rectangle>();
             Canvas.SetLeft(rectangle, clozeArea.X);

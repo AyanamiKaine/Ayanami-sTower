@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 /*
-This should be a singleton that can be used in the entire app as a single place where 
+This should be a singleton that can be used in the entire app as a single place where
 we can call, large language models APIs and local large language models with just simple functions.
 */using System;
 using System.Collections.Generic;
@@ -26,17 +26,17 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using AyanamisTower.StellaLearning.Data; // For Request/Response types if needed
 using Flecs.NET.Core;
 using GenerativeAI; // Main namespace from the library
 using GenerativeAI.Types;
 using HtmlAgilityPack;
-using AyanamisTower.StellaLearning.Data; // For Request/Response types if needed
 
 namespace AyanamisTower.StellaLearning.Util;
 
 /*
 While much of this logic was moved to the backend, i think its better to keep it in the client.
-Why? Because this makes it much more easiert to integrate local llms. As well as sending 
+Why? Because this makes it much more easiert to integrate local llms. As well as sending
 the data to gemini because then we dont have to store direct user data and can instead
 implement end to end encryption. So the data we receive is never first not unencrypted.
 */
@@ -53,19 +53,23 @@ public class ContentMetadata
     /// AI Generated Title
     /// </summary>
     public string? Title { get; set; }
+
     /// <summary>
     /// AI Generated Author
     /// </summary>
     public string? Author { get; set; }
+
     // [JsonPropertyName("Tags")]
     /// <summary>
     /// AI Generated Tags
     /// </summary>
     public List<string>? Tags { get; set; }
+
     /// <summary>
     /// AI Generated Publisher
     /// </summary>
     public string? Publisher { get; set; }
+
     /// <summary>
     /// AI Generated Publisher
     /// </summary>
@@ -79,15 +83,15 @@ public class ContentMetadata
     {
         var tagsList = Tags != null ? string.Join(", ", Tags) : "No tags";
 
-        return $"Title: {Title ?? "Unknown"}\n" +
-               $"Author: {Author ?? "Unknown"}\n" +
-               $"Publisher: {Publisher ?? "Unknown"}\n" +
-               $"Tags: {tagsList}\n" +
-               $"Summary: {Summary ?? "No summary"}";
+        return $"Title: {Title ?? "Unknown"}\n"
+            + $"Author: {Author ?? "Unknown"}\n"
+            + $"Publisher: {Publisher ?? "Unknown"}\n"
+            + $"Tags: {tagsList}\n"
+            + $"Summary: {Summary ?? "No summary"}";
     }
 
     /*
-    TODO: 
+    TODO:
     We should also add a date for when the information was created => Date.Now()
     and the date when the source was created, this would need to be created by the LLM
     */
@@ -99,43 +103,63 @@ public class ContentMetadata
 /// </summary>
 public sealed partial class LargeLanguageManager
 {
-
     // Efficient lookup for supported extensions (using HashSet for O(1) average time complexity)
     // Store extensions in lowercase including the dot for consistent comparison.
-    private static readonly HashSet<string> _supportedFileApiExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        // Code Files
-        ".c", ".cpp", ".py", ".java", ".php", ".sql", ".html",
-        // Document Files
-        ".doc", ".docx", ".pdf", ".rtf", ".dot", ".dotx", ".hwp", ".hwpx",
-        // Plain Text
-        ".txt",
-        // Presentation
-        ".pptx",
-        // Spreadsheet/Tabular
-        ".xls", ".xlsx", ".csv", ".tsv"
-    };
+    private static readonly HashSet<string> _supportedFileApiExtensions =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Code Files
+            ".c",
+            ".cpp",
+            ".py",
+            ".java",
+            ".php",
+            ".sql",
+            ".html",
+            // Document Files
+            ".doc",
+            ".docx",
+            ".pdf",
+            ".rtf",
+            ".dot",
+            ".dotx",
+            ".hwp",
+            ".hwpx",
+            // Plain Text
+            ".txt",
+            // Presentation
+            ".pptx",
+            // Spreadsheet/Tabular
+            ".xls",
+            ".xlsx",
+            ".csv",
+            ".tsv",
+        };
 
     // Extensions we can reasonably convert to plain text for analysis
-    private static readonly HashSet<string> _convertibleToTextExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".md", ".markdown", // Markdown
-        ".log",           // Log files
-        ".xml",           // XML
-        ".json",          // JSON (though API might support directly)
-        ".yaml", ".yml",  // YAML
-        ".css",           // CSS
-        ".js",            // JavaScript (if not using .py, .java etc.)
-        ".sh",            // Shell scripts
-        ".bat"            // Batch files
-        // Add any other primarily text-based formats you encounter
-    };
-
+    private static readonly HashSet<string> _convertibleToTextExtensions =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".md",
+            ".markdown", // Markdown
+            ".log", // Log files
+            ".xml", // XML
+            ".json", // JSON (though API might support directly)
+            ".yaml",
+            ".yml", // YAML
+            ".css", // CSS
+            ".js", // JavaScript (if not using .py, .java etc.)
+            ".sh", // Shell scripts
+            ".bat" // Batch files
+            ,
+            // Add any other primarily text-based formats you encounter
+        };
 
     // --- Singleton Implementation ---
 
     // Private static instance holder using Lazy<T> for thread-safety and lazy initialization// Make lazyInstance nullable and remove direct initialization here
     private static Lazy<LargeLanguageManager>? lazyInstance;
+
     // Lock object for thread-safe initialization
     private static readonly Lock padlock = new();
 
@@ -152,7 +176,9 @@ public sealed partial class LargeLanguageManager
             {
                 // This state should ideally not be reached if Initialize is called correctly at startup.
                 // This check protects against incorrect usage patterns.
-                throw new InvalidOperationException("LargeLanguageManager has not been initialized. Call Initialize(world) first during application startup.");
+                throw new InvalidOperationException(
+                    "LargeLanguageManager has not been initialized. Call Initialize(world) first during application startup."
+                );
             }
             // Return the lazily initialized instance (the factory delegate inside Lazy<T> will run here if it hasn't already)
             return lazyInstance.Value;
@@ -165,14 +191,18 @@ public sealed partial class LargeLanguageManager
     private readonly GenerativeModel _imageModel;
     private readonly World _world;
     private readonly HttpClient _httpClient;
+
     // Private constructor to prevent external instantiation
 
     [GeneratedRegex(@"(\r\n|\r|\n)")]
     private static partial Regex MyRegex();
+
     [GeneratedRegex(@"\n{3,}")]
     private static partial Regex MyRegex1();
+
     [GeneratedRegex(@"[ \t]{2,}")]
     private static partial Regex MyRegex2();
+
     private LargeLanguageManager(World world) // <--- Added parameter
     {
         // Assign the world instance immediately
@@ -187,13 +217,15 @@ public sealed partial class LargeLanguageManager
         {
             // You could also fall back to reading from a config file or other sources here
             throw new InvalidOperationException(
-                "Gemini API Key not found. Set the GEMINI_API environment variable.");
+                "Gemini API Key not found. Set the GEMINI_API environment variable."
+            );
         }
 
         _httpClient = new HttpClient();
         // Optional: Configure HttpClient (e.g., Timeout, Headers)
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36");
-
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+        );
 
         try
         {
@@ -210,7 +242,9 @@ public sealed partial class LargeLanguageManager
         catch (Exception ex)
         {
             // Log the exception details appropriately in a real application
-            Console.Error.WriteLine($"Failed to initialize GoogleAI or GenerativeModel: {ex.Message}");
+            Console.Error.WriteLine(
+                $"Failed to initialize GoogleAI or GenerativeModel: {ex.Message}"
+            );
             // Rethrow or handle appropriately depending on application requirements
             throw;
         }
@@ -234,7 +268,9 @@ public sealed partial class LargeLanguageManager
                 if (lazyInstance == null) // Second check (ensures only one thread initializes)
                 {
                     // Create the Lazy instance, passing the world to the constructor via the factory delegate
-                    lazyInstance = new Lazy<LargeLanguageManager>(() => new LargeLanguageManager(world));
+                    lazyInstance = new Lazy<LargeLanguageManager>(
+                        () => new LargeLanguageManager(world)
+                    );
                     Console.WriteLine("LargeLanguageManager initialized.");
                 }
                 else
@@ -248,7 +284,9 @@ public sealed partial class LargeLanguageManager
         else
         {
             // If Initialize is called again after successful initialization
-            throw new InvalidOperationException("LargeLanguageManager has already been initialized. Initialize should only be called once.");
+            throw new InvalidOperationException(
+                "LargeLanguageManager has already been initialized. Initialize should only be called once."
+            );
             // Alternatively, you could just log a warning and return if you want to allow redundant calls.
             // Console.WriteLine("Warning: LargeLanguageManager.Initialize called more than once.");
         }
@@ -286,7 +324,9 @@ public sealed partial class LargeLanguageManager
         catch (Exception ex)
         {
             // Log the error in a real application (using a logging framework like Serilog, NLog, etc.)
-            Console.Error.WriteLine($"Error generating text response for prompt '{prompt}': {ex.Message}");
+            Console.Error.WriteLine(
+                $"Error generating text response for prompt '{prompt}': {ex.Message}"
+            );
             Console.Error.WriteLine($"Stack Trace: {ex.StackTrace}"); // Include stack trace for debugging
             return null; // Return null to indicate failure
         }
@@ -298,7 +338,10 @@ public sealed partial class LargeLanguageManager
     /// <param name="filePath">The path to the file to analyze.</param>
     /// <param name="maxTags">The maximum number of tags to generate (default is 4).</param>
     /// <returns>A ContentMetadata object containing the generated metadata, or null if an error occurred.</returns>
-    public async Task<ContentMetadata?> GenerateMetaDataBasedOnFile(string filePath, int maxTags = 4)
+    public async Task<ContentMetadata?> GenerateMetaDataBasedOnFile(
+        string filePath,
+        int maxTags = 4
+    )
     {
         if (!_world.Get<Settings>().EnableLargeLanguageFeatures)
         {
@@ -314,21 +357,26 @@ public sealed partial class LargeLanguageManager
         string? extension = Path.GetExtension(filePath)?.ToLowerInvariant();
         if (string.IsNullOrEmpty(extension))
         {
-            Console.Error.WriteLine($"Error: Could not determine file extension for '{filePath}'. Cannot process.");
+            Console.Error.WriteLine(
+                $"Error: Could not determine file extension for '{filePath}'. Cannot process."
+            );
             return null;
         }
 
         bool isDirectlySupported = _supportedFileApiExtensions.Contains(extension);
-        bool isConvertible = !isDirectlySupported && _convertibleToTextExtensions.Contains(extension);
+        bool isConvertible =
+            !isDirectlySupported && _convertibleToTextExtensions.Contains(extension);
 
         string fileToUploadPath = filePath; // Default to original path
-        string? tempFilePath = null;       // Path for temporary file, if created
+        string? tempFilePath = null; // Path for temporary file, if created
         bool useConversion = false;
 
         // --- Logic Branch: Conversion Fallback ---
         if (isConvertible)
         {
-            Console.WriteLine($"File type '{extension}' is not directly supported by File API, attempting conversion to .txt.");
+            Console.WriteLine(
+                $"File type '{extension}' is not directly supported by File API, attempting conversion to .txt."
+            );
             useConversion = true;
             try
             {
@@ -341,16 +389,26 @@ public sealed partial class LargeLanguageManager
                 // Write to temporary .txt file
                 await File.WriteAllTextAsync(tempFilePath, originalContent);
 
-                Console.WriteLine($"Successfully converted '{Path.GetFileName(filePath)}' to temporary file: '{tempFilePath}'");
+                Console.WriteLine(
+                    $"Successfully converted '{Path.GetFileName(filePath)}' to temporary file: '{tempFilePath}'"
+                );
                 fileToUploadPath = tempFilePath; // Upload the temporary file
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error during temporary file conversion for '{filePath}': {ex.Message}");
+                Console.Error.WriteLine(
+                    $"Error during temporary file conversion for '{filePath}': {ex.Message}"
+                );
                 // Clean up temp file if it was created partially before error
                 if (tempFilePath != null && File.Exists(tempFilePath))
                 {
-                    try { File.Delete(tempFilePath); } catch { /* Ignore delete error */ }
+                    try
+                    {
+                        File.Delete(tempFilePath);
+                    }
+                    catch
+                    { /* Ignore delete error */
+                    }
                 }
                 return null; // Cannot proceed if conversion fails
             }
@@ -358,14 +416,18 @@ public sealed partial class LargeLanguageManager
         // --- Logic Branch: Unsupported Type ---
         else if (!isDirectlySupported)
         {
-            Console.Error.WriteLine($"Error: File type '{extension}' is not directly supported by the File API and is not configured for text conversion. Skipping '{filePath}'.");
+            Console.Error.WriteLine(
+                $"Error: File type '{extension}' is not directly supported by the File API and is not configured for text conversion. Skipping '{filePath}'."
+            );
             return null;
         }
 
         RemoteFile? remoteFile = null;
         try
         {
-            Console.WriteLine($"Uploading {(useConversion ? "temporary " : "")}file '{Path.GetFileName(fileToUploadPath)}' (Original: '{Path.GetFileName(filePath)}') using File API...");
+            Console.WriteLine(
+                $"Uploading {(useConversion ? "temporary " : "")}file '{Path.GetFileName(fileToUploadPath)}' (Original: '{Path.GetFileName(filePath)}') using File API..."
+            );
             remoteFile = await _textModel.Files.UploadFileAsync(
                 fileToUploadPath!,
                 progressCallback: (progress) =>
@@ -383,7 +445,10 @@ public sealed partial class LargeLanguageManager
 
         var request = new GenerateContentRequest
         {
-            SystemInstruction = new GenerativeAI.Types.Content("You are an AI assistant specialized in extracting structured metadata from text content. Your task is to analyze the provided text content below and generate a single, valid JSON object containing specific metadata fields.", "SYSTEM")
+            SystemInstruction = new GenerativeAI.Types.Content(
+                "You are an AI assistant specialized in extracting structured metadata from text content. Your task is to analyze the provided text content below and generate a single, valid JSON object containing specific metadata fields.",
+                "SYSTEM"
+            ),
         };
         // Configure the request to expect JSON output (important!)
         // This tells the SDK/API to enforce JSON mode.
@@ -391,8 +456,7 @@ public sealed partial class LargeLanguageManager
 
         // Construct a prompt specifically asking for tags in a parseable format
         // You might need to experiment with this prompt for optimal results
-        var promptText =
-            $"""
+        var promptText = $"""
             Analyze Content: Carefully read the entire content
             Extract Metadata: Identify and extract the following pieces of information from the text:
 
@@ -427,7 +491,9 @@ public sealed partial class LargeLanguageManager
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error generating AI response for file '{filePath}': {ex.Message}");
+            Console.Error.WriteLine(
+                $"Error generating AI response for file '{filePath}': {ex.Message}"
+            );
             Console.Error.WriteLine($"Stack Trace: {ex.StackTrace}");
             return null;
         }
@@ -443,14 +509,25 @@ public sealed partial class LargeLanguageManager
                 catch (IOException ioEx)
                 {
                     // Log non-critically, the main operation might have succeeded
-                    Console.Error.WriteLine($"Warning: Failed to delete temporary file '{tempFilePath}': {ioEx.Message}");
+                    Console.Error.WriteLine(
+                        $"Warning: Failed to delete temporary file '{tempFilePath}': {ioEx.Message}"
+                    );
                 }
             }
             // Optional: Delete the remote file if no longer needed (requires another API call)
             if (remoteFile != null)
             {
-                try { await _textModel.Files.DeleteFileAsync(remoteFile!.Name!); Console.WriteLine($"Deleted remote file: {remoteFile.Name}"); }
-                catch (Exception ex) { Console.Error.WriteLine($"Warning: Failed to delete remote file '{remoteFile.Name}': {ex.Message}"); }
+                try
+                {
+                    await _textModel.Files.DeleteFileAsync(remoteFile!.Name!);
+                    Console.WriteLine($"Deleted remote file: {remoteFile.Name}");
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine(
+                        $"Warning: Failed to delete remote file '{remoteFile.Name}': {ex.Message}"
+                    );
+                }
             }
         }
     }
@@ -481,14 +558,13 @@ public sealed partial class LargeLanguageManager
         }
         var request = new GenerateContentRequest();
 
-
         string prompt = $"""
-        Describe this image with relevant THEME tags. THAT CAN BE USED TO CATEGORIES THE IMAGE
-        SO THEIR TAGS CAN BE USED TO SEARCH FOR THE IMAGE, FOR EXAMPLE AN PAINTING OF AN APPLE
-        WOULD GET THE TAG APPLE AND PAINTING, AND ITS STYLE. SEEING A PICTURE OF A WOMEN SMOKING
-        WOULD BECOME WOMEN, SMOKING TAGS. ONLY RETURN THE TAGS LIST NOTHING ELSE
-        Provide up to {maxTags} tags as a comma-separated list (e.g., tag1, tag2, tag3).
-        """;
+            Describe this image with relevant THEME tags. THAT CAN BE USED TO CATEGORIES THE IMAGE
+            SO THEIR TAGS CAN BE USED TO SEARCH FOR THE IMAGE, FOR EXAMPLE AN PAINTING OF AN APPLE
+            WOULD GET THE TAG APPLE AND PAINTING, AND ITS STYLE. SEEING A PICTURE OF A WOMEN SMOKING
+            WOULD BECOME WOMEN, SMOKING TAGS. ONLY RETURN THE TAGS LIST NOTHING ELSE
+            Provide up to {maxTags} tags as a comma-separated list (e.g., tag1, tag2, tag3).
+            """;
 
         request.AddText(prompt);
 
@@ -510,10 +586,11 @@ public sealed partial class LargeLanguageManager
             }
 
             // Parse the comma-separated list
-            return generatedText.Split(',')
-                                    .Select(tag => tag.Trim()) // Remove leading/trailing whitespace
-                                    .Where(tag => !string.IsNullOrEmpty(tag)) // Remove empty entries
-                                    .ToList();
+            return generatedText
+                .Split(',')
+                .Select(tag => tag.Trim()) // Remove leading/trailing whitespace
+                .Where(tag => !string.IsNullOrEmpty(tag)) // Remove empty entries
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -531,7 +608,10 @@ public sealed partial class LargeLanguageManager
     /// <param name="url">The URL of the website to fetch.</param>
     /// <param name="promptAboutUrlContent">The specific question or instruction about the website content.</param>
     /// <returns>The AI's response, trimmed, or null if an error occurs.</returns>
-    public async Task<ContentMetadata?> GetResponseFromUrlAsync(string url, string promptAboutUrlContent)
+    public async Task<ContentMetadata?> GetResponseFromUrlAsync(
+        string url,
+        string promptAboutUrlContent
+    )
     {
         if (!_world.Get<Settings>().EnableLargeLanguageFeatures)
         {
@@ -556,11 +636,15 @@ public sealed partial class LargeLanguageManager
             HttpResponseMessage response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
             htmlContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Successfully fetched {htmlContent.Length} characters (raw HTML) from {url}");
+            Console.WriteLine(
+                $"Successfully fetched {htmlContent.Length} characters (raw HTML) from {url}"
+            );
         }
         catch (HttpRequestException ex)
         {
-            Console.Error.WriteLine($"HTTP request error fetching URL '{url}': {ex.Message} (Status Code: {ex.StatusCode})");
+            Console.Error.WriteLine(
+                $"HTTP request error fetching URL '{url}': {ex.Message} (Status Code: {ex.StatusCode})"
+            );
             return null;
         }
         catch (TaskCanceledException ex)
@@ -582,10 +666,19 @@ public sealed partial class LargeLanguageManager
             htmlDoc.LoadHtml(htmlContent);
 
             // Remove potentially problematic or non-content nodes
-            var nodesToRemove = htmlDoc.DocumentNode.Descendants()
-                .Where(n => n.Name == "script" || n.Name == "style" || n.Name == "nav" ||
-                            n.Name == "footer" || n.Name == "header" || n.Name == "aside" ||
-                            n.Name == "form" || n.Name == "button" || n.Name == "iframe")
+            var nodesToRemove = htmlDoc
+                .DocumentNode.Descendants()
+                .Where(n =>
+                    n.Name == "script"
+                    || n.Name == "style"
+                    || n.Name == "nav"
+                    || n.Name == "footer"
+                    || n.Name == "header"
+                    || n.Name == "aside"
+                    || n.Name == "form"
+                    || n.Name == "button"
+                    || n.Name == "iframe"
+                )
                 .ToList(); // Materialize before removing
 
             foreach (var node in nodesToRemove)
@@ -594,7 +687,8 @@ public sealed partial class LargeLanguageManager
             }
 
             // Select the body node, or fallback to the document node
-            var contentNode = htmlDoc.DocumentNode.SelectSingleNode("//body") ?? htmlDoc.DocumentNode;
+            var contentNode =
+                htmlDoc.DocumentNode.SelectSingleNode("//body") ?? htmlDoc.DocumentNode;
 
             // Get the inner text, which concatenates text from descendant nodes
             string rawInnerText = contentNode.InnerText;
@@ -616,13 +710,17 @@ public sealed partial class LargeLanguageManager
 
             if (string.IsNullOrWhiteSpace(cleanedText))
             {
-                Console.Error.WriteLine($"Failed to extract meaningful text content from URL: {url}");
+                Console.Error.WriteLine(
+                    $"Failed to extract meaningful text content from URL: {url}"
+                );
                 return null; // Return null if extraction yielded nothing useful
             }
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error parsing HTML or extracting text from URL '{url}': {ex.Message}");
+            Console.Error.WriteLine(
+                $"Error parsing HTML or extracting text from URL '{url}': {ex.Message}"
+            );
             // Optional: Fallback to sending raw HTML or just return null
             return null;
         }
@@ -631,12 +729,14 @@ public sealed partial class LargeLanguageManager
 
         // Prepare the combined prompt using the CLEANED text
         // Note: Changed prompt slightly to indicate it's extracted text, not raw HTML
-        string finalPrompt = $"Here is the extracted text content from the website {url}:\n" +
-                             $"---\n" + // Use simpler separator
-                             $"{cleanedText}\n" +
-                             $"---\n\n" +
-                             $"Based on the text content above, please answer the following question:\n" +
-                             $"{promptAboutUrlContent}";
+        string finalPrompt =
+            $"Here is the extracted text content from the website {url}:\n"
+            + $"---\n"
+            + // Use simpler separator
+            $"{cleanedText}\n"
+            + $"---\n\n"
+            + $"Based on the text content above, please answer the following question:\n"
+            + $"{promptAboutUrlContent}";
 
         // Call the AI model (same logic as before)
         Console.WriteLine("Sending combined prompt (Extracted Text + Question) to AI model...");
@@ -678,17 +778,17 @@ public sealed partial class LargeLanguageManager
         // Construct the prompt specifically asking for JSON output
         // matching the UrlMetadata structure. Be explicit!
         string jsonPrompt = $"""
-                Generate a concise, relevant title for the content and a list of up to {maxTags} relevant keyword tags.
+            Generate a concise, relevant title for the content and a list of up to {maxTags} relevant keyword tags.
 
-                Extracted Text:
-                ---
-                {cleanedText}
-                ---
+            Extracted Text:
+            ---
+            {cleanedText}
+            ---
 
-                Instructions:
-                Respond ONLY with a valid JSON object containing the generated title and tags.
-                The JSON object must have exactly two keys: "Title" (string) and "Tags" (array of strings).
-                """;
+            Instructions:
+            Respond ONLY with a valid JSON object containing the generated title and tags.
+            The JSON object must have exactly two keys: "Title" (string) and "Tags" (array of strings).
+            """;
 
         // Create the request object
         var request = new GenerateContentRequest();
@@ -702,15 +802,21 @@ public sealed partial class LargeLanguageManager
         try
         {
             // Use GenerateObjectAsync<T> to directly get the deserialized object
-            ContentMetadata? result = await _textModel.GenerateObjectAsync<ContentMetadata>(request);
+            ContentMetadata? result = await _textModel.GenerateObjectAsync<ContentMetadata>(
+                request
+            );
 
             if (result == null)
             {
-                Console.WriteLine("AI model returned null or failed to deserialize the JSON object.");
+                Console.WriteLine(
+                    "AI model returned null or failed to deserialize the JSON object."
+                );
             }
             else
             {
-                Console.WriteLine($"Successfully received JSON metadata: Title='{result.Title}', Tags='{(result.Tags != null ? string.Join(", ", result.Tags) : "None")}'");
+                Console.WriteLine(
+                    $"Successfully received JSON metadata: Title='{result.Title}', Tags='{(result.Tags != null ? string.Join(", ", result.Tags) : "None")}'"
+                );
             }
 
             return result; // Return the deserialized object (or null if it failed)
@@ -718,7 +824,9 @@ public sealed partial class LargeLanguageManager
         catch (Exception ex)
         {
             // Log the specific error related to JSON generation/parsing
-            Console.Error.WriteLine($"Error generating or parsing JSON metadata for URL '{url}': {ex.Message}");
+            Console.Error.WriteLine(
+                $"Error generating or parsing JSON metadata for URL '{url}': {ex.Message}"
+            );
             // Consider checking exception type for more specific API errors if available
             Console.Error.WriteLine($"Stack Trace: {ex.StackTrace}");
             return null;
@@ -741,21 +849,51 @@ public sealed partial class LargeLanguageManager
             HttpResponseMessage response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
             htmlContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Successfully fetched {htmlContent.Length} characters (raw HTML) from {url}");
+            Console.WriteLine(
+                $"Successfully fetched {htmlContent.Length} characters (raw HTML) from {url}"
+            );
         }
-        catch (HttpRequestException ex) { Console.Error.WriteLine($"HTTP error fetching URL '{url}': {ex.Message}"); return null; }
-        catch (TaskCanceledException ex) { Console.Error.WriteLine($"Timeout fetching URL '{url}': {ex.Message}"); return null; }
-        catch (Exception ex) { Console.Error.WriteLine($"Error fetching URL '{url}': {ex.Message}"); return null; }
+        catch (HttpRequestException ex)
+        {
+            Console.Error.WriteLine($"HTTP error fetching URL '{url}': {ex.Message}");
+            return null;
+        }
+        catch (TaskCanceledException ex)
+        {
+            Console.Error.WriteLine($"Timeout fetching URL '{url}': {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error fetching URL '{url}': {ex.Message}");
+            return null;
+        }
 
         string cleanedText;
         try
         {
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(htmlContent);
-            var nodesToRemove = htmlDoc.DocumentNode.Descendants().Where(n => /* ... node names ... */
-    n.Name == "script" || n.Name == "style" || n.Name == "nav" || n.Name == "footer" || n.Name == "header" || n.Name == "aside" || n.Name == "form" || n.Name == "button" || n.Name == "iframe").ToList();
-            foreach (var node in nodesToRemove) { node.Remove(); }
-            var contentNode = htmlDoc.DocumentNode.SelectSingleNode("//body") ?? htmlDoc.DocumentNode;
+            var nodesToRemove = htmlDoc
+                .DocumentNode.Descendants()
+                .Where(n => /* ... node names ... */
+                    n.Name == "script"
+                    || n.Name == "style"
+                    || n.Name == "nav"
+                    || n.Name == "footer"
+                    || n.Name == "header"
+                    || n.Name == "aside"
+                    || n.Name == "form"
+                    || n.Name == "button"
+                    || n.Name == "iframe"
+                )
+                .ToList();
+            foreach (var node in nodesToRemove)
+            {
+                node.Remove();
+            }
+            var contentNode =
+                htmlDoc.DocumentNode.SelectSingleNode("//body") ?? htmlDoc.DocumentNode;
             string rawInnerText = contentNode.InnerText;
             var decodedText = HtmlEntity.DeEntitize(rawInnerText);
             var textWithStandardNewlines = MyRegex().Replace(decodedText, "\n"); // (\r\n|\r|\n)
@@ -765,7 +903,9 @@ public sealed partial class LargeLanguageManager
             Console.WriteLine($"Extracted and cleaned text: {cleanedText.Length} characters.");
             if (string.IsNullOrWhiteSpace(cleanedText))
             {
-                Console.Error.WriteLine($"Failed to extract meaningful text content from URL: {url}");
+                Console.Error.WriteLine(
+                    $"Failed to extract meaningful text content from URL: {url}"
+                );
                 return null;
             }
             return cleanedText;

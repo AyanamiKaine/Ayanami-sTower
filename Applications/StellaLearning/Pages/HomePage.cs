@@ -22,6 +22,7 @@ using NLog;
 using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace AyanamisTower.StellaLearning.Pages;
+
 /// <summary>
 /// Home Page
 /// </summary>
@@ -30,16 +31,17 @@ public class HomePage : IUIComponent
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
+
     /// <summary>
     /// Creates a home page.
     /// </summary>
     /// <param name="world"></param>
     public HomePage(World world)
     {
-        _root = world.UI<TextBlock>((t) => t.SetText("Home"))
-            .Add<Page>().Entity;
+        _root = world.UI<TextBlock>((t) => t.SetText("Home")).Add<Page>().Entity;
     }
 
     /// <summary>
@@ -49,8 +51,6 @@ public class HomePage : IUIComponent
     /// <param name="parent"></param>
     public HomePage(World world, Entity parent)
     {
-        _root = world.UI<TextBlock>((t) => t.SetText("Home"))
-            .Add<Page>().Entity
-            .ChildOf(parent);
+        _root = world.UI<TextBlock>((t) => t.SetText("Home")).Add<Page>().Entity.ChildOf(parent);
     }
 }

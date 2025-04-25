@@ -20,18 +20,18 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Reactive.Disposables;
+using Avalonia; // For Dispatcher.UIThread
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Flecs.NET.Core;
-using System.Reactive.Disposables;
-using NLog;
 using Avalonia.Threading;
 using AyanamisTower.StellaLearning.Data;
-using Avalonia; // For Dispatcher.UIThread
+using Flecs.NET.Core;
+using NLog;
 
 namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if needed
 {
@@ -46,14 +46,14 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
         private readonly CompositeDisposable _disposables = [];
         private bool _isDisposed = false;
         private UIBuilder<AutoCompleteBox>? _tagInputAutoCompleteBox; // Changed from TextBox
+
         /// <summary>
         /// The underlying collection of tags *for this specific instance* managed by this component.
         /// </summary>
         public ObservableCollection<string> Tags { get; } = [];
 
-
         /*
-        TODO: We want to reuse the unique tags for everything not just spaced repetition items, so 
+        TODO: We want to reuse the unique tags for everything not just spaced repetition items, so
         we can reuse the tags for art and literature based items. Probably we can define an tags interface
         that implements a list of tags. That also ensure the list only holds unique values etc.
         */
@@ -62,6 +62,7 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
         /// Used as the source for AutoCompleteBox suggestions.
         /// </summary>
         private readonly ObservableCollection<string> _allUniqueTags = [];
+
         /// <summary>
         /// Reference to the main collection of all spaced repetition items.
         /// </summary>
@@ -70,12 +71,14 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
 
         /// <inheritdoc/>
         public Entity Root { get; }
+
         // --- Primary Constructor (Existing) ---
         /// <summary>
         /// Creates a new Tag Management UI Component with auto-completion, initially empty.
         /// </summary>
         /// <param name="world">The Flecs world, expected to contain ObservableCollection&lt;SpacedRepetitionItem&gt;.</param>
-        public TagComponent(World world) : this(world, null) // Chain to the new constructor with null initial tags
+        public TagComponent(World world)
+            : this(world, null) // Chain to the new constructor with null initial tags
         {
             // Primary constructor logic is now mostly in the new constructor
             // Or keep the common logic here and call common init methods
@@ -96,22 +99,35 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
 
                 UpdateAllUniqueTags(); // Populate suggestions source
                 _allSpacedRepetitionItems.CollectionChanged += OnAllItemsChanged;
-                _disposables.Add(Disposable.Create(() =>
-                {
-                    if (_allSpacedRepetitionItems != null) _allSpacedRepetitionItems.CollectionChanged -= OnAllItemsChanged;
-                    Logger.Debug("Unsubscribed from _allSpacedRepetitionItems.CollectionChanged");
-                }));
+                _disposables.Add(
+                    Disposable.Create(() =>
+                    {
+                        if (_allSpacedRepetitionItems != null)
+                            _allSpacedRepetitionItems.CollectionChanged -= OnAllItemsChanged;
+                        Logger.Debug(
+                            "Unsubscribed from _allSpacedRepetitionItems.CollectionChanged"
+                        );
+                    })
+                );
 
                 _allLiteratureSourceItems.CollectionChanged += OnAllItemsChanged;
-                _disposables.Add(Disposable.Create(() =>
-                {
-                    if (_allLiteratureSourceItems != null) _allLiteratureSourceItems.CollectionChanged -= OnAllItemsChanged;
-                    Logger.Debug("Unsubscribed from _allLiteratureSourceItems.CollectionChanged");
-                }));
+                _disposables.Add(
+                    Disposable.Create(() =>
+                    {
+                        if (_allLiteratureSourceItems != null)
+                            _allLiteratureSourceItems.CollectionChanged -= OnAllItemsChanged;
+                        Logger.Debug(
+                            "Unsubscribed from _allLiteratureSourceItems.CollectionChanged"
+                        );
+                    })
+                );
             }
             catch (Exception ex)
             {
-                Logger.Warn(ex, "Failed to get SpacedRepetitionItem collection. Auto-completion source empty.");
+                Logger.Warn(
+                    ex,
+                    "Failed to get SpacedRepetitionItem collection. Auto-completion source empty."
+                );
                 _allSpacedRepetitionItems = null;
             }
 
@@ -120,112 +136,142 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
             Tags.Clear(); // Ensure Tags starts empty before adding initial ones
             if (initialTags != null)
             {
-                foreach (var tag in initialTags.Where(t => !string.IsNullOrWhiteSpace(t)).Distinct(StringComparer.OrdinalIgnoreCase))
+                foreach (
+                    var tag in initialTags
+                        .Where(t => !string.IsNullOrWhiteSpace(t))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                )
                 {
                     Tags.Add(tag.Trim());
                 }
                 Logger.Debug($"Initialized TagComponent with {Tags.Count} tags.");
             }
             // --- Define Tag Item Template (Unchanged) ---
-            var tagItemTemplate = world.CreateTemplate<string, Border>((borderBuilder, tagText) =>
-            {
-                // ... (Identical to previous version) ...
-                borderBuilder
-                    .SetMargin(2)
-                    .SetPadding(5, 2)
-                    .SetCornerRadius(new CornerRadius(4))
-                    .SetBackground(Brushes.LightGray)
-                    .Child<StackPanel>(stackPanel =>
-                    {
-                        stackPanel
-                            .SetOrientation(Orientation.Horizontal)
-                            .SetSpacing(5)
-                            .SetVerticalAlignment(VerticalAlignment.Center);
-
-                        stackPanel.Child<TextBlock>(textBlock =>
+            var tagItemTemplate = world.CreateTemplate<string, Border>(
+                (borderBuilder, tagText) =>
+                {
+                    // ... (Identical to previous version) ...
+                    borderBuilder
+                        .SetMargin(2)
+                        .SetPadding(5, 2)
+                        .SetCornerRadius(new CornerRadius(4))
+                        .SetBackground(Brushes.LightGray)
+                        .Child<StackPanel>(stackPanel =>
                         {
-                            textBlock
-                                .SetText(tagText)
+                            stackPanel
+                                .SetOrientation(Orientation.Horizontal)
+                                .SetSpacing(5)
                                 .SetVerticalAlignment(VerticalAlignment.Center);
-                        });
 
-                        stackPanel.Child<Button>(removeButton =>
-                        {
-                            removeButton
-                                .SetText("x")
-                                .SetPadding(5, 0)
-                                .SetFontSize(10)
-                                .SetVerticalAlignment(VerticalAlignment.Center)
-                                .SetHorizontalAlignment(HorizontalAlignment.Center)
-                                .SetBorderThickness(new Thickness(0))
-                                .OnClick((_, _) => Tags.Remove(tagText));
-                        });
-                    });
-            });
+                            stackPanel.Child<TextBlock>(textBlock =>
+                            {
+                                textBlock
+                                    .SetText(tagText)
+                                    .SetVerticalAlignment(VerticalAlignment.Center);
+                            });
 
+                            stackPanel.Child<Button>(removeButton =>
+                            {
+                                removeButton
+                                    .SetText("x")
+                                    .SetPadding(5, 0)
+                                    .SetFontSize(10)
+                                    .SetVerticalAlignment(VerticalAlignment.Center)
+                                    .SetHorizontalAlignment(HorizontalAlignment.Center)
+                                    .SetBorderThickness(new Thickness(0))
+                                    .OnClick((_, _) => Tags.Remove(tagText));
+                            });
+                        });
+                }
+            );
 
             // --- Build the main component UI (Same as before) ---
-            Root = world.UI<StackPanel>(rootPanel =>
-            {
-                rootPanel.SetOrientation(Orientation.Vertical).SetSpacing(5);
-                rootPanel.Child<Grid>(inputGrid =>
+            Root = world
+                .UI<StackPanel>(rootPanel =>
                 {
-                    inputGrid.SetColumnDefinitions("*,Auto").SetRowDefinitions("Auto");
-                    inputGrid.Child<AutoCompleteBox>(autoCompleteBox =>
+                    rootPanel.SetOrientation(Orientation.Vertical).SetSpacing(5);
+                    rootPanel.Child<Grid>(inputGrid =>
                     {
-                        _tagInputAutoCompleteBox = autoCompleteBox;
-                        autoCompleteBox.SetColumn(0).SetWatermark("Add Tag...") // Added Watermark here
-                           .With(acb =>
-                           {
-                               acb.ItemsSource = _allUniqueTags;
-                               acb.FilterMode = AutoCompleteFilterMode.StartsWith;
-                           })
-                           .OnKeyDown((sender, args) =>
-                           {
-                               if (sender is AutoCompleteBox acb && (args.Key == Key.Enter || args.Key == Key.Tab))
-                               {
-                                   AddTagFromInput(acb.Text);
-                                   args.Handled = true;
-                               }
-                           });
+                        inputGrid.SetColumnDefinitions("*,Auto").SetRowDefinitions("Auto");
+                        inputGrid.Child<AutoCompleteBox>(autoCompleteBox =>
+                        {
+                            _tagInputAutoCompleteBox = autoCompleteBox;
+                            autoCompleteBox
+                                .SetColumn(0)
+                                .SetWatermark("Add Tag...") // Added Watermark here
+                                .With(acb =>
+                                {
+                                    acb.ItemsSource = _allUniqueTags;
+                                    acb.FilterMode = AutoCompleteFilterMode.StartsWith;
+                                })
+                                .OnKeyDown(
+                                    (sender, args) =>
+                                    {
+                                        if (
+                                            sender is AutoCompleteBox acb
+                                            && (args.Key == Key.Enter || args.Key == Key.Tab)
+                                        )
+                                        {
+                                            AddTagFromInput(acb.Text);
+                                            args.Handled = true;
+                                        }
+                                    }
+                                );
+                        });
+                        inputGrid.Child<Button>(button =>
+                        {
+                            button
+                                .SetText("Add")
+                                .SetColumn(1)
+                                .SetMargin(5, 0, 0, 0)
+                                .OnClick(
+                                    (_, _) =>
+                                    {
+                                        if (_tagInputAutoCompleteBox?.Entity.IsAlive() == true)
+                                        {
+                                            AddTagFromInput(
+                                                _tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text
+                                            );
+                                        }
+                                    }
+                                );
+                        });
                     });
-                    inputGrid.Child<Button>(button =>
+                    rootPanel.Child<ItemsControl>(itemsControl =>
                     {
-                        button.SetText("Add").SetColumn(1).SetMargin(5, 0, 0, 0)
-                           .OnClick((_, _) =>
-                           {
-                               if (_tagInputAutoCompleteBox?.Entity.IsAlive() == true)
-                               {
-                                   AddTagFromInput(_tagInputAutoCompleteBox.Get<AutoCompleteBox>().Text);
-                               }
-                           });
+                        itemsControl
+                            .SetItemsSource(Tags)
+                            .SetItemTemplate(tagItemTemplate)
+                            .With(ic =>
+                                ic.ItemsPanel = new FuncTemplate<Panel>(
+                                    () => new WrapPanel { Orientation = Orientation.Horizontal }
+                                )!
+                            );
                     });
-                });
-                rootPanel.Child<ItemsControl>(itemsControl =>
-                {
-                    itemsControl.SetItemsSource(Tags).SetItemTemplate(tagItemTemplate)
-                       .With(ic => ic.ItemsPanel = new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal })!);
-                });
-            }).Entity;
+                })
+                .Entity;
 
             // --- Disposables & Setup ---
-            _disposables.Add(Disposable.Create(() =>
-            {
-                if (Root.IsValid() && Root.IsAlive())
+            _disposables.Add(
+                Disposable.Create(() =>
                 {
-                    Logger.Debug($"Disposing TagComponent Root Entity: {Root.Id}");
-                    Root.Destruct();
-                }
-                else
-                {
-                    Logger.Warn("Root entity invalid or dead during TagComponent Dispose.");
-                }
-            }));
+                    if (Root.IsValid() && Root.IsAlive())
+                    {
+                        Logger.Debug($"Disposing TagComponent Root Entity: {Root.Id}");
+                        Root.Destruct();
+                    }
+                    else
+                    {
+                        Logger.Warn("Root entity invalid or dead during TagComponent Dispose.");
+                    }
+                })
+            );
 
             Root.SetName($"TAGCOMPONENT_AC-{new Random().Next()}");
-            Logger.Info($"TagComponent (AutoComplete Corrected) created with Root Entity: {Root.Id}");
+            Logger.Info(
+                $"TagComponent (AutoComplete Corrected) created with Root Entity: {Root.Id}"
+            );
         }
-
 
         /// <summary>
         /// Rebuilds the _allUniqueTags collection based on the current _allItems.
@@ -239,7 +285,8 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
                 Logger.Warn("Cannot update unique tags, _allItems collection is null.");
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
-                    if (_allUniqueTags.Any()) _allUniqueTags.Clear();
+                    if (_allUniqueTags.Any())
+                        _allUniqueTags.Clear();
                 });
                 return;
             }
@@ -269,7 +316,10 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
             catch (Exception ex)
             {
                 // Catch potential issues during iteration, e.g., if item becomes invalid unexpectedly
-                Logger.Error(ex, "Error occurred while iterating through _allItems to collect unique tags.");
+                Logger.Error(
+                    ex,
+                    "Error occurred while iterating through _allItems to collect unique tags."
+                );
                 return; // Abort update if iteration fails
             }
 
@@ -292,10 +342,12 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
             catch (Exception ex)
             {
                 // Catch potential issues during iteration, e.g., if item becomes invalid unexpectedly
-                Logger.Error(ex, "Error occurred while iterating through _allItems to collect unique tags.");
+                Logger.Error(
+                    ex,
+                    "Error occurred while iterating through _allItems to collect unique tags."
+                );
                 return; // Abort update if iteration fails
             }
-
 
             var sortedTags = uniqueTags.Order().ToList(); // Sort alphabetically
 
@@ -304,15 +356,20 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
                 try
                 {
                     // Efficiently update the ObservableCollection on the UI thread
-                    foreach (var tagToRemove in _allUniqueTags.Except(sortedTags).ToList()) _allUniqueTags.Remove(tagToRemove);
+                    foreach (var tagToRemove in _allUniqueTags.Except(sortedTags).ToList())
+                        _allUniqueTags.Remove(tagToRemove);
 
-                    foreach (var tagToAdd in sortedTags.Except(_allUniqueTags).ToList()) _allUniqueTags.Add(tagToAdd); // Add new tags
+                    foreach (var tagToAdd in sortedTags.Except(_allUniqueTags).ToList())
+                        _allUniqueTags.Add(tagToAdd); // Add new tags
 
                     Logger.Debug($"Unique tags list updated. Count: {_allUniqueTags.Count}");
                 }
                 catch (Exception uiEx)
                 {
-                    Logger.Error(uiEx, "Error occurred while updating _allUniqueTags collection on UI thread.");
+                    Logger.Error(
+                        uiEx,
+                        "Error occurred while updating _allUniqueTags collection on UI thread."
+                    );
                 }
             });
         }
@@ -340,7 +397,10 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
             string cleanTag = tagToAdd?.Trim() ?? string.Empty;
             bool added = false;
 
-            if (!string.IsNullOrWhiteSpace(cleanTag) && !Tags.Any(t => t.Equals(cleanTag, StringComparison.OrdinalIgnoreCase))) // Use LINQ Any for case-insensitive check
+            if (
+                !string.IsNullOrWhiteSpace(cleanTag)
+                && !Tags.Any(t => t.Equals(cleanTag, StringComparison.OrdinalIgnoreCase))
+            ) // Use LINQ Any for case-insensitive check
             {
                 Tags.Add(cleanTag);
                 Logger.Debug($"Tag added: {cleanTag}");
@@ -372,7 +432,6 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
             // }
         }
 
-
         /// <summary>
         /// Clears all tags *from this component instance*.
         /// </summary>
@@ -401,7 +460,9 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
             {
                 if (disposing)
                 {
-                    Logger.Debug($"Disposing TagComponent (AutoComplete Corrected) (Root: {Root.Id})...");
+                    Logger.Debug(
+                        $"Disposing TagComponent (AutoComplete Corrected) (Root: {Root.Id})..."
+                    );
                     // Unsubscribe external event first is safer
                     if (_allSpacedRepetitionItems != null)
                     {
@@ -412,7 +473,9 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
                     // Clear local collections
                     Tags.Clear();
                     _allUniqueTags.Clear();
-                    Logger.Debug($"TagComponent (AutoComplete Corrected) disposed (Root: {Root.Id}).");
+                    Logger.Debug(
+                        $"TagComponent (AutoComplete Corrected) disposed (Root: {Root.Id})."
+                    );
                 }
                 _isDisposed = true;
             }
@@ -421,6 +484,9 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
         /// <summary>
         /// Destructor
         /// </summary>
-        ~TagComponent() { Dispose(disposing: false); }
+        ~TagComponent()
+        {
+            Dispose(disposing: false);
+        }
     }
 }

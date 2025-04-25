@@ -16,18 +16,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
-using Flecs.NET.Core;
-using static Avalonia.Flecs.Controls.ECS.Module; // Assuming this is where Page tag is defined
-using Avalonia.Controls;
-using Avalonia.Layout;
-using NLog;
-using Avalonia.Flecs.Controls; // Assuming UIBuilder and extensions are here
-using Avalonia.Threading; // For Dispatcher
 using System.Net.Http; // For HttpClient
 using System.Net.Http.Json; // For PostAsJsonAsync, ReadFromJsonAsync
 using System.Text.Json; // For JsonSerializerOptions
-using AyanamisTower.WebAPI.Dtos; // Include the DTOs namespace
+using Avalonia.Controls;
+using Avalonia.Flecs.Controls; // Assuming UIBuilder and extensions are here
+using Avalonia.Layout;
 using Avalonia.Media; // For Brushes
+using Avalonia.Threading; // For Dispatcher
+using AyanamisTower.WebAPI.Dtos; // Include the DTOs namespace
+using Flecs.NET.Core;
+using NLog;
+using static Avalonia.Flecs.Controls.ECS.Module; // Assuming this is where Page tag is defined
 
 namespace AyanamisTower.StellaLearning.Pages;
 
@@ -38,6 +38,7 @@ namespace AyanamisTower.StellaLearning.Pages;
 public class AccountPage : IUIComponent
 {
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -65,157 +66,160 @@ public class AccountPage : IUIComponent
     /// <param name="world">The Flecs world.</param>
     public AccountPage(World world)
     {
-        _root = world.UI<StackPanel>((stack) =>
-        {
-            stack
-                .SetSpacing(15)
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center);
-
-            // --- Title ---
-            stack.Child<TextBlock>(title =>
-            {
-                title
-                    .SetRow(0)
-                    .SetText("Account")
-                    .SetFontSize(24)
-                    .SetFontWeight(FontWeight.Bold)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center);
-            });
-
-            // --- Username/Email Field ---
-
-            var usernameLabel = stack.Child<TextBlock>(usernameLabel =>
-            {
-                usernameLabel
-                    .Visible(false)
-                    .SetText("Email:")
-                    .SetMargin(0, 15, 0, 5); // Increased top margin
-            });
-            var usernameInput = stack.Child<TextBox>(usernameInput =>
-            {
-                _usernameInputBuilder = usernameInput; // Store reference
-                usernameInput
-                    .Visible(false)
-                    .SetWatermark("Enter your email");
-            });
-
-            // --- Password Field ---
-            // Row 3 is spacing
-            var passwordLabel = stack.Child<TextBlock>(passwordLabel =>
-            {
-                passwordLabel
-                    .Visible(false)
-                    .SetText("Password:")
-                    .SetMargin(0, 0, 0, 5);
-            });
-            var passwordInput = stack.Child<TextBox>(passwordInput =>
-            {
-                _passwordInputBuilder = passwordInput; // Store reference
-                passwordInput
-                    .Visible(false)
-                    .SetRow(5)
-                    .SetWatermark("Enter your password")
-                    .With(tb => tb.PasswordChar = '*');
-            });
-
-            // --- Confirm Password Field (for Registration) ---
-            // Row 6 is spacing
-            var confirmPasswordLabel = stack.Child<TextBlock>(confirmPasswordLabel =>
-            {
-                confirmPasswordLabel
-                    .Visible(false)
-                    .SetRow(7)
-                    .SetText("Confirm Password:")
-                    .SetMargin(0, 0, 0, 5);
-            });
-            var confirmPasswordInput = stack.Child<TextBox>(confirmPasswordInput =>
-            {
-                _confirmPasswordInputBuilder = confirmPasswordInput; // Store reference
-                confirmPasswordInput
-                    .SetRow(8)
-                    .Visible(false)
-                    .SetWatermark("Confirm your password")
-                    .With(tb => tb.PasswordChar = '*');
-            });
-
-            // --- Action Buttons ---
-            // Row 9 is spacing
-            stack.Child<StackPanel>(buttonPanel =>
-            {
-                buttonPanel
-                    .SetRow(10) // Adjusted row index
-                    .SetOrientation(Orientation.Horizontal)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .SetSpacing(10);
-
-                buttonPanel.Child<Button>(loginButton =>
+        _root = world
+            .UI<StackPanel>(
+                (stack) =>
                 {
-                    loginButton
-                        .SetMinWidth(100)
-                        .SetText("Sign in")
-                        .OnClick((sender, e) =>
+                    stack
+                        .SetSpacing(15)
+                        .SetVerticalAlignment(VerticalAlignment.Center)
+                        .SetHorizontalAlignment(HorizontalAlignment.Center);
+
+                    // --- Title ---
+                    stack.Child<TextBlock>(title =>
+                    {
+                        title
+                            .SetRow(0)
+                            .SetText("Account")
+                            .SetFontSize(24)
+                            .SetFontWeight(FontWeight.Bold)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center);
+                    });
+
+                    // --- Username/Email Field ---
+
+                    var usernameLabel = stack.Child<TextBlock>(usernameLabel =>
+                    {
+                        usernameLabel.Visible(false).SetText("Email:").SetMargin(0, 15, 0, 5); // Increased top margin
+                    });
+                    var usernameInput = stack.Child<TextBox>(usernameInput =>
+                    {
+                        _usernameInputBuilder = usernameInput; // Store reference
+                        usernameInput.Visible(false).SetWatermark("Enter your email");
+                    });
+
+                    // --- Password Field ---
+                    // Row 3 is spacing
+                    var passwordLabel = stack.Child<TextBlock>(passwordLabel =>
+                    {
+                        passwordLabel.Visible(false).SetText("Password:").SetMargin(0, 0, 0, 5);
+                    });
+                    var passwordInput = stack.Child<TextBox>(passwordInput =>
+                    {
+                        _passwordInputBuilder = passwordInput; // Store reference
+                        passwordInput
+                            .Visible(false)
+                            .SetRow(5)
+                            .SetWatermark("Enter your password")
+                            .With(tb => tb.PasswordChar = '*');
+                    });
+
+                    // --- Confirm Password Field (for Registration) ---
+                    // Row 6 is spacing
+                    var confirmPasswordLabel = stack.Child<TextBlock>(confirmPasswordLabel =>
+                    {
+                        confirmPasswordLabel
+                            .Visible(false)
+                            .SetRow(7)
+                            .SetText("Confirm Password:")
+                            .SetMargin(0, 0, 0, 5);
+                    });
+                    var confirmPasswordInput = stack.Child<TextBox>(confirmPasswordInput =>
+                    {
+                        _confirmPasswordInputBuilder = confirmPasswordInput; // Store reference
+                        confirmPasswordInput
+                            .SetRow(8)
+                            .Visible(false)
+                            .SetWatermark("Confirm your password")
+                            .With(tb => tb.PasswordChar = '*');
+                    });
+
+                    // --- Action Buttons ---
+                    // Row 9 is spacing
+                    stack.Child<StackPanel>(buttonPanel =>
+                    {
+                        buttonPanel
+                            .SetRow(10) // Adjusted row index
+                            .SetOrientation(Orientation.Horizontal)
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetSpacing(10);
+
+                        buttonPanel.Child<Button>(loginButton =>
                         {
-                            // We can only login when the the confirm password input
-                            // is not visible, this happens when we click the
-                            // button again. 
+                            loginButton
+                                .SetMinWidth(100)
+                                .SetText("Sign in")
+                                .OnClick(
+                                    (sender, e) =>
+                                    {
+                                        // We can only login when the the confirm password input
+                                        // is not visible, this happens when we click the
+                                        // button again.
 
-                            if (!confirmPasswordInput.IsVisible() && usernameLabel.IsVisible())
-                            {
-                                HandleLoginClick(sender, e);
-                            }
+                                        if (
+                                            !confirmPasswordInput.IsVisible()
+                                            && usernameLabel.IsVisible()
+                                        )
+                                        {
+                                            HandleLoginClick(sender, e);
+                                        }
 
-                            usernameLabel.Visible();
-                            usernameInput.Visible();
-                            passwordInput.Visible();
-                            passwordLabel.Visible();
-                            confirmPasswordLabel.Visible(false);
-                            confirmPasswordInput.Visible(false);
+                                        usernameLabel.Visible();
+                                        usernameInput.Visible();
+                                        passwordInput.Visible();
+                                        passwordLabel.Visible();
+                                        confirmPasswordLabel.Visible(false);
+                                        confirmPasswordInput.Visible(false);
+                                    }
+                                );
                         });
-                });
 
-                // Register Button
-                buttonPanel.Child<Button>(registerButton =>
-                {
-                    registerButton
-                        .SetMinWidth(100)
-                        .SetText("Sign up")
-                        .OnClick((sender, e) =>
+                        // Register Button
+                        buttonPanel.Child<Button>(registerButton =>
                         {
+                            registerButton
+                                .SetMinWidth(100)
+                                .SetText("Sign up")
+                                .OnClick(
+                                    (sender, e) =>
+                                    {
+                                        // We can only register when the the confirm password input
+                                        // is visible
 
-                            // We can only register when the the confirm password input
-                            // is visible
+                                        if (
+                                            confirmPasswordInput.IsVisible()
+                                            && usernameLabel.IsVisible()
+                                        )
+                                        {
+                                            HandleRegisterClick(sender, e);
+                                        }
 
-                            if (confirmPasswordInput.IsVisible() && usernameLabel.IsVisible())
-                            {
-                                HandleRegisterClick(sender, e);
-                            }
-
-                            usernameLabel.Visible();
-                            usernameInput.Visible();
-                            passwordInput.Visible();
-                            passwordLabel.Visible();
-                            confirmPasswordLabel.Visible();
-                            confirmPasswordInput.Visible();
+                                        usernameLabel.Visible();
+                                        usernameInput.Visible();
+                                        passwordInput.Visible();
+                                        passwordLabel.Visible();
+                                        confirmPasswordLabel.Visible();
+                                        confirmPasswordInput.Visible();
+                                    }
+                                );
                         });
-                });
-            });
+                    });
 
-            // --- Status Message Area ---
-            stack.Child<TextBlock>(status =>
-            {
-                _statusMessageBuilder = status; // Store reference
-                status
-                   .SetRow(11) // Place below buttons
-                   .SetMargin(0, 15, 0, 0) // Add margin above
-                   .SetHorizontalAlignment(HorizontalAlignment.Center)
-                   .SetTextWrapping(TextWrapping.Wrap); // Wrap long messages
-                                                        // Initial text is empty
-            });
-
-        })
-        .Add<Page>()
-        .Entity;
+                    // --- Status Message Area ---
+                    stack.Child<TextBlock>(status =>
+                    {
+                        _statusMessageBuilder = status; // Store reference
+                        status
+                            .SetRow(11) // Place below buttons
+                            .SetMargin(0, 15, 0, 0) // Add margin above
+                            .SetHorizontalAlignment(HorizontalAlignment.Center)
+                            .SetTextWrapping(TextWrapping.Wrap); // Wrap long messages
+                        // Initial text is empty
+                    });
+                }
+            )
+            .Add<Page>()
+            .Entity;
     }
 
     /// <summary>
@@ -225,11 +229,17 @@ public class AccountPage : IUIComponent
     private async void HandleLoginClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         // Defensive checks for UI elements
-        if (_usernameInputBuilder == null || !_usernameInputBuilder.Entity.IsAlive() ||
-            _passwordInputBuilder == null || !_passwordInputBuilder.Entity.IsAlive())
+        if (
+            _usernameInputBuilder == null
+            || !_usernameInputBuilder.Entity.IsAlive()
+            || _passwordInputBuilder == null
+            || !_passwordInputBuilder.Entity.IsAlive()
+        )
         {
             SetStatusMessage("Internal error: Input fields not ready.", true);
-            Logger.Error("Login attempt failed: UI input builders are null or their entities are dead.");
+            Logger.Error(
+                "Login attempt failed: UI input builders are null or their entities are dead."
+            );
             return;
         }
 
@@ -259,12 +269,15 @@ public class AccountPage : IUIComponent
             if (response.IsSuccessStatusCode) // Status 200 OK
             {
                 // Attempt to deserialize the successful response
-                AuthResponseDto? authResponse = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+                AuthResponseDto? authResponse =
+                    await response.Content.ReadFromJsonAsync<AuthResponseDto>();
                 if (authResponse != null && !string.IsNullOrEmpty(authResponse.Token))
                 {
                     _authToken = authResponse.Token;
                     _currentUser = authResponse;
-                    Logger.Info($"Login successful for {authResponse.Email}. Token expires at {authResponse.TokenExpiration}.");
+                    Logger.Info(
+                        $"Login successful for {authResponse.Email}. Token expires at {authResponse.TokenExpiration}."
+                    );
                     SetStatusMessage($"Welcome {authResponse.Email}!", false);
 
                     // --- IMPORTANT: Securely store the token ---
@@ -274,7 +287,6 @@ public class AccountPage : IUIComponent
                     // Example placeholder: await SecureStorage.SetAsync("auth_token", _authToken);
                     Logger.Info("TODO: Implement secure token storage.");
 
-
                     // TODO: Update application state (e.g., navigate to main page, update UI)
                     // Example: _world.Emit<UserLoggedInEvent>(new UserLoggedInEvent(_currentUser));
                     // Example: NavigateToMainPage();
@@ -282,14 +294,18 @@ public class AccountPage : IUIComponent
                 else
                 {
                     // This case should ideally not happen if the API returns 200 OK with a valid body
-                    Logger.Error("Login successful (200 OK) but failed to deserialize response body or token is missing.");
+                    Logger.Error(
+                        "Login successful (200 OK) but failed to deserialize response body or token is missing."
+                    );
                     SetStatusMessage("Login failed: Could not process server response.", true);
                 }
             }
             else // Handle non-success status codes (400, 401, 500, etc.)
             {
                 string responseBody = await response.Content.ReadAsStringAsync();
-                Logger.Warn($"Login failed. Status: {response.StatusCode}, Response Body: {responseBody}");
+                Logger.Warn(
+                    $"Login failed. Status: {response.StatusCode}, Response Body: {responseBody}"
+                );
 
                 // Default error message
                 string errorMessage = "Login failed. Please check credentials or server status.";
@@ -305,7 +321,12 @@ public class AccountPage : IUIComponent
                         if (!string.IsNullOrWhiteSpace(errorDto?.Message))
                         {
                             // Check for specific messages related to 'RequireConfirmedAccount' if backend provides them
-                            if (errorDto.Message.Contains("Account not confirmed", StringComparison.OrdinalIgnoreCase))
+                            if (
+                                errorDto.Message.Contains(
+                                    "Account not confirmed",
+                                    StringComparison.OrdinalIgnoreCase
+                                )
+                            )
                             {
                                 errorMessage = "Login failed: Account email needs confirmation.";
                             }
@@ -342,7 +363,8 @@ public class AccountPage : IUIComponent
                     // Handle other errors (500 Internal Server Error, etc.)
                     else
                     {
-                        errorMessage = $"Login failed: Server returned status {response.StatusCode}.";
+                        errorMessage =
+                            $"Login failed: Server returned status {response.StatusCode}.";
                     }
                 }
                 catch (JsonException jsonEx)
@@ -357,7 +379,10 @@ public class AccountPage : IUIComponent
         catch (HttpRequestException httpEx)
         {
             Logger.Error(httpEx, "HTTP request failed during login.");
-            SetStatusMessage($"Login failed: Could not connect to the server. ({httpEx.Message})", true);
+            SetStatusMessage(
+                $"Login failed: Could not connect to the server. ({httpEx.Message})",
+                true
+            );
         }
         catch (JsonException jsonEx) // Error deserializing success or error response
         {
@@ -382,12 +407,19 @@ public class AccountPage : IUIComponent
     private async void HandleRegisterClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         // Defensive checks for UI elements
-        if (_usernameInputBuilder == null || !_usernameInputBuilder.Entity.IsAlive() ||
-           _passwordInputBuilder == null || !_passwordInputBuilder.Entity.IsAlive() ||
-           _confirmPasswordInputBuilder == null || !_confirmPasswordInputBuilder.Entity.IsAlive())
+        if (
+            _usernameInputBuilder == null
+            || !_usernameInputBuilder.Entity.IsAlive()
+            || _passwordInputBuilder == null
+            || !_passwordInputBuilder.Entity.IsAlive()
+            || _confirmPasswordInputBuilder == null
+            || !_confirmPasswordInputBuilder.Entity.IsAlive()
+        )
         {
             SetStatusMessage("Internal error: Input fields not ready.", true);
-            Logger.Error("Register attempt failed: UI input builders are null or their entities are dead.");
+            Logger.Error(
+                "Register attempt failed: UI input builders are null or their entities are dead."
+            );
             return;
         }
 
@@ -396,7 +428,11 @@ public class AccountPage : IUIComponent
         string confirmPassword = _confirmPasswordInputBuilder.GetText() ?? string.Empty;
 
         // Basic client-side validation
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+        if (
+            string.IsNullOrWhiteSpace(email)
+            || string.IsNullOrWhiteSpace(password)
+            || string.IsNullOrWhiteSpace(confirmPassword)
+        )
         {
             SetStatusMessage("Please fill in all fields.", true);
             return;
@@ -418,7 +454,7 @@ public class AccountPage : IUIComponent
         {
             Email = email,
             Password = password,
-            ConfirmPassword = confirmPassword
+            ConfirmPassword = confirmPassword,
         };
 
         SetStatusMessage("Registering...", false); // Indicate progress
@@ -434,7 +470,8 @@ public class AccountPage : IUIComponent
             if (response.IsSuccessStatusCode) // Status 201 Created
             {
                 // Attempt to deserialize success message
-                MessageDto? successResponse = await response.Content.ReadFromJsonAsync<MessageDto>();
+                MessageDto? successResponse =
+                    await response.Content.ReadFromJsonAsync<MessageDto>();
                 string successMsg = successResponse?.Message ?? "Registration successful!";
                 Logger.Info($"Registration successful for {email}. Message: {successMsg}");
 
@@ -450,7 +487,9 @@ public class AccountPage : IUIComponent
             else // Handle errors (400 Bad Request, 500 Internal Server Error, etc.)
             {
                 string errorContent = await response.Content.ReadAsStringAsync();
-                Logger.Warn($"Registration failed. Status: {response.StatusCode}, Response Body: {errorContent}");
+                Logger.Warn(
+                    $"Registration failed. Status: {response.StatusCode}, Response Body: {errorContent}"
+                );
 
                 // Try to parse structured error response
                 string errorMessage = "Registration failed. Please check your details."; // Default
@@ -458,7 +497,7 @@ public class AccountPage : IUIComponent
                 {
                     var options = new JsonSerializerOptions
                     {
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                     };
 
                     var errorDto = JsonSerializer.Deserialize<ErrorDto>(errorContent, options); // Assumes ErrorDto structure on failure
@@ -489,7 +528,8 @@ public class AccountPage : IUIComponent
                 {
                     Logger.Error(jsonEx, "Failed to deserialize registration error response body.");
                     // Stick with default message or use status code
-                    errorMessage = $"Registration failed: Server returned status {response.StatusCode}.";
+                    errorMessage =
+                        $"Registration failed: Server returned status {response.StatusCode}.";
                 }
 
                 SetStatusMessage(errorMessage, true);
@@ -498,7 +538,10 @@ public class AccountPage : IUIComponent
         catch (HttpRequestException httpEx)
         {
             Logger.Error(httpEx, "HTTP request failed during registration.");
-            SetStatusMessage($"Registration failed: Could not connect to the server. ({httpEx.Message})", true);
+            SetStatusMessage(
+                $"Registration failed: Could not connect to the server. ({httpEx.Message})",
+                true
+            );
         }
         catch (JsonException jsonEx) // Error deserializing success or error response
         {
@@ -534,16 +577,20 @@ public class AccountPage : IUIComponent
             }
             else
             {
-                Logger.Warn($"Status message TextBlock builder is null or its entity is dead. Message: '{message}'");
+                Logger.Warn(
+                    $"Status message TextBlock builder is null or its entity is dead. Message: '{message}'"
+                );
             }
         });
     }
 
-
     /// <inheritdoc/>
     public void Attach(Entity entity)
     {
-        if (_root.IsValid() && _root.IsAlive()) { _root.ChildOf(entity); }
+        if (_root.IsValid() && _root.IsAlive())
+        {
+            _root.ChildOf(entity);
+        }
     }
 
     /// <inheritdoc/>

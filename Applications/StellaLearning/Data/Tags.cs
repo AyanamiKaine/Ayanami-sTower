@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
+
 namespace AyanamisTower.StellaLearning.Data;
 
 /// <summary>
@@ -62,6 +63,7 @@ public class Tag : IEquatable<Tag>
 
         return false;
     }
+
     /// <summary>
     /// Get the hash code of the tag
     /// </summary>

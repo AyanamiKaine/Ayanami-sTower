@@ -25,10 +25,10 @@ using Avalonia.Flecs.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Flecs.NET.Core;
-using FluentAvalonia.UI.Controls;
 using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.UiComponents;
+using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace AyanamisTower.StellaLearning.Windows;
 
@@ -48,6 +48,7 @@ public class AddCloze : IUIComponent, IDisposable
     private UIBuilder<TextBox>? clozeBox = null;
     private Entity calculatedPriority;
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
     private readonly ObservableCollection<string> clozes = [];
@@ -58,6 +59,7 @@ public class AddCloze : IUIComponent, IDisposable
     // it again
     private NotifyCollectionChangedEventHandler? collectionChangedHandler;
     private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
+
     /// <summary>
     /// Create the Add Cloze Window
     /// </summary>
@@ -68,24 +70,30 @@ public class AddCloze : IUIComponent, IDisposable
         comparePriority = new ComparePriority(world);
         calculatedPriority = comparePriority.CalculatedPriorityEntity;
 
-        _root = world.UI<Window>((window) =>
-        {
-            window
-            .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
-            .SetTitle("Add Cloze")
-            .SetWidth(400)
-            .SetHeight(400)
-            .Child<ScrollViewer>((scrollViewer) =>
-            {
-                scrollViewer
-                .SetRow(1)
-                .SetColumnSpan(3)
-                .Child(DefineWindowContents(world));
-            });
+        _root = world
+            .UI<Window>(
+                (window) =>
+                {
+                    window
+                        .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
+                        .SetTitle("Add Cloze")
+                        .SetWidth(400)
+                        .SetHeight(400)
+                        .Child<ScrollViewer>(
+                            (scrollViewer) =>
+                            {
+                                scrollViewer
+                                    .SetRow(1)
+                                    .SetColumnSpan(3)
+                                    .Child(DefineWindowContents(world));
+                            }
+                        );
 
-            window.OnClosed((sender, args) => Dispose());
-            window.Show();
-        }).Entity;
+                    window.OnClosed((sender, args) => Dispose());
+                    window.Show();
+                }
+            )
+            .Entity;
         calculatedPriority.ChildOf(_root);
     }
 
@@ -100,197 +108,244 @@ public class AddCloze : IUIComponent, IDisposable
             }
         }
 
-        return world.UI<StackPanel>((stackPanel) =>
-        {
+        return world
+            .UI<StackPanel>(
+                (stackPanel) =>
+                {
+                    stackPanel.SetOrientation(Orientation.Vertical).SetSpacing(10).SetMargin(20);
 
-            stackPanel
-            .SetOrientation(Orientation.Vertical)
-            .SetSpacing(10)
-            .SetMargin(20);
-
-            stackPanel.Child<TextBox>((textBox) =>
-            {
-                nameTextBox = textBox;
-                textBox.SetWatermark("Name");
-            });
-
-            stackPanel.Child<TextBox>((textBox) =>
-            {
-                clozeBox = textBox;
-                textBox
-                .SetWatermark("Cloze Text")
-                .SetTextWrapping(TextWrapping.Wrap)
-                .AcceptsReturn();
-
-                var menu = world.UI<MenuFlyout>((menu) =>
-                      {
-                          menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
-                          menu.Child<MenuItem>((menuItem) =>
-                          {
-                              menuItem
-                              .SetHeader("Mark as Cloze")
-                              .OnClick((_, _) =>
-                              {
-                                  var cloze = textBox.Get<TextBox>().SelectedText;
-                                  AddCloze(cloze, clozes);
-                              });
-                          });
-                      });
-
-                menu.Entity.ChildOf(textBox.Entity);
-
-                textBox.SetContextFlyout(menu);
-            });
-
-            // Create cloze list with items control
-            stackPanel.Child<ItemsControl>((itemsControl) =>
-            {
-                itemsControl
-                .SetItemTemplate(
-                    world.CreateTemplate<string, StackPanel>(
-                    (sp, tag) =>
-                    {
-                        sp
-                        .SetOrientation(Orientation.Horizontal)
-                        .SetSpacing(5);
-
-                        sp.Child<TextBlock>((tb) =>
+                    stackPanel.Child<TextBox>(
+                        (textBox) =>
                         {
-                            tb
-                            .SetText(tag)
-                            .SetVerticalAlignment(VerticalAlignment.Center);
-                        });
-                        sp.Child<Button>((btn) =>
+                            nameTextBox = textBox;
+                            textBox.SetWatermark("Name");
+                        }
+                    );
+
+                    stackPanel.Child<TextBox>(
+                        (textBox) =>
                         {
-                            btn.Child<TextBlock>(textBlock => textBlock.SetText("X"));
-                            btn
-                            .SetPadding(6, 2, 6, 2)
-                            .OnClick((_, _) => clozes.Remove(tag));
+                            clozeBox = textBox;
+                            textBox
+                                .SetWatermark("Cloze Text")
+                                .SetTextWrapping(TextWrapping.Wrap)
+                                .AcceptsReturn();
 
-
-                            btn.AttachToolTip(world.UI<ToolTip>((toolTip) =>
-                            {
-                                toolTip.Child<TextBlock>((textBlock) =>
+                            var menu = world.UI<MenuFlyout>(
+                                (menu) =>
                                 {
-                                    textBlock.SetText("Removes the cloze word");
-                                });
-                            }));
+                                    menu.SetShowMode(
+                                        FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+                                    );
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("Mark as Cloze")
+                                                .OnClick(
+                                                    (_, _) =>
+                                                    {
+                                                        var cloze = textBox
+                                                            .Get<TextBox>()
+                                                            .SelectedText;
+                                                        AddCloze(cloze, clozes);
+                                                    }
+                                                );
+                                        }
+                                    );
+                                }
+                            );
 
-                        });
-                    }));
-            }).SetItemsSource(clozes);
+                            menu.Entity.ChildOf(textBox.Entity);
 
-            var warningText = stackPanel.Child<TextBlock>((textBlock) =>
-            {
-                textBlock.SetText("Please create at least one cloze word")
-                    .SetForeground(Brushes.Red)
-                    .SetFontWeight(FontWeight.Bold)
-                    .SetFontSize(12)
-                    .SetMargin(new Thickness(0, 5, 0, 5));
+                            textBox.SetContextFlyout(menu);
+                        }
+                    );
 
-                // Set initial visibility based on collection status
-                textBlock.Visible(clozes.Count == 0);
-            });
+                    // Create cloze list with items control
+                    stackPanel
+                        .Child<ItemsControl>(
+                            (itemsControl) =>
+                            {
+                                itemsControl.SetItemTemplate(
+                                    world.CreateTemplate<string, StackPanel>(
+                                        (sp, tag) =>
+                                        {
+                                            sp.SetOrientation(Orientation.Horizontal).SetSpacing(5);
 
-            // Subscribe to collection changes to toggle warning visibility
-            collectionChangedHandler = (_, _) =>
-            {
-                warningText.Get<TextBlock>().IsVisible = clozes.Count == 0;
-            };
+                                            sp.Child<TextBlock>(
+                                                (tb) =>
+                                                {
+                                                    tb.SetText(tag)
+                                                        .SetVerticalAlignment(
+                                                            VerticalAlignment.Center
+                                                        );
+                                                }
+                                            );
+                                            sp.Child<Button>(
+                                                (btn) =>
+                                                {
+                                                    btn.Child<TextBlock>(textBlock =>
+                                                        textBlock.SetText("X")
+                                                    );
+                                                    btn.SetPadding(6, 2, 6, 2)
+                                                        .OnClick((_, _) => clozes.Remove(tag));
 
-            clozes.CollectionChanged += collectionChangedHandler;
+                                                    btn.AttachToolTip(
+                                                        world.UI<ToolTip>(
+                                                            (toolTip) =>
+                                                            {
+                                                                toolTip.Child<TextBlock>(
+                                                                    (textBlock) =>
+                                                                    {
+                                                                        textBlock.SetText(
+                                                                            "Removes the cloze word"
+                                                                        );
+                                                                    }
+                                                                );
+                                                            }
+                                                        )
+                                                    );
+                                                }
+                                            );
+                                        }
+                                    )
+                                );
+                            }
+                        )
+                        .SetItemsSource(clozes);
 
-            stackPanel.Child<TextBlock>((textBlock) =>
-            {
-                textBlock.SetText("Select a word and right click to mark it as a cloze");
-                textBlock.SetFontSize(12);
-                textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
-            });
-
-            var tagManager = new TagComponent(world);
-            stackPanel.Child(tagManager);
-
-            stackPanel.Child<Separator>((separator) =>
-            {
-                separator
-                    .SetMargin(0, 0, 0, 10)
-                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                    .SetBorderBrush(Brushes.Black);
-            });
-
-            stackPanel.Child(comparePriority);
-
-            // Create button
-            createButton = stackPanel.Child<Button>((button) =>
-            {
-                button
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center);
-                button.Child<TextBlock>((textBlock) =>
-                {
-                    textBlock.SetText("Create Cloze");
-                });
-
-
-                createButtonClickedHandler = (sender, args) =>
-                {
-                    if (nameTextBox is null || clozeBox is null)
-                    {
-                        return;
-                    }
-
-                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
-                    {
-                        var cd = new ContentDialog()
+                    var warningText = stackPanel.Child<TextBlock>(
+                        (textBlock) =>
                         {
-                            Title = "Missing Name",
-                            Content = "You must define a name",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
+                            textBlock
+                                .SetText("Please create at least one cloze word")
+                                .SetForeground(Brushes.Red)
+                                .SetFontWeight(FontWeight.Bold)
+                                .SetFontSize(12)
+                                .SetMargin(new Thickness(0, 5, 0, 5));
 
-                    if (clozes.Count == 0)
+                            // Set initial visibility based on collection status
+                            textBlock.Visible(clozes.Count == 0);
+                        }
+                    );
+
+                    // Subscribe to collection changes to toggle warning visibility
+                    collectionChangedHandler = (_, _) =>
                     {
-                        var cd = new ContentDialog()
+                        warningText.Get<TextBlock>().IsVisible = clozes.Count == 0;
+                    };
+
+                    clozes.CollectionChanged += collectionChangedHandler;
+
+                    stackPanel.Child<TextBlock>(
+                        (textBlock) =>
                         {
-                            Title = "Clozes Missing",
-                            Content = "Your test currently has not cloze words defined you must atleast define one",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
+                            textBlock.SetText(
+                                "Select a word and right click to mark it as a cloze"
+                            );
+                            textBlock.SetFontSize(12);
+                            textBlock.SetMargin(new Thickness(0, -5, 0, 0)); // Tighten spacing
+                        }
+                    );
 
-                    if (_root.IsValid())
-                    {
-                        world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionCloze()
+                    var tagManager = new TagComponent(world);
+                    stackPanel.Child(tagManager);
+
+                    stackPanel.Child<Separator>(
+                        (separator) =>
                         {
-                            Name = nameTextBox.GetText(),
-                            Priority = calculatedPriority.Get<int>(),
-                            FullText = clozeBox.GetText(),
-                            ClozeWords = [.. clozes],
-                            Tags = [.. tagManager.Tags],
-                            SpacedRepetitionItemType = SpacedRepetitionItemType.Cloze
-                        });
+                            separator
+                                .SetMargin(0, 0, 0, 10)
+                                .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                                .SetBorderBrush(Brushes.Black);
+                        }
+                    );
 
-                        nameTextBox.SetText("");
-                        clozeBox.SetText("");
-                        clozes.Clear();
-                        calculatedPriority.Set(500000000);
+                    stackPanel.Child(comparePriority);
 
-                        comparePriority.Reset();
-                        tagManager.ClearTags();
-                    }
-                };
+                    // Create button
+                    createButton = stackPanel.Child<Button>(
+                        (button) =>
+                        {
+                            button
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                                .SetHorizontalAlignment(HorizontalAlignment.Center);
+                            button.Child<TextBlock>(
+                                (textBlock) =>
+                                {
+                                    textBlock.SetText("Create Cloze");
+                                }
+                            );
 
-                button.With((b) => b.Click += createButtonClickedHandler);
-            });
-        }).Entity;
+                            createButtonClickedHandler = (sender, args) =>
+                            {
+                                if (nameTextBox is null || clozeBox is null)
+                                {
+                                    return;
+                                }
+
+                                if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                                {
+                                    var cd = new ContentDialog()
+                                    {
+                                        Title = "Missing Name",
+                                        Content = "You must define a name",
+                                        PrimaryButtonText = "Ok",
+                                        DefaultButton = ContentDialogButton.Primary,
+                                        IsSecondaryButtonEnabled = true,
+                                    };
+                                    cd.ShowAsync();
+                                    return;
+                                }
+
+                                if (clozes.Count == 0)
+                                {
+                                    var cd = new ContentDialog()
+                                    {
+                                        Title = "Clozes Missing",
+                                        Content =
+                                            "Your test currently has not cloze words defined you must atleast define one",
+                                        PrimaryButtonText = "Ok",
+                                        DefaultButton = ContentDialogButton.Primary,
+                                    };
+                                    cd.ShowAsync();
+                                    return;
+                                }
+
+                                if (_root.IsValid())
+                                {
+                                    world
+                                        .Get<ObservableCollection<SpacedRepetitionItem>>()
+                                        .Add(
+                                            new SpacedRepetitionCloze()
+                                            {
+                                                Name = nameTextBox.GetText(),
+                                                Priority = calculatedPriority.Get<int>(),
+                                                FullText = clozeBox.GetText(),
+                                                ClozeWords = [.. clozes],
+                                                Tags = [.. tagManager.Tags],
+                                                SpacedRepetitionItemType =
+                                                    SpacedRepetitionItemType.Cloze,
+                                            }
+                                        );
+
+                                    nameTextBox.SetText("");
+                                    clozeBox.SetText("");
+                                    clozes.Clear();
+                                    calculatedPriority.Set(500000000);
+
+                                    comparePriority.Reset();
+                                    tagManager.ClearTags();
+                                }
+                            };
+
+                            button.With((b) => b.Click += createButtonClickedHandler);
+                        }
+                    );
+                }
+            )
+            .Entity;
     }
 
     /// <summary>
@@ -306,7 +361,7 @@ public class AddCloze : IUIComponent, IDisposable
     /// Releases unmanaged and - optionally - managed resources.
     /// </summary>
     /// <param name="disposing">
-    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>true</c> to release both managed and unmanaged resources;
     /// <c>false</c> to release only unmanaged resources.
     /// </param>
     protected virtual void Dispose(bool disposing)

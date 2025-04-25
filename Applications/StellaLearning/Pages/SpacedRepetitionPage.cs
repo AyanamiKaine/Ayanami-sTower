@@ -16,32 +16,32 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
-using System.IO;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using Avalonia.Controls;
-using Avalonia.Layout;
-using Flecs.NET.Core;
-using static Avalonia.Flecs.Controls.ECS.Module;
-using Avalonia.Data;
-using Avalonia.Controls.Templates;
-using Avalonia.Media;
-using FluentAvalonia.UI.Controls;
-using System.Text.Json;
-using NLog;
-using Avalonia.Flecs.Controls;
-using System.Timers;
-using Avalonia.Threading;
-using DesktopNotifications;
 using System.Collections.Specialized;
-using System.Reactive.Disposables;
 using System.ComponentModel;
-using AyanamisTower.StellaLearning.Data;
-using StellaLearning.Windows;
+using System.IO;
+using System.Linq;
+using System.Reactive.Disposables;
+using System.Text.Json;
+using System.Timers;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Flecs.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Threading;
 using AyanamisTower.StellaLearning.Converters;
+using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.Windows;
+using DesktopNotifications;
+using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
+using NLog;
+using StellaLearning.Windows;
+using static Avalonia.Flecs.Controls.ECS.Module;
 
 namespace AyanamisTower.StellaLearning.Pages;
 
@@ -53,19 +53,24 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
     private readonly CompositeDisposable _disposables = [];
     private bool _isDisposed = false;
     private readonly List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
-    private readonly Dictionary<Guid, PropertyChangedEventHandler> _itemPropertyChangedHandlers = [];
-    private static readonly INotificationManager _iNotificationManager = Program.NotificationManager ??
-                           throw new InvalidOperationException("Missing notification manager");
+    private readonly Dictionary<Guid, PropertyChangedEventHandler> _itemPropertyChangedHandlers =
+    [];
+    private static readonly INotificationManager _iNotificationManager =
+        Program.NotificationManager
+        ?? throw new InvalidOperationException("Missing notification manager");
+
     // --- Control References ---
     private UIBuilder<ListBox>? _srItemsBuilder;
     private UIBuilder<ComboBox>? _sortItemButtonBuilder;
     private UIBuilder<TextBox>? _searchTextBoxBuilder; // Keep ref to search box
     private UIBuilder<TextBlock>? _itemCountTextBlockBuilder; // Keep ref to count textblock
+
     // ---
     private static bool _previouslyHadItemToReview = false;
     private readonly ObservableCollection<SpacedRepetitionItem> _baseSpacedRepetitionItems; // The original, unfiltered list
@@ -80,396 +85,574 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         _baseSpacedRepetitionItems = world.Get<ObservableCollection<SpacedRepetitionItem>>();
         SubscribeToAllItemChanges(_baseSpacedRepetitionItems);
         /*
-        We only add the handler once. 
+        We only add the handler once.
         */
         _iNotificationManager.NotificationActivated += OnNotificationActivated;
 
-        _root = world.UI<Grid>((grid) =>
-        {
-            /*
-        *: This represents a "star" column. 
-        It means this column will take up as much available space as 
-        possible after any fixed-size or Auto columns have been accounted for. 
-        Think of it as flexible or "greedy". 
-        In this case, the first column will grab most of the grid's width.
-
-        Auto: This means the column's width will adjust automatically to 
-        fit the content within it. If you place a button in this column, 
-        the column will be just wide enough to accommodate the button's size.
-        */
-            grid
-            .SetColumnDefinitions("*, Auto, Auto")
-            .SetRowDefinitions("Auto, *, Auto");
-
-            grid.Child<TextBox>((textBox) =>
-            {
-                _searchTextBoxBuilder = textBox; // Store reference
-
-                textBox
-                .SetColumn(0)
-                .SetMargin(5)
-                .SetWatermark("Search Entries")
-                .OnTextChanged((sender, args) =>
+        _root = world
+            .UI<Grid>(
+                (grid) =>
                 {
-                    // Get current search text directly from the event sender or builder
-                    string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
-                    ApplyFilterAndSort(searchText); // Apply filter and current sort
-                });
+                    /*
+                *: This represents a "star" column.
+                It means this column will take up as much available space as
+                possible after any fixed-size or Auto columns have been accounted for.
+                Think of it as flexible or "greedy".
+                In this case, the first column will grab most of the grid's width.
+        
+                Auto: This means the column's width will adjust automatically to
+                fit the content within it. If you place a button in this column,
+                the column will be just wide enough to accommodate the button's size.
+                */
+                    grid.SetColumnDefinitions("*, Auto, Auto").SetRowDefinitions("Auto, *, Auto");
 
-                textBox.AttachToolTip(world.UI<ToolTip>((toolTip) =>
-                {
-                    toolTip.Child<TextBlock>((textBlock) =>
-                    {
-                        textBlock.SetText(
-                        """
-                        You can search spaced repetition items by name or by their tags.
-                        """);
-                    });
-                }), false);
-            });
-
-            grid.Child<TextBlock>((textBlock) =>
-            {
-                _itemCountTextBlockBuilder = textBlock; // Store reference
-
-                textBlock
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetMargin(new Thickness(10, 0))
-                .SetText($"Total Items: {_baseSpacedRepetitionItems.Count}")
-                .SetColumn(1);
-
-                _baseSpacedRepetitionItems.CollectionChanged += (sender, args) => textBlock.SetText($"Total Items: {_baseSpacedRepetitionItems.Count}");
-            });
-
-            grid.Child<ComboBox>((comboBox) =>
-            {
-                _sortItemButtonBuilder = comboBox; // Store reference
-
-                comboBox
-                .SetPlaceholderText("Sort Items")
-                .SetColumn(2)
-                .SetMargin(5)
-                .SetItemsSource(sortItems);
-
-                comboBox.OnSelectionChanged((sender, args) =>
-                {
-                    if (args.AddedItems.Count == 0)
-                    {
-                        return;
-                    }
-                    var selectedItem = args.AddedItems[0]!.ToString();
-                    var itemsSource = (ObservableCollection<SpacedRepetitionItem>)_srItemsBuilder!.GetItemsSource();
-
-                    if (selectedItem == "Sort By Date")
-                    {
-                        // Sort by NextReview date (ascending - soonest due date first)
-                        itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
-                    }
-                    else if (selectedItem == "Sort By Priority")
-                    {
-                        // Sort by Priority (descending - highest priority first)
-                        itemsSource = [.. itemsSource.OrderByDescending(s => s.Priority)];
-                    }
-                    else if (selectedItem == "Sort By Name")
-                    {
-                        // Sort by Name (ascending - alphabetical order)
-                        itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
-                    }
-                    // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
-
-                    _srItemsBuilder!.SetItemsSource(itemsSource);
-                });
-
-            });
-
-            grid.Child<ScrollViewer>((scrollViewer) =>
-            {
-                scrollViewer
-                    .SetRow(1)
-                    .SetColumnSpan(3)
-                    .SetMargin(5, 0);
-
-                scrollViewer.Child<ListBox>((listBox) =>
-                {
-                    _srItemsBuilder = listBox; // Store reference
-
-                    var contextFlyout = world.UI<MenuFlyout>((menuFlyout) =>
-                    {
-                        menuFlyout.OnOpened((sender, e) =>
+                    grid.Child<TextBox>(
+                        (textBox) =>
                         {
-                            if (!listBox.HasItemSelected())
-                            {
-                                menuFlyout.Hide();
-                            }
-                        });
+                            _searchTextBoxBuilder = textBox; // Store reference
 
-                        menuFlyout.Child<MenuItem>((item) =>
+                            textBox
+                                .SetColumn(0)
+                                .SetMargin(5)
+                                .SetWatermark("Search Entries")
+                                .OnTextChanged(
+                                    (sender, args) =>
+                                    {
+                                        // Get current search text directly from the event sender or builder
+                                        string searchText =
+                                            _searchTextBoxBuilder?.GetText() ?? string.Empty;
+                                        ApplyFilterAndSort(searchText); // Apply filter and current sort
+                                    }
+                                );
+
+                            textBox.AttachToolTip(
+                                world.UI<ToolTip>(
+                                    (toolTip) =>
+                                    {
+                                        toolTip.Child<TextBlock>(
+                                            (textBlock) =>
+                                            {
+                                                textBlock.SetText(
+                                                    """
+                                                    You can search spaced repetition items by name or by their tags.
+                                                    """
+                                                );
+                                            }
+                                        );
+                                    }
+                                ),
+                                false
+                            );
+                        }
+                    );
+
+                    grid.Child<TextBlock>(
+                        (textBlock) =>
                         {
-                            item.SetHeader("Edit")
-                            .OnClick((sender, args) =>
-                            {
-                                var item = listBox.GetSelectedItem<SpacedRepetitionItem>();
+                            _itemCountTextBlockBuilder = textBlock; // Store reference
 
-                                object _ = item switch
-                                {
-                                    SpacedRepetitionCloze => new EditCloze(world, (SpacedRepetitionCloze)item),
-                                    SpacedRepetitionFlashcard => new EditFlashcard(world, (SpacedRepetitionFlashcard)item),
-                                    SpacedRepetitionFile => new EditFile(world, (SpacedRepetitionFile)item),
-                                    SpacedRepetitionQuiz => new EditQuiz(world, (SpacedRepetitionQuiz)item),
-                                    SpacedRepetitionImageCloze => new EditImageCloze(world, (SpacedRepetitionImageCloze)item),
-                                    _ => throw new NotImplementedException(),
-                                };
-                            });
-                        });
+                            textBlock
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                                .SetMargin(new Thickness(10, 0))
+                                .SetText($"Total Items: {_baseSpacedRepetitionItems.Count}")
+                                .SetColumn(1);
 
-                        menuFlyout.Child<MenuItem>((item) =>
+                            _baseSpacedRepetitionItems.CollectionChanged += (sender, args) =>
+                                textBlock.SetText(
+                                    $"Total Items: {_baseSpacedRepetitionItems.Count}"
+                                );
+                        }
+                    );
+
+                    grid.Child<ComboBox>(
+                        (comboBox) =>
                         {
-                            item.SetHeader("Delete")
-                            .OnClick(async (sender, args) =>
-                            {
-                                var item = listBox.GetSelectedItem<SpacedRepetitionItem>();
+                            _sortItemButtonBuilder = comboBox; // Store reference
 
-                                var cd = new ContentDialog()
-                                {
-                                    Title = "Attention",
-                                    Content = $"""Do you want to delete the item "{item.Name}". This cannot be undone!""",
-                                    PrimaryButtonText = "Yes",
-                                    SecondaryButtonText = "No",
-                                    DefaultButton = ContentDialogButton.Secondary,
-                                    IsSecondaryButtonEnabled = true,
-                                };
-                                var result = await cd.ShowAsync();
+                            comboBox
+                                .SetPlaceholderText("Sort Items")
+                                .SetColumn(2)
+                                .SetMargin(5)
+                                .SetItemsSource(sortItems);
 
-                                if (result == ContentDialogResult.Primary)
+                            comboBox.OnSelectionChanged(
+                                (sender, args) =>
                                 {
-                                    _baseSpacedRepetitionItems.Remove(item);
+                                    if (args.AddedItems.Count == 0)
+                                    {
+                                        return;
+                                    }
+                                    var selectedItem = args.AddedItems[0]!.ToString();
+                                    var itemsSource =
+                                        (ObservableCollection<SpacedRepetitionItem>)
+                                            _srItemsBuilder!.GetItemsSource();
+
+                                    if (selectedItem == "Sort By Date")
+                                    {
+                                        // Sort by NextReview date (ascending - soonest due date first)
+                                        itemsSource = [.. itemsSource.OrderBy(s => s.NextReview)];
+                                    }
+                                    else if (selectedItem == "Sort By Priority")
+                                    {
+                                        // Sort by Priority (descending - highest priority first)
+                                        itemsSource =
+                                        [
+                                            .. itemsSource.OrderByDescending(s => s.Priority),
+                                        ];
+                                    }
+                                    else if (selectedItem == "Sort By Name")
+                                    {
+                                        // Sort by Name (ascending - alphabetical order)
+                                        itemsSource = [.. itemsSource.OrderBy(s => s.Name)];
+                                    }
+                                    // You might want to add more sorting options, e.g., by type, difficulty, stability, etc.
+
+                                    _srItemsBuilder!.SetItemsSource(itemsSource);
                                 }
+                            );
+                        }
+                    );
 
-                            });
-
-                        });
-
-                    });
-
-                    _srItemsBuilder
-                    .SetItemsSource(_baseSpacedRepetitionItems)
-                    .SetItemTemplate(world.CreateTemplate<SpacedRepetitionItem, Grid>((grid, item) =>
-                    {
-                        var dateTimeConverter = new DateTimeOffsetToLocalTimeStringConverter();
-
-                        grid
-                        .SetColumnDefinitions("*, *")
-                        .SetRowDefinitions("Auto, Auto")
-                        .SetMargin(5);
-
-                        grid.Child<TextBlock>((textBlock) =>
+                    grid.Child<ScrollViewer>(
+                        (scrollViewer) =>
                         {
-                            textBlock
-                            .SetTextWrapping(TextWrapping.NoWrap)
-                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
-                            .SetFontWeight(FontWeight.Bold)
-                            .SetMargin(0, 0, 5, 0)
-                            .SetBinding(TextBlock.TextProperty, "Name")
-                            .SetColumn(0);
-                        });
+                            scrollViewer.SetRow(1).SetColumnSpan(3).SetMargin(5, 0);
 
-                        /*
-                        For now only when we hover over the name the long description is shown
-                        what we want is that it is also shown when we hover over the short description
+                            scrollViewer.Child<ListBox>(
+                                (listBox) =>
+                                {
+                                    _srItemsBuilder = listBox; // Store reference
 
-                        To do this we can easily use a stack panel on which we add the name and short description
-                        that extends to two rows and on that stack panel then we attach the tooltip.
-                        */
-                        //ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
-                        //tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
+                                    var contextFlyout = world.UI<MenuFlyout>(
+                                        (menuFlyout) =>
+                                        {
+                                            menuFlyout.OnOpened(
+                                                (sender, e) =>
+                                                {
+                                                    if (!listBox.HasItemSelected())
+                                                    {
+                                                        menuFlyout.Hide();
+                                                    }
+                                                }
+                                            );
 
-                        //Type (ENUM)
-                        var typeTextBlock = new TextBlock
+                                            menuFlyout.Child<MenuItem>(
+                                                (item) =>
+                                                {
+                                                    item.SetHeader("Edit")
+                                                        .OnClick(
+                                                            (sender, args) =>
+                                                            {
+                                                                var item =
+                                                                    listBox.GetSelectedItem<SpacedRepetitionItem>();
+
+                                                                object _ = item switch
+                                                                {
+                                                                    SpacedRepetitionCloze =>
+                                                                        new EditCloze(
+                                                                            world,
+                                                                            (SpacedRepetitionCloze)item
+                                                                        ),
+                                                                    SpacedRepetitionFlashcard =>
+                                                                        new EditFlashcard(
+                                                                            world,
+                                                                            (SpacedRepetitionFlashcard)item
+                                                                        ),
+                                                                    SpacedRepetitionFile =>
+                                                                        new EditFile(
+                                                                            world,
+                                                                            (SpacedRepetitionFile)item
+                                                                        ),
+                                                                    SpacedRepetitionQuiz =>
+                                                                        new EditQuiz(
+                                                                            world,
+                                                                            (SpacedRepetitionQuiz)item
+                                                                        ),
+                                                                    SpacedRepetitionImageCloze =>
+                                                                        new EditImageCloze(
+                                                                            world,
+                                                                            (SpacedRepetitionImageCloze)item
+                                                                        ),
+                                                                    _ =>
+                                                                        throw new NotImplementedException(),
+                                                                };
+                                                            }
+                                                        );
+                                                }
+                                            );
+
+                                            menuFlyout.Child<MenuItem>(
+                                                (item) =>
+                                                {
+                                                    item.SetHeader("Delete")
+                                                        .OnClick(
+                                                            async (sender, args) =>
+                                                            {
+                                                                var item =
+                                                                    listBox.GetSelectedItem<SpacedRepetitionItem>();
+
+                                                                var cd = new ContentDialog()
+                                                                {
+                                                                    Title = "Attention",
+                                                                    Content =
+                                                                        $"""Do you want to delete the item "{item.Name}". This cannot be undone!""",
+                                                                    PrimaryButtonText = "Yes",
+                                                                    SecondaryButtonText = "No",
+                                                                    DefaultButton =
+                                                                        ContentDialogButton.Secondary,
+                                                                    IsSecondaryButtonEnabled = true,
+                                                                };
+                                                                var result = await cd.ShowAsync();
+
+                                                                if (
+                                                                    result
+                                                                    == ContentDialogResult.Primary
+                                                                )
+                                                                {
+                                                                    _baseSpacedRepetitionItems.Remove(
+                                                                        item
+                                                                    );
+                                                                }
+                                                            }
+                                                        );
+                                                }
+                                            );
+                                        }
+                                    );
+
+                                    _srItemsBuilder
+                                        .SetItemsSource(_baseSpacedRepetitionItems)
+                                        .SetItemTemplate(
+                                            world.CreateTemplate<SpacedRepetitionItem, Grid>(
+                                                (grid, item) =>
+                                                {
+                                                    var dateTimeConverter =
+                                                        new DateTimeOffsetToLocalTimeStringConverter();
+
+                                                    grid.SetColumnDefinitions("*, *")
+                                                        .SetRowDefinitions("Auto, Auto")
+                                                        .SetMargin(5);
+
+                                                    grid.Child<TextBlock>(
+                                                        (textBlock) =>
+                                                        {
+                                                            textBlock
+                                                                .SetTextWrapping(
+                                                                    TextWrapping.NoWrap
+                                                                )
+                                                                .SetTextTrimming(
+                                                                    TextTrimming.CharacterEllipsis
+                                                                )
+                                                                .SetFontWeight(FontWeight.Bold)
+                                                                .SetMargin(0, 0, 5, 0)
+                                                                .SetBinding(
+                                                                    TextBlock.TextProperty,
+                                                                    "Name"
+                                                                )
+                                                                .SetColumn(0);
+                                                        }
+                                                    );
+
+                                                    /*
+                                                    For now only when we hover over the name the long description is shown
+                                                    what we want is that it is also shown when we hover over the short description
+                            
+                                                    To do this we can easily use a stack panel on which we add the name and short description
+                                                    that extends to two rows and on that stack panel then we attach the tooltip.
+                                                    */
+                                                    //ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
+                                                    //tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
+
+                                                    //Type (ENUM)
+                                                    var typeTextBlock = new TextBlock
+                                                    {
+                                                        TextWrapping = TextWrapping.NoWrap,
+                                                        TextTrimming =
+                                                            TextTrimming.CharacterEllipsis,
+                                                        Margin = new Thickness(0, 0, 5, 0),
+                                                    };
+
+                                                    grid.Child<TextBlock>(
+                                                        (textBlock) =>
+                                                        {
+                                                            textBlock
+                                                                .SetTextWrapping(
+                                                                    TextWrapping.NoWrap
+                                                                )
+                                                                .SetTextTrimming(
+                                                                    TextTrimming.CharacterEllipsis
+                                                                )
+                                                                .SetMargin(0, 0, 5, 0)
+                                                                .SetBinding(
+                                                                    TextBlock.TextProperty,
+                                                                    "SpacedRepetitionItemType"
+                                                                )
+                                                                .SetColumn(0)
+                                                                .SetRow(1);
+                                                        }
+                                                    );
+
+                                                    var nextReviewTextBlock = new TextBlock
+                                                    {
+                                                        TextWrapping = TextWrapping.NoWrap,
+                                                        TextTrimming =
+                                                            TextTrimming.CharacterEllipsis,
+                                                        FontWeight = FontWeight.Bold,
+                                                        HorizontalAlignment =
+                                                            HorizontalAlignment.Right,
+                                                    };
+
+                                                    grid.Child<TextBlock>(
+                                                        (textBlock) =>
+                                                        {
+                                                            textBlock
+                                                                .SetTextWrapping(
+                                                                    TextWrapping.NoWrap
+                                                                )
+                                                                .SetTextTrimming(
+                                                                    TextTrimming.CharacterEllipsis
+                                                                )
+                                                                .SetFontWeight(FontWeight.Bold)
+                                                                .SetHorizontalAlignment(
+                                                                    HorizontalAlignment.Right
+                                                                )
+                                                                .SetBinding(
+                                                                    TextBlock.TextProperty,
+                                                                    new Binding(
+                                                                        nameof(
+                                                                            SpacedRepetitionItem.NextReview
+                                                                        )
+                                                                    )
+                                                                    {
+                                                                        // Assign the converter instance
+                                                                        Converter =
+                                                                            dateTimeConverter,
+                                                                        // Optionally pass a format string as the ConverterParameter
+                                                                        // If omitted, the converter's default ("g") will be used.
+                                                                        ConverterParameter =
+                                                                            "dd/MM/yyyy HH:mm",
+                                                                        // StringFormat is NO LONGER used here, the converter handles formatting
+                                                                    }
+                                                                )
+                                                                .SetColumn(1)
+                                                                .SetRow(0);
+                                                        }
+                                                    );
+                                                    /*
+                            
+                                                    Here we want to show our tags for our items.
+                            
+                                                    grid.Child<TextBlock>((textBlock) =>
+                                                    {
+                                                        textBlock
+                                                        .SetTextWrapping(TextWrapping.NoWrap)
+                                                        .SetTextTrimming(TextTrimming.CharacterEllipsis)
+                                                        .SetHorizontalAlignment(HorizontalAlignment.Right)
+                                                        .SetColumn(1)
+                                                        .SetRow(1)
+                                                        .SetText("YOUR TAGS HERE!");
+                                                    });
+                                                    */
+                                                }
+                                            )
+                                        )
+                                        .SetSelectionMode(SelectionMode.Single)
+                                        .SetContextFlyout(contextFlyout);
+                                }
+                            );
+                        }
+                    );
+
+                    grid.Child<Button>(
+                        (startLearningButton) =>
                         {
-                            TextWrapping = TextWrapping.NoWrap,
-                            TextTrimming = TextTrimming.CharacterEllipsis,
-                            Margin = new Thickness(0, 0, 5, 0),
-                        };
+                            var menu = world.UI<MenuFlyout>(
+                                (menu) =>
+                                {
+                                    menu.SetShowMode(
+                                        FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+                                    );
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("Normal")
+                                                .OnClick(
+                                                    (_, _) =>
+                                                        new StartLearningWindow(
+                                                            world,
+                                                            cramMode: false
+                                                        )
+                                                )
+                                                .AttachToolTip(
+                                                    world.UI<ToolTip>(
+                                                        (toolTip) =>
+                                                        {
+                                                            toolTip.Child<TextBlock>(
+                                                                (textBlock) =>
+                                                                {
+                                                                    textBlock.SetText(
+                                                                        """
+                                                                        Use spaced repetition to learn items in order of their defined priority.
+                                                                        """
+                                                                    );
+                                                                }
+                                                            );
+                                                        }
+                                                    ),
+                                                    false
+                                                );
+                                        }
+                                    );
 
-                        grid.Child<TextBlock>((textBlock) =>
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("Cram (Priority)")
+                                                .OnClick(
+                                                    (_, _) =>
+                                                        new StartLearningWindow(
+                                                            world,
+                                                            cramMode: true
+                                                        )
+                                                )
+                                                .AttachToolTip(
+                                                    world.UI<ToolTip>(
+                                                        (toolTip) =>
+                                                        {
+                                                            toolTip.Child<TextBlock>(
+                                                                (textBlock) =>
+                                                                {
+                                                                    textBlock.SetText(
+                                                                        """
+                                                                        Learn items based on their priority (They are slightly randomized, to avoid seeing the pattern)
+                                                                        regardless of their due date.
+                                                                        """
+                                                                    );
+                                                                }
+                                                            );
+                                                        }
+                                                    ),
+                                                    false
+                                                );
+                                        }
+                                    );
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("Cram (Random)")
+                                                .OnClick(
+                                                    (_, _) =>
+                                                        new StartLearningWindow(
+                                                            world,
+                                                            cramMode: true,
+                                                            random: true
+                                                        )
+                                                )
+                                                .AttachToolTip(
+                                                    world.UI<ToolTip>(
+                                                        (toolTip) =>
+                                                        {
+                                                            toolTip.Child<TextBlock>(
+                                                                (textBlock) =>
+                                                                {
+                                                                    textBlock.SetText(
+                                                                        """
+                                                                        Learn items total randomized
+                                                                        """
+                                                                    );
+                                                                }
+                                                            );
+                                                        }
+                                                    ),
+                                                    false
+                                                );
+                                        }
+                                    );
+                                }
+                            );
+
+                            startLearningButton
+                                .SetMargin(0, 20, 0, 0)
+                                .SetColumn(0)
+                                .SetColumnSpan(2)
+                                .SetRow(2)
+                                .SetFlyout(menu)
+                                .Child<TextBlock>(t => t.SetText("Start Learning"));
+                        }
+                    );
+
+                    grid.Child<Button>(
+                        (addItemButton) =>
                         {
-                            textBlock
-                            .SetTextWrapping(TextWrapping.NoWrap)
-                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
-                            .SetMargin(0, 0, 5, 0)
-                            .SetBinding(TextBlock.TextProperty, "SpacedRepetitionItemType")
-                            .SetColumn(0)
-                            .SetRow(1);
-                        });
+                            var menu = world.UI<MenuFlyout>(
+                                (menu) =>
+                                {
+                                    menu.SetShowMode(
+                                        FlyoutShowMode.TransientWithDismissOnPointerMoveAway
+                                    );
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("File")
+                                                .OnClick((_, _) => new AddFile(world));
+                                        }
+                                    );
 
-                        var nextReviewTextBlock = new TextBlock
-                        {
-                            TextWrapping = TextWrapping.NoWrap,
-                            TextTrimming = TextTrimming.CharacterEllipsis,
-                            FontWeight = FontWeight.Bold,
-                            HorizontalAlignment = HorizontalAlignment.Right,
-                        };
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("Cloze Text")
+                                                .OnClick((_, _) => new AddCloze(world));
+                                        }
+                                    );
 
-                        grid.Child<TextBlock>((textBlock) =>
-                        {
-                            textBlock
-                            .SetTextWrapping(TextWrapping.NoWrap)
-                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
-                            .SetFontWeight(FontWeight.Bold)
-                            .SetHorizontalAlignment(HorizontalAlignment.Right)
-                            .SetBinding(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.NextReview))
-                            {
-                                // Assign the converter instance
-                                Converter = dateTimeConverter,
-                                // Optionally pass a format string as the ConverterParameter
-                                // If omitted, the converter's default ("g") will be used.
-                                ConverterParameter = "dd/MM/yyyy HH:mm"
-                                // StringFormat is NO LONGER used here, the converter handles formatting
-                            })
-                            .SetColumn(1)
-                            .SetRow(0);
-                        });
-                        /*
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("Image Cloze")
+                                                .OnClick((_, _) => new AddImageCloze(world));
+                                        }
+                                    );
 
-                        Here we want to show our tags for our items.
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("Flashcard")
+                                                .OnClick((_, _) => new AddFlashcard(world));
+                                        }
+                                    );
 
-                        grid.Child<TextBlock>((textBlock) =>
-                        {
-                            textBlock
-                            .SetTextWrapping(TextWrapping.NoWrap)
-                            .SetTextTrimming(TextTrimming.CharacterEllipsis)
-                            .SetHorizontalAlignment(HorizontalAlignment.Right)
-                            .SetColumn(1)
-                            .SetRow(1)
-                            .SetText("YOUR TAGS HERE!");
-                        });
-                        */
+                                    menu.Child<MenuItem>(
+                                        (menuItem) =>
+                                        {
+                                            menuItem
+                                                .SetHeader("Quiz")
+                                                .OnClick((_, _) => new AddQuiz(world));
+                                        }
+                                    );
+                                }
+                            );
 
-                    }))
-                        .SetSelectionMode(SelectionMode.Single)
-                        .SetContextFlyout(contextFlyout);
-                });
-            });
-
-            grid.Child<Button>((startLearningButton) =>
-            {
-
-                var menu = world.UI<MenuFlyout>((menu) =>
-                {
-                    menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("Normal")
-                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: false))
-                        .AttachToolTip(world.UI<ToolTip>((toolTip) =>
-                        {
-                            toolTip.Child<TextBlock>((textBlock) =>
-                            {
-                                textBlock.SetText(
-                                """
-                                Use spaced repetition to learn items in order of their defined priority.
-                                """);
-                            });
-                        }), false);
-                    });
-
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("Cram (Priority)")
-                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: true))
-                        .AttachToolTip(world.UI<ToolTip>((toolTip) =>
-                        {
-                            toolTip.Child<TextBlock>((textBlock) =>
-                            {
-                                textBlock.SetText(
-                                """
-                                Learn items based on their priority (They are slightly randomized, to avoid seeing the pattern)
-                                regardless of their due date.
-                                """);
-                            });
-                        }), false);
-                    });
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("Cram (Random)")
-                        .OnClick((_, _) => new StartLearningWindow(world, cramMode: true, random: true))
-                        .AttachToolTip(world.UI<ToolTip>((toolTip) =>
-                        {
-                            toolTip.Child<TextBlock>((textBlock) =>
-                            {
-                                textBlock.SetText(
-                                """
-                                Learn items total randomized
-                                """);
-                            });
-                        }), false);
-                    });
-                });
-
-                startLearningButton
-                .SetMargin(0, 20, 0, 0)
-                .SetColumn(0)
-                .SetColumnSpan(2)
-                .SetRow(2)
-                .SetFlyout(menu)
-                .Child<TextBlock>(t => t.SetText("Start Learning"));
-            });
-
-            grid.Child<Button>((addItemButton) =>
-            {
-                var menu = world.UI<MenuFlyout>((menu) =>
-                {
-                    menu.SetShowMode(FlyoutShowMode.TransientWithDismissOnPointerMoveAway);
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("File")
-                        .OnClick((_, _) => new AddFile(world));
-                    });
-
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("Cloze Text")
-                        .OnClick((_, _) => new AddCloze(world));
-                    });
-
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("Image Cloze")
-                        .OnClick((_, _) => new AddImageCloze(world));
-                    });
-
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("Flashcard")
-                        .OnClick((_, _) => new AddFlashcard(world));
-                    });
-
-                    menu.Child<MenuItem>((menuItem) =>
-                    {
-                        menuItem
-                        .SetHeader("Quiz")
-                        .OnClick((_, _) => new AddQuiz(world));
-                    });
-                });
-
-                addItemButton
-                .SetMargin(0, 20, 0, 0)
+                            addItemButton
+                                .SetMargin(0, 20, 0, 0)
                                 .SetHorizontalAlignment(HorizontalAlignment.Right)
                                 .SetColumn(2)
                                 .SetRow(2)
                                 .SetFlyout(menu.Entity)
                                 .SetText("Add Item");
-            });
-
-        })
-        .Add<Page>().Entity;
+                        }
+                    );
+                }
+            )
+            .Add<Page>()
+            .Entity;
 
         // Initial Apply Filter & Sort
         Dispatcher.UIThread.InvokeAsync(() => ApplyFilterAndSort(string.Empty));
@@ -482,27 +665,29 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         Control, Panel, ItemsControl, TemplatedControl, Etc. They should
         always take the lowest common denominator.
 
-        No need to depend on things that we dont care for 
+        No need to depend on things that we dont care for
         */
 
         //App.Entities!["SpacedRepetitionItems"] = world.Entity()
         //    .Set(dummyItems);
 
         // --- Timers & Save Logic ---
-        var timerEntity = world.Entity()
-            .Set(CreateAutoSaveTimer(_baseSpacedRepetitionItems));
+        var timerEntity = world.Entity().Set(CreateAutoSaveTimer(_baseSpacedRepetitionItems));
         _disposables.Add(Disposable.Create(() => timerEntity.Destruct())); // Cleanup timer entity
 
-        var notificationTimer = world.Entity()
-            .Set(CreateNotificationTimer());
+        var notificationTimer = world.Entity().Set(CreateNotificationTimer());
         _disposables.Add(Disposable.Create(() => notificationTimer.Destruct())); // Cleanup timer entity
-
 
         // Handle Base Collection Changed (Re-apply filter/sort)
         _baseSpacedRepetitionItems.CollectionChanged += OnBaseCollectionChanged;
-        _disposables.Add(Disposable.Create(() => _baseSpacedRepetitionItems.CollectionChanged -= OnBaseCollectionChanged));
+        _disposables.Add(
+            Disposable.Create(
+                () => _baseSpacedRepetitionItems.CollectionChanged -= OnBaseCollectionChanged
+            )
+        );
 
-        App.GetMainWindow().Closing += (_, _) => SaveSpaceRepetitionItemsToDisk(_baseSpacedRepetitionItems);
+        App.GetMainWindow().Closing += (_, _) =>
+            SaveSpaceRepetitionItemsToDisk(_baseSpacedRepetitionItems);
     }
 
     /// <summary>
@@ -532,17 +717,28 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             filteredItems = _baseSpacedRepetitionItems.Where(item =>
             {
                 // Check Name (null-safe, case-insensitive)
-                bool nameMatch = item.Name?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase) ?? false;
-                if (nameMatch) return true; // Early exit if name matches
+                bool nameMatch =
+                    item.Name?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase)
+                    ?? false;
+                if (nameMatch)
+                    return true; // Early exit if name matches
 
                 // Check Tags (null-safe, case-insensitive)
-                bool tagMatch = item.Tags?.Any(tag => tag?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase) ?? false) ?? false;
-                if (tagMatch) return true; // Early exit if tag matches
+                bool tagMatch =
+                    item.Tags?.Any(tag =>
+                        tag?.Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase)
+                        ?? false
+                    ) ?? false;
+                if (tagMatch)
+                    return true; // Early exit if tag matches
 
                 // Check Type (case-insensitive)
                 // Convert Enum to string and compare
-                bool typeMatch = item.SpacedRepetitionItemType.ToString().Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase);
-                if (typeMatch) return true; // Early exit if type matches
+                bool typeMatch = item
+                    .SpacedRepetitionItemType.ToString()
+                    .Contains(searchTerm, StringComparison.InvariantCultureIgnoreCase);
+                if (typeMatch)
+                    return true; // Early exit if type matches
 
                 // No match found for this item
                 return false;
@@ -553,32 +749,46 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         IEnumerable<SpacedRepetitionItem> sortedAndFilteredItems = ApplySorting(filteredItems);
 
         // 3. Update the ListBox ItemsSource on the UI thread
-        var finalCollection = new ObservableCollection<SpacedRepetitionItem>(sortedAndFilteredItems);
-        Dispatcher.UIThread.Post(() =>
-        {
-            // Re-check validity inside dispatcher
-            if (_srItemsBuilder?.Entity.IsAlive() == true)
+        var finalCollection = new ObservableCollection<SpacedRepetitionItem>(
+            sortedAndFilteredItems
+        );
+        Dispatcher.UIThread.Post(
+            () =>
             {
-                _srItemsBuilder.SetItemsSource(finalCollection);
-                Logger.Trace($"ListBox updated. Filter: '{searchText}', Items: {finalCollection.Count}");
-            }
-        }, DispatcherPriority.Background); // Use Background priority for UI updates
+                // Re-check validity inside dispatcher
+                if (_srItemsBuilder?.Entity.IsAlive() == true)
+                {
+                    _srItemsBuilder.SetItemsSource(finalCollection);
+                    Logger.Trace(
+                        $"ListBox updated. Filter: '{searchText}', Items: {finalCollection.Count}"
+                    );
+                }
+            },
+            DispatcherPriority.Background
+        ); // Use Background priority for UI updates
 
         // 4. Update item count (also on UI thread)
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (_itemCountTextBlockBuilder?.Entity.IsAlive() == true)
+        Dispatcher.UIThread.Post(
+            () =>
             {
-                _itemCountTextBlockBuilder.SetText($"Total Items: {_baseSpacedRepetitionItems.Count}"); // Show total count always
-                                                                                                        // Or show filtered count: .SetText($"Items: {finalCollection.Count} / {_baseSpacedRepetitionItems.Count}");
-            }
-        }, DispatcherPriority.Background);
+                if (_itemCountTextBlockBuilder?.Entity.IsAlive() == true)
+                {
+                    _itemCountTextBlockBuilder.SetText(
+                        $"Total Items: {_baseSpacedRepetitionItems.Count}"
+                    ); // Show total count always
+                    // Or show filtered count: .SetText($"Items: {finalCollection.Count} / {_baseSpacedRepetitionItems.Count}");
+                }
+            },
+            DispatcherPriority.Background
+        );
     }
 
     /// <summary>
     /// Applies sorting to a given collection based on the selected sort option.
     /// </summary>
-    private IEnumerable<SpacedRepetitionItem> ApplySorting(IEnumerable<SpacedRepetitionItem> itemsToSort)
+    private IEnumerable<SpacedRepetitionItem> ApplySorting(
+        IEnumerable<SpacedRepetitionItem> itemsToSort
+    )
     {
         string? selectedSort = null;
         if (_sortItemButtonBuilder?.Entity.IsAlive() == true)
@@ -634,7 +844,8 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     // Helper to subscribe to all items in a collection
     private void SubscribeToAllItemChanges(IEnumerable<SpacedRepetitionItem>? items)
     {
-        if (items == null) return;
+        if (items == null)
+            return;
         Logger.Debug($"Subscribing to PropertyChanged for initial/reset items.");
         foreach (var item in items)
         {
@@ -643,13 +854,18 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     }
 
     // Helper to unsubscribe from all tracked items (used in Dispose and Reset)
-    private void UnsubscribeFromAllItemChanges(IEnumerable<SpacedRepetitionItem>? currentItems = null)
+    private void UnsubscribeFromAllItemChanges(
+        IEnumerable<SpacedRepetitionItem>? currentItems = null
+    )
     {
-        Logger.Debug($"Unsubscribing from all tracked items ({_itemPropertyChangedHandlers.Count}).");
+        Logger.Debug(
+            $"Unsubscribing from all tracked items ({_itemPropertyChangedHandlers.Count})."
+        );
         // Get the list of items we *are* subscribed to from the dictionary keys
         var subscribedIds = _itemPropertyChangedHandlers.Keys.ToList();
-        var itemsToUnsubscribe = currentItems?.Where(i => i != null && subscribedIds.Contains(i.Uid)).ToList()
-                                ?? Enumerable.Empty<SpacedRepetitionItem>();
+        var itemsToUnsubscribe =
+            currentItems?.Where(i => i != null && subscribedIds.Contains(i.Uid)).ToList()
+            ?? Enumerable.Empty<SpacedRepetitionItem>();
 
         // If currentItems isn't available (e.g. during dispose after collection is gone), we might leak handlers.
         // A better approach might be to store WeakReference<SpacedRepetitionItem> or handle this more carefully.
@@ -663,12 +879,13 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         _itemPropertyChangedHandlers.Clear();
     }
 
-
     // --- NEW: Handler for PropertyChanged Events from Items ---
     private void HandleItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (_isDisposed) return; // Don't handle if page is disposed
-        if (sender is not SpacedRepetitionItem changedItem) return;
+        if (_isDisposed)
+            return; // Don't handle if page is disposed
+        if (sender is not SpacedRepetitionItem changedItem)
+            return;
 
         // Check if the changed property is relevant for filtering or sorting
         bool needsRefresh = e.PropertyName switch
@@ -678,20 +895,26 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             nameof(SpacedRepetitionItem.NextReview) => true,
             nameof(SpacedRepetitionItem.Tags) => true, // If filtering by tags
             nameof(SpacedRepetitionItem.SpacedRepetitionItemType) => true, // If filtering by type
-                                                                           // Add other properties if they affect filter/sort
-            _ => false
+            // Add other properties if they affect filter/sort
+            _ => false,
         };
 
         if (needsRefresh)
         {
-            Logger.Trace($"Relevant property '{e.PropertyName}' changed for item '{changedItem.Name}', triggering list refresh.");
+            Logger.Trace(
+                $"Relevant property '{e.PropertyName}' changed for item '{changedItem.Name}', triggering list refresh."
+            );
             // Refresh the list on the UI thread. Use Post for better responsiveness if updates are frequent.
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (_isDisposed) return; // Double check dispose state
-                string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
-                ApplyFilterAndSort(searchText);
-            }, DispatcherPriority.Background); // Lower priority for UI updates
+            Dispatcher.UIThread.Post(
+                () =>
+                {
+                    if (_isDisposed)
+                        return; // Double check dispose state
+                    string searchText = _searchTextBoxBuilder?.GetText() ?? string.Empty;
+                    ApplyFilterAndSort(searchText);
+                },
+                DispatcherPriority.Background
+            ); // Lower priority for UI updates
         }
     }
 
@@ -709,7 +932,8 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
             if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
             {
-                foreach (SpacedRepetitionItem item in e.NewItems.OfType<SpacedRepetitionItem>()) SubscribeToItemChanges(item);
+                foreach (SpacedRepetitionItem item in e.NewItems.OfType<SpacedRepetitionItem>())
+                    SubscribeToItemChanges(item);
             }
             if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
             {
@@ -720,30 +944,38 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                     if (removedItemObject is SpacedRepetitionItem removedItem)
                     {
                         Guid itemIdToRemove = removedItem.Uid; // Get the unique ID.
-                        Logger.Info($"Item removed from base collection: '{removedItem.Name ?? "N/A"}' (ID: {itemIdToRemove}). Scheduling statistics removal.");
+                        Logger.Info(
+                            $"Item removed from base collection: '{removedItem.Name ?? "N/A"}' (ID: {itemIdToRemove}). Scheduling statistics removal."
+                        );
 
                         try
                         {
                             // Get the singleton instance and await the removal process.
                             await StatsTracker.Instance.RemoveStatsForItemAsync(itemIdToRemove);
-                            Logger.Info($"Successfully completed background statistics removal for item ID {itemIdToRemove}.");
+                            Logger.Info(
+                                $"Successfully completed background statistics removal for item ID {itemIdToRemove}."
+                            );
                         }
                         catch (Exception ex)
                         {
                             // Log any exceptions during the stats removal process.
-                            Logger.Error(ex, $"Error occurred during background statistics removal for item ID {itemIdToRemove}.");
+                            Logger.Error(
+                                ex,
+                                $"Error occurred during background statistics removal for item ID {itemIdToRemove}."
+                            );
                             // Consider additional error handling if needed (e.g., user notification).
                         }
                     }
                     else
                     {
                         // Log a warning if the removed item was not of the expected type.
-                        Logger.Warn($"An item removed from the base collection was not of the expected type 'SpacedRepetitionItem'. Actual type: {removedItemObject?.GetType().FullName ?? "null"}");
+                        Logger.Warn(
+                            $"An item removed from the base collection was not of the expected type 'SpacedRepetitionItem'. Actual type: {removedItemObject?.GetType().FullName ?? "null"}"
+                        );
                     }
                 }
             }
         });
-
     }
 
     /// <summary>
@@ -751,13 +983,15 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     /// </summary>
     /// <param name="spacedRepetitionItems"></param>
     /// <returns></returns>
-    public static Timer CreateAutoSaveTimer(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    public static Timer CreateAutoSaveTimer(
+        ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems
+    )
     {
         // Create a System.Timers.Timer for auto-saving
         var autoSaveTimer = new Timer(TimeSpan.FromMinutes(5).TotalMilliseconds) // 5 minutes
         {
             AutoReset = true, // Make the timer repeat
-            Enabled = true,   // Start the timer immediately
+            Enabled = true, // Start the timer immediately
         };
 
         autoSaveTimer.Elapsed += async (sender, e) =>
@@ -783,44 +1017,41 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
     private Timer CreateNotificationTimer()
     {
-        var notificationTimer = new Timer(60000)
-        {
-            AutoReset = true,
-            Enabled = true,
-        };
+        var notificationTimer = new Timer(60000) { AutoReset = true, Enabled = true };
 
         notificationTimer.Elapsed += (sender, e) =>
         {
             Dispatcher.UIThread.Post(() =>
-                        {
-                            if (_root == 0)
-                            {
-                                return;
-                            }
-                            if (!_root.CsWorld().Has<Settings>())
-                            {
-                                return;
-                            }
+            {
+                if (_root == 0)
+                {
+                    return;
+                }
+                if (!_root.CsWorld().Has<Settings>())
+                {
+                    return;
+                }
 
-                            var _ItemToBeLearned = _baseSpacedRepetitionItems.GetNextItemToBeReviewed();
-                            bool hasItemToReview = _ItemToBeLearned != null;
-                            if (hasItemToReview && !_previouslyHadItemToReview && !App.GetMainWindow().IsActive && _root.CsWorld().Get<Settings>().EnableNotifications)
-                            {
-                                var nf = new Notification
-                                {
-                                    Title = "New item can be learned",
-                                    Body = "Open the learning window by clicking start learning",
-                                    Buttons =
-                                {
-                                    ("Start Learning", "startLearning"),
-                                    ("Dismiss", "dismiss")
-                                }
-                                };
+                var _ItemToBeLearned = _baseSpacedRepetitionItems.GetNextItemToBeReviewed();
+                bool hasItemToReview = _ItemToBeLearned != null;
+                if (
+                    hasItemToReview
+                    && !_previouslyHadItemToReview
+                    && !App.GetMainWindow().IsActive
+                    && _root.CsWorld().Get<Settings>().EnableNotifications
+                )
+                {
+                    var nf = new Notification
+                    {
+                        Title = "New item can be learned",
+                        Body = "Open the learning window by clicking start learning",
+                        Buttons = { ("Start Learning", "startLearning"), ("Dismiss", "dismiss") },
+                    };
 
-                                _iNotificationManager.ShowNotification(nf);
-                            }
-                            _previouslyHadItemToReview = hasItemToReview;
-                        });
+                    _iNotificationManager.ShowNotification(nf);
+                }
+                _previouslyHadItemToReview = hasItemToReview;
+            });
         };
 
         return notificationTimer;
@@ -833,7 +1064,9 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     /// Saves the spaced repetition items to disk, but only if the data has changed since the last save
     /// </summary>
     /// <param name="spacedRepetitionItems"></param>
-    public static void SaveSpaceRepetitionItemsToDisk(ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems)
+    public static void SaveSpaceRepetitionItemsToDisk(
+        ObservableCollection<SpacedRepetitionItem> spacedRepetitionItems
+    )
     {
         if (spacedRepetitionItems == null || spacedRepetitionItems.Count == 0)
         {
@@ -847,7 +1080,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                Converters = { new SpacedRepetitionItemConverter() }
+                Converters = { new SpacedRepetitionItemConverter() },
             };
 
             // Generate JSON string from current data
@@ -900,111 +1133,116 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     /// <returns></returns>
     public static FuncDataTemplate<SpacedRepetitionItem> DefineSpacedRepetitionItemTemplate()
     {
-
         var dateTimeConverter = new DateTimeOffsetToLocalTimeStringConverter();
 
-        return new FuncDataTemplate<SpacedRepetitionItem>((item, nameScope) =>
-        {
-            var grid = new Grid
+        return new FuncDataTemplate<SpacedRepetitionItem>(
+            (item, nameScope) =>
             {
-                ColumnDefinitions = new ColumnDefinitions("*, *"), // Name, Description, Type
-                RowDefinitions = new RowDefinitions("Auto, Auto"),
-                Margin = new Thickness(0, 5)
-            };
+                var grid = new Grid
+                {
+                    ColumnDefinitions = new ColumnDefinitions("*, *"), // Name, Description, Type
+                    RowDefinitions = new RowDefinitions("Auto, Auto"),
+                    Margin = new Thickness(0, 5),
+                };
 
-            // *** Create a TextBlock for the multi-line tooltip ***
-            var tooltipTextBlock = new TextBlock
-            {
-                FontWeight = FontWeight.Normal,
-                TextWrapping = TextWrapping.Wrap, // Enable text wrapping
-                MaxWidth = 200, // Set a maximum width for wrapping
-                Text = "This is a very long tooltip text that spans multiple lines. " +
-                        "It provides more detailed information about the content item. " +
-                        "You can even add more and more text to make it even longer.",
-            };
+                // *** Create a TextBlock for the multi-line tooltip ***
+                var tooltipTextBlock = new TextBlock
+                {
+                    FontWeight = FontWeight.Normal,
+                    TextWrapping = TextWrapping.Wrap, // Enable text wrapping
+                    MaxWidth = 200, // Set a maximum width for wrapping
+                    Text =
+                        "This is a very long tooltip text that spans multiple lines. "
+                        + "It provides more detailed information about the content item. "
+                        + "You can even add more and more text to make it even longer.",
+                };
 
-            //Name
-            var nameTextBlock = new TextBlock
-            {
-                TextWrapping = TextWrapping.NoWrap,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                FontWeight = FontWeight.Bold,
-                Margin = new Thickness(0, 0, 5, 0),
-            };
-            nameTextBlock.Bind(TextBlock.TextProperty, new Binding("Name"));
-            Grid.SetColumn(nameTextBlock, 0);
-            grid.Children.Add(nameTextBlock);
+                //Name
+                var nameTextBlock = new TextBlock
+                {
+                    TextWrapping = TextWrapping.NoWrap,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    FontWeight = FontWeight.Bold,
+                    Margin = new Thickness(0, 0, 5, 0),
+                };
+                nameTextBlock.Bind(TextBlock.TextProperty, new Binding("Name"));
+                Grid.SetColumn(nameTextBlock, 0);
+                grid.Children.Add(nameTextBlock);
 
-            /*
-            For now only when we hover over the name the long description is shown
-            what we want is that it is also shown when we hover over the short description
+                /*
+                For now only when we hover over the name the long description is shown
+                what we want is that it is also shown when we hover over the short description
+    
+                To do this we can easily use a stack panel on which we add the name and short description
+                that extends to two rows and on that stack panel then we attach the tooltip.
+                */
+                //ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
+                //tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
 
-            To do this we can easily use a stack panel on which we add the name and short description
-            that extends to two rows and on that stack panel then we attach the tooltip.
-            */
-            //ToolTip.SetTip(nameTextBlock, tooltipTextBlock);
-            //tooltipTextBlock.Bind(TextBlock.TextProperty, new Binding("LongDescription"));
+                //Type (ENUM)
+                var typeTextBlock = new TextBlock
+                {
+                    TextWrapping = TextWrapping.NoWrap,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    Margin = new Thickness(0, 0, 5, 0),
+                };
 
-            //Type (ENUM)
-            var typeTextBlock = new TextBlock
-            {
-                TextWrapping = TextWrapping.NoWrap,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(0, 0, 5, 0),
-            };
+                typeTextBlock.Bind(
+                    TextBlock.TextProperty,
+                    new Binding(nameof(SpacedRepetitionItem.SpacedRepetitionItemType))
+                );
+                Grid.SetColumn(typeTextBlock, 0);
+                Grid.SetRow(typeTextBlock, 1);
+                grid.Children.Add(typeTextBlock);
 
-            typeTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.SpacedRepetitionItemType)));
-            Grid.SetColumn(typeTextBlock, 0);
-            Grid.SetRow(typeTextBlock, 1);
-            grid.Children.Add(typeTextBlock);
+                var nextReviewTextBlock = new TextBlock
+                {
+                    TextWrapping = TextWrapping.NoWrap,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    FontWeight = FontWeight.Bold,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                };
 
-            var nextReviewTextBlock = new TextBlock
-            {
-                TextWrapping = TextWrapping.NoWrap,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                FontWeight = FontWeight.Bold,
-                HorizontalAlignment = HorizontalAlignment.Right,
-            };
+                var nextReviewBinding = new Binding(nameof(SpacedRepetitionItem.NextReview))
+                {
+                    // Assign the converter instance
+                    Converter = dateTimeConverter,
+                    // Optionally pass a format string as the ConverterParameter
+                    // If omitted, the converter's default ("g") will be used.
+                    ConverterParameter = "dd/MM/yyyy HH:mm",
+                    // StringFormat is NO LONGER used here, the converter handles formatting
+                };
 
-            var nextReviewBinding = new Binding(nameof(SpacedRepetitionItem.NextReview))
-            {
-                // Assign the converter instance
-                Converter = dateTimeConverter,
-                // Optionally pass a format string as the ConverterParameter
-                // If omitted, the converter's default ("g") will be used.
-                ConverterParameter = "dd/MM/yyyy HH:mm"
-                // StringFormat is NO LONGER used here, the converter handles formatting
-            };
+                nextReviewTextBlock.Bind(TextBlock.TextProperty, nextReviewBinding);
+                Grid.SetRow(nextReviewTextBlock, 0);
+                Grid.SetColumn(nextReviewTextBlock, 1);
+                grid.Children.Add(nextReviewTextBlock);
 
-            nextReviewTextBlock.Bind(TextBlock.TextProperty, nextReviewBinding);
-            Grid.SetRow(nextReviewTextBlock, 0);
-            Grid.SetColumn(nextReviewTextBlock, 1);
-            grid.Children.Add(nextReviewTextBlock);
-
-            //Priority
-            /*
-            var priorityTextBlock = new TextBlock
-            {
-                HorizontalAlignment = HorizontalAlignment.Right,
-            };
-            priorityTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.Priority)) { StringFormat = "Priority: {0}" });
-            Grid.SetRow(priorityTextBlock, 1);
-            Grid.SetColumn(priorityTextBlock, 1);
-            grid.Children.Add(priorityTextBlock);
-
-            // *** Create a TextBlock for the multi-line tooltip ***
-            var priorityTooltipTextBlock = new TextBlock
-            {
-                FontWeight = FontWeight.Normal,
-                TextWrapping = TextWrapping.Wrap, // Enable text wrapping
-                MaxWidth = 200, // Set a maximum width for wrapping
-                Text = "Priority shows the importance, it determines in which order items will be learned."
-            };
-
-            //ToolTip.SetTip(priorityTextBlock, priorityTooltipTextBlock);
-            */
-            return grid;
-        });
+                //Priority
+                /*
+                var priorityTextBlock = new TextBlock
+                {
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                };
+                priorityTextBlock.Bind(TextBlock.TextProperty, new Binding(nameof(SpacedRepetitionItem.Priority)) { StringFormat = "Priority: {0}" });
+                Grid.SetRow(priorityTextBlock, 1);
+                Grid.SetColumn(priorityTextBlock, 1);
+                grid.Children.Add(priorityTextBlock);
+    
+                // *** Create a TextBlock for the multi-line tooltip ***
+                var priorityTooltipTextBlock = new TextBlock
+                {
+                    FontWeight = FontWeight.Normal,
+                    TextWrapping = TextWrapping.Wrap, // Enable text wrapping
+                    MaxWidth = 200, // Set a maximum width for wrapping
+                    Text = "Priority shows the importance, it determines in which order items will be learned."
+                };
+    
+                //ToolTip.SetTip(priorityTextBlock, priorityTooltipTextBlock);
+                */
+                return grid;
+            }
+        );
     }
 
     private void OnNotificationActivated(object? sender, NotificationActivatedEventArgs e)
@@ -1015,13 +1253,13 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
         }
     }
 
-
     /// <inheritdoc/>
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     /// <summary>
     /// Diposes flecs entities and event handlers correctly
     /// </summary>
@@ -1049,7 +1287,8 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                 // If the Page lifecycle is managed elsewhere that destroys Root, this isn't needed.
                 // If this page component *owns* its UI root, destroy it.
                 // Assuming it owns it for now:
-                if (_root.IsValid() && _root.IsAlive()) _root.Destruct();
+                if (_root.IsValid() && _root.IsAlive())
+                    _root.Destruct();
 
                 Logger.Debug("SpacedRepetitionPage disposed.");
             }

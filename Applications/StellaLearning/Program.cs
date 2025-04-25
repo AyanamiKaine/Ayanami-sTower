@@ -23,10 +23,9 @@ using DesktopNotifications.Avalonia;
 
 namespace AyanamisTower.StellaLearning;
 
-
 /*
 We implement stella learning as a single app, you cannot run more than one instance of the same app.
-Because we want to run stella learning in the background. And instead of opening a new instance 
+Because we want to run stella learning in the background. And instead of opening a new instance
 of the app we check if it already runs and show its window instead.
 */
 static class Program
@@ -43,23 +42,24 @@ static class Program
         /*
         Implementation done by Medo64
         (https://github.com/medo64/Medo/blob/main/examples/SingleInstanceApplication/App.cs)
-        I simply copied it into my own repo for better maintainablility and updated it to 
+        I simply copied it into my own repo for better maintainablility and updated it to
         support dotnet 9
         */
-        SingleInstance.Attach();  // will auto-exit for second instance
+        SingleInstance.Attach(); // will auto-exit for second instance
         SingleInstance.NewInstanceDetected += OnNewInstanceDetected;
 
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
+
     // Avalonia configuration, don't remove; also used by visual designer.
     public static AppBuilder BuildAvaloniaApp()
     {
-        return AppBuilder.Configure<App>()
-                .UsePlatformDetect()
-                .SetupDesktopNotifications(out NotificationManager!)
-                .WithInterFont()
-                .LogToTrace();
+        return AppBuilder
+            .Configure<App>()
+            .UsePlatformDetect()
+            .SetupDesktopNotifications(out NotificationManager!)
+            .WithInterFont()
+            .LogToTrace();
     }
 
     private static void OnNewInstanceDetected(object? sender, NewInstanceEventArgs e)

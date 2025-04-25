@@ -18,13 +18,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.IO;
 using Mono.Unix;
+
 namespace AyanamisTower.StellaLearning.Util;
+
 /// <summary>
 /// Provides utilities for detecting whether files are executable.
 /// </summary>
 public static class ExecutableDetector
 {
-
     /*
     Design Note:
     This was created because of the need to distinguish files that are to be read like data (for example a png)
@@ -42,8 +43,10 @@ public static class ExecutableDetector
             return false;
 
         // Check extension for Windows executables
-        if (Path.GetExtension(filePath).ToLowerInvariant() is string ext &&
-            (ext == ".exe" || ext == ".bat" || ext == ".cmd" || ext == ".com"))
+        if (
+            Path.GetExtension(filePath).ToLowerInvariant() is string ext
+            && (ext == ".exe" || ext == ".bat" || ext == ".cmd" || ext == ".com")
+        )
         {
             return true;
         }
@@ -56,9 +59,13 @@ public static class ExecutableDetector
                 // Use FileInfo to check Unix permissions
                 var fileInfo = new FileInfo(filePath);
                 var unixFileInfo = UnixFileInfo.GetFileSystemEntry(filePath);
-                return unixFileInfo.FileAccessPermissions.HasFlag(FileAccessPermissions.UserExecute) ||
-                       unixFileInfo.FileAccessPermissions.HasFlag(FileAccessPermissions.GroupExecute) ||
-                       unixFileInfo.FileAccessPermissions.HasFlag(FileAccessPermissions.OtherExecute);
+                return unixFileInfo.FileAccessPermissions.HasFlag(FileAccessPermissions.UserExecute)
+                    || unixFileInfo.FileAccessPermissions.HasFlag(
+                        FileAccessPermissions.GroupExecute
+                    )
+                    || unixFileInfo.FileAccessPermissions.HasFlag(
+                        FileAccessPermissions.OtherExecute
+                    );
             }
             catch
             {

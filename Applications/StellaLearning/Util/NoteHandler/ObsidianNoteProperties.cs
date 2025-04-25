@@ -21,6 +21,7 @@ public class ObsidianNoteProperties
     /// </summary>
     [YamlMember(Alias = "aliases")]
     public List<string> Aliases { get; set; } // Made setter public for deserialization
+
     /// <summary>
     /// Defined obsidian tags
     /// </summary>
@@ -40,7 +41,8 @@ public class ObsidianNoteProperties
     /// Created
     /// </summary>
     /// <param name="created"></param>
-    public ObsidianNoteProperties(DateTime created) : this()
+    public ObsidianNoteProperties(DateTime created)
+        : this()
     {
         Created = created;
     }
@@ -81,15 +83,16 @@ public class ObsidianNoteProperties
                 return new(); // No actual content between markers
             }
 
-            var yamlContent = trimmedContent.Substring(startOfYaml, endMarkerIndex - startOfYaml).Trim();
+            var yamlContent = trimmedContent
+                .Substring(startOfYaml, endMarkerIndex - startOfYaml)
+                .Trim();
 
             if (string.IsNullOrWhiteSpace(yamlContent))
             {
                 return new();
             }
 
-            var deserializer = new DeserializerBuilder()
-                .Build();
+            var deserializer = new DeserializerBuilder().Build();
 
             try
             {
@@ -104,7 +107,9 @@ public class ObsidianNoteProperties
             }
             catch (Exception ex) // Catch other potential exceptions during deserialization
             {
-                Console.Error.WriteLine($"An unexpected error occurred during deserialization: {ex.Message}");
+                Console.Error.WriteLine(
+                    $"An unexpected error occurred during deserialization: {ex.Message}"
+                );
                 return new();
             }
         }

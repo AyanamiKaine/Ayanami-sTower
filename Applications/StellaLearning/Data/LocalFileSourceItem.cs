@@ -36,9 +36,6 @@ public partial class LocalFileSourceItem : LiteratureSourceItem
     [JsonPropertyName("FilePath")]
     private string _filePath = string.Empty; // Non-nullable
 
-
-
-
     // --- Constructor ---
 
 
@@ -47,19 +44,25 @@ public partial class LocalFileSourceItem : LiteratureSourceItem
     /// when not using a fully bindable parameterized constructor.
     /// </summary>
     [JsonConstructor] // Explicitly mark, though often implicit if public parameterless exists
-    public LocalFileSourceItem() : base(LiteratureSourceType.LocalFile) // Set default type
+    public LocalFileSourceItem()
+        : base(LiteratureSourceType.LocalFile) // Set default type
     {
         // Initialize required fields/properties to safe defaults if needed.
         _filePath = string.Empty; // Or some other indicator of "not set yet" if required
-                                  // Base properties like Name, Uid etc. will be set by deserializer via setters
+        // Base properties like Name, Uid etc. will be set by deserializer via setters
     }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="LocalFileSourceItem"/> class.
     /// This constructor is intended for use by the JSON deserializer.
     /// </summary>
     /// <param name="filePath">The full path to the local file. Must match the 'FilePath' property in JSON.</param>
     /// <param name="type">The type of literature source. Defaults to LocalFile if not present in JSON for base class.</param>
-    public LocalFileSourceItem(string filePath, LiteratureSourceType type = LiteratureSourceType.LocalFile) : base(type)
+    public LocalFileSourceItem(
+        string filePath,
+        LiteratureSourceType type = LiteratureSourceType.LocalFile
+    )
+        : base(type)
     {
         // It's generally better to perform validation *after* deserialization if possible,
         // or make the property setter validate. File.Exists check here might fail
@@ -86,7 +89,9 @@ public partial class LocalFileSourceItem : LiteratureSourceItem
         // Optional: Post-deserialization validation or warning for File.Exists
         if (!File.Exists(filePath))
         {
-            Console.WriteLine($"Warning: File specified for deserialized LocalFileSourceItem does not exist or is inaccessible: {filePath}");
+            Console.WriteLine(
+                $"Warning: File specified for deserialized LocalFileSourceItem does not exist or is inaccessible: {filePath}"
+            );
         }
     }
 
@@ -106,7 +111,11 @@ public partial class LocalFileSourceItem : LiteratureSourceItem
         {
             string formattedTitle = Title.Trim().TrimEnd('.');
             // Italicize book/report titles in APA
-            if (SourceType == LiteratureSourceType.Book || SourceType == LiteratureSourceType.Report || SourceType == LiteratureSourceType.Thesis)
+            if (
+                SourceType == LiteratureSourceType.Book
+                || SourceType == LiteratureSourceType.Report
+                || SourceType == LiteratureSourceType.Thesis
+            )
             {
                 sb.Append('*').Append(formattedTitle).Append("*");
             }
@@ -139,4 +148,3 @@ public partial class LocalFileSourceItem : LiteratureSourceItem
         // No URL or AccessedDate typically for local files unless it's a web download backup.
     }
 }
-

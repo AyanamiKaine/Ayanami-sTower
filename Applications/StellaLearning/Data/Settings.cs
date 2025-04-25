@@ -35,16 +35,19 @@ public partial class Settings : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _enableNotifications = true;
+
     /// <summary>
     /// Whether the the windows are always on top
     /// </summary>
     [ObservableProperty]
     private bool _enableAlwaysOnTop = false;
+
     /// <summary>
     /// Whether the application is allowed to send notifcations
     /// </summary>
     [ObservableProperty]
     private bool _enableCloudSaves = true;
+
     //TODO: I want to implement a more fine grain control so the user can say, yea titles are fine but not descriptions.
     /// <summary>
     /// Whether we are allowed to use large language models to genereate various meta data for
@@ -52,30 +55,32 @@ public partial class Settings : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _enableLargeLanguageFeatures = true;
+
     /// <summary>
     /// Whether the application is in dark mode
     /// </summary>
     [ObservableProperty]
     private bool _isDarkMode = false;
+
     /// <summary>
     /// Whether the application closes to a small tray icon instead. Leaving
     /// the app running in the background.
     /// </summary>
     [ObservableProperty]
     private bool _closeToTray = true;
+
     /// <summary>
     /// The path to the Obsidian executable
     /// </summary>
     [ObservableProperty]
     private string _obsidianPath = string.Empty;
+
     /// <summary>
     /// Caching the json serializer options for performance
     /// </summary>
-    public static JsonSerializerOptions jsonSerializerOptions = new()
-    {
-        IncludeFields = true,
-        WriteIndented = true
-    };
+    public static JsonSerializerOptions jsonSerializerOptions =
+        new() { IncludeFields = true, WriteIndented = true };
+
     /// <summary>
     /// Create a new settings object
     /// </summary>
@@ -99,7 +104,10 @@ public partial class Settings : ObservableObject
             Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
         }
         // Optionally set OS-specific defaults here if they apply universally to new instances
-        if (string.IsNullOrEmpty(_obsidianPath) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (
+            string.IsNullOrEmpty(_obsidianPath)
+            && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+        )
         {
             _obsidianPath = GetWindowsDefaultObsidianFolderPath();
         }
@@ -108,7 +116,9 @@ public partial class Settings : ObservableObject
     private static string GetWindowsDefaultObsidianFolderPath()
     {
         // Get the AppData\Local folder path
-        string localAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string localAppDataPath = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData
+        );
 
         // Construct the full path to the Obsidian folder
         return Path.Combine(localAppDataPath, "Programs", "obsidian", "Obsidian.exe");
@@ -133,7 +143,8 @@ public partial class Settings : ObservableObject
                 // Read the file content
                 string jsonContent = File.ReadAllText(settingsFile);
 
-                return JsonSerializer.Deserialize<Settings>(jsonContent, jsonSerializerOptions) ?? new Settings();
+                return JsonSerializer.Deserialize<Settings>(jsonContent, jsonSerializerOptions)
+                    ?? new Settings();
             }
             catch (Exception ex)
             {
@@ -185,7 +196,9 @@ public partial class Settings : ObservableObject
 
         // Determine the new theme variant based on the input string
 
-        var newThemeVariant = string.Equals(theme, "dark", StringComparison.OrdinalIgnoreCase) ? ThemeVariant.Dark : ThemeVariant.Light;
+        var newThemeVariant = string.Equals(theme, "dark", StringComparison.OrdinalIgnoreCase)
+            ? ThemeVariant.Dark
+            : ThemeVariant.Light;
 
         // Only update the theme if it has changed
         if (currentThemeVariant != newThemeVariant)

@@ -16,19 +16,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Reactive.Disposables;
 using Avalonia.Controls;
 using Avalonia.Flecs.Controls;
-using Flecs.NET.Core;
-using System.Reactive.Disposables;
-using NLog;
 using Avalonia.Layout; // Added for Layout enums
-using Avalonia.Threading;
-using System.Collections.Generic;
-using AyanamisTower.StellaLearning.Data;
 using Avalonia.Media; // Added for Dispatcher
+using Avalonia.Threading;
+using AyanamisTower.StellaLearning.Data;
+using Flecs.NET.Core;
+using NLog;
 
 namespace AyanamisTower.StellaLearning.UiComponents
 {
@@ -45,12 +45,12 @@ namespace AyanamisTower.StellaLearning.UiComponents
 
         private const int MAX_COMPARISONS = 4; // Number of comparisons to perform
         private const long MAX_PRIORITY_VALUE = 999_999_999L; // Consistent max value
-        private const long MIN_PRIORITY_VALUE = -999_999_999L;          // Consistent min value
+        private const long MIN_PRIORITY_VALUE = -999_999_999L; // Consistent min value
 
         // State for the comparison process
         private int _timesCompared = 0;
         private long _internalSmallestPrio; // Use long internally for calculations
-        private long _internalHighestPrio;  // Use long internally
+        private long _internalHighestPrio; // Use long internally
         private SpacedRepetitionItem? _currentItemToCompare = null;
         private readonly List<Guid> _comparedItemIdsThisRound = []; // Assuming SpacedRepetitionItem has a long Id
 
@@ -80,7 +80,10 @@ namespace AyanamisTower.StellaLearning.UiComponents
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Failed to get ObservableCollection<SpacedRepetitionItem> from world.");
+                Logger.Error(
+                    ex,
+                    "Failed to get ObservableCollection<SpacedRepetitionItem> from world."
+                );
                 // Handle error state - perhaps disable component?
                 _spacedRepetitionItems = new ObservableCollection<SpacedRepetitionItem>(); // Use empty list to prevent crashes
             }
@@ -88,88 +91,104 @@ namespace AyanamisTower.StellaLearning.UiComponents
             // Entity to store the final calculated priority (as int)
             CalculatedPriorityEntity = world.Entity().Set(0); // Default value
 
-            Root = world.UI<Grid>((grid) =>
-            {
-                grid
-                    .SetColumnDefinitions("*,*")
-                    // Add extra row for status text
-                    .SetRowDefinitions("Auto, Auto, *, Auto"); // Title, Status, Item, Buttons
+            Root = world
+                .UI<Grid>(
+                    (grid) =>
+                    {
+                        grid.SetColumnDefinitions("*,*")
+                            // Add extra row for status text
+                            .SetRowDefinitions("Auto, Auto, *, Auto"); // Title, Status, Item, Buttons
 
-                // Title TextBlock
-                grid.Child<TextBlock>(tb => tb
-                    .SetTextWrapping(TextWrapping.Wrap)
-                    .SetVerticalAlignment(VerticalAlignment.Center)
-                    .SetHorizontalAlignment(HorizontalAlignment.Center)
-                    .SetRow(0).SetColumnSpan(2).SetMargin(5)
-                    .SetText("Is the new item more or less important than this one?")
-                );
+                        // Title TextBlock
+                        grid.Child<TextBlock>(tb =>
+                            tb.SetTextWrapping(TextWrapping.Wrap)
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                                .SetRow(0)
+                                .SetColumnSpan(2)
+                                .SetMargin(5)
+                                .SetText("Is the new item more or less important than this one?")
+                        );
 
-                // Status TextBlock (e.g., "Comparison 1 of 3")
-                grid.Child<TextBlock>(tb =>
-                {
-                    _statusTextBlock = tb;
-                    tb.SetRow(1).SetColumnSpan(2)
-                      .SetHorizontalAlignment(HorizontalAlignment.Center)
-                      .SetFontSize(11)
-                      .SetOpacity(0.8);
-                    // Text set dynamically in SelectNextItemToCompare
-                });
+                        // Status TextBlock (e.g., "Comparison 1 of 3")
+                        grid.Child<TextBlock>(tb =>
+                        {
+                            _statusTextBlock = tb;
+                            tb.SetRow(1)
+                                .SetColumnSpan(2)
+                                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                                .SetFontSize(11)
+                                .SetOpacity(0.8);
+                            // Text set dynamically in SelectNextItemToCompare
+                        });
 
+                        // Item to Compare TextBlock
+                        grid.Child<TextBlock>(text =>
+                        {
+                            _itemToCompareToTextBlock = text;
+                            text.SetVerticalAlignment(VerticalAlignment.Center)
+                                .SetHorizontalAlignment(HorizontalAlignment.Center)
+                                .SetMargin(10)
+                                .SetRow(2) // Moved to row 2
+                                .SetColumnSpan(2)
+                                .SetTextWrapping(TextWrapping.Wrap)
+                                .SetFontWeight(FontWeight.Bold);
+                            // Initial text set by Reset -> SelectNextItemToCompare
+                        });
 
-                // Item to Compare TextBlock
-                grid.Child<TextBlock>(text =>
-                {
-                    _itemToCompareToTextBlock = text;
-                    text.SetVerticalAlignment(VerticalAlignment.Center)
-                        .SetHorizontalAlignment(HorizontalAlignment.Center)
-                        .SetMargin(10)
-                        .SetRow(2) // Moved to row 2
-                        .SetColumnSpan(2)
-                        .SetTextWrapping(TextWrapping.Wrap)
-                        .SetFontWeight(FontWeight.Bold);
-                    // Initial text set by Reset -> SelectNextItemToCompare
-                });
+                        // Less Priority Button
+                        grid.Child<Button>(button =>
+                        {
+                            _lessPriorityButton = button;
+                            button
+                                .SetText("Less Important") // More descriptive
+                                .SetHorizontalAlignment(HorizontalAlignment.Stretch) // Stretch
+                                .SetMargin(10, 5, 5, 10) // Margins
+                                .SetColumn(0)
+                                .SetRow(3); // Moved to row 3
+                            button.OnClick((_, _) => HandleLessPriorityClick());
+                        });
 
-                // Less Priority Button
-                grid.Child<Button>(button =>
-                {
-                    _lessPriorityButton = button;
-                    button.SetText("Less Important") // More descriptive
-                          .SetHorizontalAlignment(HorizontalAlignment.Stretch) // Stretch
-                          .SetMargin(10, 5, 5, 10) // Margins
-                          .SetColumn(0).SetRow(3); // Moved to row 3
-                    button.OnClick((_, _) => HandleLessPriorityClick());
-                });
-
-                // More Priority Button
-                grid.Child<Button>(button =>
-                {
-                    _morePriorityButton = button;
-                    button.SetText("More Important") // More descriptive
-                          .SetHorizontalAlignment(HorizontalAlignment.Stretch) // Stretch
-                          .SetMargin(5, 5, 10, 10) // Margins
-                          .SetColumn(1).SetRow(3); // Moved to row 3
-                    button.OnClick((_, _) => HandleMorePriorityClick());
-                });
-            }).Entity;
+                        // More Priority Button
+                        grid.Child<Button>(button =>
+                        {
+                            _morePriorityButton = button;
+                            button
+                                .SetText("More Important") // More descriptive
+                                .SetHorizontalAlignment(HorizontalAlignment.Stretch) // Stretch
+                                .SetMargin(5, 5, 10, 10) // Margins
+                                .SetColumn(1)
+                                .SetRow(3); // Moved to row 3
+                            button.OnClick((_, _) => HandleMorePriorityClick());
+                        });
+                    }
+                )
+                .Entity;
 
             // --- Initial Setup & Event Subscriptions ---
             Reset(); // Set initial state and select first item
 
             _spacedRepetitionItems.CollectionChanged += OnCollectionChanged;
-            _disposables.Add(Disposable.Create(() =>
-            {
-                // Check if collection still exists before unsubscribing
-                var items = world.Get<ObservableCollection<SpacedRepetitionItem>>();
-                if (items != null) items.CollectionChanged -= OnCollectionChanged;
-                Logger.Debug("Unsubscribed from _spacedRepetitionItems.CollectionChanged");
-            }));
+            _disposables.Add(
+                Disposable.Create(() =>
+                {
+                    // Check if collection still exists before unsubscribing
+                    var items = world.Get<ObservableCollection<SpacedRepetitionItem>>();
+                    if (items != null)
+                        items.CollectionChanged -= OnCollectionChanged;
+                    Logger.Debug("Unsubscribed from _spacedRepetitionItems.CollectionChanged");
+                })
+            );
 
-            _disposables.Add(Disposable.Create(() =>
-            {
-                if (CalculatedPriorityEntity.IsAlive()) CalculatedPriorityEntity.Destruct(); // Clean up entity
-                if (Root.IsValid() && Root.IsAlive()) Root.Destruct(); // Clean up UI
-            }));
+            _disposables.Add(
+                Disposable.Create(() =>
+                {
+                    if (CalculatedPriorityEntity.IsAlive())
+                        CalculatedPriorityEntity.Destruct(); // Clean up entity
+                    if (Root.IsValid() && Root.IsAlive())
+                        Root.Destruct(); // Clean up UI
+                })
+            );
 
             Root.SetName($"COMPAREPRIORITY-{_rng.Next()}");
         }
@@ -179,7 +198,8 @@ namespace AyanamisTower.StellaLearning.UiComponents
         /// </summary>
         public void Reset()
         {
-            if (_isDisposed) return; // Don't reset if disposed
+            if (_isDisposed)
+                return; // Don't reset if disposed
 
             _timesCompared = 0;
             _internalSmallestPrio = MIN_PRIORITY_VALUE;
@@ -197,8 +217,10 @@ namespace AyanamisTower.StellaLearning.UiComponents
         /// </summary>
         private void SelectNextItemToCompare()
         {
-            if (_isDisposed) return;
-            if (!AreUIElementsValid()) return; // Check UI elements first
+            if (_isDisposed)
+                return;
+            if (!AreUIElementsValid())
+                return; // Check UI elements first
 
             // Update Status Text
             if (_timesCompared < MAX_COMPARISONS)
@@ -234,20 +256,26 @@ namespace AyanamisTower.StellaLearning.UiComponents
             {
                 availableItems = _spacedRepetitionItems
                     .Where(i => i != null) // Basic null check
-                                           // No need to check _comparedItemIdsThisRound here as it's empty
+                    // No need to check _comparedItemIdsThisRound here as it's empty
                     .ToList();
-                Logger.Trace($"Selecting initial random item from {availableItems.Count} total items.");
+                Logger.Trace(
+                    $"Selecting initial random item from {availableItems.Count} total items."
+                );
             }
             else // Subsequent comparisons: Select randomly from items WITHIN range, not yet compared this round
             {
                 // Find items STRICTLY between the current bounds
                 availableItems = _spacedRepetitionItems
-                    .Where(i => i != null &&
-                                i.Priority > _internalSmallestPrio &&
-                                i.Priority < _internalHighestPrio &&
-                                !_comparedItemIdsThisRound.Contains(i.Uid)) // Exclude already shown items
+                    .Where(i =>
+                        i != null
+                        && i.Priority > _internalSmallestPrio
+                        && i.Priority < _internalHighestPrio
+                        && !_comparedItemIdsThisRound.Contains(i.Uid)
+                    ) // Exclude already shown items
                     .ToList();
-                Logger.Trace($"Selecting subsequent random item from {availableItems.Count} items in range ({_internalSmallestPrio} - {_internalHighestPrio}).");
+                Logger.Trace(
+                    $"Selecting subsequent random item from {availableItems.Count} items in range ({_internalSmallestPrio} - {_internalHighestPrio})."
+                );
             }
 
             // 3. Choose Randomly from Available Candidates
@@ -264,7 +292,9 @@ namespace AyanamisTower.StellaLearning.UiComponents
                 }
                 else
                 {
-                    Logger.Warn($"No *new* items found strictly within range ({_internalSmallestPrio} - {_internalHighestPrio}). Finalizing early.");
+                    Logger.Warn(
+                        $"No *new* items found strictly within range ({_internalSmallestPrio} - {_internalHighestPrio}). Finalizing early."
+                    );
                     FinalizeComparison("No suitable items left for comparison in range.");
                 }
                 return; // Exit selection process
@@ -279,24 +309,36 @@ namespace AyanamisTower.StellaLearning.UiComponents
             _itemToCompareToTextBlock!.SetText(currentItemName);
             _morePriorityButton!.Enable();
             _lessPriorityButton!.Enable();
-            Logger.Debug($"Next comparison item selected: {currentItemName} (Prio: {_currentItemToCompare.Priority}, ID: {_currentItemToCompare.Uid}). Comparison #{_timesCompared + 1}");
+            Logger.Debug(
+                $"Next comparison item selected: {currentItemName} (Prio: {_currentItemToCompare.Priority}, ID: {_currentItemToCompare.Uid}). Comparison #{_timesCompared + 1}"
+            );
         }
 
         private void HandleLessPriorityClick()
         {
-            if (_isDisposed || _currentItemToCompare == null) { /* ... Log/Recover ... */ return; }
+            if (_isDisposed || _currentItemToCompare == null)
+            { /* ... Log/Recover ... */
+                return;
+            }
             _internalHighestPrio = _currentItemToCompare.Priority;
             _timesCompared++;
-            Logger.Debug($"Less Priority clicked. New range: [{_internalSmallestPrio} - {_internalHighestPrio}]. Comparisons: {_timesCompared}");
+            Logger.Debug(
+                $"Less Priority clicked. New range: [{_internalSmallestPrio} - {_internalHighestPrio}]. Comparisons: {_timesCompared}"
+            );
             SelectNextItemToCompare();
         }
 
         private void HandleMorePriorityClick()
         {
-            if (_isDisposed || _currentItemToCompare == null) { /* ... Log/Recover ... */ return; }
+            if (_isDisposed || _currentItemToCompare == null)
+            { /* ... Log/Recover ... */
+                return;
+            }
             _internalSmallestPrio = _currentItemToCompare.Priority;
             _timesCompared++;
-            Logger.Debug($"More Priority clicked. New range: [{_internalSmallestPrio} - {_internalHighestPrio}]. Comparisons: {_timesCompared}");
+            Logger.Debug(
+                $"More Priority clicked. New range: [{_internalSmallestPrio} - {_internalHighestPrio}]. Comparisons: {_timesCompared}"
+            );
             SelectNextItemToCompare();
         }
 
@@ -304,13 +346,16 @@ namespace AyanamisTower.StellaLearning.UiComponents
         // Calculates midpoint of final range + offset + clamp + collision check
         private void FinalizeComparison(string reason)
         {
-            if (_isDisposed) return;
+            if (_isDisposed)
+                return;
             Logger.Info($"Finalizing priority comparison. Reason: {reason}");
 
             // 1. Check if range is valid before calculating midpoint
             if (_internalSmallestPrio > _internalHighestPrio)
             {
-                Logger.Error($"Invalid priority range detected in FinalizeComparison: Small={_internalSmallestPrio}, High={_internalHighestPrio}. Resetting to default midpoint.");
+                Logger.Error(
+                    $"Invalid priority range detected in FinalizeComparison: Small={_internalSmallestPrio}, High={_internalHighestPrio}. Resetting to default midpoint."
+                );
                 _internalSmallestPrio = MIN_PRIORITY_VALUE; // Reset to avoid nonsensical calculation
                 _internalHighestPrio = MAX_PRIORITY_VALUE;
             }
@@ -320,27 +365,41 @@ namespace AyanamisTower.StellaLearning.UiComponents
                 _internalHighestPrio++; // Allow a tiny range
             }
 
-
             // 2. Calculate Final Priority (Midpoint + Random Offset)
             long finalPriorityLong = (_internalSmallestPrio + _internalHighestPrio) / 2;
             int offset = _rng.Next(-50, 51); // Range -50 to +50 inclusive
             finalPriorityLong += offset;
 
             // 3. Clamp to Valid Range
-            finalPriorityLong = Math.Clamp(finalPriorityLong, MIN_PRIORITY_VALUE, MAX_PRIORITY_VALUE);
+            finalPriorityLong = Math.Clamp(
+                finalPriorityLong,
+                MIN_PRIORITY_VALUE,
+                MAX_PRIORITY_VALUE
+            );
 
             // 4. Prevent Exact Collision with Boundaries
-            if (finalPriorityLong <= _internalSmallestPrio && _internalSmallestPrio < _internalHighestPrio) finalPriorityLong = _internalSmallestPrio + 1;
-            else if (finalPriorityLong >= _internalHighestPrio && _internalHighestPrio > _internalSmallestPrio) finalPriorityLong = _internalHighestPrio - 1;
+            if (
+                finalPriorityLong <= _internalSmallestPrio
+                && _internalSmallestPrio < _internalHighestPrio
+            )
+                finalPriorityLong = _internalSmallestPrio + 1;
+            else if (
+                finalPriorityLong >= _internalHighestPrio
+                && _internalHighestPrio > _internalSmallestPrio
+            )
+                finalPriorityLong = _internalHighestPrio - 1;
 
             // 5. Re-Clamp and Cast to int
-            int finalPriorityInt = (int)Math.Clamp(finalPriorityLong, MIN_PRIORITY_VALUE, MAX_PRIORITY_VALUE);
+            int finalPriorityInt = (int)
+                Math.Clamp(finalPriorityLong, MIN_PRIORITY_VALUE, MAX_PRIORITY_VALUE);
 
             // 6. Set the Entity Value
             if (CalculatedPriorityEntity.IsAlive())
             {
                 CalculatedPriorityEntity.Set(finalPriorityInt);
-                Logger.Info($"Final calculated priority set to: {finalPriorityInt} (Range: [{_internalSmallestPrio} - {_internalHighestPrio}], BaseMid: {(_internalSmallestPrio + _internalHighestPrio) / 2}, Offset: {offset})");
+                Logger.Info(
+                    $"Final calculated priority set to: {finalPriorityInt} (Range: [{_internalSmallestPrio} - {_internalHighestPrio}], BaseMid: {(_internalSmallestPrio + _internalHighestPrio) / 2}, Offset: {offset})"
+                );
             }
             else
             {
@@ -359,26 +418,26 @@ namespace AyanamisTower.StellaLearning.UiComponents
 
         private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            if (_isDisposed) return;
+            if (_isDisposed)
+                return;
             Logger.Info("Item collection changed, resetting ComparePriority state.");
             Dispatcher.UIThread.InvokeAsync(Reset);
         }
-
-
 
         /// <summary>
         /// Checks if essential UI element builders are still valid.
         /// </summary>
         private bool AreUIElementsValid()
         {
-            bool valid = _lessPriorityButton?.Entity.IsAlive() == true &&
-                         _morePriorityButton?.Entity.IsAlive() == true &&
-                         _itemToCompareToTextBlock?.Entity.IsAlive() == true &&
-                         _statusTextBlock?.Entity.IsAlive() == true; // Check status block too
-            if (!valid) Logger.Error("One or more ComparePriority UI elements are not valid/alive.");
+            bool valid =
+                _lessPriorityButton?.Entity.IsAlive() == true
+                && _morePriorityButton?.Entity.IsAlive() == true
+                && _itemToCompareToTextBlock?.Entity.IsAlive() == true
+                && _statusTextBlock?.Entity.IsAlive() == true; // Check status block too
+            if (!valid)
+                Logger.Error("One or more ComparePriority UI elements are not valid/alive.");
             return valid;
         }
-
 
         #region IDisposable Implementation
         /// <inheritdoc/>
@@ -401,7 +460,7 @@ namespace AyanamisTower.StellaLearning.UiComponents
                     Logger.Debug($"Disposing ComparePriority (Root: {Root.Id})...");
                     // Dispose managed state (managed objects).
                     _disposables.Dispose(); // Unsubscribes events, destroys entities added to it
-                                            // Set fields to null to aid GC? Optional.
+                    // Set fields to null to aid GC? Optional.
                     _currentItemToCompare = null;
                     _lessPriorityButton = null;
                     _morePriorityButton = null;

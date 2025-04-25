@@ -24,10 +24,10 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
-using Flecs.NET.Core;
-using FluentAvalonia.UI.Controls;
 using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.UiComponents;
+using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace AyanamisTower.StellaLearning.Windows;
 
@@ -36,13 +36,14 @@ namespace AyanamisTower.StellaLearning.Windows;
 /// </summary>
 public class EditFlashcard : IUIComponent, IDisposable
 {
-
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
     private SpacedRepetitionFlashcard flashcard;
     private readonly CompositeDisposable _disposables = []; // For managing disposables
     private bool _isDisposed = false; // For IDisposable pattern
+
     /// <summary>
     /// Create the Add File Window
     /// </summary>
@@ -51,26 +52,31 @@ public class EditFlashcard : IUIComponent, IDisposable
     /// <returns></returns>
     public EditFlashcard(World world, SpacedRepetitionFlashcard flashcard)
     {
-
         this.flashcard = flashcard;
-        _root = world.UI<Window>((window) =>
+        _root = world
+            .UI<Window>(
+                (window) =>
                 {
                     window
-                    .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
-                    .SetTitle($"Edit Flashcard: {flashcard.Name}")
-                    .SetWidth(400)
-                    .SetHeight(400)
-                    .Child<ScrollViewer>((scrollViewer) =>
-                    {
-                        scrollViewer
-                        .SetRow(1)
-                        .SetColumnSpan(3)
-                        .Child(DefineWindowContents(world));
-                    });
+                        .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
+                        .SetTitle($"Edit Flashcard: {flashcard.Name}")
+                        .SetWidth(400)
+                        .SetHeight(400)
+                        .Child<ScrollViewer>(
+                            (scrollViewer) =>
+                            {
+                                scrollViewer
+                                    .SetRow(1)
+                                    .SetColumnSpan(3)
+                                    .Child(DefineWindowContents(world));
+                            }
+                        );
                     window.OnClosed((sender, args) => Dispose());
 
                     window.Show();
-                }).Entity;
+                }
+            )
+            .Entity;
     }
 
     private Entity DefineWindowContents(World world)
@@ -83,152 +89,172 @@ public class EditFlashcard : IUIComponent, IDisposable
 
         ObservableCollection<Tag> tags = [];
 
-        return world.UI<StackPanel>((stackPanel) =>
-        {
-            UIBuilder<TextBox>? nameTextBox = null;
-            UIBuilder<TextBox>? frontText = null;
-            UIBuilder<TextBox>? backText = null;
-            var tagManager = new TagComponent(world, flashcard.Tags);
+        return world
+            .UI<StackPanel>(
+                (stackPanel) =>
+                {
+                    UIBuilder<TextBox>? nameTextBox = null;
+                    UIBuilder<TextBox>? frontText = null;
+                    UIBuilder<TextBox>? backText = null;
+                    var tagManager = new TagComponent(world, flashcard.Tags);
 
-            void SaveData()
-            {
-                if (nameTextBox is null ||
-                    frontText is null ||
-                    backText is null)
-                {
-                    return;
-                }
-                if (string.IsNullOrEmpty(nameTextBox.GetText()))
-                {
-                    nameTextBox.SetWatermark("Name is required");
-                    var cd = new ContentDialog()
+                    void SaveData()
                     {
-                        Title = "Missing Name",
-                        Content = "You must define a name",
-                        PrimaryButtonText = "Ok",
-                        DefaultButton = ContentDialogButton.Primary,
-                        IsSecondaryButtonEnabled = true,
-                    };
-                    cd.ShowAsync();
-                    return;
-                }
+                        if (nameTextBox is null || frontText is null || backText is null)
+                        {
+                            return;
+                        }
+                        if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                        {
+                            nameTextBox.SetWatermark("Name is required");
+                            var cd = new ContentDialog()
+                            {
+                                Title = "Missing Name",
+                                Content = "You must define a name",
+                                PrimaryButtonText = "Ok",
+                                DefaultButton = ContentDialogButton.Primary,
+                                IsSecondaryButtonEnabled = true,
+                            };
+                            cd.ShowAsync();
+                            return;
+                        }
 
-                if (string.IsNullOrEmpty(frontText.GetText()))
-                {
-                    frontText.SetWatermark("A front text is required");
-                    var cd = new ContentDialog()
-                    {
-                        Title = "Missing Front Text",
-                        Content = "You must define a front text",
-                        PrimaryButtonText = "Ok",
-                        DefaultButton = ContentDialogButton.Primary,
-                        IsSecondaryButtonEnabled = true,
-                    };
-                    cd.ShowAsync();
-                    return;
-                }
+                        if (string.IsNullOrEmpty(frontText.GetText()))
+                        {
+                            frontText.SetWatermark("A front text is required");
+                            var cd = new ContentDialog()
+                            {
+                                Title = "Missing Front Text",
+                                Content = "You must define a front text",
+                                PrimaryButtonText = "Ok",
+                                DefaultButton = ContentDialogButton.Primary,
+                                IsSecondaryButtonEnabled = true,
+                            };
+                            cd.ShowAsync();
+                            return;
+                        }
 
-                if (string.IsNullOrEmpty(backText.GetText()))
-                {
-                    backText.SetWatermark("A back text is required");
-                    var cd = new ContentDialog()
-                    {
-                        Title = "Missing Back Text",
-                        Content = "You must define a back text",
-                        PrimaryButtonText = "Ok",
-                        DefaultButton = ContentDialogButton.Primary,
-                        IsSecondaryButtonEnabled = true,
-                    };
-                    cd.ShowAsync();
-                    return;
-                }
+                        if (string.IsNullOrEmpty(backText.GetText()))
+                        {
+                            backText.SetWatermark("A back text is required");
+                            var cd = new ContentDialog()
+                            {
+                                Title = "Missing Back Text",
+                                Content = "You must define a back text",
+                                PrimaryButtonText = "Ok",
+                                DefaultButton = ContentDialogButton.Primary,
+                                IsSecondaryButtonEnabled = true,
+                            };
+                            cd.ShowAsync();
+                            return;
+                        }
 
-                flashcard.Name = nameTextBox.GetText();
-                flashcard.Front = frontText.GetText();
-                flashcard.Back = backText.GetText();
-                flashcard.Priority = calculatedPriority.Get<int>();
-                flashcard.Tags = [.. tagManager.Tags];
+                        flashcard.Name = nameTextBox.GetText();
+                        flashcard.Front = frontText.GetText();
+                        flashcard.Back = backText.GetText();
+                        flashcard.Priority = calculatedPriority.Get<int>();
+                        flashcard.Tags = [.. tagManager.Tags];
 
-                Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    await StatsTracker.Instance.UpdateTagsForItemAsync(flashcard.Uid, flashcard.Tags);
-                });
+                        Dispatcher.UIThread.InvokeAsync(async () =>
+                        {
+                            await StatsTracker.Instance.UpdateTagsForItemAsync(
+                                flashcard.Uid,
+                                flashcard.Tags
+                            );
+                        });
 
-
-                // Clearing an entity results in all components, relationships etc to be removed.
-                // this also results in invoking the remove hooks that are used on components for 
-                // cleanup. For example removing a window component results in closing it.
-                _root.Clear();
-            }
-
-            stackPanel
-            .SetOrientation(Orientation.Vertical)
-            .SetSpacing(10)
-            .SetMargin(20);
-
-            stackPanel.Child<TextBlock>((t) =>
-            {
-                t.SetText("Name");
-            });
-
-            nameTextBox = stackPanel.Child<TextBox>((textBox) =>
-            {
-                textBox
-                .SetWatermark("Name")
-                .SetText(flashcard.Name)
-                .OnKeyDown((sender, args) =>
-                {
-                    if (args.Key == Key.Enter)
-                    {
-                        SaveData();
+                        // Clearing an entity results in all components, relationships etc to be removed.
+                        // this also results in invoking the remove hooks that are used on components for
+                        // cleanup. For example removing a window component results in closing it.
+                        _root.Clear();
                     }
-                });
-            });
 
-            stackPanel.Child<TextBlock>((t) =>
-            {
-                t.SetText("Front Text");
-            });
+                    stackPanel.SetOrientation(Orientation.Vertical).SetSpacing(10).SetMargin(20);
 
+                    stackPanel.Child<TextBlock>(
+                        (t) =>
+                        {
+                            t.SetText("Name");
+                        }
+                    );
 
-            frontText = stackPanel.Child<TextBox>((textBox) =>
-            {
-                textBox
-                .SetWatermark("Front Text")
-                .SetTextWrapping(TextWrapping.Wrap).SetText(flashcard.Front);
+                    nameTextBox = stackPanel.Child<TextBox>(
+                        (textBox) =>
+                        {
+                            textBox
+                                .SetWatermark("Name")
+                                .SetText(flashcard.Name)
+                                .OnKeyDown(
+                                    (sender, args) =>
+                                    {
+                                        if (args.Key == Key.Enter)
+                                        {
+                                            SaveData();
+                                        }
+                                    }
+                                );
+                        }
+                    );
 
-                textBox.Get<TextBox>().AcceptsReturn = true;
-            });
+                    stackPanel.Child<TextBlock>(
+                        (t) =>
+                        {
+                            t.SetText("Front Text");
+                        }
+                    );
 
-            stackPanel.Child<TextBlock>((t) =>
-            {
-                t.SetText("Back Text");
-            });
+                    frontText = stackPanel.Child<TextBox>(
+                        (textBox) =>
+                        {
+                            textBox
+                                .SetWatermark("Front Text")
+                                .SetTextWrapping(TextWrapping.Wrap)
+                                .SetText(flashcard.Front);
 
-            backText = stackPanel.Child<TextBox>((textBox) =>
-            {
-                textBox
-                .SetWatermark("Back Text")
-                .SetTextWrapping(TextWrapping.Wrap).SetText(flashcard.Back);
+                            textBox.Get<TextBox>().AcceptsReturn = true;
+                        }
+                    );
 
-                textBox.Get<TextBox>().AcceptsReturn = true;
-            });
+                    stackPanel.Child<TextBlock>(
+                        (t) =>
+                        {
+                            t.SetText("Back Text");
+                        }
+                    );
 
-            stackPanel.Child(tagManager); // Add the tag manager UI
-            stackPanel.Child(comparePriority);
-            stackPanel.Child<Button>((button) =>
-            {
-                button
-                .SetText("Save Changes")
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Stretch);
+                    backText = stackPanel.Child<TextBox>(
+                        (textBox) =>
+                        {
+                            textBox
+                                .SetWatermark("Back Text")
+                                .SetTextWrapping(TextWrapping.Wrap)
+                                .SetText(flashcard.Back);
 
-                button.OnClick((sender, args) =>
-                {
-                    SaveData();
-                });
-            });
-        }).Entity;
+                            textBox.Get<TextBox>().AcceptsReturn = true;
+                        }
+                    );
+
+                    stackPanel.Child(tagManager); // Add the tag manager UI
+                    stackPanel.Child(comparePriority);
+                    stackPanel.Child<Button>(
+                        (button) =>
+                        {
+                            button
+                                .SetText("Save Changes")
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                                .SetHorizontalAlignment(HorizontalAlignment.Stretch);
+
+                            button.OnClick(
+                                (sender, args) =>
+                                {
+                                    SaveData();
+                                }
+                            );
+                        }
+                    );
+                }
+            )
+            .Entity;
     }
 
     /// <inheritdoc/>
@@ -237,6 +263,7 @@ public class EditFlashcard : IUIComponent, IDisposable
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     /// <summary>
     /// Diposer
     /// </summary>
@@ -262,8 +289,12 @@ public class EditFlashcard : IUIComponent, IDisposable
             _isDisposed = true;
         }
     }
+
     /// <summary>
     /// Destructor
     /// </summary>
-    ~EditFlashcard() { Dispose(disposing: false); }
+    ~EditFlashcard()
+    {
+        Dispose(disposing: false);
+    }
 }

@@ -25,7 +25,6 @@ using AyanamisTower.StellaLearning.Data;
 
 namespace AyanamisTower.StellaLearning.Converters
 {
-
     /// <summary>
     /// Converts a DateTimeOffset (expected to be UTC) to a formatted string
     /// representing the local date and time.
@@ -40,7 +39,12 @@ namespace AyanamisTower.StellaLearning.Converters
         /// <param name="parameter">An optional parameter (e.g., a custom format string). If null or empty, uses a default format.</param>
         /// <param name="culture">The culture to use in the converter (usually ignored for standard formats).</param>
         /// <returns>A formatted string representing the local date and time, or an empty string/default value if conversion fails.</returns>
-        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object? Convert(
+            object? value,
+            Type targetType,
+            object? parameter,
+            CultureInfo culture
+        )
         {
             // Check if the input value is a DateTimeOffset
             if (value is DateTimeOffset dto)
@@ -52,7 +56,7 @@ namespace AyanamisTower.StellaLearning.Converters
 
                     // Determine the format string to use
                     string format = parameter as string ?? "g"; // Use parameter as format, default to "g" (short date/time) if null/empty
-                                                                // Example: You could pass "dd/MM/yyyy HH:mm:ss" as the parameter if needed
+                    // Example: You could pass "dd/MM/yyyy HH:mm:ss" as the parameter if needed
 
                     // Return the formatted local time string
                     return localTime.ToString(format, culture);
@@ -60,7 +64,9 @@ namespace AyanamisTower.StellaLearning.Converters
                 catch (Exception ex)
                 {
                     // Log the exception if you have logging set up
-                    Console.WriteLine($"Error converting DateTimeOffset to local string: {ex.Message}"); // Basic error logging
+                    Console.WriteLine(
+                        $"Error converting DateTimeOffset to local string: {ex.Message}"
+                    ); // Basic error logging
                     return "Error"; // Return an error indicator
                 }
             }
@@ -72,10 +78,17 @@ namespace AyanamisTower.StellaLearning.Converters
         /// <summary>
         /// Converts a string back to a DateTimeOffset (not typically needed for display).
         /// </summary>
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object? ConvertBack(
+            object? value,
+            Type targetType,
+            object? parameter,
+            CultureInfo culture
+        )
         {
             // ConvertBack is usually not implemented for one-way display formatting
-            throw new NotSupportedException("Cannot convert string back to DateTimeOffset in this converter.");
+            throw new NotSupportedException(
+                "Cannot convert string back to DateTimeOffset in this converter."
+            );
             // Or return BindingOperations.DoNothing;
         }
     }
@@ -94,8 +107,7 @@ namespace AyanamisTower.StellaLearning.Converters
             SpacedRepetitionVideo = 4,
             SpacedRepetitionFile = 5,
             SpacedRepetitionExercise = 6,
-            SpacedRepetitionImageCloze = 7
-
+            SpacedRepetitionImageCloze = 7,
         }
 
         /// <summary>
@@ -115,14 +127,21 @@ namespace AyanamisTower.StellaLearning.Converters
         /// <returns></returns>
         /// <exception cref="JsonException"></exception>
         public override SpacedRepetitionItem Read(
-            ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
         {
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException();
             }
 
-            if (!reader.Read() || reader.TokenType != JsonTokenType.PropertyName || reader.GetString() != "TypeDiscriminator")
+            if (
+                !reader.Read()
+                || reader.TokenType != JsonTokenType.PropertyName
+                || reader.GetString() != "TypeDiscriminator"
+            )
             {
                 throw new JsonException();
             }
@@ -148,7 +167,7 @@ namespace AyanamisTower.StellaLearning.Converters
                 TypeDiscriminator.SpacedRepetitionFile => new SpacedRepetitionFile(),
                 TypeDiscriminator.SpacedRepetitionExercise => new SpacedRepetitionExercise(),
                 TypeDiscriminator.SpacedRepetitionImageCloze => new SpacedRepetitionImageCloze(),
-                _ => throw new JsonException("Type Discriminator not found")
+                _ => throw new JsonException("Type Discriminator not found"),
             };
 
             while (reader.Read())
@@ -164,89 +183,140 @@ namespace AyanamisTower.StellaLearning.Converters
                     reader.Read();
                     switch (item)
                     {
-                        case SpacedRepetitionQuiz quiz when propertyName == nameof(SpacedRepetitionQuiz.Question):
+                        case SpacedRepetitionQuiz quiz
+                            when propertyName == nameof(SpacedRepetitionQuiz.Question):
                             quiz.Question = reader.GetString()!;
                             break;
-                        case SpacedRepetitionQuiz quiz when propertyName == nameof(SpacedRepetitionQuiz.Answers):
-                            quiz.Answers = JsonSerializer.Deserialize<List<string>>(ref reader, optionsWithoutConverter)!;
+                        case SpacedRepetitionQuiz quiz
+                            when propertyName == nameof(SpacedRepetitionQuiz.Answers):
+                            quiz.Answers = JsonSerializer.Deserialize<List<string>>(
+                                ref reader,
+                                optionsWithoutConverter
+                            )!;
                             break;
-                        case SpacedRepetitionQuiz quiz when propertyName == nameof(SpacedRepetitionQuiz.CorrectAnswerIndex):
+                        case SpacedRepetitionQuiz quiz
+                            when propertyName == nameof(SpacedRepetitionQuiz.CorrectAnswerIndex):
                             quiz.CorrectAnswerIndex = reader.GetInt32();
                             break;
-                        case SpacedRepetitionCloze cloze when propertyName == nameof(SpacedRepetitionCloze.FullText):
+                        case SpacedRepetitionCloze cloze
+                            when propertyName == nameof(SpacedRepetitionCloze.FullText):
                             cloze.FullText = reader.GetString()!;
                             break;
-                        case SpacedRepetitionCloze cloze when propertyName == nameof(SpacedRepetitionCloze.ClozeWords):
-                            cloze.ClozeWords = JsonSerializer.Deserialize<List<string>>(ref reader, optionsWithoutConverter)!;
+                        case SpacedRepetitionCloze cloze
+                            when propertyName == nameof(SpacedRepetitionCloze.ClozeWords):
+                            cloze.ClozeWords = JsonSerializer.Deserialize<List<string>>(
+                                ref reader,
+                                optionsWithoutConverter
+                            )!;
                             break;
-                        case SpacedRepetitionFlashcard flashcard when propertyName == nameof(SpacedRepetitionFlashcard.Front):
+                        case SpacedRepetitionFlashcard flashcard
+                            when propertyName == nameof(SpacedRepetitionFlashcard.Front):
                             flashcard.Front = reader.GetString()!;
                             break;
-                        case SpacedRepetitionFlashcard flashcard when propertyName == nameof(SpacedRepetitionFlashcard.Back):
+                        case SpacedRepetitionFlashcard flashcard
+                            when propertyName == nameof(SpacedRepetitionFlashcard.Back):
                             flashcard.Back = reader.GetString()!;
                             break;
-                        case SpacedRepetitionVideo video when propertyName == nameof(SpacedRepetitionVideo.VideoUrl):
+                        case SpacedRepetitionVideo video
+                            when propertyName == nameof(SpacedRepetitionVideo.VideoUrl):
                             video.VideoUrl = reader.GetString()!;
                             break;
-                        case SpacedRepetitionFile file when propertyName == nameof(SpacedRepetitionFile.FilePath):
+                        case SpacedRepetitionFile file
+                            when propertyName == nameof(SpacedRepetitionFile.FilePath):
                             file.FilePath = reader.GetString()!;
                             break;
-                        case SpacedRepetitionFile file when propertyName == nameof(SpacedRepetitionFile.Question):
+                        case SpacedRepetitionFile file
+                            when propertyName == nameof(SpacedRepetitionFile.Question):
                             file.Question = reader.GetString()!;
                             break;
-                        case SpacedRepetitionExercise exercise when propertyName == nameof(SpacedRepetitionExercise.Problem):
+                        case SpacedRepetitionExercise exercise
+                            when propertyName == nameof(SpacedRepetitionExercise.Problem):
                             exercise.Problem = reader.GetString()!;
                             break;
-                        case SpacedRepetitionExercise exercise when propertyName == nameof(SpacedRepetitionExercise.Solution):
+                        case SpacedRepetitionExercise exercise
+                            when propertyName == nameof(SpacedRepetitionExercise.Solution):
                             exercise.Solution = reader.GetString()!;
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.Uid):
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.Uid):
                             baseItem.Uid = Guid.Parse(reader.GetString()!);
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.Name):
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.Name):
                             baseItem.Name = reader.GetString()!;
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.Tags):
-                            baseItem.Tags = JsonSerializer.Deserialize<List<string>>(ref reader, optionsWithoutConverter)!;
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.Tags):
+                            baseItem.Tags = JsonSerializer.Deserialize<List<string>>(
+                                ref reader,
+                                optionsWithoutConverter
+                            )!;
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.Stability):
-                            baseItem.Stability = reader.TokenType == JsonTokenType.Null ? null : reader.GetSingle();
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.Stability):
+                            baseItem.Stability =
+                                reader.TokenType == JsonTokenType.Null ? null : reader.GetSingle();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.Difficulty):
-                            baseItem.Difficulty = reader.TokenType == JsonTokenType.Null ? null : reader.GetSingle();
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.Difficulty):
+                            baseItem.Difficulty =
+                                reader.TokenType == JsonTokenType.Null ? null : reader.GetSingle();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.Priority):
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.Priority):
                             baseItem.Priority = reader.GetInt32();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.Step):
-                            baseItem.Step = reader.TokenType == JsonTokenType.Null ? null : (int)reader.GetInt64();
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.Step):
+                            baseItem.Step =
+                                reader.TokenType == JsonTokenType.Null
+                                    ? null
+                                    : (int)reader.GetInt64();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.LastReview):
-                            baseItem.LastReview = reader.TokenType == JsonTokenType.Null ? null : reader.GetDateTime();
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.LastReview):
+                            baseItem.LastReview =
+                                reader.TokenType == JsonTokenType.Null
+                                    ? null
+                                    : reader.GetDateTime();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.NextReview):
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.NextReview):
                             baseItem.NextReview = reader.GetDateTime();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.NumberOfTimesSeen):
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.NumberOfTimesSeen):
                             baseItem.NumberOfTimesSeen = reader.GetInt32();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.ElapsedDays):
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.ElapsedDays):
                             baseItem.ElapsedDays = reader.GetInt32();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.ScheduledDays):
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.ScheduledDays):
                             baseItem.ScheduledDays = reader.GetInt32();
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.SpacedRepetitionState):
-                            baseItem.SpacedRepetitionState = Enum.Parse<SpacedRepetitionState>(reader.GetString()!);
+                        case SpacedRepetitionItem baseItem
+                            when propertyName == nameof(SpacedRepetitionItem.SpacedRepetitionState):
+                            baseItem.SpacedRepetitionState = Enum.Parse<SpacedRepetitionState>(
+                                reader.GetString()!
+                            );
                             break;
-                        case SpacedRepetitionItem baseItem when propertyName == nameof(SpacedRepetitionItem.SpacedRepetitionItemType):
-                            baseItem.SpacedRepetitionItemType = Enum.Parse<SpacedRepetitionItemType>(reader.GetString()!);
+                        case SpacedRepetitionItem baseItem
+                            when propertyName
+                                == nameof(SpacedRepetitionItem.SpacedRepetitionItemType):
+                            baseItem.SpacedRepetitionItemType =
+                                Enum.Parse<SpacedRepetitionItemType>(reader.GetString()!);
                             break;
-                        case SpacedRepetitionImageCloze imageCloze when propertyName == nameof(SpacedRepetitionImageCloze.ImagePath):
+                        case SpacedRepetitionImageCloze imageCloze
+                            when propertyName == nameof(SpacedRepetitionImageCloze.ImagePath):
                             imageCloze.ImagePath = reader.GetString()!;
                             break;
-                        case SpacedRepetitionImageCloze imageCloze when propertyName == nameof(SpacedRepetitionImageCloze.ClozeAreas):
-                            imageCloze.ClozeAreas = JsonSerializer.Deserialize<List<ImageClozeArea>>(ref reader, optionsWithoutConverter)!;
+                        case SpacedRepetitionImageCloze imageCloze
+                            when propertyName == nameof(SpacedRepetitionImageCloze.ClozeAreas):
+                            imageCloze.ClozeAreas = JsonSerializer.Deserialize<
+                                List<ImageClozeArea>
+                            >(ref reader, optionsWithoutConverter)!;
                             break;
                         default:
                             reader.Skip(); // Skip unknown properties
@@ -264,7 +334,10 @@ namespace AyanamisTower.StellaLearning.Converters
         /// <param name="item"></param>
         /// <param name="options"></param>
         public override void Write(
-            Utf8JsonWriter writer, SpacedRepetitionItem item, JsonSerializerOptions options)
+            Utf8JsonWriter writer,
+            SpacedRepetitionItem item,
+            JsonSerializerOptions options
+        )
         {
             // Create an options object that doesnt include the converter itself
             JsonSerializerOptions optionsWithoutConverter = new(options);
@@ -275,45 +348,82 @@ namespace AyanamisTower.StellaLearning.Converters
             switch (item)
             {
                 case SpacedRepetitionQuiz quiz:
-                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionQuiz);
+                    writer.WriteNumber(
+                        "TypeDiscriminator",
+                        (int)TypeDiscriminator.SpacedRepetitionQuiz
+                    );
                     writer.WriteString(nameof(SpacedRepetitionQuiz.Question), quiz.Question);
                     writer.WritePropertyName(nameof(SpacedRepetitionQuiz.Answers));
                     JsonSerializer.Serialize(writer, quiz.Answers, optionsWithoutConverter);
-                    writer.WriteNumber(nameof(SpacedRepetitionQuiz.CorrectAnswerIndex), quiz.CorrectAnswerIndex);
+                    writer.WriteNumber(
+                        nameof(SpacedRepetitionQuiz.CorrectAnswerIndex),
+                        quiz.CorrectAnswerIndex
+                    );
                     break;
                 case SpacedRepetitionCloze cloze:
-                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionCloze);
+                    writer.WriteNumber(
+                        "TypeDiscriminator",
+                        (int)TypeDiscriminator.SpacedRepetitionCloze
+                    );
                     writer.WriteString(nameof(SpacedRepetitionCloze.FullText), cloze.FullText);
                     writer.WritePropertyName(nameof(SpacedRepetitionCloze.ClozeWords));
                     JsonSerializer.Serialize(writer, cloze.ClozeWords, optionsWithoutConverter);
                     break;
                 case SpacedRepetitionFlashcard flashcard:
-                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionFlashcard);
+                    writer.WriteNumber(
+                        "TypeDiscriminator",
+                        (int)TypeDiscriminator.SpacedRepetitionFlashcard
+                    );
                     writer.WriteString(nameof(SpacedRepetitionFlashcard.Front), flashcard.Front);
                     writer.WriteString(nameof(SpacedRepetitionFlashcard.Back), flashcard.Back);
                     break;
                 case SpacedRepetitionVideo video:
-                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionVideo);
+                    writer.WriteNumber(
+                        "TypeDiscriminator",
+                        (int)TypeDiscriminator.SpacedRepetitionVideo
+                    );
                     writer.WriteString(nameof(SpacedRepetitionVideo.VideoUrl), video.VideoUrl);
                     break;
                 case SpacedRepetitionFile file:
-                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionFile);
+                    writer.WriteNumber(
+                        "TypeDiscriminator",
+                        (int)TypeDiscriminator.SpacedRepetitionFile
+                    );
                     writer.WriteString(nameof(SpacedRepetitionFile.Question), file.Question);
                     writer.WriteString(nameof(SpacedRepetitionFile.FilePath), file.FilePath);
                     break;
                 case SpacedRepetitionExercise exercise:
-                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionExercise);
+                    writer.WriteNumber(
+                        "TypeDiscriminator",
+                        (int)TypeDiscriminator.SpacedRepetitionExercise
+                    );
                     writer.WriteString(nameof(SpacedRepetitionExercise.Problem), exercise.Problem);
-                    writer.WriteString(nameof(SpacedRepetitionExercise.Solution), exercise.Solution);
+                    writer.WriteString(
+                        nameof(SpacedRepetitionExercise.Solution),
+                        exercise.Solution
+                    );
                     break;
                 case SpacedRepetitionImageCloze imageCloze:
-                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionImageCloze);
-                    writer.WriteString(nameof(SpacedRepetitionImageCloze.ImagePath), imageCloze.ImagePath);
+                    writer.WriteNumber(
+                        "TypeDiscriminator",
+                        (int)TypeDiscriminator.SpacedRepetitionImageCloze
+                    );
+                    writer.WriteString(
+                        nameof(SpacedRepetitionImageCloze.ImagePath),
+                        imageCloze.ImagePath
+                    );
                     writer.WritePropertyName(nameof(SpacedRepetitionImageCloze.ClozeAreas));
-                    JsonSerializer.Serialize(writer, imageCloze.ClozeAreas, optionsWithoutConverter);
+                    JsonSerializer.Serialize(
+                        writer,
+                        imageCloze.ClozeAreas,
+                        optionsWithoutConverter
+                    );
                     break;
                 default:
-                    writer.WriteNumber("TypeDiscriminator", (int)TypeDiscriminator.SpacedRepetitionItem);
+                    writer.WriteNumber(
+                        "TypeDiscriminator",
+                        (int)TypeDiscriminator.SpacedRepetitionItem
+                    );
                     break;
             }
 
@@ -336,15 +446,30 @@ namespace AyanamisTower.StellaLearning.Converters
             else
                 writer.WriteNull(nameof(SpacedRepetitionItem.Step));
             if (item.LastReview.HasValue)
-                writer.WriteString(nameof(SpacedRepetitionItem.LastReview), item.LastReview.Value.ToString("o"));
+                writer.WriteString(
+                    nameof(SpacedRepetitionItem.LastReview),
+                    item.LastReview.Value.ToString("o")
+                );
             else
                 writer.WriteNull(nameof(SpacedRepetitionItem.LastReview));
-            writer.WriteString(nameof(SpacedRepetitionItem.NextReview), item.NextReview.ToString("o"));
-            writer.WriteNumber(nameof(SpacedRepetitionItem.NumberOfTimesSeen), item.NumberOfTimesSeen);
+            writer.WriteString(
+                nameof(SpacedRepetitionItem.NextReview),
+                item.NextReview.ToString("o")
+            );
+            writer.WriteNumber(
+                nameof(SpacedRepetitionItem.NumberOfTimesSeen),
+                item.NumberOfTimesSeen
+            );
             writer.WriteNumber(nameof(SpacedRepetitionItem.ElapsedDays), item.ElapsedDays);
             writer.WriteNumber(nameof(SpacedRepetitionItem.ScheduledDays), item.ScheduledDays);
-            writer.WriteString(nameof(SpacedRepetitionItem.SpacedRepetitionState), item.SpacedRepetitionState.ToString());
-            writer.WriteString(nameof(SpacedRepetitionItem.SpacedRepetitionItemType), item.SpacedRepetitionItemType.ToString());
+            writer.WriteString(
+                nameof(SpacedRepetitionItem.SpacedRepetitionState),
+                item.SpacedRepetitionState.ToString()
+            );
+            writer.WriteString(
+                nameof(SpacedRepetitionItem.SpacedRepetitionItemType),
+                item.SpacedRepetitionItemType.ToString()
+            );
 
             writer.WriteEndObject();
         }

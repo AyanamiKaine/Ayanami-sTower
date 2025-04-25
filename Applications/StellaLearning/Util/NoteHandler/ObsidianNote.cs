@@ -8,10 +8,12 @@ namespace AyanamisTower.StellaLearning.Util.NoteHandler;
 public class ObsidianNote
 {
     ObsidianNoteProperties Properties { get; } = new();
+
     /// <summary>
     /// Absolute file path to the obsidian note
     /// </summary>
     string AbsoluteNoteFilePath { get; } = string.Empty;
+
     /// <summary>
     /// Absolute path to the obsidian vault
     /// </summary>

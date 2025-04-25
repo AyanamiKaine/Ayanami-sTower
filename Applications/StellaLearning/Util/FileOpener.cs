@@ -16,11 +16,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using NLog;
-
 
 namespace AyanamisTower.StellaLearning.Util;
 
@@ -67,7 +66,6 @@ public static class FileOpener
             throw new ArgumentException($"Invalid file path: {filePath}", nameof(filePath), ex);
         }
 
-
         // 3. Check if file exists (using the normalized path)
         if (!File.Exists(filePath))
         {
@@ -86,9 +84,11 @@ public static class FileOpener
                 // It uses the file path directly as the target.
                 ProcessStartInfo startInfo = new ProcessStartInfo(filePath)
                 {
-                    UseShellExecute = true
+                    UseShellExecute = true,
                 };
-                Logger.Debug($"Windows: Starting process with UseShellExecute=true, FileName='{startInfo.FileName}'");
+                Logger.Debug(
+                    $"Windows: Starting process with UseShellExecute=true, FileName='{startInfo.FileName}'"
+                );
                 Process.Start(startInfo);
                 // NOTE: Success here only means the request was sent to the OS shell.
                 // Failure in the target app often won't cause an exception here.
@@ -109,8 +109,12 @@ public static class FileOpener
             }
             else
             {
-                Logger.Error($"Operating system not supported for opening files: {RuntimeInformation.OSDescription}");
-                throw new PlatformNotSupportedException("Operating system not supported for opening files.");
+                Logger.Error(
+                    $"Operating system not supported for opening files: {RuntimeInformation.OSDescription}"
+                );
+                throw new PlatformNotSupportedException(
+                    "Operating system not supported for opening files."
+                );
             }
             Logger.Info($"Successfully initiated opening file: {filePath}");
         }
@@ -118,9 +122,14 @@ public static class FileOpener
         // (e.g., Win32Exception if UseShellExecute=true fails, or other issues)
         catch (System.ComponentModel.Win32Exception winEx)
         {
-            Logger.Error(winEx, $"Win32 Error opening file '{filePath}'. ErrorCode: {winEx.ErrorCode}, NativeErrorCode: {winEx.NativeErrorCode}");
+            Logger.Error(
+                winEx,
+                $"Win32 Error opening file '{filePath}'. ErrorCode: {winEx.ErrorCode}, NativeErrorCode: {winEx.NativeErrorCode}"
+            );
             // Consider showing a user-friendly message here
-            MessageDialog.ShowErrorDialog($"Failed to open file '{Path.GetFileName(filePath)}'.\nReason: {winEx.Message}\nCheck file associations and permissions.");
+            MessageDialog.ShowErrorDialog(
+                $"Failed to open file '{Path.GetFileName(filePath)}'.\nReason: {winEx.Message}\nCheck file associations and permissions."
+            );
             // Re-throw or handle as needed
             throw new Exception($"Failed to open file '{filePath}'.", winEx);
         }
@@ -128,7 +137,9 @@ public static class FileOpener
         {
             // Catch other potential exceptions during the process start.
             Logger.Error(ex, $"An unexpected error occurred trying to open file: {filePath}");
-            MessageDialog.ShowErrorDialog($"An unexpected error occurred while trying to open '{Path.GetFileName(filePath)}':\n{ex.Message}");
+            MessageDialog.ShowErrorDialog(
+                $"An unexpected error occurred while trying to open '{Path.GetFileName(filePath)}':\n{ex.Message}"
+            );
             // Re-throw the original exception or a new one wrapping it
             throw;
         }
@@ -142,10 +153,12 @@ public static class FileOpener
         {
             FileName = command,
             Arguments = $"\"{filePathArgument}\"", // Quote the path
-            UseShellExecute = false,         // Required for redirection
-            CreateNoWindow = true,          // Optional: Don't show a console window
-            RedirectStandardError = true,   // Capture error output
-            RedirectStandardOutput = true   // Capture standard output as well (optional)
+            UseShellExecute = false, // Required for redirection
+            CreateNoWindow = true, // Optional: Don't show a console window
+            RedirectStandardError = true, // Capture error output
+            RedirectStandardOutput =
+                true // Capture standard output as well (optional)
+            ,
         };
 
         using Process process = new Process { StartInfo = startInfo };
@@ -172,12 +185,14 @@ public static class FileOpener
         if (process.ExitCode != 0)
         {
             string errorMessage = string.IsNullOrWhiteSpace(error)
-               ? $"Command '{command}' failed with exit code {process.ExitCode} but no error message."
-               : $"Command '{command}' failed with exit code {process.ExitCode}. Error: {error}";
+                ? $"Command '{command}' failed with exit code {process.ExitCode} but no error message."
+                : $"Command '{command}' failed with exit code {process.ExitCode}. Error: {error}";
 
             Logger.Error(errorMessage);
             // Provide error message back to the user
-            MessageDialog.ShowErrorDialog($"Failed to open file '{Path.GetFileName(filePathArgument)}' using {command}.\nDetails: {error}");
+            MessageDialog.ShowErrorDialog(
+                $"Failed to open file '{Path.GetFileName(filePathArgument)}' using {command}.\nDetails: {error}"
+            );
             throw new Exception(errorMessage);
         }
     }
@@ -213,7 +228,9 @@ public static class FileOpener
     private static bool IsFileInVault(string path)
     {
         // Recursively check for .obsidian folder up the directory tree
-        DirectoryInfo? directory = File.Exists(path) ? new FileInfo(path).Directory : new DirectoryInfo(path);
+        DirectoryInfo? directory = File.Exists(path)
+            ? new FileInfo(path).Directory
+            : new DirectoryInfo(path);
         while (directory != null && directory.Exists)
         {
             if (Directory.Exists(Path.Combine(directory.FullName, ".obsidian")))
@@ -235,19 +252,22 @@ public static class FileOpener
     {
         try
         {
-            Console.WriteLine($"Opening file in Obsidian: {obsidianPath} obsidian://open?path={path}");
+            Console.WriteLine(
+                $"Opening file in Obsidian: {obsidianPath} obsidian://open?path={path}"
+            );
             Process.Start(obsidianPath, $"obsidian://open?path=\"{path}\"");
 
-            Process process = new()
-            {
-                StartInfo = new ProcessStartInfo
+            Process process =
+                new()
                 {
-                    FileName = obsidianPath,
-                    Arguments = $"obsidian://open?path=\"{path}\"", // Quote the path
-                    UseShellExecute = false, // Required for redirection
-                    CreateNoWindow = true, // Optional: Don't show a console window
-                }
-            };
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = obsidianPath,
+                        Arguments = $"obsidian://open?path=\"{path}\"", // Quote the path
+                        UseShellExecute = false, // Required for redirection
+                        CreateNoWindow = true, // Optional: Don't show a console window
+                    },
+                };
             process.Start();
         }
         catch (Exception ex)

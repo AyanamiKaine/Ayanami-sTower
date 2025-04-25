@@ -25,10 +25,10 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Flecs.NET.Core;
-using FluentAvalonia.UI.Controls;
 using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.UiComponents;
+using Flecs.NET.Core;
+using FluentAvalonia.UI.Controls;
 
 namespace AyanamisTower.StellaLearning.Windows;
 
@@ -51,6 +51,7 @@ public class AddFlashcard : IUIComponent, IDisposable
     private EventHandler<RoutedEventArgs>? createButtonClickedHandler;
 
     private Entity _root;
+
     /// <inheritdoc/>
     public Entity Root => _root;
 
@@ -61,8 +62,6 @@ public class AddFlashcard : IUIComponent, IDisposable
     /// <returns></returns>
     public AddFlashcard(World world)
     {
-
-
         comparePriority = new ComparePriority(world);
         /*
         Disposables should be there defined where we inital created
@@ -70,179 +69,206 @@ public class AddFlashcard : IUIComponent, IDisposable
         1. Creation Logic
         2. Dispose Logic
 
-        Its better to have them together so we know when we forget 
-        to create the dispose logic. It will be immediatly clear to 
+        Its better to have them together so we know when we forget
+        to create the dispose logic. It will be immediatly clear to
         us.
         */
         _disposables.Add(Disposable.Create(() => comparePriority.Dispose()));
         calculatedPriority = comparePriority.CalculatedPriorityEntity;
 
-        _root = world.UI<Window>((window) =>
+        _root = world
+            .UI<Window>(
+                (window) =>
                 {
                     window
-                    .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
-                    .SetTitle("Add Flashcard")
-                    .SetWidth(400)
-                    .SetHeight(400)
-                    .Child<ScrollViewer>((scrollViewer) =>
-                    {
-                        scrollViewer
-                        .SetRow(1)
-                        .SetColumnSpan(3)
-                        .Child(DefineWindowContents(world));
-                    });
+                        .AlwaysOnTop(world.Get<Settings>().EnableAlwaysOnTop)
+                        .SetTitle("Add Flashcard")
+                        .SetWidth(400)
+                        .SetHeight(400)
+                        .Child<ScrollViewer>(
+                            (scrollViewer) =>
+                            {
+                                scrollViewer
+                                    .SetRow(1)
+                                    .SetColumnSpan(3)
+                                    .Child(DefineWindowContents(world));
+                            }
+                        );
                     window.OnClosed((sender, args) => Dispose());
 
                     window.Show();
-                }).Entity;
+                }
+            )
+            .Entity;
 
-        _disposables.Add(Disposable.Create(() =>
-        {
-            if (_root.IsValid())
+        _disposables.Add(
+            Disposable.Create(() =>
             {
-                _root.Get<Window>().Content = null;
-                _root.Destruct();
-            }
-        }));
+                if (_root.IsValid())
+                {
+                    _root.Get<Window>().Content = null;
+                    _root.Destruct();
+                }
+            })
+        );
     }
 
     private Entity DefineWindowContents(World world)
     {
         ObservableCollection<Tag> tags = [];
 
-        return world.UI<StackPanel>((stackPanel) =>
-        {
-            stackPanel
-            .SetOrientation(Orientation.Vertical)
-            .SetSpacing(10)
-            .SetMargin(20);
-
-            stackPanel.Child<TextBox>((textBox) =>
-            {
-                nameTextBox = textBox;
-                textBox.SetWatermark("Name");
-            });
-
-            stackPanel.Child<TextBox>((textBox) =>
-            {
-                frontText = textBox;
-                textBox
-                .SetWatermark("Front Text")
-                .SetTextWrapping(TextWrapping.Wrap);
-
-                textBox.Get<TextBox>().AcceptsReturn = true;
-            });
-
-            stackPanel.Child<TextBox>((textBox) =>
-            {
-                backText = textBox;
-                textBox
-                .SetWatermark("Back Text")
-                .SetTextWrapping(TextWrapping.Wrap);
-
-                textBox.Get<TextBox>().AcceptsReturn = true;
-            });
-
-            var tagManager = new TagComponent(world);
-            stackPanel.Child(tagManager);
-
-            stackPanel.Child<Separator>((separator) =>
-            {
-                separator
-                    .SetMargin(0, 0, 0, 10)
-                    .SetBorderThickness(new Thickness(100, 5, 100, 0))
-                    .SetBorderBrush(Brushes.Black);
-            });
-
-            stackPanel.Child(comparePriority);
-
-            stackPanel.Child<Button>((button) =>
-            {
-                createButton = button;
-                button
-                .SetVerticalAlignment(VerticalAlignment.Center)
-                .SetHorizontalAlignment(HorizontalAlignment.Center);
-                button.Child<TextBlock>((textBlock) =>
+        return world
+            .UI<StackPanel>(
+                (stackPanel) =>
                 {
-                    textBlock.SetText("Create Item");
-                });
+                    stackPanel.SetOrientation(Orientation.Vertical).SetSpacing(10).SetMargin(20);
 
-                createButtonClickedHandler = (sender, args) =>
-                {
-                    if (nameTextBox is null ||
-                        frontText is null ||
-                        backText is null)
-                    {
-                        return;
-                    }
-
-                    if (string.IsNullOrEmpty(nameTextBox.GetText()))
-                    {
-                        nameTextBox.SetWatermark("Name is required");
-                        var cd = new ContentDialog()
+                    stackPanel.Child<TextBox>(
+                        (textBox) =>
                         {
-                            Title = "Missing Name",
-                            Content = "You must define a name",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
+                            nameTextBox = textBox;
+                            textBox.SetWatermark("Name");
+                        }
+                    );
 
-                    if (string.IsNullOrEmpty(frontText.GetText()))
-                    {
-                        frontText.SetWatermark("A front text is required");
-                        var cd = new ContentDialog()
+                    stackPanel.Child<TextBox>(
+                        (textBox) =>
                         {
-                            Title = "Missing Front Text",
-                            Content = "You must define a front text",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
+                            frontText = textBox;
+                            textBox.SetWatermark("Front Text").SetTextWrapping(TextWrapping.Wrap);
 
-                    if (string.IsNullOrEmpty(backText.GetText()))
-                    {
-                        backText.SetWatermark("A back text is required");
-                        var cd = new ContentDialog()
+                            textBox.Get<TextBox>().AcceptsReturn = true;
+                        }
+                    );
+
+                    stackPanel.Child<TextBox>(
+                        (textBox) =>
                         {
-                            Title = "Missing Back Text",
-                            Content = "You must define a back text",
-                            PrimaryButtonText = "Ok",
-                            DefaultButton = ContentDialogButton.Primary,
-                            IsSecondaryButtonEnabled = true,
-                        };
-                        cd.ShowAsync();
-                        return;
-                    }
+                            backText = textBox;
+                            textBox.SetWatermark("Back Text").SetTextWrapping(TextWrapping.Wrap);
 
-                    world.Get<ObservableCollection<SpacedRepetitionItem>>().Add(new SpacedRepetitionFlashcard()
-                    {
-                        Name = nameTextBox.GetText(),
-                        Front = frontText.GetText(),
-                        Back = backText.GetText(),
-                        Priority = calculatedPriority.Get<int>(),
-                        Tags = [.. tagManager.Tags],
-                        SpacedRepetitionItemType = SpacedRepetitionItemType.Flashcard
-                    });
+                            textBox.Get<TextBox>().AcceptsReturn = true;
+                        }
+                    );
 
-                    calculatedPriority.Set(500000000);
-                    nameTextBox.SetText("");
-                    frontText.SetText("");
-                    backText.SetText("");
-                    tags.Clear();
-                    comparePriority.Reset();
-                    tagManager.ClearTags();
-                };
-                button.With((b) => b.Click += createButtonClickedHandler);
-                _disposables.Add(Disposable.Create(() => createButton?.With((b) => b.Click -= createButtonClickedHandler)));
-            });
-        }).Entity;
+                    var tagManager = new TagComponent(world);
+                    stackPanel.Child(tagManager);
+
+                    stackPanel.Child<Separator>(
+                        (separator) =>
+                        {
+                            separator
+                                .SetMargin(0, 0, 0, 10)
+                                .SetBorderThickness(new Thickness(100, 5, 100, 0))
+                                .SetBorderBrush(Brushes.Black);
+                        }
+                    );
+
+                    stackPanel.Child(comparePriority);
+
+                    stackPanel.Child<Button>(
+                        (button) =>
+                        {
+                            createButton = button;
+                            button
+                                .SetVerticalAlignment(VerticalAlignment.Center)
+                                .SetHorizontalAlignment(HorizontalAlignment.Center);
+                            button.Child<TextBlock>(
+                                (textBlock) =>
+                                {
+                                    textBlock.SetText("Create Item");
+                                }
+                            );
+
+                            createButtonClickedHandler = (sender, args) =>
+                            {
+                                if (nameTextBox is null || frontText is null || backText is null)
+                                {
+                                    return;
+                                }
+
+                                if (string.IsNullOrEmpty(nameTextBox.GetText()))
+                                {
+                                    nameTextBox.SetWatermark("Name is required");
+                                    var cd = new ContentDialog()
+                                    {
+                                        Title = "Missing Name",
+                                        Content = "You must define a name",
+                                        PrimaryButtonText = "Ok",
+                                        DefaultButton = ContentDialogButton.Primary,
+                                        IsSecondaryButtonEnabled = true,
+                                    };
+                                    cd.ShowAsync();
+                                    return;
+                                }
+
+                                if (string.IsNullOrEmpty(frontText.GetText()))
+                                {
+                                    frontText.SetWatermark("A front text is required");
+                                    var cd = new ContentDialog()
+                                    {
+                                        Title = "Missing Front Text",
+                                        Content = "You must define a front text",
+                                        PrimaryButtonText = "Ok",
+                                        DefaultButton = ContentDialogButton.Primary,
+                                        IsSecondaryButtonEnabled = true,
+                                    };
+                                    cd.ShowAsync();
+                                    return;
+                                }
+
+                                if (string.IsNullOrEmpty(backText.GetText()))
+                                {
+                                    backText.SetWatermark("A back text is required");
+                                    var cd = new ContentDialog()
+                                    {
+                                        Title = "Missing Back Text",
+                                        Content = "You must define a back text",
+                                        PrimaryButtonText = "Ok",
+                                        DefaultButton = ContentDialogButton.Primary,
+                                        IsSecondaryButtonEnabled = true,
+                                    };
+                                    cd.ShowAsync();
+                                    return;
+                                }
+
+                                world
+                                    .Get<ObservableCollection<SpacedRepetitionItem>>()
+                                    .Add(
+                                        new SpacedRepetitionFlashcard()
+                                        {
+                                            Name = nameTextBox.GetText(),
+                                            Front = frontText.GetText(),
+                                            Back = backText.GetText(),
+                                            Priority = calculatedPriority.Get<int>(),
+                                            Tags = [.. tagManager.Tags],
+                                            SpacedRepetitionItemType =
+                                                SpacedRepetitionItemType.Flashcard,
+                                        }
+                                    );
+
+                                calculatedPriority.Set(500000000);
+                                nameTextBox.SetText("");
+                                frontText.SetText("");
+                                backText.SetText("");
+                                tags.Clear();
+                                comparePriority.Reset();
+                                tagManager.ClearTags();
+                            };
+                            button.With((b) => b.Click += createButtonClickedHandler);
+                            _disposables.Add(
+                                Disposable.Create(
+                                    () =>
+                                        createButton?.With(
+                                            (b) => b.Click -= createButtonClickedHandler
+                                        )
+                                )
+                            );
+                        }
+                    );
+                }
+            )
+            .Entity;
     }
 
     /// <summary>
@@ -258,7 +284,7 @@ public class AddFlashcard : IUIComponent, IDisposable
     /// Releases unmanaged and - optionally - managed resources.
     /// </summary>
     /// <param name="disposing">
-    /// <c>true</c> to release both managed and unmanaged resources; 
+    /// <c>true</c> to release both managed and unmanaged resources;
     /// <c>false</c> to release only unmanaged resources.
     /// </param>
     protected virtual void Dispose(bool disposing)

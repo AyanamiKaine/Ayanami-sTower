@@ -2,7 +2,8 @@ using AyanamisTower.NihilEx.ECS;
 using AyanamisTower.NihilEx.ECS.Events;
 using AyanamisTower.NihilEx.SDLWrapper; // Assuming SdlHost, SdlEventArgs etc. are here
 using Flecs.NET.Core;
-using SDL3; // Keep for SDL enums like Keycode if needed by user code or ECS events
+using SDL3;
+using static SDL3.SDL; // Keep for SDL enums like Keycode if needed by user code or ECS events
 
 namespace AyanamisTower.NihilEx
 {
@@ -55,6 +56,18 @@ namespace AyanamisTower.NihilEx
         /// </summary>
         protected Window? Window { get; private set; }
 
+        private GpuDevice? _gpuDevice;
+
+        private GpuCommandBuffer? _cmd;
+
+        // Resources (store these)
+#pragma warning disable CS0649 // Make field read-only
+        private GpuShader? _vertexShader;
+
+        private GpuShader? _fragmentShader;
+        private GpuGraphicsPipeline? _pipeline;
+        private GpuBuffer? _vertexBuffer;
+#pragma warning restore CS0649 // Make field read-only
         /// <summary>
         /// Gets or sets the current height of the application window.
         /// </summary>
@@ -179,17 +192,22 @@ namespace AyanamisTower.NihilEx
                 Console.WriteLine(value: $"Window created with ID: {Window.Id}");
                 if (Window == null)
                     throw new InvalidOperationException(message: "Failed to create SDL Window.");
-                World.Set(data: Window); // Add Window as singleton resource
 
+                World.Set(data: Window); // Add Window as singleton resource
+                /*
                 Renderer = Window.CreateRenderer();
                 Console.WriteLine(value: $"Renderer created: {Renderer.Name}");
                 if (Renderer == null)
                     throw new InvalidOperationException(message: "Failed to create SDL Renderer.");
                 Renderer.DrawColor = new Color(r: 255, g: 255, b: 255, a: 255); // White (using wrapper's Color)
                 World.Set(data: Renderer); // Add Renderer as singleton resource
-
+                */
                 // Create the application's root entity for events
                 _appEntity = World.Entity(name: $"App: {Title}"); // Use property, will fetch from Window
+
+                _gpuDevice = new GpuDevice(GpuShaderFormat.SpirV, enableDebugMode: true);
+                Console.WriteLine($"Created GPU device with driver: {_gpuDevice.DriverName}");
+                _gpuDevice.ClaimWindow(Window);
 
                 // Call user's initialization code
                 if (!OnInit(args: args))
@@ -233,6 +251,8 @@ namespace AyanamisTower.NihilEx
 
                 if (Renderer is not null)
                     Renderer.DrawColor = System.Drawing.Color.PaleGoldenrod;
+
+                RenderFrame();
 
                 // Progress the ECS world (execute systems)
                 if (!World.IsDeferred()) // Basic check, might need more robust handling
@@ -462,6 +482,65 @@ namespace AyanamisTower.NihilEx
         }
 
         /// <summary>
+        /// Rendering a frame on the GPU
+        /// </summary>
+        public void RenderFrame()
+        {
+            if (_gpuDevice == null || Window == null)
+                return;
+
+            _cmd = _gpuDevice.AcquireCommandBuffer();
+
+            // Acquire swapchain texture
+            if (
+                !_cmd.WaitAndAcquireSwapchainTexture(
+                    Window,
+                    out IntPtr swapchainTextureHandle,
+                    out uint w,
+                    out uint h
+                )
+            )
+            {
+                Console.Error.WriteLine("Failed to acquire swapchain texture.");
+                _cmd.Cancel(); // Important: Cancel if acquisition fails
+                return;
+            }
+
+            // Define render target info using the acquired swapchain texture
+            var colorTargetInfo = new SDL_GPUColorTargetInfo
+            {
+                texture = swapchainTextureHandle, // Use the acquired handle
+                load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
+                clear_color = new FColor(
+                    0.1f,
+                    0.2f,
+                    0.3f,
+                    1.0f
+                ) // Use FColor wrapper
+                ,
+                // Cycle is usually false for swapchain image itself in simple cases
+            };
+            Span<SDL_GPUColorTargetInfo> colorTargets = [colorTargetInfo];
+
+            // --- Begin Render Pass ---
+            using (var renderPass = _cmd.BeginRenderPass(colorTargets))
+            {
+                // ... more draw calls ...
+
+            } // --- End Render Pass (Dispose called automatically) ---
+            // --- Submit ---
+            _cmd.Submit(); // Submit commands for this frame
+            // Or:
+            // GpuFence fence = _cmd.SubmitAndAcquireFence();
+            // ... do CPU work ...
+            // _gpuDevice.WaitForFence(fence); // Wait if needed
+            // fence.Dispose();
+
+            // SDL_RenderPresent is NOT used with the GPU API. Submission handles presentation implicitly.
+        }
+
+        /// <summary>
         /// Core cleanup logic called by SdlHost.RunApplication just before exit.
         /// Calls the user-defined OnQuit method and disposes resources.
         /// </summary>
@@ -481,7 +560,17 @@ namespace AyanamisTower.NihilEx
                 Console.ResetColor();
                 // Continue with engine cleanup even if user code fails
             }
+            _pipeline?.Dispose();
+            _vertexBuffer?.Dispose();
+            // Dispose other resources...
+            _vertexShader?.Dispose();
+            _fragmentShader?.Dispose();
 
+            if (_gpuDevice != null && Window?.IsDisposed == false)
+            {
+                _gpuDevice?.ReleaseWindow(Window);
+            }
+            _gpuDevice?.Dispose();
             Renderer?.Dispose();
             Window?.Dispose(); // Dispose wrapper objects
 

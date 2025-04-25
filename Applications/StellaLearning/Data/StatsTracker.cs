@@ -17,15 +17,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using NLog;
-using System.Collections.ObjectModel;
-using FsrsSharp;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using FsrsSharp;
+using NLog;
 
 namespace AyanamisTower.StellaLearning.Data;
 
@@ -69,7 +69,9 @@ public partial class StatsTracker : ObservableObject
                 // Snapshot collections and dictionaries
                 DailyStats = [.. DailyStats],
                 StudySessions = [.. StudySessions],
-                ItemTypeStats = new Dictionary<SpacedRepetitionItemType, ItemTypeStats>(ItemTypeStats),
+                ItemTypeStats = new Dictionary<SpacedRepetitionItemType, ItemTypeStats>(
+                    ItemTypeStats
+                ),
                 TagStats = new Dictionary<string, TagStats>(TagStats),
 
                 // Copy current scalar values
@@ -80,7 +82,7 @@ public partial class StatsTracker : ObservableObject
                 OverallAccuracy = OverallAccuracy,
 
                 // Update LastUpdated timestamp when data is requested for saving
-                LastUpdated = DateTime.Now
+                LastUpdated = DateTime.Now,
             };
         }
     }
@@ -155,7 +157,8 @@ public partial class StatsTracker : ObservableObject
     {
         var appDataPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "StellaLearning");
+            "StellaLearning"
+        );
 
         Directory.CreateDirectory(appDataPath);
 
@@ -164,9 +167,9 @@ public partial class StatsTracker : ObservableObject
         const string statsFilename = "learning_stats_debug.json";
         Logger.Info("Running in DEBUG mode. Using stats file: {Filename}", statsFilename);
 #else
-            // Use the standard filename for Release builds
-            const string statsFilename = "learning_stats.json";
-            Logger.Info("Running in RELEASE mode. Using stats file: {Filename}", statsFilename);
+        // Use the standard filename for Release builds
+        const string statsFilename = "learning_stats.json";
+        Logger.Info("Running in RELEASE mode. Using stats file: {Filename}", statsFilename);
 #endif
         _statsFilePath = Path.Combine(appDataPath, statsFilename);
 
@@ -181,14 +184,17 @@ public partial class StatsTracker : ObservableObject
     /// <param name="existingItemIds">A HashSet containing the Guids of all SpacedRepetitionItems currently loaded in the main application.</param>
     public async Task InitializeAsync(HashSet<Guid> existingItemIds)
     {
-        if (_isInitialized) return;
+        if (_isInitialized)
+            return;
 
         try
         {
             // Pass the existing IDs down to LoadStatsAsync for filtering
             await LoadStatsAsync(existingItemIds);
             _isInitialized = true;
-            Logger.Info("StatsTracker initialized successfully. Stats filtered for existing items.");
+            Logger.Info(
+                "StatsTracker initialized successfully. Stats filtered for existing items."
+            );
         }
         catch (Exception ex)
         {
@@ -197,7 +203,7 @@ public partial class StatsTracker : ObservableObject
             // but call again here ensure clean state if InitializeAsync itself fails early.
             ResetObservablePropertiesToDefault();
             _isInitialized = false; // Ensure it's marked as not initialized
-                                    // Consider re-throwing or specific error handling if initialization is critical
+            // Consider re-throwing or specific error handling if initialization is critical
         }
         // Start auto-save timer regardless of initial load success? Or only if successful?
         // Current constructor starts it immediately. Let's keep it there for simplicity unless specific need arises.
@@ -215,11 +221,7 @@ public partial class StatsTracker : ObservableObject
             await EndStudySession();
         }
 
-        CurrentSession = new StudySession
-        {
-            StartTime = DateTime.Now,
-            SessionId = Guid.NewGuid()
-        };
+        CurrentSession = new StudySession { StartTime = DateTime.Now, SessionId = Guid.NewGuid() };
 
         Logger.Info("Started new study session: {SessionId}", CurrentSession.SessionId);
     }
@@ -244,21 +246,20 @@ public partial class StatsTracker : ObservableObject
 
         // Add to sessions collection (use Dispatcher if accessed from non-UI thread)
         await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (CurrentSession is not null) // Check again inside dispatcher in case it changed
             {
-                if (CurrentSession is not null) // Check again inside dispatcher in case it changed
-                {
-                    StudySessions.Add(CurrentSession);
-                }
-            });
-
+                StudySessions.Add(CurrentSession);
+            }
+        });
 
         // Update daily stats
         UpdateDailyStats(CurrentSession);
         UpdateOverallAccuracy();
-        RecalculateTotalReviews([.. StudySessions]);       // Recalc TotalReviews first
-        RecalculateTotalStudyTime([.. StudySessions]);     // Recalc TotalStudyTimeSeconds
-        RebuildItemAndTagStats([.. StudySessions]);        // Rebuild ItemTypeStats, TagStats
-        RebuildDailyStatsAndStreaks([.. StudySessions]);   // Rebuild DailyStats, CurrentStreak, LongestStreak
+        RecalculateTotalReviews([.. StudySessions]); // Recalc TotalReviews first
+        RecalculateTotalStudyTime([.. StudySessions]); // Recalc TotalStudyTimeSeconds
+        RebuildItemAndTagStats([.. StudySessions]); // Rebuild ItemTypeStats, TagStats
+        RebuildDailyStatsAndStreaks([.. StudySessions]); // Rebuild DailyStats, CurrentStreak, LongestStreak
 
         // Clear current session
         CurrentSession = null;
@@ -291,19 +292,21 @@ public partial class StatsTracker : ObservableObject
                 Rating = (int)rating,
                 State = item.SpacedRepetitionState,
                 ItemType = item.SpacedRepetitionItemType,
-                Tags = [.. item.Tags]
+                Tags = [.. item.Tags],
             };
 
             // Add to current session
             CurrentSession!.Reviews.Add(review);
 
             // Update item type statistics
-            if (!ItemTypeStats.TryGetValue(item.SpacedRepetitionItemType, out ItemTypeStats? typeStats))
+            if (
+                !ItemTypeStats.TryGetValue(
+                    item.SpacedRepetitionItemType,
+                    out ItemTypeStats? typeStats
+                )
+            )
             {
-                typeStats = new ItemTypeStats
-                {
-                    ItemType = item.SpacedRepetitionItemType
-                };
+                typeStats = new ItemTypeStats { ItemType = item.SpacedRepetitionItemType };
                 ItemTypeStats[item.SpacedRepetitionItemType] = typeStats;
             }
 
@@ -337,7 +340,11 @@ public partial class StatsTracker : ObservableObject
 
             LastUpdated = DateTime.Now;
 
-            Logger.Debug("Recorded review for item {ItemName} with rating {Rating}", item.Name, rating);
+            Logger.Debug(
+                "Recorded review for item {ItemName} with rating {Rating}",
+                item.Name,
+                rating
+            );
         }
         catch (Exception ex)
         {
@@ -384,7 +391,8 @@ public partial class StatsTracker : ObservableObject
         // Update unique items count
         var uniqueItemIds = session.Reviews.Select(r => r.ItemId).Distinct();
         dailyStat.UniqueItemsReviewed += uniqueItemIds.Count(id =>
-            !dailyStat.ReviewedItemIds.Contains(id));
+            !dailyStat.ReviewedItemIds.Contains(id)
+        );
 
         // Add the unique item IDs
         foreach (var id in uniqueItemIds)
@@ -422,7 +430,9 @@ public partial class StatsTracker : ObservableObject
             // or if some other data inconsistency has occurred.
             if (calculatedAccuracy > 100.0 || calculatedAccuracy < 0.0)
             {
-                Logger.Warn($"Raw calculated accuracy ({calculatedAccuracy:F2}%) was outside the valid 0-100 range before clamping. This indicates an ongoing calculation issue or data inconsistency. TotalCorrect={totalCorrect}, TotalReviews={TotalReviews}.");
+                Logger.Warn(
+                    $"Raw calculated accuracy ({calculatedAccuracy:F2}%) was outside the valid 0-100 range before clamping. This indicates an ongoing calculation issue or data inconsistency. TotalCorrect={totalCorrect}, TotalReviews={TotalReviews}."
+                );
             }
         }
         else
@@ -452,7 +462,8 @@ public partial class StatsTracker : ObservableObject
 
         var reviews = relevantSessions.SelectMany(s => s.Reviews).ToList();
 
-        if (reviews.Count == 0) return 0;
+        if (reviews.Count == 0)
+            return 0;
 
         var correctReviews = reviews.Count(r => r.Rating >= 3);
         return (double)correctReviews / reviews.Count * 100;
@@ -469,7 +480,12 @@ public partial class StatsTracker : ObservableObject
         {
             foreach (var review in session.Reviews)
             {
-                if (!itemPerformance.TryGetValue(review.ItemId, out (int TotalReviews, int FailedReviews) current))
+                if (
+                    !itemPerformance.TryGetValue(
+                        review.ItemId,
+                        out (int TotalReviews, int FailedReviews) current
+                    )
+                )
                 {
                     current = (0, 0);
                     itemPerformance[review.ItemId] = current;
@@ -483,11 +499,14 @@ public partial class StatsTracker : ObservableObject
         }
 
         // Filter for items with at least 3 reviews
-        return [.. itemPerformance
+        return
+        [
+            .. itemPerformance
                 .Where(kvp => kvp.Value.TotalReviews >= 3)
                 .OrderByDescending(kvp => (double)kvp.Value.FailedReviews / kvp.Value.TotalReviews)
                 .Take(count)
-                .Select(kvp => kvp.Key)];
+                .Select(kvp => kvp.Key),
+        ];
     }
 
     /// <summary>
@@ -500,8 +519,10 @@ public partial class StatsTracker : ObservableObject
         foreach (DayOfWeek day in Enum.GetValues<DayOfWeek>())
         {
             var sessionsOnDay = StudySessions.Where(s => s.StartTime.DayOfWeek == day);
-            result[day] = sessionsOnDay.Aggregate(TimeSpan.Zero,
-                (current, session) => current + session.Duration);
+            result[day] = sessionsOnDay.Aggregate(
+                TimeSpan.Zero,
+                (current, session) => current + session.Duration
+            );
         }
 
         return result;
@@ -510,7 +531,10 @@ public partial class StatsTracker : ObservableObject
     /// <summary>
     /// Gets a forecast of reviews due in the upcoming days.
     /// </summary>
-    public static Dictionary<DateTime, int> GetReviewForecast(ObservableCollection<SpacedRepetitionItem> items, int daysAhead = 14)
+    public static Dictionary<DateTime, int> GetReviewForecast(
+        ObservableCollection<SpacedRepetitionItem> items,
+        int daysAhead = 14
+    )
     {
         var result = new Dictionary<DateTime, int>();
         var today = DateTime.Today;
@@ -554,7 +578,9 @@ public partial class StatsTracker : ObservableObject
         // Prevent saving if not initialized to avoid writing default/empty data over existing file
         if (!_isInitialized && File.Exists(_statsFilePath))
         {
-            Logger.Warn("Attempted to save stats before initialization, but an existing file was found. Skipping save to prevent data loss.");
+            Logger.Warn(
+                "Attempted to save stats before initialization, but an existing file was found. Skipping save to prevent data loss."
+            );
             return;
         }
         // Allow saving if not initialized *but no file exists* (first time save)
@@ -562,7 +588,6 @@ public partial class StatsTracker : ObservableObject
         {
             Logger.Info("Performing initial save of potentially empty stats as no file exists.");
         }
-
 
         try
         {
@@ -586,7 +611,9 @@ public partial class StatsTracker : ObservableObject
                 TotalStudyTimeSeconds = TotalStudyTimeSeconds, // Save seconds
                 TotalReviews = TotalReviews,
                 OverallAccuracy = OverallAccuracy,
-                LastUpdated = DateTime.Now // Update LastUpdated time on save
+                LastUpdated =
+                    DateTime.Now // Update LastUpdated time on save
+                ,
             };
 
             var json = JsonSerializer.Serialize(statsData, options);
@@ -604,7 +631,10 @@ public partial class StatsTracker : ObservableObject
                     catch (IOException ioEx) when (attempt < 3)
                     {
                         // Log the failure but continue to retry
-                        Logger.Warn(ioEx, $"Failed to save statistics on attempt {attempt}/3: File access error. Retrying after delay...");
+                        Logger.Warn(
+                            ioEx,
+                            $"Failed to save statistics on attempt {attempt}/3: File access error. Retrying after delay..."
+                        );
                         await Task.Delay(250 * attempt); // Increasing delay between retries
                     }
                 }
@@ -615,7 +645,10 @@ public partial class StatsTracker : ObservableObject
             catch (IOException ioEx)
             {
                 // After all retries failed, log the error but don't crash
-                Logger.Error(ioEx, "Failed to save statistics after multiple attempts: File access error (file may be locked by another process)");
+                Logger.Error(
+                    ioEx,
+                    "Failed to save statistics after multiple attempts: File access error (file may be locked by another process)"
+                );
                 // Consider notifying user of save failure if critical
             }
 
@@ -643,7 +676,10 @@ public partial class StatsTracker : ObservableObject
         {
             if (!File.Exists(_statsFilePath))
             {
-                Logger.Info("No existing statistics file found at {FilePath}. Initializing defaults.", _statsFilePath);
+                Logger.Info(
+                    "No existing statistics file found at {FilePath}. Initializing defaults.",
+                    _statsFilePath
+                );
                 // Fallthrough to initialize defaults
             }
             else
@@ -655,33 +691,51 @@ public partial class StatsTracker : ObservableObject
                 }
                 else
                 {
-                    Logger.Warn("Statistics file at {FilePath} is empty. Initializing defaults.", _statsFilePath);
+                    Logger.Warn(
+                        "Statistics file at {FilePath} is empty. Initializing defaults.",
+                        _statsFilePath
+                    );
                 }
             }
         }
         catch (JsonException jsonEx)
         {
-            Logger.Error(jsonEx, "JSON Error loading statistics from {FilePath}. File might be corrupted. Initializing defaults.", _statsFilePath);
+            Logger.Error(
+                jsonEx,
+                "JSON Error loading statistics from {FilePath}. File might be corrupted. Initializing defaults.",
+                _statsFilePath
+            );
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to load statistics from {FilePath}. Initializing defaults.", _statsFilePath);
+            Logger.Error(
+                ex,
+                "Failed to load statistics from {FilePath}. Initializing defaults.",
+                _statsFilePath
+            );
         }
 
         // Step 2: Populate the tracker state
         if (loadedStatsData != null)
         {
-            Logger.Debug("Deserialized StatsData successfully. Populating tracker and filtering history...");
+            Logger.Debug(
+                "Deserialized StatsData successfully. Populating tracker and filtering history..."
+            );
 
             // Filter the loaded sessions based on existing item IDs BEFORE assigning
-            List<StudySession> filteredSessions = FilterSessions(loadedStatsData.StudySessions, existingItemIds);
+            List<StudySession> filteredSessions = FilterSessions(
+                loadedStatsData.StudySessions,
+                existingItemIds
+            );
 
             // Populate the tracker's properties from the loaded (and filtered) data
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 StudySessions = new ObservableCollection<StudySession>(filteredSessions);
                 // Load dictionaries - recalculation below will ensure accuracy
-                ItemTypeStats = loadedStatsData.ItemTypeStats ?? new Dictionary<SpacedRepetitionItemType, ItemTypeStats>();
+                ItemTypeStats =
+                    loadedStatsData.ItemTypeStats
+                    ?? new Dictionary<SpacedRepetitionItemType, ItemTypeStats>();
                 TagStats = loadedStatsData.TagStats ?? new Dictionary<string, TagStats>();
                 // Clear DailyStats - it will be fully rebuilt
                 DailyStats.Clear();
@@ -705,7 +759,10 @@ public partial class StatsTracker : ObservableObject
             RebuildDailyStatsAndStreaks(orderedSessions); // Rebuild Daily and Streaks from filtered sessions
             UpdateOverallAccuracy(); // Final accuracy calc
 
-            Logger.Info("Loaded and rebuilt statistics from {FilePath}. Stats filtered.", _statsFilePath);
+            Logger.Info(
+                "Loaded and rebuilt statistics from {FilePath}. Stats filtered.",
+                _statsFilePath
+            );
         }
         else
         {
@@ -722,20 +779,25 @@ public partial class StatsTracker : ObservableObject
     }
 
     // Helper method to filter sessions (keep only those with reviews for existing items)
-    private List<StudySession> FilterSessions(List<StudySession>? sessionsToFilter, HashSet<Guid> existingItemIds)
+    private List<StudySession> FilterSessions(
+        List<StudySession>? sessionsToFilter,
+        HashSet<Guid> existingItemIds
+    )
     {
         List<StudySession> filteredSessions = [];
-        if (sessionsToFilter == null) return filteredSessions;
+        if (sessionsToFilter == null)
+            return filteredSessions;
 
         int originalReviewCount = sessionsToFilter.SelectMany(s => s?.Reviews ?? []).Count();
         int keptReviewCount = 0;
 
         foreach (var session in sessionsToFilter)
         {
-            if (session?.Reviews == null || !session.Reviews.Any()) continue;
+            if (session?.Reviews == null || !session.Reviews.Any())
+                continue;
 
-            var reviewsToKeep = session.Reviews
-                .Where(review => existingItemIds.Contains(review.ItemId))
+            var reviewsToKeep = session
+                .Reviews.Where(review => existingItemIds.Contains(review.ItemId))
                 .ToList();
 
             keptReviewCount += reviewsToKeep.Count;
@@ -743,17 +805,23 @@ public partial class StatsTracker : ObservableObject
             if (reviewsToKeep.Any())
             {
                 // Add a session DTO (or modify original if safe) with only the kept reviews
-                filteredSessions.Add(new StudySession
-                { // Create new DTO to avoid modifying original list if needed elsewhere
-                    SessionId = session.SessionId,
-                    StartTime = session.StartTime,
-                    EndTime = session.EndTime,
-                    Duration = session.Duration,
-                    Reviews = reviewsToKeep // Assign filtered list
-                });
+                filteredSessions.Add(
+                    new StudySession
+                    { // Create new DTO to avoid modifying original list if needed elsewhere
+                        SessionId = session.SessionId,
+                        StartTime = session.StartTime,
+                        EndTime = session.EndTime,
+                        Duration = session.Duration,
+                        Reviews =
+                            reviewsToKeep // Assign filtered list
+                        ,
+                    }
+                );
             }
         }
-        Logger.Info($"Filtered review history: Kept {keptReviewCount} reviews out of {originalReviewCount} based on {existingItemIds.Count} existing items.");
+        Logger.Info(
+            $"Filtered review history: Kept {keptReviewCount} reviews out of {originalReviewCount} based on {existingItemIds.Count} existing items."
+        );
         return filteredSessions;
     }
 
@@ -763,13 +831,15 @@ public partial class StatsTracker : ObservableObject
     private void ResetObservablePropertiesToDefault()
     {
         // Use Dispatcher for collections
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            DailyStats.Clear();
-            StudySessions.Clear();
-            ItemTypeStats.Clear();
-            TagStats.Clear();
-        }).Wait(); // Consider if waiting is necessary
+        Dispatcher
+            .UIThread.InvokeAsync(() =>
+            {
+                DailyStats.Clear();
+                StudySessions.Clear();
+                ItemTypeStats.Clear();
+                TagStats.Clear();
+            })
+            .Wait(); // Consider if waiting is necessary
 
         CurrentStreak = 0;
         LongestStreak = 0;
@@ -816,14 +886,15 @@ public partial class StatsTracker : ObservableObject
         OnPropertyChanged(nameof(ItemTypeStats));
         OnPropertyChanged(nameof(TagStats));
 
-
         // Ensure current session is also cleared if one was active
         if (CurrentSession != null)
         {
-            Logger.Warn("Resetting stats while a study session ({SessionId}) was active. Ending the session without saving its final state.", CurrentSession.SessionId);
+            Logger.Warn(
+                "Resetting stats while a study session ({SessionId}) was active. Ending the session without saving its final state.",
+                CurrentSession.SessionId
+            );
             CurrentSession = null; // Clears the session without saving its potentially partial data
         }
-
 
         // Save the reset state immediately
         await SaveStatsAsync();
@@ -849,13 +920,17 @@ public partial class StatsTracker : ObservableObject
         if (!itemHasReviews)
         {
             // If no reviews match the item ID, log it and exit the method.
-            Logger.Info($"No review records found for item ID {itemId}. No statistics removal needed.");
+            Logger.Info(
+                $"No review records found for item ID {itemId}. No statistics removal needed."
+            );
             return; // Stop execution here
         }
         // --- End Early Exit Check ---
 
         // If the code reaches here, it means at least one review for the item exists.
-        Logger.Debug($"Reviews found for item {itemId}. Proceeding with stats removal and recalculation...");
+        Logger.Debug(
+            $"Reviews found for item {itemId}. Proceeding with stats removal and recalculation..."
+        );
 
         Logger.Info($"Attempting to remove statistics for deleted item: {itemId}");
         bool statsChanged = false;
@@ -899,17 +974,25 @@ public partial class StatsTracker : ObservableObject
         {
             Logger.Info($"No review records found for item {itemId}. No statistics were changed.");
             // Re-add the original sessions if we cleared the main list
-            foreach (var session in currentSessionsSnapshot) { StudySessions.Add(session); }
+            foreach (var session in currentSessionsSnapshot)
+            {
+                StudySessions.Add(session);
+            }
             return;
         }
 
-        Logger.Info($"Removed {removedReviewsCount} review records for item {itemId}. Recalculating all aggregate statistics...");
+        Logger.Info(
+            $"Removed {removedReviewsCount} review records for item {itemId}. Recalculating all aggregate statistics..."
+        );
 
         // --- 2. Reset Aggregates ---
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             StudySessions.Clear(); // Clear original collection
-            foreach (var session in sessionsToKeep) { StudySessions.Add(session); } // Repopulate
+            foreach (var session in sessionsToKeep)
+            {
+                StudySessions.Add(session);
+            } // Repopulate
 
             ItemTypeStats.Clear();
             TagStats.Clear();
@@ -922,14 +1005,13 @@ public partial class StatsTracker : ObservableObject
         LongestStreak = 0;
         OverallAccuracy = 0;
 
-
         // --- 3. Recalculate Aggregates from Filtered Data ---
         var orderedSessions = sessionsToKeep.OrderBy(s => s.StartTime).ToList();
 
-        RecalculateTotalReviews(orderedSessions);       // Recalc TotalReviews first
-        RecalculateTotalStudyTime(orderedSessions);     // Recalc TotalStudyTimeSeconds
-        RebuildItemAndTagStats(orderedSessions);        // Rebuild ItemTypeStats, TagStats
-        RebuildDailyStatsAndStreaks(orderedSessions);   // Rebuild DailyStats, CurrentStreak, LongestStreak
+        RecalculateTotalReviews(orderedSessions); // Recalc TotalReviews first
+        RecalculateTotalStudyTime(orderedSessions); // Recalc TotalStudyTimeSeconds
+        RebuildItemAndTagStats(orderedSessions); // Rebuild ItemTypeStats, TagStats
+        RebuildDailyStatsAndStreaks(orderedSessions); // Rebuild DailyStats, CurrentStreak, LongestStreak
 
         // Final accuracy calculation based on rebuilt totals
         UpdateOverallAccuracy(); // Uses recalculated TotalReviews and scans current StudySessions
@@ -954,7 +1036,9 @@ public partial class StatsTracker : ObservableObject
     /// <param name="newTags">The new list of tags for the item.</param>
     public async Task UpdateTagsForItemAsync(Guid itemId, List<string> newTags)
     {
-        Logger.Info($"Updating historical tags for item {itemId} to: [{string.Join(", ", newTags ?? [])}]");
+        Logger.Info(
+            $"Updating historical tags for item {itemId} to: [{string.Join(", ", newTags ?? [])}]"
+        );
 
         bool tagsActuallyChanged = false;
 
@@ -998,16 +1082,19 @@ public partial class StatsTracker : ObservableObject
                 RebuildTagStatsOnly(StudySessions.ToList()); // Use a helper focused only on tags
             });
 
-
             // Save the changes
             LastUpdated = DateTime.Now;
             await SaveStatsAsync();
 
-            Logger.Info($"TagStats rebuilt and statistics saved after updating tags for item {itemId}.");
+            Logger.Info(
+                $"TagStats rebuilt and statistics saved after updating tags for item {itemId}."
+            );
         }
         else
         {
-            Logger.Info($"No historical tag changes detected for item {itemId}. TagStats remain unchanged.");
+            Logger.Info(
+                $"No historical tag changes detected for item {itemId}. TagStats remain unchanged."
+            );
         }
     }
 
@@ -1031,7 +1118,8 @@ public partial class StatsTracker : ObservableObject
                 foreach (var tag in review.Tags)
                 {
                     var normalizedTag = tag.Trim();
-                    if (string.IsNullOrEmpty(normalizedTag)) continue;
+                    if (string.IsNullOrEmpty(normalizedTag))
+                        continue;
 
                     if (!tempTagStats.TryGetValue(normalizedTag, out TagStats? tagStat))
                     {
@@ -1039,7 +1127,8 @@ public partial class StatsTracker : ObservableObject
                         tempTagStats[normalizedTag] = tagStat;
                     }
                     tagStat.TotalReviews++;
-                    if (review.Rating >= (int)Rating.Good) tagStat.CorrectReviews++;
+                    if (review.Rating >= (int)Rating.Good)
+                        tagStat.CorrectReviews++;
                 }
             }
         }
@@ -1090,7 +1179,8 @@ public partial class StatsTracker : ObservableObject
                 ItemTypeStats[review.ItemType] = typeStats;
             }
             typeStats.TotalReviews++;
-            if (review.Rating >= 3) typeStats.CorrectReviews++;
+            if (review.Rating >= 3)
+                typeStats.CorrectReviews++;
 
             // --- Rebuild TagStats ---
             // CRITICAL: This assumes ReviewRecord has a 'Tags' property populated at review time.
@@ -1104,21 +1194,23 @@ public partial class StatsTracker : ObservableObject
                         TagStats[tag] = tagStat;
                     }
                     tagStat.TotalReviews++;
-                    if (review.Rating >= 3) tagStat.CorrectReviews++;
+                    if (review.Rating >= 3)
+                        tagStat.CorrectReviews++;
                 }
             }
             // else { // Optional: Log if a review record is missing tags if you expect them
             //    Logger.Warn($"Review record for item {review.ItemId} at {review.ReviewTime} is missing Tags for TagStats rebuild.");
             // }
         }
-        Logger.Debug($"Rebuilt ItemTypeStats (Count: {ItemTypeStats.Count}) and TagStats (Count: {TagStats.Count})");
+        Logger.Debug(
+            $"Rebuilt ItemTypeStats (Count: {ItemTypeStats.Count}) and TagStats (Count: {TagStats.Count})"
+        );
 
         // Notify observers that the dictionaries have been potentially repopulated
         // This might be redundant if the caller notifies, but safer to include.
         OnPropertyChanged(nameof(ItemTypeStats));
         OnPropertyChanged(nameof(TagStats));
     }
-
 
     /// <summary>
     /// Rebuilds the DailyStats collection and recalculates CurrentStreak and LongestStreak.
@@ -1201,7 +1293,6 @@ public partial class StatsTracker : ObservableObject
         }
     }
 
-
     /// <summary>
     /// Recalculates CurrentStreak and LongestStreak based *only* on the current state
     /// of the DailyStats collection. Assumes DailyStats is populated and sorted.
@@ -1250,7 +1341,10 @@ public partial class StatsTracker : ObservableObject
             currentTempStreak = 0;
             for (int i = orderedDailyStats.Count - 1; i >= 0; i--)
             {
-                if (i == orderedDailyStats.Count - 1 || orderedDailyStats[i].Date == orderedDailyStats[i + 1].Date.AddDays(-1))
+                if (
+                    i == orderedDailyStats.Count - 1
+                    || orderedDailyStats[i].Date == orderedDailyStats[i + 1].Date.AddDays(-1)
+                )
                 {
                     currentTempStreak++;
                 }
@@ -1268,7 +1362,6 @@ public partial class StatsTracker : ObservableObject
             {
                 CurrentStreak = 0; // Should not happen based on outer if, but defensive check
             }
-
         }
         else
         {
@@ -1277,10 +1370,12 @@ public partial class StatsTracker : ObservableObject
         }
 
         // Basic sanity checks
-        if (LongestStreak < 0) LongestStreak = 0;
-        if (CurrentStreak < 0) CurrentStreak = 0;
-        if (CurrentStreak > LongestStreak) LongestStreak = CurrentStreak; // Current can't exceed longest
-
+        if (LongestStreak < 0)
+            LongestStreak = 0;
+        if (CurrentStreak < 0)
+            CurrentStreak = 0;
+        if (CurrentStreak > LongestStreak)
+            LongestStreak = CurrentStreak; // Current can't exceed longest
 
         Logger.Debug($"Streaks recalculated: Current={CurrentStreak}, Longest={LongestStreak}");
 
@@ -1455,6 +1550,7 @@ public class ReviewRecord
     /// The type of the spaced repetition item that was reviewed.
     /// </summary>
     public SpacedRepetitionItemType ItemType { get; set; }
+
     /// <summary>
     /// Tags associated with the item at the time of review.
     /// </summary>
@@ -1484,9 +1580,8 @@ public class ItemTypeStats
     /// <summary>
     /// The percentage of correct reviews for this item type (0-100).
     /// </summary>
-    public double AccuracyRate => TotalReviews > 0
-        ? (double)CorrectReviews / TotalReviews * 100
-        : 0;
+    public double AccuracyRate =>
+        TotalReviews > 0 ? (double)CorrectReviews / TotalReviews * 100 : 0;
 }
 
 /// <summary>
@@ -1512,9 +1607,6 @@ public class TagStats
     /// <summary>
     /// The percentage of correct reviews for items with this tag (0-100).
     /// </summary>
-    public double AccuracyRate => TotalReviews > 0
-        ? (double)CorrectReviews / TotalReviews * 100
-        : 0;
+    public double AccuracyRate =>
+        TotalReviews > 0 ? (double)CorrectReviews / TotalReviews * 100 : 0;
 }
-
-
