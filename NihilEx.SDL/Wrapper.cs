@@ -1388,6 +1388,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <summary>
         /// Acquires the next texture from the window's swapchain for rendering.
         /// This version waits if necessary.
+        /// This function should only be called from the thread that created the window.
         /// </summary>
         /// <param name="window">The window whose swapchain texture to acquire.</param>
         /// <param name="swapchainTexture">Outputs the acquired swapchain texture handle.</param>
@@ -1504,6 +1505,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// <summary>
         /// Claims a window for use with this GPU device.
         /// </summary>
+        /// <remarks>
+        /// This must be called before AcquireGPUSwapchainTexture is called using the window. You should only call this function from the thread that created the window. The swapchain will be created with SWAPCHAINCOMPOSITION_SDR and GPU_PRESENTMODE_VSYNC. If you want to have different swapchain parameters, you must call SetGPUSwapchainParameters after claiming the window.
+        /// </remarks>
         /// <param name="window">The window to claim.</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ObjectDisposedException"></exception>
