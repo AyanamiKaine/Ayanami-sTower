@@ -527,7 +527,6 @@ namespace AyanamisTower.NihilEx
             using (var renderPass = _cmd.BeginRenderPass(colorTargets))
             {
                 // ... more draw calls ...
-
             } // --- End Render Pass (Dispose called automatically) ---
             // --- Submit ---
             _cmd.Submit(); // Submit commands for this frame
