@@ -55,13 +55,13 @@ namespace AyanamisTower.NihilEx
         /// This is created during the Initialize phase.
         /// </summary>
         protected Window? Window { get; private set; }
-
+#pragma warning disable CS0649 // Make field read-only
         private GpuDevice? _gpuDevice;
 
         private GpuCommandBuffer? _cmd;
 
         // Resources (store these)
-#pragma warning disable CS0649 // Make field read-only
+
         private GpuShader? _vertexShader;
 
         private GpuShader? _fragmentShader;
@@ -194,21 +194,22 @@ namespace AyanamisTower.NihilEx
                     throw new InvalidOperationException(message: "Failed to create SDL Window.");
 
                 World.Set(data: Window); // Add Window as singleton resource
-                /*
+
                 Renderer = Window.CreateRenderer();
                 Console.WriteLine(value: $"Renderer created: {Renderer.Name}");
                 if (Renderer == null)
                     throw new InvalidOperationException(message: "Failed to create SDL Renderer.");
                 Renderer.DrawColor = new Color(r: 255, g: 255, b: 255, a: 255); // White (using wrapper's Color)
                 World.Set(data: Renderer); // Add Renderer as singleton resource
-                */
+
                 // Create the application's root entity for events
                 _appEntity = World.Entity(name: $"App: {Title}"); // Use property, will fetch from Window
 
-                _gpuDevice = new GpuDevice(GpuShaderFormat.SpirV, enableDebugMode: true);
-                Console.WriteLine($"Created GPU device with driver: {_gpuDevice.DriverName}");
-                _gpuDevice.ClaimWindow(Window);
-
+                /*
+                    _gpuDevice = new GpuDevice(GpuShaderFormat.SpirV, enableDebugMode: true);
+                    Console.WriteLine($"Created GPU device with driver: {_gpuDevice.DriverName}");
+                    _gpuDevice.ClaimWindow(Window);
+                */
                 // Call user's initialization code
                 if (!OnInit(args: args))
                 {
@@ -565,10 +566,7 @@ namespace AyanamisTower.NihilEx
             _vertexShader?.Dispose();
             _fragmentShader?.Dispose();
 
-            if (_gpuDevice != null && Window?.IsDisposed == false)
-            {
-                _gpuDevice?.ReleaseWindow(Window);
-            }
+            _gpuDevice?.ReleaseWindow(Window!);
             _gpuDevice?.Dispose();
             Renderer?.Dispose();
             Window?.Dispose(); // Dispose wrapper objects
