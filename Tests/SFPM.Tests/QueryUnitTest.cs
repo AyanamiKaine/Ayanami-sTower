@@ -7,7 +7,6 @@ namespace AyanamisTower.SFPM.Tests;
 /// </summary>
 public class QueryUnitTest
 {
-
     /// <summary>
     /// Initializes a new instance of the <see cref="QueryUnitTest"/> class.
     /// </summary>
@@ -43,7 +42,6 @@ public class QueryUnitTest
             .Add(key: "damage", value: 12.4);
     }
 
-
     /// <summary>
     /// We want to match a query, against a set of rules and
     /// select the rule that matches the most and execute its payload.
@@ -59,43 +57,72 @@ public class QueryUnitTest
             .Add(key: "attacker", value: "Hunter")
             .Add(key: "damage", value: 12.4);
 
-        List<Rule> rules = [
-                new Rule(criterias:
+        List<Rule> rules =
+        [
+            new Rule(
+                criterias:
                 [
                     new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                ], payload: ()=>{
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "onHit"
+                    ),
+                ],
+                payload: () =>
+                {
                     // This should never be executed.
                     ruleExecuted = false;
-                }),
-
-                new Rule(criterias:
+                }
+            ),
+            new Rule(
+                criterias:
                 [
-                    new Criteria<string>(factName: "attacker", predicate: attacker => attacker == "Hunter"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "OnHit"),
+                    new Criteria<string>(
+                        factName: "attacker",
+                        predicate: attacker => attacker == "Hunter"
+                    ),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "OnHit"
+                    ),
                     new Criteria<double>(factName: "damage", predicate: damage => damage == 12.4),
-                ], payload: ()=>{
+                ],
+                payload: () =>
+                {
                     // This should be executed.
                     ruleExecuted = true;
-                }),
-
-                new Rule(criterias:
+                }
+            ),
+            new Rule(
+                criterias:
                 [
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "OnHit"),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "OnHit"
+                    ),
                     new Criteria<double>(factName: "damage", predicate: damage => damage > 10.0),
-                ], payload: () => {
+                ],
+                payload: () =>
+                {
                     // Less specific rule, shouldn't be chosen
                     ruleExecuted = false;
-                }),
-
-                new Rule(criterias:
+                }
+            ),
+            new Rule(
+                criterias:
                 [
-                    new Criteria<string>(factName: "attacker", predicate: attacker => attacker.StartsWith(value: 'H')),
+                    new Criteria<string>(
+                        factName: "attacker",
+                        predicate: attacker => attacker.StartsWith(value: 'H')
+                    ),
                     new Criteria<double>(factName: "damage", predicate: damage => damage < 20.0),
-                ], payload: () => {
+                ],
+                payload: () =>
+                {
                     // Less specific rule, shouldn't be chosen
                     ruleExecuted = false;
-                })
+                }
+            ),
         ];
 
         query.Match(rules: rules);
@@ -117,41 +144,70 @@ public class QueryUnitTest
             .Add(key: "attacker", value: "Hunter")
             .Add(key: "damage", value: 12.4);
 
-        List<Rule> rules = [
-                new Rule(criterias:
+        List<Rule> rules =
+        [
+            new Rule(
+                criterias:
                 [
                     new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                ], payload: ()=>{
-                }),
-
-                new Rule(criterias:
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "onHit"
+                    ),
+                ],
+                payload: () => { }
+            ),
+            new Rule(
+                criterias:
                 [
-                    new Criteria<string>(factName: "attacker", predicate: attacker => attacker == "Hunter"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "OnHit"),
+                    new Criteria<string>(
+                        factName: "attacker",
+                        predicate: attacker => attacker == "Hunter"
+                    ),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "OnHit"
+                    ),
                     new Criteria<double>(factName: "damage", predicate: damage => damage == 12.4),
-                ], payload: ()=>{
+                ],
+                payload: () =>
+                {
                     query.Add(key: "EventAHappened", value: true);
-                }),
-
-                new Rule(criterias:
+                }
+            ),
+            new Rule(
+                criterias:
                 [
-                    new Criteria<string>(factName: "attacker", predicate: attacker => attacker == "Hunter"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "OnHit"),
+                    new Criteria<string>(
+                        factName: "attacker",
+                        predicate: attacker => attacker == "Hunter"
+                    ),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "OnHit"
+                    ),
                     new Criteria<double>(factName: "damage", predicate: damage => damage == 12.4),
-                    new Criteria<bool>(factName: "EventAHappened", predicate: eventAHappened => eventAHappened == true)
-                ], payload: () =>
+                    new Criteria<bool>(
+                        factName: "EventAHappened",
+                        predicate: eventAHappened => eventAHappened == true
+                    ),
+                ],
+                payload: () =>
                 {
-                        ruleExecuted = true;
-                }),
-
-                new Rule(criterias:
+                    ruleExecuted = true;
+                }
+            ),
+            new Rule(
+                criterias:
                 [
-                    new Criteria<string>(factName: "attacker", predicate: attacker => attacker.StartsWith(value: 'H')),
+                    new Criteria<string>(
+                        factName: "attacker",
+                        predicate: attacker => attacker.StartsWith(value: 'H')
+                    ),
                     new Criteria<double>(factName: "damage", predicate: damage => damage < 20.0),
-                ], payload: () =>
-                {
-                })
+                ],
+                payload: () => { }
+            ),
         ];
         // We first match the rule that adds the EventAHappened to the query
         query.Match(rules: rules);

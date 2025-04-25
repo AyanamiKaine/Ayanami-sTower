@@ -35,11 +35,9 @@ using System.Threading;
 /// </summary>
 public static class SingleInstance
 {
-
     private static Mutex? _mtxFirstInstance;
     private static Thread? _thread;
     private static readonly object _syncRoot = new();
-
 
     /// <summary>
     /// Returns true if this application is not already started.
@@ -64,7 +62,11 @@ public static class SingleInstance
             var isFirstInstance = false;
             try
             {
-                _mtxFirstInstance = new Mutex(initiallyOwned: true, @"Global\" + MutexName, out isFirstInstance);
+                _mtxFirstInstance = new Mutex(
+                    initiallyOwned: true,
+                    @"Global\" + MutexName,
+                    out isFirstInstance
+                );
                 if (isFirstInstance == false)
                 { //we need to contact previous instance
                     var contentObject = new SingleInstanceArguments()
@@ -73,19 +75,21 @@ public static class SingleInstance
                         CommandLineArgs = Environment.GetCommandLineArgs(),
                     };
                     var contentBytes = JsonSerializer.SerializeToUtf8Bytes(contentObject);
-                    using var clientPipe = new NamedPipeClientStream(".",
-                                                                     MutexName,
-                                                                     PipeDirection.Out,
-                                                                     PipeOptions.CurrentUserOnly | PipeOptions.WriteThrough);
+                    using var clientPipe = new NamedPipeClientStream(
+                        ".",
+                        MutexName,
+                        PipeDirection.Out,
+                        PipeOptions.CurrentUserOnly | PipeOptions.WriteThrough
+                    );
                     clientPipe.Connect();
                     clientPipe.Write(contentBytes, 0, contentBytes.Length);
                 }
                 else
-                {  //there is no application already running.
+                { //there is no application already running.
                     _thread = new Thread(Run)
                     {
                         Name = typeof(SingleInstance).FullName,
-                        IsBackground = true
+                        IsBackground = true,
                     };
                     _thread.Start();
                 }
@@ -97,14 +101,16 @@ public static class SingleInstance
 
             if ((isFirstInstance == false) && (noAutoExit == false))
             {
-                Trace.TraceInformation("Exit due to another instance running." + " [" + nameof(SingleInstance) + "]");
+                Trace.TraceInformation(
+                    "Exit due to another instance running." + " [" + nameof(SingleInstance) + "]"
+                );
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    Environment.Exit(unchecked((int)0x80004004));  // E_ABORT(0x80004004)
+                    Environment.Exit(unchecked((int)0x80004004)); // E_ABORT(0x80004004)
                 }
                 else
                 {
-                    Environment.Exit(114);  // EALREADY(114)
+                    Environment.Exit(114); // EALREADY(114)
                 }
             }
 
@@ -142,12 +148,21 @@ public static class SingleInstance
                     else
                     {
                         var args = Environment.GetCommandLineArgs();
-                        if (args.Length > 0) { sbHash.AppendLine(args[0]); }
+                        if (args.Length > 0)
+                        {
+                            sbHash.AppendLine(args[0]);
+                        }
                     }
                     foreach (var b in SHA256.HashData(Encoding.UTF8.GetBytes(sbHash.ToString())))
                     {
-                        if (sbMutextName.Length == 63) { sbMutextName.AppendFormat("{0:X1}", b >> 4); }  // just take the first nubble
-                        if (sbMutextName.Length == 64) { break; }
+                        if (sbMutextName.Length == 63)
+                        {
+                            sbMutextName.AppendFormat("{0:X1}", b >> 4);
+                        } // just take the first nubble
+                        if (sbMutextName.Length == 64)
+                        {
+                            break;
+                        }
                         sbMutextName.AppendFormat("{0:X2}", b);
                     }
                     _mutexName = sbMutextName.ToString();
@@ -186,30 +201,37 @@ public static class SingleInstance
     /// </summary>
     public static event EventHandler<NewInstanceEventArgs>? NewInstanceDetected;
 
-
     /// <summary>
     /// Thread function.
     /// </summary>
     private static void Run()
     {
-        using var serverPipe = new NamedPipeServerStream(MutexName,
-                                                         PipeDirection.In,
-                                                         maxNumberOfServerInstances: 1,
-                                                         PipeTransmissionMode.Byte,
-                                                         PipeOptions.CurrentUserOnly | PipeOptions.WriteThrough);
+        using var serverPipe = new NamedPipeServerStream(
+            MutexName,
+            PipeDirection.In,
+            maxNumberOfServerInstances: 1,
+            PipeTransmissionMode.Byte,
+            PipeOptions.CurrentUserOnly | PipeOptions.WriteThrough
+        );
         while (_mtxFirstInstance != null)
         {
             try
             {
-                if (!serverPipe.IsConnected) { serverPipe.WaitForConnection(); }
+                if (!serverPipe.IsConnected)
+                {
+                    serverPipe.WaitForConnection();
+                }
                 var contentObject = JsonSerializer.Deserialize<SingleInstanceArguments>(serverPipe);
                 serverPipe.Disconnect();
                 if (contentObject != null)
                 {
-                    NewInstanceDetected?.Invoke(null,
-                                                new NewInstanceEventArgs(
-                                                    contentObject.CommandLine,
-                                                    contentObject.CommandLineArgs));
+                    NewInstanceDetected?.Invoke(
+                        null,
+                        new NewInstanceEventArgs(
+                            contentObject.CommandLine,
+                            contentObject.CommandLineArgs
+                        )
+                    );
                 }
             }
             catch (Exception ex)
@@ -220,10 +242,9 @@ public static class SingleInstance
         }
     }
 
-
     [Serializable]
     private sealed record SingleInstanceArguments
-    {  // just a storage
+    { // just a storage
 #if NET7_0_OR_GREATER
         [JsonInclude]
         public required string CommandLine;
@@ -231,7 +252,8 @@ public static class SingleInstance
         [JsonInclude]
         public required string[] CommandLineArgs;
 #else
-        public SingleInstanceArguments() {
+        public SingleInstanceArguments()
+        {
             CommandLine = string.Empty;
             CommandLineArgs = Array.Empty<string>();
         }
@@ -243,9 +265,7 @@ public static class SingleInstance
         public string[] CommandLineArgs;
 #endif
     }
-
 }
-
 
 /// <summary>
 /// Arguments for newly detected application instance.
@@ -270,6 +290,7 @@ public sealed class NewInstanceEventArgs : EventArgs
     public string CommandLine { get; }
 
     private readonly string[] _commandLineArgs;
+
     /// <summary>
     /// Returns a string array containing the command line arguments.
     /// </summary>
@@ -292,5 +313,4 @@ public sealed class NewInstanceEventArgs : EventArgs
             return argCopy;
         }
     }
-
 }

@@ -13,29 +13,27 @@ public class EntityNotFoundException : Exception
     /// <summary>
     /// Constructor for EntityNotFoundException
     /// </summary>
-    public EntityNotFoundException() : base()
-    {
-    }
+    public EntityNotFoundException()
+        : base() { }
+
     /// <summary>
     /// Constructor for EntityNotFoundException
     /// </summary>
     /// <param name="message"></param>
-    public EntityNotFoundException(string message) : base(message)
-    { }
+    public EntityNotFoundException(string message)
+        : base(message) { }
 
     /// <summary>
     /// Constructor for EntityNotFoundException
     /// </summary>
     /// <param name="message"></param>
     /// <param name="innerException"></param>
-    public EntityNotFoundException(string message, Exception innerException) : base(message, innerException)
-    {
-    }
+    public EntityNotFoundException(string message, Exception innerException)
+        : base(message, innerException) { }
 }
 
-
 /*
-I would really like to enhance the idea of entities bringing them even more in object oriented design 
+I would really like to enhance the idea of entities bringing them even more in object oriented design
 more similar to small-talk.
 
 Entities should be so much more, for example adding a description component would be quite nice.
@@ -80,14 +78,20 @@ public class NamedEntities(World world) : IEnumerable<Entity>
             catch (KeyNotFoundException)
             {
                 Logger.Error("Entity with name: {EntityName} not found", name);
-                throw new EntityNotFoundException($"Entity with the name:{name} was not found in the named entities dictonary. If you didnt care if the entity was created here you can use the GetEntityCreateIfNotExist method instead. If you expected that the entity was created here you should check if the entity was created before trying to access it.");
+                throw new EntityNotFoundException(
+                    $"Entity with the name:{name} was not found in the named entities dictonary. If you didnt care if the entity was created here you can use the GetEntityCreateIfNotExist method instead. If you expected that the entity was created here you should check if the entity was created before trying to access it."
+                );
             }
         }
         set
         {
             if (_entities.TryGetValue(name, out var existingEntity))
             {
-                Logger.Info("Replacing existing entity with name: {EntityName}, ID: {EntityId}", name, existingEntity.ToString());
+                Logger.Info(
+                    "Replacing existing entity with name: {EntityName}, ID: {EntityId}",
+                    name,
+                    existingEntity.ToString()
+                );
                 _entities[name] = value;
             }
             else
@@ -124,7 +128,11 @@ public class NamedEntities(World world) : IEnumerable<Entity>
         Logger.Info("Clearing all entities. Count: {EntityCount}", _entities.Count);
         foreach (var entity in _entities)
         {
-            Logger.Debug("Destructing entity: {EntityName}, ID: {EntityId}", entity.Key, entity.Value.ToString());
+            Logger.Debug(
+                "Destructing entity: {EntityName}, ID: {EntityId}",
+                entity.Key,
+                entity.Value.ToString()
+            );
             entity.Value.Destruct();
         }
         _entities.Clear();
@@ -140,7 +148,11 @@ public class NamedEntities(World world) : IEnumerable<Entity>
     {
         if (_entities.TryGetValue(name, out var entity))
         {
-            Logger.Debug("Retrieved existing entity: {EntityName}, ID: {EntityId}", name, entity.ToString());
+            Logger.Debug(
+                "Retrieved existing entity: {EntityName}, ID: {EntityId}",
+                name,
+                entity.ToString()
+            );
             return entity;
         }
         else
@@ -165,7 +177,7 @@ public class NamedEntities(World world) : IEnumerable<Entity>
     }
 
     /// <summary>
-    /// Creates a nameless entity, its default name 
+    /// Creates a nameless entity, its default name
     /// will be its id given by flecs ecs. Usually just a number.
     /// Use this if you intent to use an entity only in a local context
     /// where you created it, or when you only want to use it in queries.
@@ -224,23 +236,30 @@ internal static class EventCleaner
     /// <param name="obj"></param>
     internal static void ClearAllEvents(object obj)
     {
-        if (obj == null) return;
+        if (obj == null)
+            return;
 
         Type type = obj.GetType();
-        EventInfo[] events = type.GetEvents(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        EventInfo[] events = type.GetEvents(
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+        );
 
         foreach (EventInfo eventInfo in events)
         {
             FieldInfo? fieldInfo = null;
 
             //Try to get the event field directly
-            fieldInfo = type.GetField(eventInfo.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            fieldInfo = type.GetField(
+                eventInfo.Name,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+            );
             //If the field is not found directly, it might be a compiler-generated field (e.g., for auto-implemented events)
             if (fieldInfo == null)
             {
                 fieldInfo = GetCompilerGeneratedField(type, eventInfo.Name);
             }
-            if (fieldInfo == null) continue;
+            if (fieldInfo == null)
+                continue;
 
             try
             {
@@ -248,10 +267,13 @@ internal static class EventCleaner
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error clearing event {eventInfo.Name} on {type.Name}: {ex.Message}");
+                Console.WriteLine(
+                    $"Error clearing event {eventInfo.Name} on {type.Name}: {ex.Message}"
+                );
             }
         }
     }
+
     private static FieldInfo? GetCompilerGeneratedField(Type type, string eventName)
     {
         //For compiler-generated fields, the name is typically in the format <EventName>k__BackingField

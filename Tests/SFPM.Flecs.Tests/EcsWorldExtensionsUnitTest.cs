@@ -4,8 +4,11 @@ using SFPM;
 namespace AyanamisTower.SFPM.Flecs.Tests;
 
 internal struct NPC { };
+
 internal record struct Player { };
+
 internal record struct Health(int Value);
+
 internal record struct Position(int X, int Y);
 
 // For now components need to implement the IComparable interface so it can be used in a criteria.
@@ -14,18 +17,19 @@ internal record struct Name(string Value) : IComparable<Name>
 {
     public readonly int CompareTo(Name other) => Value.CompareTo(strB: other.Value);
 }
+
 internal record struct Map(string Name) : IComparable<Map>
 {
     public readonly int CompareTo(Map other) => Name.CompareTo(strB: other.Name);
 }
+
 /// <summary>
 /// Contains unit tests for the EcsWorldExtensions.
 /// </summary>
 public class EcsWorldExtensionsUnitTest
 {
-
     /// <summary>
-    /// Implementing the basic usage. 
+    /// Implementing the basic usage.
     /// </summary>
     [Fact]
     public void BasicIdeaDefiningRulesAsEntities()
@@ -50,59 +54,106 @@ public class EcsWorldExtensionsUnitTest
 
         We dont need to create a array of rules ourselves, not only that but we get tagged rules for free.
 
-        The cool thing is we can easily modify, add or remove existing rules. 
+        The cool thing is we can easily modify, add or remove existing rules.
 
-        We could also go further write rules in C# scripts so they can be modified, added or removed at runtime 
+        We could also go further write rules in C# scripts so they can be modified, added or removed at runtime
         */
 
-        rule1.Set<NPC, Rule>(data: new Rule(criterias:
-        [
-                    new Criteria<string>(factName: "who", predicate: who => who == "Nick", predicateName: "IsNick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit", predicateName: "conceptIsHit"),
-                ], payload: () => ruleExecuted = false));
+        rule1.Set<NPC, Rule>(
+            data: new Rule(
+                criterias:
+                [
+                    new Criteria<string>(
+                        factName: "who",
+                        predicate: who => who == "Nick",
+                        predicateName: "IsNick"
+                    ),
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "onHit",
+                        predicateName: "conceptIsHit"
+                    ),
+                ],
+                payload: () => ruleExecuted = false
+            )
+        );
 
-        rule2.Set<NPC, Rule>(data: new Rule(criterias:
-        [
+        rule2.Set<NPC, Rule>(
+            data: new Rule(
+                criterias:
+                [
                     new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => nearAllies > 1),
-                ], payload: () => ruleExecuted = false));
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "onHit"
+                    ),
+                    new Criteria<int>(
+                        factName: "nearAllies",
+                        predicate: nearAllies => nearAllies > 1
+                    ),
+                ],
+                payload: () => ruleExecuted = false
+            )
+        );
 
-        rule3.Set<NPC, Rule>(data: new Rule(criterias:
-        [
+        rule3.Set<NPC, Rule>(
+            data: new Rule(
+                criterias:
+                [
                     new Criteria<Name>(factName: "who", predicate: who => who.Value == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<Map>(factName: "curMap", predicate: curMap => curMap.Name == "circus"),
-                ], payload: () =>
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "onHit"
+                    ),
+                    new Criteria<Map>(
+                        factName: "curMap",
+                        predicate: curMap => curMap.Name == "circus"
+                    ),
+                ],
+                payload: () =>
                 {
                     // In the payload of rules we can interact with the ecs world,
                     // here we simulate a map change.
                     ref Map curMap = ref world.GetMut<Map>();
                     curMap.Name = "AirPort";
                     ruleExecuted = true;
-                }));
+                }
+            )
+        );
 
-        rule4.Set<NPC, Rule>(data: new Rule(criterias:
-        [
+        rule4.Set<NPC, Rule>(
+            data: new Rule(
+                criterias:
+                [
                     new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<string>(factName: "hitBy", predicate: hitBy => hitBy == "zombieClown"),
-                ], payload: () => ruleExecuted = false));
+                    new Criteria<string>(
+                        factName: "concept",
+                        predicate: concept => concept == "onHit"
+                    ),
+                    new Criteria<string>(
+                        factName: "hitBy",
+                        predicate: hitBy => hitBy == "zombieClown"
+                    ),
+                ],
+                payload: () => ruleExecuted = false
+            )
+        );
 
         var queryData = new Dictionary<string, object>
+        {
+            { "concept", "onHit" },
+            { "who", player.Get<Name>() }, // Here we query the data from an entity and its component
             {
-                { "concept",    "onHit" },
-                { "who",        player.Get<Name>()}, // Here we query the data from an entity and its component
-                { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
-            };
+                "curMap",
+                world.Get<Map>()
+            } // If the component data changes it gets automaticall reflected here
+            ,
+        };
 
         world.MatchOnEntities<NPC>(queryData: queryData);
 
-        Assert.True(
-            condition: ruleExecuted);
-        Assert.Equal(
-            expected: "AirPort",
-            actual: world.Get<Map>().Name);
+        Assert.True(condition: ruleExecuted);
+        Assert.Equal(expected: "AirPort", actual: world.Get<Map>().Name);
     }
 
     /// <summary>
@@ -111,47 +162,85 @@ public class EcsWorldExtensionsUnitTest
     [Fact]
     public void DefiningARuleGlobalComponent()
     {
-
         var ruleExecuted = false;
 
         World world = World.Create();
         world.Set(data: new Map(Name: "circus"));
-        world.Set<NPC, List<Rule>>
-            (data: new List<Rule>(collection:
-            [
-                new Rule(criterias:
+        world.Set<NPC, List<Rule>>(
+            data: new List<Rule>(
+                collection:
                 [
-                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                ], payload: () => ruleExecuted = false),
-                new Rule(criterias:
-                [
-                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => nearAllies > 1),
-                ], payload: () => ruleExecuted = false),
-                new Rule(criterias:
-                [
-                    // TODO: Its important to benchmark Criteria<CustomType> vs Criteria<PrimitiveType> to understand
-                    // the drawbacks if there are any.
-                    new Criteria<Name>(factName: "who", predicate: who => who.Value == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<Map>(factName: "curMap", predicate: curMap => curMap.Name == "circus"),
-                ], payload: () =>
-                {
-                    // In the payload of rules we can interact with the ecs world,
-                    // here we simulate a map change.
-                    ref Map curMap = ref world.GetMut<Map>();
-                    curMap.Name = "AirPort";
-                    ruleExecuted = true;
-                }),
-                new Rule(criterias:
-                [
-                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<string>(factName: "hitBy", predicate: hitBy => hitBy == "zombieClown"),
-                ], payload: () => ruleExecuted = false)
-            ]));
+                    new Rule(
+                        criterias:
+                        [
+                            new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                            new Criteria<string>(
+                                factName: "concept",
+                                predicate: concept => concept == "onHit"
+                            ),
+                        ],
+                        payload: () => ruleExecuted = false
+                    ),
+                    new Rule(
+                        criterias:
+                        [
+                            new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                            new Criteria<string>(
+                                factName: "concept",
+                                predicate: concept => concept == "onHit"
+                            ),
+                            new Criteria<int>(
+                                factName: "nearAllies",
+                                predicate: nearAllies => nearAllies > 1
+                            ),
+                        ],
+                        payload: () => ruleExecuted = false
+                    ),
+                    new Rule(
+                        criterias:
+                        [
+                            // TODO: Its important to benchmark Criteria<CustomType> vs Criteria<PrimitiveType> to understand
+                            // the drawbacks if there are any.
+                            new Criteria<Name>(
+                                factName: "who",
+                                predicate: who => who.Value == "Nick"
+                            ),
+                            new Criteria<string>(
+                                factName: "concept",
+                                predicate: concept => concept == "onHit"
+                            ),
+                            new Criteria<Map>(
+                                factName: "curMap",
+                                predicate: curMap => curMap.Name == "circus"
+                            ),
+                        ],
+                        payload: () =>
+                        {
+                            // In the payload of rules we can interact with the ecs world,
+                            // here we simulate a map change.
+                            ref Map curMap = ref world.GetMut<Map>();
+                            curMap.Name = "AirPort";
+                            ruleExecuted = true;
+                        }
+                    ),
+                    new Rule(
+                        criterias:
+                        [
+                            new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                            new Criteria<string>(
+                                factName: "concept",
+                                predicate: concept => concept == "onHit"
+                            ),
+                            new Criteria<string>(
+                                factName: "hitBy",
+                                predicate: hitBy => hitBy == "zombieClown"
+                            ),
+                        ],
+                        payload: () => ruleExecuted = false
+                    ),
+                ]
+            )
+        );
 
         var player = world.Entity();
 
@@ -165,17 +254,21 @@ public class EcsWorldExtensionsUnitTest
 
         We dont need to create a array of rules ourselves, not only that but we get tagged rules for free.
 
-        The cool thing is we can easily modify, add or remove existing rules. 
+        The cool thing is we can easily modify, add or remove existing rules.
 
-        We could also go further write rules in C# scripts so they can be modified, added or removed at runtime 
+        We could also go further write rules in C# scripts so they can be modified, added or removed at runtime
         */
 
         var queryData = new Dictionary<string, object>
+        {
+            { "concept", "onHit" },
+            { "who", player.Get<Name>() }, // Here we query the data from an entity and its component
             {
-                { "concept",    "onHit" },
-                { "who",        player.Get<Name>()}, // Here we query the data from an entity and its component
-                { "curMap",     world.Get<Map>()}    // If the component data changes it gets automaticall reflected here
-            };
+                "curMap",
+                world.Get<Map>()
+            } // If the component data changes it gets automaticall reflected here
+            ,
+        };
 
         world.MatchOnWorld<NPC>(queryData: queryData);
 
@@ -189,47 +282,76 @@ public class EcsWorldExtensionsUnitTest
     [Fact]
     public void OptimizingRulesList()
     {
-
         World world = World.Create();
         world.Set(data: new Map(Name: "circus"));
-        world.Set<NPC, List<Rule>>
-            (data: new List<Rule>(collection:
-            [
-                new Rule(criterias:
+        world.Set<NPC, List<Rule>>(
+            data: new List<Rule>(
+                collection:
                 [
-                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                ], payload: () =>
-                {
-                }),
-                new Rule(criterias:
-                [
-                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<int>(factName: "nearAllies", predicate: nearAllies => nearAllies > 1),
-                ], payload: () =>
-                {
-                }),
-                new Rule(criterias:
-                [
-                    // Using a custom type is maybe not a good idea, should we really depend on the specifc type?
-                    // Here Name, I dont think so.
-                    new Criteria<Name>(factName: "who", predicate: who => who.Value == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<Map>(factName: "curMap", predicate: curMap => curMap.Name == "circus"),
-                ], payload: () =>
-                {
-
-                }),
-                new Rule(criterias:
-                [
-                    new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
-                    new Criteria<string>(factName: "concept", predicate: concept => concept == "onHit"),
-                    new Criteria<string>(factName: "hitBy", predicate: hitBy => hitBy == "zombieClown"),
-                ], payload: () =>
-                {
-                })
-            ]));
+                    new Rule(
+                        criterias:
+                        [
+                            new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                            new Criteria<string>(
+                                factName: "concept",
+                                predicate: concept => concept == "onHit"
+                            ),
+                        ],
+                        payload: () => { }
+                    ),
+                    new Rule(
+                        criterias:
+                        [
+                            new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                            new Criteria<string>(
+                                factName: "concept",
+                                predicate: concept => concept == "onHit"
+                            ),
+                            new Criteria<int>(
+                                factName: "nearAllies",
+                                predicate: nearAllies => nearAllies > 1
+                            ),
+                        ],
+                        payload: () => { }
+                    ),
+                    new Rule(
+                        criterias:
+                        [
+                            // Using a custom type is maybe not a good idea, should we really depend on the specifc type?
+                            // Here Name, I dont think so.
+                            new Criteria<Name>(
+                                factName: "who",
+                                predicate: who => who.Value == "Nick"
+                            ),
+                            new Criteria<string>(
+                                factName: "concept",
+                                predicate: concept => concept == "onHit"
+                            ),
+                            new Criteria<Map>(
+                                factName: "curMap",
+                                predicate: curMap => curMap.Name == "circus"
+                            ),
+                        ],
+                        payload: () => { }
+                    ),
+                    new Rule(
+                        criterias:
+                        [
+                            new Criteria<string>(factName: "who", predicate: who => who == "Nick"),
+                            new Criteria<string>(
+                                factName: "concept",
+                                predicate: concept => concept == "onHit"
+                            ),
+                            new Criteria<string>(
+                                factName: "hitBy",
+                                predicate: hitBy => hitBy == "zombieClown"
+                            ),
+                        ],
+                        payload: () => { }
+                    ),
+                ]
+            )
+        );
 
         world.OptimizeWorldRules<NPC>();
 
@@ -240,6 +362,7 @@ public class EcsWorldExtensionsUnitTest
 
         Assert.Equal(
             expected: 3,
-            actual: world.GetSecond<NPC, List<Rule>>()[index: 0].CriteriaCount);
+            actual: world.GetSecond<NPC, List<Rule>>()[index: 0].CriteriaCount
+        );
     }
 }

@@ -19,7 +19,11 @@ public class RegisterDto
     /// </summary>
     [Required]
     [DataType(DataType.Password)]
-    [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 8)] // Example length, adjust as needed
+    [StringLength(
+        100,
+        ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.",
+        MinimumLength = 8
+    )] // Example length, adjust as needed
     public string Password { get; set; } = string.Empty;
 
     /// <summary>

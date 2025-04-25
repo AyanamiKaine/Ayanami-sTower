@@ -9,7 +9,7 @@ namespace AyanamisTower.SFPM.Flecs;
 public static class EcsWorldExtensions
 {
     /*
-    Right now I see one crucial problem, while we can improve performance by splitting up rules with tags, we cannot sort the Rules component array 
+    Right now I see one crucial problem, while we can improve performance by splitting up rules with tags, we cannot sort the Rules component array
     from rules with most criteria at the beginning to the least criteria at the end.
     */
 
@@ -33,28 +33,30 @@ public static class EcsWorldExtensions
         var acceptedRules = new List<Rule>();
         var currentHighestScore = 0;
 
-        world.Each<TTag, Rule>(callback: (Entity _, ref Rule rule) =>
-        {
-            if (rule.CriteriaCount < currentHighestScore)
-                return;
-            /*
-            This here remains a big problem, where does the rule get its data from? From one entity? From the world?
-            From an ECS query? Conceptually a key would be the type of component like Health and the value the data of the component.
-            */
-            var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
-            if (matched)
+        world.Each<TTag, Rule>(
+            callback: (Entity _, ref Rule rule) =>
             {
-                if (matchedCriteriaCount > currentHighestScore)
+                if (rule.CriteriaCount < currentHighestScore)
+                    return;
+                /*
+                This here remains a big problem, where does the rule get its data from? From one entity? From the world?
+                From an ECS query? Conceptually a key would be the type of component like Health and the value the data of the component.
+                */
+                var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
+                if (matched)
                 {
-                    currentHighestScore = matchedCriteriaCount;
-                    acceptedRules.Clear();
-                }
-                if (matchedCriteriaCount == currentHighestScore)
-                {
-                    acceptedRules.Add(item: rule);
+                    if (matchedCriteriaCount > currentHighestScore)
+                    {
+                        currentHighestScore = matchedCriteriaCount;
+                        acceptedRules.Clear();
+                    }
+                    if (matchedCriteriaCount == currentHighestScore)
+                    {
+                        acceptedRules.Add(item: rule);
+                    }
                 }
             }
-        });
+        );
 
         if (acceptedRules.Count == 1)
         {
@@ -63,15 +65,19 @@ public static class EcsWorldExtensions
         else if (acceptedRules.Count > 1)
         {
             // Group the highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(keySelector: r => r.Priority)
-                                                   .OrderByDescending(keySelector: g => g.Key)
-                                                   .First();
+            var highestPriorityRules = acceptedRules
+                .GroupBy(keySelector: r => r.Priority)
+                .OrderByDescending(keySelector: g => g.Key)
+                .First();
             // Randomly select one rule from the highest priority group
             var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(maxValue: highestPriorityRules.Count()));
+            var selectedRule = highestPriorityRules.ElementAt(
+                index: random.Next(maxValue: highestPriorityRules.Count())
+            );
             selectedRule.ExecutePayload();
         }
     }
+
     /// <summary>
     /// Matches rules stored in the ECS world as entities against provided query data and executes the payload of the best matching rule.
     /// </summary>
@@ -92,29 +98,31 @@ public static class EcsWorldExtensions
         var acceptedRules = new List<Rule>();
         var currentHighestScore = 0;
 
-        world.Each(callback: (ref Rule rule) =>
-        {
-            if (rule.CriteriaCount < currentHighestScore)
-                return;
-
-            /*
-            This here remains a big problem, where does the rule get its data from? From one entity? From the world?
-            From an ECS query? Conceptually a key would be the type of component like Health and the value the data of the component.
-            */
-            var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
-            if (matched)
+        world.Each(
+            callback: (ref Rule rule) =>
             {
-                if (matchedCriteriaCount > currentHighestScore)
+                if (rule.CriteriaCount < currentHighestScore)
+                    return;
+
+                /*
+                This here remains a big problem, where does the rule get its data from? From one entity? From the world?
+                From an ECS query? Conceptually a key would be the type of component like Health and the value the data of the component.
+                */
+                var (matched, matchedCriteriaCount) = rule.Evaluate(facts: queryData);
+                if (matched)
                 {
-                    currentHighestScore = matchedCriteriaCount;
-                    acceptedRules.Clear();
-                }
-                if (matchedCriteriaCount == currentHighestScore)
-                {
-                    acceptedRules.Add(item: rule);
+                    if (matchedCriteriaCount > currentHighestScore)
+                    {
+                        currentHighestScore = matchedCriteriaCount;
+                        acceptedRules.Clear();
+                    }
+                    if (matchedCriteriaCount == currentHighestScore)
+                    {
+                        acceptedRules.Add(item: rule);
+                    }
                 }
             }
-        });
+        );
 
         if (acceptedRules.Count == 1)
         {
@@ -123,12 +131,15 @@ public static class EcsWorldExtensions
         else if (acceptedRules.Count > 1)
         {
             // Group the highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(keySelector: r => r.Priority)
-                                                   .OrderByDescending(keySelector: g => g.Key)
-                                                   .First();
+            var highestPriorityRules = acceptedRules
+                .GroupBy(keySelector: r => r.Priority)
+                .OrderByDescending(keySelector: g => g.Key)
+                .First();
             // Randomly select one rule from the highest priority group
             var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(maxValue: highestPriorityRules.Count()));
+            var selectedRule = highestPriorityRules.ElementAt(
+                index: random.Next(maxValue: highestPriorityRules.Count())
+            );
             selectedRule.ExecutePayload();
         }
     }
@@ -152,6 +163,7 @@ public static class EcsWorldExtensions
     {
         world.GetSecond<TTag, List<Rule>>().Match(queryData: queryData);
     }
+
     /// <summary>
     /// Matches rules stored in the ECS world rules component against provided query data and executes the payload of the best matching rule.
     /// </summary>

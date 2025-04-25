@@ -19,12 +19,14 @@ public class Rule(List<ICriteria> criterias, Action payload, string name = "")
     /// The name that identifies this rule.
     /// </value>
     public string Name { get; set; } = name;
+
     /// <summary>
     /// We might set a priority for a rule, its used when a query matches more than one rule with the same
-    /// number of criteria. We then select the rule with the highest priority. If they have both the same 
+    /// number of criteria. We then select the rule with the highest priority. If they have both the same
     /// priority we select a random one.
     /// </summary>
     public int Priority { get; set; }
+
     /// <summary>
     /// Gets or sets the action to be executed when this rule matches.
     /// Represents a delegate that encapsulates a method that takes no parameters and does not return a value.
@@ -33,6 +35,7 @@ public class Rule(List<ICriteria> criterias, Action payload, string name = "")
     /// The action delegate to be executed.
     /// </value>
     public Action Payload { get; set; } = payload;
+
     /// <summary>
     /// Gets or sets the list of criteria that compose this rule.
     /// </summary>
@@ -42,7 +45,8 @@ public class Rule(List<ICriteria> criterias, Action payload, string name = "")
     /// <exception cref="ArgumentNullException">
     /// Thrown when attempting to set a null value for the criteria list.
     /// </exception>
-    public List<ICriteria> Criterias { get; set; } = criterias ?? throw new ArgumentNullException(paramName: nameof(criterias));
+    public List<ICriteria> Criterias { get; set; } =
+        criterias ?? throw new ArgumentNullException(paramName: nameof(criterias));
 
     /// <summary>
     /// Gets the number of criteria in this rule.
@@ -60,33 +64,52 @@ public class Rule(List<ICriteria> criterias, Action payload, string name = "")
     /// </returns>
     public (bool IsTrue, int MatchedCriteriaCount) Evaluate(Dictionary<string, object> facts)
     {
-        Logger.ConditionalDebug(message: $"SFPM.Rule.Evaluate: Evaluating rule with {CriteriaCount} criteria.");
-        Logger.ConditionalDebug(message: $"SFPM.Rule.Evaluate: Facts provided: {string.Join(separator: ", ", values: facts)}");
+        Logger.ConditionalDebug(
+            message: $"SFPM.Rule.Evaluate: Evaluating rule with {CriteriaCount} criteria."
+        );
+        Logger.ConditionalDebug(
+            message: $"SFPM.Rule.Evaluate: Facts provided: {string.Join(separator: ", ", values: facts)}"
+        );
 
         var matchedCriteriaCount = 0;
         foreach (var criteria in Criterias)
         {
-            if (!string.IsNullOrEmpty(value: criteria.FactName) && facts.TryGetValue(key: criteria.FactName, value: out var factValue))
+            if (
+                !string.IsNullOrEmpty(value: criteria.FactName)
+                && facts.TryGetValue(key: criteria.FactName, value: out var factValue)
+            )
             {
-                Logger.ConditionalDebug(message: $"SFPM.Rule.Evaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'.");
+                Logger.ConditionalDebug(
+                    message: $"SFPM.Rule.Evaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'."
+                );
                 if (criteria.Matches(factValue: factValue))
                 {
-                    Logger.ConditionalDebug(message: $"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' matched.");
+                    Logger.ConditionalDebug(
+                        message: $"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' matched."
+                    );
                     matchedCriteriaCount++;
                 }
                 else
                 {
-                    Logger.ConditionalDebug(message: $"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' did NOT match. Evaluate returning false.");
+                    Logger.ConditionalDebug(
+                        message: $"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' did NOT match. Evaluate returning false."
+                    );
                     return (false, 0);
                 }
             }
             else
             {
-                Logger.ConditionalDebug(message: $"SFPM.Rule.Evaluate: Fact '{criteria.FactName}' not found or fact name is empty. Evaluate returning false.");
+                Logger.ConditionalDebug(
+                    message: $"SFPM.Rule.Evaluate: Fact '{criteria.FactName}' not found or fact name is empty. Evaluate returning false."
+                );
                 return (false, 0);
             }
         }
-        Logger.ConditionalDebug(message: "SFPM.Rule.Evaluate: Strict Evaluate finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.", argument1: true, argument2: matchedCriteriaCount);
+        Logger.ConditionalDebug(
+            message: "SFPM.Rule.Evaluate: Strict Evaluate finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.",
+            argument1: true,
+            argument2: matchedCriteriaCount
+        );
         return (true, matchedCriteriaCount);
     }
 
@@ -95,15 +118,25 @@ public class Rule(List<ICriteria> criterias, Action payload, string name = "")
     /// </summary>
     public void ExecutePayload()
     {
-        Logger.ConditionalDebug(message: "SFPM.Rule.ExecutePayload: Executing payload for rule (Priority: {Priority}).", argument: Priority); // Info level for payload execution, including priority
+        Logger.ConditionalDebug(
+            message: "SFPM.Rule.ExecutePayload: Executing payload for rule (Priority: {Priority}).",
+            argument: Priority
+        ); // Info level for payload execution, including priority
         try
         {
             Payload();
-            Logger.ConditionalDebug(message: "SFPM.Rule.ExecutePayload: Payload executed successfully (Priority: {Priority}).", argument: Priority); // Debug log on successful payload execution
+            Logger.ConditionalDebug(
+                message: "SFPM.Rule.ExecutePayload: Payload executed successfully (Priority: {Priority}).",
+                argument: Priority
+            ); // Debug log on successful payload execution
         }
         catch (Exception ex)
         {
-            Logger.ConditionalDebug(exception: ex, message: "SFPM.Rule.ExecutePayload: Exception during payload execution (Priority: {Priority}).", args: Priority); // Error log with exception details
+            Logger.ConditionalDebug(
+                exception: ex,
+                message: "SFPM.Rule.ExecutePayload: Exception during payload execution (Priority: {Priority}).",
+                args: Priority
+            ); // Error log with exception details
             Console.WriteLine(value: ex.Message);
         }
     }

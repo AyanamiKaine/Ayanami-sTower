@@ -4,7 +4,6 @@ using SDL3;
 
 namespace SDL3Example;
 
-
 /*
 In this example we are using the new callback way of using SDL3.
 */
@@ -13,14 +12,8 @@ internal static class Program
 {
     private class AppState
     {
-        public nint Window
-        {
-            get; set;
-        }
-        public nint Renderer
-        {
-            get; set;
-        }
+        public nint Window { get; set; }
+        public nint Renderer { get; set; }
         public World World;
 
         // State for color cycling
@@ -47,9 +40,21 @@ internal static class Program
         }
 
         // Create Window and Renderer
-        if (!SDL.CreateWindowAndRenderer("SDL3 Create Window (Callbacks)", 800, 600, SDL.WindowFlags.Resizable, out var window, out var renderer))
+        if (
+            !SDL.CreateWindowAndRenderer(
+                "SDL3 Create Window (Callbacks)",
+                800,
+                600,
+                SDL.WindowFlags.Resizable,
+                out var window,
+                out var renderer
+            )
+        )
         {
-            SDL.LogError(SDL.LogCategory.Application, $"Error creating window and rendering: {SDL.GetError()}");
+            SDL.LogError(
+                SDL.LogCategory.Application,
+                $"Error creating window and rendering: {SDL.GetError()}"
+            );
             SDL.Quit(); // Clean up initialized subsystems before failing
             return SDL.AppResult.Failure; // Signal failure
         }
@@ -78,7 +83,9 @@ internal static class Program
             DeltaR = changeRateR,
             DeltaG = changeRateG,
             DeltaB = changeRateB,
-            LastUpdateTimeTicks = SDL.GetTicks() // Get initial time
+            LastUpdateTimeTicks =
+                SDL.GetTicks() // Get initial time
+            ,
         };
 
         // Allocate a GCHandle to keep the managed state object alive
@@ -94,7 +101,10 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            SDL.LogError(SDL.LogCategory.Application, $"Failed to allocate GCHandle for app state: {ex.Message}");
+            SDL.LogError(
+                SDL.LogCategory.Application,
+                $"Failed to allocate GCHandle for app state: {ex.Message}"
+            );
             SDL.DestroyRenderer(renderer);
             SDL.DestroyWindow(window);
             SDL.Quit();
@@ -166,11 +176,13 @@ internal static class Program
 
         // --- Rendering ---
         // Set the *updated* draw color before clearing
-        SDL.SetRenderDrawColor(appState.Renderer,
-                               (byte)appState.CurrentR,
-                               (byte)appState.CurrentG,
-                               (byte)appState.CurrentB,
-                               255); // Opaque Alpha
+        SDL.SetRenderDrawColor(
+            appState.Renderer,
+            (byte)appState.CurrentR,
+            (byte)appState.CurrentG,
+            (byte)appState.CurrentB,
+            255
+        ); // Opaque Alpha
 
         // Rendering logic (formerly in the while loop)
         SDL.RenderClear(appState.Renderer);
@@ -217,7 +229,10 @@ internal static class Program
                 }
                 else
                 {
-                    SDL.LogWarn(SDL.LogCategory.Application, "App state handle target was not the expected type during Quit.");
+                    SDL.LogWarn(
+                        SDL.LogCategory.Application,
+                        "App state handle target was not the expected type during Quit."
+                    );
                 }
 
                 // *** CRITICAL: Free the GCHandle ***
@@ -226,7 +241,10 @@ internal static class Program
             }
             else
             {
-                SDL.LogWarn(SDL.LogCategory.Application, "App state handle was already freed or invalid during Quit.");
+                SDL.LogWarn(
+                    SDL.LogCategory.Application,
+                    "App state handle was already freed or invalid during Quit."
+                );
             }
         }
         else
@@ -237,7 +255,6 @@ internal static class Program
         // SDL.Quit() is called automatically by SDL after this function returns.
         SDL.LogInfo(SDL.LogCategory.Application, "Quit Callback Complete.");
     }
-
 
     // --- Application Entry Point ---
 
@@ -256,8 +273,18 @@ internal static class Program
         // This function will block until one of the callbacks
         // returns Success or Failure.
         SDL.LogInfo(SDL.LogCategory.Application, "Entering SDL Main Callbacks...");
-        int exitCode = SDL.EnterAppMainCallbacks(args.Length, args, initFunc, iterateFunc, eventFunc, quitFunc);
-        SDL.LogInfo(SDL.LogCategory.Application, $"Exited SDL Main Callbacks with code: {exitCode}");
+        int exitCode = SDL.EnterAppMainCallbacks(
+            args.Length,
+            args,
+            initFunc,
+            iterateFunc,
+            eventFunc,
+            quitFunc
+        );
+        SDL.LogInfo(
+            SDL.LogCategory.Application,
+            $"Exited SDL Main Callbacks with code: {exitCode}"
+        );
 
         return exitCode; // Return the exit code SDL determined.
     }

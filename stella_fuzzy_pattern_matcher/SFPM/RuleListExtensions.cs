@@ -1,6 +1,7 @@
 using NLog;
 
 namespace AyanamisTower.SFPM;
+
 /// <summary>
 /// Provides extension methods for <see cref="List{Rule}"/> to optimize rule processing.
 /// </summary>
@@ -35,7 +36,10 @@ public static class RuleListExtensions
     public static Rule MostSpecificRule(this List<Rule> rules)
     {
         if (rules.Count == 0)
-            throw new ArgumentException(message: "Rules list cannot be empty.", paramName: nameof(rules));
+            throw new ArgumentException(
+                message: "Rules list cannot be empty.",
+                paramName: nameof(rules)
+            );
         return rules.MaxBy(keySelector: r => r.CriteriaCount)!;
     }
 
@@ -52,7 +56,10 @@ public static class RuleListExtensions
     public static Rule LeastSpecificRule(this List<Rule> rules)
     {
         if (rules.Count == 0)
-            throw new ArgumentException(message: "Rules list cannot be empty.", paramName: nameof(rules));
+            throw new ArgumentException(
+                message: "Rules list cannot be empty.",
+                paramName: nameof(rules)
+            );
         return rules.MinBy(keySelector: r => r.CriteriaCount)!;
     }
 
@@ -65,13 +72,19 @@ public static class RuleListExtensions
     {
         var acceptedRules = new List<Rule>();
         var currentHighestScore = 0;
-        Logger.ConditionalDebug(message: $"SFPM.Query.Match: Matching against {rules.Count} rules.");
+        Logger.ConditionalDebug(
+            message: $"SFPM.Query.Match: Matching against {rules.Count} rules."
+        );
         foreach (var rule in rules)
         {
-            Logger.ConditionalDebug(message: $"SFPM.Query.Match: Trying to match new rule Name:{(string.IsNullOrEmpty(rule.Name) ? "NoNameGiven" : rule.Name)} | critera: amount {rule.CriteriaCount}");
+            Logger.ConditionalDebug(
+                message: $"SFPM.Query.Match: Trying to match new rule Name:{(string.IsNullOrEmpty(rule.Name) ? "NoNameGiven" : rule.Name)} | critera: amount {rule.CriteriaCount}"
+            );
             if (rule.CriteriaCount < currentHighestScore)
             {
-                Logger.ConditionalDebug(message: "SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one");
+                Logger.ConditionalDebug(
+                    message: "SFPM.Query.Match: Skipping current rule as it has less criterias, then the current highest matched one"
+                );
                 break;
             }
 
@@ -80,13 +93,17 @@ public static class RuleListExtensions
             {
                 if (matchedCriteriaCount > currentHighestScore)
                 {
-                    Logger.ConditionalDebug(message: $"SFPM.Query.Match: New more specifc rule found, clearing accepted rules list. Old highest criteria rule count: {currentHighestScore}. New Highest criteria rule count: {matchedCriteriaCount}");
+                    Logger.ConditionalDebug(
+                        message: $"SFPM.Query.Match: New more specifc rule found, clearing accepted rules list. Old highest criteria rule count: {currentHighestScore}. New Highest criteria rule count: {matchedCriteriaCount}"
+                    );
                     currentHighestScore = matchedCriteriaCount;
                     acceptedRules.Clear();
                 }
                 if (matchedCriteriaCount == currentHighestScore)
                 {
-                    Logger.ConditionalDebug(message: "SFPM.Query.Match: Rule with the same number of highest criteria matched, adding it to the accepted rules list.");
+                    Logger.ConditionalDebug(
+                        message: "SFPM.Query.Match: Rule with the same number of highest criteria matched, adding it to the accepted rules list."
+                    );
                     acceptedRules.Add(item: rule);
                 }
             }
@@ -99,14 +116,19 @@ public static class RuleListExtensions
         }
         else if (acceptedRules.Count > 1)
         {
-            Logger.ConditionalDebug(message: $"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one.");
+            Logger.ConditionalDebug(
+                message: $"SFPM.Query.Match: More than one rule with the same number of criteria matched({acceptedRules.Count}). Grouping them by priority, selecting the highest priority one, if multiple rules have the same priority selecting a random one."
+            );
             // Group the highest priority rules
-            var highestPriorityRules = acceptedRules.GroupBy(keySelector: r => r.Priority)
-                                                   .OrderByDescending(keySelector: g => g.Key)
-                                                   .First();
+            var highestPriorityRules = acceptedRules
+                .GroupBy(keySelector: r => r.Priority)
+                .OrderByDescending(keySelector: g => g.Key)
+                .First();
             // Randomly select one rule from the highest priority group
             var random = new Random();
-            var selectedRule = highestPriorityRules.ElementAt(index: random.Next(maxValue: highestPriorityRules.Count()));
+            var selectedRule = highestPriorityRules.ElementAt(
+                index: random.Next(maxValue: highestPriorityRules.Count())
+            );
             selectedRule.ExecutePayload();
         }
     }

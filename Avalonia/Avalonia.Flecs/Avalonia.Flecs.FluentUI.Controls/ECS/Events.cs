@@ -7,5 +7,8 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS.Events
     /// </summary>
     /// <param name="Sender">The object that raised the event.</param>
     /// <param name="Args">The event arguments.</param>
-    public record struct OnSelectionChanged(object? Sender, NavigationViewSelectionChangedEventArgs Args);
+    public record struct OnSelectionChanged(
+        object? Sender,
+        NavigationViewSelectionChangedEventArgs Args
+    );
 }

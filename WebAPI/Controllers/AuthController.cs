@@ -1,14 +1,14 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
-using AyanamisTower.WebAPI.Models;
-using AyanamisTower.WebAPI.Dtos;
-using AyanamisTower.WebAPI.Data;
 using System.Security.Cryptography;
+using System.Text;
+using AyanamisTower.WebAPI.Data;
+using AyanamisTower.WebAPI.Dtos;
+using AyanamisTower.WebAPI.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore; // Your Models namespace (for ApplicationUser)
+using Microsoft.IdentityModel.Tokens;
 
 namespace AyanamisTower.WebAPI.Controllers;
 
@@ -38,7 +38,8 @@ public class AuthController : ControllerBase
         SignInManager<ApplicationUser> signInManager,
         IConfiguration configuration,
         ILogger<AuthController> logger,
-        ApplicationDbContext context)
+        ApplicationDbContext context
+    )
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -46,7 +47,6 @@ public class AuthController : ControllerBase
         _logger = logger;
         _context = context;
     }
-
 
     /// <summary>
     /// Registers a new user in the system.
@@ -70,9 +70,18 @@ public class AuthController : ControllerBase
         var existingUser = await _userManager.FindByEmailAsync(registerDto.Email);
         if (existingUser != null)
         {
-            _logger.LogWarning("Registration failed: Email {Email} already exists.", registerDto.Email);
+            _logger.LogWarning(
+                "Registration failed: Email {Email} already exists.",
+                registerDto.Email
+            );
             // Return a generic error to avoid revealing if an email is registered
-            return BadRequest(new { Message = $"Registration failed: Email {registerDto.Email} already exists.", Errors = Array.Empty<List<string>>() });
+            return BadRequest(
+                new
+                {
+                    Message = $"Registration failed: Email {registerDto.Email} already exists.",
+                    Errors = Array.Empty<List<string>>(),
+                }
+            );
         }
 
         var newUser = new ApplicationUser
@@ -88,9 +97,11 @@ public class AuthController : ControllerBase
 
         if (!result.Succeeded)
         {
-            _logger.LogError("User creation failed for {Email}. Errors: {Errors}",
+            _logger.LogError(
+                "User creation failed for {Email}. Errors: {Errors}",
                 registerDto.Email,
-                string.Join(", ", result.Errors.Select(e => e.Description)));
+                string.Join(", ", result.Errors.Select(e => e.Description))
+            );
 
             // Add specific errors to ModelState for detailed feedback (optional, consider security implications)
             foreach (var error in result.Errors)
@@ -98,7 +109,13 @@ public class AuthController : ControllerBase
                 ModelState.AddModelError(string.Empty, error.Description);
             }
             // Return a generic error or the ModelState containing specific errors
-            return BadRequest(new { Message = "User creation failed.", Errors = result.Errors.Select(e => e.Description) });
+            return BadRequest(
+                new
+                {
+                    Message = "User creation failed.",
+                    Errors = result.Errors.Select(e => e.Description),
+                }
+            );
         }
 
         _logger.LogInformation("User {RegisterDto.Email} created successfully.", registerDto.Email);
@@ -107,10 +124,11 @@ public class AuthController : ControllerBase
 
         // Return 201 Created status without revealing sensitive info
         // Could return the created user ID or email if desired, but often not necessary here.
-        return StatusCode(StatusCodes.Status201Created, new { Message = "User registered successfully." });
+        return StatusCode(
+            StatusCodes.Status201Created,
+            new { Message = "User registered successfully." }
+        );
     }
-
-
 
     /// <summary>
     /// Authenticates a user and returns JWT and refresh tokens upon successful login.
@@ -140,15 +158,19 @@ public class AuthController : ControllerBase
         }
 
         // Use CheckPasswordSignInAsync for password verification without setting auth cookies
-        var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, lockoutOnFailure: false); // Set lockoutOnFailure to true if desired
+        var result = await _signInManager.CheckPasswordSignInAsync(
+            user,
+            loginDto.Password,
+            lockoutOnFailure: false
+        ); // Set lockoutOnFailure to true if desired
 
         if (result.IsNotAllowed) // Check specifically for confirmation/lockout issues
         {
-            _logger.LogWarning("Login failed: Account for {Email} is not allowed (e.g., needs confirmation).", loginDto.Email);
-            return Unauthorized(new
-            {
-                Message = "Account not confirmed or locked out."
-            });
+            _logger.LogWarning(
+                "Login failed: Account for {Email} is not allowed (e.g., needs confirmation).",
+                loginDto.Email
+            );
+            return Unauthorized(new { Message = "Account not confirmed or locked out." });
         }
 
         if (!result.Succeeded)
@@ -161,7 +183,10 @@ public class AuthController : ControllerBase
         _logger.LogInformation("User {Email} logged in successfully.", loginDto.Email);
 
         var refreshToken = GenerateRefreshToken();
-        var refreshTokenExpirationDays = _configuration.GetValue("Jwt:RefreshTokenExpirationDays", 30); // Default 30 days
+        var refreshTokenExpirationDays = _configuration.GetValue(
+            "Jwt:RefreshTokenExpirationDays",
+            30
+        ); // Default 30 days
         var refreshTokenEntity = new UserRefreshToken
         {
             UserId = user.Id,
@@ -185,22 +210,27 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to store refresh token for user {UserId}", user.Id);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "An error occurred while processing your login." });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new { Message = "An error occurred while processing your login." }
+            );
         }
 
         // Generate JWT Token
         var (Token, Expiration) = GenerateJwtToken(user);
 
-        return Ok(new AuthResponseDto
-        {
-            UserId = user.Id,
-            Email = user.Email!,
-            Token = Token,
-            TokenExpiration = Expiration,
-            RefreshToken = refreshToken
-            // Map other properties if needed:
-            // FullName = user.FullName
-        });
+        return Ok(
+            new AuthResponseDto
+            {
+                UserId = user.Id,
+                Email = user.Email!,
+                Token = Token,
+                TokenExpiration = Expiration,
+                RefreshToken = refreshToken,
+                // Map other properties if needed:
+                // FullName = user.FullName
+            }
+        );
     }
 
     /// <summary>
@@ -227,8 +257,8 @@ public class AuthController : ControllerBase
         try
         {
             // Find the token in the database, include the User navigation property
-            storedToken = await _context.UserRefreshTokens
-                .Include(rt => rt.User) // Important: Load the related user data
+            storedToken = await _context
+                .UserRefreshTokens.Include(rt => rt.User) // Important: Load the related user data
                 .FirstOrDefaultAsync(rt => rt.Token == refreshRequestDto.RefreshToken);
 
             if (storedToken == null)
@@ -239,7 +269,10 @@ public class AuthController : ControllerBase
 
             if (storedToken.IsRevoked)
             {
-                _logger.LogWarning("Refresh token is revoked. UserID: {UserId}", storedToken.UserId);
+                _logger.LogWarning(
+                    "Refresh token is revoked. UserID: {UserId}",
+                    storedToken.UserId
+                );
                 // Security consideration: If a revoked token is used, maybe revoke all tokens for that user?
                 return Unauthorized(new { Message = "Refresh token has been revoked." });
             }
@@ -253,7 +286,10 @@ public class AuthController : ControllerBase
 
             if (storedToken.User == null)
             {
-                _logger.LogError("User associated with refresh token not found. UserID: {UserId}", storedToken.UserId);
+                _logger.LogError(
+                    "User associated with refresh token not found. UserID: {UserId}",
+                    storedToken.UserId
+                );
                 // This shouldn't happen with proper DB constraints but handle defensively
                 storedToken.IsRevoked = true; // Revoke the problematic token
                 await _context.SaveChangesAsync();
@@ -262,12 +298,18 @@ public class AuthController : ControllerBase
 
             // Mark the used token as revoked (implementing rotation)
             storedToken.IsRevoked = true;
-
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred during refresh token validation for token {Token}", refreshRequestDto.RefreshToken);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "An error occurred while processing your request." });
+            _logger.LogError(
+                ex,
+                "Error occurred during refresh token validation for token {Token}",
+                refreshRequestDto.RefreshToken
+            );
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new { Message = "An error occurred while processing your request." }
+            );
         }
         // --- End Database Interaction ---
 
@@ -279,12 +321,15 @@ public class AuthController : ControllerBase
 
         // --- Generate NEW Refresh Token (Rotation) ---
         var newRefreshToken = GenerateRefreshToken();
-        var refreshTokenExpirationDays = _configuration.GetValue("Jwt:RefreshTokenExpirationDays", 30);
+        var refreshTokenExpirationDays = _configuration.GetValue(
+            "Jwt:RefreshTokenExpirationDays",
+            30
+        );
         var newRefreshTokenEntity = new UserRefreshToken
         {
             UserId = user.Id,
             Token = newRefreshToken,
-            ExpiresUtc = DateTime.UtcNow.AddDays(refreshTokenExpirationDays)
+            ExpiresUtc = DateTime.UtcNow.AddDays(refreshTokenExpirationDays),
         };
 
         // --- Database Interaction (Store New Refresh Token, Save Revocation) ---
@@ -296,21 +341,32 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to store new refresh token after refresh for user {UserId}", user.Id);
+            _logger.LogError(
+                ex,
+                "Failed to store new refresh token after refresh for user {UserId}",
+                user.Id
+            );
             // Don't return the new access token if we couldn't store the new refresh token state
-            return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "An error occurred while finalizing token refresh." });
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                new { Message = "An error occurred while finalizing token refresh." }
+            );
         }
         // --- End Database Interaction ---
 
         // --- Return NEW tokens ---
-        return Ok(new AuthResponseDto
-        {
-            UserId = user.Id,
-            Email = user.Email!,
-            Token = newAccessToken,
-            TokenExpiration = newAccessTokenExpiration,
-            RefreshToken = newRefreshToken // Return the NEW refresh token
-        });
+        return Ok(
+            new AuthResponseDto
+            {
+                UserId = user.Id,
+                Email = user.Email!,
+                Token = newAccessToken,
+                TokenExpiration = newAccessTokenExpiration,
+                RefreshToken =
+                    newRefreshToken // Return the NEW refresh token
+                ,
+            }
+        );
     }
 
     private static string GenerateRefreshToken()
@@ -320,15 +376,15 @@ public class AuthController : ControllerBase
         {
             rng.GetBytes(randomNumber);
             // Return a URL-safe base64 string
-            return Convert.ToBase64String(randomNumber)
-                          .Replace("+", "-")
-                          .Replace("/", "_");
+            return Convert.ToBase64String(randomNumber).Replace("+", "-").Replace("/", "_");
         }
     }
 
     private (string Token, DateTime Expiration) GenerateJwtToken(ApplicationUser user)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        var securityKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!)
+        );
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
         // Claims identify the user and token properties
@@ -337,7 +393,7 @@ public class AuthController : ControllerBase
             new(JwtRegisteredClaimNames.Sub, user.Id), // Subject (usually user ID)
             new(JwtRegisteredClaimNames.Email, user.Email!),
             // Jti is a unique identifier for the token, useful for revocation if needed
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             // Add custom claims if necessary (e.g., roles)
             // var userRoles = await _userManager.GetRolesAsync(user);
             // foreach (var role in userRoles) { claims.Add(new Claim(ClaimTypes.Role, role)); }
@@ -353,7 +409,7 @@ public class AuthController : ControllerBase
             Expires = expiration,
             Issuer = _configuration["Jwt:Issuer"],
             Audience = _configuration["Jwt:Audience"],
-            SigningCredentials = credentials
+            SigningCredentials = credentials,
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();

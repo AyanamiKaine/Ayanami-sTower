@@ -11,10 +11,12 @@ public interface ICriteria
     /// The FactName is used as a key to get the value out of the query data.
     /// </summary>
     string FactName { get; }
+
     /// <summary>
     /// Gets the operator used for comparison.
     /// </summary>
     Operator Operator { get; }
+
     /// <summary>
     /// Determines whether the specified fact value matches the criteria.
     /// </summary>
@@ -32,31 +34,38 @@ public enum Operator
     /// Represents the equality operator.
     /// </summary>
     Equal,
+
     /// <summary>
     /// Represents the greater than operator.
     /// </summary>
     GreaterThan,
+
     /// <summary>
     /// Represents the less than operator.
     /// </summary>
     LessThan,
+
     /// <summary>
     /// Represents the greater than or equal operator.
     /// </summary>
     GreaterThanOrEqual,
+
     /// <summary>
     /// Represents the less than or equal operator.
     /// </summary>
     LessThanOrEqual,
+
     /// <summary>
     /// Represents the not equal operator.
     /// </summary>
     NotEqual,
+
     /// <summary>
     /// Added Custom operator for predicate-based criteria
     /// </summary>
-    Predicate
+    Predicate,
 }
+
 /*
 Maybe we can improve this by adding a source code generator, for generating the conditions
 */
@@ -71,16 +80,20 @@ Maybe we can improve this by adding a source code generator, for generating the 
 /// <param name="factName">The name of the fact. Used as a key for the query data.</param>
 /// <param name="expectedValue">The expected value for comparison.</param>
 /// <param name="operator">The operator used for comparison.</param>
-public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @operator) : ICriteria where TValue : IComparable<TValue>
+public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @operator)
+    : ICriteria
+    where TValue : IComparable<TValue>
 {
     /// <summary>
     /// Gets the name of the fact.
     /// </summary>
     public string FactName { get; } = factName;
+
     /// <summary>
     /// Gets the expected value for comparison.
     /// </summary>
     public TValue? ExpectedValue { get; } = expectedValue;
+
     /// <summary>
     /// Gets the operator used for comparison.
     /// </summary>
@@ -98,7 +111,8 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     public Criteria(string factName, Predicate<TValue> predicate, string predicateName = "")
         : this(factName: factName, expectedValue: default, @operator: Operator.Predicate)
     {
-        this._predicate = predicate ?? throw new ArgumentNullException(paramName: nameof(predicate));
+        this._predicate =
+            predicate ?? throw new ArgumentNullException(paramName: nameof(predicate));
         _predicateName = predicateName;
     }
 
@@ -116,20 +130,33 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
             if (Operator == Operator.Predicate) // Check for Custom operator and predicate
             {
                 var result = _predicate(obj: typedFactValue); // Execute the predicate lambda
-                Logger.ConditionalDebug(message: $"SFPM.Criteria.Matches: FactName={FactName}, Predicate={(_predicateName.Length == 0 ? "NoNameGiven" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}");
+                Logger.ConditionalDebug(
+                    message: $"SFPM.Criteria.Matches: FactName={FactName}, Predicate={(_predicateName.Length == 0 ? "NoNameGiven" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}"
+                );
                 return result;
             }
             else
             {
                 return Operator switch
                 {
-                    Operator.Equal => EqualityComparer<TValue>.Default.Equals(x: typedFactValue, y: ExpectedValue),
+                    Operator.Equal => EqualityComparer<TValue>.Default.Equals(
+                        x: typedFactValue,
+                        y: ExpectedValue
+                    ),
                     Operator.GreaterThan => typedFactValue.CompareTo(other: ExpectedValue) > 0,
                     Operator.LessThan => typedFactValue.CompareTo(other: ExpectedValue) < 0,
-                    Operator.GreaterThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue) >= 0,
+                    Operator.GreaterThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue)
+                        >= 0,
                     Operator.LessThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue) <= 0,
-                    Operator.NotEqual => !EqualityComparer<TValue>.Default.Equals(x: typedFactValue, y: ExpectedValue),
-                    _ => throw new ArgumentOutOfRangeException(paramName: nameof(Operator), actualValue: Operator, message: "Unknown operator"),
+                    Operator.NotEqual => !EqualityComparer<TValue>.Default.Equals(
+                        x: typedFactValue,
+                        y: ExpectedValue
+                    ),
+                    _ => throw new ArgumentOutOfRangeException(
+                        paramName: nameof(Operator),
+                        actualValue: Operator,
+                        message: "Unknown operator"
+                    ),
                 };
             }
         }

@@ -35,5 +35,3 @@ public class UploadResponseDto
     /// </summary>
     public DateTime UploadTimestamp { get; set; }
 }
-
-

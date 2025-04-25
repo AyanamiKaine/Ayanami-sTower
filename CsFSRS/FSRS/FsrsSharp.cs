@@ -11,11 +11,28 @@ public static class FsrsConstants
     /// <summary>
     /// Default parameters (weights) for the FSRS algorithm.
     /// </summary>
-    public static readonly double[] DefaultParameters = {
-            0.40255, 1.18385, 3.173, 15.69105, 7.1949, 0.5345, 1.4604, 0.0046,
-            1.54575, 0.1192, 1.01925, 1.9395, 0.11, 0.29605, 2.2698, 0.2315,
-            2.9898, 0.51655, 0.6621
-        };
+    public static readonly double[] DefaultParameters =
+    {
+        0.40255,
+        1.18385,
+        3.173,
+        15.69105,
+        7.1949,
+        0.5345,
+        1.4604,
+        0.0046,
+        1.54575,
+        0.1192,
+        1.01925,
+        1.9395,
+        0.11,
+        0.29605,
+        2.2698,
+        0.2315,
+        2.9898,
+        0.51655,
+        0.6621,
+    };
 
     /// <summary>
     /// Decay constant used in retrievability calculation.
@@ -36,10 +53,12 @@ public static class FsrsConstants
         /// Start range
         /// </summary>
         public double Start;
+
         /// <summary>
         /// End range
         /// </summary>
         public double End;
+
         /// <summary>
         /// Factor for the ranges
         /// </summary>
@@ -49,11 +68,27 @@ public static class FsrsConstants
     /// <summary>
     /// Defines ranges and factors for applying fuzziness to calculated intervals.
     /// </summary>
-    public static readonly FuzzRange[] FuzzRanges = {
-            new() { Start = 2.5, End = 7.0, Factor = 0.15 },
-            new() { Start = 7.0, End = 20.0, Factor = 0.1 },
-            new() { Start = 20.0, End = double.PositiveInfinity, Factor = 0.05 }
-        };
+    public static readonly FuzzRange[] FuzzRanges =
+    {
+        new()
+        {
+            Start = 2.5,
+            End = 7.0,
+            Factor = 0.15,
+        },
+        new()
+        {
+            Start = 7.0,
+            End = 20.0,
+            Factor = 0.1,
+        },
+        new()
+        {
+            Start = 20.0,
+            End = double.PositiveInfinity,
+            Factor = 0.05,
+        },
+    };
 }
 
 /// <summary>
@@ -66,18 +101,21 @@ public enum State
     /// All cards start with the new state
     /// </summary>
     New = 0,
+
     /// <summary>
     /// First state for cards
     /// </summary>
     Learning = 1,
+
     /// <summary>
     /// Learned cards get reviewd over time
     /// </summary>
     Review = 2,
+
     /// <summary>
     /// Should reviewed cards be reviewed badly they go into a relearning state.
     /// </summary>
-    Relearning = 3
+    Relearning = 3,
 }
 
 /// <summary>
@@ -90,18 +128,21 @@ public enum Rating
     /// forgot the card
     /// </summary>
     Again = 1,
+
     /// <summary>
     /// remembered the card with serious difficulty
     /// </summary>
     Hard = 2,
+
     /// <summary>
     /// remembered the card after a hesitation
     /// </summary>
     Good = 3,
+
     /// <summary>
     /// remembered the card easily
     /// </summary>
-    Easy = 4
+    Easy = 4,
 }
 
 /// <summary>
@@ -162,7 +203,8 @@ public class Card : ICloneable // Implement ICloneable for easy copying
         double? stability = null,
         double? difficulty = null,
         DateTimeOffset? due = null,
-        DateTimeOffset? lastReview = null)
+        DateTimeOffset? lastReview = null
+    )
     {
         if (cardId == null)
         {
@@ -193,14 +235,15 @@ public class Card : ICloneable // Implement ICloneable for easy copying
     /// <returns>A string representation.</returns>
     public override string ToString()
     {
-        return $"{nameof(Card)}(" +
-               $"CardId={CardId}, " +
-               $"State={State}, " +
-               $"Step={(Step.HasValue ? Step.Value.ToString() : "null")}, " +
-               $"Stability={(Stability.HasValue ? Stability.Value.ToString("F5", CultureInfo.InvariantCulture) : "null")}, " +
-               $"Difficulty={(Difficulty.HasValue ? Difficulty.Value.ToString("F5", CultureInfo.InvariantCulture) : "null")}, " +
-               $"Due={Due:O}, " + // ISO 8601 format
-               $"LastReview={(LastReview.HasValue ? LastReview.Value.ToString("O") : "null")})";
+        return $"{nameof(Card)}("
+            + $"CardId={CardId}, "
+            + $"State={State}, "
+            + $"Step={(Step.HasValue ? Step.Value.ToString() : "null")}, "
+            + $"Stability={(Stability.HasValue ? Stability.Value.ToString("F5", CultureInfo.InvariantCulture) : "null")}, "
+            + $"Difficulty={(Difficulty.HasValue ? Difficulty.Value.ToString("F5", CultureInfo.InvariantCulture) : "null")}, "
+            + $"Due={Due:O}, "
+            + // ISO 8601 format
+            $"LastReview={(LastReview.HasValue ? LastReview.Value.ToString("O") : "null")})";
     }
 
     /// <summary>
@@ -210,15 +253,19 @@ public class Card : ICloneable // Implement ICloneable for easy copying
     public Dictionary<string, object?> ToDictionary()
     {
         return new Dictionary<string, object?>
+        {
+            { "card_id", CardId },
+            { "state", (int)State },
+            { "step", Step }, // Nullable int
+            { "stability", Stability }, // Nullable double
+            { "difficulty", Difficulty }, // Nullable double
+            { "due", Due.ToString("O") }, // ISO 8601 format preserves offset
             {
-                { "card_id", CardId },
-                { "state", (int)State },
-                { "step", Step }, // Nullable int
-                { "stability", Stability }, // Nullable double
-                { "difficulty", Difficulty }, // Nullable double
-                { "due", Due.ToString("O") }, // ISO 8601 format preserves offset
-                { "last_review", LastReview?.ToString("O") } // Nullable DateTimeOffset
-            };
+                "last_review",
+                LastReview?.ToString("O")
+            } // Nullable DateTimeOffset
+            ,
+        };
     }
 
     /// <summary>
@@ -233,11 +280,29 @@ public class Card : ICloneable // Implement ICloneable for easy copying
         {
             long cardId = Convert.ToInt64(sourceDict["card_id"]);
             State state = (State)Convert.ToInt32(sourceDict["state"]);
-            int? step = sourceDict["step"] == null ? (int?)null : Convert.ToInt32(sourceDict["step"]);
-            double? stability = sourceDict["stability"] == null ? (double?)null : Convert.ToDouble(sourceDict["stability"], CultureInfo.InvariantCulture);
-            double? difficulty = sourceDict["difficulty"] == null ? (double?)null : Convert.ToDouble(sourceDict["difficulty"], CultureInfo.InvariantCulture);
-            DateTimeOffset due = DateTimeOffset.Parse(sourceDict["due"]!.ToString()!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-            DateTimeOffset? lastReview = sourceDict["last_review"] == null ? (DateTimeOffset?)null : DateTimeOffset.Parse(sourceDict["last_review"]!.ToString()!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            int? step =
+                sourceDict["step"] == null ? (int?)null : Convert.ToInt32(sourceDict["step"]);
+            double? stability =
+                sourceDict["stability"] == null
+                    ? (double?)null
+                    : Convert.ToDouble(sourceDict["stability"], CultureInfo.InvariantCulture);
+            double? difficulty =
+                sourceDict["difficulty"] == null
+                    ? (double?)null
+                    : Convert.ToDouble(sourceDict["difficulty"], CultureInfo.InvariantCulture);
+            DateTimeOffset due = DateTimeOffset.Parse(
+                sourceDict["due"]!.ToString()!,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind
+            );
+            DateTimeOffset? lastReview =
+                sourceDict["last_review"] == null
+                    ? (DateTimeOffset?)null
+                    : DateTimeOffset.Parse(
+                        sourceDict["last_review"]!.ToString()!,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind
+                    );
 
             return new Card(
                 cardId: cardId,
@@ -249,9 +314,14 @@ public class Card : ICloneable // Implement ICloneable for easy copying
                 lastReview: lastReview
             );
         }
-        catch (Exception ex) when (ex is KeyNotFoundException || ex is FormatException || ex is InvalidCastException)
+        catch (Exception ex)
+            when (ex is KeyNotFoundException || ex is FormatException || ex is InvalidCastException)
         {
-            throw new ArgumentException("Source dictionary contains invalid or missing data for Card creation.", nameof(sourceDict), ex);
+            throw new ArgumentException(
+                "Source dictionary contains invalid or missing data for Card creation.",
+                nameof(sourceDict),
+                ex
+            );
         }
     }
 
@@ -276,7 +346,10 @@ public class Card : ICloneable // Implement ICloneable for easy copying
         double elapsedDays = Math.Max(0, (now - LastReview.Value).TotalDays);
 
         // Formula: R = (1 + factor * t / S) ^ decay
-        return Math.Pow(1 + FsrsConstants.Factor * elapsedDays / Stability.Value, FsrsConstants.Decay);
+        return Math.Pow(
+            1 + FsrsConstants.Factor * elapsedDays / Stability.Value,
+            FsrsConstants.Decay
+        );
     }
 
     /// <summary>
@@ -322,7 +395,12 @@ public class ReviewLog
     /// <param name="rating">The rating given.</param>
     /// <param name="reviewDateTime">The time of the review (UTC).</param>
     /// <param name="reviewDurationMs">Optional duration in milliseconds.</param>
-    public ReviewLog(long cardId, Rating rating, DateTimeOffset reviewDateTime, int? reviewDurationMs = null)
+    public ReviewLog(
+        long cardId,
+        Rating rating,
+        DateTimeOffset reviewDateTime,
+        int? reviewDurationMs = null
+    )
     {
         CardId = cardId;
         Rating = rating;
@@ -336,11 +414,12 @@ public class ReviewLog
     /// <returns>A string representation.</returns>
     public override string ToString()
     {
-        return $"{nameof(ReviewLog)}(" +
-               $"CardId={CardId}, " +
-               $"Rating={Rating}, " +
-               $"ReviewDateTime={ReviewDateTime:O}, " + // ISO 8601 format
-               $"ReviewDurationMs={(ReviewDurationMs.HasValue ? ReviewDurationMs.Value.ToString() : "null")})";
+        return $"{nameof(ReviewLog)}("
+            + $"CardId={CardId}, "
+            + $"Rating={Rating}, "
+            + $"ReviewDateTime={ReviewDateTime:O}, "
+            + // ISO 8601 format
+            $"ReviewDurationMs={(ReviewDurationMs.HasValue ? ReviewDurationMs.Value.ToString() : "null")})";
     }
 
     /// <summary>
@@ -350,12 +429,16 @@ public class ReviewLog
     public Dictionary<string, object?> ToDictionary()
     {
         return new Dictionary<string, object?>
+        {
+            { "card_id", CardId },
+            { "rating", (int)Rating },
+            { "review_datetime", ReviewDateTime.ToString("O") }, // ISO 8601 format
             {
-                { "card_id", CardId },
-                { "rating", (int)Rating },
-                { "review_datetime", ReviewDateTime.ToString("O") }, // ISO 8601 format
-                { "review_duration", ReviewDurationMs } // Nullable int
-            };
+                "review_duration",
+                ReviewDurationMs
+            } // Nullable int
+            ,
+        };
     }
 
     /// <summary>
@@ -370,8 +453,15 @@ public class ReviewLog
         {
             long cardId = Convert.ToInt64(sourceDict["card_id"]);
             Rating rating = (Rating)Convert.ToInt32(sourceDict["rating"]);
-            DateTimeOffset reviewDateTime = DateTimeOffset.Parse(sourceDict["review_datetime"]!.ToString()!, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-            int? reviewDurationMs = sourceDict["review_duration"] == null ? (int?)null : Convert.ToInt32(sourceDict["review_duration"]);
+            DateTimeOffset reviewDateTime = DateTimeOffset.Parse(
+                sourceDict["review_datetime"]!.ToString()!,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind
+            );
+            int? reviewDurationMs =
+                sourceDict["review_duration"] == null
+                    ? (int?)null
+                    : Convert.ToInt32(sourceDict["review_duration"]);
 
             return new ReviewLog(
                 cardId: cardId,
@@ -380,9 +470,14 @@ public class ReviewLog
                 reviewDurationMs: reviewDurationMs
             );
         }
-        catch (Exception ex) when (ex is KeyNotFoundException || ex is FormatException || ex is InvalidCastException)
+        catch (Exception ex)
+            when (ex is KeyNotFoundException || ex is FormatException || ex is InvalidCastException)
         {
-            throw new ArgumentException("Source dictionary contains invalid or missing data for ReviewLog creation.", nameof(sourceDict), ex);
+            throw new ArgumentException(
+                "Source dictionary contains invalid or missing data for ReviewLog creation.",
+                nameof(sourceDict),
+                ex
+            );
         }
     }
 }
@@ -441,16 +536,22 @@ public class Scheduler
         IEnumerable<TimeSpan>? learningSteps = null,
         IEnumerable<TimeSpan>? relearningSteps = null,
         int maximumIntervalDays = 36500,
-        bool enableFuzzing = true)
+        bool enableFuzzing = true
+    )
     {
         Parameters = (parameters ?? FsrsConstants.DefaultParameters).ToArray();
         if (Parameters.Length != 19) // FSRS v4 has 19 parameters
         {
-            throw new ArgumentException($"Parameters array must contain exactly 19 values, but found {Parameters.Length}.", nameof(parameters));
+            throw new ArgumentException(
+                $"Parameters array must contain exactly 19 values, but found {Parameters.Length}.",
+                nameof(parameters)
+            );
         }
 
         DesiredRetention = Math.Clamp(desiredRetention, 0.01, 0.99); // Keep retention within a reasonable range
-        LearningSteps = (learningSteps ?? new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10) }).ToArray();
+        LearningSteps = (
+            learningSteps ?? new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10) }
+        ).ToArray();
         RelearningSteps = (relearningSteps ?? new[] { TimeSpan.FromMinutes(10) }).ToArray();
         MaximumIntervalDays = Math.Max(1, maximumIntervalDays); // Ensure at least 1 day
         EnableFuzzing = enableFuzzing;
@@ -464,10 +565,18 @@ public class Scheduler
     {
         var sb = new StringBuilder();
         sb.Append($"{nameof(Scheduler)}(");
-        sb.Append($"Parameters=[{string.Join(", ", Parameters.Select(p => p.ToString("F5", CultureInfo.InvariantCulture)))}], ");
-        sb.Append($"DesiredRetention={DesiredRetention.ToString("F2", CultureInfo.InvariantCulture)}, ");
-        sb.Append($"LearningSteps=[{string.Join(", ", LearningSteps.Select(ts => ts.TotalMinutes.ToString("F1", CultureInfo.InvariantCulture) + "m"))}], ");
-        sb.Append($"RelearningSteps=[{string.Join(", ", RelearningSteps.Select(ts => ts.TotalMinutes.ToString("F1", CultureInfo.InvariantCulture) + "m"))}], ");
+        sb.Append(
+            $"Parameters=[{string.Join(", ", Parameters.Select(p => p.ToString("F5", CultureInfo.InvariantCulture)))}], "
+        );
+        sb.Append(
+            $"DesiredRetention={DesiredRetention.ToString("F2", CultureInfo.InvariantCulture)}, "
+        );
+        sb.Append(
+            $"LearningSteps=[{string.Join(", ", LearningSteps.Select(ts => ts.TotalMinutes.ToString("F1", CultureInfo.InvariantCulture) + "m"))}], "
+        );
+        sb.Append(
+            $"RelearningSteps=[{string.Join(", ", RelearningSteps.Select(ts => ts.TotalMinutes.ToString("F1", CultureInfo.InvariantCulture) + "m"))}], "
+        );
         sb.Append($"MaximumIntervalDays={MaximumIntervalDays}, ");
         sb.Append($"EnableFuzzing={EnableFuzzing})");
         return sb.ToString();
@@ -484,17 +593,22 @@ public class Scheduler
     /// <exception cref="ArgumentNullException">Thrown if card is null.</exception>
     /// <exception cref="ArgumentException">Thrown if reviewDateTime is not UTC.</exception>
     public (Card UpdatedCard, ReviewLog Log) ReviewCard(
-         Card card, // Pass the original card
-         Rating rating,
-         DateTimeOffset? reviewDateTime = null,
-         int? reviewDurationMs = null)
+        Card card, // Pass the original card
+        Rating rating,
+        DateTimeOffset? reviewDateTime = null,
+        int? reviewDurationMs = null
+    )
     {
-        if (card == null) throw new ArgumentNullException(nameof(card));
+        if (card == null)
+            throw new ArgumentNullException(nameof(card));
 
         DateTimeOffset now = reviewDateTime ?? DateTimeOffset.UtcNow;
         if (now.Offset != TimeSpan.Zero)
         {
-            throw new ArgumentException("Review DateTimeOffset must be in UTC (Offset zero).", nameof(reviewDateTime));
+            throw new ArgumentException(
+                "Review DateTimeOffset must be in UTC (Offset zero).",
+                nameof(reviewDateTime)
+            );
         }
 
         // Create a clone to work with, leaving the original card unmodified.
@@ -531,7 +645,9 @@ public class Scheduler
             {
                 // This case should ideally not happen if cards are always created as New
                 // and transition correctly. Throw an exception or handle as an error.
-                throw new InvalidOperationException($"Card in state {previousState} has null Stability or Difficulty.");
+                throw new InvalidOperationException(
+                    $"Card in state {previousState} has null Stability or Difficulty."
+                );
             }
 
             double retrievability = workingCard.GetRetrievability(now);
@@ -569,11 +685,13 @@ public class Scheduler
                 // Ensure Step has a value; it should have been set to 0 if transitioned from New
                 if (!workingCard.Step.HasValue)
                 {
-                    throw new InvalidOperationException("Card is in Learning state but Step is null.");
+                    throw new InvalidOperationException(
+                        "Card is in Learning state but Step is null."
+                    );
                 }
 
-                bool learningStepsExhausted = LearningSteps.Length == 0 ||
-                                              (workingCard.Step.Value >= LearningSteps.Length);
+                bool learningStepsExhausted =
+                    LearningSteps.Length == 0 || (workingCard.Step.Value >= LearningSteps.Length);
 
                 if (learningStepsExhausted && rating >= Rating.Hard)
                 {
@@ -587,7 +705,8 @@ public class Scheduler
                     if (rating == Rating.Again)
                     {
                         workingCard.Step = 0;
-                        nextInterval = LearningSteps.Length > 0 ? LearningSteps[0] : TimeSpan.FromMinutes(1);
+                        nextInterval =
+                            LearningSteps.Length > 0 ? LearningSteps[0] : TimeSpan.FromMinutes(1);
                     }
                     else if (rating == Rating.Hard)
                     {
@@ -602,7 +721,10 @@ public class Scheduler
                         }
                         else
                         {
-                            nextInterval = LearningSteps.Length > 0 ? LearningSteps[workingCard.Step.Value] : TimeSpan.FromMinutes(5);
+                            nextInterval =
+                                LearningSteps.Length > 0
+                                    ? LearningSteps[workingCard.Step.Value]
+                                    : TimeSpan.FromMinutes(5);
                         }
                     }
                     else // Good or Easy
@@ -652,12 +774,15 @@ public class Scheduler
                 // Ensure Step has a value
                 if (!workingCard.Step.HasValue)
                 {
-                    throw new InvalidOperationException("Card is in Relearning state but Step is null.");
+                    throw new InvalidOperationException(
+                        "Card is in Relearning state but Step is null."
+                    );
                 }
                 // S and D guaranteed non-null in Relearning state
 
-                bool relearningStepsExhausted = RelearningSteps.Length == 0 ||
-                                                (workingCard.Step.Value >= RelearningSteps.Length);
+                bool relearningStepsExhausted =
+                    RelearningSteps.Length == 0
+                    || (workingCard.Step.Value >= RelearningSteps.Length);
 
                 if (relearningStepsExhausted && rating >= Rating.Hard)
                 {
@@ -671,7 +796,10 @@ public class Scheduler
                     if (rating == Rating.Again)
                     {
                         workingCard.Step = 0;
-                        nextInterval = RelearningSteps.Length > 0 ? RelearningSteps[0] : TimeSpan.FromMinutes(1);
+                        nextInterval =
+                            RelearningSteps.Length > 0
+                                ? RelearningSteps[0]
+                                : TimeSpan.FromMinutes(1);
                     }
                     else if (rating == Rating.Hard)
                     {
@@ -686,7 +814,10 @@ public class Scheduler
                         }
                         else
                         {
-                            nextInterval = RelearningSteps.Length > 0 ? RelearningSteps[workingCard.Step.Value] : TimeSpan.FromMinutes(5);
+                            nextInterval =
+                                RelearningSteps.Length > 0
+                                    ? RelearningSteps[workingCard.Step.Value]
+                                    : TimeSpan.FromMinutes(5);
                         }
                     }
                     else // Good or Easy
@@ -711,7 +842,6 @@ public class Scheduler
 
             default:
                 throw new InvalidOperationException($"Unexpected card state: {workingCard.State}");
-
         } // End switch
 
         // Apply fuzzing if enabled and the card ended up in the Review state
@@ -728,7 +858,6 @@ public class Scheduler
         return (workingCard, reviewLog);
     }
 
-
     /// <summary>
     /// Converts the Scheduler object to a dictionary suitable for serialization.
     /// </summary>
@@ -736,14 +865,14 @@ public class Scheduler
     public Dictionary<string, object> ToDictionary()
     {
         return new Dictionary<string, object>
-            {
-                { "parameters", Parameters.ToList() }, // Store as list
-                { "desired_retention", DesiredRetention },
-                { "learning_steps", LearningSteps.Select(ts => (long)ts.TotalSeconds).ToList() }, // Store seconds
-                { "relearning_steps", RelearningSteps.Select(ts => (long)ts.TotalSeconds).ToList() }, // Store seconds
-                { "maximum_interval", MaximumIntervalDays },
-                { "enable_fuzzing", EnableFuzzing }
-            };
+        {
+            { "parameters", Parameters.ToList() }, // Store as list
+            { "desired_retention", DesiredRetention },
+            { "learning_steps", LearningSteps.Select(ts => (long)ts.TotalSeconds).ToList() }, // Store seconds
+            { "relearning_steps", RelearningSteps.Select(ts => (long)ts.TotalSeconds).ToList() }, // Store seconds
+            { "maximum_interval", MaximumIntervalDays },
+            { "enable_fuzzing", EnableFuzzing },
+        };
     }
 
     /// <summary>
@@ -759,29 +888,44 @@ public class Scheduler
             // Need to handle potential type differences during deserialization (e.g., lists might be object arrays)
             var parametersObj = sourceDict["parameters"];
             List<double> parameters;
-            if (parametersObj is List<double> pList) parameters = pList;
-            else if (parametersObj is System.Collections.IEnumerable pEnum) parameters = pEnum.Cast<object>().Select(Convert.ToDouble).ToList(); // More robust cast
-                                                                                                                                                 // else if (parametersObj is IEnumerable<double> pDEnum) parameters = pDEnum.ToList(); // This might be redundant with IEnumerable cast
-            else throw new InvalidCastException("Cannot cast parameters to List<double>");
+            if (parametersObj is List<double> pList)
+                parameters = pList;
+            else if (parametersObj is System.Collections.IEnumerable pEnum)
+                parameters = pEnum.Cast<object>().Select(Convert.ToDouble).ToList(); // More robust cast
+            // else if (parametersObj is IEnumerable<double> pDEnum) parameters = pDEnum.ToList(); // This might be redundant with IEnumerable cast
+            else
+                throw new InvalidCastException("Cannot cast parameters to List<double>");
 
-
-            double desiredRetention = Convert.ToDouble(sourceDict["desired_retention"], CultureInfo.InvariantCulture);
+            double desiredRetention = Convert.ToDouble(
+                sourceDict["desired_retention"],
+                CultureInfo.InvariantCulture
+            );
 
             var learningStepsObj = sourceDict["learning_steps"];
             List<TimeSpan> learningSteps;
-            if (learningStepsObj is List<long> lsList) learningSteps = lsList.Select(TimeSpan.FromSeconds).ToList();
-            else if (learningStepsObj is System.Collections.IEnumerable lsEnum) learningSteps = lsEnum.Cast<object>().Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o))).ToList(); // More robust cast
-                                                                                                                                                                                      // else if (learningStepsObj is IEnumerable<long> lsLEnum) learningSteps = lsLEnum.Select(TimeSpan.FromSeconds).ToList(); // Redundant
-            else throw new InvalidCastException("Cannot cast learning_steps to List<long>");
-
+            if (learningStepsObj is List<long> lsList)
+                learningSteps = lsList.Select(TimeSpan.FromSeconds).ToList();
+            else if (learningStepsObj is System.Collections.IEnumerable lsEnum)
+                learningSteps = lsEnum
+                    .Cast<object>()
+                    .Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o)))
+                    .ToList(); // More robust cast
+            // else if (learningStepsObj is IEnumerable<long> lsLEnum) learningSteps = lsLEnum.Select(TimeSpan.FromSeconds).ToList(); // Redundant
+            else
+                throw new InvalidCastException("Cannot cast learning_steps to List<long>");
 
             var relearningStepsObj = sourceDict["relearning_steps"];
             List<TimeSpan> relearningSteps;
-            if (relearningStepsObj is List<long> rlsList) relearningSteps = rlsList.Select(TimeSpan.FromSeconds).ToList();
-            else if (relearningStepsObj is System.Collections.IEnumerable rlsEnum) relearningSteps = rlsEnum.Cast<object>().Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o))).ToList(); // More robust cast
-                                                                                                                                                                                            // else if (relearningStepsObj is IEnumerable<long> rlsLEnum) relearningSteps = rlsLEnum.Select(TimeSpan.FromSeconds).ToList(); // Redundant
-            else throw new InvalidCastException("Cannot cast relearning_steps to List<long>");
-
+            if (relearningStepsObj is List<long> rlsList)
+                relearningSteps = rlsList.Select(TimeSpan.FromSeconds).ToList();
+            else if (relearningStepsObj is System.Collections.IEnumerable rlsEnum)
+                relearningSteps = rlsEnum
+                    .Cast<object>()
+                    .Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o)))
+                    .ToList(); // More robust cast
+            // else if (relearningStepsObj is IEnumerable<long> rlsLEnum) relearningSteps = rlsLEnum.Select(TimeSpan.FromSeconds).ToList(); // Redundant
+            else
+                throw new InvalidCastException("Cannot cast relearning_steps to List<long>");
 
             int maximumInterval = Convert.ToInt32(sourceDict["maximum_interval"]);
             bool enableFuzzing = Convert.ToBoolean(sourceDict["enable_fuzzing"]);
@@ -795,12 +939,20 @@ public class Scheduler
                 enableFuzzing: enableFuzzing
             );
         }
-        catch (Exception ex) when (ex is KeyNotFoundException || ex is FormatException || ex is InvalidCastException || ex is NullReferenceException)
+        catch (Exception ex)
+            when (ex is KeyNotFoundException
+                || ex is FormatException
+                || ex is InvalidCastException
+                || ex is NullReferenceException
+            )
         {
-            throw new ArgumentException("Source dictionary contains invalid or missing data for Scheduler creation.", nameof(sourceDict), ex);
+            throw new ArgumentException(
+                "Source dictionary contains invalid or missing data for Scheduler creation.",
+                nameof(sourceDict),
+                ex
+            );
         }
     }
-
 
     // --- Private Helper Methods for FSRS Calculations ---
 
@@ -817,14 +969,17 @@ public class Scheduler
 
     private double InitialDifficulty(Rating rating)
     {
-        double initialDifficulty = Parameters[4] - (Math.Pow(Math.E, Parameters[5] * ((int)rating - 1)) - 1);
+        double initialDifficulty =
+            Parameters[4] - (Math.Pow(Math.E, Parameters[5] * ((int)rating - 1)) - 1);
         return ClampDifficulty(initialDifficulty);
     }
 
     private int NextInterval(double stability)
     {
         stability = Math.Max(0.01, stability);
-        double interval = (stability / FsrsConstants.Factor) * (Math.Pow(DesiredRetention, 1 / FsrsConstants.Decay) - 1);
+        double interval =
+            (stability / FsrsConstants.Factor)
+            * (Math.Pow(DesiredRetention, 1 / FsrsConstants.Decay) - 1);
         int intervalDays = (int)Math.Round(interval);
         intervalDays = Math.Max(1, intervalDays);
         intervalDays = Math.Min(intervalDays, MaximumIntervalDays);
@@ -842,12 +997,19 @@ public class Scheduler
         double deltaDifficulty = -Parameters[6] * ((int)rating - 3);
         double linearDampingFactor = (10.0 - difficulty) / 9.0;
         double difficultyAfterUpdate = difficulty + deltaDifficulty * linearDampingFactor;
-        double initialDifficultyEasy = Parameters[4] - (Math.Pow(Math.E, Parameters[5] * ((int)Rating.Easy - 1)) - 1);
-        double nextDifficulty = Parameters[7] * initialDifficultyEasy + (1 - Parameters[7]) * difficultyAfterUpdate;
+        double initialDifficultyEasy =
+            Parameters[4] - (Math.Pow(Math.E, Parameters[5] * ((int)Rating.Easy - 1)) - 1);
+        double nextDifficulty =
+            Parameters[7] * initialDifficultyEasy + (1 - Parameters[7]) * difficultyAfterUpdate;
         return ClampDifficulty(nextDifficulty);
     }
 
-    private double NextStability(double difficulty, double stability, double retrievability, Rating rating)
+    private double NextStability(
+        double difficulty,
+        double stability,
+        double retrievability,
+        Rating rating
+    )
     {
         stability = Math.Max(0.01, stability);
         if (rating == Rating.Again)
@@ -863,32 +1025,39 @@ public class Scheduler
     private double NextForgetStability(double difficulty, double stability, double retrievability)
     {
         stability = Math.Max(0.01, stability);
-        double stabilityLongTerm = Parameters[11]
-                                 * Math.Pow(difficulty, -Parameters[12])
-                                 * (Math.Pow(stability + 1, Parameters[13]) - 1)
-                                 * Math.Exp((1 - retrievability) * Parameters[14]);
+        double stabilityLongTerm =
+            Parameters[11]
+            * Math.Pow(difficulty, -Parameters[12])
+            * (Math.Pow(stability + 1, Parameters[13]) - 1)
+            * Math.Exp((1 - retrievability) * Parameters[14]);
         double stabilityShortTermLimit = stability / Math.Exp(Parameters[17] * Parameters[18]);
         return Math.Max(0.1, Math.Min(stabilityLongTerm, stabilityShortTermLimit));
     }
 
-    private double NextRecallStability(double difficulty, double stability, double retrievability, Rating rating)
+    private double NextRecallStability(
+        double difficulty,
+        double stability,
+        double retrievability,
+        Rating rating
+    )
     {
         stability = Math.Max(0.01, stability);
         double hardPenalty = (rating == Rating.Hard) ? Parameters[15] : 1.0;
         double easyBonus = (rating == Rating.Easy) ? Parameters[16] : 1.0;
-        double stabilityIncreaseFactor = Math.Exp(Parameters[8])
-                                       * (11 - difficulty)
-                                       * Math.Pow(stability, -Parameters[9])
-                                       * (Math.Exp((1 - retrievability) * Parameters[10]) - 1);
+        double stabilityIncreaseFactor =
+            Math.Exp(Parameters[8])
+            * (11 - difficulty)
+            * Math.Pow(stability, -Parameters[9])
+            * (Math.Exp((1 - retrievability) * Parameters[10]) - 1);
         double nextStability = stability * (1 + stabilityIncreaseFactor * hardPenalty * easyBonus);
         return Math.Max(0.1, nextStability);
     }
 
-
     private TimeSpan GetFuzzedInterval(TimeSpan interval)
     {
         double intervalDays = interval.TotalDays;
-        if (intervalDays < 2.5) return interval;
+        if (intervalDays < 2.5)
+            return interval;
 
         double delta = 1.0;
         foreach (var range in FsrsConstants.FuzzRanges)
@@ -908,4 +1077,3 @@ public class Scheduler
         return TimeSpan.FromDays(fuzzedIntervalDays);
     }
 }
-

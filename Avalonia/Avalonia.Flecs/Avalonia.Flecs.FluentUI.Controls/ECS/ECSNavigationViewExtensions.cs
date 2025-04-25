@@ -1,7 +1,8 @@
 using Avalonia.Controls;
-using Flecs.NET.Core;
 using Avalonia.Flecs.Controls;
+using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
+
 namespace Avalonia.Flecs.FluentUI.Controls.ECS
 {
     /// <summary>
@@ -24,7 +25,11 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
                 return entity;
             }
 
-            throw new ComponentNotFoundException(entity, typeof(ContentControl), nameof(NavigationView));
+            throw new ComponentNotFoundException(
+                entity,
+                typeof(ContentControl),
+                nameof(NavigationView)
+            );
         }
     }
 }

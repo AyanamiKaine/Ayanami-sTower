@@ -1,13 +1,13 @@
+using System.Security.Claims;
+using System.Security.Cryptography; // Required for encryption
+using AyanamisTower.WebAPI.Data;
+using AyanamisTower.WebAPI.Dtos;
+using AyanamisTower.WebAPI.Models;
+using AyanamisTower.WebAPI.Util;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using System.Security.Cryptography; // Required for encryption
-using AyanamisTower.WebAPI.Models;
-using AyanamisTower.WebAPI.Data;
-using AyanamisTower.WebAPI.Dtos;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using AyanamisTower.WebAPI.Util;
 using Microsoft.EntityFrameworkCore;
 
 namespace AyanamisTower.WebAPI.Controllers
@@ -43,14 +43,17 @@ namespace AyanamisTower.WebAPI.Controllers
             ApplicationDbContext context,
             IConfiguration configuration,
             ILogger<StorageController> logger,
-            IWebHostEnvironment webHostEnvironment)
+            IWebHostEnvironment webHostEnvironment
+        )
         {
             _webHostEnvironment = webHostEnvironment;
             _userManager = userManager;
             _context = context;
             _configuration = configuration;
             _logger = logger;
-            _storageBasePath = _configuration["StorageSettings:BasePath"] ?? Path.Combine("App_Data", "UserUploads");
+            _storageBasePath =
+                _configuration["StorageSettings:BasePath"]
+                ?? Path.Combine("App_Data", "UserUploads");
 
             // --- Master Key Handling ---
             // IMPORTANT: Retrieve this key securely (User Secrets, Env Vars, Key Vault).
@@ -60,7 +63,9 @@ namespace AyanamisTower.WebAPI.Controllers
             if (string.IsNullOrEmpty(masterKeyBase64))
             {
                 _logger.LogCritical("MasterEncryptionKey (Base64) is missing in configuration.");
-                throw new InvalidOperationException("MasterEncryptionKey is not configured correctly.");
+                throw new InvalidOperationException(
+                    "MasterEncryptionKey is not configured correctly."
+                );
             }
 
             try
@@ -68,8 +73,12 @@ namespace AyanamisTower.WebAPI.Controllers
                 _masterKey = Convert.FromBase64String(masterKeyBase64);
                 if (_masterKey.Length != 32) // Check *byte* length AFTER decoding
                 {
-                    _logger.LogCritical("Decoded MasterEncryptionKey is not 32 bytes (256 bits) long.");
-                    throw new InvalidOperationException("MasterEncryptionKey must be a Base64 encoded 256-bit key.");
+                    _logger.LogCritical(
+                        "Decoded MasterEncryptionKey is not 32 bytes (256 bits) long."
+                    );
+                    throw new InvalidOperationException(
+                        "MasterEncryptionKey must be a Base64 encoded 256-bit key."
+                    );
                 }
             }
             catch (FormatException ex)
@@ -77,17 +86,27 @@ namespace AyanamisTower.WebAPI.Controllers
                 _logger.LogCritical(ex, "MasterEncryptionKey is not a valid Base64 string.");
                 throw new InvalidOperationException("MasterEncryptionKey is not valid Base64.", ex);
             }
-            var absoluteStorageBasePath = Path.Combine(_webHostEnvironment.ContentRootPath, _storageBasePath);
+            var absoluteStorageBasePath = Path.Combine(
+                _webHostEnvironment.ContentRootPath,
+                _storageBasePath
+            );
             if (!Directory.Exists(absoluteStorageBasePath))
             {
                 try
                 {
                     Directory.CreateDirectory(absoluteStorageBasePath);
-                    _logger.LogInformation("Base storage directory created at {Path}", absoluteStorageBasePath);
+                    _logger.LogInformation(
+                        "Base storage directory created at {Path}",
+                        absoluteStorageBasePath
+                    );
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogCritical(ex, "Failed to create base storage directory at {Path}. Halting operations.", absoluteStorageBasePath);
+                    _logger.LogCritical(
+                        ex,
+                        "Failed to create base storage directory at {Path}. Halting operations.",
+                        absoluteStorageBasePath
+                    );
                     throw;
                 }
             }
@@ -116,34 +135,33 @@ namespace AyanamisTower.WebAPI.Controllers
             if (file == null || file.Length == 0)
             {
                 _logger.LogWarning("Upload attempt failed: No file provided.");
-                return BadRequest(new
-                {
-                    Message = "No file provided or file is empty."
-                });
+                return BadRequest(new { Message = "No file provided or file is empty." });
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 _logger.LogError("Upload failed: User ID claim not found in token.");
-                return Unauthorized(new
-                {
-                    Message = "Unable to identify user from token."
-                });
+                return Unauthorized(new { Message = "Unable to identify user from token." });
             }
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
             {
-                _logger.LogError("Upload failed: User with ID {UserId} not found in database.", userId);
-                return Unauthorized(new
-                {
-                    Message = "User not found."
-                });
+                _logger.LogError(
+                    "Upload failed: User with ID {UserId} not found in database.",
+                    userId
+                );
+                return Unauthorized(new { Message = "User not found." });
             }
 
-            _logger.LogInformation("Upload (for encryption) request received from User ID: {UserId}, Email: {Email}, File: {FileName}, Size: {FileSize} bytes",
-               userId, user.Email, file.FileName, file.Length);
+            _logger.LogInformation(
+                "Upload (for encryption) request received from User ID: {UserId}, Email: {Email}, File: {FileName}, Size: {FileSize} bytes",
+                userId,
+                user.Email,
+                file.FileName,
+                file.Length
+            );
 
             var userStoragePath = Path.Combine(_storageBasePath, userId);
             if (!Directory.Exists(userStoragePath))
@@ -154,11 +172,15 @@ namespace AyanamisTower.WebAPI.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to create storage directory for user {UserId}", userId);
-                    return StatusCode(StatusCodes.Status500InternalServerError, new
-                    {
-                        Message = "Could not create user storage directory."
-                    });
+                    _logger.LogError(
+                        ex,
+                        "Failed to create storage directory for user {UserId}",
+                        userId
+                    );
+                    return StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new { Message = "Could not create user storage directory." }
+                    );
                 }
             }
 
@@ -182,17 +204,37 @@ namespace AyanamisTower.WebAPI.Controllers
                     // Encrypt the generated file key using the master key (AES encryption)
                     encryptedKeyForDb = EncryptionHelper.EncryptData(_masterKey, fileEncryptionKey); // Simple helper needed
 
-                    _logger.LogInformation("Generated unique AES key and IV for file {OriginalFileName}", file.FileName);
+                    _logger.LogInformation(
+                        "Generated unique AES key and IV for file {OriginalFileName}",
+                        file.FileName
+                    );
 
-                    await using var destinationStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-                    await using var cryptoStream = new CryptoStream(destinationStream, aes.CreateEncryptor(), CryptoStreamMode.Write);
-                    _logger.LogInformation("Starting encryption process for {OriginalFileName} to {FilePath}", file.FileName, filePath);
+                    await using var destinationStream = new FileStream(
+                        filePath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None
+                    );
+                    await using var cryptoStream = new CryptoStream(
+                        destinationStream,
+                        aes.CreateEncryptor(),
+                        CryptoStreamMode.Write
+                    );
+                    _logger.LogInformation(
+                        "Starting encryption process for {OriginalFileName} to {FilePath}",
+                        file.FileName,
+                        filePath
+                    );
                     await file.CopyToAsync(cryptoStream);
 
                     // Dispose cryptoStream (flushes data), then destinationStream
                     // CryptoStream must be flushed upon completion, which happens implicitly when disposed.
                 }
-                _logger.LogInformation("Successfully encrypted and saved file for user {UserId} to {FilePath}", userId, filePath);
+                _logger.LogInformation(
+                    "Successfully encrypted and saved file for user {UserId} to {FilePath}",
+                    userId,
+                    filePath
+                );
 
                 // --- Store Metadata ---
                 var fileMetadata = new FileMetadata
@@ -207,50 +249,73 @@ namespace AyanamisTower.WebAPI.Controllers
                     StoredPath = filePath,
                     // Store the encrypted key and the IV (IV can be stored in plaintext)
                     EncryptedFileKey = Convert.ToBase64String(encryptedKeyForDb), // Store as Base64 string
-                    EncryptionIV = Convert.ToBase64String(iv) // Store IV as Base64 string
+                    EncryptionIV = Convert.ToBase64String(
+                        iv
+                    ) // Store IV as Base64 string
+                    ,
                 };
 
                 _context.FileMetadataEntries.Add(fileMetadata);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Saved encrypted file metadata to database for StoredFileName: {StoredFileName}", uniqueFileName);
+                _logger.LogInformation(
+                    "Saved encrypted file metadata to database for StoredFileName: {StoredFileName}",
+                    uniqueFileName
+                );
 
                 // --- Return Success Response ---
-                return Ok(new UploadResponseDto // Use the same DTO, or create a new one if needed
-                {
-                    Message = "File uploaded and encrypted successfully.",
-                    FileId = fileMetadata.Id,
-                    StoredFileName = uniqueFileName,
-                    OriginalFileName = file.FileName,
-                    FileSize = fileMetadata.FileSize, // Size of encrypted file
-                    UploadTimestamp = fileMetadata.UploadTimestamp
-                });
+                return Ok(
+                    new UploadResponseDto // Use the same DTO, or create a new one if needed
+                    {
+                        Message = "File uploaded and encrypted successfully.",
+                        FileId = fileMetadata.Id,
+                        StoredFileName = uniqueFileName,
+                        OriginalFileName = file.FileName,
+                        FileSize = fileMetadata.FileSize, // Size of encrypted file
+                        UploadTimestamp = fileMetadata.UploadTimestamp,
+                    }
+                );
             }
             catch (CryptographicException cryptoEx)
             {
-                _logger.LogError(cryptoEx, "Cryptography error during file encryption for user {UserId}, file {FileName}", userId, file.FileName);
+                _logger.LogError(
+                    cryptoEx,
+                    "Cryptography error during file encryption for user {UserId}, file {FileName}",
+                    userId,
+                    file.FileName
+                );
                 CleanupFailedUpload(filePath);
-                return StatusCode(StatusCodes.Status500InternalServerError, new
-                {
-                    Message = "A cryptography error occurred during file processing."
-                });
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { Message = "A cryptography error occurred during file processing." }
+                );
             }
             catch (IOException ioEx)
             {
-                _logger.LogError(ioEx, "IO Error saving encrypted file {FilePath} for user {UserId}.", filePath, userId);
+                _logger.LogError(
+                    ioEx,
+                    "IO Error saving encrypted file {FilePath} for user {UserId}.",
+                    filePath,
+                    userId
+                );
                 CleanupFailedUpload(filePath);
-                return StatusCode(StatusCodes.Status500InternalServerError, new
-                {
-                    Message = "An error occurred while saving the encrypted file."
-                });
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { Message = "An error occurred while saving the encrypted file." }
+                );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during file encryption/upload for user {UserId}, file {FileName}", userId, file.FileName);
+                _logger.LogError(
+                    ex,
+                    "Unexpected error during file encryption/upload for user {UserId}, file {FileName}",
+                    userId,
+                    file.FileName
+                );
                 CleanupFailedUpload(filePath);
-                return StatusCode(StatusCodes.Status500InternalServerError, new
-                {
-                    Message = "An unexpected error occurred during file upload."
-                });
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { Message = "An unexpected error occurred during file upload." }
+                );
             }
             finally
             {
@@ -275,7 +340,11 @@ namespace AyanamisTower.WebAPI.Controllers
                 }
                 catch (Exception cleanupEx)
                 {
-                    _logger.LogWarning(cleanupEx, "Failed to cleanup partial file {FilePath}", filePath);
+                    _logger.LogWarning(
+                        cleanupEx,
+                        "Failed to cleanup partial file {FilePath}",
+                        filePath
+                    );
                 }
             }
         }
@@ -304,8 +373,8 @@ namespace AyanamisTower.WebAPI.Controllers
 
             try
             {
-                var files = await _context.FileMetadataEntries
-                    .Where(f => f.UserId == userId)
+                var files = await _context
+                    .FileMetadataEntries.Where(f => f.UserId == userId)
                     .OrderByDescending(f => f.UploadTimestamp) // Show newest first
                     .Select(f => new FileListItemDto // Project to DTO
                     {
@@ -313,7 +382,7 @@ namespace AyanamisTower.WebAPI.Controllers
                         OriginalFileName = f.OriginalFileName,
                         FileSize = f.FileSize,
                         ContentType = f.ContentType ?? "",
-                        UploadTimestamp = f.UploadTimestamp
+                        UploadTimestamp = f.UploadTimestamp,
                     })
                     .ToListAsync(); // Execute the query
 
@@ -322,7 +391,10 @@ namespace AyanamisTower.WebAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving file list for user {UserId}", userId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "An error occurred while retrieving the file list." });
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { Message = "An error occurred while retrieving the file list." }
+                );
             }
         }
 
@@ -351,48 +423,79 @@ namespace AyanamisTower.WebAPI.Controllers
                 return Unauthorized(new { Message = "User identifier not found." });
             }
 
-            _logger.LogInformation("User {UserId} requesting deletion of File ID: {FileId}", userId, fileId);
+            _logger.LogInformation(
+                "User {UserId} requesting deletion of File ID: {FileId}",
+                userId,
+                fileId
+            );
 
             FileMetadata? fileMetadata;
             try
             {
                 // Find the file making sure it belongs to the current user
-                fileMetadata = await _context.FileMetadataEntries
-                                             .FirstOrDefaultAsync(f => f.Id == fileId && f.UserId == userId);
+                fileMetadata = await _context.FileMetadataEntries.FirstOrDefaultAsync(f =>
+                    f.Id == fileId && f.UserId == userId
+                );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Database error looking up FileMetadata for deletion (File ID {FileId}, User ID {UserId})", fileId, userId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Database error finding file." });
+                _logger.LogError(
+                    ex,
+                    "Database error looking up FileMetadata for deletion (File ID {FileId}, User ID {UserId})",
+                    fileId,
+                    userId
+                );
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { Message = "Database error finding file." }
+                );
             }
-
 
             if (fileMetadata == null)
             {
-                _logger.LogWarning("DeleteFile failed: File ID {FileId} not found for User ID {UserId}.", fileId, userId);
+                _logger.LogWarning(
+                    "DeleteFile failed: File ID {FileId} not found for User ID {UserId}.",
+                    fileId,
+                    userId
+                );
                 // Return 404 - don't reveal if file exists but belongs to someone else
                 return NotFound(new { Message = "File not found." });
             }
 
             // --- Delete physical file ---
             var relativeStoredPath = fileMetadata.StoredPath;
-            var absoluteStoredPath = Path.Combine(_webHostEnvironment.ContentRootPath, relativeStoredPath);
+            var absoluteStoredPath = Path.Combine(
+                _webHostEnvironment.ContentRootPath,
+                relativeStoredPath
+            );
             try
             {
                 // Use absolute path for Exists and Delete
                 if (System.IO.File.Exists(absoluteStoredPath))
                 {
                     System.IO.File.Delete(absoluteStoredPath);
-                    _logger.LogInformation("Successfully deleted physical file: {AbsoluteStoredPath}", absoluteStoredPath);
+                    _logger.LogInformation(
+                        "Successfully deleted physical file: {AbsoluteStoredPath}",
+                        absoluteStoredPath
+                    );
                 }
                 else
                 {
-                    _logger.LogWarning("Physical file not found at {AbsoluteStoredPath} during deletion for File ID {FileId}, but metadata exists.", absoluteStoredPath, fileId);
+                    _logger.LogWarning(
+                        "Physical file not found at {AbsoluteStoredPath} during deletion for File ID {FileId}, but metadata exists.",
+                        absoluteStoredPath,
+                        fileId
+                    );
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting physical file {AbsoluteStoredPath} for File ID {FileId}. Proceeding to delete metadata.", absoluteStoredPath, fileId);
+                _logger.LogError(
+                    ex,
+                    "Error deleting physical file {AbsoluteStoredPath} for File ID {FileId}. Proceeding to delete metadata.",
+                    absoluteStoredPath,
+                    fileId
+                );
             }
 
             // --- Delete metadata record ---
@@ -400,7 +503,10 @@ namespace AyanamisTower.WebAPI.Controllers
             {
                 _context.FileMetadataEntries.Remove(fileMetadata);
                 await _context.SaveChangesAsync();
-                _logger.LogInformation("Successfully deleted metadata for File ID: {FileId}", fileId);
+                _logger.LogInformation(
+                    "Successfully deleted metadata for File ID: {FileId}",
+                    fileId
+                );
 
                 // Return 204 No Content on successful deletion
                 // TODO: Maybe we want to return a succesfull message instead.
@@ -408,9 +514,16 @@ namespace AyanamisTower.WebAPI.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Database error deleting FileMetadata for File ID {FileId}", fileId);
+                _logger.LogError(
+                    ex,
+                    "Database error deleting FileMetadata for File ID {FileId}",
+                    fileId
+                );
                 // If DB delete fails, the file might still be gone from disk.
-                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Error deleting file metadata from database." });
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { Message = "Error deleting file metadata from database." }
+                );
             }
         }
 
@@ -436,59 +549,96 @@ namespace AyanamisTower.WebAPI.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                _logger.LogWarning("DownloadEncryptedFile failed: User ID claim not found in token.");
+                _logger.LogWarning(
+                    "DownloadEncryptedFile failed: User ID claim not found in token."
+                );
                 return Unauthorized(new { Message = "User identifier not found." });
             }
 
-            _logger.LogInformation("User {UserId} requesting download of File ID: {FileId}", userId, fileId);
+            _logger.LogInformation(
+                "User {UserId} requesting download of File ID: {FileId}",
+                userId,
+                fileId
+            );
 
             FileMetadata? fileMetadata;
             try
             {
                 // Find the file making sure it belongs to the current user
-                fileMetadata = await _context.FileMetadataEntries
-                                             .AsNoTracking() // Read-only is sufficient
-                                             .FirstOrDefaultAsync(f => f.Id == fileId && f.UserId == userId);
+                fileMetadata = await _context
+                    .FileMetadataEntries.AsNoTracking() // Read-only is sufficient
+                    .FirstOrDefaultAsync(f => f.Id == fileId && f.UserId == userId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Database error looking up FileMetadata for download (File ID {FileId}, User ID {UserId})", fileId, userId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Database error finding file." });
+                _logger.LogError(
+                    ex,
+                    "Database error looking up FileMetadata for download (File ID {FileId}, User ID {UserId})",
+                    fileId,
+                    userId
+                );
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { Message = "Database error finding file." }
+                );
             }
 
             if (fileMetadata == null)
             {
-                _logger.LogWarning("DownloadEncryptedFile failed: File ID {FileId} not found for User ID {UserId}.", fileId, userId);
+                _logger.LogWarning(
+                    "DownloadEncryptedFile failed: File ID {FileId} not found for User ID {UserId}.",
+                    fileId,
+                    userId
+                );
                 return NotFound(new { Message = "File not found." });
             }
 
             var relativeStoredPath = fileMetadata.StoredPath;
-            var absoluteStoredPath = Path.Combine(_webHostEnvironment.ContentRootPath, relativeStoredPath);
+            var absoluteStoredPath = Path.Combine(
+                _webHostEnvironment.ContentRootPath,
+                relativeStoredPath
+            );
             // ---
 
             // Check if the physical file actually exists using ABSOLUTE path
             if (!System.IO.File.Exists(absoluteStoredPath))
             {
-                _logger.LogError("Physical file not found at {AbsoluteStoredPath} during download request for File ID {FileId}.", absoluteStoredPath, fileId);
+                _logger.LogError(
+                    "Physical file not found at {AbsoluteStoredPath} during download request for File ID {FileId}.",
+                    absoluteStoredPath,
+                    fileId
+                );
                 return NotFound(new { Message = "Stored file is missing." });
             }
 
             try
             {
-                _logger.LogInformation("Streaming encrypted file {AbsoluteStoredPath} as download '{DownloadName}' with content type {ContentType}",
-                    absoluteStoredPath, fileMetadata.OriginalFileName, fileMetadata.ContentType ?? "application/octet-stream");
+                _logger.LogInformation(
+                    "Streaming encrypted file {AbsoluteStoredPath} as download '{DownloadName}' with content type {ContentType}",
+                    absoluteStoredPath,
+                    fileMetadata.OriginalFileName,
+                    fileMetadata.ContentType ?? "application/octet-stream"
+                );
 
                 // Use ABSOLUTE path for PhysicalFile
                 return PhysicalFile(
                     absoluteStoredPath,
                     fileMetadata.ContentType ?? "application/octet-stream",
                     fileMetadata.OriginalFileName
-                    );
+                );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error preparing file download for File ID {FileId} from path {AbsoluteStoredPath}", fileId, absoluteStoredPath);
-                return StatusCode(StatusCodes.Status500InternalServerError, new { Message = "Error occurred while preparing the file for download." });
+                _logger.LogError(
+                    ex,
+                    "Error preparing file download for File ID {FileId} from path {AbsoluteStoredPath}",
+                    fileId,
+                    absoluteStoredPath
+                );
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    new { Message = "Error occurred while preparing the file for download." }
+                );
             }
         }
     }

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+
 namespace AyanamisTower.WebAPI.Dtos;
 
 /// <summary>
@@ -11,7 +12,7 @@ public class GenerateImageTagsRequestDto
     /// </summary>
     [Required]
     public Guid FileId { get; set; }
-    
+
     /// <summary>
     /// Gets or sets the maximum number of tags to generate. Default value is 4.
     /// </summary>

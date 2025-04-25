@@ -1,5 +1,5 @@
-﻿using Flecs.NET.Core;
-using System.Collections.Generic; // Required for List<T>
+﻿using System.Collections.Generic; // Required for List<T>
+using Flecs.NET.Core;
 using Xunit; // Assuming xUnit is used based on [Fact]
 
 namespace AyanamisTower.NihilEx.Test;
@@ -20,14 +20,16 @@ public class PhaseTest
         // Use a list to record the execution order
         var executionOrder = new List<string>();
 
-        world.System("PreRenderSystem") // Give systems names for clarity
+        world
+            .System("PreRenderSystem") // Give systems names for clarity
             .Kind(engine.Phases["PreRender"])
             .Each(() =>
             {
                 executionOrder.Add("PreRender");
             });
 
-        world.System("OnRenderSystem")
+        world
+            .System("OnRenderSystem")
             .Kind(engine.Phases["OnRender"])
             .Each(() =>
             {
@@ -38,7 +40,8 @@ public class PhaseTest
                 executionOrder.Add("OnRender");
             });
 
-        world.System("PostRenderSystem")
+        world
+            .System("PostRenderSystem")
             .Kind(engine.Phases["PostRender"])
             .Each(() =>
             {
@@ -48,7 +51,6 @@ public class PhaseTest
                 Assert.DoesNotContain("PostRender", executionOrder);
                 executionOrder.Add("PostRender");
             });
-
 
         world.Progress();
 

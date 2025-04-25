@@ -15,17 +15,25 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
         /// <param name="handler">The event handler.</param>
         /// <returns>The entity.</returns>
         /// <exception cref="MissingMemberException">Thrown when the object does not have a BackRequested event.</exception>
-        public static Entity OnBackRequested(this Entity entity, Action<object?, NavigationViewBackRequestedEventArgs> handler)
+        public static Entity OnBackRequested(
+            this Entity entity,
+            Action<object?, NavigationViewBackRequestedEventArgs> handler
+        )
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("BackRequested");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<NavigationViewBackRequestedEventArgs>(handler));
+                eventInfo.AddEventHandler(
+                    obj,
+                    new EventHandler<NavigationViewBackRequestedEventArgs>(handler)
+                );
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a BackRequested event");
+                throw new MissingMemberException(
+                    $"obj of type {obj.GetType()} does not have a BackRequested event"
+                );
             }
 
             return entity;
@@ -38,17 +46,25 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
         /// <param name="handler">The event handler.</param>
         /// <returns>The entity.</returns>
         /// <exception cref="MissingMemberException">Thrown when the object does not have an ItemCollapsed event.</exception>
-        public static Entity OnItemCollapsed(this Entity entity, Action<object?, NavigationViewItemCollapsedEventArgs> handler)
+        public static Entity OnItemCollapsed(
+            this Entity entity,
+            Action<object?, NavigationViewItemCollapsedEventArgs> handler
+        )
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("ItemCollapsed");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<NavigationViewItemCollapsedEventArgs>(handler));
+                eventInfo.AddEventHandler(
+                    obj,
+                    new EventHandler<NavigationViewItemCollapsedEventArgs>(handler)
+                );
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a ItemCollapsed event");
+                throw new MissingMemberException(
+                    $"obj of type {obj.GetType()} does not have a ItemCollapsed event"
+                );
             }
 
             return entity;
@@ -61,17 +77,25 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
         /// <param name="handler">The event handler.</param>
         /// <returns>The entity.</returns>
         /// <exception cref="MissingMemberException">Thrown when the object does not have a ItemExpanding event.</exception>
-        public static Entity OnItemExpanding(this Entity entity, Action<object?, NavigationViewItemExpandingEventArgs> handler)
+        public static Entity OnItemExpanding(
+            this Entity entity,
+            Action<object?, NavigationViewItemExpandingEventArgs> handler
+        )
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("ItemExpanding");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<NavigationViewItemExpandingEventArgs>(handler));
+                eventInfo.AddEventHandler(
+                    obj,
+                    new EventHandler<NavigationViewItemExpandingEventArgs>(handler)
+                );
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a ItemExpanding event");
+                throw new MissingMemberException(
+                    $"obj of type {obj.GetType()} does not have a ItemExpanding event"
+                );
             }
 
             return entity;
@@ -84,17 +108,25 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
         /// <param name="handler">The event handler.</param>
         /// <returns>The entity.</returns>
         /// <exception cref="MissingMemberException">Thrown if the object does not have a ItemInvoked event.</exception>
-        public static Entity OnItemInvoked(this Entity entity, Action<object?, NavigationViewItemInvokedEventArgs> handler)
+        public static Entity OnItemInvoked(
+            this Entity entity,
+            Action<object?, NavigationViewItemInvokedEventArgs> handler
+        )
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("ItemInvoked");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<NavigationViewItemInvokedEventArgs>(handler));
+                eventInfo.AddEventHandler(
+                    obj,
+                    new EventHandler<NavigationViewItemInvokedEventArgs>(handler)
+                );
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a ItemInvoked event");
+                throw new MissingMemberException(
+                    $"obj of type {obj.GetType()} does not have a ItemInvoked event"
+                );
             }
 
             return entity;
@@ -107,17 +139,25 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
         /// <param name="handler">The event handler.</param>
         /// <returns>The entity.</returns>
         /// <exception cref="MissingMemberException">Thrown if the object does not have a DisplayModeChanged event.</exception>
-        public static Entity OnDisplayModeChanged(this Entity entity, Action<object?, NavigationViewDisplayModeChangedEventArgs> handler)
+        public static Entity OnDisplayModeChanged(
+            this Entity entity,
+            Action<object?, NavigationViewDisplayModeChangedEventArgs> handler
+        )
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("DisplayModeChanged");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<NavigationViewDisplayModeChangedEventArgs>(handler));
+                eventInfo.AddEventHandler(
+                    obj,
+                    new EventHandler<NavigationViewDisplayModeChangedEventArgs>(handler)
+                );
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a DisplayModeChanged event");
+                throw new MissingMemberException(
+                    $"obj of type {obj.GetType()} does not have a DisplayModeChanged event"
+                );
             }
 
             return entity;
@@ -130,17 +170,25 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
         /// <param name="handler">The event handler.</param>
         /// <returns>The entity.</returns>
         /// <exception cref="MissingMemberException">Thrown if the object does not have a PaneClosing event.</exception>
-        public static Entity OnPaneClosing(this Entity entity, Action<object?, NavigationViewPaneClosingEventArgs> handler)
+        public static Entity OnPaneClosing(
+            this Entity entity,
+            Action<object?, NavigationViewPaneClosingEventArgs> handler
+        )
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("PaneClosing");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<NavigationViewPaneClosingEventArgs>(handler));
+                eventInfo.AddEventHandler(
+                    obj,
+                    new EventHandler<NavigationViewPaneClosingEventArgs>(handler)
+                );
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a PaneClosing event");
+                throw new MissingMemberException(
+                    $"obj of type {obj.GetType()} does not have a PaneClosing event"
+                );
             }
 
             return entity;
@@ -153,17 +201,25 @@ namespace Avalonia.Flecs.FluentUI.Controls.ECS
         /// <param name="handler">The event handler.</param>
         /// <returns>The entity.</returns>
         /// <exception cref="MissingMemberException">Thrown if the object does not have a SelectionChanged event.</exception>
-        public static Entity OnNavViewSelectionChanged(this Entity entity, Action<object?, NavigationViewSelectionChangedEventArgs> handler)
+        public static Entity OnNavViewSelectionChanged(
+            this Entity entity,
+            Action<object?, NavigationViewSelectionChangedEventArgs> handler
+        )
         {
             var obj = entity.Get<object>();
             var eventInfo = obj.GetType().GetEvent("SelectionChanged");
             if (eventInfo != null)
             {
-                eventInfo.AddEventHandler(obj, new EventHandler<NavigationViewSelectionChangedEventArgs>(handler));
+                eventInfo.AddEventHandler(
+                    obj,
+                    new EventHandler<NavigationViewSelectionChangedEventArgs>(handler)
+                );
             }
             else
             {
-                throw new MissingMemberException($"obj of type {obj.GetType()} does not have a SelectionChanged event");
+                throw new MissingMemberException(
+                    $"obj of type {obj.GetType()} does not have a SelectionChanged event"
+                );
             }
 
             return entity;

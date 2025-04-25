@@ -34,7 +34,13 @@ namespace AyanamisTower.WebAPI.Util // Or a more general namespace
             using var memoryStream = new MemoryStream();
             // Prepend the IV to the ciphertext for easy retrieval during decryption
             memoryStream.Write(iv, 0, iv.Length); // IV is always 16 bytes for AES
-            using (var cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write))
+            using (
+                var cryptoStream = new CryptoStream(
+                    memoryStream,
+                    aes.CreateEncryptor(),
+                    CryptoStreamMode.Write
+                )
+            )
             {
                 cryptoStream.Write(dataToEncrypt, 0, dataToEncrypt.Length);
                 cryptoStream.FlushFinalBlock(); // Ensure all data is written
@@ -65,7 +71,10 @@ namespace AyanamisTower.WebAPI.Util // Or a more general namespace
             // Ensure data includes at least IV bytes (16 for AES)
             ArgumentNullException.ThrowIfNull(dataToDecrypt);
             if (dataToDecrypt.Length <= AesBlockSize)
-                throw new ArgumentException($"Invalid data length ({dataToDecrypt.Length} bytes) for decryption. Must be > {AesBlockSize} bytes.", nameof(dataToDecrypt));
+                throw new ArgumentException(
+                    $"Invalid data length ({dataToDecrypt.Length} bytes) for decryption. Must be > {AesBlockSize} bytes.",
+                    nameof(dataToDecrypt)
+                );
             using var aes = Aes.Create();
             aes.Key = key;
 
@@ -75,11 +84,21 @@ namespace AyanamisTower.WebAPI.Util // Or a more general namespace
             aes.IV = iv;
 
             // Create a MemoryStream for the actual ciphertext (excluding the IV)
-            using var ciphertextStream = new MemoryStream(dataToDecrypt, iv.Length, dataToDecrypt.Length - iv.Length);
+            using var ciphertextStream = new MemoryStream(
+                dataToDecrypt,
+                iv.Length,
+                dataToDecrypt.Length - iv.Length
+            );
             using var memoryStream = new MemoryStream(); // Output for decrypted data
 
             // Decrypt using CryptoStream in Read mode
-            using (var cryptoStream = new CryptoStream(ciphertextStream, aes.CreateDecryptor(), CryptoStreamMode.Read))
+            using (
+                var cryptoStream = new CryptoStream(
+                    ciphertextStream,
+                    aes.CreateDecryptor(),
+                    CryptoStreamMode.Read
+                )
+            )
             {
                 cryptoStream.CopyTo(memoryStream); // Read decrypted data into the output stream
             }

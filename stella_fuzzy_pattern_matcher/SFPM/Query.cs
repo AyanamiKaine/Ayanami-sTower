@@ -7,18 +7,18 @@ namespace AyanamisTower.SFPM;
 /// </summary>
 public class Query()
 {
-
     /// <summary>
     /// Sets the query data from a dictionary
     /// </summary>
     /// <param name="queryData"></param>
-    public Query(Dictionary<string, object> queryData) : this()
+    public Query(Dictionary<string, object> queryData)
+        : this()
     {
         _queryData = queryData;
     }
 
     private readonly Dictionary<string, object> _queryData = [];
-        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
     /// Adds a key and value to the query.
@@ -27,9 +27,7 @@ public class Query()
     /// <param name="value"></param>
     public Query Add(string key, object value)
     {
-        _queryData.Add(
-            key: key,
-            value: value);
+        _queryData.Add(key: key, value: value);
         return this;
     }
 

@@ -4,7 +4,7 @@ namespace AyanamisTower.WebAPI.Dtos;
 /// Represents an item in a file list, containing metadata about an uploaded file.
 /// </summary>
 /// <remarks>
-/// This DTO (Data Transfer Object) is used to transfer file metadata information 
+/// This DTO (Data Transfer Object) is used to transfer file metadata information
 /// between different layers of the application.
 /// </remarks>
 public class FileListItemDto
