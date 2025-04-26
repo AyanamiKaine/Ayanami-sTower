@@ -38,7 +38,11 @@ public static class Program
     {
         SdlHost.Init(SdlSubSystem.Everything);
         window = new Window("Basic Triangle Example", 400, 400, WindowFlags.Resizable);
-        gpuDevice = new GpuDevice(GpuShaderFormat.SpirV, enableDebugMode: true);
+        gpuDevice = new GpuDevice(
+            GpuShaderFormat.SpirV | GpuShaderFormat.Msl | GpuShaderFormat.Dxil,
+            enableDebugMode: true,
+            null
+        );
         gpuDevice.ClaimWindow(window);
 
         Console.WriteLine($"Created GPU device with driver: {gpuDevice.DriverName}");
@@ -135,6 +139,8 @@ public static class Program
             float viewY = margin;
 
             // Here we define the rectangular area we want to drawn in.
+            // Reminder that: " GPU API uses a left-handed coordinate system"
+            // https://wiki.libsdl.org/SDL3/CategoryGPU#coordinate-system
             renderPass?.SetViewport(
                 new()
                 {
