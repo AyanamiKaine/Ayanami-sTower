@@ -206,6 +206,653 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
     }
 
+    /// <summary>
+    /// A builder class for creating GpuGraphicsPipeline objects using a fluent interface.
+    /// </summary>
+    public class GraphicsPipelineBuilder
+    {
+        private readonly GpuDevice _device;
+        private GpuShader? _vertexShader;
+        private GpuShader? _fragmentShader;
+        private SDL_GPUPrimitiveType _primitiveType =
+            SDL_GPUPrimitiveType.SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+        private SDL_GPURasterizerState _rasterizerState = GetDefaultRasterizerState();
+        private SDL_GPUMultisampleState _multisampleState = GetDefaultMultisampleState();
+        private SDL_GPUDepthStencilState _depthStencilState = GetDefaultDepthStencilState();
+        private readonly List<SDL_GPUColorTargetDescription> _colorTargetDescriptions = new();
+        private SDL_GPUTextureFormat _depthStencilFormat =
+            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_INVALID;
+        private bool _hasDepthStencilTarget = false;
+        private readonly List<SDL_GPUVertexBufferDescription> _vertexBufferDescriptions = new();
+        private readonly List<SDL_GPUVertexAttribute> _vertexAttributes = new();
+        private uint _pipelineProps = 0;
+        private string? _pipelineName;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GraphicsPipelineBuilder"/> class.
+        /// </summary>
+        /// <param name="device">The GpuDevice to use for creating the pipeline.</param>
+        /// <exception cref="ArgumentNullException">Thrown if device is null.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the device is disposed.</exception>
+        public GraphicsPipelineBuilder(GpuDevice device)
+        {
+            ArgumentNullException.ThrowIfNull(device);
+            ObjectDisposedException.ThrowIf(device.IsDisposed, device);
+            _device = device;
+        }
+
+        // --- Shader Configuration ---
+
+        /// <summary>
+        /// Sets the vertex shader for the pipeline.
+        /// </summary>
+        /// <param name="shader">The vertex shader.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if shader is null.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the shader is disposed.</exception>
+        /// <exception cref="ArgumentException">Thrown if the shader is not a vertex shader.</exception>
+        public GraphicsPipelineBuilder SetVertexShader(GpuShader shader)
+        {
+            ArgumentNullException.ThrowIfNull(shader);
+            ObjectDisposedException.ThrowIf(shader.IsDisposed, shader);
+            if (shader.Stage != SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX)
+            {
+                throw new ArgumentException("Shader must be a vertex shader.", nameof(shader));
+            }
+            _vertexShader = shader;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the fragment shader for the pipeline.
+        /// </summary>
+        /// <param name="shader">The fragment shader.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if shader is null.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the shader is disposed.</exception>
+        /// <exception cref="ArgumentException">Thrown if the shader is not a fragment shader.</exception>
+        public GraphicsPipelineBuilder SetFragmentShader(GpuShader shader)
+        {
+            ArgumentNullException.ThrowIfNull(shader);
+            ObjectDisposedException.ThrowIf(shader.IsDisposed, shader);
+            if (shader.Stage != SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT)
+            {
+                throw new ArgumentException("Shader must be a fragment shader.", nameof(shader));
+            }
+            _fragmentShader = shader;
+            return this;
+        }
+
+        // --- Primitive Assembly Configuration ---
+
+        /// <summary>
+        /// Sets the primitive topology type for the pipeline.
+        /// Default is SDL_GPU_PRIMITIVETYPE_TRIANGLELIST.
+        /// </summary>
+        /// <param name="type">The primitive type.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetPrimitiveType(SDL_GPUPrimitiveType type)
+        {
+            _primitiveType = type;
+            return this;
+        }
+
+        // --- Rasterizer State Configuration ---
+
+        /// <summary>
+        /// Sets the polygon fill mode. Default is FILL.
+        /// </summary>
+        /// <param name="mode">The fill mode.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetFillMode(SDL_GPUFillMode mode)
+        {
+            _rasterizerState.fill_mode = mode;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the polygon culling mode. Default is NONE.
+        /// </summary>
+        /// <param name="mode">The cull mode.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetCullMode(SDL_GPUCullMode mode)
+        {
+            _rasterizerState.cull_mode = mode;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the front-facing polygon orientation. Default is COUNTER_CLOCKWISE.
+        /// </summary>
+        /// <param name="frontFace">The front face orientation.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetFrontFace(SDL_GPUFrontFace frontFace)
+        {
+            _rasterizerState.front_face = frontFace;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables or disables depth bias. Default is disabled.
+        /// </summary>
+        /// <param name="enabled">True to enable depth bias, false to disable.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder EnableDepthBias(bool enabled)
+        {
+            _rasterizerState.enable_depth_bias = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the depth bias parameters. Only effective if depth bias is enabled.
+        /// </summary>
+        /// <param name="constantFactor">The constant depth bias factor.</param>
+        /// <param name="clamp">The maximum (or minimum) depth bias of an element.</param>
+        /// <param name="slopeFactor">Scales the maximum depth slope of a triangle.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetDepthBias(
+            float constantFactor,
+            float clamp,
+            float slopeFactor
+        )
+        {
+            _rasterizerState.depth_bias_constant_factor = constantFactor;
+            _rasterizerState.depth_bias_clamp = clamp;
+            _rasterizerState.depth_bias_slope_factor = slopeFactor;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables or disables depth clipping. Default is enabled.
+        /// </summary>
+        /// <param name="enabled">True to enable depth clipping, false to disable.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder EnableDepthClip(bool enabled)
+        {
+            _rasterizerState.enable_depth_clip = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the entire rasterizer state.
+        /// </summary>
+        /// <param name="state">The rasterizer state.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetRasterizerState(SDL_GPURasterizerState state)
+        {
+            _rasterizerState = state;
+            return this;
+        }
+
+        // --- Multisample State Configuration ---
+
+        /// <summary>
+        /// Sets the multisample count. Default is 1 sample.
+        /// </summary>
+        /// <param name="count">The sample count.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetSampleCount(SDL_GPUSampleCount count)
+        {
+            _multisampleState.sample_count = count;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the multisample mask. Default is 0xFFFFFFFF.
+        /// </summary>
+        /// <param name="mask">The sample mask.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetSampleMask(uint mask)
+        {
+            _multisampleState.sample_mask = mask;
+            _multisampleState.enable_mask = true; // Assume if setting mask, it should be enabled
+            return this;
+        }
+
+        /// <summary>
+        /// Enables or disables the multisample mask. Default is disabled (mask is 0xFFFFFFFF).
+        /// </summary>
+        /// <param name="enabled">True to enable the mask, false to disable.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder EnableSampleMask(bool enabled)
+        {
+            _multisampleState.enable_mask = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the entire multisample state.
+        /// </summary>
+        /// <param name="state">The multisample state.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetMultisampleState(SDL_GPUMultisampleState state)
+        {
+            _multisampleState = state;
+            return this;
+        }
+
+        // --- Depth/Stencil State Configuration ---
+
+        /// <summary>
+        /// Enables or disables depth testing. Default is disabled.
+        /// </summary>
+        /// <param name="enabled">True to enable depth testing, false to disable.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder EnableDepthTest(bool enabled)
+        {
+            _depthStencilState.enable_depth_test = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables or disables depth writing. Default is disabled.
+        /// </summary>
+        /// <param name="enabled">True to enable depth writing, false to disable.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder EnableDepthWrite(bool enabled)
+        {
+            _depthStencilState.enable_depth_write = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the depth comparison function. Default is ALWAYS.
+        /// </summary>
+        /// <param name="op">The comparison operation.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetDepthCompareOp(SDL_GPUCompareOp op)
+        {
+            _depthStencilState.compare_op = op;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables or disables stencil testing. Default is disabled.
+        /// </summary>
+        /// <param name="enabled">True to enable stencil testing, false to disable.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder EnableStencilTest(bool enabled)
+        {
+            _depthStencilState.enable_stencil_test = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the stencil operation state for front-facing polygons.
+        /// </summary>
+        /// <param name="state">The stencil operation state.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetFrontStencilState(SDL_GPUStencilOpState state)
+        {
+            _depthStencilState.front_stencil_state = state;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the stencil operation state for back-facing polygons.
+        /// </summary>
+        /// <param name="state">The stencil operation state.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetBackStencilState(SDL_GPUStencilOpState state)
+        {
+            _depthStencilState.back_stencil_state = state;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the stencil compare mask. Default is 0xFF.
+        /// </summary>
+        /// <param name="mask">The compare mask.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetStencilCompareMask(byte mask)
+        {
+            _depthStencilState.compare_mask = mask;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the stencil write mask. Default is 0xFF.
+        /// </summary>
+        /// <param name="mask">The write mask.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetStencilWriteMask(byte mask)
+        {
+            _depthStencilState.write_mask = mask;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the entire depth/stencil state.
+        /// </summary>
+        /// <param name="state">The depth/stencil state.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetDepthStencilState(SDL_GPUDepthStencilState state)
+        {
+            _depthStencilState = state;
+            return this;
+        }
+
+        // --- Target Configuration ---
+
+        /// <summary>
+        /// Adds a color target description to the pipeline.
+        /// </summary>
+        /// <param name="description">The color target description.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder AddColorTarget(SDL_GPUColorTargetDescription description)
+        {
+            _colorTargetDescriptions.Add(description);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a color target with a specific format and default blend state (no blend, write all).
+        /// </summary>
+        /// <param name="format">The texture format of the color target.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder AddColorTarget(SDL_GPUTextureFormat format)
+        {
+            return AddColorTarget(
+                new SDL_GPUColorTargetDescription
+                {
+                    format = format,
+                    blend_state =
+                        GetDefaultBlendState() // Use default blend state
+                    ,
+                }
+            );
+        }
+
+        /// <summary>
+        /// Sets the format for the depth/stencil target.
+        /// Setting this also enables the depth/stencil target.
+        /// </summary>
+        /// <param name="format">The depth/stencil texture format.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetDepthStencilFormat(SDL_GPUTextureFormat format)
+        {
+            _depthStencilFormat = format;
+            _hasDepthStencilTarget = (format != SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_INVALID);
+            return this;
+        }
+
+        // --- Vertex Input State Configuration ---
+
+        /// <summary>
+        /// Adds a vertex buffer description.
+        /// </summary>
+        /// <param name="description">The vertex buffer description.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder AddVertexBuffer(SDL_GPUVertexBufferDescription description)
+        {
+            _vertexBufferDescriptions.Add(description);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a vertex attribute description.
+        /// </summary>
+        /// <param name="attribute">The vertex attribute description.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder AddVertexAttribute(SDL_GPUVertexAttribute attribute)
+        {
+            _vertexAttributes.Add(attribute);
+            return this;
+        }
+
+        // --- Pipeline Properties ---
+
+        /// <summary>
+        /// Sets the pipeline properties handle.
+        /// </summary>
+        /// <param name="props">The properties handle.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetProperties(uint props)
+        {
+            _pipelineProps = props;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets a debug name for the pipeline.
+        /// </summary>
+        /// <param name="name">The debug name.</param>
+        /// <returns>The builder instance for chaining.</returns>
+        public GraphicsPipelineBuilder SetName(string name)
+        {
+            _pipelineName = name;
+            return this;
+        }
+
+        // --- Build Method ---
+
+        /// <summary>
+        /// Builds the GpuGraphicsPipeline using the configured state.
+        /// </summary>
+        /// <returns>A new GpuGraphicsPipeline instance.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if required state (like shaders) is missing.</exception>
+        /// <exception cref="SDLException">Thrown if pipeline creation fails at the SDL level.</exception>
+        public unsafe GpuGraphicsPipeline Build()
+        {
+            // --- Validation ---
+            if (_vertexShader == null)
+            {
+                throw new InvalidOperationException(
+                    "Vertex shader must be set before building the pipeline."
+                );
+            }
+            if (_fragmentShader == null)
+            {
+                throw new InvalidOperationException(
+                    "Fragment shader must be set before building the pipeline."
+                );
+            }
+            if (_colorTargetDescriptions.Count == 0 && !_hasDepthStencilTarget)
+            {
+                // Maybe allow this? Check SDL requirements. For now, assume at least one target.
+                // throw new InvalidOperationException("Pipeline must have at least one color target or a depth/stencil target.");
+            }
+
+            // --- Prepare CreateInfo Struct ---
+
+            // Use stackalloc for small, fixed-size arrays where possible for efficiency.
+            // Note: Pointers from stackalloc are only valid within this method's scope.
+            int numColorTargets = _colorTargetDescriptions.Count;
+            SDL_GPUColorTargetDescription* colorTargetsPtr =
+                stackalloc SDL_GPUColorTargetDescription[numColorTargets];
+            for (int i = 0; i < numColorTargets; i++)
+            {
+                colorTargetsPtr[i] = _colorTargetDescriptions[i];
+            }
+
+            int numVertexBuffers = _vertexBufferDescriptions.Count;
+            SDL_GPUVertexBufferDescription* vertexBuffersPtr =
+                stackalloc SDL_GPUVertexBufferDescription[numVertexBuffers];
+            for (int i = 0; i < numVertexBuffers; i++)
+            {
+                vertexBuffersPtr[i] = _vertexBufferDescriptions[i];
+            }
+
+            int numVertexAttributes = _vertexAttributes.Count;
+            SDL_GPUVertexAttribute* vertexAttributesPtr =
+                stackalloc SDL_GPUVertexAttribute[numVertexAttributes];
+            for (int i = 0; i < numVertexAttributes; i++)
+            {
+                vertexAttributesPtr[i] = _vertexAttributes[i];
+            }
+
+            // If a pipeline name was provided, set it via properties
+            uint finalProps = _pipelineProps;
+            IntPtr namePtr = IntPtr.Zero;
+            if (!string.IsNullOrEmpty(_pipelineName))
+            {
+                // If no properties were provided externally, create temporary ones
+                bool ownProps = finalProps == 0;
+                if (ownProps)
+                {
+                    finalProps = SDL_CreateProperties();
+                    if (finalProps == 0)
+                    {
+                        throw new SDLException(
+                            "Failed to create temporary properties for pipeline name."
+                        );
+                    }
+                }
+
+                try
+                {
+                    // Set the name property
+                    if (
+                        !SDL_SetStringProperty(
+                            finalProps,
+                            SDL_PROP_GPU_GRAPHICSPIPELINE_CREATE_NAME_STRING,
+                            _pipelineName
+                        )
+                    )
+                    {
+                        if (ownProps)
+                            SDL_DestroyProperties(finalProps); // Clean up temp props on failure
+                        throw new SDLException(
+                            $"Failed to set pipeline name property: {SdlHost.GetError()}"
+                        );
+                    }
+                }
+                catch
+                {
+                    if (ownProps)
+                        SDL_DestroyProperties(finalProps); // Ensure cleanup on exception
+                    throw;
+                }
+
+                // If we created temporary properties, destroy them *after* pipeline creation
+                // This is handled below in the try/finally block
+            }
+
+            SDL_GPUGraphicsPipelineCreateInfo createInfo = default;
+            try
+            {
+                createInfo = new SDL_GPUGraphicsPipelineCreateInfo
+                {
+                    vertex_shader = _vertexShader.Handle,
+                    fragment_shader = _fragmentShader.Handle,
+                    vertex_input_state = new SDL_GPUVertexInputState
+                    {
+                        vertex_buffer_descriptions = vertexBuffersPtr,
+                        num_vertex_buffers = (uint)numVertexBuffers,
+                        vertex_attributes = vertexAttributesPtr,
+                        num_vertex_attributes = (uint)numVertexAttributes,
+                    },
+                    primitive_type = _primitiveType,
+                    rasterizer_state = _rasterizerState,
+                    multisample_state = _multisampleState,
+                    depth_stencil_state = _depthStencilState,
+                    target_info = new SDL_GPUGraphicsPipelineTargetInfo
+                    {
+                        color_target_descriptions = colorTargetsPtr,
+                        num_color_targets = (uint)numColorTargets,
+                        depth_stencil_format = _depthStencilFormat,
+                        has_depth_stencil_target = _hasDepthStencilTarget,
+                    },
+                    props =
+                        finalProps // Use the potentially modified props handle
+                    ,
+                };
+
+                // --- Create Pipeline ---
+                // The actual GpuGraphicsPipeline constructor is internal and takes the createInfo struct
+                return _device.CreateGraphicsPipeline(createInfo);
+            }
+            finally
+            {
+                // If we created temporary properties *only* for the name, destroy them now
+                if (finalProps != 0 && _pipelineProps == 0 && !string.IsNullOrEmpty(_pipelineName))
+                {
+                    SDL_DestroyProperties(finalProps);
+                }
+            }
+        }
+
+        // --- Default State Helpers ---
+
+        private static SDL_GPURasterizerState GetDefaultRasterizerState()
+        {
+            return new SDL_GPURasterizerState
+            {
+                fill_mode = SDL_GPUFillMode.SDL_GPU_FILLMODE_FILL,
+                cull_mode = SDL_GPUCullMode.SDL_GPU_CULLMODE_NONE, // Often BACK is preferred, but NONE is safer default
+                front_face = SDL_GPUFrontFace.SDL_GPU_FRONTFACE_COUNTER_CLOCKWISE,
+                enable_depth_bias = false,
+                depth_bias_constant_factor = 0,
+                depth_bias_clamp = 0,
+                depth_bias_slope_factor = 0,
+                enable_depth_clip =
+                    true // Typically enabled
+                ,
+            };
+        }
+
+        private static SDL_GPUMultisampleState GetDefaultMultisampleState()
+        {
+            return new SDL_GPUMultisampleState
+            {
+                sample_count = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1,
+                sample_mask = 0, //  /**< Reserved for future use. Must be set to 0. */
+                enable_mask = false, // /**< Reserved for future use. Must be set to false. */
+            };
+        }
+
+        private static SDL_GPUDepthStencilState GetDefaultDepthStencilState()
+        {
+            return new SDL_GPUDepthStencilState
+            {
+                enable_depth_test = false,
+                enable_depth_write = false,
+                compare_op = SDL_GPUCompareOp.SDL_GPU_COMPAREOP_ALWAYS, // Pass always if depth test disabled
+                enable_stencil_test = false,
+                back_stencil_state = new SDL_GPUStencilOpState
+                {
+                    fail_op = SDL_GPUStencilOp.SDL_GPU_STENCILOP_KEEP,
+                    pass_op = SDL_GPUStencilOp.SDL_GPU_STENCILOP_KEEP,
+                    depth_fail_op = SDL_GPUStencilOp.SDL_GPU_STENCILOP_KEEP,
+                    compare_op = SDL_GPUCompareOp.SDL_GPU_COMPAREOP_ALWAYS,
+                },
+                front_stencil_state = new SDL_GPUStencilOpState
+                {
+                    fail_op = SDL_GPUStencilOp.SDL_GPU_STENCILOP_KEEP,
+                    pass_op = SDL_GPUStencilOp.SDL_GPU_STENCILOP_KEEP,
+                    depth_fail_op = SDL_GPUStencilOp.SDL_GPU_STENCILOP_KEEP,
+                    compare_op = SDL_GPUCompareOp.SDL_GPU_COMPAREOP_ALWAYS,
+                },
+                compare_mask = 0xFF,
+                write_mask = 0xFF,
+            };
+        }
+
+        private static SDL_GPUColorTargetBlendState GetDefaultBlendState()
+        {
+            // Default: No blend, write all color components
+            return new SDL_GPUColorTargetBlendState
+            {
+                enable_blend = false,
+                // Factors/ops below are ignored if enable_blend is false, but set sensible defaults
+                src_color_blendfactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE,
+                dst_color_blendfactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ZERO,
+                color_blend_op = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD,
+                src_alpha_blendfactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ONE,
+                dst_alpha_blendfactor = SDL_GPUBlendFactor.SDL_GPU_BLENDFACTOR_ZERO,
+                alpha_blend_op = SDL_GPUBlendOp.SDL_GPU_BLENDOP_ADD,
+                color_write_mask =
+                    SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_R
+                    | SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_G
+                    | SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_B
+                    | SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_A,
+                enable_color_write_mask =
+                    true // Explicitly enable writing all components
+                ,
+            };
+        }
+    }
+
     public sealed class GpuShader : GpuResource // Inherit from GpuResource
     {
         // Store info potentially needed later
