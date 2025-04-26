@@ -42,15 +42,16 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     [Flags]
     public enum GpuBufferUsageFlags : uint
     {
+        None = 0,
         Vertex = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_VERTEX,
         Index = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_INDEX,
         Indirect = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_INDIRECT,
         GraphicsStorageRead = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ,
         ComputeStorageRead = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ,
-        ComputeStorageWrite = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE,
 
         // Convenience combinations
         StorageRead = GraphicsStorageRead | ComputeStorageRead,
+        ComputeStorageWrite = SDL_GPUBufferUsageFlags.SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE,
         StorageWrite = ComputeStorageWrite, // Currently only ComputeStorageWrite exists
         StorageReadWrite = StorageRead | StorageWrite,
     }
@@ -62,15 +63,16 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     [Flags]
     public enum GpuTextureUsageFlags : uint
     {
+        None = 0,
         Sampler = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_SAMPLER,
         ColorTarget = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET,
         DepthStencilTarget = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
         GraphicsStorageRead = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_GRAPHICS_STORAGE_READ,
         ComputeStorageRead = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ,
-        ComputeStorageWrite = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE,
 
         // Convenience combinations
         StorageRead = GraphicsStorageRead | ComputeStorageRead,
+        ComputeStorageWrite = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE,
         StorageWrite = ComputeStorageWrite,
         StorageReadWrite = StorageRead | StorageWrite,
     }
@@ -673,6 +675,10 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             SDL_BindGPUGraphicsPipeline(_passHandle, pipeline.Handle);
         }
 
+        /// <summary>
+        /// Sets the current viewport state on a command buffer.
+        /// </summary>
+        /// <param name="viewport"></param>
         public void SetViewport(SDL_GPUViewport viewport) // Pass SDL struct directly
         {
             SDL_SetGPUViewport(_passHandle, in viewport);
