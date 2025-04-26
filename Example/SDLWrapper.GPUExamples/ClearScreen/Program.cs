@@ -36,7 +36,7 @@ public static class Program
     private static void Init()
     {
         SdlHost.Init(SdlSubSystem.Everything);
-        window = new Window("Test", 600, 800, WindowFlags.Resizable);
+        window = new Window("Clear Screen Example", 600, 800, WindowFlags.Resizable);
         gpuDevice = new GpuDevice(GpuShaderFormat.SpirV, enableDebugMode: true);
 
         Console.WriteLine($"Created GPU device with driver: {gpuDevice.DriverName}");
