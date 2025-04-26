@@ -1606,6 +1606,472 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     }
 
     /// <summary>
+    /// Manages swapchain presentation, including handling MSAA targets and resolve operations.
+    /// </summary>
+    public sealed class GpuSwapchainManager : IDisposable
+    {
+        private readonly GpuDevice _device;
+        private readonly Window _window;
+        private bool _disposed = false;
+
+        private readonly List<SDL_GPUSampleCount> _supportedSampleCounts = new();
+        private SDL_GPUSampleCount _actualSampleCount = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1;
+        private SDL_GPUTextureFormat _renderTargetFormat =
+            SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_INVALID;
+
+        private GpuTexture? _msaaRenderTarget = null; // Only created if _actualSampleCount > 1
+        private GpuTexture? _resolveTexture = null; // Only created if _actualSampleCount > 1
+        private GpuTexture? _singleSampleRenderTarget = null; // Created if _actualSampleCount == 1
+
+        private uint _internalWidth = 0;
+        private uint _internalHeight = 0;
+
+        /// <summary>
+        /// Gets the GpuDevice associated with this manager.
+        /// </summary>
+        public GpuDevice Device => _device;
+
+        /// <summary>
+        /// Gets the Window associated with this manager.
+        /// </summary>
+        public Window Window => _window;
+
+        /// <summary>
+        /// Gets the actual MSAA sample count being used, based on requested level and hardware support.
+        /// </summary>
+        public SDL_GPUSampleCount ActualSampleCount => _actualSampleCount;
+
+        /// <summary>
+        /// Gets the texture format of the internal render targets (matches swapchain format).
+        /// </summary>
+        public SDL_GPUTextureFormat RenderTargetFormat => _renderTargetFormat;
+
+        /// <summary>
+        /// Gets the texture that should be used as the primary render target for drawing commands.
+        /// This will be the MSAA texture if MSAA is active (>1x), otherwise the single-sampled texture.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Thrown if SetMSAA has not been called successfully.</exception>
+        public GpuTexture RenderTarget
+        {
+            get
+            {
+                if (_renderTargetFormat == SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_INVALID)
+                {
+                    throw new InvalidOperationException(
+                        "SetMSAA must be called successfully before accessing RenderTarget."
+                    );
+                }
+                return _actualSampleCount > SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1
+                    ? _msaaRenderTarget! // Non-null if MSAA > 1x and init succeeded
+                    : _singleSampleRenderTarget!; // Non-null if MSAA == 1x and init succeeded
+            }
+        }
+
+        /// <summary>
+        /// Gets the texture used for resolving the MSAA render target. Returns null if MSAA is not active (1x).
+        /// </summary>
+        public GpuTexture? ResolveTarget => _resolveTexture; // Null if _actualSampleCount == 1
+
+        /// <summary>
+        /// Gets the width of the internal render targets.
+        /// </summary>
+        public uint InternalWidth => _internalWidth;
+
+        /// <summary>
+        /// Gets the height of the internal render targets.
+        /// </summary>
+        public uint InternalHeight => _internalHeight;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GpuSwapchainManager"/> class.
+        /// </summary>
+        /// <param name="device">The GPU device.</param>
+        /// <param name="window">The window to manage.</param>
+        /// <exception cref="ArgumentNullException">Thrown if device or window is null.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if device or window is disposed.</exception>
+        public GpuSwapchainManager(GpuDevice device, Window window)
+        {
+            ArgumentNullException.ThrowIfNull(device);
+            ArgumentNullException.ThrowIfNull(window);
+            ObjectDisposedException.ThrowIf(device.IsDisposed, device);
+            ObjectDisposedException.ThrowIf(window.IsDisposed, window);
+
+            _device = device;
+            _window = window;
+
+            // Initial query for format, but textures are created in SetMSAA
+            _renderTargetFormat = _device.GetSwapchainTextureFormat(_window);
+            if (_renderTargetFormat == SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_INVALID)
+            {
+                throw new SDLException(
+                    "Could not get swapchain texture format during manager initialization."
+                );
+            }
+        }
+
+        /// <summary>
+        /// Sets the desired maximum MSAA level and creates/recreates necessary textures.
+        /// The actual level used will be the highest supported level up to the desired maximum.
+        /// </summary>
+        /// <param name="desiredMaxSampleCount">The desired maximum sample count (e.g., 8x).</param>
+        /// <param name="internalWidth">Width of the internal render targets. Defaults to window width if 0.</param>
+        /// <param name="internalHeight">Height of the internal render targets. Defaults to window height if 0.</param>
+        /// <exception cref="SDLException">Thrown if texture creation fails.</exception>
+        /// <exception cref="NotSupportedException">Thrown if no sample counts are supported.</exception>
+        public void SetMSAA(
+            SDL_GPUSampleCount desiredMaxSampleCount,
+            uint internalWidth = 0,
+            uint internalHeight = 0
+        )
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            // Use window size if internal dimensions are not provided
+            _internalWidth = internalWidth == 0 ? (uint)_window.Size.X : internalWidth;
+            _internalHeight = internalHeight == 0 ? (uint)_window.Size.Y : internalHeight;
+            if (_internalWidth == 0 || _internalHeight == 0)
+            {
+                throw new ArgumentException("Internal width and height must be greater than zero.");
+            }
+
+            // Re-query format in case it changed (e.g., HDR toggle)
+            _renderTargetFormat = _device.GetSwapchainTextureFormat(_window);
+            if (_renderTargetFormat == SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_INVALID)
+            {
+                throw new SDLException("Could not get swapchain texture format when setting MSAA.");
+            }
+
+            // Determine supported sample counts
+            _supportedSampleCounts.Clear();
+            SDL_GPUSampleCount[] possibleSampleCounts =
+            [
+                SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1,
+                SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_2,
+                SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_4,
+                SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_8,
+            ];
+
+            foreach (var sampleCount in possibleSampleCounts)
+            {
+                if (_device.SupportsSampleCount(_renderTargetFormat, sampleCount))
+                {
+                    _supportedSampleCounts.Add(sampleCount);
+                }
+            }
+
+            if (_supportedSampleCounts.Count == 0)
+            {
+                throw new NotSupportedException(
+                    "GPU does not support any MSAA sample counts for the current format."
+                );
+            }
+
+            // Find the highest supported count <= desiredMaxSampleCount
+            _actualSampleCount = _supportedSampleCounts
+                .Where(sc => sc <= desiredMaxSampleCount)
+                .DefaultIfEmpty(SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1) // Fallback to 1x
+                .Max(); // Get the highest supported level
+
+            Console.WriteLine(
+                $"Requested MSAA: <= {(1 << (int)desiredMaxSampleCount)}x. Actual MSAA set to: {(1 << (int)_actualSampleCount)}x"
+            );
+
+            // Dispose existing textures before creating new ones
+            DisposeIntermediateTextures();
+
+            // Create new textures based on the actual sample count
+            try
+            {
+                if (_actualSampleCount > SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1)
+                {
+                    // Create MSAA Render Target
+                    _msaaRenderTarget = _device.CreateTexture(
+                        new SDL_GPUTextureCreateInfo
+                        {
+                            type = SDL_GPUTextureType.SDL_GPU_TEXTURETYPE_2D,
+                            format = _renderTargetFormat,
+                            usage = SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET, // Resolve source doesn't need SAMPLER
+                            width = _internalWidth,
+                            height = _internalHeight,
+                            layer_count_or_depth = 1,
+                            num_levels = 1,
+                            sample_count = _actualSampleCount,
+                            props = 0,
+                        }
+                    );
+                    _msaaRenderTarget.SetName($"Managed_MSAART_{(1 << (int)_actualSampleCount)}x");
+
+                    // Create Resolve Target
+                    _resolveTexture = _device.CreateTexture(
+                        new SDL_GPUTextureCreateInfo
+                        {
+                            type = SDL_GPUTextureType.SDL_GPU_TEXTURETYPE_2D,
+                            format = _renderTargetFormat,
+                            usage =
+                                SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET
+                                | SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_SAMPLER, // Needs sampler for blit
+                            width = _internalWidth,
+                            height = _internalHeight,
+                            layer_count_or_depth = 1,
+                            num_levels = 1,
+                            sample_count = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1, // Resolve is always 1x
+                            props = 0,
+                        }
+                    );
+                    _resolveTexture.SetName("Managed_ResolveTarget");
+                }
+                else // _actualSampleCount == SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1
+                {
+                    // Create Single-Sample Render Target (needs sampler usage for blit)
+                    _singleSampleRenderTarget = _device.CreateTexture(
+                        new SDL_GPUTextureCreateInfo
+                        {
+                            type = SDL_GPUTextureType.SDL_GPU_TEXTURETYPE_2D,
+                            format = _renderTargetFormat,
+                            usage =
+                                SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET
+                                | SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_SAMPLER,
+                            width = _internalWidth,
+                            height = _internalHeight,
+                            layer_count_or_depth = 1,
+                            num_levels = 1,
+                            sample_count = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1,
+                            props = 0,
+                        }
+                    );
+                    _singleSampleRenderTarget.SetName("Managed_SingleSampleRT");
+                }
+            }
+            catch
+            {
+                // Clean up if creation failed halfway
+                DisposeIntermediateTextures();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Acquires the next frame's command buffer and swapchain texture.
+        /// </summary>
+        /// <returns>A FrameInfo object containing necessary resources for the frame, or null if acquisition fails.</returns>
+        /// <exception cref="ObjectDisposedException">Thrown if the manager, device, or window is disposed.</exception>
+        public FrameInfo? AcquireNextFrame()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ObjectDisposedException.ThrowIf(_device.IsDisposed, _device);
+            ObjectDisposedException.ThrowIf(_window.IsDisposed, _window);
+
+            GpuCommandBuffer commandBuffer = _device.AcquireCommandBuffer();
+            IntPtr swapchainTextureHandle;
+            uint swapchainWidth,
+                swapchainHeight;
+
+            if (
+                !commandBuffer.WaitAndAcquireSwapchainTexture(
+                    _window,
+                    out swapchainTextureHandle,
+                    out swapchainWidth,
+                    out swapchainHeight
+                )
+            )
+            {
+                Console.WriteLine("Failed to acquire swapchain texture in manager.");
+                commandBuffer.Cancel(); // Cancel the acquired buffer
+                return null; // Indicate failure
+            }
+
+            return new FrameInfo(
+                commandBuffer,
+                swapchainTextureHandle,
+                swapchainWidth,
+                swapchainHeight
+            );
+        }
+
+        /// <summary>
+        /// Configures and begins a render pass targeting the appropriate internal render target (MSAA or single-sampled).
+        /// Automatically sets up MSAA resolve if needed.
+        /// </summary>
+        /// <param name="frameInfo">The FrameInfo obtained from AcquireNextFrame.</param>
+        /// <param name="loadOp">How to handle the target at the start of the pass.</param>
+        /// <param name="clearColor">The clear color if loadOp is CLEAR.</param>
+        /// <param name="depthStencilInfo">Optional depth/stencil target info.</param>
+        /// <returns>An active GpuRenderPass.</returns>
+        /// <exception cref="InvalidOperationException">Thrown if SetMSAA has not been called successfully.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if frameInfo is null.</exception>
+        public GpuRenderPass BeginRenderPass(
+            FrameInfo frameInfo,
+            SDL_GPULoadOp loadOp = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+            FColor clearColor = default,
+            SDL_GPUDepthStencilTargetInfo depthStencilInfo = default
+        )
+        {
+            ArgumentNullException.ThrowIfNull(frameInfo);
+            if (RenderTarget == null) // RenderTarget getter throws if SetMSAA wasn't called
+            {
+                // This path should ideally not be hit due to the getter check, but defensive coding
+                throw new InvalidOperationException(
+                    "Render target is not available. Was SetMSAA called?"
+                );
+            }
+
+            var colorTargetInfo = new SDL_GPUColorTargetInfo
+            {
+                texture = RenderTarget.Handle, // Target the correct internal texture
+                load_op = loadOp,
+                clear_color = clearColor,
+                cycle =
+                    false // Internal targets are not cycled
+                ,
+            };
+
+            if (_actualSampleCount > SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1)
+            {
+                // Setup resolve if MSAA is active
+                colorTargetInfo.store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_RESOLVE;
+                colorTargetInfo.resolve_texture = ResolveTarget!.Handle; // Should be non-null here
+                colorTargetInfo.cycle_resolve_texture = false;
+            }
+            else
+            {
+                // Just store if not using MSAA
+                colorTargetInfo.store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE;
+                colorTargetInfo.resolve_texture = IntPtr.Zero;
+            }
+
+            Span<SDL_GPUColorTargetInfo> colorTargets = [colorTargetInfo];
+
+            // Pass depth info directly
+            return frameInfo.CommandBuffer.BeginRenderPass(colorTargets, depthStencilInfo);
+        }
+
+        /// <summary>
+        /// Ends the frame by blitting the rendered result to the swapchain and submitting the command buffer.
+        /// </summary>
+        /// <param name="frameInfo">The FrameInfo obtained from AcquireNextFrame.</param>
+        /// <exception cref="ArgumentNullException">Thrown if frameInfo is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if SetMSAA has not been called successfully.</exception>
+        /// <exception cref="SDLException">Thrown if the blit or submit fails.</exception>
+        public void PresentFrame(FrameInfo frameInfo)
+        {
+            ArgumentNullException.ThrowIfNull(frameInfo);
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (RenderTarget == null) // Check again before accessing targets
+            {
+                throw new InvalidOperationException(
+                    "Render target is not available. Was SetMSAA called?"
+                );
+            }
+
+            // Determine which texture holds the final image for this frame
+            GpuTexture sourceTextureForBlit =
+                (_actualSampleCount > SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1)
+                    ? ResolveTarget! // Use resolved texture if MSAA > 1x
+                    : RenderTarget; // Use the single-sampled RT if MSAA == 1x
+
+            // Create the BlitInfo struct
+            SDL_GPUBlitInfo blitInfo = new SDL_GPUBlitInfo
+            {
+                source = new SDL_GPUBlitRegion
+                {
+                    texture = sourceTextureForBlit.Handle,
+                    x = 0,
+                    y = 0,
+                    w = _internalWidth,
+                    h = _internalHeight,
+                    mip_level = 0,
+                    layer_or_depth_plane = 0,
+                },
+                destination = new SDL_GPUBlitRegion
+                {
+                    texture = frameInfo.SwapchainTexture,
+                    x = 0,
+                    y = 0,
+                    w = frameInfo.SwapchainWidth,
+                    h = frameInfo.SwapchainHeight,
+                    mip_level = 0,
+                    layer_or_depth_plane = 0,
+                },
+                filter = SDL_GPUFilter.SDL_GPU_FILTER_LINEAR,
+                flip_mode = SDL_FlipMode.SDL_FLIP_NONE,
+                load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
+                cycle =
+                    false // Cycle should be false for blit destination
+                ,
+            };
+
+            // Perform the blit directly on the command buffer
+            frameInfo.CommandBuffer.BlitTexture(blitInfo);
+
+            // Submit the command buffer
+            frameInfo.CommandBuffer.Submit();
+        }
+
+        /// <summary>
+        /// Releases the internal MSAA and resolve textures.
+        /// </summary>
+        private void DisposeIntermediateTextures()
+        {
+            _msaaRenderTarget?.Dispose();
+            _msaaRenderTarget = null;
+            _resolveTexture?.Dispose();
+            _resolveTexture = null;
+            _singleSampleRenderTarget?.Dispose();
+            _singleSampleRenderTarget = null;
+        }
+
+        /// <summary>
+        /// Releases all resources used by the manager.
+        /// </summary>
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                DisposeIntermediateTextures();
+                // Note: We don't own the GpuDevice or Window, so we don't dispose them here.
+                _disposed = true;
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        ~GpuSwapchainManager()
+        {
+            Dispose(); // Ensure textures are released if Dispose wasn't called explicitly
+        }
+    }
+
+    /// <summary>
+    /// Holds information and resources for a single frame being rendered.
+    /// </summary>
+    public sealed class FrameInfo
+    {
+        /// <summary>The command buffer for this frame.</summary>
+        public GpuCommandBuffer CommandBuffer { get; }
+
+        /// <summary>The acquired swapchain texture handle for this frame.</summary>
+        public IntPtr SwapchainTexture { get; }
+
+        /// <summary>The width of the acquired swapchain texture.</summary>
+        public uint SwapchainWidth { get; }
+
+        /// <summary>The height of the acquired swapchain texture.</summary>
+        public uint SwapchainHeight { get; }
+
+        internal FrameInfo(
+            GpuCommandBuffer commandBuffer,
+            IntPtr swapchainTexture,
+            uint width,
+            uint height
+        )
+        {
+            CommandBuffer = commandBuffer;
+            SwapchainTexture = swapchainTexture;
+            SwapchainWidth = width;
+            SwapchainHeight = height;
+        }
+    }
+
+    /// <summary>
     /// Represents an active GPU copy pass scope within a command buffer.
     /// Dispose this object to end the pass. Use with a 'using' statement.
     /// </summary>
