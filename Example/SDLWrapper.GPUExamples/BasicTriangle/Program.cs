@@ -96,6 +96,8 @@ public static class Program
     {
         commadBuffer = gpuDevice?.AcquireCommandBuffer();
         IntPtr swapchainTextureHandle = IntPtr.Zero;
+
+        // If I am correct we get the texture that gets displayed in the window, so we can write to it using our GPU
         commadBuffer?.WaitAndAcquireSwapchainTexture(
             window!,
             out swapchainTextureHandle,
