@@ -2279,6 +2279,21 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
 
         /// <summary>
+        /// Blits a texture to the current target associated with this command buffer.
+        /// Usually used after render/compute passes, often to blit to the swapchain.
+        /// </summary>
+        /// <param name="info">The blit information.</param>
+        /// <exception cref="ObjectDisposedException">Thrown if the command buffer has been submitted or cancelled.</exception>
+        /// <exception cref="SDLException">Thrown if the blit operation fails.</exception>
+        public void BlitTexture(SDL_GPUBlitInfo info) // Use 'in' for efficiency
+        {
+            ObjectDisposedException.ThrowIf(_isSubmittedOrCancelled, this);
+            // Consider adding null checks for info.source.texture and info.destination.texture if paranoid,
+            // but might add overhead. Assume valid handles are passed for now.
+            SDL_BlitGPUTexture(Handle, in info);
+        }
+
+        /// <summary>
         /// Acquires the next texture from the window's swapchain, if available without waiting.
         /// </summary>
         /// <param name="window">The window whose swapchain texture to acquire.</param>
@@ -2774,10 +2789,14 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 if (disposing)
                 {
                     // Dispose managed state (managed objects).
-                    // Check for leaked resources (optional)
+                    // Check for leaked resources (optional) more safely
                     lock (_trackedResources)
                     {
-                        _trackedResources.RemoveAll(wr => !wr.TryGetTarget(out _)); // Clean up dead refs first
+                        // Filter out resources that are already gone (GC'd) or explicitly disposed
+                        _trackedResources.RemoveAll(wr =>
+                            !wr.TryGetTarget(out var resource) || resource.IsDisposed
+                        );
+
                         if (_trackedResources.Count > 0)
                         {
                             Console.Error.WriteLine(
@@ -2785,10 +2804,12 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                             );
                             foreach (var weakRef in _trackedResources)
                             {
+                                // TryGetTarget should succeed here because we removed dead refs above
                                 if (weakRef.TryGetTarget(out var resource))
                                 {
+                                    // Safely report the type, avoid accessing properties that might throw
                                     Console.Error.WriteLine(
-                                        $" - {resource.GetType().Name} ({resource.Handle})"
+                                        $" - {resource.GetType().Name} (Handle was potentially leaked, cannot safely access handle value after device disposal)"
                                     );
                                 }
                             }
