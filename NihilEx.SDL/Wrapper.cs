@@ -26,6 +26,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     [Flags]
     public enum GpuShaderFormat : uint
     {
+        None = 0,
         Private = SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_PRIVATE,
         SpirV = SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV,
         Dxbc = SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_DXBC,
@@ -203,19 +204,24 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
     }
 
-    public sealed class GpuShader : GpuResource
+    public sealed class GpuShader : GpuResource // Inherit from GpuResource
     {
-        // Store info needed later if required
+        // Store info potentially needed later
         public GpuShaderFormat Format { get; }
         public SDL_GPUShaderStage Stage { get; }
 
+        // Base path for shaders - configure this as needed for your project structure
+        // You might load this from a config file or set it during initialization.
+        public static string BasePath { get; set; } = GetDefaultBasePath(); // Example initialization
+
+        // Internal constructor called by the factory method
         internal GpuShader(
             GpuDevice device,
             IntPtr handle,
             GpuShaderFormat format,
             SDL_GPUShaderStage stage
         )
-            : base(device, handle)
+            : base(device, handle) // Call base constructor
         {
             Format = format;
             Stage = stage;
@@ -224,6 +230,208 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         protected override void ReleaseNativeResource(GpuDevice device, IntPtr handle)
         {
             SDL_ReleaseGPUShader(device.Handle, handle);
+        }
+
+        // --- Static Factory Method: LoadShader ---
+        public static unsafe GpuShader LoadShader(
+            GpuDevice device,
+            string shaderFilename, // e.g., "myShader.vert" or "myShader.frag"
+            uint samplerCount = 0,
+            uint uniformBufferCount = 0,
+            uint storageBufferCount = 0,
+            uint storageTextureCount = 0
+        )
+        {
+            ArgumentNullException.ThrowIfNull(device);
+            ObjectDisposedException.ThrowIf(device.IsDisposed, device);
+            ArgumentException.ThrowIfNullOrEmpty(shaderFilename);
+
+            // --- 1. Auto-detect the shader stage ---
+            SDL_GPUShaderStage stage;
+            if (shaderFilename.Contains(".vert", StringComparison.OrdinalIgnoreCase))
+            {
+                stage = SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX;
+            }
+            else if (shaderFilename.Contains(".frag", StringComparison.OrdinalIgnoreCase))
+            {
+                stage = SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT;
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "Invalid shader stage: Filename must contain '.vert', '.frag', or '.comp'",
+                    nameof(shaderFilename)
+                );
+            }
+
+            // --- 2. Determine supported backend format and path ---
+            SDL_GPUShaderFormat backendFormats = SDL_GetGPUShaderFormats(device.Handle);
+            string entryPoint;
+            string fullPath; // We'll use Path.Combine for better path handling
+
+            // Ensure BasePath ends with a directory separator if not empty
+            string basePathWithSeparator = string.IsNullOrEmpty(BasePath)
+                ? ""
+                : Path.TrimEndingDirectorySeparator(BasePath) + Path.DirectorySeparatorChar;
+
+            SDL_GPUShaderFormat format;
+            if ((backendFormats & SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV) != 0)
+            {
+                // Path.Combine handles directory separators correctly
+                fullPath = Path.Combine(
+                    basePathWithSeparator,
+                    "Content",
+                    "Shaders",
+                    "Compiled",
+                    "SPIRV",
+                    shaderFilename + ".spv"
+                );
+                format = SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV;
+                entryPoint = "main";
+            }
+            else if ((backendFormats & SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_MSL) != 0)
+            {
+                fullPath = Path.Combine(
+                    basePathWithSeparator,
+                    "Content",
+                    "Shaders",
+                    "Compiled",
+                    "MSL",
+                    shaderFilename + ".msl"
+                );
+                format = SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_MSL;
+                entryPoint = "main0"; // Note the MSL entry point convention
+            }
+            else if ((backendFormats & SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_DXIL) != 0)
+            {
+                fullPath = Path.Combine(
+                    basePathWithSeparator,
+                    "Content",
+                    "Shaders",
+                    "Compiled",
+                    "DXIL",
+                    shaderFilename + ".dxil"
+                );
+                format = SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_DXIL;
+                entryPoint = "main";
+            }
+            // Add checks for DXBC, MetalLib etc. if your pipeline supports them
+            // else if ((backendFormats & SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_DXBC) != 0) { ... }
+            // else if ((backendFormats & SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_METALLIB) != 0) { ... }
+            else
+            {
+                // Throw exception if no suitable backend format is supported by the device
+                throw new NotSupportedException(
+                    $"GPU device does not support any recognized shader formats (SPIRV, MSL, DXIL). Supported: {backendFormats}"
+                );
+            }
+
+            // --- 3. Load the shader code from disk using SDL_LoadFile ---
+            // SDL_LoadFile returns a pointer allocated by SDL, which needs SDL_free
+            IntPtr codePtr = IntPtr.Zero;
+            IntPtr entryPointPtr = IntPtr.Zero; // For marshaled entry point string
+            IntPtr shaderHandle = IntPtr.Zero;
+
+            try
+            {
+                // Load file using SDL function
+                codePtr = SDL_LoadFile(fullPath, out nuint codeSize);
+                if (codePtr == IntPtr.Zero)
+                {
+                    // Use Path.GetFullPath for a clearer error message
+                    string absolutePath = Path.GetFullPath(fullPath);
+                    throw new FileNotFoundException(
+                        $"Failed to load shader from disk: {absolutePath}. SDL Error: {SdlHost.GetError()}",
+                        absolutePath
+                    );
+                }
+
+                // Marshal the C# entryPoint string to a native UTF-8 string
+                entryPointPtr = Marshal.StringToCoTaskMemUTF8(entryPoint);
+                if (entryPointPtr == IntPtr.Zero)
+                {
+                    // Extremely unlikely, but handle potential allocation failure
+                    throw new OutOfMemoryException("Failed to marshal shader entry point string.");
+                }
+
+                // --- 4. Create the Shader ---
+                var shaderInfo = new SDL_GPUShaderCreateInfo
+                {
+                    code = (byte*)codePtr, // Cast IntPtr to byte*
+                    code_size = codeSize,
+                    entrypoint = (byte*)entryPointPtr, // Cast IntPtr to byte*
+                    format = format,
+                    stage = stage,
+                    num_samplers = samplerCount,
+                    num_uniform_buffers = uniformBufferCount,
+                    num_storage_buffers = storageBufferCount,
+                    num_storage_textures = storageTextureCount,
+                    props =
+                        0 // Set properties if needed
+                    ,
+                };
+
+                shaderHandle = SDL_CreateGPUShader(device.Handle, in shaderInfo); // Pass struct by ref
+
+                if (shaderHandle == IntPtr.Zero)
+                {
+                    // Creation failed, throw an exception including the SDL error
+                    throw new SDLException(
+                        $"Failed to create GPU shader '{shaderFilename}'. SDL Error: {SdlHost.GetError()}"
+                    );
+                }
+
+                // --- 5. Create and return the managed wrapper object ---
+                // Pass necessary info to the constructor
+                var managedShader = new GpuShader(
+                    device,
+                    shaderHandle,
+                    (GpuShaderFormat)format,
+                    stage
+                );
+
+                // IMPORTANT: Track the resource with the device if you have that mechanism
+                // This helps detect leaks if the GpuDevice is disposed before its resources.
+                device.TrackResource(managedShader); // Assuming GpuDevice has TrackResource method
+
+                return managedShader;
+            }
+            catch // Catch any exception during loading or creation
+            {
+                // If shader creation failed *after* loading/marshalling, ensure cleanup happens here
+                if (shaderHandle != IntPtr.Zero)
+                {
+                    // This case should technically not be reachable if ThrowOnNull works,
+                    // but good for robustness. Release the partially created shader if needed.
+                    SDL_ReleaseGPUShader(device.Handle, shaderHandle);
+                }
+                // Let the finally block handle freeing codePtr and entryPointPtr
+                throw; // Re-throw the caught exception
+            }
+            finally
+            {
+                // --- 6. Cleanup native resources ---
+                // Free the shader code loaded by SDL_LoadFile (ALWAYS, regardless of success/failure after loading)
+                if (codePtr != IntPtr.Zero)
+                {
+                    SDL_free(codePtr);
+                }
+                // Free the marshaled entry point string (ALWAYS, regardless of success/failure after marshalling)
+                if (entryPointPtr != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(entryPointPtr);
+                }
+            }
+        }
+
+        // Helper to get a default base path (adjust as needed)
+        private static string GetDefaultBasePath()
+        {
+            // Use the application's base directory as a starting point
+            // This might need adjustment depending on where your 'Content' folder is relative to the executable
+            string? assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string? assemblyDir = Path.GetDirectoryName(assemblyPath);
+            return assemblyDir ?? AppContext.BaseDirectory; // Fallback to AppContext.BaseDirectory
         }
     }
 
@@ -1866,8 +2074,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             return SDL_GPUTextureSupportsSampleCount(Handle, format, sampleCount);
         }
 
-        // --- Internal Resource Management ---
-        private void TrackResource(GpuResource resource)
+        public void TrackResource(GpuResource resource)
         {
             lock (_trackedResources)
             {
