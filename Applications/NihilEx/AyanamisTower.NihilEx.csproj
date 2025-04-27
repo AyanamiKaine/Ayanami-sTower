@@ -20,7 +20,6 @@
     <PackageReference Include="Box2D.NET.Debug" />
     <PackageReference Include="Box2D.NET.Release" />
     <PackageReference Include="JoltPhysicsSharp" />
-    <PackageReference Include="SDL3-CS.Native" />
     </ItemGroup>
 
   <ItemGroup>
