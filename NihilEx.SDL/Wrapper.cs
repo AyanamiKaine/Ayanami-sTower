@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text; // Required for StringBuilder
 using SDL3;
+using static AyanamisTower.NihilEx.SDLWrapper.ShaderCross;
 //THIS SHOULD BE REMOVED AT SOME POINT
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -11,6 +13,518 @@ using static SDL3.SDL;
 
 namespace AyanamisTower.NihilEx.SDLWrapper
 {
+    public static unsafe partial class ShaderCross
+    {
+        private const string nativeLibShaderCross = "SDL3_shadercross"; // Or the exact name of the compiled DLL
+        #region SDL_shadercross.h Enumerations
+
+        /// <summary>
+        /// Enum representing the different shader stages.
+        /// </summary>
+        public enum SDL_ShaderCross_ShaderStage
+        {
+            SDL_SHADERCROSS_SHADERSTAGE_VERTEX,
+            SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT,
+            SDL_SHADERCROSS_SHADERSTAGE_COMPUTE,
+        }
+
+        #endregion
+
+        #region SDL_shadercross.h Structures
+
+        /// <summary>
+        /// Metadata structure filled by graphics shader compilation.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SDL_ShaderCross_GraphicsShaderMetadata
+        {
+            public uint num_samplers;
+
+            //**< The number of samplers defined in the shader. */
+            public uint num_storage_textures;
+
+            //**< The number of storage textures defined in the shader. */
+            public uint num_storage_buffers;
+
+            //**< The number of storage buffers defined in the shader. */
+            public uint num_uniform_buffers;
+
+            //**< The number of uniform buffers defined in the shader. */
+            public uint props;
+            //**< SDL_PropertiesID for extensions. */
+        }
+
+        /// <summary>
+        /// Metadata structure filled by compute pipeline compilation.
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SDL_ShaderCross_ComputePipelineMetadata
+        {
+            public uint num_samplers;
+
+            //**< The number of samplers defined in the shader. */
+            public uint num_readonly_storage_textures;
+
+            //**< The number of readonly storage textures defined in the shader. */
+            public uint num_readonly_storage_buffers;
+
+            //**< The number of readonly storage buffers defined in the shader. */
+            public uint num_readwrite_storage_textures;
+
+            //**< The number of read-write storage textures defined in the shader. */
+            public uint num_readwrite_storage_buffers;
+
+            //**< The number of read-write storage buffers defined in the shader. */
+            public uint num_uniform_buffers;
+
+            //**< The number of uniform buffers defined in the shader. */
+            public uint threadcount_x;
+
+            //**< The number of threads in the X dimension. */
+            public uint threadcount_y;
+
+            //**< The number of threads in the Y dimension. */
+            public uint threadcount_z;
+
+            //**< The number of threads in the Z dimension. */
+            public uint props;
+            //**< SDL_PropertiesID for extensions. */
+        }
+
+        /// <summary>
+        /// Custom marshaller for SDL_ShaderCross_SPIRV_Info used with LibraryImport.
+        /// </summary>
+        [CustomMarshaller(
+            typeof(SDL_ShaderCross_SPIRV_Info),
+            MarshalMode.ManagedToUnmanagedIn,
+            typeof(SDL_ShaderCross_SPIRV_InfoMarshaller.In)
+        )]
+        public static class SDL_ShaderCross_SPIRV_InfoMarshaller
+        {
+            /// <summary>
+            /// The unmanaged representation matching the native layout.
+            /// Strings are marshalled to IntPtr (byte*).
+            /// </summary>
+            [StructLayout(LayoutKind.Sequential)]
+            public struct SDL_ShaderCross_SPIRV_Info_Unmanaged
+            {
+                public IntPtr bytecode;
+                public UIntPtr bytecode_size;
+                public IntPtr entrypoint; // UTF-8 string pointer
+                public SDL_ShaderCross_ShaderStage shader_stage;
+                public SDLBool enable_debug;
+                public IntPtr name; // UTF-8 string pointer (can be null)
+                public uint props;
+            }
+
+            /// <summary>
+            /// Marshaller logic for 'in' parameters (Managed -> Unmanaged).
+            /// </summary>
+            public static class In
+            {
+                /// <summary>
+                /// Converts the managed struct to its unmanaged representation.
+                /// Allocates memory for strings.
+                /// </summary>
+                public static SDL_ShaderCross_SPIRV_Info_Unmanaged ConvertToUnmanaged(
+                    SDL_ShaderCross_SPIRV_Info managed
+                )
+                {
+                    return new SDL_ShaderCross_SPIRV_Info_Unmanaged
+                    {
+                        bytecode = managed.bytecode,
+                        bytecode_size = managed.bytecode_size,
+                        // Marshal strings to UTF8 IntPtrs using CoTaskMem for interop
+                        entrypoint = Marshal.StringToCoTaskMemUTF8(managed.entrypoint),
+                        shader_stage = managed.shader_stage,
+                        enable_debug = managed.enable_debug,
+                        // Handle potentially null optional 'name' string
+                        name = string.IsNullOrEmpty(managed.name)
+                            ? IntPtr.Zero
+                            : Marshal.StringToCoTaskMemUTF8(managed.name),
+                        props = managed.props,
+                    };
+                }
+
+                /// <summary>
+                /// Frees the unmanaged memory allocated during conversion (for the strings).
+                /// </summary>
+                public static void Free(SDL_ShaderCross_SPIRV_Info_Unmanaged unmanaged)
+                {
+                    Marshal.FreeCoTaskMem(unmanaged.entrypoint);
+                    // Only free 'name' if it was actually allocated (i.e., not IntPtr.Zero)
+                    if (unmanaged.name != IntPtr.Zero)
+                    {
+                        Marshal.FreeCoTaskMem(unmanaged.name);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Information structure for compiling/transpiling from SPIR-V.
+        /// This managed version uses 'string' for convenience.
+        /// The [NativeMarshalling] attribute links it to the custom marshaller.
+        /// </summary>
+        [NativeMarshalling(typeof(SDL_ShaderCross_SPIRV_InfoMarshaller))]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SDL_ShaderCross_SPIRV_Info
+        {
+            public IntPtr bytecode;
+
+            //**< Pointer (byte*) to the SPIRV bytecode. */
+            public UIntPtr bytecode_size;
+
+            //**< size_t: The length of the SPIRV bytecode. */
+            public string entrypoint;
+
+            //**< const char*: The entry point function name for the shader in UTF-8. */
+            public SDL_ShaderCross_ShaderStage shader_stage;
+
+            //**< The shader stage to transpile the shader with. */
+            public SDLBool enable_debug;
+
+            //**< Allows debug info to be emitted when relevant. */
+            public string name;
+
+            //**< const char*: A UTF-8 name to associate with the shader. Optional, can be NULL. */
+            public uint props;
+            //**< SDL_PropertiesID for extensions. Should be 0 if no extensions are needed. */
+            // NOTE: Removed [MarshalAs] attributes as the custom marshaller handles string conversion.
+        }
+
+        /// <summary>
+        /// Custom marshaller for SDL_ShaderCross_HLSL_Info used with LibraryImport.
+        /// Handles strings and the null-terminated array of defines.
+        /// </summary>
+        [CustomMarshaller(
+            typeof(SDL_ShaderCross_HLSL_Info),
+            MarshalMode.ManagedToUnmanagedIn,
+            typeof(SDL_ShaderCross_HLSL_InfoMarshaller.In)
+        )]
+        [NativeMarshalling(typeof(SDL_ShaderCross_HLSL_DefineMarshaller))]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SDL_ShaderCross_HLSL_Define
+        {
+            public string name;
+
+            //**< The define name. */
+            public string value;
+            //**< An optional value for the define. Can be NULL. */
+        }
+
+        /// <summary>
+        /// Custom marshaller for SDL_ShaderCross_HLSL_Define.
+        /// </summary>
+        [CustomMarshaller(
+            typeof(SDL_ShaderCross_HLSL_Define),
+            MarshalMode.Default,
+            typeof(SDL_ShaderCross_HLSL_DefineMarshaller)
+        )]
+        public static class SDL_ShaderCross_HLSL_DefineMarshaller
+        {
+            /// <summary>
+            /// Unmanaged representation of SDL_ShaderCross_HLSL_Define.
+            /// </summary>
+            [StructLayout(LayoutKind.Sequential)]
+            public struct Unmanaged
+            {
+                public IntPtr name; // UTF-8 string pointer
+                public IntPtr value; // UTF-8 string pointer (can be null)
+            }
+
+            /// <summary>
+            /// Converts managed define to unmanaged, allocating memory for strings.
+            /// </summary>
+            public static Unmanaged ConvertToUnmanaged(SDL_ShaderCross_HLSL_Define managed)
+            {
+                return new Unmanaged
+                {
+                    name = Marshal.StringToCoTaskMemUTF8(managed.name),
+                    value = string.IsNullOrEmpty(managed.value)
+                        ? IntPtr.Zero
+                        : Marshal.StringToCoTaskMemUTF8(managed.value),
+                };
+            }
+
+            /// <summary>
+            /// Frees memory allocated for unmanaged strings.
+            /// </summary>
+            public static void Free(Unmanaged unmanaged)
+            {
+                Marshal.FreeCoTaskMem(unmanaged.name);
+                if (unmanaged.value != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(unmanaged.value);
+                }
+            }
+
+            public static SDL_ShaderCross_HLSL_Define ConvertToManaged(Unmanaged unmanaged)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [CustomMarshaller(
+            typeof(SDL_ShaderCross_HLSL_Info),
+            MarshalMode.ManagedToUnmanagedIn,
+            typeof(In)
+        )]
+        public static unsafe class SDL_ShaderCross_HLSL_InfoMarshaller
+        {
+            /// <summary>
+            /// The unmanaged representation matching the native layout.
+            /// </summary>
+            [StructLayout(LayoutKind.Sequential)]
+            public struct SDL_ShaderCross_HLSL_Info_Unmanaged
+            {
+                public IntPtr source; // UTF-8 string pointer
+                public IntPtr entrypoint; // UTF-8 string pointer
+                public IntPtr include_dir; // UTF-8 string pointer (can be null)
+                public IntPtr defines; // Pointer to array of SDL_ShaderCross_HLSL_Define_Unmanaged
+                public SDL_ShaderCross_ShaderStage shader_stage;
+                public SDLBool enable_debug;
+                public IntPtr name; // UTF-8 string pointer (can be null)
+                public uint props;
+            }
+
+            public static class In
+            {
+                /// <summary>
+                /// Converts the managed struct to its unmanaged representation.
+                /// Allocates memory for strings and the defines array.
+                /// </summary>
+                public static SDL_ShaderCross_HLSL_Info_Unmanaged ConvertToUnmanaged(
+                    SDL_ShaderCross_HLSL_Info managed
+                )
+                {
+                    IntPtr unmanagedDefinesArrayPtr = IntPtr.Zero;
+                    int numDefines = managed.defines?.Length ?? 0;
+
+                    if (numDefines > 0)
+                    {
+                        // Allocate memory for the defines array + 1 for the null terminator
+                        int defineStructSize =
+                            sizeof(SDL_ShaderCross_HLSL_DefineMarshaller.Unmanaged);
+                        unmanagedDefinesArrayPtr = Marshal.AllocCoTaskMem(
+                            (numDefines + 1) * defineStructSize
+                        );
+
+                        SDL_ShaderCross_HLSL_DefineMarshaller.Unmanaged* currentDefinePtr =
+                            (SDL_ShaderCross_HLSL_DefineMarshaller.Unmanaged*)unmanagedDefinesArrayPtr;
+
+                        // Marshal each define
+                        for (int i = 0; i < numDefines; i++)
+                        {
+                            *(SDL_ShaderCross_HLSL_DefineMarshaller.Unmanaged*)
+                                (IntPtr)currentDefinePtr =
+                                SDL_ShaderCross_HLSL_DefineMarshaller.ConvertToUnmanaged(
+                                    managed.defines![i]
+                                );
+                            currentDefinePtr++; // Move to the next position
+                        }
+
+                        // Add the null terminator (zeroed struct)
+                        *(SDL_ShaderCross_HLSL_DefineMarshaller.Unmanaged*)
+                            (IntPtr)currentDefinePtr = default;
+                    }
+
+                    return new SDL_ShaderCross_HLSL_Info_Unmanaged
+                    {
+                        source = Marshal.StringToCoTaskMemUTF8(managed.source),
+                        entrypoint = Marshal.StringToCoTaskMemUTF8(managed.entrypoint),
+                        include_dir = string.IsNullOrEmpty(managed.include_dir)
+                            ? IntPtr.Zero
+                            : Marshal.StringToCoTaskMemUTF8(managed.include_dir),
+                        defines = unmanagedDefinesArrayPtr, // Pointer to the allocated array
+                        shader_stage = managed.shader_stage,
+                        enable_debug = managed.enable_debug,
+                        name = string.IsNullOrEmpty(managed.name)
+                            ? IntPtr.Zero
+                            : Marshal.StringToCoTaskMemUTF8(managed.name),
+                        props = managed.props,
+                    };
+                }
+
+                /// <summary>
+                /// Frees the unmanaged memory allocated during conversion.
+                /// </summary>
+                public static void Free(SDL_ShaderCross_HLSL_Info_Unmanaged unmanaged)
+                {
+                    Marshal.FreeCoTaskMem(unmanaged.source);
+                    Marshal.FreeCoTaskMem(unmanaged.entrypoint);
+                    if (unmanaged.include_dir != IntPtr.Zero)
+                        Marshal.FreeCoTaskMem(unmanaged.include_dir);
+                    if (unmanaged.name != IntPtr.Zero)
+                        Marshal.FreeCoTaskMem(unmanaged.name);
+
+                    // Free the defines array and its contents
+                    if (unmanaged.defines != IntPtr.Zero)
+                    {
+                        SDL_ShaderCross_HLSL_DefineMarshaller.Unmanaged* currentDefinePtr =
+                            (SDL_ShaderCross_HLSL_DefineMarshaller.Unmanaged*)unmanaged.defines;
+
+                        // Free strings within each define struct until the null terminator
+                        while (
+                            currentDefinePtr->name != IntPtr.Zero
+                            || currentDefinePtr->value != IntPtr.Zero
+                        )
+                        {
+                            SDL_ShaderCross_HLSL_DefineMarshaller.Free(*currentDefinePtr);
+                            currentDefinePtr++;
+                        }
+
+                        // Free the array itself
+                        Marshal.FreeCoTaskMem(unmanaged.defines);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Information structure for compiling/transpiling from HLSL.
+        /// </summary>
+        [NativeMarshalling(typeof(SDL_ShaderCross_HLSL_InfoMarshaller))]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct SDL_ShaderCross_HLSL_Info
+        {
+            public string source;
+
+            //**< const char*: The HLSL source code for the shader. */
+            public string entrypoint;
+
+            //**< const char*: The entry point function name for the shader in UTF-8. */
+            public string? include_dir;
+
+            //**< const char*: The include directory for shader code. Optional, can be NULL. */
+            public SDL_ShaderCross_HLSL_Define[]? defines;
+
+            //**< An array of defines. Optional, can be NULL. If not NULL, must be terminated with a fully NULL define struct (handled by marshaller). */
+            public SDL_ShaderCross_ShaderStage shader_stage;
+
+            //**< The shader stage to compile the shader with. */
+            public SDLBool enable_debug;
+
+            //**< Allows debug info to be emitted when relevant. */
+            public string name;
+
+            //**< const char*: A UTF-8 name to associate with the shader. Optional, can be NULL. */
+            public uint props;
+            //**< SDL_PropertiesID for extensions. Should be 0 if no extensions are needed. */
+        }
+
+        #endregion
+
+        #region SDL_shadercross.h Functions
+
+        /// <summary>
+        /// Compile an SDL GPU shader from SPIRV code.
+        /// </summary>
+        /// <param name="device">The SDL GPU device.</param>
+        /// <param name="info">A struct describing the shader to transpile.</param>
+        /// <param name="metadata">A pointer filled in with shader metadata.</param>
+        /// <returns>A compiled SDL_GPUShader (IntPtr) or NULL on error.</returns>
+        /// <remarks>
+        /// SDL_GPUShader* is returned as IntPtr.
+        /// SDL_GPUDevice* is passed as IntPtr.
+        /// SDL_ShaderCross_SPIRV_Info* is passed by reference using a custom marshaller.
+        /// SDL_ShaderCross_GraphicsShaderMetadata* is passed as 'out'.
+        /// </remarks>
+        [LibraryImport(
+            nativeLibShaderCross,
+            EntryPoint = "SDL_ShaderCross_CompileGraphicsShaderFromSPIRV"
+        )]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial IntPtr SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
+            IntPtr device, // SDL_GPUDevice*
+            in SDL_ShaderCross_SPIRV_Info info, // Uses custom marshaller defined above
+            out SDL_ShaderCross_GraphicsShaderMetadata metadata // SDL_ShaderCross_GraphicsShaderMetadata*
+        );
+
+        /// <summary>
+        /// Compile an SDL GPU compute pipeline from SPIRV code.
+        /// </summary>
+        /// <param name="device">The SDL GPU device.</param>
+        /// <param name="info">A struct describing the shader to transpile.</param>
+        /// <param name="metadata">A pointer filled in with compute pipeline metadata.</param>
+        /// <returns>A compiled SDL_GPUComputePipeline (IntPtr) or NULL on error.</returns>
+        /// <remarks>
+        /// SDL_GPUComputePipeline* is returned as IntPtr.
+        /// SDL_GPUDevice* is passed as IntPtr.
+        /// SDL_ShaderCross_SPIRV_Info* is passed by reference using a custom marshaller.
+        /// SDL_ShaderCross_ComputePipelineMetadata* is passed as 'out'.
+        /// </remarks>
+        [LibraryImport(
+            nativeLibShaderCross,
+            EntryPoint = "SDL_ShaderCross_CompileComputePipelineFromSPIRV"
+        )]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial IntPtr SDL_ShaderCross_CompileComputePipelineFromSPIRV(
+            IntPtr device, // SDL_GPUDevice*
+            in SDL_ShaderCross_SPIRV_Info info, // Uses custom marshaller defined above
+            out SDL_ShaderCross_ComputePipelineMetadata metadata // SDL_ShaderCross_ComputePipelineMetadata*
+        );
+
+        /// <summary>
+        /// Compile to SPIRV bytecode from HLSL code.
+        /// </summary>
+        /// <param name="info">A struct describing the shader to compile.</param>
+        /// <param name="size">Filled in with the bytecode buffer size.</param>
+        /// <returns>An IntPtr (void*) containing SPIRV bytecode allocated via SDL_malloc, or NULL on error. You must SDL_free this buffer.</returns>
+        /// <remarks>
+        /// The returned IntPtr points to memory allocated by SDL_malloc. Use SDL_free() to release it.
+        /// size_t* is passed as 'out UIntPtr'.
+        /// </remarks>
+        [LibraryImport(nativeLibShaderCross, EntryPoint = "SDL_ShaderCross_CompileSPIRVFromHLSL")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial IntPtr SDL_ShaderCross_CompileSPIRVFromHLSL(
+            in SDL_ShaderCross_HLSL_Info info, // Uses custom marshaller
+            out UIntPtr size // size_t*
+        );
+
+        /// <summary>
+        /// Compile to DXIL bytecode from HLSL code.
+        /// </summary>
+        /// <param name="info">A struct describing the shader to compile.</param>
+        /// <param name="size">Filled in with the bytecode buffer size.</param>
+        /// <returns>An IntPtr (void*) containing DXIL bytecode allocated via SDL_malloc, or NULL on error. You must SDL_free this buffer.</returns>
+        /// <remarks>
+        /// The returned IntPtr points to memory allocated by SDL_malloc. Use SDL_free() to release it.
+        /// size_t* is passed as 'out UIntPtr'.
+        /// </remarks>
+        [LibraryImport(nativeLibShaderCross, EntryPoint = "SDL_ShaderCross_CompileDXILFromHLSL")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial IntPtr SDL_ShaderCross_CompileDXILFromHLSL(
+            in SDL_ShaderCross_HLSL_Info info, // Uses custom marshaller
+            out UIntPtr size // size_t*
+        );
+
+        /// <summary>
+        /// Compile an SDL GPU shader from HLSL code.
+        /// </summary>
+        /// <param name="device">The SDL GPU device.</param>
+        /// <param name="info">A struct describing the shader to compile.</param>
+        /// <param name="metadata">A pointer filled in with shader metadata.</param>
+        /// <returns>A compiled SDL_GPUShader (IntPtr) or NULL on error.</returns>
+        /// <remarks>
+        /// SDL_GPUShader* is returned as IntPtr.
+        /// SDL_GPUDevice* is passed as IntPtr.
+        /// SDL_ShaderCross_HLSL_Info* is passed by reference using a custom marshaller.
+        /// SDL_ShaderCross_GraphicsShaderMetadata* is passed as 'out'.
+        /// </remarks>
+        [LibraryImport(
+            nativeLibShaderCross,
+            EntryPoint = "SDL_ShaderCross_CompileGraphicsShaderFromHLSL"
+        )]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial IntPtr SDL_ShaderCross_CompileGraphicsShaderFromHLSL(
+            IntPtr device, // SDL_GPUDevice*
+            in SDL_ShaderCross_HLSL_Info info, // Uses custom marshaller
+            out SDL_ShaderCross_GraphicsShaderMetadata metadata // SDL_ShaderCross_GraphicsShaderMetadata*
+        );
+        #endregion
+    }
+
     #region GPU Abstraction Enums
 
     // --- Mirror SDL_GPU Enums ---
@@ -853,6 +1367,30 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         }
     }
 
+    /*
+    TODO:
+    
+    This code in the GpuShader class is really something special,
+    somehow it actually works and has the ability to compile shaders,
+    This is definitely something that needs to be refactors in
+    another library specially for shadercross. This would make it
+    easier to maintain down the line.
+
+    We need to slim down the API, I think i would be much better to
+    just expose, compile, load, and CompileAndLoad methods so all
+    the underlying transpiler/Compilation of different formats gets down
+    in the implementation and the user does not have to care.
+
+    This involves making them private, move the condition handeling of different
+    shader types in the implementation.
+
+    Also we need to add the method of Recompile to a GpuShader instance,
+    where it saves the current destination of the source file and recompiles
+    and loads it. Also it would be a great opportunity to add a auto recompile
+    feature when the source file changes, this can be quite easily implemented
+    using the existing methods and a filewatcher.
+    */
+
     public sealed class GpuShader : GpuResource // Inherit from GpuResource
     {
         // Store info potentially needed later
@@ -874,6 +1412,26 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         {
             Format = format;
             Stage = stage;
+        }
+
+        public SDL_ShaderCross_GraphicsShaderMetadata Metadata { get; } // Store metadata
+
+        // Base path for shaders - configure this as needed for your project structure
+        // You might load this from a config file or set it during initialization.
+
+        // Internal constructor called by the factory method
+        internal GpuShader(
+            GpuDevice device,
+            IntPtr handle,
+            GpuShaderFormat sourceFormat, // Store the source format
+            SDL_ShaderCross_ShaderStage stage,
+            SDL_ShaderCross_GraphicsShaderMetadata metadata // Accept metadata
+        )
+            : base(device, handle) // Call base constructor (assuming GpuResource(GpuDevice, IntPtr))
+        {
+            Format = sourceFormat;
+            Stage = (SDL_GPUShaderStage)stage;
+            Metadata = metadata; // Store the metadata
         }
 
         protected override void ReleaseNativeResource(GpuDevice device, IntPtr handle)
@@ -1071,6 +1629,673 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                     Marshal.FreeCoTaskMem(entryPointPtr);
                 }
             }
+        }
+
+        /// <summary>
+        /// TODO:
+        /// Compiling Shader using SDL_shadercross
+        /// For more see: "https://moonside.games/posts/introducing-sdl-shadercross/"
+        /// and "https://github.com/libsdl-org/SDL_shadercross"
+        /// </summary>
+        /// <returns></returns>
+        public static unsafe void CompileShader(
+            GpuDevice gpuDevice,
+            string shaderPath,
+            string outputPath
+        )
+        {
+            //ShaderCross.SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(gpuDevice.Handle, )
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Compiles an HLSL shader from a file into SPIR-V bytecode.
+        /// </summary>
+        /// <param name="shaderPath">Relative path to the HLSL source file within the 'Shaders/Source' directory (e.g., "myShader.hlsl.vert"). BasePath will be prepended.</param>
+        /// <param name="stage">The shader stage (Vertex, Fragment, or Compute).</param>
+        /// <param name="entryPoint">The entry point function name in the HLSL code (default is "main").</param>
+        /// <param name="defines">Optional array of preprocessor defines.</param>
+        /// <param name="enableDebug">Whether to include debug information in the compiled shader.</param>
+        /// <param name="shaderName">Optional name for the shader (useful for debugging).</param>
+        /// <returns>A byte array containing the compiled SPIR-V bytecode.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if shaderPath is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if the file is empty.</exception>
+        /// <exception cref="FileNotFoundException">Thrown if the shader source file cannot be found.</exception>
+        /// <exception cref="DirectoryNotFoundException">Thrown if the 'Shaders/Source' directory cannot be found.</exception>
+        /// <exception cref="IOException">Thrown if there's an error reading the shader file.</exception>
+        /// <exception cref="SDLException">Thrown if shader compilation fails.</exception>
+        public static unsafe byte[] CompileHLSLToSPIRV(
+            string shaderPath, // e.g., "myShader.hlsl.vert" or "RawTriangle.vert.hlsl"
+            SDL_ShaderCross_ShaderStage stage, // Explicitly require stage
+            string entryPoint = "main",
+            SDL_ShaderCross_HLSL_Define[]? defines = null,
+            bool enableDebug = false,
+            string? shaderName = null
+        )
+        {
+            ArgumentException.ThrowIfNullOrEmpty(shaderPath);
+            ArgumentException.ThrowIfNullOrEmpty(entryPoint);
+
+            // --- 1. Construct full path and read HLSL source ---
+            string fullPath = Path.Combine(BasePath ?? "", "Shaders", "Source", shaderPath);
+            string hlslSource;
+            try
+            {
+                hlslSource = File.ReadAllText(fullPath);
+            }
+            catch (FileNotFoundException)
+            {
+                throw new FileNotFoundException(
+                    $"HLSL shader source file not found: {Path.GetFullPath(fullPath)}",
+                    fullPath
+                );
+            }
+            catch (DirectoryNotFoundException) // Catch if Shaders/Source doesn't exist
+            {
+                throw new DirectoryNotFoundException(
+                    $"Shader source directory not found: {Path.GetDirectoryName(Path.GetFullPath(fullPath))}"
+                );
+            }
+            catch (IOException ex)
+            {
+                throw new IOException(
+                    $"Error reading HLSL shader file: {Path.GetFullPath(fullPath)}",
+                    ex
+                );
+            }
+
+            if (string.IsNullOrEmpty(hlslSource))
+            {
+                throw new ArgumentException(
+                    $"HLSL shader file is empty: {Path.GetFullPath(fullPath)}",
+                    nameof(shaderPath)
+                );
+            }
+
+            IntPtr spirvCodePtr = IntPtr.Zero;
+            UIntPtr spirvSize = UIntPtr.Zero;
+
+            // Use provided shaderName or derive from filename if null/empty
+            string effectiveShaderName = string.IsNullOrEmpty(shaderName)
+                ? Path.GetFileNameWithoutExtension(shaderPath)
+                : shaderName;
+
+            // Prepare the info struct for compilation
+            var shaderInfo = new SDL_ShaderCross_HLSL_Info
+            {
+                source = hlslSource,
+                entrypoint = entryPoint,
+                include_dir = null, // Or Path.GetDirectoryName(fullPath) if includes are relative to source
+                defines = defines,
+                shader_stage = stage, // Use the provided stage
+                enable_debug = enableDebug,
+                name = effectiveShaderName,
+                props = 0,
+            };
+
+            try
+            {
+                // --- 2. Compile HLSL to SPIR-V using SDL_shadercross ---
+                // The custom marshaller handles the 'in' parameter conversion
+                spirvCodePtr = SDL_ShaderCross_CompileSPIRVFromHLSL(in shaderInfo, out spirvSize);
+
+                // --- 3. Check for compilation errors ---
+                if (spirvCodePtr == IntPtr.Zero)
+                {
+                    throw new SDLException(
+                        $"Failed to compile HLSL shader '{shaderPath}' to SPIR-V. SDL Error: {SDL.SDL_GetError()}"
+                    );
+                }
+
+                if (spirvSize == UIntPtr.Zero)
+                {
+                    // Should not happen if ptr is non-zero, but check anyway
+                    SDL.SDL_free(spirvCodePtr); // Free the empty allocation
+                    throw new SDLException(
+                        $"HLSL shader '{shaderPath}' compiled to SPIR-V successfully, but result size was zero."
+                    );
+                }
+
+                // --- 4. Copy SPIR-V bytecode to managed array ---
+                byte[] spirvBytes = new byte[(int)spirvSize]; // Cast UIntPtr to int for array size
+                Marshal.Copy(spirvCodePtr, spirvBytes, 0, spirvBytes.Length);
+
+                return spirvBytes;
+            }
+            finally // Ensure native memory is freed even if errors occur after allocation
+            {
+                // --- 5. Free the native memory allocated by SDL_ShaderCross_CompileSPIRVFromHLSL ---
+                if (spirvCodePtr != IntPtr.Zero)
+                {
+                    SDL.SDL_free(spirvCodePtr);
+                }
+                // Note: Memory for shaderInfo is handled by the custom marshaller's Free method automatically.
+            }
+        }
+
+        /// <summary>
+        /// Compiles an HLSL shader to SPIR-V, then loads the SPIR-V into a GpuShader object.
+        /// </summary>
+        /// <param name="device">The GpuDevice to create the shader on.</param>
+        /// <param name="hlslShaderPath">Relative path to the HLSL source file (e.g., "Shaders/Source/myShader.hlsl.vert").</param>
+        /// <param name="entryPoint">The entry point function name (default is "main" for both HLSL and SPIR-V).</param>
+        /// <param name="defines">Optional array of preprocessor defines for HLSL compilation.</param>
+        /// <param name="enableDebug">Whether to include debug information.</param>
+        /// <param name="shaderName">Optional name for the shader.</param>
+        /// <returns>A new GpuShader instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if device or hlslShaderPath is null.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the device is disposed.</exception>
+        /// <exception cref="ArgumentException">Thrown if the shader stage cannot be determined or files are empty.</exception>
+        /// <exception cref="FileNotFoundException">Thrown if the HLSL source file cannot be found.</exception>
+        /// <exception cref="IOException">Thrown if there's an error reading the HLSL file.</exception>
+        /// <exception cref="SDLException">Thrown if HLSL->SPIRV compilation or SPIRV->GPU loading fails.</exception>
+        /// <exception cref="NotSupportedException">Thrown if attempting to compile a compute shader.</exception>
+        public static unsafe GpuShader CompileAndLoadHLSLToSPIRV(
+            GpuDevice device,
+            string hlslShaderPath, // e.g., "myShader.hlsl.vert"
+            string entryPoint = "main",
+            SDL_ShaderCross_HLSL_Define[]? defines = null,
+            bool enableDebug = false,
+            string? shaderName = null
+        )
+        {
+            ArgumentNullException.ThrowIfNull(device);
+            ObjectDisposedException.ThrowIf(device.IsDisposed, device);
+            ArgumentException.ThrowIfNullOrEmpty(hlslShaderPath);
+            ArgumentException.ThrowIfNullOrEmpty(entryPoint);
+
+            // --- 1. Determine Stage (same logic as other methods) ---
+            SDL_ShaderCross_ShaderStage stage;
+            if (hlslShaderPath.Contains(".vert", StringComparison.OrdinalIgnoreCase))
+            {
+                stage = SDL_ShaderCross_ShaderStage.SDL_SHADERCROSS_SHADERSTAGE_VERTEX;
+            }
+            else if (hlslShaderPath.Contains(".frag", StringComparison.OrdinalIgnoreCase))
+            {
+                stage = SDL_ShaderCross_ShaderStage.SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT;
+            }
+            else if (hlslShaderPath.Contains(".comp", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new NotSupportedException(
+                    "Compute shaders are not supported by this graphics shader loading method."
+                );
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "Invalid shader stage: Filename must contain '.vert' or '.frag'",
+                    nameof(hlslShaderPath)
+                );
+            }
+
+            // --- 2. Compile HLSL to SPIR-V Bytecode ---
+            // This step allocates native memory for SPIR-V, which needs careful cleanup.
+            IntPtr spirvCodePtr = IntPtr.Zero;
+            UIntPtr spirvSize = UIntPtr.Zero;
+            IntPtr shaderHandle = IntPtr.Zero;
+            SDL_ShaderCross_GraphicsShaderMetadata metadata;
+
+            // Use provided shaderName or derive from filename if null/empty
+            string effectiveShaderName = string.IsNullOrEmpty(shaderName)
+                ? Path.GetFileNameWithoutExtension(hlslShaderPath)
+                : shaderName;
+
+            // Prepare HLSL info struct
+            string fullHlslPath = Path.Combine(
+                BasePath ?? "",
+                "Content",
+                "Shaders",
+                "Source",
+                hlslShaderPath
+            );
+            string hlslSource;
+            try
+            {
+                hlslSource = File.ReadAllText(fullHlslPath);
+            }
+            catch (Exception ex)
+            {
+                throw new IOException(
+                    $"Error reading HLSL source {fullHlslPath}: {ex.Message}",
+                    ex
+                );
+            }
+            if (string.IsNullOrEmpty(hlslSource))
+            {
+                throw new ArgumentException($"HLSL file is empty: {fullHlslPath}");
+            }
+
+            var hlslInfo = new SDL_ShaderCross_HLSL_Info
+            {
+                source = hlslSource,
+                entrypoint = entryPoint,
+                include_dir = null,
+                defines = defines,
+                shader_stage = stage,
+                enable_debug = enableDebug,
+                name = effectiveShaderName, // Name for the HLSL compilation step
+                props = 0,
+            };
+
+            try
+            {
+                // Compile HLSL -> SPIRV (allocates spirvCodePtr via SDL_malloc)
+                spirvCodePtr = SDL_ShaderCross_CompileSPIRVFromHLSL(in hlslInfo, out spirvSize);
+                if (spirvCodePtr == IntPtr.Zero)
+                {
+                    throw new SDLException(
+                        $"Failed to compile HLSL '{hlslShaderPath}' to SPIR-V. SDL Error: {SDL.SDL_GetError()}"
+                    );
+                }
+                if (spirvSize == UIntPtr.Zero)
+                {
+                    throw new SDLException(
+                        $"HLSL '{hlslShaderPath}' compiled to SPIR-V successfully, but result size was zero."
+                    );
+                }
+
+                // --- 3. Load SPIR-V into GPU Shader ---
+                var spirvInfo = new SDL_ShaderCross_SPIRV_Info
+                {
+                    bytecode = spirvCodePtr, // Use the pointer from the previous step
+                    bytecode_size = spirvSize,
+                    entrypoint = entryPoint, // Often "main" for SPIR-V too
+                    shader_stage = stage,
+                    enable_debug = enableDebug, // Can potentially differ from HLSL debug flag
+                    name = effectiveShaderName, // Name for the SPIR-V loading step
+                    props = 0,
+                };
+
+                // Load SPIRV -> GPU Shader (creates the final handle)
+                shaderHandle = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
+                    device.Handle,
+                    in spirvInfo, // Marshaller handles the strings again
+                    out metadata
+                );
+
+                if (shaderHandle == IntPtr.Zero)
+                {
+                    // If this fails, spirvCodePtr still needs freeing in finally block
+                    throw new SDLException(
+                        $"Failed to load compiled SPIR-V for '{hlslShaderPath}' into GPU shader. SDL Error: {SDL.SDL_GetError()}"
+                    );
+                }
+
+                // --- 4. Create Managed Wrapper ---
+                var managedShader = new GpuShader(
+                    device,
+                    shaderHandle,
+                    GpuShaderFormat.SpirV,
+                    stage,
+                    metadata
+                );
+
+                device.TrackResource(managedShader);
+                return managedShader;
+            }
+            catch // Catch any exception during the process
+            {
+                // If the final shader handle was created but an exception occurred afterwards
+                // (e.g., during resource tracking or wrapper creation), release it.
+                if (shaderHandle != IntPtr.Zero)
+                {
+                    SDL.SDL_ReleaseGPUShader(device.Handle, shaderHandle);
+                }
+                // The finally block will handle freeing spirvCodePtr.
+                throw; // Re-throw
+            }
+            finally
+            {
+                // --- 5. ALWAYS Free Intermediate SPIR-V Memory ---
+                if (spirvCodePtr != IntPtr.Zero)
+                {
+                    SDL.SDL_free(spirvCodePtr); // Free memory allocated by SDL_ShaderCross_CompileSPIRVFromHLSL
+                }
+                // Marshaller memory for hlslInfo and spirvInfo is handled automatically.
+            }
+        }
+
+        /// <summary>
+        /// Compiles a SPIR-V shader from a file and loads it into a GpuShader object.
+        /// </summary>
+        /// <param name="device">The GpuDevice to create the shader on.</param>
+        /// <param name="shaderPath">Relative path to the SPIR-V bytecode file within the 'Shaders/Compiled/SPIRV' directory (e.g., "myShader.vert.spv"). BasePath will be prepended.</param>
+        /// <param name="entryPoint">The entry point function name in the SPIR-V code (default is "main").</param>
+        /// <param name="enableDebug">Whether to include debug information (if supported by backend).</param>
+        /// <param name="shaderName">Optional name for the shader (useful for debugging).</param>
+        /// <returns>A new GpuShader instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if device or shaderPath is null.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the device is disposed.</exception>
+        /// <exception cref="ArgumentException">Thrown if the shader stage cannot be determined from the filename.</exception>
+        /// <exception cref="FileNotFoundException">Thrown if the SPIR-V file cannot be found.</exception>
+        /// <exception cref="IOException">Thrown if there's an error reading the SPIR-V file.</exception>
+        /// <exception cref="SDLException">Thrown if shader compilation/loading fails.</exception>
+        public static unsafe GpuShader CompileAndLoadSPIRVShader(
+            GpuDevice device,
+            string shaderPath, // e.g., "myShader.vert.spv"
+            string entryPoint = "main",
+            bool enableDebug = false,
+            string? shaderName = null
+        )
+        {
+            ArgumentNullException.ThrowIfNull(device);
+            ObjectDisposedException.ThrowIf(device.IsDisposed, device);
+            ArgumentException.ThrowIfNullOrEmpty(shaderPath);
+            ArgumentException.ThrowIfNullOrEmpty(entryPoint);
+
+            // --- 1. Auto-detect the shader stage from filename ---
+            SDL_ShaderCross_ShaderStage stage;
+            if (shaderPath.Contains(".vert", StringComparison.OrdinalIgnoreCase))
+            {
+                stage = SDL_ShaderCross_ShaderStage.SDL_SHADERCROSS_SHADERSTAGE_VERTEX;
+            }
+            else if (shaderPath.Contains(".frag", StringComparison.OrdinalIgnoreCase))
+            {
+                stage = SDL_ShaderCross_ShaderStage.SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT;
+            }
+            else if (shaderPath.Contains(".comp", StringComparison.OrdinalIgnoreCase))
+            {
+                // Note: CompileGraphicsShaderFromSPIRV doesn't support compute.
+                // You'd need a separate method using SDL_ShaderCross_CompileComputePipelineFromSPIRV
+                throw new NotSupportedException(
+                    "Compute shaders require SDL_ShaderCross_CompileComputePipelineFromSPIRV. This method only handles graphics shaders."
+                );
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "Invalid shader stage: Filename must contain '.vert', '.frag', or '.comp'",
+                    nameof(shaderPath)
+                );
+            }
+
+            // --- 2. Construct full path to the SPIR-V file ---
+            // Assumes SPIR-V files are in Shaders/Compiled/SPIRV
+            string fullPath = Path.Combine(
+                BasePath ?? "",
+                "Content",
+                "Shaders",
+                "Source",
+                shaderPath
+            );
+            IntPtr codePtr = IntPtr.Zero;
+            IntPtr shaderHandle = IntPtr.Zero;
+            SDL_ShaderCross_GraphicsShaderMetadata metadata;
+
+            // Use provided shaderName or derive from filename if null/empty
+            string effectiveShaderName = string.IsNullOrEmpty(shaderName)
+                ? Path.GetFileNameWithoutExtension(shaderPath)
+                : shaderName;
+
+            try
+            {
+                // --- 3. Load SPIR-V bytecode using SDL_LoadFile ---
+                // SDL_LoadFile allocates memory that needs to be freed with SDL_free
+                codePtr = SDL.SDL_LoadFile(fullPath, out nuint codeSize);
+                if (codePtr == IntPtr.Zero)
+                {
+                    throw new FileNotFoundException(
+                        $"Failed to load SPIR-V shader file: {Path.GetFullPath(fullPath)}. SDL Error: {SDL.SDL_GetError()}",
+                        fullPath
+                    );
+                }
+
+                if (codeSize == 0)
+                {
+                    throw new ArgumentException(
+                        $"SPIR-V shader file is empty: {Path.GetFullPath(fullPath)}",
+                        nameof(shaderPath)
+                    );
+                }
+
+                // --- 4. Prepare the info struct for compilation ---
+                // The custom marshaller handles converting the managed struct
+                var shaderInfo = new SDL_ShaderCross_SPIRV_Info
+                {
+                    bytecode = codePtr, // Pass the pointer directly
+                    bytecode_size = codeSize, // Cast nuint to UIntPtr
+                    entrypoint = entryPoint,
+                    shader_stage = stage,
+                    enable_debug = enableDebug,
+                    name = effectiveShaderName,
+                    props = 0,
+                };
+
+                // --- 5. Compile/Load the SPIR-V shader ---
+                shaderHandle = SDL_ShaderCross_CompileGraphicsShaderFromSPIRV(
+                    device.Handle,
+                    in shaderInfo, // Pass the managed struct by reference (custom marshaller handles it)
+                    out metadata
+                );
+
+                // --- 6. Check for errors ---
+                if (shaderHandle == IntPtr.Zero)
+                {
+                    throw new SDLException(
+                        $"Failed to compile/load SPIR-V shader '{shaderPath}'. SDL Error: {SDL.SDL_GetError()}"
+                    );
+                }
+
+                // --- 7. Create and return the managed wrapper object ---
+                var managedShader = new GpuShader(
+                    device,
+                    shaderHandle,
+                    GpuShaderFormat.SpirV, // Indicate the source format was SPIRV
+                    stage,
+                    metadata
+                );
+
+                // --- 8. Track Resource ---
+                device.TrackResource(managedShader);
+
+                return managedShader;
+            }
+            catch // Catch any exception
+            {
+                // If shader creation failed after the SDL call potentially succeeded
+                if (shaderHandle != IntPtr.Zero)
+                {
+                    SDL.SDL_ReleaseGPUShader(device.Handle, shaderHandle);
+                }
+                throw; // Re-throw
+            }
+            finally
+            {
+                // --- 9. Free the bytecode memory loaded by SDL_LoadFile ---
+                if (codePtr != IntPtr.Zero)
+                {
+                    SDL.SDL_free(codePtr);
+                }
+                // Note: Memory for shaderInfo strings is handled by its custom marshaller automatically.
+            }
+        }
+
+        /// <summary>
+        /// Compiles an HLSL shader from a file and loads it into a GpuShader object.
+        /// </summary>
+        /// <param name="device">The GpuDevice to create the shader on.</param>
+        /// <param name="shaderPath">Relative path to the HLSL source file within the 'Shaders/Source' directory (e.g., "myShader.hlsl.vert"). BasePath will be prepended.</param>
+        /// <param name="entryPoint">The entry point function name in the HLSL code (default is "main").</param>
+        /// <param name="defines">Optional array of preprocessor defines.</param>
+        /// <param name="enableDebug">Whether to include debug information in the compiled shader.</param>
+        /// <param name="shaderName">Optional name for the shader (useful for debugging).</param>
+        /// <returns>A new GpuShader instance.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if device or shaderPath is null.</exception>
+        /// <exception cref="ObjectDisposedException">Thrown if the device is disposed.</exception>
+        /// <exception cref="ArgumentException">Thrown if the shader stage cannot be determined from the filename or the file is empty.</exception>
+        /// <exception cref="FileNotFoundException">Thrown if the shader source file cannot be found.</exception>
+        /// <exception cref="IOException">Thrown if there's an error reading the shader file.</exception>
+        /// <exception cref="SDLException">Thrown if shader compilation fails.</exception>
+        /// <exception cref="NotSupportedException">Thrown if attempting to compile a compute shader with this method.</exception>
+        public static unsafe GpuShader CompileAndLoadShader(
+            GpuDevice device,
+            string shaderPath, // e.g., "myShader.hlsl.vert" or "RawTriangle.vert.hlsl"
+            string entryPoint = "main",
+            SDL_ShaderCross_HLSL_Define[]? defines = null,
+            bool enableDebug = false,
+            string? shaderName = null // Use Path.GetFileNameWithoutExtension(shaderPath) if null?
+        )
+        {
+            ArgumentNullException.ThrowIfNull(device);
+            ObjectDisposedException.ThrowIf(device.IsDisposed, device); // Assuming GpuResource has IsDisposed
+            ArgumentException.ThrowIfNullOrEmpty(shaderPath);
+            ArgumentException.ThrowIfNullOrEmpty(entryPoint);
+
+            // --- 1. Auto-detect the shader stage from filename ---
+            SDL_ShaderCross_ShaderStage stage;
+            // Check for more specific extensions first if needed (e.g., .hlsl.vert)
+            // Allow flexible naming like .vert, .hlsl.vert, .vert.hlsl etc.
+            if (shaderPath.Contains(".vert", StringComparison.OrdinalIgnoreCase))
+            {
+                stage = SDL_ShaderCross_ShaderStage.SDL_SHADERCROSS_SHADERSTAGE_VERTEX;
+            }
+            else if (shaderPath.Contains(".frag", StringComparison.OrdinalIgnoreCase))
+            {
+                stage = SDL_ShaderCross_ShaderStage.SDL_SHADERCROSS_SHADERSTAGE_FRAGMENT;
+            }
+            else if (shaderPath.Contains(".comp", StringComparison.OrdinalIgnoreCase))
+            {
+                // Note: CompileGraphicsShaderFromHLSL doesn't support compute.
+                // You'd need a separate method using SDL_ShaderCross_CompileComputePipelineFromHLSL
+                throw new NotSupportedException(
+                    "Compute shaders require SDL_ShaderCross_CompileComputePipelineFromHLSL. This method only handles graphics shaders."
+                );
+            }
+            else
+            {
+                throw new ArgumentException(
+                    "Invalid shader stage: Filename must contain '.vert', '.frag', or '.comp' (or variants like .hlsl.vert)",
+                    nameof(shaderPath)
+                );
+            }
+
+            // --- 2. Construct full path to the SOURCE file and read HLSL source ---
+            // Corrected path construction to point to the source directory
+            string fullPath = Path.Combine(
+                BasePath ?? "",
+                "Content",
+                "Shaders",
+                "Source",
+                shaderPath
+            );
+            string hlslSource;
+            try
+            {
+                hlslSource = File.ReadAllText(fullPath);
+            }
+            catch (FileNotFoundException)
+            {
+                throw new FileNotFoundException(
+                    $"HLSL shader source file not found: {Path.GetFullPath(fullPath)}",
+                    fullPath
+                );
+            }
+            catch (DirectoryNotFoundException) // Catch if Shaders/Source doesn't exist
+            {
+                throw new DirectoryNotFoundException(
+                    $"Shader source directory not found: {Path.GetDirectoryName(Path.GetFullPath(fullPath))}"
+                );
+            }
+            catch (IOException ex)
+            {
+                throw new IOException(
+                    $"Error reading HLSL shader file: {Path.GetFullPath(fullPath)}",
+                    ex
+                );
+            }
+
+            if (string.IsNullOrEmpty(hlslSource))
+            {
+                throw new ArgumentException(
+                    $"HLSL shader file is empty: {Path.GetFullPath(fullPath)}",
+                    nameof(shaderPath)
+                );
+            }
+
+            IntPtr shaderHandle = IntPtr.Zero;
+            SDL_ShaderCross_GraphicsShaderMetadata metadata; // To receive output
+
+            // Use provided shaderName or derive from filename if null/empty
+            string effectiveShaderName = string.IsNullOrEmpty(shaderName)
+                ? Path.GetFileNameWithoutExtension(shaderPath)
+                : shaderName;
+
+            // The custom marshaller handles converting the managed struct (with strings and array)
+            // to the unmanaged representation needed by the native function.
+            var shaderInfo = new SDL_ShaderCross_HLSL_Info
+            {
+                source = hlslSource, // Pass the managed string
+                entrypoint = entryPoint,
+                include_dir = null, // Set include directory if needed (e.g., Path.GetDirectoryName(fullPath))
+                defines = defines, // Pass the managed array (or null)
+                shader_stage = stage,
+                enable_debug = enableDebug,
+                name = effectiveShaderName, // Use effective name
+                props =
+                    0 // Set properties if needed
+                ,
+            };
+
+            try
+            {
+                // --- 3. Compile the Shader using SDL_shadercross ---
+                // The custom marshaller for SDL_ShaderCross_HLSL_Info will handle the conversion
+                shaderHandle = SDL_ShaderCross_CompileGraphicsShaderFromHLSL(
+                    device.Handle,
+                    in shaderInfo, // Pass the managed struct by reference
+                    out metadata // Receive the metadata
+                );
+
+                // --- 4. Check for compilation errors ---
+                if (shaderHandle == IntPtr.Zero)
+                {
+                    // Compilation failed, throw an exception including the SDL error
+                    throw new SDLException(
+                        $"Failed to compile HLSL shader '{shaderPath}'. SDL Error: {SDL.SDL_GetError()}" // Assuming SDL.GetError() exists
+                    );
+                }
+
+                // --- 5. Create and return the managed wrapper object ---
+                var managedShader = new GpuShader(
+                    device,
+                    shaderHandle,
+                    GpuShaderFormat.SpirV, //TODO: THIS IS WRONG, we dont want directly load hlsl shaders but instead always target SpirV by default
+                    stage,
+                    metadata // Pass the obtained metadata
+                );
+
+                // --- 6. Track Resource (Optional but Recommended) ---
+                // Assuming your GpuDevice class has a way to track created resources
+                // This helps manage lifetimes and detect leaks.
+                device.TrackResource(managedShader);
+
+                return managedShader;
+            }
+            catch // Catch any exception during compilation or wrapper creation
+            {
+                // If shader creation failed *after* the SDL call potentially succeeded (unlikely with checks),
+                // ensure the native handle is released.
+                if (shaderHandle != IntPtr.Zero)
+                {
+                    SDL.SDL_ReleaseGPUShader(device.Handle, shaderHandle);
+                }
+                throw; // Re-throw the caught exception
+            }
+            // Note: No manual memory management needed here for shaderInfo strings/array,
+            // as the custom marshaller's Free method is called automatically by the runtime
+            // after the SDL_ShaderCross_CompileGraphicsShaderFromHLSL call returns.
+        }
+
+        /// <summary>
+        /// TODO:
+        /// Recompiles the current shader using SDL_shadercross
+        /// For more see: "https://moonside.games/posts/introducing-sdl-shadercross/"
+        /// and "https://github.com/libsdl-org/SDL_shadercross"
+        /// </summary>
+        /// <returns></returns>
+        public unsafe void RecompileShader()
+        {
+            throw new NotImplementedException();
         }
 
         // Helper to get a default base path (adjust as needed)
