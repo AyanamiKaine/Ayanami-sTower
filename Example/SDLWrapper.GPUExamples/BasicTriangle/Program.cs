@@ -47,6 +47,8 @@ public static class Program
 
         Console.WriteLine($"Created GPU device with driver: {gpuDevice.DriverName}");
 
+        /*
+
         GpuShader vertexShader = GpuShader.LoadShader(
             gpuDevice,
             "Shader/RawTriangle.vert",
@@ -55,6 +57,9 @@ public static class Program
             0,
             0
         );
+        
+        */
+        GpuShader vertexShader = GpuShader.CompileAndLoadShader(gpuDevice, "RawTriangle.vert.hlsl");
 
         GpuShader fragmentShader = GpuShader.LoadShader(
             gpuDevice,
