@@ -4,7 +4,7 @@
 /// Integration tests that actually invoke the underlying native SDL functions.
 /// This class handles SDL Init/Quit for tests within it.
 /// </summary>
-public class IntegrationTests : IDisposable // Implement IDisposable for cleanup
+public class WindowIntegrationTests : IDisposable // Implement IDisposable for cleanup
 {
     private bool _sdlInitialized = false;
     private Window? _windowUnderTest = null; // Field to hold the window for disposal
@@ -13,7 +13,7 @@ public class IntegrationTests : IDisposable // Implement IDisposable for cleanup
     /// Constructor runs before each test fact in this class.
     /// Initializes SDL subsystems needed for the tests.
     /// </summary>
-    public IntegrationTests()
+    public WindowIntegrationTests()
     {
         try
         {
