@@ -1369,7 +1369,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
     /*
     TODO:
-    
+
     This code in the GpuShader class is really something special,
     somehow it actually works and has the ability to compile shaders,
     This is definitely something that needs to be refactors in
@@ -2109,6 +2109,11 @@ namespace AyanamisTower.NihilEx.SDLWrapper
                 // Note: Memory for shaderInfo strings is handled by its custom marshaller automatically.
             }
         }
+
+        /*
+        TODO:
+        The api is terrible there is now way to pass uniform data to the shader.
+        */
 
         /// <summary>
         /// Compiles an HLSL shader from a file and loads it into a GpuShader object.
