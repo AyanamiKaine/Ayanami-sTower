@@ -151,8 +151,7 @@ public static class Program
         window = new Window("MSAA Triangle Example (Builder)", 800, 600, WindowFlags.Resizable); // Slightly larger window
         gpuDevice = new GpuDevice(
             GpuShaderFormat.SpirV | GpuShaderFormat.Msl | GpuShaderFormat.Dxil,
-            enableDebugMode: true, // Enable debug layers if possible
-            null // Let SDL pick the best driver
+            enableDebugMode: true // Enable debug layers if possible
         );
         gpuDevice.ClaimWindow(window);
 
