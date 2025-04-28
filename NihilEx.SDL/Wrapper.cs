@@ -2844,7 +2844,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         private readonly Window _window;
         private bool _disposed = false;
 
-        private readonly List<SDL_GPUSampleCount> _supportedSampleCounts = new();
+        private readonly List<SDL_GPUSampleCount> _supportedSampleCounts = [];
         private SDL_GPUSampleCount _actualSampleCount = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1;
         private SDL_GPUTextureFormat _renderTargetFormat =
             SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_INVALID;
