@@ -4020,6 +4020,70 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
     #endregion
 
+    /// <summary>
+    /// Represents the GPU buffers required for rendering a mesh.
+    /// </summary>
+    public sealed class GpuMeshBuffers : IDisposable
+    {
+        /// <summary>
+        /// The buffer containing vertex data.
+        /// </summary>
+        public GpuBuffer VertexBuffer { get; }
+
+        /// <summary>
+        /// The buffer containing index data.
+        /// </summary>
+        public GpuBuffer IndexBuffer { get; }
+
+        /// <summary>
+        /// The number of indices in the index buffer.
+        /// </summary>
+        public uint IndexCount { get; }
+
+        /// <summary>
+        /// The format of the indices (16-bit or 32-bit).
+        /// </summary>
+        public SDL_GPUIndexElementSize IndexElementSize { get; }
+
+        private bool _disposed = false;
+
+        internal GpuMeshBuffers(
+            GpuBuffer vertexBuffer,
+            GpuBuffer indexBuffer,
+            uint indexCount,
+            SDL_GPUIndexElementSize indexElementSize
+        )
+        {
+            VertexBuffer = vertexBuffer ?? throw new ArgumentNullException(nameof(vertexBuffer));
+            IndexBuffer = indexBuffer ?? throw new ArgumentNullException(nameof(indexBuffer));
+            IndexCount = indexCount;
+            IndexElementSize = indexElementSize;
+        }
+
+        /// <summary>
+        /// Disposes the underlying GPU buffers.
+        /// </summary>
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                // Dispose buffers if this class is considered the owner
+                // If ownership is managed elsewhere (e.g., by the GpuDevice),
+                // remove these Dispose calls.
+                VertexBuffer?.Dispose();
+                IndexBuffer?.Dispose();
+                _disposed = true;
+                GC.SuppressFinalize(this);
+            }
+        }
+
+        // Optional: Finalizer if Dispose might not be called
+        ~GpuMeshBuffers()
+        {
+            Dispose();
+        }
+    }
+
     #region GPU Device
 
     /// <summary>
@@ -4216,6 +4280,164 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             var buffer = new GpuBuffer(this, bufferHandle, sizeInBytes, usage);
             TrackResource(buffer);
             return buffer;
+        }
+
+        /// <summary>
+        /// Creates GPU buffers and uploads mesh data (vertices and indices).
+        /// Mimics the Vulkan approach but uses SDL_gpu concepts like Transfer Buffers.
+        /// </summary>
+        /// <typeparam name="TVertex">The vertex struct type (must be unmanaged).</typeparam>
+        /// <param name="indices">A ReadOnlySpan of uint indices.</param>
+        /// <param name="vertices">A ReadOnlySpan of TVertex vertices.</param>
+        /// <param name="vertexBufferUsage">Optional additional usage flags for the vertex buffer besides VERTEX.</param>
+        /// <param name="indexBufferUsage">Optional additional usage flags for the index buffer besides INDEX.</param>
+        /// <returns>A GpuMeshBuffers object containing the created vertex and index buffers.</returns>
+        /// <exception cref="ArgumentException">Thrown if indices or vertices spans are empty.</exception>
+        /// <exception cref="SDLException">Thrown if buffer creation or upload fails.</exception>
+        /// <remarks>
+        /// This method handles creating the necessary GPU buffers and uploading the provided
+        /// mesh data using an intermediate transfer buffer, following the SDL_gpu API pattern.
+        /// Unlike the Vulkan example using vkGetBufferDeviceAddress, this method does not
+        /// retrieve or return buffer device addresses, as that feature is not exposed
+        /// in a cross-platform way by the core SDL_gpu API.
+        /// </remarks>
+        public unsafe GpuMeshBuffers UploadMesh<TVertex>(
+            ReadOnlySpan<uint> indices,
+            ReadOnlySpan<TVertex> vertices,
+            GpuBufferUsageFlags vertexBufferUsage = GpuBufferUsageFlags.None,
+            GpuBufferUsageFlags indexBufferUsage = GpuBufferUsageFlags.None
+        )
+            where TVertex : unmanaged // Ensure TVertex is an unmanaged type (struct)
+        {
+            if (vertices.IsEmpty)
+                throw new ArgumentException("Vertex data cannot be empty.", nameof(vertices));
+            if (indices.IsEmpty)
+                throw new ArgumentException("Index data cannot be empty.", nameof(indices));
+
+            // --- 1. Calculate Buffer Sizes ---
+            uint vertexDataSize = (uint)(vertices.Length * sizeof(TVertex));
+            uint indexDataSize = (uint)(indices.Length * sizeof(uint));
+            uint totalDataSize = vertexDataSize + indexDataSize;
+
+            GpuBuffer? finalVertexBuffer = null;
+            GpuBuffer? finalIndexBuffer = null;
+            GpuTransferBuffer? transferBuffer = null;
+            GpuCommandBuffer? commandBuffer = null;
+
+            try
+            {
+                // --- 2. Create Target GPU Buffers ---
+                // Vertex Buffer: Always needs VERTEX usage, add optional flags.
+                // Note: The Vulkan example added STORAGE_BUFFER | SHADER_DEVICE_ADDRESS.
+                // We map STORAGE_BUFFER to StorageRead (assuming read-only storage access needed).
+                // SHADER_DEVICE_ADDRESS is not directly supported in SDL_gpu core API.
+                finalVertexBuffer = CreateBuffer(
+                    GpuBufferUsageFlags.Vertex | vertexBufferUsage, // Combine mandatory VERTEX with user flags
+                    vertexDataSize
+                );
+                finalVertexBuffer.SetName($"MeshVertexBuffer_{finalVertexBuffer.Handle:X}"); // Optional debug name
+
+                // Index Buffer: Always needs INDEX usage, add optional flags.
+                finalIndexBuffer = CreateBuffer(
+                    GpuBufferUsageFlags.Index | indexBufferUsage, // Combine mandatory INDEX with user flags
+                    indexDataSize
+                );
+                finalIndexBuffer.SetName($"MeshIndexBuffer_{finalIndexBuffer.Handle:X}"); // Optional debug name
+
+                // --- 3. Create and Populate Transfer Buffer ---
+                transferBuffer = CreateTransferBuffer(
+                    SDL_GPUTransferBufferUsage.SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+                    totalDataSize
+                );
+
+                // Map the transfer buffer to get a CPU-writable pointer
+                byte* mappedPtr = (byte*)transferBuffer.Map(cycle: false); // Don't cycle for initial upload
+
+                // Copy vertex data
+                var vertexSourceSpan = MemoryMarshal.AsBytes(vertices);
+                var vertexDestSpan = new Span<byte>(mappedPtr, (int)vertexDataSize);
+                vertexSourceSpan.CopyTo(vertexDestSpan);
+
+                // Copy index data (immediately after vertex data)
+                var indexSourceSpan = MemoryMarshal.AsBytes(indices);
+                var indexDestSpan = new Span<byte>(mappedPtr + vertexDataSize, (int)indexDataSize);
+                indexSourceSpan.CopyTo(indexDestSpan);
+
+                // Unmap the buffer, making the data available to the GPU
+                transferBuffer.Unmap();
+
+                // --- 4. Record and Submit Copy Commands ---
+                commandBuffer = AcquireCommandBuffer();
+                commandBuffer.PushDebugGroup("UploadMesh"); // Optional debug marker
+
+                using (GpuCopyPass copyPass = commandBuffer.BeginCopyPass())
+                {
+                    // Upload Vertex Data
+                    copyPass.UploadToBuffer(
+                        source: new SDL_GPUTransferBufferLocation
+                        {
+                            transfer_buffer = transferBuffer.Handle,
+                            offset =
+                                0 // Vertex data starts at offset 0
+                            ,
+                        },
+                        destination: new SDL_GPUBufferRegion
+                        {
+                            buffer = finalVertexBuffer.Handle,
+                            offset = 0,
+                            size = vertexDataSize,
+                        },
+                        cycle: false // Don't cycle destination for initial upload
+                    );
+
+                    // Upload Index Data
+                    copyPass.UploadToBuffer(
+                        source: new SDL_GPUTransferBufferLocation
+                        {
+                            transfer_buffer = transferBuffer.Handle,
+                            offset =
+                                vertexDataSize // Index data starts after vertex data
+                            ,
+                        },
+                        destination: new SDL_GPUBufferRegion
+                        {
+                            buffer = finalIndexBuffer.Handle,
+                            offset = 0,
+                            size = indexDataSize,
+                        },
+                        cycle: false // Don't cycle destination for initial upload
+                    );
+                } // GpuCopyPass is automatically ended here by Dispose()
+
+                commandBuffer.PopDebugGroup(); // Match PushDebugGroup
+                commandBuffer.Submit(); // Submit the copy commands to the GPU
+                commandBuffer = null; // Command buffer is consumed after submission
+
+                // --- 5. Return Mesh Buffers ---
+                // Note: We don't wait for the GPU here. The buffers are ready for use
+                // in subsequent command buffers. If immediate use is needed,
+                // submit with a fence and wait.
+                return new GpuMeshBuffers(
+                    finalVertexBuffer,
+                    finalIndexBuffer,
+                    (uint)indices.Length,
+                    SDL_GPUIndexElementSize.SDL_GPU_INDEXELEMENTSIZE_32BIT // Assuming uint indices
+                );
+            }
+            catch (Exception ex)
+            {
+                // Clean up partially created resources on error
+                finalVertexBuffer?.Dispose();
+                finalIndexBuffer?.Dispose();
+                commandBuffer?.Cancel(); // Cancel if acquired but not submitted
+                Console.WriteLine($"Error during mesh upload: {ex.Message}"); // Log error
+                throw; // Re-throw the exception
+            }
+            finally
+            {
+                // Dispose the temporary transfer buffer - it's usually not needed after upload
+                transferBuffer?.Dispose();
+            }
         }
 
         /// <summary>
