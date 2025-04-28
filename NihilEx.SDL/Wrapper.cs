@@ -4165,6 +4165,9 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             }
         }
 
+        //TODO:
+        //using generics to calculate the sizeInBytes in the function
+
         /// <summary>Creates a GPU buffer.</summary>
         public GpuBuffer CreateBuffer(GpuBufferUsageFlags usage, uint sizeInBytes)
         {
@@ -4182,6 +4185,21 @@ namespace AyanamisTower.NihilEx.SDLWrapper
             var buffer = new GpuBuffer(this, bufferHandle, sizeInBytes, usage);
             TrackResource(buffer);
             return buffer;
+        }
+
+        /// <summary>
+        /// Creates a GPU buffer with size automatically calculated from the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type of data to store in the buffer. Must be unmanaged.</typeparam>
+        /// <param name="usage">Buffer usage flags.</param>
+        /// <returns>A new GpuBuffer instance.</returns>
+        /// <exception cref="ObjectDisposedException">Thrown if the device is disposed.</exception>
+        /// <exception cref="SDLException">Thrown if buffer creation fails.</exception>
+        public unsafe GpuBuffer CreateBuffer<T>(GpuBufferUsageFlags usage)
+            where T : unmanaged
+        {
+            uint elementSize = (uint)sizeof(T);
+            return CreateBuffer(usage, elementSize);
         }
 
         /// <summary>Creates a GPU texture.</summary>
