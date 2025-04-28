@@ -19,18 +19,18 @@ public static class Program
     private static GpuMeshBuffers? mesh = null; // To hold vertex/index buffers
 
     // --- Mesh Data ---
-    // Use your wrapper's Vertex struct if available, otherwise define it or use SDL_Vertex carefully
-    // Using the definition from your wrapper code
+    //Rectangle
     private static readonly Vertex[] vertices =
     [
-        // Position                Color                       TexCoord (unused here)
-        new(new FPoint(-0.5f, -0.5f), new FColor(1.0f, 0.0f, 0.0f, 1.0f), new FPoint(0, 0)), // Top-left, Red
-        new(new FPoint(0.5f, -0.5f), new FColor(0.0f, 1.0f, 0.0f, 1.0f), new FPoint(0, 0)), // Top-right, Green
+        // Position             Color                           TexCoord (unused)
+        new(new FPoint(-0.5f, -0.5f), new FColor(1.0f, 0.0f, 0.0f, 1.0f), new FPoint(0, 1)), // Bottom-left, Red
+        new(new FPoint(0.5f, -0.5f), new FColor(0.0f, 1.0f, 0.0f, 1.0f), new FPoint(1, 1)), // Bottom-right, Green
+        new(new FPoint(0.5f, 0.5f), new FColor(0.0f, 0.0f, 1.0f, 1.0f), new FPoint(1, 0)), // Top-right, Blue
         new(
-            new FPoint(0.0f, 0.5f),
-            new FColor(0.0f, 0.0f, 1.0f, 1.0f),
+            new FPoint(-0.5f, 0.5f),
+            new FColor(1.0f, 1.0f, 0.0f, 1.0f),
             new FPoint(0, 0)
-        ) // Bottom-center, Blue
+        ) // Top-left, Yellow
         ,
     ];
 
@@ -38,7 +38,10 @@ public static class Program
     [
         0,
         1,
-        2 // Simple triangle
+        2, // First triangle (Bottom-left -> Bottom-right -> Top-right)
+        0,
+        2,
+        3 // Second triangle (Bottom-left -> Top-right -> Top-left)
         ,
     ];
 
@@ -60,27 +63,10 @@ public static class Program
         }
     }
 
-    private static void CreateRectangle()
-    {
-        List<SDL_Vertex> vertices =
-        [
-            new()
-            {
-                position = new() { x = 0.5f, y = -0.5f },
-                color = new()
-                {
-                    r = 0.5f,
-                    g = 0.5f,
-                    b = 0.0f,
-                },
-            },
-        ];
-    }
-
     private static unsafe void Init()
     {
         SdlHost.Init(SdlSubSystem.Everything);
-        window = new Window("Basic Triangle Example", 400, 400, WindowFlags.Resizable);
+        window = new Window("Basic Rectangle Example", 400, 400, WindowFlags.Resizable);
         gpuDevice = new GpuDevice(
             GpuShaderFormat.SpirV | GpuShaderFormat.Msl | GpuShaderFormat.Dxil,
             enableDebugMode: true
@@ -95,7 +81,10 @@ public static class Program
             $"Uploaded Mesh: VB={mesh.VertexBuffer.Handle}, IB={mesh.IndexBuffer.Handle}, Indices={mesh.IndexCount}"
         );
 
-        GpuShader vertexShader = GpuShader.LoadShader(gpuDevice, "Shader/RawTriangle.vert");
+        GpuShader vertexShader = GpuShader.CompileAndLoadHLSLToSPIRV(
+            gpuDevice,
+            "Rectangle.vert.hlsl"
+        );
 
         GpuShader fragmentShader = GpuShader.LoadShader(gpuDevice, "Shader/SolidColor.frag");
 
@@ -223,7 +212,7 @@ public static class Program
             renderPass?.BindGraphicsPipeline(fillPipeline!);
             renderPass?.BindVertexBuffer(0, mesh!.VertexBuffer); // Bind VB to slot 0
             renderPass?.BindIndexBuffer(mesh!.IndexBuffer, 0, mesh.IndexElementSize); // Bind IB
-            
+
             // 1. Define your desired margin in pixels.
             //    Using float because SDL_GPUViewport uses floats.
             float margin = 100.0f;
