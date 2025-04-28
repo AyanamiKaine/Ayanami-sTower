@@ -53,6 +53,7 @@
 	 <PackageVersion Include="Box2D.NET.Debug" Version="3.0.0" />
 	 <PackageVersion Include="Box2D.NET.Release" Version="3.0.0" />
 	 <PackageVersion Include="JoltPhysicsSharp" Version="2.16.1" />
+     <PackageVersion Include="AssimpNetter" Version="5.4.3.3" />
 	 <!--END-->
 
 	 <!--Used for aspnet core applications-->
