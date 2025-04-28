@@ -79,13 +79,15 @@ public static class Program
             stackalloc SDL_GPUColorTargetDescription[1];
         colorTargetDescriptions[0].format = gpuDevice.GetSwapchainTextureFormat(window);
 
-        SDL_GPUVertexBufferDescription sDL_GPUVertexBufferDescription =
-            new()
-            {
-                slot = 0,
-                pitch = (uint)sizeof(PerFrameConstants),
-                input_rate = SDL_GPUVertexInputRate.SDL_GPU_VERTEXINPUTRATE_VERTEX,
-            };
+        /*
+
+        SDL_GPUVertexBufferDescription* GPUVertexBufferDescriptions =
+            stackalloc SDL_GPUVertexBufferDescription[1];
+
+        GPUVertexBufferDescriptions[0].slot = 0;
+        GPUVertexBufferDescriptions[0].pitch = (uint)sizeof(PerFrameConstants);
+        GPUVertexBufferDescriptions[0].input_rate =
+            SDL_GPUVertexInputRate.SDL_GPU_VERTEXINPUTRATE_VERTEX;
 
         SDL_GPUVertexAttribute* attributes = stackalloc SDL_GPUVertexAttribute[1];
         attributes[0].location = 0;
@@ -97,15 +99,18 @@ public static class Program
             new()
             {
                 // Point to null or keep the pointer but set count to 0
-                vertex_buffer_descriptions = null, // Or &someDummyDesc if null disallowed
-                num_vertex_buffers = 0,
+                vertex_buffer_descriptions = GPUVertexBufferDescriptions, // Or &someDummyDesc if null disallowed
+                num_vertex_buffers = 1,
                 // Point to null or keep the pointer but set count to 0
-                vertex_attributes = null, // Or &someDummyAttr if null disallowed
+                vertex_attributes = attributes, // Or &someDummyAttr if null disallowed
                 num_vertex_attributes =
-                    0 // Correctly state there are NO attributes
+                    1 // Correctly state there are NO attributes
                 ,
             };
-
+        
+        The entire vertex input state can be removed we defined above and the shader still works with
+        no erros. I have absoluetly zero glue what the vertex_input_state even does.
+        */
         SDL_GPUGraphicsPipelineCreateInfo pipelineCreateInfo =
             new()
             {
@@ -118,14 +123,12 @@ public static class Program
                 primitive_type = SDL_GPUPrimitiveType.SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
                 vertex_shader = vertexShader.Handle,
                 fragment_shader = fragmentShader.Handle,
-                vertex_input_state = vertexInputState,
+                //vertex_input_state = vertexInputState, // Does nothing ?
             };
 
         pipelineCreateInfo.rasterizer_state.fill_mode = SDL_GPUFillMode.SDL_GPU_FILLMODE_FILL;
         //This only shows the outline, comment out the line above and uncomment the line below
         //pipelineCreateInfo.rasterizer_state.fill_mode = SDL_GPUFillMode.SDL_GPU_FILLMODE_LINE;
-
-
 
         // Here we are defining one vertex buffer
         vertexBuffer = gpuDevice.CreateBuffer<PerFrameConstants>(GpuBufferUsageFlags.Vertex);
