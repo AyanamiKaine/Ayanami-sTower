@@ -36,7 +36,7 @@ public static class Program
     private static void Init()
     {
         SdlHost.Init(SdlSubSystem.Everything);
-        window = new Window("Basic Triangle Example", 400, 400, WindowFlags.Resizable);
+        window = new Window("GraphicsPipelineBuilder Example", 400, 400, WindowFlags.Resizable);
         gpuDevice = new GpuDevice(
             GpuShaderFormat.SpirV | GpuShaderFormat.Msl | GpuShaderFormat.Dxil,
             enableDebugMode: true
