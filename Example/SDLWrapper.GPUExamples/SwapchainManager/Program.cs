@@ -168,8 +168,7 @@ public static class Program
         window = new Window("MSAA Triangle (SwapchainManager)", 800, 600, WindowFlags.Resizable);
         gpuDevice = new GpuDevice(
             GpuShaderFormat.SpirV | GpuShaderFormat.Msl | GpuShaderFormat.Dxil,
-            enableDebugMode: true,
-            null
+            enableDebugMode: true
         );
         gpuDevice.ClaimWindow(window);
         Console.WriteLine($"Created GPU device with driver: {gpuDevice.DriverName}");
