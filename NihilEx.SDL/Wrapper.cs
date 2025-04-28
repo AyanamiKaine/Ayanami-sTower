@@ -4049,7 +4049,7 @@ namespace AyanamisTower.NihilEx.SDLWrapper
     {
         private IntPtr _handle;
         private bool _disposed = false;
-        private readonly List<WeakReference<GpuResource>> _trackedResources = new(); // To potentially warn about leaks
+        private readonly List<WeakReference<GpuResource>> _trackedResources = []; // To potentially warn about leaks
 
         public IntPtr Handle =>
             _disposed ? throw new ObjectDisposedException(nameof(GpuDevice)) : _handle;
