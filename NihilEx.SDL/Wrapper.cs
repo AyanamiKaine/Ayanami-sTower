@@ -4022,11 +4022,23 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
     #region GPU Device
 
+    /// <summary>
+    /// Enumerates the available GPU drivers that can be used with the SDL_GPU API.
+    /// </summary>
+    /// <remarks>
+    /// This enumeration represents different graphics processing unit (GPU) drivers
+    /// that can be selected when initializing GpuDevice. Each driver has
+    /// different capabilities, performance characteristics, and platform support.
+    /// </remarks>
     public enum GPUDriver
     {
         Vulkan,
         Metal,
         Direct3D12,
+
+        /// <summary>
+        /// Let the GpuDevice pick the optimal driver
+        /// </summary>
         Optimal,
     }
 
