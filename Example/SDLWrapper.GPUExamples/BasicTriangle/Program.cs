@@ -40,8 +40,7 @@ public static class Program
         window = new Window("Basic Triangle Example", 400, 400, WindowFlags.Resizable);
         gpuDevice = new GpuDevice(
             GpuShaderFormat.SpirV | GpuShaderFormat.Msl | GpuShaderFormat.Dxil,
-            enableDebugMode: true,
-            null
+            enableDebugMode: true
         );
         gpuDevice.ClaimWindow(window);
 
