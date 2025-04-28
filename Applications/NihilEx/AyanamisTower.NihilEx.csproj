@@ -20,6 +20,7 @@
     <PackageReference Include="Box2D.NET.Debug" />
     <PackageReference Include="Box2D.NET.Release" />
     <PackageReference Include="JoltPhysicsSharp" />
+    <PackageReference Include="AssimpNetter"/>
     </ItemGroup>
 
   <ItemGroup>
