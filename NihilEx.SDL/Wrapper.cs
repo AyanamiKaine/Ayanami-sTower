@@ -4022,6 +4022,14 @@ namespace AyanamisTower.NihilEx.SDLWrapper
 
     #region GPU Device
 
+    public enum GPUDriver
+    {
+        Vulkan,
+        Metal,
+        Direct3D12,
+        Optimal,
+    }
+
     /// <summary>
     /// Represents a GPU device, the main interface for interacting with the GPU API.
     /// </summary>
@@ -4046,14 +4054,25 @@ namespace AyanamisTower.NihilEx.SDLWrapper
         /// </summary>
         /// <param name="formats">The shader formats the application can provide.</param>
         /// <param name="enableDebugMode">Whether to enable backend debug layers/validation.</param>
-        /// <param name="driverName">Optional name of a specific driver backend to request.</param>
+        /// <param name="gpuDriver">The specific gpu driver backend to request.</param>
         /// <exception cref="SDLException">Thrown if device creation fails.</exception>
         public GpuDevice(
             GpuShaderFormat formats,
             bool enableDebugMode = false,
-            string? driverName = null
+            GPUDriver gpuDriver = GPUDriver.Optimal
         )
         {
+            string? driverName = gpuDriver switch
+            {
+                GPUDriver.Vulkan => "vulkan",
+                GPUDriver.Metal => "metal",
+                GPUDriver.Direct3D12 => "direct3d12",
+                GPUDriver.Optimal => null,
+                _ =>
+                    null // Default case if new enum values are added
+                ,
+            };
+
             _handle = SDL_CreateGPUDevice(
                 (SDL_GPUShaderFormat)formats,
                 enableDebugMode,
