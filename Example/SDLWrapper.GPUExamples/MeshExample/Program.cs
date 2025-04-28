@@ -6,8 +6,9 @@ using static SDL3.SDL;
 namespace MeshExample;
 
 /// <summary>
-/// This is a port of https://github.com/TheSpydog/SDL_gpu_examples/blob/main/Examples/BasicTriangle.c
-/// using my SDL3 wrapper around the native SDL3 bindings.
+/// This should become an example on how to use complex meshes
+/// currently we only show how to construct a rectangle using
+/// 2 triangles... this leaves much to desire.
 /// </summary>
 public static class Program
 {
