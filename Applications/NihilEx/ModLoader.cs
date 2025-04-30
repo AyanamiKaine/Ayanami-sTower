@@ -272,8 +272,8 @@ public class ModLoader
         foreach (var modDir in Directory.GetDirectories(_modsSourceDir))
         {
             string modName = Path.GetFileName(modDir);
-            string moduleSourcePath = Path.Combine(modDir, "Module.cs");
-            string componentsSourcePath = Path.Combine(modDir, "Components.cs");
+            string moduleSourcePath = Path.Combine(modDir, $"{modName}.Module.cs");
+            string componentsSourcePath = Path.Combine(modDir, $"{modName}.Components.cs");
 
             if (File.Exists(moduleSourcePath)) // A valid mod must have at least Module.cs
             {
