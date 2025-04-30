@@ -285,26 +285,26 @@ public class ModLoader
             }
         }
 
-        foreach (var mod in discoveredMods)
+        foreach (var (ModName, ModDir, ModuleSourcePath, ComponentsSourcePath) in discoveredMods)
         {
-            Console.WriteLine($"\nModLoader: Compiling Mod -> {mod.ModName}");
+            Console.WriteLine($"\nModLoader: Compiling Mod -> {ModName}");
             string componentsDllPath = Path.Combine(
                 _compiledModsDir,
-                $"{mod.ModName}.Components.dll"
+                $"{ModName}.Components.dll"
             );
-            string moduleDllPath = Path.Combine(_compiledModsDir, $"{mod.ModName}.Module.dll");
+            string moduleDllPath = Path.Combine(_compiledModsDir, $"{ModName}.Module.dll");
 
             Assembly? componentsAssembly = CompileComponents(
-                mod.ModName,
-                mod.ComponentsSourcePath,
+                ModName,
+                ComponentsSourcePath,
                 componentsDllPath
             );
             Assembly? moduleAssembly = null;
-            if (componentsAssembly != null || !File.Exists(mod.ComponentsSourcePath))
+            if (componentsAssembly != null || !File.Exists(ComponentsSourcePath))
             {
                 moduleAssembly = CompileModule(
-                    mod.ModName,
-                    mod.ModuleSourcePath,
+                    ModName,
+                    ModuleSourcePath,
                     moduleDllPath,
                     componentsAssembly,
                     componentsDllPath
@@ -313,16 +313,16 @@ public class ModLoader
             else
             {
                 Console.WriteLine(
-                    $"  Skipping module compilation for {mod.ModName} because components failed."
+                    $"  Skipping module compilation for {ModName} because components failed."
                 );
             }
             // Store the original ModDir along with other data
-            compiledData[mod.ModName] = (
+            compiledData[ModName] = (
                 componentsAssembly!,
                 moduleAssembly!,
                 componentsDllPath,
                 moduleDllPath,
-                mod.ModDir
+                ModDir
             );
         }
         return compiledData;
