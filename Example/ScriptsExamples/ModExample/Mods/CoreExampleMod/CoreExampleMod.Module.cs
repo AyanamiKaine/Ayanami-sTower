@@ -18,7 +18,10 @@ namespace Core3D.Module // Use a specific namespace
         public string Description => "Provides core 3D components";
 
         public IReadOnlyList<ModDependency> Dependencies =>
-            new List<ModDependency> { }.AsReadOnly();
+            new List<ModDependency>
+            {
+                new ModDependency("Core Health System", ">=1.0.0"),
+            }.AsReadOnly();
         public int LoadPriority => 0;
         public IReadOnlyList<string> Tags => new List<string> { "Core", "Gameplay" }.AsReadOnly();
 
