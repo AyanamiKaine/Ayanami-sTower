@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>preview</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Mods\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Mods\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NLog" />
+    <PackageReference Include="CS-Script" />
+    <PackageReference Include="Flecs.NET.Debug" />
+	<PackageReference Include="Flecs.NET.Release" />   
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Applications\NihilEx\AyanamisTower.NihilEx.csproj" />
+  </ItemGroup>
+</Project>
