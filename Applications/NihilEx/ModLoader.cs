@@ -288,10 +288,7 @@ public class ModLoader
         foreach (var (ModName, ModDir, ModuleSourcePath, ComponentsSourcePath) in discoveredMods)
         {
             Console.WriteLine($"\nModLoader: Compiling Mod -> {ModName}");
-            string componentsDllPath = Path.Combine(
-                _compiledModsDir,
-                $"{ModName}.Components.dll"
-            );
+            string componentsDllPath = Path.Combine(_compiledModsDir, $"{ModName}.Components.dll");
             string moduleDllPath = Path.Combine(_compiledModsDir, $"{ModName}.Module.dll");
 
             Assembly? componentsAssembly = CompileComponents(
