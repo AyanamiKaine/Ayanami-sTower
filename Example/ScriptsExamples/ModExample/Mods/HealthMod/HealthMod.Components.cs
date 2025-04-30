@@ -1,4 +1,4 @@
-// HealthMod/Components.cs
+//css_assemblyname HealthMod.Components
 using System;
 using Flecs.NET.Core; // Might be needed if components implement interfaces from Flecs
 

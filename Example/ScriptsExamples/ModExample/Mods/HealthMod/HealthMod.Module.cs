@@ -1,10 +1,4 @@
-// HealthMod/Module.cs
-
-// --- References needed for THIS file at COMPILE time ---
-// Reference the Components DLL that will be created first
-//css_reference HealthMod.Components.dll
-// Reference Flecs.NET
-//css_reference Flecs.NET.dll
+//css_assemblyname HealthMod.Module
 
 using System;
 using System.Collections.Generic;
