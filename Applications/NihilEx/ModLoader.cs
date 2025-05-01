@@ -466,7 +466,7 @@ public class ModLoader
                 }
             }
 
-            if (!loadableThisPass.Any())
+            if (loadableThisPass.Count == 0)
             {
                 // If no mods can be loaded in this pass, log remaining and break
                 Console.WriteLine(
@@ -521,7 +521,7 @@ public class ModLoader
 
         // --- Log the Calculated Load Order ---
         Console.WriteLine("\nModLoader: --- Calculated Load Order ---");
-        if (finalLoadOrder.Any())
+        if (finalLoadOrder.Count != 0)
         {
             Console.WriteLine(
                 $"ModLoader: {finalLoadOrder.Count} mod(s) resolved successfully. Loading order:"
