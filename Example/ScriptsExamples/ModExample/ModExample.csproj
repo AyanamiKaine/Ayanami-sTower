@@ -30,4 +30,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Applications\NihilEx\AyanamisTower.NihilEx.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Mods\HealthMod\Systems\" />
+  </ItemGroup>
 </Project>

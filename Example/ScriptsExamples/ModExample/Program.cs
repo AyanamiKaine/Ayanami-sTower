@@ -33,7 +33,7 @@ internal static class Program
 
         Console.WriteLine("Initializing ModLoader...");
         ModLoader modLoader = new(GlobalData.world, modsSourceDir, compiledModsDir);
-        modLoader.LoadAllMods(); // This does all the work!
+        modLoader.LoadAllMods();
 
         Console.WriteLine("\nHost application running after mod loading.");
         Console.WriteLine("--- Loaded Mod Metadata ---");
