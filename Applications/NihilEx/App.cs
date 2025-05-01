@@ -253,13 +253,7 @@ namespace AyanamisTower.NihilEx
                 if (Renderer is not null)
                     Renderer.DrawColor = System.Drawing.Color.PaleGoldenrod;
 
-                RenderFrame();
-
-                // Progress the ECS world (execute systems)
-                if (!World.IsDeferred()) // Basic check, might need more robust handling
-                {
-                    World.Progress(deltaTime: deltaTime);
-                }
+                World.Progress(deltaTime: deltaTime);
             }
             catch (Exception ex)
             {
