@@ -14,6 +14,11 @@ class or we dont want to attach a specific SawnTrashCans components in an ECS sy
 This should not be data that gets looped and iterated over every frame as this
 as performance implications and will blow the cache.
 
+With that we could add the memory class to entities that should have the ability to
+remember something. We dont need to attach it to every npc. We could attach it to
+entites that represent regions in the game world. Again this class works best
+when you want to add the ability to remember things.
+
 TODO:
 Implement a dotnet.benchmark project that gives us some concrete performance
 numbers.
