@@ -422,6 +422,7 @@ public class ModLoader
         int loadedCount = 0;
         int iteration = 0;
         int maxIterations = (modsToLoad.Count * modsToLoad.Count) + 1; // Safety break
+        var finalLoadOrder = new List<ModInfo>(); // <-- Stores the calculated load order
 
         while (modsToLoad.Count > 0 && iteration++ < maxIterations)
         {
@@ -494,6 +495,7 @@ public class ModLoader
                     successfullyLoaded.Add(modInfo.Name); // Mark as successfully loaded for dependency checks
                     modsToLoad.Remove(modInfo); // Remove from the pending list
                     loadedCount++;
+                    finalLoadOrder.Add(modInfo);
                     Console.WriteLine($"  Successfully imported {modInfo.Name} into Flecs world.");
                 }
                 catch (Exception ex)
@@ -516,6 +518,42 @@ public class ModLoader
                 $"  ERROR: Possible circular dependency or unresolved dependency detected. Cannot load: {string.Join(", ", modsToLoad.Select(m => m.Name))}"
             );
         }
+
+        // --- Log the Calculated Load Order ---
+        Console.WriteLine("\nModLoader: --- Calculated Load Order ---");
+        if (finalLoadOrder.Any())
+        {
+            Console.WriteLine(
+                $"ModLoader: {finalLoadOrder.Count} mod(s) resolved successfully. Loading order:"
+            );
+            for (int i = 0; i < finalLoadOrder.Count; i++)
+            {
+                var modInfo = finalLoadOrder[i];
+                string depString = "None";
+                if (modInfo.Dependencies?.Any() == true)
+                {
+                    // Create a readable string of dependencies: ModName(VersionReq)
+                    depString = string.Join(
+                        ", ",
+                        modInfo.Dependencies.Select(d => $"{d.ModName}({d.RequiredVersion})")
+                    );
+                }
+
+                // Print: OrderNumber. ModName (vVersion) | Priority: P | Depends on: [Deps]
+                Console.WriteLine(
+                    $"  {i + 1, 3}. {modInfo.Name, -25} (v{modInfo.Version, -10})"
+                        + // Pad names/versions for alignment
+                        $" | Priority: {modInfo.LoadPriority, -3}"
+                        + // Pad priority
+                        $" | Depends on: [{depString}]"
+                );
+            }
+        }
+        else
+        {
+            Console.WriteLine("ModLoader: No mods were successfully resolved for loading.");
+        }
+        Console.WriteLine("ModLoader: --- End Calculated Load Order ---");
     }
 
     // --- Compilation Helper Methods ---
