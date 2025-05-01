@@ -24,11 +24,6 @@ public static class ReplExample
         // Add any other default usings here
     ];
 
-    /// <summary>
-    /// ECS WORLD - Accessed only by the main thread
-    /// </summary>
-    public static World World { get; } = World.Create();
-
     // Thread-safe queue for communication between input thread and main thread
     private static readonly BlockingCollection<string> inputQueue = [];
 
@@ -39,6 +34,11 @@ public static class ReplExample
     private const string WorldContextPropertyName = "WorldInstance";
 
     /// <summary>
+    /// ECS WORLD - Created and managed by the main application
+    /// </summary>
+    public static World World { get; private set; } = World.Create();
+
+    /// <summary>
     /// Main
     /// </summary>
     /// <param name="args"></param>
@@ -47,9 +47,9 @@ public static class ReplExample
         // --- Flecs Initialization (Main Thread) ---
         try
         {
-            // Example Flecs setup - adapt as needed
-            World.Import<Ecs.Stats>(); // Example import if needed
-            World.Set<flecs.EcsRest>(default); // Example REST setup
+            // Add any initial Flecs setup for your application here
+            World.Import<Ecs.Stats>(); // Example
+            World.Set(default(flecs.EcsRest));
             Console.WriteLine("Flecs world initialized.");
         }
         catch (Exception ex)
@@ -62,142 +62,21 @@ public static class ReplExample
             return;
         }
 
-        // --- REPL Setup ---
-        Console.WriteLine("CS-Script REPL Example (Async Input)");
-        Console.WriteLine("Enter C# code. Multi-line blocks require an empty line to finish.");
-        Console.WriteLine("Single lines and 'using' directives are processed immediately.");
-        Console.WriteLine("Type '#usings' to see current usings, '#clear' to clear buffer/input.");
-        Console.WriteLine("Type 'exit' or 'quit' to exit.");
-        Console.WriteLine("------------------------------------");
-
-        // Create evaluator (Main Thread)
+        // --- Create Evaluator (Main Thread) ---
+        // Use ReferenceDomainAssemblies to make types from the main app available.
         IEvaluator evaluator = CSScript.Evaluator.ReferenceDomainAssemblies();
 
-        PrintCurrentUsings(); // Show initial usings
+        // --- Start the REPL Session (Blocking Call) ---
+        // The StartFlecsRepl method now contains the main REPL loop.
+        // It will run until 'exit' or 'quit' is entered.
+        evaluator.StartStaticWorldRepl("ReplExample.World", () => World.Progress()); // Pass the created world instance
 
-        // Start the dedicated input reader thread
-        Thread inputThread = new Thread(ReadInputLoop)
-        {
-            IsBackground = true, // Allows application to exit even if this thread is running
-            Name = "ConsoleInputThread",
-        };
-        inputThread.Start();
-
-        // --- Main Loop (Main Thread) ---
-        StringBuilder codeBuffer = new StringBuilder();
-        bool exitRequested = false;
-
-        while (!exitRequested && !cancellationTokenSource.IsCancellationRequested)
-        {
-            // 1. Process Flecs World (Main Thread)
-            World.Progress(); // Keep the ECS world ticking
-
-            // 2. Check for and process input from the queue (Main Thread)
-            // TryTake with zero timeout makes it non-blocking
-            if (inputQueue.TryTake(out string? input, TimeSpan.Zero))
-            {
-                // Input received from the other thread
-                string trimmedInput = input?.Trim() ?? string.Empty;
-
-                // --- Handle REPL Commands ---
-                if (codeBuffer.Length == 0) // Commands only work when buffer is empty
-                {
-                    if (
-                        trimmedInput.Equals("exit", StringComparison.InvariantCultureIgnoreCase)
-                        || trimmedInput.Equals("quit", StringComparison.InvariantCultureIgnoreCase)
-                    )
-                    {
-                        exitRequested = true;
-                        cancellationTokenSource.Cancel(); // Signal input thread to stop
-                        continue; // Skip further processing this iteration
-                    }
-                    if (trimmedInput.Equals("#usings", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        PrintCurrentUsings();
-                        continue;
-                    }
-                    if (trimmedInput.Equals("#clear", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        codeBuffer.Clear();
-                        Console.ForegroundColor = ConsoleColor.DarkGray;
-                        Console.WriteLine("Input buffer cleared.");
-                        Console.ResetColor();
-                        Console.Write("> "); // Re-display prompt immediately
-                        continue;
-                    }
-                }
-
-                // --- Handle End of Multi-line Input (Empty Line) ---
-                if (string.IsNullOrWhiteSpace(input))
-                {
-                    if (codeBuffer.Length > 0)
-                    {
-                        // Evaluate the accumulated block (Main Thread)
-                        EvaluateCodeBuffer(evaluator, codeBuffer);
-                        Console.Write("> "); // Re-display prompt after evaluation
-                    }
-                    else
-                    {
-                        // Empty line entered, but buffer was already empty, just show prompt
-                        Console.Write("> ");
-                    }
-                    continue;
-                }
-
-                // --- Input is NOT empty and not a command/empty line ---
-
-                // --- Handle 'using' Directives ---
-                if (trimmedInput.StartsWith("using ") && codeBuffer.Length == 0)
-                {
-                    HandleUsingDirective(trimmedInput);
-                    Console.Write("> "); // Re-display prompt
-                    continue;
-                }
-
-                // --- Append to Code Buffer ---
-                bool wasBufferEmpty = codeBuffer.Length == 0;
-                codeBuffer.AppendLine(input);
-
-                // --- Try Immediate Evaluation (Single Line) ---
-                if (wasBufferEmpty)
-                {
-                    bool evaluateSuccess = TryEvaluateSingleLine(evaluator, codeBuffer);
-                    // If evaluation succeeded or was a definite error, buffer is cleared.
-                    // If it was likely incomplete, buffer remains.
-                    // Re-display appropriate prompt
-                    Console.Write(codeBuffer.Length == 0 ? "> " : ".. ");
-                }
-                else
-                {
-                    // Part of a multi-line block, just show the continuation prompt
-                    Console.Write(".. ");
-                }
-            }
-            else
-            {
-                // No input available, brief sleep to prevent tight loop spinning
-                // Adjust sleep duration as needed for responsiveness vs CPU usage balance
-                Thread.Sleep(10); // Sleep for 10 milliseconds
-            }
-        } // End of main loop
-
-        // --- Cleanup ---
-        Console.WriteLine("\nExiting REPL...");
-
-        // Ensure input thread finishes (optional wait)
-        // inputThread.Join(TimeSpan.FromSeconds(1)); // Wait briefly
-
-        // Dispose evaluator if possible
-        (evaluator as IDisposable)?.Dispose();
-
-        // Dispose Flecs world
-        World.Dispose();
-
-        // Dispose queue and token source
-        inputQueue.Dispose();
-        cancellationTokenSource.Dispose();
-
-        Console.WriteLine("Cleanup complete.");
+        // --- Application Cleanup (After REPL Exits) ---
+        Console.WriteLine("\nMain application cleaning up...");
+        World.Dispose(); // Dispose the world if it was created
+        (evaluator as IDisposable)?.Dispose(); // Dispose evaluator if possible
+        Console.WriteLine("Main application cleanup complete. Press Enter to exit.");
+        Console.ReadLine();
     }
 
     // Method to run on the dedicated input thread
