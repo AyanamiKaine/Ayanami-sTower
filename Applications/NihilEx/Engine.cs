@@ -2,6 +2,7 @@
 using System.Numerics;
 using AyanamisTower.NihilEx.ECS;
 using AyanamisTower.NihilEx.SDLWrapper;
+using CSScriptLib;
 using Flecs.NET.Bindings;
 using Flecs.NET.Core;
 
@@ -35,6 +36,7 @@ public class Engine
         InitComponents();
         InitDefaultPhases();
         InitDefaultSystems();
+        InitMods();
     }
 
     private void InitDefaultPhases()
@@ -586,5 +588,18 @@ public class Engine
                     renderer.Present();
                 }
             );
+    }
+
+    private void InitMods()
+    {
+        CSScript.EvaluatorConfig.Engine = EvaluatorEngine.CodeDom;
+
+        string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+        string modsSourceDir = Path.Combine(baseDirectory, "Mods");
+        string compiledModsDir = Path.Combine(baseDirectory, "CompiledMods");
+
+        Console.WriteLine("Initializing ModLoader...");
+        ModLoader modLoader = new(World, modsSourceDir, compiledModsDir);
+        modLoader.LoadAllMods();
     }
 }

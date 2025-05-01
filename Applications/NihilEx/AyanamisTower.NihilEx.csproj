@@ -15,19 +15,33 @@
     </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Mods\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Mods\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Flecs.NET.Debug" />
 	<PackageReference Include="Flecs.NET.Release" />    
     <PackageReference Include="Box2D.NET.Debug" />
     <PackageReference Include="Box2D.NET.Release" />
     <PackageReference Include="JoltPhysicsSharp" />
-    <PackageReference Include="AssimpNetter"/>
-    <PackageReference Include="CS-Script"/>
+    <PackageReference Include="AssimpNetter" />
+    <PackageReference Include="CS-Script" />
     </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../NihilEx.SDL/AyanamisTower.NihilEx.SDLWrapper.csproj" />
     <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM.Flecs\AyanamisTower.SFPM.Flecs.csproj" />
     <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM\AyanamisTower.SFPM.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Mods\" />
   </ItemGroup>
 
 </Project>
