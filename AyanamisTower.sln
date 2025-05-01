@@ -117,6 +117,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CreatingAndRefrencingAssemb
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModExample", "Example\ScriptsExamples\ModExample\ModExample.csproj", "{93E583F1-A941-487B-865E-FAF37170D6CC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebuggingExample", "Example\ScriptsExamples\DebuggingExample\DebuggingExample.csproj", "{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -583,6 +585,18 @@ Global
 		{93E583F1-A941-487B-865E-FAF37170D6CC}.Release|x64.Build.0 = Release|Any CPU
 		{93E583F1-A941-487B-865E-FAF37170D6CC}.Release|x86.ActiveCfg = Release|Any CPU
 		{93E583F1-A941-487B-865E-FAF37170D6CC}.Release|x86.Build.0 = Release|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Debug|x64.Build.0 = Debug|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Debug|x86.Build.0 = Debug|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Release|x64.ActiveCfg = Release|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Release|x64.Build.0 = Release|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Release|x86.ActiveCfg = Release|Any CPU
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -630,5 +644,6 @@ Global
 		{3F743F3B-9C2B-43C8-90B6-9037B55D7165} = {F850F53B-015F-31EA-49B1-5D46A3F55651}
 		{0675AB74-E7A9-4593-AEE8-A82F0F59A2E6} = {F850F53B-015F-31EA-49B1-5D46A3F55651}
 		{93E583F1-A941-487B-865E-FAF37170D6CC} = {F850F53B-015F-31EA-49B1-5D46A3F55651}
+		{FB04AC3C-7D4C-41C0-898E-90AA3D5EF5CD} = {F850F53B-015F-31EA-49B1-5D46A3F55651}
 	EndGlobalSection
 EndGlobal
