@@ -1,48 +1,87 @@
+using System.Diagnostics.CodeAnalysis;
 using NLog;
 
 namespace AyanamisTower.SFPM;
 
 /// <summary>
-/// Represents a query, it's a set facts, represented as a key value pair.
+/// Represents a request to match rules against a specific set of facts provided by an IFactSource.
 /// </summary>
-public class Query()
+public class Query
 {
     /// <summary>
-    /// Sets the query data from a dictionary
+    /// Represents a request to match rules against a specific set of facts provided by an IFactSource.
     /// </summary>
-    /// <param name="queryData"></param>
-    public Query(Dictionary<string, object> queryData)
-        : this()
-    {
-        _queryData = queryData;
-    }
-
-    private readonly Dictionary<string, object> _queryData = [];
+    private readonly IFactSource _factSource; // Store the fact source
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
     /// <summary>
-    /// Adds a key and value to the query.
+    /// Initializes a new instance of the Query class with a fact source.
     /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    public Query Add(string key, object value)
+    /// <param name="factSource">The source of facts for this query.</param>
+    /// <exception cref="ArgumentNullException">Thrown if factSource is null.</exception>
+    public Query(IFactSource factSource)
     {
-        _queryData.Add(key: key, value: value);
-        return this;
+        _factSource = factSource ?? throw new ArgumentNullException(nameof(factSource));
     }
 
     /// <summary>
-    /// Matches a query against a list of rules, it tries to select a rule that matches the most
-    /// (i.e. the most criteria) as its more specific. Then it runs the payload of the rule.
-    ///
-    /// If more than one rule with the same amount of criteria matches a random one in selected.
-    ///
-    /// To improve performance, sort rules from most specific rule to less.
-    /// I.e. the first rule in the list should have the most criteria.
+    /// Matches the query's fact source against a list of rules.
     /// </summary>
-    /// <param name="rules"></param>
+    /// <param name="rules">The list of rules to match against.</param>
     public void Match(List<Rule> rules)
     {
-        rules.Match(_queryData);
+        ArgumentNullException.ThrowIfNull(rules);
+        Logger.ConditionalDebug(
+            $"SFPM.Query.Match: Initiating match for query using {_factSource.GetType().Name}."
+        );
+        // Delegate directly to the extension method, passing the internal fact source
+        rules.Match(_factSource);
+    }
+
+    // --- Static helper for convenience if still working with dictionaries often ---
+
+    /// <summary>
+    /// Creates a Query instance using a dictionary as the fact source.
+    /// </summary>
+    /// <param name="queryData">The dictionary containing fact data.</param>
+    /// <returns>A new Query instance.</returns>
+    public static Query FromDictionary(Dictionary<string, object> queryData)
+    {
+        ArgumentNullException.ThrowIfNull(queryData);
+        return new Query(new DictionaryFactSource(queryData));
+    }
+
+    /// <summary>
+    /// Private adapter class to wrap a Dictionary as an IFactSource.
+    /// </summary>
+    private class DictionaryFactSource : IFactSource
+    {
+        private readonly Dictionary<string, object> _data;
+
+        public DictionaryFactSource(Dictionary<string, object> data)
+        {
+            _data = data ?? throw new ArgumentNullException(nameof(data));
+        }
+
+        public bool TryGetFact<TValue>(string factName, [MaybeNullWhen(false)] out TValue value)
+        {
+            if (_data.TryGetValue(factName, out object? objValue))
+            {
+                // Check if the object value is assignable to TValue
+                if (objValue is TValue typedValue)
+                {
+                    value = typedValue;
+                    return true;
+                }
+                // Handle null assignment explicitly if TValue is nullable and object value is null
+                if (objValue == null && default(TValue) == null) // Checks if TValue can accept null
+                {
+                    value = default!; // Assign default (which is null for nullable TValue)
+                    return true;
+                }
+            }
+            value = default;
+            return false;
+        }
     }
 }

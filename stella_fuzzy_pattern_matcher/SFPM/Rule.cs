@@ -54,63 +54,51 @@ public class Rule(List<ICriteria> criterias, Action payload, string name = "")
     public int CriteriaCount => Criterias.Count;
 
     /// <summary>
-    /// Checks if the rule is true based on a set of facts and returns the number of matched criteria.
-    /// IT WILL RETURN IMMEDIATELY IF ONE CRITERIA IS NOT MATCHED. The matched count will be 0.
+    /// Checks if the rule is true based on facts from the source and returns the number of criteria.
+    /// Returns immediately if one criteria is not matched.
     /// </summary>
-    /// <param name="facts">A dictionary of facts to check against the criteria.</param>
+    /// <param name="facts">The source of facts to check against the criteria.</param>
     /// <returns>A tuple containing:
     ///     - Item1: True if all criteria match the facts, otherwise false.
-    ///     - Item2: The number of criteria that matched the facts, if not all criteria matched returns 0
+    ///     - Item2: The number of criteria in the rule if true, otherwise 0.
     /// </returns>
-    public (bool IsTrue, int MatchedCriteriaCount) Evaluate(Dictionary<string, object> facts)
+    public (bool IsTrue, int MatchedCriteriaCount) Evaluate(IFactSource facts) // Changed parameter
     {
+        string ruleId = string.IsNullOrEmpty(Name) ? "[Unnamed Rule]" : Name;
         Logger.ConditionalDebug(
-            message: $"SFPM.Rule.Evaluate: Evaluating rule with {CriteriaCount} criteria."
-        );
-        Logger.ConditionalDebug(
-            message: $"SFPM.Rule.Evaluate: Facts provided: {string.Join(separator: ", ", values: facts)}"
+            $"SFPM.Rule.Evaluate: Evaluating rule '{ruleId}' with {CriteriaCount} criteria."
         );
 
-        var matchedCriteriaCount = 0;
+        if (Criterias.Count == 0)
+            return (true, 0); // An empty rule technically matches
+
         foreach (var criteria in Criterias)
         {
-            if (
-                !string.IsNullOrEmpty(value: criteria.FactName)
-                && facts.TryGetValue(key: criteria.FactName, value: out var factValue)
-            )
+            if (criteria == null) // Defensive check
+            {
+                Logger.Warn(
+                    $"SFPM.Rule.Evaluate: Rule '{ruleId}' contains a null criteria. Skipping it."
+                );
+                continue; // Or maybe treat as failure? return (false, 0);
+            }
+
+            Logger.ConditionalDebug(
+                $"SFPM.Rule.Evaluate: Rule '{ruleId}' checking criteria for fact '{criteria.FactName}'."
+            );
+            if (!criteria.Evaluate(facts)) // Call the new Evaluate on the criteria
             {
                 Logger.ConditionalDebug(
-                    message: $"SFPM.Rule.Evaluate: Checking criteria for fact '{criteria.FactName}' with value '{factValue}'."
+                    $"SFPM.Rule.Evaluate: Rule '{ruleId}': Criteria for fact '{criteria.FactName}' did NOT match. Evaluate returning false."
                 );
-                if (criteria.Matches(factValue: factValue))
-                {
-                    Logger.ConditionalDebug(
-                        message: $"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' matched."
-                    );
-                    matchedCriteriaCount++;
-                }
-                else
-                {
-                    Logger.ConditionalDebug(
-                        message: $"SFPM.Rule.Evaluate: Criteria for fact '{criteria.FactName}' did NOT match. Evaluate returning false."
-                    );
-                    return (false, 0);
-                }
+                return (false, 0); // Short-circuit
             }
-            else
-            {
-                Logger.ConditionalDebug(
-                    message: $"SFPM.Rule.Evaluate: Fact '{criteria.FactName}' not found or fact name is empty. Evaluate returning false."
-                );
-                return (false, 0);
-            }
+            // Logger.ConditionalDebug($"SFPM.Rule.Evaluate: Rule '{ruleId}': Criteria for fact '{criteria.FactName}' matched.");
         }
+
         Logger.ConditionalDebug(
-            message: "SFPM.Rule.Evaluate: Strict Evaluate finished. Rule isTrue: {IsTrue}, Matched criteria count: {MatchedCriteriaCount}.",
-            argument1: true,
-            argument2: matchedCriteriaCount
+            $"SFPM.Rule.Evaluate: Rule '{ruleId}': All {CriteriaCount} criteria matched. Rule is true."
         );
-        return (true, matchedCriteriaCount);
+        return (true, CriteriaCount); // All criteria passed
     }
 
     /// <summary>

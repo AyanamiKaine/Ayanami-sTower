@@ -18,11 +18,13 @@ public interface ICriteria
     Operator Operator { get; }
 
     /// <summary>
-    /// Determines whether the specified fact value matches the criteria.
+    /// Evaluates this criteria against facts provided by the source.
+    /// Implementations should retrieve the typed fact corresponding to FactName
+    /// from the source and perform their specific matching logic.
     /// </summary>
-    /// <param name="factValue">The value of the fact to compare against the expected value.</param>
-    /// <returns>true if the fact value matches the criteria; otherwise, false.</returns>
-    bool Matches(object factValue); // Matches method now takes object - we'll handle type inside implementations
+    /// <param name="facts">The source providing access to typed facts.</param>
+    /// <returns>true if the criteria is met based on the fact source; otherwise, false.</returns>
+    bool Evaluate(IFactSource facts); // Changed from Matches(object)
 }
 
 /// <summary>
@@ -117,57 +119,97 @@ public class Criteria<TValue>(string factName, TValue? expectedValue, Operator @
     }
 
     /// <summary>
-    /// Determines whether the specified fact value matches the criteria.
+    /// Evaluates the criteria by fetching the typed fact from the source.
     /// </summary>
-    /// <param name="factValue">The value of the fact to compare against the expected value.</param>
-    /// <returns>true if the fact value matches the criteria; otherwise, false.</returns>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public bool Matches(object factValue)
+    /// <param name="facts">The fact source.</param>
+    /// <returns>True if the criteria matches, false otherwise.</returns>
+    public bool Evaluate(IFactSource facts)
     {
-        // **Crucial Type Check:**
-        if (factValue is TValue typedFactValue) // Check if factValue is of the correct type
+        // Try to get the fact value with the correct type from the source
+        if (facts.TryGetFact(FactName, out TValue? typedFactValue))
         {
-            if (Operator == Operator.Predicate) // Check for Custom operator and predicate
+            // Fact exists and has the expected type (or is null if TValue is nullable)
+
+            if (Operator == Operator.Predicate)
             {
-                var result = _predicate(obj: typedFactValue); // Execute the predicate lambda
+                if (_predicate == null) // Defensive check
+                {
+                    Logger.Error(
+                        $"SFPM.Criteria.Evaluate: Predicate operator used but predicate is null for fact '{FactName}'. Returning false."
+                    );
+                    return false;
+                }
+                var result = _predicate(typedFactValue!); // Execute predicate. Use ! assuming predicate handles potential null TValue if needed.
                 Logger.ConditionalDebug(
-                    message: $"SFPM.Criteria.Matches: FactName={FactName}, Predicate={(_predicateName.Length == 0 ? "NoNameGiven" : _predicateName)}, PredicateResult={result}, ProvidedPraticateValue={typedFactValue}"
+                    $"SFPM.Criteria.Evaluate: FactName={FactName}, Predicate={(_predicateName.Length == 0 ? "NoNameGiven" : _predicateName)}, PredicateResult={result}, ProvidedValue='{typedFactValue}'"
                 );
                 return result;
             }
             else
             {
-                return Operator switch
+                // Perform comparison using typed values
+                try
                 {
-                    Operator.Equal => EqualityComparer<TValue>.Default.Equals(
-                        x: typedFactValue,
-                        y: ExpectedValue
-                    ),
-                    Operator.GreaterThan => typedFactValue.CompareTo(other: ExpectedValue) > 0,
-                    Operator.LessThan => typedFactValue.CompareTo(other: ExpectedValue) < 0,
-                    Operator.GreaterThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue)
-                        >= 0,
-                    Operator.LessThanOrEqual => typedFactValue.CompareTo(other: ExpectedValue) <= 0,
-                    Operator.NotEqual => !EqualityComparer<TValue>.Default.Equals(
-                        x: typedFactValue,
-                        y: ExpectedValue
-                    ),
-                    _ => throw new ArgumentOutOfRangeException(
-                        paramName: nameof(Operator),
-                        actualValue: Operator,
-                        message: "Unknown operator"
-                    ),
-                };
+                    // Comparer<T> handles nulls and IComparable/IComparable<T>
+                    int comparisonResult = 0;
+                    if (
+                        Operator == Operator.GreaterThan
+                        || Operator == Operator.LessThan
+                        || Operator == Operator.GreaterThanOrEqual
+                        || Operator == Operator.LessThanOrEqual
+                    )
+                    {
+                        // Comparison only makes sense if both values can be compared meaningfully.
+                        // Comparer<TValue>.Default handles nulls (null is less than non-null).
+                        // It throws if TValue isn't comparable and neither value is null.
+                        comparisonResult = Comparer<TValue>.Default.Compare(
+                            typedFactValue,
+                            ExpectedValue
+                        );
+                    }
+
+                    bool matchResult = Operator switch
+                    {
+                        Operator.Equal => EqualityComparer<TValue>.Default.Equals(
+                            typedFactValue,
+                            ExpectedValue
+                        ),
+                        Operator.GreaterThan => comparisonResult > 0,
+                        Operator.LessThan => comparisonResult < 0,
+                        Operator.GreaterThanOrEqual => comparisonResult >= 0,
+                        Operator.LessThanOrEqual => comparisonResult <= 0,
+                        Operator.NotEqual => !EqualityComparer<TValue>.Default.Equals(
+                            typedFactValue,
+                            ExpectedValue
+                        ),
+                        _ => throw new ArgumentOutOfRangeException(
+                            nameof(Operator),
+                            Operator,
+                            "Unknown operator during evaluation"
+                        ),
+                    };
+                    Logger.ConditionalDebug(
+                        $"SFPM.Criteria.Evaluate: FactName='{FactName}', Operator={Operator}, Expected='{ExpectedValue}', Actual='{typedFactValue}', Result={matchResult}"
+                    );
+                    return matchResult;
+                }
+                catch (ArgumentException ex) // Comparer<T>.Default throws if T is not comparable
+                {
+                    Logger.Error(
+                        ex,
+                        $"SFPM.Criteria.Evaluate: Failed to compare values for FactName='{FactName}' (Type: {typeof(TValue).Name}). Ensure the type implements IComparable or IComparable<{typeof(TValue).Name}> for comparison operators."
+                    );
+                    return false; // Cannot compare, criteria fails
+                }
             }
         }
         else
         {
-            // Handle case where factValue is not of the expected type TValue
-            // You might want to:
-            // - Return false (fact doesn't match if wrong type) - as shown below
-            // - Throw an exception (if you expect facts to always be of the correct type)
-            // - Log a warning
-            return false; // Or throw new ArgumentException($"Fact value for '{FactName}' is not of expected type {typeof(TValue).Name}");
+            // Fact not found in source or has the wrong type
+            Logger.ConditionalDebug(
+                $"SFPM.Criteria.Evaluate: Fact '{FactName}' not found in source or has wrong type (Expected: {typeof(TValue).Name}). Criteria fails."
+            );
+            return false;
         }
     }
 }
