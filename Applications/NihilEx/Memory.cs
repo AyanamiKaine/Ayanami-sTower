@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent; // For ConcurrentDictionary
 using System.Collections.Generic; // For KeyNotFoundException
 using System.Diagnostics.CodeAnalysis;
+using AyanamisTower.SFPM;
 
 namespace AyanamisTower.NihilEx;
 
@@ -29,229 +30,232 @@ numbers.
 */
 
 /// <summary>
-/// Represents a type-safe, generic memory store for game data.
+/// Represents a type-safe, generic memory store for game data using ConcurrentDictionary internally
+/// for thread-safe operations on individual facts.
 /// It can hold multiple collections of key-value pairs, where each collection
 /// can have different types for its keys and values.
 /// Provides direct methods (GetValue/SetValue) and an indexer-like syntax via the For() method.
+/// Implements IFactSource for integration with SFPM.
 /// </summary>
-public class Memory
+public class Memory : IFactSource
 {
     // The master storage.
-    // Key: The Type of the specific Dictionary<TKey, TValue> being stored.
-    // Value: The actual Dictionary<TKey, TValue> instance, stored as object.
-    // Using ConcurrentDictionary for basic thread safety when adding/removing dictionary types.
+    // Key: The Type representing the specific ConcurrentDictionary<TKey, TValue> being stored.
+    // Value: The actual ConcurrentDictionary<TKey, TValue> instance, stored as object.
+    // Using ConcurrentDictionary for the outer storage makes adding/removing dictionary *types* thread-safe.
     private readonly ConcurrentDictionary<Type, object> _storage = new();
 
     /// <summary>
-    /// Gets the internal dictionary instance for the specified key and value types.
-    /// If it doesn't exist, it creates and returns a new one.
-    /// This method ensures thread-safe creation and retrieval of the specific dictionary instance.
+    /// Gets the internal ConcurrentDictionary instance for the specified key and value types.
+    /// If it doesn't exist, it creates and returns a new one. Thread-safe.
     /// </summary>
-    /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
-    /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
-    /// <returns>The Dictionary&lt;TKey, TValue instance.</returns>
-    private Dictionary<TKey, TValue> GetOrCreateDictionary<TKey, TValue>()
+    /// <returns>The ConcurrentDictionary&lt;TKey, TValue&gt; instance.</returns>
+    private ConcurrentDictionary<TKey, TValue> GetOrCreateConcurrentDictionary<TKey, TValue>()
         where TKey : notnull
     {
-        // The unique type identifier for this specific dictionary generic combination.
-        Type dictionaryType = typeof(Dictionary<TKey, TValue>);
+        // Type identifier now represents ConcurrentDictionary<TKey, TValue>
+        Type dictionaryType = typeof(ConcurrentDictionary<TKey, TValue>);
 
         // Use GetOrAdd for thread-safe retrieval or creation.
-        // The value factory delegate () => new Dictionary<TKey, TValue>()
-        // is only executed if the key (dictionaryType) is not already present.
+        // The factory now creates a ConcurrentDictionary.
         object dictObject = _storage.GetOrAdd(
             dictionaryType,
-            (type) => new Dictionary<TKey, TValue>()
+            (type) => new ConcurrentDictionary<TKey, TValue>() // Create ConcurrentDictionary
         );
 
-        // We know the object stored for this type *must* be Dictionary<TKey, TValue>,
-        // either because it was just created or retrieved from a previous Add.
-        // So, the cast is safe.
-        return (Dictionary<TKey, TValue>)dictObject;
+        // Cast is safe due to GetOrAdd guarantees and class encapsulation.
+        return (ConcurrentDictionary<TKey, TValue>)dictObject;
     }
 
     /// <summary>
-    /// Sets or updates a value in the appropriate dictionary based on the generic types.
+    /// Sets or updates a value in the appropriate concurrent dictionary. Thread-safe.
     /// If a dictionary for the combination of TKey and TValue doesn't exist, it will be created automatically.
     /// </summary>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    /// <typeparam name="TValue">The type of the value.</typeparam>
-    /// <param name="key">The key to set.</param>
-    /// <param name="value">The value to associate with the key.</param>
-    /// <remarks>
-    /// Note: While retrieving/creating the dictionary instance is thread-safe,
-    /// modifying the *contents* of a retrieved Dictionary&lt;TKey, TValue&gt; is *not*
-    /// inherently thread-safe if multiple threads access the *same* inner dictionary concurrently.
-    /// If you need concurrent writes to the *same* key/value types from different threads,
-    /// consider adding external locking or modifying this class to store
-    /// ConcurrentDictionary&lt;TKey, TValue&gt; internally instead of Dictionary&lt;TKey, TValue&gt;.
-    /// </remarks>
-    public void SetValue<TKey, TValue>(TKey key, TValue value)
+    /// <returns>The Memory instance for fluent chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if key is null.</exception>
+    public Memory SetValue<TKey, TValue>(TKey key, TValue value)
         where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
-        Dictionary<TKey, TValue> specificDict = GetOrCreateDictionary<TKey, TValue>();
-        lock (specificDict) // Optional: lock inner dictionary
-        {
-            specificDict[key] = value;
-        }
+
+        // Get the specific ConcurrentDictionary instance (thread-safe retrieval/creation)
+        ConcurrentDictionary<TKey, TValue> specificDict = GetOrCreateConcurrentDictionary<
+            TKey,
+            TValue
+        >();
+
+        // Use the thread-safe indexer or AddOrUpdate
+        specificDict[key] = value;
+        // Or: specificDict.AddOrUpdate(key, value, (k, existingValue) => value);
+
+        // No lock needed here!
+        return this;
     }
 
     /// <summary>
-    /// Tries to get a value from the appropriate dictionary based on the generic types.
+    /// Tries to get a value from the appropriate concurrent dictionary. Thread-safe.
     /// </summary>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    /// <typeparam name="TValue">The type of the value.</typeparam>
-    /// <param name="key">The key whose value to get.</param>
-    /// <param name="value">When this method returns, contains the value associated with the specified key,
-    /// if the key is found; otherwise, the default value for the type TValue.</param>
-    /// <returns>true if the key was found in the appropriate dictionary; otherwise, false.</returns>
+    /// <returns>true if the key was found; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if key is null.</exception>
     public bool TryGetValue<TKey, TValue>(TKey key, [MaybeNullWhen(false)] out TValue value)
         where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
-        Type dictionaryType = typeof(Dictionary<TKey, TValue>);
+
+        // Use the Type for ConcurrentDictionary now
+        Type dictionaryType = typeof(ConcurrentDictionary<TKey, TValue>);
+
+        // TryGetValue on the outer storage is thread-safe
         if (_storage.TryGetValue(dictionaryType, out object? dictObject))
         {
-            Dictionary<TKey, TValue> specificDict = (Dictionary<TKey, TValue>)dictObject;
-            lock (specificDict) // Optional: lock inner dictionary
+            // Safe cast check (though GetOrCreate ensures type correctness)
+            if (dictObject is ConcurrentDictionary<TKey, TValue> specificDict)
             {
+                // Use the thread-safe TryGetValue of ConcurrentDictionary
+                // No lock needed here!
                 return specificDict.TryGetValue(key, out value);
             }
+            else
+            {
+                // Should not happen with correct GetOrCreate implementation
+                // Consider logging an error if this state is reached.
+            }
         }
-        else
-        {
-            value = default;
-            return false;
-        }
+
+        // Dictionary type doesn't exist, or cast failed (shouldn't happen)
+        value = default;
+        return false;
     }
 
     /// <summary>
-    /// Gets a value from the appropriate dictionary based on the generic types.
-    /// Throws KeyNotFoundException if the key is not found or if the dictionary
-    /// for the specified TKey/TValue combination does not exist.
+    /// Gets a value from the appropriate concurrent dictionary. Thread-safe (reads).
+    /// Throws KeyNotFoundException if the dictionary type or the key does not exist.
     /// </summary>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    /// <typeparam name="TValue">The type of the value.</typeparam>
-    /// <param name="key">The key whose value to get.</param>
-    /// <returns>The value associated with the key.</returns>
-    /// <exception cref="System.Collections.Generic.KeyNotFoundException">
-    /// Thrown if the key is not found in the relevant dictionary or if a dictionary
-    /// for the TKey/TValue combination hasn't been created yet (e.g., via SetValue).
-    /// </exception>
+    /// <exception cref="ArgumentNullException">Thrown if key is null.</exception>
+    /// <exception cref="KeyNotFoundException">Thrown if the key/dictionary type is not found.</exception>
     public TValue GetValue<TKey, TValue>(TKey key)
         where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
-        if (TryGetValue(key, out TValue? value)) // Converting null literal or possible null value to non-nullable type.
+
+        // Use the updated TryGetValue which is now thread-safe internally
+        if (TryGetValue(key, out TValue? value))
         {
-            return value!; // Mhhh even though the value maybe null, if that would be the case
-            // try get value would return false and not return null. I think the compiler cant see it.
+            // The [MaybeNullWhen(false)] on TryGetValue ensures 'value' is not null here.
+            // The '!' suppression might still be needed if compiler analysis isn't perfect,
+            // but semantically, 'value' is guaranteed non-null when TryGetValue returns true.
+            return value!;
         }
         else
         {
-            Type dictionaryType = typeof(Dictionary<TKey, TValue>);
-            string message = _storage.ContainsKey(dictionaryType)
-                ? $"The key '{key}' was not found in the dictionary of type '{dictionaryType.FullName}'."
-                : $"No dictionary of type '{dictionaryType.FullName}' exists in Memory, or the key '{key}' was not found.";
+            // Determine specific reason for failure for a better message
+            Type dictionaryType = typeof(ConcurrentDictionary<TKey, TValue>);
+            bool dictExists = _storage.ContainsKey(dictionaryType);
+            string message = dictExists
+                ? $"The key '{key}' was not found in the concurrent dictionary of type '{dictionaryType.FullName}'."
+                : $"No concurrent dictionary of type '{dictionaryType.FullName}' exists in Memory.";
             throw new KeyNotFoundException(message);
         }
     }
 
     /// <summary>
-    /// Checks if a key exists in the appropriate dictionary based on the generic types.
+    /// Checks if a key exists in the appropriate concurrent dictionary. Thread-safe.
     /// </summary>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    /// <typeparam name="TValue">The type of the value associated with the key (determines which dictionary to check).</typeparam>
-    /// <param name="key">The key to check for existence.</param>
-    /// <returns>true if the key exists in the appropriate dictionary; otherwise, false.</returns>
+    /// <returns>true if the key exists; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if key is null.</exception>
     public bool ContainsKey<TKey, TValue>(TKey key)
         where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        Type dictionaryType = typeof(Dictionary<TKey, TValue>);
-
+        Type dictionaryType = typeof(ConcurrentDictionary<TKey, TValue>);
         if (_storage.TryGetValue(dictionaryType, out object? dictObject))
         {
-            Dictionary<TKey, TValue> specificDict = (Dictionary<TKey, TValue>)dictObject;
-            lock (specificDict) // Example of locking the inner dictionary
+            if (dictObject is ConcurrentDictionary<TKey, TValue> specificDict)
             {
+                // Use the thread-safe ContainsKey of ConcurrentDictionary
+                // No lock needed here!
                 return specificDict.ContainsKey(key);
             }
-            // If no locking needed:
-            // return specificDict.ContainsKey(key);
+            else
+            { /* Log error? Should not happen */
+            }
         }
-        return false; // Dictionary type doesn't exist, so key can't exist
+        return false; // Dictionary type doesn't exist or cast failed
     }
 
     /// <summary>
-    /// Removes a value associated with the specified key from the appropriate dictionary.
+    /// Removes a value associated with the specified key from the appropriate concurrent dictionary. Thread-safe.
     /// </summary>
-    /// <typeparam name="TKey">The type of the key.</typeparam>
-    /// <typeparam name="TValue">The type of the value (determines which dictionary to modify).</typeparam>
-    /// <param name="key">The key of the element to remove.</param>
-    /// <returns>true if the element is successfully found and removed; otherwise, false.
-    /// This method returns false if key is not found in the specific Dictionary&lt;TKey, TValue&gt;
-    /// or if the dictionary type itself doesn't exist.</returns>
+    /// <returns>true if the element is successfully found and removed; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if key is null.</exception>
     public bool RemoveValue<TKey, TValue>(TKey key)
         where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
-        Type dictionaryType = typeof(Dictionary<TKey, TValue>);
-
+        Type dictionaryType = typeof(ConcurrentDictionary<TKey, TValue>);
         if (_storage.TryGetValue(dictionaryType, out object? dictObject))
         {
-            Dictionary<TKey, TValue> specificDict = (Dictionary<TKey, TValue>)dictObject;
-            lock (specificDict) // Example of locking the inner dictionary
+            if (dictObject is ConcurrentDictionary<TKey, TValue> specificDict)
             {
-                return specificDict.Remove(key);
+                // Use the thread-safe TryRemove method.
+                // The second 'out' parameter receives the removed value, which we discard (`out _`).
+                // No lock needed here!
+                return specificDict.TryRemove(key, out _);
             }
-            // If no locking needed:
-            // return specificDict.Remove(key);
+            else
+            { /* Log error? Should not happen */
+            }
         }
-        return false; // Dictionary type doesn't exist, so nothing to remove
+        return false; // Dictionary type doesn't exist or cast failed
     }
 
     /// <summary>
-    /// Clears all entries from the dictionary corresponding to the specified TKey and TValue types.
+    /// Clears all entries from the concurrent dictionary corresponding to the specified TKey/TValue types. Thread-safe.
     /// Does nothing if no such dictionary exists.
     /// </summary>
-    /// <typeparam name="TKey">The key type of the dictionary to clear.</typeparam>
-    /// <typeparam name="TValue">The value type of the dictionary to clear.</typeparam>
     public void Clear<TKey, TValue>()
         where TKey : notnull
     {
-        Type dictionaryType = typeof(Dictionary<TKey, TValue>);
+        Type dictionaryType = typeof(ConcurrentDictionary<TKey, TValue>);
         if (_storage.TryGetValue(dictionaryType, out object? dictObject))
         {
-            Dictionary<TKey, TValue> specificDict = (Dictionary<TKey, TValue>)dictObject;
-            lock (specificDict) // Example of locking the inner dictionary
+            if (dictObject is ConcurrentDictionary<TKey, TValue> specificDict)
             {
+                // Use the thread-safe Clear method.
+                // No lock needed here!
                 specificDict.Clear();
             }
-            // If no locking needed:
-            // specificDict.Clear();
+            else
+            { /* Log error? Should not happen */
+            }
         }
     }
 
+    #region IFactSource Implementation
+
     /// <summary>
-    /// Provides access to the underlying dictionary specified by TKey and TValue
-    /// using indexer syntax.
+    /// Tries to get a fact value of the specified type from memory. Thread-safe.
+    /// Implements the IFactSource interface for SFPM integration.
     /// </summary>
-    /// <typeparam name="TKey">The type of the keys in the desired dictionary.</typeparam>
-    /// <typeparam name="TValue">The type of the values in the desired dictionary.</typeparam>
-    /// <returns>A TypedMemoryAccessor struct that provides indexer access.</returns>
-    /// <example>
-    /// int score = memory.For&lt;string, int&gt;()["PlayerScore"];
-    /// memory.For&lt;string, int&gt;()["PlayerScore"] = 100;
-    /// </example>
+    public bool TryGetFact<TValue>(string factName, [MaybeNullWhen(false)] out TValue value)
+    {
+        // Delegates to the updated, thread-safe TryGetValue<string, TValue>
+        return TryGetValue<string, TValue>(factName, out value);
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Provides thread-safe indexer-like access via a helper struct.
+    /// </summary>
+    /// <returns>A TypedMemoryAccessor for the specified types.</returns>
     public TypedMemoryAccessor<TKey, TValue> For<TKey, TValue>()
         where TKey : notnull
     {
@@ -260,82 +264,56 @@ public class Memory
     }
 
     /// <summary>
-    /// A helper struct returned by Memory.For&lt;TKey, TValue&gt;() to provide
-    /// indexer access to a specific underlying dictionary type.
-    /// Defined as readonly struct for potential performance benefits (avoids heap allocation).
+    /// A helper struct providing indexer access. Operations are thread-safe
+    /// as they delegate to the Memory class's thread-safe methods.
     /// </summary>
-    /// <typeparam name="TKey">The key type.</typeparam>
-    /// <typeparam name="TValue">The value type.</typeparam>
     public readonly struct TypedMemoryAccessor<TKey, TValue>
         where TKey : notnull
     {
-        // Keep a reference to the parent Memory instance
         private readonly Memory _parentMemory;
 
-        // Constructor called by Memory.For<TKey, TValue>()
         internal TypedMemoryAccessor(Memory parent)
         {
             _parentMemory = parent ?? throw new ArgumentNullException(nameof(parent));
         }
 
         /// <summary>
-        /// Gets or sets the value associated with the specified key in the
-        /// underlying dictionary identified by TKey and TValue.
+        /// Gets or sets the value associated with the key. Thread-safe.
         /// Getting a non-existent key throws KeyNotFoundException.
         /// Setting will add or update the key.
         /// </summary>
-        /// <param name="key">The key of the element to get or set.</param>
-        /// <returns>The value associated with the key.</returns>
-        /// <exception cref="System.Collections.Generic.KeyNotFoundException">Thrown by the getter if the key is not found.</exception>
-        /// <exception cref="System.ArgumentNullException">Thrown if the key is null.</exception>
         public TValue this[TKey key]
         {
-            get
-            {
-                // Delegate the call to the parent Memory instance's GetValue method
-                return _parentMemory.GetValue<TKey, TValue>(key);
-            }
-            set
-            {
-                // Delegate the call to the parent Memory instance's SetValue method
-                // 'value' is implicitly available in the set accessor
-                _parentMemory.SetValue<TKey, TValue>(key, value);
-            }
+            // Delegates to parent's GetValue/SetValue which are now thread-safe
+            get => _parentMemory.GetValue<TKey, TValue>(key);
+            set => _parentMemory.SetValue<TKey, TValue>(key, value);
         }
 
-        // Optional: You could also add TryGetValue and ContainsKey methods here
-        // if you want them available via the accessor struct as well.
-
         /// <summary>
-        /// Tries to get the value associated with the specified key.
+        /// Tries to get the value associated with the specified key. Thread-safe.
         /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="value">The output value if found.</param>
-        /// <returns>True if the key was found, false otherwise.</returns>
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
+            // Delegates to parent's TryGetValue which is now thread-safe
             return _parentMemory.TryGetValue<TKey, TValue>(key, out value);
         }
 
         /// <summary>
-        /// Checks if the specified key exists in the underlying dictionary.
+        /// Checks if the specified key exists. Thread-safe.
         /// </summary>
-        /// <param name="key">The key.</param>
-        /// <returns>True if the key exists, false otherwise.</returns>
         public bool ContainsKey(TKey key)
         {
+            // Delegates to parent's ContainsKey which is now thread-safe
             return _parentMemory.ContainsKey<TKey, TValue>(key);
         }
     }
 
     /// <summary>
-    /// Clears all stored dictionaries and their contents.
+    /// Clears all stored concurrent dictionaries and their contents. Thread-safe.
     /// </summary>
     public void ClearAll()
     {
-        // Note: Clearing the outer dictionary might have concurrency implications
-        // if other threads are actively using GetOrCreateDictionary at the same time.
-        // ConcurrentDictionary.Clear() is generally thread-safe itself.
+        // ConcurrentDictionary.Clear() is thread-safe itself.
         _storage.Clear();
     }
 }
