@@ -3,6 +3,8 @@ using System.Collections.Concurrent; // For ConcurrentDictionary
 using System.Collections.Generic; // For KeyNotFoundException
 using System.Diagnostics.CodeAnalysis;
 
+namespace AyanamisTower.NihilEx;
+
 /*
 Design Note:
 
@@ -39,7 +41,7 @@ public class Memory
     // Value: The actual Dictionary<TKey, TValue> instance, stored as object.
     // Using ConcurrentDictionary for basic thread safety when adding/removing dictionary types.
     private readonly ConcurrentDictionary<Type, object> _storage =
-        new ConcurrentDictionary<Type, object>();
+        new();
 
     /// <summary>
     /// Gets the internal dictionary instance for the specified key and value types.
