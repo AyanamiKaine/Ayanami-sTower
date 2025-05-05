@@ -40,8 +40,7 @@ public class Memory
     // Key: The Type of the specific Dictionary<TKey, TValue> being stored.
     // Value: The actual Dictionary<TKey, TValue> instance, stored as object.
     // Using ConcurrentDictionary for basic thread safety when adding/removing dictionary types.
-    private readonly ConcurrentDictionary<Type, object> _storage =
-        new();
+    private readonly ConcurrentDictionary<Type, object> _storage = new();
 
     /// <summary>
     /// Gets the internal dictionary instance for the specified key and value types.
