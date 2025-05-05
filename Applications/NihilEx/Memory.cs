@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent; // For ConcurrentDictionary
 using System.Collections.Generic; // For KeyNotFoundException
+using System.Diagnostics.CodeAnalysis;
 
 /*
 Design Note:
@@ -47,8 +48,9 @@ public class Memory
     /// </summary>
     /// <typeparam name="TKey">The type of the keys in the dictionary.</typeparam>
     /// <typeparam name="TValue">The type of the values in the dictionary.</typeparam>
-    /// <returns>The Dictionary<TKey, TValue> instance.</returns>
+    /// <returns>The Dictionary&lt;TKey, TValue instance.</returns>
     private Dictionary<TKey, TValue> GetOrCreateDictionary<TKey, TValue>()
+        where TKey : notnull
     {
         // The unique type identifier for this specific dictionary generic combination.
         Type dictionaryType = typeof(Dictionary<TKey, TValue>);
@@ -77,13 +79,14 @@ public class Memory
     /// <param name="value">The value to associate with the key.</param>
     /// <remarks>
     /// Note: While retrieving/creating the dictionary instance is thread-safe,
-    /// modifying the *contents* of a retrieved Dictionary<TKey, TValue> is *not*
+    /// modifying the *contents* of a retrieved Dictionary&lt;TKey, TValue&gt; is *not*
     /// inherently thread-safe if multiple threads access the *same* inner dictionary concurrently.
     /// If you need concurrent writes to the *same* key/value types from different threads,
     /// consider adding external locking or modifying this class to store
-    /// ConcurrentDictionary<TKey, TValue> internally instead of Dictionary<TKey, TValue>.
+    /// ConcurrentDictionary&lt;TKey, TValue&gt; internally instead of Dictionary&lt;TKey, TValue&gt;.
     /// </remarks>
     public void SetValue<TKey, TValue>(TKey key, TValue value)
+        where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
@@ -103,12 +106,13 @@ public class Memory
     /// <param name="value">When this method returns, contains the value associated with the specified key,
     /// if the key is found; otherwise, the default value for the type TValue.</param>
     /// <returns>true if the key was found in the appropriate dictionary; otherwise, false.</returns>
-    public bool TryGetValue<TKey, TValue>(TKey key, out TValue value)
+    public bool TryGetValue<TKey, TValue>(TKey key, [MaybeNullWhen(false)] out TValue value)
+        where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
         Type dictionaryType = typeof(Dictionary<TKey, TValue>);
-        if (_storage.TryGetValue(dictionaryType, out object dictObject))
+        if (_storage.TryGetValue(dictionaryType, out object? dictObject))
         {
             Dictionary<TKey, TValue> specificDict = (Dictionary<TKey, TValue>)dictObject;
             lock (specificDict) // Optional: lock inner dictionary
@@ -118,7 +122,7 @@ public class Memory
         }
         else
         {
-            value = default(TValue);
+            value = default;
             return false;
         }
     }
@@ -137,12 +141,14 @@ public class Memory
     /// for the TKey/TValue combination hasn't been created yet (e.g., via SetValue).
     /// </exception>
     public TValue GetValue<TKey, TValue>(TKey key)
+        where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
-        if (TryGetValue(key, out TValue value))
+        if (TryGetValue(key, out TValue? value)) // Converting null literal or possible null value to non-nullable type.
         {
-            return value;
+            return value!; // Mhhh even though the value maybe null, if that would be the case
+            // try get value would return false and not return null. I think the compiler cant see it.
         }
         else
         {
@@ -162,13 +168,14 @@ public class Memory
     /// <param name="key">The key to check for existence.</param>
     /// <returns>true if the key exists in the appropriate dictionary; otherwise, false.</returns>
     public bool ContainsKey<TKey, TValue>(TKey key)
+        where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
         Type dictionaryType = typeof(Dictionary<TKey, TValue>);
 
-        if (_storage.TryGetValue(dictionaryType, out object dictObject))
+        if (_storage.TryGetValue(dictionaryType, out object? dictObject))
         {
             Dictionary<TKey, TValue> specificDict = (Dictionary<TKey, TValue>)dictObject;
             lock (specificDict) // Example of locking the inner dictionary
@@ -188,16 +195,17 @@ public class Memory
     /// <typeparam name="TValue">The type of the value (determines which dictionary to modify).</typeparam>
     /// <param name="key">The key of the element to remove.</param>
     /// <returns>true if the element is successfully found and removed; otherwise, false.
-    /// This method returns false if key is not found in the specific Dictionary<TKey, TValue>
+    /// This method returns false if key is not found in the specific Dictionary&lt;TKey, TValue&gt;
     /// or if the dictionary type itself doesn't exist.</returns>
     public bool RemoveValue<TKey, TValue>(TKey key)
+        where TKey : notnull
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
 
         Type dictionaryType = typeof(Dictionary<TKey, TValue>);
 
-        if (_storage.TryGetValue(dictionaryType, out object dictObject))
+        if (_storage.TryGetValue(dictionaryType, out object? dictObject))
         {
             Dictionary<TKey, TValue> specificDict = (Dictionary<TKey, TValue>)dictObject;
             lock (specificDict) // Example of locking the inner dictionary
@@ -217,9 +225,10 @@ public class Memory
     /// <typeparam name="TKey">The key type of the dictionary to clear.</typeparam>
     /// <typeparam name="TValue">The value type of the dictionary to clear.</typeparam>
     public void Clear<TKey, TValue>()
+        where TKey : notnull
     {
         Type dictionaryType = typeof(Dictionary<TKey, TValue>);
-        if (_storage.TryGetValue(dictionaryType, out object dictObject))
+        if (_storage.TryGetValue(dictionaryType, out object? dictObject))
         {
             Dictionary<TKey, TValue> specificDict = (Dictionary<TKey, TValue>)dictObject;
             lock (specificDict) // Example of locking the inner dictionary
@@ -239,23 +248,25 @@ public class Memory
     /// <typeparam name="TValue">The type of the values in the desired dictionary.</typeparam>
     /// <returns>A TypedMemoryAccessor struct that provides indexer access.</returns>
     /// <example>
-    /// int score = memory.For<string, int>()["PlayerScore"];
-    /// memory.For<string, int>()["PlayerScore"] = 100;
+    /// int score = memory.For&lt;string, int&gt;()["PlayerScore"];
+    /// memory.For&lt;string, int&gt;()["PlayerScore"] = 100;
     /// </example>
     public TypedMemoryAccessor<TKey, TValue> For<TKey, TValue>()
+        where TKey : notnull
     {
         // Pass 'this' (the current Memory instance) to the accessor struct
         return new TypedMemoryAccessor<TKey, TValue>(this);
     }
 
     /// <summary>
-    /// A helper struct returned by Memory.For<TKey, TValue>() to provide
+    /// A helper struct returned by Memory.For&lt;TKey, TValue&gt;() to provide
     /// indexer access to a specific underlying dictionary type.
     /// Defined as readonly struct for potential performance benefits (avoids heap allocation).
     /// </summary>
     /// <typeparam name="TKey">The key type.</typeparam>
     /// <typeparam name="TValue">The value type.</typeparam>
     public readonly struct TypedMemoryAccessor<TKey, TValue>
+        where TKey : notnull
     {
         // Keep a reference to the parent Memory instance
         private readonly Memory _parentMemory;
@@ -300,7 +311,7 @@ public class Memory
         /// <param name="key">The key.</param>
         /// <param name="value">The output value if found.</param>
         /// <returns>True if the key was found, false otherwise.</returns>
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             return _parentMemory.TryGetValue<TKey, TValue>(key, out value);
         }
