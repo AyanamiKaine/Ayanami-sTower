@@ -78,7 +78,7 @@ public class DefaultPlannerState : IPlannerState
 {
     public ITask? CurrentTask { get; set; }
     public Queue<ITask> Plan { get; set; } = new Queue<ITask>();
-    public FluidHTN.TaskStatus LastStatus { get; set; } = FluidHTN.TaskStatus.Success;
+    public TaskStatus LastStatus { get; set; } = FluidHTN.TaskStatus.Success;
     public Action<Queue<ITask>>? OnNewPlan { get; set; }
     public Action<Queue<ITask>, ITask, Queue<ITask>>? OnReplacePlan { get; set; }
     public Action<ITask>? OnNewTask { get; set; }
@@ -146,7 +146,7 @@ public class Agent
                                              // It will also execute the first task if it's instantaneous.
 
             // After a planning tick, if a plan is now active, switch to execution mode for the next AI update.
-            if (Context.PlannerState.CurrentTask != null || (Context.PlannerState.Plan != null && Context.PlannerState.Plan.Count > 0))
+            if (Context.PlannerState.CurrentTask != null || (Context.PlannerState.Plan?.Count > 0))
             {
                 Console.WriteLine("Agent: New plan established. Switching to ExecutingPlan for subsequent updates.");
                 _currentMode = AgentProcessingMode.ExecutingPlan;
@@ -189,7 +189,7 @@ public class Agent
         {
             Console.WriteLine("Current Task: None");
         }
-        if (Context.PlannerState.Plan != null && Context.PlannerState.Plan.Count > 0)
+        if (Context.PlannerState.Plan?.Count > 0)
         {
             Console.WriteLine($"Tasks in Plan Queue: {Context.PlannerState.Plan.Count} (Next: {Context.PlannerState.Plan.Peek().Name})");
         }
@@ -203,13 +203,13 @@ public class Agent
 
     private void LogDecomposition()
     {
-        if (Context.LogDecomposition && Context.DecompositionLog != null && Context.DecompositionLog.Count > 0)
+        if (Context.LogDecomposition && Context.DecompositionLog?.Count > 0)
         {
             //Console.WriteLine("---------------------- DECOMP LOG --------------------------");
             while (Context.DecompositionLog.Count > 0) // Check here too
             {
                 var entry = Context.DecompositionLog.Dequeue();
-                var depth = FluidHTN.Debug.Debug.DepthToString(entry.Depth);
+                var depth = Debug.DepthToString(entry.Depth);
                 //    Console.ForegroundColor = entry.Color;
                 //    Console.WriteLine($"{depth}{entry.Name}: {entry.Description}");
             }
@@ -333,7 +333,7 @@ public static class Program
         agent.Context.SetState(CoffeeAIWorldState.CoffeeMachine_Ready, true, EffectType.Permanent);
 
         int gameTick = 0;
-        const int maxGameTicks = 20; // Let it run for a bit
+        const int maxGameTicks = 3; // Let it run for a bit
 
         while (gameTick < maxGameTicks)
         {
@@ -353,7 +353,7 @@ public static class Program
 
             gameTick++;
             Console.WriteLine($"<=============== END GAME TICK {gameTick - 1} ===============>");
-            System.Threading.Thread.Sleep(100); // Simulate delay of a real game tick
+            Thread.Sleep(100); // Simulate delay of a real game tick
         }
 
         Console.WriteLine("\n--- Simulation Finished ---");
