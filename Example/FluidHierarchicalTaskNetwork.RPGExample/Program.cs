@@ -232,7 +232,7 @@ public class Agent
 
         Its quite easy. When a task gets executed its execution time is the time for the task.
 
-        Wdym: Imagine a animation playing instead of printing to the console. The next task gets
+        Wdim: Imagine a animation playing instead of printing to the console. The next task gets
         executed as soon as the animation is finished. We could also add a new world state like 
         can move or "Its his turn". When thinking about a turn based game. In many games that 
         are realtime most actions are animations that get executed and when finished executed the 
