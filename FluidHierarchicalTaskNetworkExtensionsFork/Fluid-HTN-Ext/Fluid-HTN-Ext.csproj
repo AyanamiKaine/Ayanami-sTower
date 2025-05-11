@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Fluid_HTN_Ext</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
+    </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\FluidHierarchicalTaskNetworkFork\Fluid-HTN\Fluid-HTN.csproj" />
+  </ItemGroup>
+  </Project>

@@ -49,8 +49,7 @@ public class ShaderTests
     {
         var gpuDevice = new GpuDevice(
             GpuShaderFormat.SpirV | GpuShaderFormat.Msl | GpuShaderFormat.Dxil,
-            enableDebugMode: true,
-            null
+            enableDebugMode: true
         );
 
         //GpuShader.CompileShader(VertexShaderPath, "./");
@@ -72,7 +71,7 @@ public class ShaderTests
         // Create the window using the wrapper class constructor
         Window? createdWindow = new(testTitle, testWidth, testHeight, testFlags);
 
-        var gpuDevice = new GpuDevice(GpuShaderFormat.SpirV, enableDebugMode: true, null);
+        var gpuDevice = new GpuDevice(GpuShaderFormat.SpirV, enableDebugMode: true);
 
         _ = GpuShader.CompileAndLoadSPIRVShader(gpuDevice, VertexShaderPath, enableDebug: true);
     }
@@ -85,8 +84,7 @@ public class ShaderTests
     {
         var gpuDevice = new GpuDevice(
             GpuShaderFormat.SpirV | GpuShaderFormat.Msl | GpuShaderFormat.Dxil,
-            enableDebugMode: true,
-            null
+            enableDebugMode: true
         );
         _ = GpuShader.LoadShader(gpuDevice, VertexShaderPath);
     }

@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Library</OutputType> 
+    <RootNamespace>Fluid_HTN.UnitTests</RootNamespace>
+    <AssemblyName>Fluid-HTN.UnitTests</AssemblyName>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
+    <IsTestProject>true</IsTestProject>
+
+    <Deterministic>true</Deterministic>
+    <ImplicitUsings>enable</ImplicitUsings> 
+    <Nullable>enable</Nullable>         
+    <Description>Unit Tests for Fluid HTN library.</Description>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType> <Optimize>false</Optimize>
+    <DefineConstants>$(DefineConstants);DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>portable</DebugType> <Optimize>true</Optimize>
+    <DefineConstants>$(DefineConstants);TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+    <PackageReference Include="MSTest.TestAdapter"/>
+    <PackageReference Include="MSTest.TestFramework"/>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fluid-HTN\Fluid-HTN.csproj" />
+  </ItemGroup>
+
+  </Project>
