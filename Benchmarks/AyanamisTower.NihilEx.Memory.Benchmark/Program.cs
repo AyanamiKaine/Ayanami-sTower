@@ -269,9 +269,9 @@ public class MemorySfpBenchmark
 
             // Update based on key prefix convention
             if (keyToUpdate.StartsWith("IntFact"))
-                targetMemory.SetValue<string, int>(keyToUpdate, _random.Next(1000));
+                targetMemory.SetValue(keyToUpdate, _random.Next(1000));
             else if (keyToUpdate.StartsWith("StringFact"))
-                targetMemory.SetValue<string, string>(keyToUpdate, $"Value_{_random.Next(1000)}");
+                targetMemory.SetValue(keyToUpdate, $"Value_{_random.Next(1000)}");
         }
     }
 
@@ -350,9 +350,9 @@ public class MemorySfpBenchmark
             int keyIndex = _random.Next(_factKeysPool.Count);
             string keyToUpdate = _factKeysPool[keyIndex];
             if (keyToUpdate.StartsWith("IntFact"))
-                targetMemory.SetValue<string, int>(keyToUpdate, _random.Next(1000));
+                targetMemory.SetValue(keyToUpdate, _random.Next(1000));
             else if (keyToUpdate.StartsWith("StringFact"))
-                targetMemory.SetValue<string, string>(keyToUpdate, $"Value_{_random.Next(1000)}");
+                targetMemory.SetValue(keyToUpdate, $"Value_{_random.Next(1000)}");
         }
     }
 
