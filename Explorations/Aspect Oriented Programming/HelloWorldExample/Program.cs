@@ -5,8 +5,15 @@ namespace HelloWorldExample;
 /// <summary>
 /// Showing the usage of contracts
 /// </summary>
+[PrettyPrint]
 public class Customer
 {
+
+    /// <summary>
+    /// required name
+    /// </summary>
+    public required string Name { get; set; }
+
     /// <summary>
     /// Here we define a contract that says the BirthYear can only be
     /// between 1900 and 2100
@@ -29,6 +36,7 @@ public static class Program
         {
             var tom = new Customer()
             {
+                Name = "Tom",
                 BirthYear = 200 // WILL THROW
             };
         }
@@ -41,8 +49,11 @@ public static class Program
         {
             var tom = new Customer()
             {
+                Name = "Tom",
                 BirthYear = 2000 // WONT THROW
             };
+
+            Console.WriteLine(tom);
         }
         catch (Exception ex)
         {
