@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using AyanamisTower.Utilities.Aspects;
 using CSScriptLib; // For CS-Script classes
 using Flecs.NET.Core; // For Flecs types
 
@@ -15,6 +16,7 @@ namespace AyanamisTower.NihilEx;
 /// ModInfo contains all the necessary information to identify, load, and manage a mod,
 /// including its metadata (name, author, version), dependencies, and runtime components.
 /// </remarks>
+[PrettyPrint]
 public class ModInfo
 {
     /// <summary>
@@ -173,6 +175,7 @@ The main goal is the following:
 /// <summary>
 /// Handles discovery, compilation, dependency resolution, and loading of mods.
 /// </summary>
+[PrettyPrint]
 public class ModLoader
 {
     private readonly string _modsSourceDir;
@@ -541,9 +544,9 @@ public class ModLoader
 
                 // Print: OrderNumber. ModName (vVersion) | Priority: P | Depends on: [Deps]
                 Console.WriteLine(
-                    $"  {i + 1, 3}. {modInfo.Name, -25} (v{modInfo.Version, -10})"
+                    $"  {i + 1,3}. {modInfo.Name,-25} (v{modInfo.Version,-10})"
                         + // Pad names/versions for alignment
-                        $" | Priority: {modInfo.LoadPriority, -3}"
+                        $" | Priority: {modInfo.LoadPriority,-3}"
                         + // Pad priority
                         $" | Depends on: [{depString}]"
                 );

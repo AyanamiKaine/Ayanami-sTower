@@ -1,5 +1,4 @@
 using System.Numerics;
-
 namespace AyanamisTower.NihilEx.ECS;
 
 /// <summary>

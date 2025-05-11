@@ -1,5 +1,6 @@
 using System;
 using AyanamisTower.NihilEx.SDLWrapper;
+using AyanamisTower.Utilities.Aspects;
 using SDL3;
 
 namespace AyanamisTower.NihilEx.ECS;
@@ -11,6 +12,7 @@ namespace AyanamisTower.NihilEx.ECS;
 /// Represents a color in the Red, Green, Blue, Alpha (RGBA) color space.
 /// Each component is stored as a byte (0-255).
 /// </summary>
+[PrettyPrint]
 public struct RgbaColor : IEquatable<RgbaColor>
 {
     /// <summary>The red component of the color.</summary>
@@ -158,19 +160,6 @@ public struct RgbaColor : IEquatable<RgbaColor>
         return !(left == right);
     }
 
-    // --- ToString for Debugging ---
-
-    /// <summary>
-    /// Returns a string representation of the color.
-    /// </summary>
-    /// <returns>A string in the format "Rgba(R, G, B, A)".</returns>
-    public override string ToString()
-    {
-        return $"Rgba({R}, {G}, {B}, {A})";
-    }
-
-    // --- Optional: Methods for common operations ---
-
     /// <summary>
     /// Linearly interpolates between two colors.
     /// </summary>
@@ -181,10 +170,10 @@ public struct RgbaColor : IEquatable<RgbaColor>
     public static RgbaColor Lerp(RgbaColor a, RgbaColor b, float t)
     {
         t = Math.Clamp(value: t, min: 0.0f, max: 1.0f); // Ensure t is in [0, 1] range
-        byte r = (byte)(a.R + (b.R - a.R) * t);
-        byte g = (byte)(a.G + (b.G - a.G) * t);
-        byte bl = (byte)(a.B + (b.B - a.B) * t); // Renamed 'b' parameter to 'bl' to avoid conflict
-        byte alpha = (byte)(a.A + (b.A - a.A) * t);
+        byte r = (byte)(a.R + ((b.R - a.R) * t));
+        byte g = (byte)(a.G + ((b.G - a.G) * t));
+        byte bl = (byte)(a.B + ((b.B - a.B) * t)); // Renamed 'b' parameter to 'bl' to avoid conflict
+        byte alpha = (byte)(a.A + ((b.A - a.A) * t));
         return new RgbaColor(r, g, bl, alpha);
     }
 }

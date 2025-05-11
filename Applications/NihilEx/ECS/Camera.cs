@@ -1,5 +1,6 @@
 using System;
-using System.Numerics; // Using System.Numerics for Vector3, Quaternion, Matrix4x4
+using System.Numerics;
+using AyanamisTower.Utilities.Aspects; // Using System.Numerics for Vector3, Quaternion, Matrix4x4
 
 namespace AyanamisTower.NihilEx.ECS
 {
@@ -29,6 +30,7 @@ namespace AyanamisTower.NihilEx.ECS
     /// <summary>
     /// Represents a camera in 3D space, handling view and projection transformations.
     /// </summary>
+    [PrettyPrint]
     public struct Camera
     {
         // --- Core Transform Properties ---

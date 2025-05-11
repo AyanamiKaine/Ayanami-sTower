@@ -1,10 +1,12 @@
 using System;
+using AyanamisTower.Utilities.Aspects;
 
 namespace AyanamisTower.NihilEx;
 
 /// <summary>
 /// Represents a dependency on another mod, including required version information.
 /// </summary>
+[PrettyPrint]
 public class ModDependency
 {
     /// <summary>

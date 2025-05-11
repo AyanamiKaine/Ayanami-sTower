@@ -1,3 +1,4 @@
+using AyanamisTower.Utilities.Aspects;
 using SDL3;
 
 namespace AyanamisTower.NihilEx.ECS;
@@ -6,6 +7,7 @@ namespace AyanamisTower.NihilEx.ECS;
 /// Manages delta time calculation for the application loop.
 /// Provides access to the time elapsed since the last frame and total elapsed time.
 /// </summary>
+[PrettyPrint]
 public class DeltaTime
 {
     private ulong _startTimeTicks;

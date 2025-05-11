@@ -3,6 +3,7 @@ using System.Collections.Concurrent; // For ConcurrentDictionary
 using System.Collections.Generic; // For KeyNotFoundException
 using System.Diagnostics.CodeAnalysis;
 using AyanamisTower.SFPM;
+using AyanamisTower.Utilities.Aspects;
 
 namespace AyanamisTower.NihilEx;
 
@@ -37,6 +38,7 @@ numbers.
 /// Provides direct methods (GetValue/SetValue) and an indexer-like syntax via the For() method.
 /// Implements IFactSource for integration with SFPM.
 /// </summary>
+[PrettyPrint]
 public class Memory : IFactSource
 {
     // The master storage.

@@ -1,4 +1,5 @@
 using System;
+using AyanamisTower.Utilities.Aspects;
 using Flecs.NET.Core;
 
 namespace AyanamisTower.NihilEx;
@@ -7,7 +8,8 @@ namespace AyanamisTower.NihilEx;
 /// Represents the core interface for a game mod, providing both
 /// metadata and the Flecs module loading entry point.
 /// </summary>
-public interface IMod : IFlecsModule // Inherit from IFlecsModule to ensure Load(World) exists
+[PrettyPrint]
+public partial interface IMod : IFlecsModule // Inherit from IFlecsModule to ensure Load(World) exists
 {
     /// <summary>
     /// Gets the human-readable name of the mod.
