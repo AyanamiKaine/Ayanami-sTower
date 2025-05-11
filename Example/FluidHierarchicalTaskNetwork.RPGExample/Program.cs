@@ -1,4 +1,5 @@
-﻿using FluidHTN;
+﻿using System.Reflection.Metadata.Ecma335;
+using FluidHTN;
 using FluidHTN.Contexts;
 using FluidHTN.Debug;
 using FluidHTN.Factory;
@@ -264,6 +265,15 @@ public class Agent
                 // Optional: Make machine not ready after brewing to show state change
                 .Effect("Coffee machine not ready", EffectType.PlanAndExecute, (ctx, type) => ctx.SetState(CoffeeAIWorldState.CoffeeMachine_Ready, false, type))
             .End()
+        .End();
+
+        builder.Action("Test")
+            .Condition("Testing", ctx => true)
+            .Do((ctx) =>
+            {
+                Console.WriteLine("TEST");
+                return TaskStatus.Success;
+            })
         .End();
 
         builder.Action("Idle")
