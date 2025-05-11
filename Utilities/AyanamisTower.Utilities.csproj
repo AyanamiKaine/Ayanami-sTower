@@ -5,11 +5,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+	<ItemGroup>
+        <PackageReference Include="Metalama.Framework" />
+        <PackageReference Include="Metalama.Patterns.Contracts" />
+        <PackageReference Include="Metalama.Patterns.Observability" />
+    </ItemGroup>
+
 </Project>
