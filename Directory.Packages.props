@@ -23,7 +23,9 @@
 	 <PackageVersion Include="Flecs.NET.Debug" Version="4.0.4-build.548" />
 	 <PackageVersion Include="Flecs.NET.Release" Version="4.0.4-build.548" />
 	 <!--End-->
-
+     <PackageVersion Include="Metalama.Framework" Version="2025.1.5" />
+     <PackageVersion Include="Metalama.Patterns.Contracts" Version="2025.1.5" />
+     <PackageVersion Include="Metalama.Patterns.Observability" Version="2025.1.5" />
 	 <PackageVersion Include="NLog" Version="5.4.0" />
 	 <PackageVersion Include="pythonnet" Version="3.0.5" />
 	 <PackageVersion Include="YamlDotNet" Version="16.3.0" />
