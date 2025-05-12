@@ -240,8 +240,16 @@ namespace FluidHTN
 
         // ========================================================= OPERATORS
 
+        /*
+        Why is this called Do and not operator as in the literature cited? (GameAIPro_Chapter12_Exploring_HTN_Planners_through_Example)
+        - AYANAMI
+        */
+
         /// <summary>
         ///     The operator of an Action / primitive task.
+        ///     When you see the literature reference an operator 
+        ///     it usually means Do and vice versa in the code 
+        ///     documentation. 
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
