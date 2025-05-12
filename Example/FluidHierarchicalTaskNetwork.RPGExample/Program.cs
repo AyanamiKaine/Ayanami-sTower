@@ -1,5 +1,6 @@
 ﻿using System.Reflection.Metadata.Ecma335;
 using FluidHTN;
+using FluidHTN.Compounds;
 using FluidHTN.Contexts;
 using FluidHTN.Debug;
 using FluidHTN.Factory;
@@ -243,6 +244,7 @@ public class Agent
 
         var builder = new DomainBuilder<CoffeeAIContext>("GetCoffeeDomain");
 
+        // This is a CompoundTask
         builder.Select("Get Coffee")
             .Condition("Doesn't have coffee", ctx => ctx.GetState(CoffeeAIWorldState.HasCoffee) == 0)
             .Action("Go To Coffee Machine")
@@ -267,6 +269,13 @@ public class Agent
             .End()
         .End();
 
+        /*
+
+        When the above CompoundTask condition "Doesn't have coffee" is not met it goes
+        to the next task in the tree and tries to invoke it. Here it would need to first
+        check the condition testing, its always true so it would always execute the test task
+        and never the idle task
+
         builder.Action("Test")
             .Condition("Testing", ctx => true)
             .Do((ctx) =>
@@ -275,7 +284,7 @@ public class Agent
                 return TaskStatus.Success;
             })
         .End();
-
+        */
         builder.Action("Idle")
             .Do(Idle)
         .End();

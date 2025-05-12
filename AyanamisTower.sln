@@ -137,7 +137,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FluidHierarchicalTaskNetwor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fluid-HTN-Ext", "FluidHierarchicalTaskNetworkExtensionsFork\Fluid-HTN-Ext\Fluid-HTN-Ext.csproj", "{54087D45-1F82-49BF-ADE5-266BF9A6FD0C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluidHierarchicalTaskNetwork.RPGExample", "Example\FluidHierarchicalTaskNetwork.RPGExample\FluidHierarchicalTaskNetwork.RPGExample.csproj", "{46FC173E-83C8-48FB-B9DB-37E941263034}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FluidHierarchicalTaskNetwork.CoffeeExample", "Example\FluidHierarchicalTaskNetwork.RPGExample\FluidHierarchicalTaskNetwork.CoffeeExample.csproj", "{46FC173E-83C8-48FB-B9DB-37E941263034}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspect Oriented Programming", "Aspect Oriented Programming", "{C4698B9F-0DA6-168C-2C7D-C8C8F66F2DAB}"
 	ProjectSection(SolutionItems) = preProject
