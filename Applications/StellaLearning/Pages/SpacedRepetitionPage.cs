@@ -140,8 +140,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                                             }
                                         );
                                     }
-                                ),
-                                false
+                                )
                             );
                         }
                     );
