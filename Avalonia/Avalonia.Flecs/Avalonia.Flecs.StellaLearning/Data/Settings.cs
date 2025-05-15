@@ -34,6 +34,18 @@ public partial class Settings : ObservableObject
     /// </summary>
     [ObservableProperty]
     private string _obsidianPath = string.Empty;
+
+    /*
+    TODO:
+    Implement a event delegate for the event on dark mode change, 
+    so we can easily react when the user changes the dark mode.
+
+    And we can appropriatly change the color. 
+    A common problem is found in background colors that need to change
+    to a darker color but currently they are hard coded and not react on
+    changes in the dark mode setting. See the tag component SetBackground.
+    */
+
     /// <summary>
     /// Caching the json serializer options for performance
     /// </summary>
