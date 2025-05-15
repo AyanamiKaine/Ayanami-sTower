@@ -1,0 +1,1 @@
+Using [Magic Onion](https://github.com/Cysharp/MagicOnion) could be a good idea to implement an easy way for stella learning to call the api of the server. It uses gRPC under the hood but we dont have to define a proto-buffer file that defines the interface of the message but instead define a plain C# interface that is then used to generate the needed code.
