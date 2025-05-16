@@ -433,12 +433,7 @@ public partial class App : Application
         var settings = _world.Get<Settings>();
         settings.PropertyChanged += (sender, e) =>
         {
-            if (e.PropertyName == nameof(Settings.IsDarkMode))
-            {
-                if (Application.Current is not null)
-                    Settings.SetTheme(Application.Current, settings.IsDarkMode ? "Dark" : "Light");
-            }
-            else if (e.PropertyName == nameof(Settings.EnableAlwaysOnTop))
+            if (e.PropertyName == nameof(Settings.EnableAlwaysOnTop))
             {
                 // Ensure _mainWindow exists and update runs on UI thread
                 if (_mainWindow != null)
