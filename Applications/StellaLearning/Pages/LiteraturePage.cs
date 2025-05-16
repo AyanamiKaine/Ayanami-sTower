@@ -337,7 +337,8 @@ public class LiteraturePage : IUIComponent, IDisposable
                                                 // Here we are passing a pdf that is smaller than 1000 pages
                                                 metaData =
                                                     await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
-                                                        localFile.FilePath
+                                                        localFile.FilePath,
+                                                        _baseLiteratureItems.GetAllUniqueTags()
                                                     );
                                             }
                                         }
@@ -345,7 +346,8 @@ public class LiteraturePage : IUIComponent, IDisposable
                                         {
                                             metaData =
                                                 await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
-                                                    localFile.FilePath
+                                                    localFile.FilePath,
+                                                    _baseLiteratureItems.GetAllUniqueTags()
                                                 );
                                         }
 
@@ -1132,12 +1134,6 @@ public class LiteraturePage : IUIComponent, IDisposable
         }
     }
 
-    private class LLMDATA
-    {
-        public string? Title { get; set; } // Use string? for nullable reference types
-        public List<string>? Tags { get; set; } // Assuming Tags is an array of strings
-    }
-
     /// <summary>
     /// Asynchronous logic to process a dropped URL.
     /// </summary>
@@ -1223,13 +1219,16 @@ public class LiteraturePage : IUIComponent, IDisposable
                 {
                     // Here we are passing a pdf that is smaller than 1000 pages
                     metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
-                        newPath
+                        newPath,
+                        _baseLiteratureItems.GetAllUniqueTags()
                     );
                 }
             }
             else
             {
-                metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(newPath);
+                metaData = await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
+                    newPath,
+                    _baseLiteratureItems.GetAllUniqueTags());
             }
 
             newItem.SourceType = LiteratureSourceType.LocalFile;
@@ -1404,7 +1403,9 @@ public class LiteraturePage : IUIComponent, IDisposable
                         StringComparison.InvariantCultureIgnoreCase
                     ) ?? false
                 )
+                {
                     return true;
+                }
                 // Check Title
                 if (
                     item.Title?.Contains(
@@ -1412,7 +1413,9 @@ public class LiteraturePage : IUIComponent, IDisposable
                         StringComparison.InvariantCultureIgnoreCase
                     ) ?? false
                 )
+                {
                     return true;
+                }
                 // Check Author
                 if (
                     item.Author?.Contains(
@@ -1420,7 +1423,9 @@ public class LiteraturePage : IUIComponent, IDisposable
                         StringComparison.InvariantCultureIgnoreCase
                     ) ?? false
                 )
+                {
                     return true;
+                }
                 // Check Summary
                 if (
                     item.Summary?.Contains(
@@ -1428,7 +1433,9 @@ public class LiteraturePage : IUIComponent, IDisposable
                         StringComparison.InvariantCultureIgnoreCase
                     ) ?? false
                 )
+                {
                     return true;
+                }
                 // Check Tags
                 if (
                     item.Tags?.Any(tag =>
@@ -1436,7 +1443,9 @@ public class LiteraturePage : IUIComponent, IDisposable
                         ?? false
                     ) ?? false
                 )
+                {
                     return true;
+                }
                 // Check FilePath (if applicable)
                 if (
                     item is LocalFileSourceItem fileItem
@@ -1447,7 +1456,9 @@ public class LiteraturePage : IUIComponent, IDisposable
                         ) ?? false
                     )
                 )
+                {
                     return true;
+                }
                 // Check URL (if applicable)
                 if (
                     item is WebSourceItem webItem
@@ -1458,7 +1469,9 @@ public class LiteraturePage : IUIComponent, IDisposable
                         ) ?? false
                     )
                 )
+                {
                     return true;
+                }
 
                 return false;
             });
