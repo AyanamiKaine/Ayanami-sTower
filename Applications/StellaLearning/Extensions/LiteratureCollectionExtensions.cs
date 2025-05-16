@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using AyanamisTower.StellaLearning.Data;
@@ -63,5 +64,31 @@ public static class LiteratureCollectionExtensions
         {
             Console.WriteLine("No duplicate file paths found to remove.");
         }
+    }
+    /// <summary>
+    /// Returns all unique tags
+    /// </summary>
+    /// <param name="collection"></param>
+    /// <returns></returns>
+    public static List<string> GetAllUniqueTags(this Collection<LiteratureSourceItem> collection)
+    {
+        if (collection == null)
+        {
+            return []; // Return an empty list if the input list is null
+        }
+
+        // Step 1: Select all tag lists (handling null tag lists)
+        // Step 2: Flatten them into a single sequence of tags
+        // Step 3: Filter out any null or empty tags (optional, but good practice)
+        // Step 4: Get distinct tags
+        // Step 5: Convert to a list
+
+        List<string> uniqueTags = [.. collection
+            .Where(item => item?.Tags != null) // Ensure object and its Tags list are not null
+            .SelectMany(item => item.Tags)                 // Flatten all tag lists into one sequence
+            .Where(tag => !string.IsNullOrEmpty(tag))    // Optional: Filter out null or empty tags
+            .Distinct(StringComparer.OrdinalIgnoreCase)];                                   // Convert the result to a List<string>
+
+        return uniqueTags;
     }
 }
