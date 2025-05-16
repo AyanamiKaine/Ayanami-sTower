@@ -39,7 +39,6 @@ using AyanamisTower.StellaLearning.Converters;
 using AyanamisTower.StellaLearning.Data; // Where LiteratureSourceItem etc. reside
 using AyanamisTower.StellaLearning.Extensions; // Assuming you use NLog like in SpacedRepetitionPage
 using AyanamisTower.StellaLearning.Util; // For MessageDialog (assuming it's here)
-using AyanamisTower.StellaLearning.Util.NoteHandler;
 using AyanamisTower.StellaLearning.Windows;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
