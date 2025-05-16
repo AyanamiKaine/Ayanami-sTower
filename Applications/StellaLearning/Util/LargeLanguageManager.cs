@@ -337,9 +337,11 @@ public sealed partial class LargeLanguageManager
     /// </summary>
     /// <param name="filePath">The path to the file to analyze.</param>
     /// <param name="maxTags">The maximum number of tags to generate (default is 4).</param>
+    /// <param name="existingTags">A list of already existing tags</param>
     /// <returns>A ContentMetadata object containing the generated metadata, or null if an error occurred.</returns>
     public async Task<ContentMetadata?> GenerateMetaDataBasedOnFile(
         string filePath,
+        List<string> existingTags,
         int maxTags = 4
     )
     {
@@ -465,6 +467,9 @@ public sealed partial class LargeLanguageManager
 
             Tags: Generate a list of highly relevant keywords or topic tags that categorize the core subject matter of the content.
             Quantity: Generate {maxTags} distinct tags. Do not exceed 5 tags under any circumstances. NEVER GENERATE MORE THAN {maxTags} TAGS, NEVER.
+
+            Here is a list of already {string.Join(", ", existingTags)} existing tags that you should prefer to pick an appropriate TAG IF AN APPROPRIATE TAG exists. If no appropriate tag exists
+            generate your own.
 
             Relevance & Type: Tags should represent the main themes, concepts, or disciplines discussed. Prefer broader topics over hyper-specific details.
             Format: Tags should be single words or short phrases (ideally 1-2 words long) and always start with a capital letter (Math, Biology, Science, Software, Study).
