@@ -34,6 +34,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage; // For FilePicker
 using Avalonia.Threading;
+using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.Util;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Flecs.NET.Core;
@@ -615,7 +616,7 @@ public class ArtPage : IUIComponent, IDisposable
                         .SetHorizontalAlignment(HorizontalAlignment.Right)
                         .SetVerticalAlignment(VerticalAlignment.Center)
                         .SetItemsSource(item.Tags) // Bind to the item's Tags collection
-                        //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                                                   //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
                         .SetItemTemplate(
                             _world.CreateTemplate<string, Border>(
                                 (border, tagText) => // Simple tag template
@@ -639,6 +640,16 @@ public class ArtPage : IUIComponent, IDisposable
                                                     .SetVerticalAlignment(VerticalAlignment.Center);
                                             });
                                         });
+
+                                    if (_world.Get<Settings>().IsDarkMode)
+                                    {
+                                        // Dark Gray
+                                        border.SetBackground(new SolidColorBrush(Color.FromRgb(51, 50, 48)));
+                                    }
+                                    else
+                                    {
+                                        border.SetBackground(Brushes.LightGray);
+                                    }
                                 }
                             )
                         )
