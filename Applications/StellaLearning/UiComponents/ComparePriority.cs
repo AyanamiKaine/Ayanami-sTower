@@ -85,7 +85,7 @@ namespace AyanamisTower.StellaLearning.UiComponents
                     "Failed to get ObservableCollection<SpacedRepetitionItem> from world."
                 );
                 // Handle error state - perhaps disable component?
-                _spacedRepetitionItems = new ObservableCollection<SpacedRepetitionItem>(); // Use empty list to prevent crashes
+                _spacedRepetitionItems = []; // Use empty list to prevent crashes
             }
 
             // Entity to store the final calculated priority (as int)
