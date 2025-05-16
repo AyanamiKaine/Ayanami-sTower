@@ -42,7 +42,7 @@ public static class MessageDialog
                 var cd = new ContentDialog()
                 {
                     Title = title,
-                    Content = message,
+                    Content = new SelectableTextBlock() { Text = message },
                     PrimaryButtonText = "Ok",
                     DefaultButton = ContentDialogButton.Primary,
                     IsSecondaryButtonEnabled = true,
@@ -66,7 +66,7 @@ public static class MessageDialog
                 var cd = new ContentDialog()
                 {
                     Title = new TextBlock() { Text = "Error!", Foreground = Brushes.Red },
-                    Content = message,
+                    Content = new SelectableTextBlock() { Text = message },
                     PrimaryButtonText = "Ok",
                     DefaultButton = ContentDialogButton.Primary,
                     IsSecondaryButtonEnabled = true,
@@ -90,7 +90,7 @@ public static class MessageDialog
                 var cd = new ContentDialog()
                 {
                     Title = new TextBlock() { Text = "Warning", Foreground = Brushes.Goldenrod },
-                    Content = message,
+                    Content = new SelectableTextBlock() { Text = message },
                     PrimaryButtonText = "Ok",
                     DefaultButton = ContentDialogButton.Primary,
                     IsSecondaryButtonEnabled = true,
