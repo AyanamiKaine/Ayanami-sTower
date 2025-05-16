@@ -100,7 +100,7 @@ public static class ObsidianHandler
                             // Use specific checks based on what Parse returns on failure (new() vs null)
                             // Since Parse returns new() on failure, check for non-default values.
                             bool parsedSuccessfully =
-                                properties.Created != default(DateTime)
+                                properties.Created != default
                                 || (properties.Aliases?.Count > 0)
                                 || (properties.Tags?.Count > 0);
 
