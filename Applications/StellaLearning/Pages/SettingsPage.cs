@@ -18,6 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Avalonia.Controls;
@@ -55,7 +57,8 @@ public class SettingsPage : IUIComponent
     {
         var ObsidianSettings = new List<IUIComponent>()
         {
-            new ImportObsidianVault(world),
+            new ObsidianImportVault(world),
+            new ObsidianAutoImportNewItems(world),
             new ObsidianPath(world),
         };
         _root = world
@@ -175,14 +178,105 @@ public class SettingsPage : IUIComponent
             .Entity;
     }
 
-    private class ImportObsidianVault : IUIComponent
+    private class ObsidianAutoImportNewItems : IUIComponent
     {
         private Entity _root;
 
         /// <inheritdoc/>
         public Entity Root => _root;
 
-        public ImportObsidianVault(World world)
+        public ObsidianAutoImportNewItems(World world)
+        {
+            _root = world
+                .UI<DockPanel>(
+                   (dockPanel) =>
+                   {
+                       dockPanel.Child<TextBlock>(
+                           (textBlock) =>
+                           {
+                               textBlock
+                                   .SetVerticalAlignment(VerticalAlignment.Center)
+                                   .SetText("Sync Obsidian Vaults")
+                                   .SetTextWrapping(TextWrapping.Wrap);
+                           }
+                       );
+
+                       dockPanel.Child<ToggleSwitch>(
+                          (toggleSwitch) =>
+                           {
+                               toggleSwitch
+                                   .SetDock(Dock.Right)
+                                   .SetHorizontalAlignment(HorizontalAlignment.Right);
+
+
+                               toggleSwitch.With(
+                                   (toggleSwitch) =>
+                                   {
+                                       toggleSwitch.IsChecked = world.Get<Settings>().SyncObsidianVaults;
+                                   }
+                               );
+
+                               toggleSwitch.OnIsCheckedChanged(
+                                   (sender, args) =>
+                                   {
+                                       var syncObsidianVaults =
+                                           ((ToggleSwitch)sender!).IsChecked ?? false;
+
+                                       var settings = world.Get<Settings>();
+                                       settings.SyncObsidianVaults = syncObsidianVaults;
+
+                                       if (syncObsidianVaults)
+                                       {
+                                           foreach (var obsidianVaultWatcher in settings.ObsidianVaultWatchers)
+                                           {
+                                               obsidianVaultWatcher.StartWatching();
+                                           }
+                                       }
+                                       else
+                                       {
+                                           foreach (var obsidianVaultWatcher in settings.ObsidianVaultWatchers)
+                                           {
+                                               obsidianVaultWatcher.StopWatching();
+                                           }
+                                       }
+                                   }
+                               );
+
+                           }
+                      );
+
+                       dockPanel.AttachToolTip(
+                           world.UI<ToolTip>(
+                               (toolTip) =>
+                               {
+                                   toolTip.Child<TextBlock>(
+                                       (textBlock) =>
+                                       {
+                                           textBlock.SetText(
+                                               """
+                                                When enabled new notes created in an imported obsidian vault are automatically synced with existing vaults.
+                                                This means adding or removing things from the vault are than reflected in the literature list.
+                                                """
+                                           );
+                                       }
+                                   );
+                               }
+                           )
+                       );
+                   }
+               )
+               .Entity;
+        }
+    }
+
+    private class ObsidianImportVault : IUIComponent
+    {
+        private Entity _root;
+
+        /// <inheritdoc/>
+        public Entity Root => _root;
+
+        public ObsidianImportVault(World world)
         {
             _root = world
                 .UI<DockPanel>(
@@ -193,7 +287,7 @@ public class SettingsPage : IUIComponent
                             {
                                 textBlock
                                     .SetVerticalAlignment(VerticalAlignment.Center)
-                                    .SetText("Import obsidian vault")
+                                    .SetText("Import Obsidian Vault")
                                     .SetTextWrapping(TextWrapping.Wrap);
                             }
                         );
@@ -243,6 +337,126 @@ public class SettingsPage : IUIComponent
                                                 }
 
                                                 literature.RemoveDuplicateFilePaths();
+
+                                                var settings = world.Get<Settings>();
+                                                settings.ObsidianVaultsFilePath.Add(selectedFolder.Path.AbsolutePath);
+
+                                                foreach (var vaultPathFromConfig in settings.ObsidianVaultsFilePath)
+                                                {
+                                                    if (string.IsNullOrWhiteSpace(vaultPathFromConfig))
+                                                    {
+                                                        Console.Error.WriteLine("Skipping an empty or null vault path from settings.");
+                                                        continue; // Skip this iteration if the path is invalid
+                                                    }
+
+                                                    string normalizedPath;
+                                                    try
+                                                    {
+                                                        normalizedPath = Path.GetFullPath(vaultPathFromConfig); // Normalize for consistent comparison
+                                                    }
+                                                    catch (ArgumentException ex)
+                                                    {
+                                                        Console.Error.WriteLine($"Invalid vault path format in settings: '{vaultPathFromConfig}'. Error: {ex.Message}");
+                                                        continue; // Skip this invalid path
+                                                    }
+                                                    catch (PathTooLongException ex)
+                                                    {
+                                                        Console.Error.WriteLine($"Vault path in settings is too long: '{vaultPathFromConfig}'. Error: {ex.Message}");
+                                                        continue; // Skip this invalid path
+                                                    }
+
+
+                                                    // Check if a watcher for this normalized path already exists in the settings' watcher collection
+                                                    var existingWatcher = settings.ObsidianVaultWatchers.FirstOrDefault(w =>
+                                                        w.VaultPath.Equals(normalizedPath, StringComparison.OrdinalIgnoreCase));
+
+                                                    if (existingWatcher == null)
+                                                    {
+                                                        // Watcher does not exist for this path, so create, add, and potentially start it.
+                                                        try
+                                                        {
+                                                            if (!Directory.Exists(normalizedPath))
+                                                            {
+                                                                Console.Error.WriteLine($"Vault path '{normalizedPath}' from settings does not exist. Skipping watcher creation.");
+                                                                continue;
+                                                            }
+
+                                                            Console.WriteLine($"Creating new watcher for vault: {normalizedPath}");
+                                                            var newWatcher = new ObsidianVaultWatcher(normalizedPath, literature);
+                                                            settings.ObsidianVaultWatchers.Add(newWatcher); // Add to your settings' collection
+
+                                                            if (settings.SyncObsidianVaults) // Check your global sync flag
+                                                            {
+                                                                newWatcher.StartWatching();
+                                                            }
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Console.Error.WriteLine($"Failed to create/initialize watcher for {normalizedPath}: {ex.Message}");
+                                                            // Optionally, remove from settings.ObsidianVaultWatchers if add failed partially
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        // Watcher already exists for this path.
+                                                        // Ensure its state (started/stopped) matches the global sync flag.
+                                                        Console.WriteLine($"Watcher already exists for vault: {normalizedPath}. Updating state based on sync settings.");
+                                                        try
+                                                        {
+                                                            if (settings.SyncObsidianVaults)
+                                                            {
+                                                                existingWatcher.StartWatching(); // Safe to call if already started
+                                                            }
+                                                            else
+                                                            {
+                                                                existingWatcher.StopWatching(); // Safe to call if already stopped
+                                                            }
+                                                        }
+                                                        catch (ObjectDisposedException)
+                                                        {
+                                                            Console.Error.WriteLine($"Watcher for {normalizedPath} was disposed. Removing it. It will be recreated if settings change or app restarts.");
+                                                            // Remove the disposed watcher so it can be recreated cleanly next time if needed.
+                                                            settings.ObsidianVaultWatchers.Remove(existingWatcher);
+                                                            // You might want to immediately recreate and add it here if settings.SyncObsidianVaults is true,
+                                                            // or let a subsequent settings load/toggle handle it. For simplicity here, just removing.
+                                                        }
+                                                        catch (Exception ex)
+                                                        {
+                                                            Console.Error.WriteLine($"Error updating state for existing watcher {normalizedPath}: {ex.Message}");
+                                                        }
+                                                    }
+                                                }
+
+                                                // Optional: After processing all paths from settings, you might want to remove any watchers
+                                                // in settings.ObsidianVaultWatchers that correspond to paths NO LONGER in settings.ObsidianVaultsFilePath.
+                                                // This handles cases where a vault path was removed from your application's settings.
+
+                                                var configuredNormalizedPaths = settings.ObsidianVaultsFilePath
+                                                                                    .Where(p => !string.IsNullOrWhiteSpace(p))
+                                                                                    .Select(p => { try { return Path.GetFullPath(p); } catch { return null; } })
+                                                                                    .Where(p => p != null)
+                                                                                    .ToList();
+
+                                                var watchersToRemove = settings.ObsidianVaultWatchers
+                                                    .Where(w => !configuredNormalizedPaths.Contains(w.VaultPath, StringComparer.OrdinalIgnoreCase))
+                                                    .ToList(); // ToList to avoid modification issues during iteration
+
+                                                foreach (var watcherToRemove in watchersToRemove)
+                                                {
+                                                    try
+                                                    {
+                                                        Console.WriteLine($"Removing watcher for obsolete vault path: {watcherToRemove.VaultPath}");
+                                                        watcherToRemove.StopWatching();
+                                                        watcherToRemove.Dispose();
+                                                        settings.ObsidianVaultWatchers.Remove(watcherToRemove);
+                                                    }
+                                                    catch (Exception ex)
+                                                    {
+                                                        Console.Error.WriteLine($"Error removing obsolete watcher for {watcherToRemove.VaultPath}: {ex.Message}");
+                                                        // Still try to remove from the list
+                                                        settings.ObsidianVaultWatchers.Remove(watcherToRemove);
+                                                    }
+                                                }
                                             }
                                         }
                                     );

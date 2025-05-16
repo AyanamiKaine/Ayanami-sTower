@@ -16,11 +16,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Styling;
+using AyanamisTower.StellaLearning.Util.NoteHandler;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AyanamisTower.StellaLearning.Data;
@@ -41,6 +43,22 @@ public partial class Settings : ObservableObject
     /// </summary>
     [ObservableProperty]
     private bool _enableNotifications = true;
+
+
+    /*
+    TODO:
+    Should we support multiple note apps, we maybe want to created an 
+    interface for such apps. Something like a filepath to the app executable
+    a filepath to the contents (if it exists), methods that make it easier to
+    get, like start app, etc. I would have to think more about what contract 
+    such an interface should adhere to.
+    */
+
+    /// <summary>
+    /// The list of all imported obsidian vaults
+    /// </summary>
+    [ObservableProperty]
+    private List<string> _obsidianVaultsFilePath = [];
 
     /// <summary>
     /// Whether the the windows are always on top
@@ -91,6 +109,14 @@ public partial class Settings : ObservableObject
     private string _obsidianPath = string.Empty;
 
     /// <summary>
+    /// All created obsidian file watchers.
+    /// </summary>
+    public readonly List<ObsidianVaultWatcher> ObsidianVaultWatchers = [];
+
+    [ObservableProperty]
+    private bool _syncObsidianVaults = true;
+
+    /// <summary>
     /// Caching the json serializer options for performance
     /// </summary>
     public static JsonSerializerOptions jsonSerializerOptions =
@@ -109,6 +135,7 @@ public partial class Settings : ObservableObject
         _obsidianPath = string.Empty; // Default path handled later or in CreateDefaultSettings
         _enableLargeLanguageFeatures = true;
         _enableCloudSaves = true;
+        _syncObsidianVaults = true;
 
         if (_isDarkMode)
         {
