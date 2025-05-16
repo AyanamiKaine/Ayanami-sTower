@@ -139,11 +139,11 @@ public class ObsidianVaultWatcher : IDisposable
                     }
                     if (properties.Tags?.Count > 0)
                     {
-                        newItem.Tags = new List<string>(properties.Tags);
+                        newItem.Tags = [.. properties.Tags];
                     }
                     if (properties.Aliases?.Count > 0)
                     {
-                        newItem.Aliases = new List<string>(properties.Aliases);
+                        newItem.Aliases = [.. properties.Aliases];
                     }
                 }
                 catch (IOException ioEx)
@@ -226,8 +226,8 @@ public class ObsidianVaultWatcher : IDisposable
                             ObsidianNoteProperties properties = ObsidianNoteProperties.Parse(fileContent);
 
                             if (properties.Created != default) itemToUpdate.PublicationYear = properties.Created.Year; else itemToUpdate.PublicationYear = 0;
-                            if (properties.Tags?.Count > 0) itemToUpdate.Tags = new List<string>(properties.Tags); else itemToUpdate.Tags.Clear();
-                            if (properties.Aliases?.Count > 0) itemToUpdate.Aliases = new List<string>(properties.Aliases); else itemToUpdate.Aliases.Clear();
+                            if (properties.Tags?.Count > 0) itemToUpdate.Tags = [.. properties.Tags]; else itemToUpdate.Tags.Clear();
+                            if (properties.Aliases?.Count > 0) itemToUpdate.Aliases = [.. properties.Aliases]; else itemToUpdate.Aliases.Clear();
 
                         }
                         catch (ArgumentException argEx)
@@ -259,8 +259,8 @@ public class ObsidianVaultWatcher : IDisposable
                             string fileContent = File.ReadAllText(newFullPath);
                             ObsidianNoteProperties properties = ObsidianNoteProperties.Parse(fileContent);
                             if (properties.Created != default) newItem.PublicationYear = properties.Created.Year;
-                            if (properties.Tags?.Count > 0) newItem.Tags = new List<string>(properties.Tags);
-                            if (properties.Aliases?.Count > 0) newItem.Aliases = new List<string>(properties.Aliases);
+                            if (properties.Tags?.Count > 0) newItem.Tags = [.. properties.Tags];
+                            if (properties.Aliases?.Count > 0) newItem.Aliases = [.. properties.Aliases];
                         }
                         catch (ArgumentException argEx)
                         {
