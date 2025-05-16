@@ -1,5 +1,5 @@
 ﻿/*
-<one line to give the program's name and a brief idea of what it does.>
+Stella Learning is a modern learning app.
 Copyright (C) <2025>  <Patrick, Grohs>
 
 This program is free software: you can redistribute it and/or modify
