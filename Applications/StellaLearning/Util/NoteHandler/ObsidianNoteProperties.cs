@@ -100,7 +100,7 @@ public class ObsidianNoteProperties
             }
 
             var yamlContent = trimmedContent
-                .Substring(startOfYaml, endMarkerIndex - startOfYaml)
+                [startOfYaml..endMarkerIndex]
                 .Trim();
 
             if (string.IsNullOrWhiteSpace(yamlContent))
