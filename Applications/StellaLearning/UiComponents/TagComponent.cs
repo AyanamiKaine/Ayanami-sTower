@@ -150,12 +150,10 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
             var tagItemTemplate = world.CreateTemplate<string, Border>(
                 (borderBuilder, tagText) =>
                 {
-                    // ... (Identical to previous version) ...
                     borderBuilder
                         .SetMargin(2)
                         .SetPadding(5, 2)
                         .SetCornerRadius(new CornerRadius(4))
-                        .SetBackground(Brushes.LightGray)
                         .Child<StackPanel>(stackPanel =>
                         {
                             stackPanel
@@ -182,6 +180,41 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
                                     .OnClick((_, _) => Tags.Remove(tagText));
                             });
                         });
+
+                    if (world.Get<Settings>().IsDarkMode)
+                    {
+                        // Dark Gray
+                        borderBuilder.SetBackground(new SolidColorBrush(Color.FromRgb(51, 50, 48)));
+                    }
+                    else
+                    {
+                        borderBuilder.SetBackground(Brushes.LightGray);
+                    }
+
+
+                    void OnDarkModeChanged(object? _, bool isDarkModeEnabled)
+                    {
+                        if (isDarkModeEnabled)
+                        {
+                            // Dark Gray
+                            borderBuilder.SetBackground(new SolidColorBrush(Color.FromRgb(51, 50, 48)));
+                        }
+                        else
+                        {
+                            borderBuilder.SetBackground(Brushes.LightGray);
+                        }
+                    }
+
+                    world.Get<Settings>().DarkModeChanged += OnDarkModeChanged;
+                    _disposables.Add(
+                        Disposable.Create(() =>
+                        {
+                            var settings = world.Get<Settings>();
+                            if (settings != null)
+                                settings.DarkModeChanged -= OnDarkModeChanged;
+                        })
+                    );
+
                 }
             );
 
