@@ -190,31 +190,6 @@ namespace AyanamisTower.StellaLearning.UiComponents // Adjust namespace if neede
                     {
                         borderBuilder.SetBackground(Brushes.LightGray);
                     }
-
-
-                    void OnDarkModeChanged(object? _, bool isDarkModeEnabled)
-                    {
-                        if (isDarkModeEnabled)
-                        {
-                            // Dark Gray
-                            borderBuilder.SetBackground(new SolidColorBrush(Color.FromRgb(51, 50, 48)));
-                        }
-                        else
-                        {
-                            borderBuilder.SetBackground(Brushes.LightGray);
-                        }
-                    }
-
-                    world.Get<Settings>().DarkModeChanged += OnDarkModeChanged;
-                    _disposables.Add(
-                        Disposable.Create(() =>
-                        {
-                            var settings = world.Get<Settings>();
-                            if (settings != null)
-                                settings.DarkModeChanged -= OnDarkModeChanged;
-                        })
-                    );
-
                 }
             );
 
