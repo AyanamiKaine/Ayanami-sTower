@@ -415,13 +415,15 @@ public class LiteraturePage : IUIComponent, IDisposable
                                                                     );
 
                                                                 toggleSwitch.With(
-                                                                    (toggleSwitch) => {
+                                                                    (toggleSwitch) =>
+                                                                    {
                                                                         // toggleSwitch.IsChecked = _world.Get<Settings>().EnableNotifications;
                                                                     }
                                                                 );
 
                                                                 toggleSwitch.OnIsCheckedChanged(
-                                                                    (sender, args) => {
+                                                                    (sender, args) =>
+                                                                    {
                                                                         //((ToggleSwitch)sender!).IsChecked;
                                                                     }
                                                                 );
@@ -673,13 +675,12 @@ public class LiteraturePage : IUIComponent, IDisposable
                                             .SetRow(1)
                                             .SetHorizontalAlignment(HorizontalAlignment.Right)
                                             .SetItemsSource(item.Tags) // Bind to the item's Tags collection
-                                            //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                                                                       //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
                                             .SetItemTemplate(
                                                 _world.CreateTemplate<string, Border>(
                                                     (border, tagText) => // Simple tag template
                                                     {
                                                         border
-                                                            .SetBackground(Brushes.LightGray)
                                                             .SetCornerRadius(3)
                                                             .SetPadding(4, 1)
                                                             .SetMargin(2)
@@ -711,6 +712,16 @@ public class LiteraturePage : IUIComponent, IDisposable
                                                                     }
                                                                 );
                                                             });
+
+                                                        if (_world.Get<Settings>().IsDarkMode)
+                                                        {
+                                                            // Dark Gray
+                                                            border.SetBackground(new SolidColorBrush(Color.FromRgb(51, 50, 48)));
+                                                        }
+                                                        else
+                                                        {
+                                                            border.SetBackground(Brushes.LightGray);
+                                                        }
                                                         /*
                                                         There is no need to clean up this template because the when the ItemTemplate
                                                         gets cleaned all child templates get cleaned too, we want to avoid an double free.
@@ -790,7 +801,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                         .SetOpacity(1)
                         .SetHorizontalAlignment(HorizontalAlignment.Right)
                         .SetItemsSource(item.Tags) // Bind to the item's Tags collection
-                        //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
+                                                   //.SetItemsPanel(new FuncTemplate<Panel>(() => new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN })) // Use WrapPanel
                         .SetItemTemplate(
                             _world.CreateTemplate<string, Border>(
                                 (border, tagText) => // Simple tag template
@@ -814,6 +825,17 @@ public class LiteraturePage : IUIComponent, IDisposable
                                                     .SetVerticalAlignment(VerticalAlignment.Center);
                                             });
                                         });
+
+                                    if (_world.Get<Settings>().IsDarkMode)
+                                    {
+                                        // Dark Gray
+                                        border.SetBackground(new SolidColorBrush(Color.FromRgb(51, 50, 48)));
+                                    }
+                                    else
+                                    {
+                                        border.SetBackground(Brushes.LightGray);
+                                    }
+
                                     /*
                                     There is no need to clean up this template because the when the ItemTemplate
                                     gets cleaned all child templates get cleaned too, we want to avoid an double free.
