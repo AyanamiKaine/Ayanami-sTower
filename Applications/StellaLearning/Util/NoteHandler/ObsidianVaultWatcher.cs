@@ -85,9 +85,8 @@ public class ObsidianVaultWatcher : IDisposable
     /// <exception cref="ObjectDisposedException"></exception>
     public void StartWatching()
     {
-        if (_isDisposed) throw new ObjectDisposedException(nameof(ObsidianVaultWatcher));
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
         _watcher.EnableRaisingEvents = true;
-        Console.WriteLine($"Started watching vault: {VaultPath}");
     }
 
     /// <summary>
@@ -97,7 +96,6 @@ public class ObsidianVaultWatcher : IDisposable
     {
         if (_isDisposed) return;
         _watcher.EnableRaisingEvents = false;
-        Console.WriteLine($"Stopped watching vault: {VaultPath}");
     }
 
     private void OnFileCreated(object sender, FileSystemEventArgs e)

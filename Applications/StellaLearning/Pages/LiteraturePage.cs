@@ -99,6 +99,9 @@ public class LiteraturePage : IUIComponent, IDisposable
         _baseLiteratureItems.RemoveDuplicateFilePaths();
 
         SubscribeToAllItemChanges(_baseLiteratureItems);
+        
+        var settings = _world.Get<Settings>();
+        settings.InitFileWatchers(_baseLiteratureItems);
 
         // Subscribe to collection changes for saving and UI updates
         _baseLiteratureItems.CollectionChanged += OnBaseCollectionChanged;

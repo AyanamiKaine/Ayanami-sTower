@@ -18,8 +18,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Avalonia;
 using Avalonia.Styling;
 using AyanamisTower.StellaLearning.Util.NoteHandler;
@@ -58,7 +60,7 @@ public partial class Settings : ObservableObject
     /// The list of all imported obsidian vaults
     /// </summary>
     [ObservableProperty]
-    private List<string> _obsidianVaultsFilePath = [];
+    private HashSet<string> _obsidianVaultsFilePath = [];
 
     /// <summary>
     /// Whether the the windows are always on top
@@ -110,7 +112,9 @@ public partial class Settings : ObservableObject
 
     /// <summary>
     /// All created obsidian file watchers.
+    /// This should not be serialized to JSON.
     /// </summary>
+    [JsonIgnore] // Prevents serialization of this runtime-managed list
     public readonly List<ObsidianVaultWatcher> ObsidianVaultWatchers = [];
 
     [ObservableProperty]
@@ -181,6 +185,38 @@ public partial class Settings : ObservableObject
         DarkModeChanged?.Invoke(this, newValue);
     }
 
+
+    /// <summary>
+    /// Handles changes to the SyncObsidianVaults property.
+    /// Starts or stops all managed file watchers accordingly.
+    /// </summary>
+    partial void OnSyncObsidianVaultsChanged(bool oldValue, bool newValue)
+    {
+        Console.WriteLine($"SyncObsidianVaults changed to: {newValue}. Updating watchers.");
+        foreach (var watcher in ObsidianVaultWatchers)
+        {
+            try
+            {
+                if (newValue) // If sync is now enabled
+                {
+                    watcher.StartWatching();
+                }
+                else // If sync is now disabled
+                {
+                    watcher.StopWatching();
+                }
+            }
+            catch (ObjectDisposedException odEx)
+            {
+                Console.Error.WriteLine($"Cannot change state of disposed watcher for '{watcher.VaultPath}': {odEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error changing state for watcher '{watcher.VaultPath}': {ex.Message}");
+            }
+        }
+    }
+
     /// <summary>
     /// Applies the theme (Dark/Light) to the current Avalonia application.
     /// </summary>
@@ -229,6 +265,94 @@ public partial class Settings : ObservableObject
 
         // Return default settings if file doesn't exist or there's an error
         return new Settings();
+    }
+
+
+
+    /// <summary>
+    /// Initializes or re-initializes the Obsidian vault file watchers based on current settings.
+    /// This method should be called after settings are loaded and the main literature items collection is available.
+    /// </summary>
+    /// <param name="literatureItemsToManage">The main collection of literature items that the watchers will interact with.</param>
+    public void InitFileWatchers(IList<LiteratureSourceItem> literatureItemsToManage)
+    {
+        Console.WriteLine("Initializing file watchers...");
+
+        // 1. Stop and dispose of any existing watchers to ensure a clean state
+        if (ObsidianVaultWatchers.Count != 0)
+        {
+            Console.WriteLine($"Disposing {ObsidianVaultWatchers.Count} existing watcher(s).");
+            // Iterate over a copy for safe removal/modification
+            foreach (var oldWatcher in ObsidianVaultWatchers.ToList())
+            {
+                try
+                {
+                    oldWatcher.StopWatching();
+                    oldWatcher.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error disposing old watcher for '{oldWatcher.VaultPath}': {ex.Message}");
+                }
+            }
+            ObsidianVaultWatchers.Clear();
+        }
+
+        // 2. Create and configure watchers for each path in ObsidianVaultsFilePath
+        if (ObsidianVaultsFilePath?.Count == 0)
+        {
+            Console.WriteLine("No Obsidian vault paths configured. No watchers will be initialized.");
+            return;
+        }
+
+        foreach (var vaultPath in ObsidianVaultsFilePath!)
+        {
+            if (string.IsNullOrWhiteSpace(vaultPath))
+            {
+                Console.Error.WriteLine("Skipping invalid (empty or whitespace) vault path in settings.");
+                continue;
+            }
+
+            string normalizedPath;
+            try
+            {
+                normalizedPath = Path.GetFullPath(vaultPath); // Normalize for consistency
+            }
+            catch (Exception ex) // Catches ArgumentException, PathTooLongException, etc.
+            {
+                Console.Error.WriteLine($"Invalid vault path format or path too long: '{vaultPath}'. Error: {ex.Message}. Skipping watcher creation.");
+                continue;
+            }
+
+            if (!Directory.Exists(normalizedPath))
+            {
+                Console.Error.WriteLine($"Configured vault path does not exist: '{normalizedPath}'. Skipping watcher creation.");
+                continue;
+            }
+
+            try
+            {
+                Console.WriteLine($"Creating watcher for vault: {normalizedPath}");
+                var newWatcher = new ObsidianVaultWatcher(normalizedPath, literatureItemsToManage);
+                ObsidianVaultWatchers.Add(newWatcher);
+
+                // 3. Start the watcher if global sync is enabled
+                if (this.SyncObsidianVaults)
+                {
+                    newWatcher.StartWatching(); // StartWatching already logs
+                }
+                else
+                {
+                    Console.WriteLine($"Sync is disabled. Watcher for '{normalizedPath}' created but not started.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Failed to create or start watcher for '{normalizedPath}': {ex.Message}");
+                // Optionally, attempt to remove if partially added, though Add is last step in try.
+            }
+        }
+        Console.WriteLine($"File watcher initialization complete. {ObsidianVaultWatchers.Count} watcher(s) configured.");
     }
 
     /// <summary>
