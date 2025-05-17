@@ -146,6 +146,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Aspect Oriented Programming
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorldExample", "Explorations\Aspect Oriented Programming\HelloWorldExample\HelloWorldExample.csproj", "{D625DD33-83D1-4142-A9EF-67B750DC1122}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Toast", "Avalonia\Toast\Toast.csproj", "{14455F83-5655-403E-ABA9-7CAC55109CB9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -720,6 +722,18 @@ Global
 		{D625DD33-83D1-4142-A9EF-67B750DC1122}.Release|x64.Build.0 = Release|Any CPU
 		{D625DD33-83D1-4142-A9EF-67B750DC1122}.Release|x86.ActiveCfg = Release|Any CPU
 		{D625DD33-83D1-4142-A9EF-67B750DC1122}.Release|x86.Build.0 = Release|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Debug|x64.Build.0 = Debug|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Debug|x86.Build.0 = Debug|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Release|x64.ActiveCfg = Release|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Release|x64.Build.0 = Release|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Release|x86.ActiveCfg = Release|Any CPU
+		{14455F83-5655-403E-ABA9-7CAC55109CB9}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -777,5 +791,6 @@ Global
 		{46FC173E-83C8-48FB-B9DB-37E941263034} = {1D587995-D2B1-D47C-23B4-E8E972FA15E9}
 		{C4698B9F-0DA6-168C-2C7D-C8C8F66F2DAB} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
 		{D625DD33-83D1-4142-A9EF-67B750DC1122} = {C4698B9F-0DA6-168C-2C7D-C8C8F66F2DAB}
+		{14455F83-5655-403E-ABA9-7CAC55109CB9} = {DA5C3214-5362-D53D-7EE1-7B72DB27BE75}
 	EndGlobalSection
 EndGlobal
