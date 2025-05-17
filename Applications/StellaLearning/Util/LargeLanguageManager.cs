@@ -443,6 +443,7 @@ public sealed partial class LargeLanguageManager
         catch (Exception ex)
         {
             Console.WriteLine($"Error uploading file: {ex.Message}");
+            throw;
         }
 
         var request = new GenerateContentRequest
@@ -736,11 +737,11 @@ public sealed partial class LargeLanguageManager
         // Note: Changed prompt slightly to indicate it's extracted text, not raw HTML
         string finalPrompt =
             $"Here is the extracted text content from the website {url}:\n"
-            + $"---\n"
+            + "---\n"
             + // Use simpler separator
             $"{cleanedText}\n"
-            + $"---\n\n"
-            + $"Based on the text content above, please answer the following question:\n"
+            + "---\n\n"
+            + "Based on the text content above, please answer the following question:\n"
             + $"{promptAboutUrlContent}";
 
         // Call the AI model (same logic as before)
