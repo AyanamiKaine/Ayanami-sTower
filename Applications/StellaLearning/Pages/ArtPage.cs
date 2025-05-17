@@ -24,6 +24,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Flecs.Controls;
@@ -36,6 +37,7 @@ using Avalonia.Platform.Storage; // For FilePicker
 using Avalonia.Threading;
 using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.Util;
+using AyanamisTower.Toast;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Flecs.NET.Core;
 using static Avalonia.Flecs.Controls.ECS.Module; // If Page tag is defined here
@@ -419,10 +421,14 @@ public class ArtPage : IUIComponent, IDisposable
 
                                             var llm = LargeLanguageManager.Instance;
                                             // Get the new tags (assuming this returns List<string> or similar)
+                                            var toast = ToastService.Show("Generating metadata please wait...", NotificationType.Information);
+
                                             var newTagsList = await llm.GetImageTagsAsync(
                                                 item.ImagePath,
                                                 6
                                             );
+                                            await toast.DismissAsync();
+                                            ToastService.Show("Successfully generating metadata", NotificationType.Success, TimeSpan.FromSeconds(2));
 
                                             // --- Modification Start ---
                                             // Instead of: item.Tags = newTagsList ?? [];
