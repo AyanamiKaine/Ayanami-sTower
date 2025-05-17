@@ -24,6 +24,7 @@ using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Controls.Notifications;
 using Avalonia.Flecs.Controls;
 using Avalonia.Flecs.FluentUI.Controls;
 using Avalonia.Flecs.FluentUI.Controls.ECS.Events;
@@ -35,6 +36,7 @@ using AyanamisTower.StellaLearning.Converters;
 using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.Pages;
 using AyanamisTower.StellaLearning.Util;
+using AyanamisTower.Toast;
 using CommunityToolkit.Mvvm.Input;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
@@ -138,7 +140,36 @@ public partial class App : Application
         );
         _mainWindow = MainWindow.Get<Window>();
 
-        MainWindow.Child(CreateUILayout());
+        MainWindow.Child<Grid>((grid) =>
+        {
+            grid.Child(CreateUILayout());
+
+
+            /*
+            Here we are setting up where our toasts are shown
+            */
+
+            grid.Child<StackPanel>((stack) =>
+            {
+
+                /*
+                TODO:
+                I think its really important to add an ability for users 
+                to customize this styling. Like where the toast should 
+                disapear.
+                */
+
+                stack
+                    .SetSpacing(5)
+                    .SetOrientation(Avalonia.Layout.Orientation.Vertical)
+                    .SetVerticalAlignment(Avalonia.Layout.VerticalAlignment.Bottom)
+                    .SetHorizontalAlignment(Avalonia.Layout.HorizontalAlignment.Right)
+                    .SetMaxWidth(400)
+                    .SetMargin(10);
+
+                ToastService.Initialize(stack.Get<StackPanel>());
+            });
+        });
     }
 
     private UIBuilder<NavigationView> CreateUILayout()

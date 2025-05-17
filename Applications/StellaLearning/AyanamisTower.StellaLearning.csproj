@@ -52,6 +52,7 @@
     <ProjectReference Include="../../Avalonia/Avalonia.Flecs/Avalonia.Flecs.FluentUI.Controls/Avalonia.Flecs.FluentUI.Controls.csproj" />
     <ProjectReference Include="../../Avalonia/Avalonia.Flecs/Avalonia.Flecs.Util/Avalonia.Flecs.Util.csproj" />
     <ProjectReference Include="../../Avalonia/Avalonia.Flecs/DesktopNotifications/DesktopNotifications.Avalonia/DesktopNotifications.Avalonia.csproj" />
+    <ProjectReference Include="..\..\Avalonia\Toast\Toast.csproj" />
     <ProjectReference Include="..\..\CsFSRS\FSRS\FsrsSharp.csproj" />
     <ProjectReference Include="..\..\WebAPI\AyanamisTower.WebAPI.csproj" />
   </ItemGroup>

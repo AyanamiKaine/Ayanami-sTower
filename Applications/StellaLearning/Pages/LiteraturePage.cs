@@ -27,6 +27,7 @@ using System.Text.Json; // For saving/loading (will need converters)
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Flecs.Controls; // For UIBuilderExtensions
@@ -40,6 +41,7 @@ using AyanamisTower.StellaLearning.Data; // Where LiteratureSourceItem etc. resi
 using AyanamisTower.StellaLearning.Extensions; // Assuming you use NLog like in SpacedRepetitionPage
 using AyanamisTower.StellaLearning.Util; // For MessageDialog (assuming it's here)
 using AyanamisTower.StellaLearning.Windows;
+using AyanamisTower.Toast;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
 using NLog;
@@ -99,7 +101,7 @@ public class LiteraturePage : IUIComponent, IDisposable
         _baseLiteratureItems.RemoveDuplicateFilePaths();
 
         SubscribeToAllItemChanges(_baseLiteratureItems);
-        
+
         var settings = _world.Get<Settings>();
         settings.InitFileWatchers(_baseLiteratureItems);
 
@@ -338,20 +340,26 @@ public class LiteraturePage : IUIComponent, IDisposable
                                             else
                                             {
                                                 // Here we are passing a pdf that is smaller than 1000 pages
+                                                var toast = ToastService.Show("Generating Metadata please wait...", NotificationType.Information);
                                                 metaData =
                                                     await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
                                                         localFile.FilePath,
                                                         _baseLiteratureItems.GetAllUniqueTags()
                                                     );
+                                                await toast.DismissAsync();
+                                                ToastService.Show("Generating metadata successfully", NotificationType.Success, TimeSpan.FromSeconds(2));
                                             }
                                         }
                                         else
                                         {
+                                            var toast = ToastService.Show("Generating metadata please wait...", NotificationType.Information);
                                             metaData =
                                                 await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
                                                     localFile.FilePath,
                                                     _baseLiteratureItems.GetAllUniqueTags()
                                                 );
+                                            toast?.DismissAsync();
+                                            ToastService.Show("Generating metadata successfully", NotificationType.Success, TimeSpan.FromSeconds(2));
                                         }
 
                                         localFile.SourceType = LiteratureSourceType.LocalFile;
