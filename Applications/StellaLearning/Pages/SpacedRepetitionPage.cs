@@ -27,6 +27,7 @@ using System.Text.Json;
 using System.Timers;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Notifications;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Flecs.Controls;
@@ -36,6 +37,7 @@ using Avalonia.Threading;
 using AyanamisTower.StellaLearning.Converters;
 using AyanamisTower.StellaLearning.Data;
 using AyanamisTower.StellaLearning.Windows;
+using AyanamisTower.Toast;
 using DesktopNotifications;
 using Flecs.NET.Core;
 using FluentAvalonia.UI.Controls;
@@ -61,7 +63,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
     private readonly List<string> sortItems = ["Sort By Date", "Sort By Priority", "Sort By Name"];
     private readonly Dictionary<Guid, PropertyChangedEventHandler> _itemPropertyChangedHandlers =
     [];
-    private static readonly INotificationManager _iNotificationManager =
+    private static readonly DesktopNotifications.INotificationManager _iNotificationManager =
         Program.NotificationManager
         ?? throw new InvalidOperationException("Missing notification manager");
 
@@ -995,7 +997,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
 
         autoSaveTimer.Elapsed += async (sender, e) =>
         {
-            Console.WriteLine("Auto Saving data...");
+            ToastService.Show("Auto saving spaced repetition data......", NotificationType.Information, TimeSpan.FromSeconds(2));
             try
             {
                 await Dispatcher.UIThread.InvokeAsync(async () =>
@@ -1040,7 +1042,7 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
                     && _root.CsWorld().Get<Settings>().EnableNotifications
                 )
                 {
-                    var nf = new Notification
+                    var nf = new DesktopNotifications.Notification
                     {
                         Title = "New item can be learned",
                         Body = "Open the learning window by clicking start learning",
