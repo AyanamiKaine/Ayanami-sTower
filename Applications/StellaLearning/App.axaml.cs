@@ -544,11 +544,10 @@ public partial class App : Application
                 Converters = { new SpacedRepetitionItemConverter() },
             };
 
-            ObservableCollection<SpacedRepetitionItem>? items = JsonSerializer.Deserialize<
-                ObservableCollection<SpacedRepetitionItem>
-            >(jsonString, options);
+            ObservableCollection<SpacedRepetitionItem> items = JsonSerializer.Deserialize<
+                ObservableCollection<SpacedRepetitionItem>>(jsonString, options) ?? [];
 
-            foreach (var item in items!)
+            foreach (var item in items)
             {
                 item.CreateCardFromSpacedRepetitionData();
             }
