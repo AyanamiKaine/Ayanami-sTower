@@ -340,7 +340,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                                             else
                                             {
                                                 // Here we are passing a pdf that is smaller than 1000 pages
-                                                var toast = ToastService.Show("Generating Metadata please wait...", NotificationType.Information);
+                                                var toast = ToastService.Show($"Generating metadata for \"{localFile.Name}\" please wait...", NotificationType.Information);
                                                 metaData =
                                                     await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
                                                         localFile.FilePath,
@@ -352,7 +352,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                                         }
                                         else
                                         {
-                                            var toast = ToastService.Show("Generating metadata please wait...", NotificationType.Information);
+                                            var toast = ToastService.Show($"Generating metadata for \"{localFile.Name}\" please wait...", NotificationType.Information);
                                             metaData =
                                                 await LargeLanguageManager.Instance.GenerateMetaDataBasedOnFile(
                                                     localFile.FilePath,
