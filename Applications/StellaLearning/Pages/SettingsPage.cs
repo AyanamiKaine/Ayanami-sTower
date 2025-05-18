@@ -314,6 +314,12 @@ public class SettingsPage : IUIComponent
                                             IReadOnlyList<IStorageFolder> result =
                                                 await App.GetMainWindow()
                                                     .StorageProvider.OpenFolderPickerAsync(options);
+
+                                            if (result.Count == 0)
+                                            {
+                                                return;
+                                            }
+
                                             // Get the selected folder (since AllowMultiple is false, there's at most one)
                                             IStorageFolder selectedFolder = result[0]; // The result is an IStorageFolder
 
