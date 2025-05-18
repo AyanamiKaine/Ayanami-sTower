@@ -199,12 +199,19 @@ public class LiteraturePage : IUIComponent, IDisposable
                 .SetText($"Items: {_baseLiteratureItems.Count}"); // Initial count
         });
 
-        grid.Child<Button>(button => // Placeholder for Add/Sort
+
+
+        /*
+        We need to split the idea of copying a file to the literature folder
+        and we need a button to link a file instead of copying it.
+        */
+
+        grid.Child<Button>(button =>
         {
             button
                 .SetColumn(2)
                 .SetMargin(5)
-                .SetText("Add Source...")
+                .SetText("Add Source")
                 .OnClick(async (s, e) => await AddSourceAsync()); // Implement AddSourceAsync
             button.AttachToolTip(
                 _world.UI<ToolTip>(tooltip =>
@@ -1337,6 +1344,23 @@ public class LiteraturePage : IUIComponent, IDisposable
             {
                 SubscribeToItemChanges(addedItem); // Subscribe to changes on the new item
             }
+
+            if (addedItem is LocalFileSourceItem localFile)
+            {
+
+                // Check if an item with the same FilePath already exists.
+                // This assumes BaseCollection is the actual collection instance.
+                bool alreadyExists = _baseLiteratureItems
+                    .OfType<LocalFileSourceItem>()
+                    .Any(existingItem => existingItem != localFile && // Ensure we are not comparing the item with itself if it somehow got added
+                    string.Equals(existingItem.FilePath, localFile.FilePath, StringComparison.OrdinalIgnoreCase));
+
+                if (alreadyExists)
+                {
+                    _baseLiteratureItems.Remove(addedItem);
+                }
+            }
+
         }
 
         if (_isDisposed)
