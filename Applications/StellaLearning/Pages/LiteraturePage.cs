@@ -293,7 +293,21 @@ public class LiteraturePage : IUIComponent, IDisposable
                     );
 
                     menuFlyout.Child<MenuItem>(item =>
-                        item.SetHeader("Edit Details...")
+                        item.SetHeader("Open Folder")
+                            .OnClick(
+                                (_, _) =>
+                                {
+                                    var selectedLiteratureItem =
+                                        listBox.GetSelectedItem<LiteratureSourceItem>();
+
+                                    if (selectedLiteratureItem is LocalFileSourceItem localFile)
+                                        FileExplorerHelper.OpenFolderAndSelectFile(localFile.FilePath);
+                                }
+                            )
+                    );
+
+                    menuFlyout.Child<MenuItem>(item =>
+                        item.SetHeader("Edit Details")
                             .OnClick(
                                 (_, _) =>
                                 {
@@ -334,7 +348,7 @@ public class LiteraturePage : IUIComponent, IDisposable
                                             if (localFile.PageCount >= 1000)
                                             {
                                                 MessageDialog.ShowWarningDialog(
-                                                    $"Only pdfs smaller than 1000 pages can be used to generate metadata via a LLM"
+                                                    "Only pdfs smaller than 1000 pages can be used to generate metadata via a LLM"
                                                 );
                                             }
                                             else
