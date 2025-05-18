@@ -102,7 +102,14 @@ to generic with their type. So they are only exposed when working with the type 
 shows information where its needed and hides it where it doesnt.
 */
 
-// DESING HINT: These extension methods are super important because they enable us type safe exposure
+
+/*
+TODO:
+Implement an really easy way for creating animations. I am thinking again of using the builder
+pattern. It seems quite naturaly to "build" an animation up.
+*/
+
+// DESIGN HINT: These extension methods are super important because they enable us type safe exposure
 // of various methods on control elements. So you can use the SetText method on only types that actual have the text property
 /// <summary>
 /// Extension methods that enable fluent UI building with a hierarchical syntax for Flecs entities.
@@ -1314,8 +1321,6 @@ public static class UIBuilderExtensions
         builder.Get<InputElement>().PointerEntered += onPointerEntered;
         return builder;
     }
-
-    //TODO: IMPLEMENT WEAK EVENT HANDLERS for diposables
 
     /// <summary>
     /// Adds an on pointer exited event to the input element
