@@ -18,6 +18,16 @@ using Avalonia.VisualTree;
 
 namespace AyanamisTower.Toast;
 
+
+/*
+TODO:
+I think we should add events for 
+OnDismissed, OnStarted etc.
+
+The dismissed event is important because so we can add hooks like, abort operation 
+when the user dismissed the toast.
+*/
+
 /// <summary>
 /// A control that displays toast notifications in an Avalonia application.
 /// Supports click-to-dismiss and timed auto-dismissal with animations.
@@ -85,8 +95,8 @@ public class ToastControl : TemplatedControl
     public ToastControl()
     {
         // Define default visual properties for the control itself
-        HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
-        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom;
+        HorizontalAlignment = HorizontalAlignment.Right;
+        VerticalAlignment = VerticalAlignment.Bottom;
         Margin = new Thickness(0, 0, 0, 20); // Margin from the bottom of its container
         Padding = new Thickness(15, 10);    // This padding will be used by the internal Border
         MinWidth = 200;
@@ -104,8 +114,8 @@ public class ToastControl : TemplatedControl
         {
             TextWrapping = TextWrapping.Wrap,
             Foreground = Brushes.White, // Default text color
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
         };
 
         // Bind TextBlock.TextProperty to this.MessageProperty
@@ -121,7 +131,7 @@ public class ToastControl : TemplatedControl
         // Bind Border.BackgroundProperty to this.BackgroundProperty (which we set in UpdateBackgroundColor)
         _visualRoot.Bind(Border.BackgroundProperty, new Binding(nameof(Background)) { Source = this });
         // Bind Border.PaddingProperty to this.PaddingProperty
-        _visualRoot.Bind(Border.PaddingProperty, new Binding(nameof(Padding)) { Source = this });
+        _visualRoot.Bind(Decorator.PaddingProperty, new Binding(nameof(Padding)) { Source = this });
 
         // Add click handler for dismissal
         _visualRoot.PointerPressed += OnPointerPressedToDismiss;
