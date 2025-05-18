@@ -362,6 +362,26 @@ public class ArtPage : IUIComponent, IDisposable
                             }
                         );
 
+                        menuFlyout.Child<MenuItem>(item =>
+                        {
+                            item.SetHeader("Open Folder")
+                                .OnClick(
+                                    (_, _) =>
+                                    {
+                                        var item =
+                                                listBox.GetSelectedItem<ReferencePaintingItem>();
+
+                                        FileExplorerHelper.OpenFolderAndSelectFile(item.ImagePath);
+                                    }
+                                );
+
+                            item.AttachToolTip(_world.UI<ToolTip>((toolTip) =>
+                            {
+                                toolTip.Child<TextBlock>((textBlock) => textBlock.SetText("Opens the folder where the images resides"));
+                            })
+                            );
+                        });
+
                         menuFlyout.Child<MenuItem>(
                             (item) =>
                             {
