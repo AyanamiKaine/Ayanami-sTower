@@ -255,7 +255,8 @@ public class SettingsPage : IUIComponent
                                            textBlock.SetText(
                                                """
                                                 When enabled new notes created in an imported obsidian vault are automatically synced with existing vaults.
-                                                This means adding or removing things from the vault are than reflected in the literature list.
+                                                This means adding or removing things from the vault are than reflected in the literature list. Only works
+                                                when the app is running.
                                                 """
                                            );
                                        }
