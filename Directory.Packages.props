@@ -23,6 +23,9 @@
 	 <PackageVersion Include="Flecs.NET.Debug" Version="4.0.4-build.548" />
 	 <PackageVersion Include="Flecs.NET.Release" Version="4.0.4-build.548" />
 	 <!--End-->
+     <PackageVersion Include="MemoryPack" Version="1.21.4" />
+     <PackageVersion Include="MagicOnion.Server" Version="7.0.4" />
+     <PackageVersion Include="MagicOnion.Client" Version="7.0.4" />
      <PackageVersion Include="Metalama.Framework" Version="2025.1.5" />
      <PackageVersion Include="Metalama.Patterns.Contracts" Version="2025.1.5" />
      <PackageVersion Include="Metalama.Patterns.Observability" Version="2025.1.5" />
@@ -38,7 +41,6 @@
 	 <PackageVersion Include="Mono.Posix.NETStandard" Version="5.20.1-preview" />
 	 <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
      <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
-
 
      
      <!--Avalonia Related-->
