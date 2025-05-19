@@ -12,7 +12,7 @@ public static class FsrsConstants
     /// Default parameters (weights) for the FSRS algorithm.
     /// </summary>
     public static readonly double[] DefaultParameters =
-    {
+    [
         0.40255,
         1.18385,
         3.173,
@@ -32,7 +32,7 @@ public static class FsrsConstants
         2.9898,
         0.51655,
         0.6621,
-    };
+    ];
 
     /// <summary>
     /// Decay constant used in retrievability calculation.
@@ -69,7 +69,7 @@ public static class FsrsConstants
     /// Defines ranges and factors for applying fuzziness to calculated intervals.
     /// </summary>
     public static readonly FuzzRange[] FuzzRanges =
-    {
+    [
         new()
         {
             Start = 2.5,
@@ -88,7 +88,7 @@ public static class FsrsConstants
             End = double.PositiveInfinity,
             Factor = 0.05,
         },
-    };
+    ];
 }
 
 /// <summary>
@@ -539,7 +539,7 @@ public class Scheduler
         bool enableFuzzing = true
     )
     {
-        Parameters = (parameters ?? FsrsConstants.DefaultParameters).ToArray();
+        Parameters = [.. parameters ?? FsrsConstants.DefaultParameters];
         if (Parameters.Length != 19) // FSRS v4 has 19 parameters
         {
             throw new ArgumentException(
@@ -549,10 +549,10 @@ public class Scheduler
         }
 
         DesiredRetention = Math.Clamp(desiredRetention, 0.01, 0.99); // Keep retention within a reasonable range
-        LearningSteps = (
-            learningSteps ?? new[] { TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10) }
-        ).ToArray();
-        RelearningSteps = (relearningSteps ?? new[] { TimeSpan.FromMinutes(10) }).ToArray();
+        LearningSteps = [.. 
+            learningSteps ?? [TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(10)]
+        ];
+        RelearningSteps = [.. relearningSteps ?? [TimeSpan.FromMinutes(10)]];
         MaximumIntervalDays = Math.Max(1, maximumIntervalDays); // Ensure at least 1 day
         EnableFuzzing = enableFuzzing;
     }
@@ -891,7 +891,7 @@ public class Scheduler
             if (parametersObj is List<double> pList)
                 parameters = pList;
             else if (parametersObj is System.Collections.IEnumerable pEnum)
-                parameters = pEnum.Cast<object>().Select(Convert.ToDouble).ToList(); // More robust cast
+                parameters = [.. pEnum.Cast<object>().Select(Convert.ToDouble)]; // More robust cast
             // else if (parametersObj is IEnumerable<double> pDEnum) parameters = pDEnum.ToList(); // This might be redundant with IEnumerable cast
             else
                 throw new InvalidCastException("Cannot cast parameters to List<double>");
@@ -904,28 +904,38 @@ public class Scheduler
             var learningStepsObj = sourceDict["learning_steps"];
             List<TimeSpan> learningSteps;
             if (learningStepsObj is List<long> lsList)
-                learningSteps = lsList.Select(TimeSpan.FromSeconds).ToList();
+            {
+                learningSteps = [.. lsList.Select(TimeSpan.FromSeconds)];
+            }
             else if (learningStepsObj is System.Collections.IEnumerable lsEnum)
-                learningSteps = lsEnum
+            {
+                learningSteps = [.. lsEnum
                     .Cast<object>()
-                    .Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o)))
-                    .ToList(); // More robust cast
+                    .Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o)))]; // More robust cast
+            }
             // else if (learningStepsObj is IEnumerable<long> lsLEnum) learningSteps = lsLEnum.Select(TimeSpan.FromSeconds).ToList(); // Redundant
             else
+            {
                 throw new InvalidCastException("Cannot cast learning_steps to List<long>");
+            }
 
             var relearningStepsObj = sourceDict["relearning_steps"];
             List<TimeSpan> relearningSteps;
             if (relearningStepsObj is List<long> rlsList)
-                relearningSteps = rlsList.Select(TimeSpan.FromSeconds).ToList();
+            {
+                relearningSteps = [.. rlsList.Select(TimeSpan.FromSeconds)];
+            }
             else if (relearningStepsObj is System.Collections.IEnumerable rlsEnum)
-                relearningSteps = rlsEnum
+            {
+                relearningSteps = [.. rlsEnum
                     .Cast<object>()
-                    .Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o)))
-                    .ToList(); // More robust cast
+                    .Select(o => TimeSpan.FromSeconds(Convert.ToInt64(o)))]; // More robust cast
+            }
             // else if (relearningStepsObj is IEnumerable<long> rlsLEnum) relearningSteps = rlsLEnum.Select(TimeSpan.FromSeconds).ToList(); // Redundant
             else
+            {
                 throw new InvalidCastException("Cannot cast relearning_steps to List<long>");
+            }
 
             int maximumInterval = Convert.ToInt32(sourceDict["maximum_interval"]);
             bool enableFuzzing = Convert.ToBoolean(sourceDict["enable_fuzzing"]);
@@ -978,7 +988,7 @@ public class Scheduler
     {
         stability = Math.Max(0.01, stability);
         double interval =
-            (stability / FsrsConstants.Factor)
+            stability / FsrsConstants.Factor
             * (Math.Pow(DesiredRetention, 1 / FsrsConstants.Decay) - 1);
         int intervalDays = (int)Math.Round(interval);
         intervalDays = Math.Max(1, intervalDays);
