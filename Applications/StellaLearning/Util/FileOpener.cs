@@ -223,6 +223,12 @@ public static class FileOpener
         {
             OpenFileInVault(filePath, obsidianPath);
         }
+        //Fallback mechanism if obsidian is not found opening the file with the default program instead
+        else
+        {
+            OpenFileWithDefaultProgram(filePath);
+        }
+
     }
 
     private static bool IsFileInVault(string path)
