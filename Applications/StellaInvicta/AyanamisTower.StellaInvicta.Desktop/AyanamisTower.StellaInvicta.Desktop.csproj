@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+	<ItemGroup>
+        <PackageReference Include="MemoryPack" />
+        <PackageReference Include="MagicOnion.Server" />
+        <PackageReference Include="MagicOnion.Client" />
+    </ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\AyanamisTower.StellaInvicta.Shared\AyanamisTower.StellaInvicta.Shared.csproj" />
+	</ItemGroup>
+</Project>

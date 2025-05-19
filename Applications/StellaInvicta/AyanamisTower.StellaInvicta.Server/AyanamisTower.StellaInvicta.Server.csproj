@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+	<ItemGroup>
+        <PackageReference Include="MemoryPack" />
+        <PackageReference Include="MagicOnion.Server" />
+    </ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM.Flecs\AyanamisTower.SFPM.Flecs.csproj" />
+	  <ProjectReference Include="..\..\stella_fuzzy_pattern_matcher\SFPM\AyanamisTower.SFPM.csproj" />
+	  <ProjectReference Include="..\AyanamisTower.StellaInvicta.Shared\AyanamisTower.StellaInvicta.Shared.csproj" />
+	</ItemGroup>
+</Project>
