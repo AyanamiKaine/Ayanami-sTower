@@ -241,6 +241,9 @@ public class LiteraturePage : IUIComponent, IDisposable
                 // Context Menu Setup
                 var contextFlyout = _world.UI<MenuFlyout>(menuFlyout =>
                 {
+
+                    UIBuilder<MenuItem>? openFolderMenuItem = null;
+
                     menuFlyout.OnOpened(
                         (sender, e) =>
                         {
@@ -248,6 +251,19 @@ public class LiteraturePage : IUIComponent, IDisposable
                             {
                                 menuFlyout.Hide();
                             }
+
+                            /*
+                            If the selected item is a localFileSourceItem we want to show 
+                            its specific menu item.
+                            */
+
+                            var selectedLiteratureItem =
+                                listBox.GetSelectedItem<LiteratureSourceItem>();
+
+                            if (selectedLiteratureItem is LocalFileSourceItem localFile)
+                                openFolderMenuItem?.Visible(true);
+                            else
+                                openFolderMenuItem?.Visible(false);
                         }
                     );
 
@@ -267,7 +283,10 @@ public class LiteraturePage : IUIComponent, IDisposable
                                                 _world.Get<Settings>().ObsidianPath
                                             );
                                         }
-                                        FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
+                                        else
+                                        {
+                                            FileOpener.OpenFileWithDefaultProgram(localFile.FilePath);
+                                        }
                                     }
                                     else if (selectedLiteratureItem is WebSourceItem webSourceItem)
                                     {
@@ -299,8 +318,11 @@ public class LiteraturePage : IUIComponent, IDisposable
                             )
                     );
 
-                    menuFlyout.Child<MenuItem>(item =>
+                    openFolderMenuItem = menuFlyout.Child<MenuItem>(item =>
                         item.SetHeader("Open Folder")
+                            // We want to make it only visible for LocalFileSourceItems
+                            // So by default its not visible
+                            .Visible(false)
                             .OnClick(
                                 (_, _) =>
                                 {
@@ -562,11 +584,10 @@ public class LiteraturePage : IUIComponent, IDisposable
                                     {
                                         _baseLiteratureItems.Remove(itemToRemove);
                                     }
-                                    // To Clean up the ui, avoid memory leak
                                     stack.Entity.Destruct();
                                 }
                             )
-                    ); // Implement RemoveSelectedItem
+                    );
                 });
 
                 listBox
@@ -1171,13 +1192,16 @@ public class LiteraturePage : IUIComponent, IDisposable
     /// </summary>
     private async Task ProcessDroppedUrlAsync(string url)
     {
-        Logger.Info($"[Simulated] Start processing URL: {url}");
-
         var llm = LargeLanguageManager.Instance;
+
+        var toast = ToastService.Show($"Generating metadata for url {url}", NotificationType.Information);
 
         var prompt =
             $"Generate me a title and a list of (A MAXIMUM OF 4)tags to categorize the content on the website({url}), RETURN ONLY YOUR GENERATED TITLE, NOTHING ELSE, RETURN THE TITLE, PUBLISHER, AUTHOR, THE TAGS AND A SHORT SUMMARY AS JSON WITH THE KEYS 'Tags' AND 'Title', 'Publisher', 'Author', 'Summary'";
         var output = await llm.GetResponseFromUrlAsync(url, prompt);
+        await toast.DismissAsync();
+
+        ToastService.Show($"Successfully generated metadata for url {url}", NotificationType.Success);
 
         var newItem = new WebSourceItem(url, name: output?.Title ?? url)
         {
