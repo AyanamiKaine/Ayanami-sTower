@@ -2,92 +2,22 @@ using System;
 using Flecs.NET.Core;
 
 namespace AyanamisTower.StellaInvicta.Server.Services;
-
-// GameState.cs (A simple example of shared game state)
-// IMPORTANT: Ensure this is thread-safe if accessed by multiple services/threads.
-// For simplicity, this example uses a basic lock.
 /// <summary>
-/// Consider more advanced thread-safe collections or patterns for complex state.
+/// Implements the gameloop that runs in the background
 /// </summary>
-public class GameState
+/// <remarks>
+/// Constructor
+/// </remarks>
+/// <param name="logger"></param>
+public class GameLoopBackgroundService(ILogger<GameLoopService> logger) : IHostedService, IDisposable
 {
-    private readonly Lock _lock = new();
-    private int _tickCount;
-    private DateTime _lastUpdate;
-    private readonly World _world = World.Create();
-
-    /// <summary>
-    /// Default
-    /// </summary>
-    public GameState()
-    {
-        _world.System().Each(()=>{
-            _tickCount++;
-            _lastUpdate = DateTime.UtcNow;
-            // TODO: Add your actual game state update logic here
-            // e.g., move players, update objects, check conditions
-            Console.WriteLine($"Game Loop Tick: {_tickCount}, Last Update: {_lastUpdate}");
-        });
-    }
-
-    /// <summary>
-    /// EXAMPLE
-    /// </summary>
-    public void UpdateState()
-    {
-        lock (_lock)
-        {
-            _world.Progress();
-        }
-    }
-
-    /// <summary>
-    /// EXAMPLE
-    /// </summary>
-    public string GetCurrentStatus()
-    {
-        lock (_lock)
-        {
-            return $"Server Tick: {_tickCount}, Last Game Update: {_lastUpdate}";
-        }
-    }
-
-    /// <summary>
-    /// EXAMPLE
-    /// </summary>
-    public int GetTickCount()
-    {
-        lock (_lock)
-        {
-            return _tickCount;
-        }
-    }
-}
-
-/// <summary>
-/// (The IHostedService implementation)
-/// </summary>
-public class GameLoopService : IHostedService, IDisposable
-{
-    private readonly ILogger<GameLoopService> _logger;
-    private readonly GameState _gameState; // Injected game state
+    private readonly ILogger<GameLoopService> _logger = logger;
     //private Timer? _timer;
     private Task? _executingTask;
     private readonly CancellationTokenSource _stoppingCts = new();
-    private const int TickRateMilliseconds = 1000; // Roughly 1 FPS/TPS
-    // --- Configuration ---
-    private const int TARGET_SERVER_TPS = 10; // Server aims for 10 ticks per real second
-    //private readonly double _millisecondsPerTick = 1000;
-    /// <summary>
-    /// Constructor
-    /// </summary>
-    /// <param name="logger"></param>
-    /// <param name="gameState"></param>
-    public GameLoopService(ILogger<GameLoopService> logger, GameState gameState)
-    {
-        _logger = logger;
-        _gameState = gameState; // Inject the shared game state
-    }
+    private readonly GameState _gameState = new();
+    private const int TickRateMilliseconds = 100; // Roughly 10 FPS/TPS
+    // A tick rate of 10 would mean 10 updates each second.
 
     /// <inheritdoc/>
     public Task StartAsync(CancellationToken cancellationToken)
@@ -115,7 +45,8 @@ public class GameLoopService : IHostedService, IDisposable
         // Loop until the cancellation token is triggered
         while (!stoppingToken.IsCancellationRequested)
         {
-            _gameState.UpdateState(); // Perform one tick of game logic
+            // The gamestate should update every tick
+            _gameState.UpdateState();
 
             try
             {

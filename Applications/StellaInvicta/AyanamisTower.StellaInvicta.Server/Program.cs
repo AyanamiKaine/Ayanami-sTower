@@ -22,7 +22,7 @@ builder.Services.AddMagicOnion();
 builder.Services.AddSingleton<GameState>();
 
 // Register the GameLoopService as a hosted service
-builder.Services.AddHostedService<GameLoopService>();
+builder.Services.AddHostedService<GameLoopBackgroundService>();
 
 var app = builder.Build();
 
