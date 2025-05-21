@@ -576,7 +576,7 @@ public class ModLoader
         {
             IEvaluator compiler = CSScript.Evaluator.Clone(copyRefAssemblies: false);
             // Reference assemblies needed by Components.cs
-            compiler.ReferenceAssembly(typeof(System.Object).Assembly); // mscorlib/System.Private.CoreLib
+            compiler.ReferenceAssembly(typeof(object).Assembly); // mscorlib/System.Private.CoreLib
             compiler.ReferenceAssembly(typeof(Console).Assembly); // System.Console
             compiler.ReferenceAssembly(typeof(World).Assembly); // Flecs.NET
             compiler.ReferenceAssembly(typeof(IMod).Assembly); // Assembly containing IMod, ModDependency
@@ -591,7 +591,7 @@ public class ModLoader
             if (CSScript.EvaluatorConfig.Engine == EvaluatorEngine.CodeDom)
             {
                 Console.WriteLine(
-                    $"  Compiler Output:\n{CSScriptLib.CodeDomEvaluator.CompilerLastOutput}"
+                    $"  Compiler Output:\n{CodeDomEvaluator.CompilerLastOutput}"
                 );
             }
             return null;
@@ -652,7 +652,7 @@ public class ModLoader
             if (CSScript.EvaluatorConfig.Engine == EvaluatorEngine.CodeDom)
             {
                 Console.WriteLine(
-                    $"  Compiler Output:\n{CSScriptLib.CodeDomEvaluator.CompilerLastOutput}"
+                    $"  Compiler Output:\n{CodeDomEvaluator.CompilerLastOutput}"
                 );
             }
             return null;
