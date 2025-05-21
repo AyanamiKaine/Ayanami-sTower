@@ -369,9 +369,9 @@ public class ModLoader
                                 Version = instance.Version ?? "0.0.0",
                                 Description = instance.Description ?? "",
                                 Dependencies =
-                                    instance.Dependencies ?? Array.Empty<ModDependency>(),
+                                    instance.Dependencies ?? [],
                                 LoadPriority = instance.LoadPriority,
-                                Tags = instance.Tags ?? Array.Empty<string>(),
+                                Tags = instance.Tags ?? [],
                                 ModuleType = moduleType,
                                 ModuleAssembly = ModuleAssembly,
                                 ComponentsAssembly = ComponentsAssembly,
