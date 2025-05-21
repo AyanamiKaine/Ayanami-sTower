@@ -348,13 +348,12 @@ public class ModLoader
         Console.WriteLine("\nModLoader: Instantiating mods and reading metadata...");
         foreach (var modName in compiledModData.Keys)
         {
-            var compiledData = compiledModData[modName];
-            if (compiledData.ModuleAssembly != null)
+            var (ComponentsAssembly, ModuleAssembly, ComponentsDllPath, ModuleDllPath, SourceDir) = compiledModData[modName];
+            if (ModuleAssembly != null)
             {
                 try
                 {
-                    Type? moduleType = compiledData
-                        .ModuleAssembly.GetTypes()
+                    Type? moduleType = ModuleAssembly.GetTypes()
                         .FirstOrDefault(t =>
                             typeof(IMod).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract
                         );
@@ -374,13 +373,13 @@ public class ModLoader
                                 LoadPriority = instance.LoadPriority,
                                 Tags = instance.Tags ?? Array.Empty<string>(),
                                 ModuleType = moduleType,
-                                ModuleAssembly = compiledData.ModuleAssembly,
-                                ComponentsAssembly = compiledData.ComponentsAssembly,
-                                SourceDirectory = compiledData.SourceDir, // Or pass from discovery
+                                ModuleAssembly = ModuleAssembly,
+                                ComponentsAssembly = ComponentsAssembly,
+                                SourceDirectory = SourceDir, // Or pass from discovery
                                 Instance = instance,
-                                ComponentsDllPath = compiledData.ComponentsDllPath, // Store path
+                                ComponentsDllPath = ComponentsDllPath, // Store path
                                 ModuleDllPath =
-                                    compiledData.ModuleDllPath // Store path
+                                    ModuleDllPath // Store path
                                 ,
                             };
                             _discoveredModInfo.Add(info);
@@ -396,7 +395,7 @@ public class ModLoader
                     else
                     {
                         Console.WriteLine(
-                            $"  WARNING: No public class implementing IMod found in {Path.GetFileName(compiledData.ModuleAssembly.Location)} for {modName}."
+                            $"  WARNING: No public class implementing IMod found in {Path.GetFileName(ModuleAssembly.Location)} for {modName}."
                         );
                     }
                 }
