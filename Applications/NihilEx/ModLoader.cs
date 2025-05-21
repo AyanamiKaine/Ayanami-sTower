@@ -141,7 +141,7 @@ public class ModInfo
             }
             else if (requiredVersionStr.StartsWith("==")) // Explicit exact match
             {
-                return availableVersionStr == requiredVersionStr.Substring(2).Trim();
+                return availableVersionStr == requiredVersionStr[2..].Trim();
             }
             else // Default to exact match if no operator
             {
