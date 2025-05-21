@@ -41,7 +41,7 @@
 	 <PackageVersion Include="Mono.Posix.NETStandard" Version="5.20.1-preview" />
 	 <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
      <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
-
+     <PackageVersion Include="LanguageExt.Core" Version="4.4.9" />
      
      <!--Avalonia Related-->
 	 <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />

@@ -156,6 +156,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaInvicta
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaInvicta.Server", "Applications\StellaInvicta\AyanamisTower.StellaInvicta.Server\AyanamisTower.StellaInvicta.Server.csproj", "{9503DFF1-E676-4BB5-A359-C67AC815EFDD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErrorHandling", "Explorations\ErrorHandling\ErrorHandling.csproj", "{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -778,6 +780,18 @@ Global
 		{9503DFF1-E676-4BB5-A359-C67AC815EFDD}.Release|x64.Build.0 = Release|Any CPU
 		{9503DFF1-E676-4BB5-A359-C67AC815EFDD}.Release|x86.ActiveCfg = Release|Any CPU
 		{9503DFF1-E676-4BB5-A359-C67AC815EFDD}.Release|x86.Build.0 = Release|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Debug|x64.Build.0 = Debug|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Debug|x86.Build.0 = Debug|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Release|x64.ActiveCfg = Release|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Release|x64.Build.0 = Release|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Release|x86.ActiveCfg = Release|Any CPU
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -840,5 +854,6 @@ Global
 		{E91EE20D-DEF9-4CA3-92E1-6F2F04E2BCA2} = {2511BA69-1FC1-D311-2E3B-2371AF8E253F}
 		{C716953F-A7EE-4228-8017-708ECBF56B24} = {2511BA69-1FC1-D311-2E3B-2371AF8E253F}
 		{9503DFF1-E676-4BB5-A359-C67AC815EFDD} = {2511BA69-1FC1-D311-2E3B-2371AF8E253F}
+		{F476F00E-A619-4DEC-9FE7-8B5C650C63E4} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
 	EndGlobalSection
 EndGlobal
