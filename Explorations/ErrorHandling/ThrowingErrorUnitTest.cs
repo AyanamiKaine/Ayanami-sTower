@@ -83,6 +83,10 @@ public class ThrowingErrorUnitTest
         static Fin<int> AddEvenNumbers(int x, int y)
         {
             // We dont have to create a new exception we could just return a error message.
+            // But what is the best practice here?
+            // To better understand when to do what we need to get a better grasp 
+            // To crash and die or to recover that is the question we need to ask.
+            // See the error handling note for more information. 
             if (x % 2 != 0 || y % 2 != 0)
                 return Fin<int>.Fail(new($"Numbers are not even! x:{x} y:{y}"));
 
