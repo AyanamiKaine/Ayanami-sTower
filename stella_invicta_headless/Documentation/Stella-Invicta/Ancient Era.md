@@ -1,5 +1,0 @@
-## The Ancient Era: Origins and Divergence
-
-The earliest known sentient beings in the galaxy were the [[Firstborn-houses]]. For millennia, they developed in isolation, believing themselves to be the only intelligent life in existence due to cosmic storms that confined them to their region of space. This isolation led to their sense of inherent superiority and divine right to rule, but also resulted in technological stagnation compared to younger civilizations that would emerge later.
-
-During this period, the colossal structure known as [[The-Eternal-Spire]] was either constructed or discovered (its true origins remain shrouded in mystery). Spanning multiple star systems and containing vast repositories of ancient knowledge, the Spire would later become the center of a faction dedicated to its preservation.

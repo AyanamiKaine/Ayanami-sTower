@@ -34,11 +34,12 @@ public class HandleErrorUnitTest
         return 0;
     }
 
+
     [Fact]
     public void UsingResultTypesSuccess()
     {
         var result = AddEvenNumbers(10, 20);
-        result = result.IfFail(HandleError);
-        result.IfSucc((value) => Assert.Equal(30, value));
+        int value = result.Match((value) => value, HandleError);
+        Assert.Equal(30, value);
     }
 }
