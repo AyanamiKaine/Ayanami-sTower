@@ -12,6 +12,7 @@
         <PackageReference Include="MagicOnion.Client" />
     </ItemGroup>
 	<ItemGroup>
+	  <ProjectReference Include="..\AyanamisTower.StellaInvicta.Core\AyanamisTower.StellaInvicta.Core.csproj" />
 	  <ProjectReference Include="..\AyanamisTower.StellaInvicta.Shared\AyanamisTower.StellaInvicta.Shared.csproj" />
 	</ItemGroup>
 </Project>
