@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+	<ItemGroup>
+      <PackageReference Include="Flecs.NET.Debug" />
+	  <PackageReference Include="Flecs.NET.Release" />    
+	  <ProjectReference Include="..\..\..\stella_fuzzy_pattern_matcher\SFPM.Flecs\AyanamisTower.SFPM.Flecs.csproj" />
+	  <ProjectReference Include="..\..\..\stella_fuzzy_pattern_matcher\SFPM\AyanamisTower.SFPM.csproj" />
+	  <ProjectReference Include="..\AyanamisTower.StellaInvicta.Shared\AyanamisTower.StellaInvicta.Shared.csproj" />
+	</ItemGroup>
+</Project>
