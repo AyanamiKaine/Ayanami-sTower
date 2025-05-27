@@ -96,7 +96,7 @@ public class ModInfo
     /// <returns></returns>
     public bool AreDependenciesMet(IReadOnlyDictionary<string, ModInfo> availableMods)
     {
-        if (Dependencies?.Any() != true)
+        if (Dependencies.Any() != true)
             return true; // No dependencies to meet
 
         foreach (var dep in Dependencies)

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 	<ItemGroup>
-        <PackageReference Include="MemoryPack"/>
-        <PackageReference Include="MagicOnion.Server"/>
+        <PackageReference Include="MemoryPack" />
+        <PackageReference Include="MagicOnion.Server" />
     </ItemGroup>
 </Project>
