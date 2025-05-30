@@ -12,7 +12,7 @@ await db.SaveChangesAsync();
 // Create
 Console.WriteLine("Inserting a new entity");
 
-for (int i = 0; i < 1000; i++)
+for (int i = 0; i < 10000; i++)
 {
     db.Add(new Entity
     {
@@ -21,10 +21,10 @@ for (int i = 0; i < 1000; i++)
         Velocity2DComponent = new Velocity2D { X = 1.0f, Y = -0.5f }
     });
 }
-var e = new Entity() {Name = "ParentA"};
+var e = new Entity() { Name = "ParentA" };
 
-db.Add(new Entity() {Name = "ChildA", Parent = e});
-db.Add(new Entity() {Name = "ChildB", Parent = e});
+db.Add(new Entity() { Name = "ChildA", Parent = e });
+db.Add(new Entity() { Name = "ChildB", Parent = e });
 
 await db.SaveChangesAsync();
 // Read

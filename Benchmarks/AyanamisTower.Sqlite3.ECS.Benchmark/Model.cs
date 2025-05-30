@@ -16,18 +16,25 @@ and writers do not block readers."
 
 and a context is NOT THREAD SAFE.
 */
+namespace AyanamisTower.Sqlite3.ECS.Benchmark;
 
 public class EntityContext : DbContext
 {
     public DbSet<Entity> Entities { get; set; }
     public DbSet<Velocity2D> Velocity2DComponents { get; set; }
     public DbSet<Position2D> Position2DComponents { get; set; }
+    public DbSet<IsStar> IsStarIdentifier { get; set; }
 
     public string DbPath { get; }
 
+    public EntityContext(string dbPath)
+    {
+        DbPath = dbPath;
+    }
+
     public EntityContext()
     {
-        var folder = Environment.SpecialFolder.LocalApplicationData;
+        const Environment.SpecialFolder folder = Environment.SpecialFolder.LocalApplicationData;
         var path = Environment.GetFolderPath(folder);
         DbPath = Path.Join(path, "EntityContext.db");
     }
@@ -75,6 +82,17 @@ public class EntityContext : DbContext
             .HasOne(e => e.Velocity2DComponent)
             .WithOne(v => v.Entity)
             .HasForeignKey<Velocity2D>(v => v.EntityId);
+
+        modelBuilder.Entity<IsStar>(pc =>
+        {
+            pc.HasKey(p => p.EntityId);
+        });
+
+        modelBuilder.Entity<Entity>()
+            .HasOne(e => e.IsStar)
+            .WithOne(v => v.Entity)
+            .HasForeignKey<IsStar>(v => v.EntityId);
+
     }
 
     // The following configures EF to create a Sqlite database file in the
@@ -100,9 +118,10 @@ public class Entity
     [ForeignKey("ParentId")] // Explicitly link Parent navigation property to ParentId FK
     public virtual Entity? Parent { get; set; } // Navigation property to the parent entity
 
-    public virtual ICollection<Entity> Children { get; set; } = new List<Entity>(); // Collection of child entities
+    public virtual ICollection<Entity> Children { get; set; } = []; // Collection of child entities
     // Using 'virtual' allows for lazy loading if enabled, though eager loading (.Include) is often preferred.
 
+    public IsStar? IsStar { get; set; }
 
     // Cache for PropertyInfo objects to avoid repeated reflection overhead.
     // The key is the component type (T), the value is the PropertyInfo for that component on the Entity.
@@ -129,7 +148,7 @@ public class Entity
         return null;
     }
     */
-    public T? Get<T>() where T : class
+    public T? GetReflection<T>() where T : class
     {
         Type requestedType = typeof(T);
 
@@ -156,11 +175,60 @@ public class Entity
         // Console.WriteLine($"Warning: Component of type {requestedType.Name} not found as a property on Entity.");
         return null;
     }
-
-    public T? GetComponent<T>(int entityId, DbContext context) where T : class
+    /// <summary>
+    /// Gets a component of type T from the entity. If the component does not exist,
+    /// it creates a new instance, associates it with this entity, and returns it.
+    /// This method ensures a component of type T is available.
+    /// </summary>
+    /// <typeparam name="T">The type of the component to get or create. Must be a class with a parameterless constructor.</typeparam>
+    /// <returns>An instance of the component T. This method will not return null.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if the Entity class (or its specific derived type) does not have a public instance property
+    /// of type T, as the component cannot be stored.
+    /// Also thrown if T cannot be instantiated (e.g. lacks a parameterless constructor when not using new() constraint,
+    /// though here we use new() constraint).
+    /// </exception>
+    public T GetEnsure<T>() where T : class, new() // Added 'new()' constraint
     {
-        // Find will use the primary key, which for components is EntityId.
-        return context.Set<T>().Find(entityId);
+        Type requestedType = typeof(T);
+
+        PropertyInfo? propertyInfo = _componentPropertyCache.GetOrAdd(requestedType, (typeToFind) =>
+        {
+            return GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .FirstOrDefault(p => p.PropertyType == typeToFind);
+        }) ?? throw new InvalidOperationException($"Entity of type '{GetType().FullName}' does not have a direct property of type '{requestedType.FullName}' to ensure. Please ensure such a property (e.g., 'public {requestedType.Name} {requestedType.Name}Component {{ get; set; }}') exists on the Entity class.");
+
+
+        if (propertyInfo.GetValue(this) is not T component)
+        {
+            component = new T();
+
+            PropertyInfo? entityIdProp = requestedType.GetProperty("EntityId", BindingFlags.Public | BindingFlags.Instance);
+            if (entityIdProp?.CanWrite == true && entityIdProp.PropertyType == typeof(int))
+            {
+                entityIdProp.SetValue(component, EntityId);
+            }
+
+            PropertyInfo? entityNavProp = requestedType.GetProperty("Entity", BindingFlags.Public | BindingFlags.Instance);
+            if (entityNavProp?.CanWrite == true && entityNavProp.PropertyType.IsAssignableFrom(typeof(Entity)))
+            {
+                entityNavProp.SetValue(component, this);
+            }
+            propertyInfo.SetValue(this, component);
+        }
+
+        return component;
+    }
+
+    /// <summary>
+    /// Checks if an entity has a component
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public bool Has<T>() where T : class
+    {
+        var component = GetReflection<T>();
+        return component is null;
     }
 }
 
@@ -173,7 +241,16 @@ public class Position2D
     public float X { get; set; }
     public float Y { get; set; }
     public override string ToString() => $"Position(X:{X}, Y:{Y})";
+}
 
+/// <summary>
+/// Defines a tag, used as an identifier to say an entity is a star.
+/// </summary>
+public class IsStar
+{
+    [Key]
+    public int EntityId { get; set; }
+    public virtual Entity Entity { get; set; } = null!;
 }
 
 public class Velocity2D
