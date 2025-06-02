@@ -4,5 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS Polity (
     EntityId INTEGER NOT NULL UNIQUE, 
+    Abbreviation VARCHAR(50),          -- e.g., 'GER', 'USA', 'CIS', 'FO'
+    LeaderTitle VARCHAR(500), -- e.g., 'Emperor', 'Chancellor', 'Supreme Leader', 'Grand Moff', 'Vigo', 'Ascendant', "Council of Justice"
     FOREIGN KEY (EntityId) REFERENCES Entity(Id) ON DELETE CASCADE
 );
