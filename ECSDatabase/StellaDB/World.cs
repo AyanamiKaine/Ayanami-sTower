@@ -59,6 +59,7 @@ public class World
         EnableOptimizations();
         CreateTables("Tables");
         PredefineGalaxies();
+        PredefinePolity();
     }
 
     /// <summary>
@@ -342,6 +343,33 @@ public class World
     {
         PredefineAndromedaGalaxy();
         PredefineMilkyWayGalaxy();
+    }
+
+    /// <summary>
+    /// Pre define political polities
+    /// </summary>
+    private void PredefinePolity()
+    {
+        DefineGrandExhangePolity();
+    }
+
+    private void DefineGrandExhangePolity()
+    {
+        // Capital world of the grandExchange
+        var abacus = Entity("Abacus");
+        Query("Planet").Insert(new
+        {
+            EntityId = abacus.Id
+        });
+
+        var grandExchange = Entity("Grand Exchange");
+        Query("Polity").Insert(new
+        {
+            EntityId = grandExchange.Id,
+            LeaderTitle = "Prime Arbiter",
+            Abbreviation = "GE",
+            SeatOfPowerLocationID = abacus.Id
+        });
     }
 
     private void PredefineMilkyWayGalaxy()
