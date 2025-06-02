@@ -70,6 +70,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageVersion>
+    <PackageVersion Include="Dapper" Version="2.0.143" />
+    <PackageVersion Include="SqlKata" Version="2.4.0" />
+    <PackageVersion Include="SqlKata.Execution" Version="2.4.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.0" />
     <!--END-->
     <!--Used for unit test projects-->
