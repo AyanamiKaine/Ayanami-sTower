@@ -105,6 +105,37 @@ public class WorldTests
         Assert.Equal(e, new Entity { Id = result, World = world });
     }
 
+    /// <summary>
+    /// We want to able to see all children of an entity.
+    /// </summary>
+    [Fact]
+    public void GetChildren()
+    {
+        // Creating an in memory test world
+        var world = new World("TEST", true);
+
+        var parent = world.Entity("Parent");
+
+        var childA = world.Entity("ChildA");
+        childA.ParentId = parent.Id;
+        var childB = world.Entity("ChildB");
+        childB.ParentId = parent.Id;
+        var childC = world.Entity("ChildC");
+        childC.ParentId = parent.Id;
+        var childD = world.Entity("ChildD");
+        childD.ParentId = parent.Id;
+
+
+        var childrenIds = world.Query("Entity")
+                       .Where("ParentId", parent.Id) // Filter by ParentId
+                       .Select("Id")                 // We only need the Ids of the children
+                       .Get<long>();                 // Execute the query and get a collection of long (the Ids)
+
+        const int expectedChildrenCount = 4;
+        var actualChildrenCount = childrenIds.Count();
+        Assert.Equal(expectedChildrenCount, actualChildrenCount);
+    }
+
 
     /// <summary>
     /// Entities with the same id are the same entity.
