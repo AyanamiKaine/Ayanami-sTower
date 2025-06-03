@@ -74,6 +74,7 @@
     <PackageVersion Include="SqlKata" Version="2.4.0" />
     <PackageVersion Include="SqlKata.Execution" Version="2.4.0" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.0" />
+    <PackageVersion Include="PocoClassGenerator" Version="0.9.5" />
     <!--END-->
     <!--Used for unit test projects-->
     <PackageVersion Include="coverlet.collector" Version="6.0.2" />

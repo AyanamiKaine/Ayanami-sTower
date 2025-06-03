@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="SqlKata"/>
     <PackageReference Include="SqlKata.Execution"/>
+    <PackageReference Include="PocoClassGenerator" />
   </ItemGroup>
 
 
