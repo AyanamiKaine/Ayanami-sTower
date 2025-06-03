@@ -58,6 +58,7 @@ public class World
 
         EnableOptimizations();
         CreateTables("Tables");
+        DefineFeatureDefinitions();
         PredefineGalaxies();
         PredefinePolity();
     }
@@ -369,6 +370,21 @@ public class World
             LeaderTitle = "Prime Arbiter",
             Abbreviation = "GE",
             SeatOfPowerLocationID = abacus.Id
+        });
+    }
+
+    private void DefineFeatureDefinitions()
+    {
+        Query("FeatureDefinition").Insert(new
+        {
+            EntityId = Entity("can_marry").Id,
+            Key = "can_marry"
+        });
+
+        Query("FeatureDefinition").Insert(new
+        {
+            EntityId = Entity("can_speak_to_void").Id,
+            Key = "can_speak_to_void"
         });
     }
 
