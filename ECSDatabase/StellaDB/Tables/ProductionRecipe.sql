@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS ProductionRecipe (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL,
+    OutputGoodId INTEGER NOT NULL,
+    OutputQuantity REAL NOT NULL DEFAULT 1.0,
+    
+    FOREIGN KEY (OutputGoodId) REFERENCES Good(Id) ON DELETE CASCADE,
+    CHECK (OutputQuantity > 0)
+);
