@@ -61,6 +61,12 @@ public class World
         DefineFeatureDefinitions();
         PredefineGalaxies();
         PredefinePolity();
+
+        // simply generates Plain Old Class Object based on the tables.
+        // this is used to store tables directly in memory. 
+        // For directly accessing them, where performance is needed
+        // Todo: Implement it so the generator runs before. 
+        var generatedClasses = _connection.GenerateAllTables();
     }
 
     /// <summary>
