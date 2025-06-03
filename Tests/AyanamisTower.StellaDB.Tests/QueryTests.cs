@@ -25,18 +25,13 @@ public class QueryTests
             EntityId = characterEntity.Id
         });
 
-        var canMarryEntity = world.Entity("can_marry");
-        world.Query("FeatureDefinition").Insert(new
-        {
-            EntityId = canMarryEntity.Id,
-            Key = "can_marry",
-            Description = "Gives the ability to marry someone"
-        });
-        
         world.Query("EntityFeature").Insert(new
         {
             EntityId = characterEntity.Id,
-            FeatureId = canMarryEntity.Id,
+            FeatureId = world.Query("FeatureDefinition")
+                .Where("Key", "can_marry") // the can_marry feature definition is a pre defined one
+                .Select("EntityId")
+                .FirstOrDefault<long>()
         });
 
         var canCharacterMarry = world.Query("EntityFeature as ef")
