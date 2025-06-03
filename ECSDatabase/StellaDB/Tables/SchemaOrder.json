@@ -8,6 +8,8 @@
     "Size",
     "BaseStat",
     "Health",
+    "FeatureDefinition",
+    "EntityFeature",
     "Population",
     "Velocity2D",
     "Velocity3D",
