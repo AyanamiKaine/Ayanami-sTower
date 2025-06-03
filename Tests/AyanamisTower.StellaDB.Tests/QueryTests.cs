@@ -1,0 +1,50 @@
+using SqlKata.Execution;
+
+namespace AyanamisTower.StellaDB.Tests;
+
+/// <summary>
+/// We want to test various queries that we expect to work out of the box
+/// </summary>
+public class QueryTests
+{
+    /// <summary>
+    /// We have the ability to dynamically add and remove features from entities.
+    /// the prime example is for a character entity to have a feature called can_marry
+    /// </summary>
+    [Fact]
+    public void QueringFeatureFlagsToEntities()
+    {
+        // Creating an in memory test world
+        var world = new World("TEST", true);
+
+        var characterEntity = world.Entity("Example Character");
+
+        //Identifies the entity as a character
+        world.Query("Character").Insert(new
+        {
+            EntityId = characterEntity.Id
+        });
+
+        var canMarryEntity = world.Entity("can_marry");
+        world.Query("FeatureDefinition").Insert(new
+        {
+            EntityId = canMarryEntity.Id,
+            Key = "can_marry",
+            Description = "Gives the ability to marry someone"
+        });
+        
+        world.Query("EntityFeature").Insert(new
+        {
+            EntityId = characterEntity.Id,
+            FeatureId = canMarryEntity.Id,
+        });
+
+        var canCharacterMarry = world.Query("EntityFeature as ef")
+            .Join("FeatureDefinition as fd", "ef.FeatureId", "fd.EntityId")
+            .Where("ef.EntityId", characterEntity.Id)
+            .Where("fd.Key", "can_marry")
+            .Count<int>() > 0;
+
+        Assert.True(canCharacterMarry);
+    }
+}
