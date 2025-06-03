@@ -83,6 +83,31 @@ public class WorldTests
     }
 
     /// <summary>
+    /// When we delete a parent it should cascade and delete all children too
+    /// </summary>
+    [Fact]
+    public void DeleteParentDeletesAllChildren()
+    {
+        // Creating an in memory test world
+        var world = new World("TEST", true);
+
+        var parent = world.Entity("Parent");
+        var child = world.Entity("Child");
+        child.ParentId = parent.Id;
+
+        world.Query("Entity").Where("Id", parent.Id).Delete();
+
+
+        var parentId = world.Query("Entity")
+                        .Where("Id", child.Id)
+                        .Select("ParentId")
+                        .FirstOrDefault<long>();
+
+        // If no entity is found we expect it to returnt he default value of 0
+        Assert.Equal(0, parentId);
+    }
+
+    /// <summary>
     /// We should be able to get entites by name
     /// </summary>
     [Fact]
