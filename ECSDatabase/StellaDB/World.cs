@@ -223,8 +223,7 @@ public class World
             {
                 Console.Error.WriteLine($"Error during transaction rollback: {rbEx.Message}");
             }
-            // Depending on your application's needs, you might want to re-throw the exception
-            // throw;
+            throw;
         }
         catch (IOException ex)
         {
@@ -238,7 +237,7 @@ public class World
             {
                 Console.Error.WriteLine($"Error during transaction rollback: {rbEx.Message}");
             }
-            // throw;
+            throw;
         }
         catch (Exception ex) // Catch-all for other unexpected errors
         {
@@ -252,7 +251,7 @@ public class World
             {
                 Console.Error.WriteLine($"Error during transaction rollback: {rbEx.Message}");
             }
-            // throw;
+            throw;
         }
     }
 
