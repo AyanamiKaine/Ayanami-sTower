@@ -1,6 +1,8 @@
--- "A polity is a group of people with a collective identity, who are organized by some form of political institutionalized social relations, and have a capacity to mobilize resources"
+-- "A polity is a group of people with a collective identity,
+-- who are organized by some form of political institutionalized 
+-- social relations, and have a capacity to mobilize resources"
 
--- why the name polity instead of faction ?
+-- Why the name polity instead of lets say faction ?
 -- It much better captures the diversity of complex political structures. 
 -- https://en.wikipedia.org/wiki/Polity
 
