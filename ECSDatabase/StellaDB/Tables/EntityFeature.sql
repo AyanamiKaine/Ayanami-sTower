@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS EntityFeature (
     
     PRIMARY KEY (EntityId, FeatureId),
     FOREIGN KEY (EntityId) REFERENCES Entity(Id) ON DELETE CASCADE,
-    FOREIGN KEY(FeatureId) REFERENCES FeatureDefinition(EntityId) ON DELETE CASCADE,
+    FOREIGN KEY(FeatureId) REFERENCES FeatureDefinition(EntityId) ON DELETE CASCADE
 );
 
 -- Indexes for efficient querying
