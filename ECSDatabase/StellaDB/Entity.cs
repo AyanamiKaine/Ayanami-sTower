@@ -1,3 +1,4 @@
+using AyanamisTower.StellaDB.Model;
 using SqlKata.Execution;
 
 namespace AyanamisTower.StellaDB;
@@ -57,6 +58,131 @@ public class Entity
                 .Where("Id", Id)
                 .Update(new { ParentId = value });
         }
+    }
+
+    /// <summary>
+    /// Updates a component on this entity, an entity must already have this component attached
+    /// other wise an error will be thrown. Keep in Mind that writing your own update query is often much more efficient
+    /// because know at best what data you actually need and what to update. These methods are for convience
+    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
+    /// </summary>
+    /// <param name="componentName">Name of the component table</param>
+    /// <param name="data">Component data as anonymous object</param>
+    /// <returns>This entity for method chaining</returns>
+    public Entity Update(string componentName, object data)
+    {
+        World.Query(componentName)
+            .Where("EntityId", Id)
+            .Update(data);
+
+        return this;
+    }
+
+    /// <summary>
+    /// Updates a component using a strongly-typed approach, an entity must already have this component attached
+    /// other wise an error will be thrown. Keep in Mind that writing your own update query is often much more efficient
+    /// because know at best what data you actually need and what to update. These methods are for convience
+    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
+    /// </summary>
+    /// <typeparam name="ComponentType">Component type</typeparam>
+    /// <param name="component">Component instance</param>
+    /// <returns>This entity for method chaining</returns>
+    public Entity Update<ComponentType>(ComponentType component) where ComponentType : IComponent
+    {
+        component.EntityId = Id;
+        var componentName = typeof(ComponentType).Name;
+        return Update(componentName, component);
+    }
+
+    /// <summary>
+    /// Adds a component to an entity
+    /// </summary>
+    /// <param name="componentName"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public Entity Add(string componentName, object data)
+    {
+        // Insert new component
+        World.Query(componentName).Insert(data);
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a component to an entity
+    /// </summary>
+    /// <typeparam name="ComponentType"></typeparam>
+    /// <param name="component"></param>
+    /// <returns></returns>
+    public Entity Add<ComponentType>(ComponentType component) where ComponentType : IComponent
+    {
+        component.EntityId = Id;
+        var componentName = typeof(ComponentType).Name;
+        return Add(componentName, component);
+    }
+
+    /// <summary>
+    /// Adds a component for an entity, used for identifier components, that only have one field
+    /// the entity id, so we have a star table where each entity id in the table says, is a star.
+    /// </summary>
+    /// <typeparam name="ComponentType"></typeparam>
+    /// <returns></returns>
+    public Entity Add<ComponentType>() where ComponentType : class
+    {
+        var componentName = typeof(ComponentType).Name;
+        World.Query(componentName).Insert(new
+        {
+            EntityId = Id
+        });
+        return this;
+    }
+
+    /// <summary>
+    /// Checks if entity has a specific component
+    /// </summary>
+    /// <param name="componentName">Name of the component table</param>
+    /// <returns>True if component exists</returns>
+    public bool Has(string componentName)
+    {
+        var count = World.Query(componentName)
+                        .Where("EntityId", Id)
+                        .Count<int>();
+        return count > 0;
+    }
+
+    /// <summary>
+    /// Checks if entity has a specific component using type
+    /// </summary>
+    /// <typeparam name="T">Component type</typeparam>
+    /// <returns>True if component exists</returns>
+    public bool Has<T>()
+    {
+        return Has(typeof(T).Name);
+    }
+
+    /// <summary>
+    /// Gets a component as a dynamic object
+    /// </summary>
+    /// <param name="componentName">Name of the component table</param>
+    /// <returns>Component data or null if not found</returns>
+    public dynamic? Get(string componentName)
+    {
+        return World.Query(componentName)
+                         .Where("EntityId", Id)
+                         .FirstOrDefault();
+    }
+
+    /// <summary>
+    /// Gets a component as a strongly-typed object
+    /// </summary>
+    /// <typeparam name="T">Component type</typeparam>
+    /// <returns>Component instance or null if not found</returns>
+    public T Get<T>()
+    {
+        var componentName = typeof(T).Name;
+
+        return World.Query(componentName)
+                         .Where("EntityId", Id)
+                         .FirstOrDefault<T>();
     }
 
     /// <summary>
