@@ -108,7 +108,8 @@ public class Entity
     }
 
     /// <summary>
-    /// Adds a component to an entity
+    /// Adds a component to an entity. These methods are for convience
+    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
     /// </summary>
     /// <typeparam name="ComponentType"></typeparam>
     /// <param name="component"></param>
@@ -123,6 +124,8 @@ public class Entity
     /// <summary>
     /// Adds a component for an entity, used for identifier components, that only have one field
     /// the entity id, so we have a star table where each entity id in the table says, is a star.
+    /// These methods are for convience
+    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
     /// </summary>
     /// <typeparam name="ComponentType"></typeparam>
     /// <returns></returns>
@@ -137,7 +140,8 @@ public class Entity
     }
 
     /// <summary>
-    /// Checks if entity has a specific component
+    /// Checks if entity has a specific component. These methods are for convience
+    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
     /// </summary>
     /// <param name="componentName">Name of the component table</param>
     /// <returns>True if component exists</returns>
@@ -150,7 +154,8 @@ public class Entity
     }
 
     /// <summary>
-    /// Checks if entity has a specific component using type
+    /// Checks if entity has a specific component using type. These methods are for convience
+    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
     /// </summary>
     /// <typeparam name="T">Component type</typeparam>
     /// <returns>True if component exists</returns>
@@ -160,7 +165,8 @@ public class Entity
     }
 
     /// <summary>
-    /// Gets a component as a dynamic object
+    /// Gets a component as a dynamic object. These methods are for convience
+    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
     /// </summary>
     /// <param name="componentName">Name of the component table</param>
     /// <returns>Component data or null if not found</returns>
@@ -172,7 +178,8 @@ public class Entity
     }
 
     /// <summary>
-    /// Gets a component as a strongly-typed object
+    /// Gets a component as a strongly-typed object. These methods are for convience
+    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
     /// </summary>
     /// <typeparam name="T">Component type</typeparam>
     /// <returns>Component instance or null if not found</returns>
