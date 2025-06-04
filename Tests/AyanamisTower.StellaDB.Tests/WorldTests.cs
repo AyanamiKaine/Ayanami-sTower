@@ -216,8 +216,8 @@ public class WorldTests
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public class ConnectedToDto
     {
-        public long SystemId1 { get; set; }
-        public long SystemId2 { get; set; }
+        public long EntityId1 { get; set; }
+        public long EntityId2 { get; set; }
         public double Distance { get; set; }
     }
 
@@ -258,7 +258,7 @@ public class WorldTests
             if (s1 == s2)
                 throw new ArgumentException("Cannot connect a system to itself with different IDs.");
 
-            world.Query("ConnectedTo").Insert(new { SystemId1 = s1, SystemId2 = s2, Distance = distance });
+            world.Query("ConnectedTo").Insert(new { EntityId1 = s1, EntityId2 = s2, Distance = distance });
         }
 
         // Act & Assert: Create connections
@@ -267,8 +267,8 @@ public class WorldTests
 
         // Assert: Verify connections were created
         var connectionAB = world.Query("ConnectedTo")
-            .Where("SystemId1", Math.Min(systemA.Id, systemB.Id))
-            .Where("SystemId2", Math.Max(systemA.Id, systemB.Id))
+            .Where("EntityId1", Math.Min(systemA.Id, systemB.Id))
+            .Where("EntityId2", Math.Max(systemA.Id, systemB.Id))
             .FirstOrDefault<ConnectedToDto>();
 
         Assert.NotNull(connectionAB);
@@ -277,19 +277,19 @@ public class WorldTests
         // Act & Assert: Query all connections for a specific system (e.g., SystemB)
         long targetSystemIdB = systemB.Id;
         var connectionsOfB_Raw = world.Query("ConnectedTo")
-            .Where(q => q.Where("SystemId1", targetSystemIdB).OrWhere("SystemId2", targetSystemIdB))
+            .Where(q => q.Where("EntityId1", targetSystemIdB).OrWhere("EntityId2", targetSystemIdB))
             .Get<ConnectedToDto>();
 
         var connectedSystemsToB = new List<(long connectedId, double distance)>();
         foreach (var row in connectionsOfB_Raw)
         {
-            if (row.SystemId1 == targetSystemIdB)
+            if (row.EntityId1 == targetSystemIdB)
             {
-                connectedSystemsToB.Add((row.SystemId2, row.Distance));
+                connectedSystemsToB.Add((row.EntityId2, row.Distance));
             }
-            else if (row.SystemId2 == targetSystemIdB) // Ensure it's not adding itself if SystemId1 was also target
+            else if (row.EntityId2 == targetSystemIdB) // Ensure it's not adding itself if SystemId1 was also target
             {
-                connectedSystemsToB.Add((row.SystemId1, row.Distance));
+                connectedSystemsToB.Add((row.EntityId1, row.Distance));
             }
         }
 
@@ -301,15 +301,15 @@ public class WorldTests
         // Act & Assert: Check if two specific systems are connected (A and B)
         // Query respects CHECK (SystemId1 < SystemId2)
         bool areABConnected = world.Query("ConnectedTo")
-            .Where("SystemId1", Math.Min(systemA.Id, systemB.Id))
-            .Where("SystemId2", Math.Max(systemA.Id, systemB.Id))
+            .Where("EntityId1", Math.Min(systemA.Id, systemB.Id))
+            .Where("EntityId2", Math.Max(systemA.Id, systemB.Id))
             .Count<int>() > 0;
         Assert.True(areABConnected, "System A and B should be connected.");
 
         // Act & Assert: Check if two specific systems are NOT directly connected (A and C)
         bool areACConnected = world.Query("ConnectedTo")
-            .Where("SystemId1", Math.Min(systemA.Id, systemC.Id))
-            .Where("SystemId2", Math.Max(systemA.Id, systemC.Id))
+            .Where("EntityId1", Math.Min(systemA.Id, systemC.Id))
+            .Where("EntityId2", Math.Max(systemA.Id, systemC.Id))
             .Count<int>() > 0;
         Assert.False(areACConnected, "System A and C should NOT be directly connected.");
     }
