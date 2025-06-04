@@ -10,11 +10,12 @@ namespace AyanamisTower.StellaDB;
 /// <summary>
 /// Represents the game world
 /// </summary>
-public class World
+public class World : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly SqliteCompiler _compiler;
     private readonly QueryFactory _queryFactory; // Added for SqlKata
+    private bool _disposed = false; // To detect redundant calls
 
     /// <summary>
     /// Name of the game
@@ -32,7 +33,8 @@ public class World
     /// </summary>
     /// <param name="name">Name of the current game</param>
     /// <param name="inMemory">Determines if the game should only be in memory</param>
-    public World(string name, bool inMemory = false)
+    /// <param name="enabledOptimizations">Enables various pragma optimizations for sqlite3</param>
+    public World(string name, bool inMemory = false, bool enabledOptimizations = true)
     {
         Name = name;
         InMemory = inMemory;
@@ -56,17 +58,28 @@ public class World
         // Initialize QueryFactory
         _queryFactory = new QueryFactory(_connection, _compiler);
 
-        EnableOptimizations();
-        CreateTables("Tables");
-        DefineFeatureDefinitions();
-        PredefineGalaxies();
-        PredefinePolity();
+        if (enabledOptimizations)
+            EnableOptimizations();
+
+
+        try
+        {
+            CreateTables("Tables");
+            DefineFeatureDefinitions();
+            PredefineGalaxies();
+            PredefinePolity();
+        }
+        catch (System.Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
 
         // simply generates Plain Old Class Object based on the tables.
         // this is used to store tables directly in memory. 
         // For directly accessing them, where performance is needed
         // Todo: Implement it so the generator runs before. 
-        var generatedClasses = _connection.GenerateAllTables();
+        //var generatedClasses = _connection.GenerateAllTables();
+        //Console.WriteLine(generatedClasses);
     }
 
     /// <summary>
@@ -265,7 +278,10 @@ public class World
     {
         const string optimizeDBCommand = @"
         -- Performance and setup PRAGMAs for in-memory database
-            PRAGMA synchronous = NORMAL;
+            /*
+            If the application running SQLite crashes, the data will be safe, but the database might become corrupted if the operating system crashes or the computer loses power before that data has been written to the disk surface. On the other hand, commits can be orders of magnitude faster with synchronous OFF.
+            */
+            PRAGMA synchronous = OFF;
             PRAGMA journal_mode = WAL;
             PRAGMA temp_store = MEMORY;
             PRAGMA locking_mode = NORMAL; 
@@ -382,14 +398,14 @@ public class World
     {
         Query("FeatureDefinition").Insert(new
         {
-            EntityId = Entity("can_marry").Id,
-            Key = "can_marry"
+            EntityId = Entity("CanMarry").Id,
+            Key = "CanMarry"
         });
 
         Query("FeatureDefinition").Insert(new
         {
-            EntityId = Entity("can_speak_to_void").Id,
-            Key = "can_speak_to_void"
+            EntityId = Entity("CanSpeakToVoid").Id,
+            Key = "CanSpeakToVoid"
         });
     }
 
@@ -455,5 +471,40 @@ public class World
         //Defining an entity with a galaxy component
         var andromeda = Entity("Andromeda");
         Query("Galaxy").Insert(new { EntityId = andromeda.Id });
+    }
+
+    /// <summary>
+    /// Closes the connection to the underlying sql database(sqlite3)
+    /// </summary>
+    public void Close()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Diposes the world
+    /// </summary>
+    /// <param name="disposing"></param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_disposed)
+            return;
+
+        if (disposing)
+        {
+            // Release managed resources
+            _connection?.Close(); // Important to close before dispose for SQLite
+            _connection?.Dispose();
+            // QueryFactory typically doesn't need explicit disposal unless it holds specific resources.
+        }
+        _disposed = true;
     }
 }

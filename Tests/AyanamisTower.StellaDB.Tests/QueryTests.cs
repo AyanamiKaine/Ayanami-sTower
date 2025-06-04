@@ -29,7 +29,7 @@ public class QueryTests
         {
             EntityId = characterEntity.Id,
             FeatureId = world.Query("FeatureDefinition")
-                .Where("Key", "can_marry") // the can_marry feature definition is a pre defined one
+                .Where("Key", "CanMarry") // the can_marry feature definition is a pre defined one
                 .Select("EntityId")
                 .FirstOrDefault<long>()
         });
@@ -37,7 +37,7 @@ public class QueryTests
         var canCharacterMarry = world.Query("EntityFeature as ef")
             .Join("FeatureDefinition as fd", "ef.FeatureId", "fd.EntityId")
             .Where("ef.EntityId", characterEntity.Id)
-            .Where("fd.Key", "can_marry")
+            .Where("fd.Key", "CanMarry")
             .Count<int>() > 0;
 
         Assert.True(canCharacterMarry);
