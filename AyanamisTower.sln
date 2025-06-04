@@ -184,6 +184,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaDB.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaDB.Benchmark", "Benchmarks\AyanamisTower.StellaDB.Benchmark\AyanamisTower.StellaDB.Benchmark.csproj", "{4CD21D36-7A0E-402A-BD16-91B4F444C2C4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaDBExplorations", "Explorations\RelationalDatabases\StellaDBExplorations\StellaDBExplorations.csproj", "{C052D5A0-0284-4C26-A001-20D2C44DCF7B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -938,6 +940,18 @@ Global
 		{4CD21D36-7A0E-402A-BD16-91B4F444C2C4}.Release|x64.Build.0 = Release|Any CPU
 		{4CD21D36-7A0E-402A-BD16-91B4F444C2C4}.Release|x86.ActiveCfg = Release|Any CPU
 		{4CD21D36-7A0E-402A-BD16-91B4F444C2C4}.Release|x86.Build.0 = Release|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Debug|x64.Build.0 = Debug|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Debug|x86.Build.0 = Debug|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Release|x64.ActiveCfg = Release|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Release|x64.Build.0 = Release|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Release|x86.ActiveCfg = Release|Any CPU
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1012,5 +1026,6 @@ Global
 		{77D297F5-112A-42F1-88E0-AB55D755E150} = {974DD58A-4990-F054-FFF9-61CB8DD6EA51}
 		{FE2D7BC3-6AE2-49CD-B59C-D0F16A814C77} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{4CD21D36-7A0E-402A-BD16-91B4F444C2C4} = {66320409-64EC-F7C5-3DEF-65E7510DAAD1}
+		{C052D5A0-0284-4C26-A001-20D2C44DCF7B} = {FBD959F3-F00A-7FC4-5399-18A0A3A33117}
 	EndGlobalSection
 EndGlobal
