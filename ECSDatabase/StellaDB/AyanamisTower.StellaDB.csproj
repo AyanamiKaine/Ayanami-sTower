@@ -8,8 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
-    <PackageReference Include="SqlKata"/>
-    <PackageReference Include="SqlKata.Execution"/>
+    <PackageReference Include="SqlKata" />
+    <PackageReference Include="SqlKata.Execution" />
     <PackageReference Include="PocoClassGenerator" />
   </ItemGroup>
 
@@ -19,6 +19,14 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Data\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+
 
 </Project>
 
