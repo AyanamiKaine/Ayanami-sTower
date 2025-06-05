@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS FeatureDefinition (
     EntityId INTEGER NOT NULL UNIQUE,
-    Key TEXT NOT NULL UNIQUE, -- e.g., 'can_marry', 'can_communicate_with_void'
+    Key TEXT NOT NULL UNIQUE, -- e.g., 'CanMarry', 'CanCommunicateWithVoid'
     Description TEXT,
     Category TEXT, -- Optional grouping like 'social', 'supernatural', 'combat'
     
