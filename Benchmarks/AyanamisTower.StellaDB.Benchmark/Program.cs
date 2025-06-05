@@ -1,6 +1,7 @@
 ﻿
 using System.Globalization;
 using System.Text.Json;
+using AyanamisTower.StellaDB.Model;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Columns;
 using BenchmarkDotNet.Configs;
@@ -56,16 +57,8 @@ public class StellaDBBenchmark
     private World _world;
     private readonly List<Entity> _entityPool = [];
     private readonly Random _random = new();
-    private const int PoolSize = 100000; // Number of entities for read/update tests
+    private const int PoolSize = 1000; // Number of entities for read/update tests
 
-    // Entities for specific benchmark iterations, prepared in IterationSetup
-    private Entity _nameTestEntityForGetCold;
-    private Entity _nameTestEntityForGetWarm;
-    private string _fetchedNameForWarmCache; // To ensure JIT doesn't optimize away the priming call
-    private Entity _nameTestEntityForSet;
-    private Entity _entityForParentIdGet;
-    private Entity _childEntityForParentIdSet;
-    private Entity _parentEntityForParentIdSet;
 
     [GlobalSetup]
     public void GlobalSetup()
@@ -84,7 +77,7 @@ public class StellaDBBenchmark
             }
         }
         // --- Initialize World and pre-populate entities ---
-        _world = new World("BenchmarkWorld", false, enabledOptimizations: false);
+        _world = new World("BenchmarkWorld", false, enabledOptimizations: true);
 
         _entityPool.Clear();
         for (int i = 0; i < PoolSize; i++)
@@ -99,108 +92,14 @@ public class StellaDBBenchmark
     public Entity CreateSingleEntity()
     {
         // Use Guid to ensure unique name for DB, as World.Entity might expect unique names.
-        return _world.Entity($"NewBenchEntity_{Guid.NewGuid()}");
+        return _world.Entity();
     }
 
-    // --- Benchmarks for Entity.Name property ---
-
-    // IterationSetup for GetEntityName_Cold and SetEntityName
-    [IterationSetup(Targets = new[] { nameof(GetEntityName_Cold), nameof(SetEntityName) })]
-    public void SetupNameTestEntityForColdAndSet()
+    [Benchmark(Description = "Create a single new entity and ads a star component to it")]
+    public Entity AddComponentToEntity()
     {
-        _nameTestEntityForGetCold = _world.Entity($"ColdNameEntity_{Guid.NewGuid()}");
-        _nameTestEntityForSet = _world.Entity($"SetNameEntity_{Guid.NewGuid()}");
-    }
-
-    [Benchmark(Description = "Get entity name (uncached/cold read)")]
-    public string GetEntityName_Cold()
-    {
-        // _nameTestEntityForGetCold is fresh from IterationSetup, so its _cachedName is null.
-        return _nameTestEntityForGetCold.Name;
-    }
-
-    [IterationSetup(Target = nameof(GetEntityName_Warm))]
-    public void SetupNameTestEntityForWarm()
-    {
-        _nameTestEntityForGetWarm = _world.Entity($"WarmNameEntity_{Guid.NewGuid()}");
-        // Prime the cache by accessing the name once.
-        _fetchedNameForWarmCache = _nameTestEntityForGetWarm.Name;
-    }
-
-    [Benchmark(Description = "Get entity name (cached/warm read)")]
-    public string GetEntityName_Warm()
-    {
-        // _nameTestEntityForGetWarm's name should be cached from its IterationSetup.
-        return _nameTestEntityForGetWarm.Name;
-    }
-
-    [Benchmark(Description = "Set entity name")]
-    public void SetEntityName()
-    {
-        // _nameTestEntityForSet is fresh from IterationSetup.
-        _nameTestEntityForSet.Name = "UpdatedBenchmarkName";
-    }
-
-    // --- Benchmarks for Entity.ParentId property ---
-
-    // IterationSetup for all ParentId related benchmarks
-    [IterationSetup(Targets = new[] { nameof(GetEntityParentId), nameof(SetEntityParentId_ToNull), nameof(SetEntityParentId_ToValue) })]
-    public void SetupParentIdTestEntities()
-    {
-        _entityForParentIdGet = _entityPool[_random.Next(PoolSize)];
-
-        int childIndex = _random.Next(PoolSize);
-        _childEntityForParentIdSet = _entityPool[childIndex];
-
-        int parentIndex;
-        if (PoolSize > 1)
-        {
-            do { parentIndex = _random.Next(PoolSize); } while (parentIndex == childIndex);
-            _parentEntityForParentIdSet = _entityPool[parentIndex];
-        }
-
-        // For SetEntityParentId_ToNull: ensure current ParentId is NOT null
-        _childEntityForParentIdSet.ParentId ??= _parentEntityForParentIdSet.Id;
-
-        // For SetEntityParentId_ToValue: ensure current ParentId IS null or different
-        // This setup is tricky because the same _childEntityForParentIdSet is used.
-        // The benchmark itself will handle the "before" state.
-        // For instance, one iteration might set it to null, the next to a value.
-        // We can ensure it starts null for ToValue, and non-null for ToNull if benchmarks run in specific order
-        // or make them more idempotent. Let's reset for ToValue.
-        // This specific IterationSetup runs before EACH of the target benchmarks.
-        // So, for SetEntityParentId_ToValue, we want ParentId to be null or different.
-        // For SetEntityParentId_ToNull, we want ParentId to be non-null.
-
-        // This logic will be specific to the benchmark method being set up if we check current method.
-        // For simplicity, the benchmarks themselves will be responsible for ensuring a change happens.
-        // e.g. SetEntityParentId_ToValue will first set to null if it's already the target parent.
-    }
-
-
-    [Benchmark(Description = "Get entity ParentId")]
-    public long? GetEntityParentId()
-    {
-        return _entityForParentIdGet.ParentId;
-    }
-
-    [Benchmark(Description = "Set entity ParentId to a new value")]
-    public void SetEntityParentId_ToValue()
-    {
-        // Ensure the operation is meaningful: if it's already set to this parent, change it first.
-        if (_childEntityForParentIdSet.ParentId == _parentEntityForParentIdSet.Id)
-        {
-            _childEntityForParentIdSet.ParentId = null; // Make the next update a change
-        }
-        _childEntityForParentIdSet.ParentId = _parentEntityForParentIdSet.Id;
-    }
-
-    [Benchmark(Description = "Set entity ParentId to null")]
-    public void SetEntityParentId_ToNull()
-    {
-        // Ensure the operation is meaningful: if it's already null, set it to something first.
-        _childEntityForParentIdSet.ParentId ??= _parentEntityForParentIdSet.Id; // Make the next update (to null) a change
-        _childEntityForParentIdSet.ParentId = null;
+        // Use Guid to ensure unique name for DB, as World.Entity might expect unique names.
+        return _world.Entity().Add<Star>();
     }
 
     [GlobalCleanup]
