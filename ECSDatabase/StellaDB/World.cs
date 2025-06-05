@@ -21,6 +21,10 @@ public class World : IDisposable
     /// Name of the game
     /// </summary>
     public string Name { get; }
+    /// <summary>
+    /// Given the entity name get the entity id.
+    /// </summary>
+    public Dictionary<string, long> Entities = [];
     private readonly string _databaseFilePath = string.Empty;
     // Connection string for an in-memory SQLite database
     private readonly string _connectionString = string.Empty;
@@ -65,9 +69,10 @@ public class World : IDisposable
         try
         {
             CreateTables("Tables");
-            DefineFeatureDefinitions();
-            PredefineGalaxies();
-            PredefinePolity();
+            LoadFeatureDefinitions();
+            LoadGalaxies();
+            //predefineGalaxies();
+            //PredefinePolity();
         }
         catch (System.Exception ex)
         {
@@ -113,7 +118,7 @@ public class World : IDisposable
     /// </summary>
     /// <param name="name"></param>
     /// <returns></returns>
-    public Entity Entity(string name = "")
+    public Entity Entity(string? name = null)
     {
         long entityId = -1;
         using var transaction = _connection.BeginTransaction();
@@ -133,10 +138,22 @@ public class World : IDisposable
                 nameCmd.Transaction = transaction;
                 nameCmd.CommandText = "INSERT INTO Name (EntityId, Value) VALUES (@EntityId, @Value);";
                 nameCmd.Parameters.AddWithValue("@EntityId", entityId);
-                nameCmd.Parameters.AddWithValue("@Value", name);
+                if (string.IsNullOrEmpty(name))
+                {
+                    nameCmd.Parameters.AddWithValue("@Value", DBNull.Value);
+                }
+                else
+                {
+                    nameCmd.Parameters.AddWithValue("@Value", name);
+                }
                 nameCmd.ExecuteNonQuery();
             }
             transaction.Commit();
+
+            // We want a dictonary of entities where we can easy get them using their name. 
+            if (!string.IsNullOrEmpty(name))
+                Entities[name] = entityId;
+
             return new Entity()
             {
                 Id = entityId,
@@ -394,19 +411,46 @@ public class World : IDisposable
         });
     }
 
-    private void DefineFeatureDefinitions()
+    private void DefineVoidWardensPolity()
     {
-        Query("FeatureDefinition").Insert(new
+        // Capital world of the Void Wardens9*
+        var veridia = Entity("Veridia");
+        Query("Planet").Insert(new
         {
-            EntityId = Entity("CanMarry").Id,
-            Key = "CanMarry"
+            EntityId = veridia.Id
         });
 
-        Query("FeatureDefinition").Insert(new
+        var grandExchange = Entity("Void Wardens");
+        Query("Polity").Insert(new
         {
-            EntityId = Entity("CanSpeakToVoid").Id,
-            Key = "CanSpeakToVoid"
+            EntityId = grandExchange.Id,
+            LeaderTitle = "Grand Keeper",
+            Abbreviation = "GK",
+            SeatOfPowerLocationID = veridia.Id
         });
+    }
+
+    private void LoadFeatureDefinitions()
+    {
+        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "FeatureDefinition.xml");
+        foreach (var key in DataParser.GetFeatureKeys(path))
+        {
+            Query("FeatureDefinition").Insert(new
+            {
+                EntityId = Entity(key ?? "").Id,
+                Key = key
+            });
+        }
+    }
+
+    private void LoadGalaxies()
+    {
+        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Galaxy.xml");
+        foreach (var galaxyName in DataParser.GetGalaxyNames(path))
+        {
+            var e = Entity(galaxyName ?? "");
+            Query("Galaxy").Insert(new { EntityId = e.Id });
+        }
     }
 
     private void PredefineMilkyWayGalaxy()
