@@ -1,0 +1,23 @@
+<Planets>
+
+    <Planet>
+        <Name>Proxima Centauri A</Name>
+        <StarSystem>Proxima Centauri</StarSystem>
+    </Planet>
+
+    <Planet>
+        <Name>Proxima Centauri B</Name>
+        <StarSystem>Proxima Centauri</StarSystem>
+    </Planet>
+
+    <Planet>
+        <Name>Sirius A</Name>
+        <StarSystem>Sirus</StarSystem>
+    </Planet>
+    
+    <Planet>
+        <Name>Sirius B</Name>
+        <StarSystem>Sirus</StarSystem>
+    </Planet>
+
+</Planets>

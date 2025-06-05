@@ -1,0 +1,15 @@
+<ConnectionsTo>
+
+    <ConnectedTo>
+        <EntityId1>Sol</EntityId1>
+        <EntityId2>Proxima Centauri</EntityId2>
+        <Distance>10</Distance>
+    </ConnectedTo>
+
+    <ConnectedTo>
+        <EntityId1>Proxima Centauri</EntityId1>
+        <EntityId2>Sirius</EntityId2>
+        <Distance>30</Distance>
+    </ConnectedTo>
+
+</ConnectionsTo>
