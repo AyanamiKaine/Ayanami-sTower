@@ -16,6 +16,7 @@
     "FeatureDefinition",
     "EntityFeature",
     "Population",
+    "PopType",
     "Velocity2D",
     "Velocity3D",
     "Trait",
