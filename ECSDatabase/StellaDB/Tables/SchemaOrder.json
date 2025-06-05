@@ -32,5 +32,6 @@
     "Asteroid",
     "Polity",
     "CharacterTrait",
-    "ConnectedTo"
+    "ConnectedTo",
+    "LocatedAt"
 ]
