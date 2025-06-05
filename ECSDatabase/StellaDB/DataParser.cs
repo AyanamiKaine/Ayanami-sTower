@@ -3,6 +3,47 @@ using System.Xml.Linq;
 
 namespace AyanamisTower.StellaDB;
 
+
+/*
+TODO:
+There must be a way to easily add components to data. We need a generic parse method that can infere based on 
+the structure what tables and attributes should be used. 
+
+<StarSystem Name = "Sirius">
+    <Galaxy Name = "Milky Way"/>
+    <Components>
+        <Position X="-60" Y="-20" Z="-20"/>
+    </Components>
+</StarSystem>
+
+Here we should understand that every element in components is another table and its attributes are columns in it.
+
+Maybe every element is a another table associated with the entity. And the attributes for an element are the columns so 
+we need to rewrite the xml structure like so:
+<StarSystem Name = "Sirius", Galaxy = "Milky Way">
+    <Position X="-60" Y="-20" Z="-20"/>
+</StarSystem>
+
+But then again its not really correct. Because correct would be saying parent. And name is not a column in entities but instead
+another component.
+
+<StarSystem Parent = "Milky Way">
+    <Name>Sirius</Name>
+    <Position X="-60" Y="-20" Z="-20"/>
+</StarSystem>
+
+Maybe being more explicit how entities are constructed. Its much more symetric, because this reflect the structure
+we create in code, and in the database. This works because the id of entities can be queried using their unique name
+so we dont have to write Parent=2231 should the id change for any reason we would need to change it here too.
+
+<Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Sirius"/>
+    <Position X="-60" Y="-20" Z="-20"/>
+</Entity>
+
+*/
+
 /// <summary>
 /// Parses the data found.
 /// </summary>
@@ -49,47 +90,6 @@ public static class DataParser
 
         return featureKeys;
     }
-
-
-    /*
-    TODO:
-    There must be a way to easily add components to data. We need a generic parse method that can infere based on 
-    the structure what tables and attributes should be used. 
-
-    <StarSystem Name = "Sirius">
-        <Galaxy Name = "Milky Way"/>
-        <Components>
-            <Position X="-60" Y="-20" Z="-20"/>
-        </Components>
-    </StarSystem>
-
-    Here we should understand that every element in components is another table and its attributes are columns in it.
-
-    Maybe every element is a another table associated with the entity. And the attributes for an element are the columns so 
-    we need to rewrite the xml structure like so:
-    <StarSystem Name = "Sirius", Galaxy = "Milky Way">
-        <Position X="-60" Y="-20" Z="-20"/>
-    </StarSystem>
-
-    But then again its not really correct. Because correct would be saying parent. And name is not a column in entities but instead
-    another component.
-
-    <StarSystem Parent = "Milky Way">
-        <Name>Sirius</Name>
-        <Position X="-60" Y="-20" Z="-20"/>
-    </StarSystem>
-
-    Maybe being more explicit how entities are constructed. Its much more symetric, because this reflect the structure
-    we create in code, and in the database. This works because the id of entities can be queried using their unique name
-    so we dont have to write Parent=2231 should the id change for any reason we would need to change it here too.
-
-    <Entity Parent="Milky Way">
-        <StarSystem/>
-        <Name Value="Sirius"/>
-        <Position X="-60" Y="-20" Z="-20"/>
-    </Entity>
-
-    */
 
     /// <summary>
     /// Reads the galaxy data from an XML file where galaxy names are attributes,
