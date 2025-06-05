@@ -1,15 +1,18 @@
-<ConnectionsTo>
+<StarSystems>
 
-    <ConnectedTo>
-        <EntityId1>Sol</EntityId1>
-        <EntityId2>Proxima Centauri</EntityId2>
-        <Distance>10</Distance>
-    </ConnectedTo>
+    <StarSystem>
+        <Name>Sol</Name>
+        <Galaxy>Milky Way</Galaxy>
+    </StarSystem>
 
-    <ConnectedTo>
-        <EntityId1>Proxima Centauri</EntityId1>
-        <EntityId2>Sirius</EntityId2>
-        <Distance>30</Distance>
-    </ConnectedTo>
+    <StarSystem>
+        <Name>Proxima Centauri</Name>
+        <Galaxy>Milky Way</Galaxy>
+    </StarSystem>
 
-</ConnectionsTo>
+    <StarSystem>
+        <Name>Sirius</Name>
+        <Galaxy>Milky Way</Galaxy>
+    </StarSystem>
+    
+</StarSystems>
