@@ -33,5 +33,9 @@
     "Asteroid",
     "Polity",
     "CharacterTrait",
-    "ConnectedTo"
+    "ConnectedTo",
+    "PopTypeConsumption",
+    "CultureConsumptionModifier",
+    "ReligionConsumptionModifier",
+    "IdeologyConsumptionModifier"
 ]
