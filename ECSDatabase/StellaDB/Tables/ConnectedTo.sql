@@ -1,8 +1,6 @@
 CREATE TABLE IF NOT EXISTS ConnectedTo (
     EntityId1 INTEGER NOT NULL,
-    EntityId2 INTEGER NOT NULL,
-    Distance REAL,
-    
+    EntityId2 INTEGER NOT NULL,    
     PRIMARY KEY (EntityId1, EntityId2),
     FOREIGN KEY (EntityId1) REFERENCES Entity(Id) ON DELETE CASCADE,
     FOREIGN KEY (EntityId2) REFERENCES Entity(Id) ON DELETE CASCADE,
@@ -22,9 +20,6 @@ SELECT
         WHEN EntityId1 = 5 THEN EntityId2 
         ELSE EntityId1 
     END as ConnectedSystemId,
-    Distance,
-    TravelTime,
-    ConnectionType
 FROM ConnectedTo 
 WHERE EntityId1 = 5 OR EntityId2 = 5;
 */
