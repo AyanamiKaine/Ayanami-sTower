@@ -20,4 +20,18 @@
         <StarSystem>Sirus</StarSystem>
     </Planet>
 
+    <Planet>
+        <Name>Veridia</Name>
+        <StarSystem>Sirus</StarSystem>
+    </Planet>
+
+    <Planet>
+        <Name>Morian</Name>
+        <StarSystem>Sirus</StarSystem>
+    </Planet>
+
+    <Planet>
+        <Name>Abacus</Name>
+        <StarSystem>Sirus</StarSystem>
+    </Planet>
 </Planets>
