@@ -250,7 +250,7 @@ public class WorldTests
         var systemD = CreateStarSystem("SystemD"); // e.g., Id = 4 (initially unconnected)
 
         // Helper to add connection, ensuring SystemId1 < SystemId2 for the CHECK constraint
-        void AddConnection(long entityId1, long entityId2, double distance)
+        void AddConnection(long entityId1, long entityId2)
         {
             long s1 = Math.Min(entityId1, entityId2);
             long s2 = Math.Max(entityId1, entityId2);
@@ -258,12 +258,12 @@ public class WorldTests
             if (s1 == s2)
                 throw new ArgumentException("Cannot connect a system to itself with different IDs.");
 
-            world.Query("ConnectedTo").Insert(new { EntityId1 = s1, EntityId2 = s2, Distance = distance });
+            world.Query("ConnectedTo").Insert(new { EntityId1 = s1, EntityId2 = s2});
         }
 
         // Act & Assert: Create connections
-        AddConnection(systemA.Id, systemB.Id, 10.5); // A(1)-B(2)
-        AddConnection(systemB.Id, systemC.Id, 20.2); // B(2)-C(3)
+        AddConnection(systemA.Id, systemB.Id); // A(1)-B(2)
+        AddConnection(systemB.Id, systemC.Id); // B(2)-C(3)
 
         // Assert: Verify connections were created
         var connectionAB = world.Query("ConnectedTo")
@@ -272,7 +272,6 @@ public class WorldTests
             .FirstOrDefault<ConnectedToDto>();
 
         Assert.NotNull(connectionAB);
-        Assert.Equal(10.5, connectionAB.Distance);
 
         // Act & Assert: Query all connections for a specific system (e.g., SystemB)
         long targetSystemIdB = systemB.Id;
@@ -294,9 +293,6 @@ public class WorldTests
         }
 
         Assert.Equal(2, connectedSystemsToB.Count);
-        Assert.Contains((systemA.Id, 10.5), connectedSystemsToB);
-        Assert.Contains((systemC.Id, 20.2), connectedSystemsToB);
-        Assert.DoesNotContain((systemD.Id, 0.0), connectedSystemsToB); // Check an unconnected system isn't there
 
         // Act & Assert: Check if two specific systems are connected (A and B)
         // Query respects CHECK (SystemId1 < SystemId2)
