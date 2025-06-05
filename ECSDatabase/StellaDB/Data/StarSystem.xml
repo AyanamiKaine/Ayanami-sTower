@@ -1,18 +1,18 @@
 <StarSystems>
 
-    <StarSystem>
-        <Name>Sol</Name>
-        <Galaxy>Milky Way</Galaxy>
+    <StarSystem Name = "Sol">
+        <Galaxy Name = "Milky Way"/>
+        <Position X="0" Y="0" Z="0"/>
     </StarSystem>
 
-    <StarSystem>
-        <Name>Proxima Centauri</Name>
-        <Galaxy>Milky Way</Galaxy>
+    <StarSystem Name = "Proxima Centauri">
+        <Galaxy Name = "Milky Way"/>
+        <Position X="30" Y="50" Z="10"/>
     </StarSystem>
 
-    <StarSystem>
-        <Name>Sirius</Name>
-        <Galaxy>Milky Way</Galaxy>
+    <StarSystem Name = "Sirius">
+        <Galaxy Name = "Milky Way"/>
+        <Position X="-60" Y="-20" Z="-20"/>
     </StarSystem>
     
 </StarSystems>

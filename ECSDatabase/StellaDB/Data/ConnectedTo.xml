@@ -1,13 +1,4 @@
 <ConnectionsTo>
-
-    <ConnectedTo>
-        <StarSystem1>Sol</StarSystem1>
-        <StarSystem2>Proxima Centauri</StarSystem2>
-    </ConnectedTo>
-
-    <ConnectedTo>
-        <StarSystem1>Proxima Centauri</StarSystem1>
-        <StarSystem2>Sirius</StarSystem2>
-    </ConnectedTo>
-
+    <ConnectedTo StarSystem1="Sol" StarSystem2="Proxima Centauri"/>
+    <ConnectedTo StarSystem1="Proxima Centauri" StarSystem2="Sirius"/>
 </ConnectionsTo>

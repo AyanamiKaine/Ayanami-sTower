@@ -1,39 +1,12 @@
 <FeatureDefinitions>
-
-  <FeatureDefinition>
-    <Key>CanMarry</Key>
-  </FeatureDefinition>
-
-  <FeatureDefinition>
-    <Key>CanSpeakToVoid</Key>
-  </FeatureDefinition>
-
-  <FeatureDefinition>
-    <Key>CanFlyShips</Key>
-  </FeatureDefinition>
-
-  <FeatureDefinition>
-    <Key>CanExecute</Key>
-  </FeatureDefinition>
-
-  <FeatureDefinition>
-    <Key>CanChangeReligion</Key>
-  </FeatureDefinition>
-
-  <FeatureDefinition>
-    <Key>CanChangeCulture</Key>
-  </FeatureDefinition>
-
-  <FeatureDefinition>
-    <Key>CanChangeIdeology</Key>
-  </FeatureDefinition>
-
-  <FeatureDefinition>
-    <Key>CanGetPregnant</Key>
-  </FeatureDefinition>
-
-  <FeatureDefinition>
-    <Key>CanCreateArtifacts</Key>
-  </FeatureDefinition>
-
+    <FeatureDefinition Key="CanMarry"/>
+    <FeatureDefinition Key="CanSpeakToVoid"/>
+    <FeatureDefinition Key="CanFlyShips"/>
+    <FeatureDefinition Key="CanExecute"/>
+    <FeatureDefinition Key="CanChangeReligion"/>
+    <FeatureDefinition Key="CanChangeCulture"/>
+    <FeatureDefinition Key="CanChangeIdeology"/>
+    <FeatureDefinition Key="CanGetPregnant"/>
+    <FeatureDefinition Key="CanCreateArtifacts"/>
 </FeatureDefinitions>
+    

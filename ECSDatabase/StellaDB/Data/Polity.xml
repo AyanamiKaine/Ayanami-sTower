@@ -1,25 +1,21 @@
 <Polities>
 
-    <Polity>
-        <Name>Grand Exchange</Name>
-        <LeaderTitle>Prime Arbiter</LeaderTitle>
-        <Abbreviation>GE</Abbreviation>
-        <SeatOfPower>Abacus</Abbreviation>
-    </Polity>
+    <Polity 
+        Name = "Grand Exchange",
+        LeaderTitel = "Prime Arbiter",
+        Abbreviation = "GE"
+        SeatOfPower = "Abacus"/>
 
+    <Polity 
+        Name = "Void Wardens",
+        LeaderTitel = "Grand Keeper",
+        Abbreviation = "GK"
+        SeatOfPower = "Veridia"/>
 
-    <Polity>
-        <Name>Void Wardens</Name>
-        <LeaderTitle>Grand Keeper</LeaderTitle>
-        <Abbreviation>GK</Abbreviation>
-        <SeatOfPower>Veridia</Abbreviation>
-    </Polity>
+    <Polity 
+        Name = "Umbral Cult",
+        LeaderTitel = "Voice of the Abyss",
+        Abbreviation = "VA"
+        SeatOfPower = "Morian"/>
 
-    <Polity>
-        <Name>Umbral Cult</Name>
-        <LeaderTitle>Voice of the Abyss</LeaderTitle>
-        <Abbreviation>VA</Abbreviation>
-        <SeatOfPower>Morian</Abbreviation>
-    </Polity>
-    
 </Polities>
