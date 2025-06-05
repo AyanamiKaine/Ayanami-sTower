@@ -18,19 +18,13 @@ public static class DataParser
         List<string?> featureKeys = [];
         try
         {
-            // Get the base directory of the application
             string baseDirectory = AppContext.BaseDirectory;
-            // Alternatively, for .NET Framework: string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
-            // Combine the base directory with the relative file path
             string fullPath = Path.Combine(baseDirectory, relativeFilePath);
 
-            // Check if the file exists before attempting to load
             if (!File.Exists(fullPath))
             {
                 Console.WriteLine($"Error: XML file not found at {fullPath}");
-                // You might want to throw an exception here or return an empty list,
-                // depending on how you want to handle missing files.
                 return featureKeys; // Return empty list
             }
 
@@ -56,6 +50,47 @@ public static class DataParser
         return featureKeys;
     }
 
+
+    /*
+    TODO:
+    There must be a way to easily add components to data. We need a generic parse method that can infere based on 
+    the structure what tables and attributes should be used. 
+
+    <StarSystem Name = "Sirius">
+        <Galaxy Name = "Milky Way"/>
+        <Components>
+            <Position X="-60" Y="-20" Z="-20"/>
+        </Components>
+    </StarSystem>
+
+    Here we should understand that every element in components is another table and its attributes are columns in it.
+
+    Maybe every element is a another table associated with the entity. And the attributes for an element are the columns so 
+    we need to rewrite the xml structure like so:
+    <StarSystem Name = "Sirius", Galaxy = "Milky Way">
+        <Position X="-60" Y="-20" Z="-20"/>
+    </StarSystem>
+
+    But then again its not really correct. Because correct would be saying parent. And name is not a column in entities but instead
+    another component.
+
+    <StarSystem Parent = "Milky Way">
+        <Name>Sirius</Name>
+        <Position X="-60" Y="-20" Z="-20"/>
+    </StarSystem>
+
+    Maybe being more explicit how entities are constructed. Its much more symetric, because this reflect the structure
+    we create in code, and in the database. This works because the id of entities can be queried using their unique name
+    so we dont have to write Parent=2231 should the id change for any reason we would need to change it here too.
+
+    <Entity Parent="Milky Way">
+        <StarSystem/>
+        <Name Value="Sirius"/>
+        <Position X="-60" Y="-20" Z="-20"/>
+    </Entity>
+
+    */
+
     /// <summary>
     /// Reads the galaxy data from an XML file where galaxy names are attributes,
     /// and returns the names of the galaxies.
@@ -67,11 +102,7 @@ public static class DataParser
         List<string?> galaxyNames = [];
         try
         {
-            // Get the base directory of the application
-            // For .NET Core/5/6/7/8+
             string baseDirectory = AppContext.BaseDirectory;
-            // Alternatively, for .NET Framework (uncomment if needed):
-            // string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
             // Combine the base directory with the relative file path
             string fullPath = Path.Combine(baseDirectory, relativeFilePath);
@@ -87,22 +118,10 @@ public static class DataParser
             // Load the XML document from the file
             XDocument doc = XDocument.Load(fullPath);
 
-            // Query the document to find all "Galaxy" elements
-            // and then select the value of their "Name" attribute.
-            // The key change is g.Attribute("Name") instead of g.Element("Name")
-            galaxyNames = doc.Descendants("Galaxy")       // Find all <Galaxy> elements
+            galaxyNames = [.. doc.Descendants("Galaxy")       // Find all <Galaxy> elements
                              .Select(g => g.Attribute("Name")?.Value) // Get the value of the "Name" attribute
-                             .Where(name => !string.IsNullOrEmpty(name)) // Filter out any null or empty names
-                             .ToList(); // Convert to List
+                             .Where(name => !string.IsNullOrEmpty(name))]; // Convert to List
 
-            // If you want to ensure the list doesn't contain nulls and make its type List<string>
-            // you could do this, but List<string?> is fine if attributes might be missing.
-            // List<string> galaxyNamesNonNull = doc.Descendants("Galaxy")
-            //                                 .Select(g => g.Attribute("Name")?.Value)
-            //                                 .Where(name => !string.IsNullOrEmpty(name))
-            //                                 .Select(name => name!) // Assert name is not null here
-            //                                 .ToList();
-            // return galaxyNamesNonNull;
 
         }
         catch (System.Xml.XmlException ex)
