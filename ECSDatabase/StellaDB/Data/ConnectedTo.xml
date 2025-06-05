@@ -1,14 +1,14 @@
 <ConnectionsTo>
 
     <ConnectedTo>
-        <Entity1Name>Sol</Entity1Name>
-        <Entity2Name>Proxima Centauri</Entity2Name>
+        <StarSystem1>Sol</StarSystem1>
+        <StarSystem2>Proxima Centauri</StarSystem2>
         <Distance>10</Distance>
     </ConnectedTo>
 
     <ConnectedTo>
-        <Entity1Name>Proxima Centauri</Entity1Name>
-        <Entity2Name>Sirius</Entity2Name>
+        <StarSystem1>Proxima Centauri</StarSystem1>
+        <StarSystem2>Sirius</StarSystem2>
         <Distance>30</Distance>
     </ConnectedTo>
 
