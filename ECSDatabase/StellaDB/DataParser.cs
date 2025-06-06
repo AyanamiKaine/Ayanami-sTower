@@ -50,6 +50,84 @@ so we dont have to write Parent=2231 should the id change for any reason we woul
 /// </summary>
 public static class DataParser
 {
+
+    /// <summary>
+    /// Generically parses many-to-many relationship elements and populates the corresponding tables.
+    /// This should be called only after all entities have been created.
+    /// Convention: An attribute is treated as an entity reference if its name ends with "Id" (case-insensitive).
+    /// </summary>
+    /// <param name="world">The world instance to populate.</param>
+    /// <param name="allRelationElements">A list of all relation XElements (e.g., <ConnectedTo/>) from all data files.</param>
+    public static void ParseAndLoadRelations(World world, List<XElement> allRelationElements)
+    {
+        Console.WriteLine("Parser Third Pass: Processing many-to-many relationships...");
+        foreach (var relationElement in allRelationElements)
+        {
+            string tableName = relationElement.Name.LocalName;
+            var dataToInsert = new Dictionary<string, object>();
+            bool allEntitiesFound = true;
+
+            foreach (var attribute in relationElement.Attributes())
+            {
+                string columnName = attribute.Name.LocalName;
+                string value = attribute.Value;
+
+                // Convention: If an attribute name ends in "Id", treat its value as an entity name to be resolved.
+                if (columnName.EndsWith("Id", StringComparison.OrdinalIgnoreCase))
+                {
+                    var referencedEntity = world.GetEntityByName(value);
+                    if (referencedEntity != null)
+                    {
+                        dataToInsert[columnName] = referencedEntity.Id;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Warning: Could not resolve entity name '{value}' for column '{columnName}' in relation '{tableName}'. Skipping this relation.");
+                        allEntitiesFound = false;
+                        break; // Stop processing attributes for this invalid relation
+                    }
+                }
+                else
+                {
+                    // Otherwise, treat the attribute's value as a literal.
+                    dataToInsert[columnName] = value;
+                }
+            }
+
+            if (allEntitiesFound)
+            {
+                if (dataToInsert.TryGetValue("EntityId1", out object? entityId1) && dataToInsert.TryGetValue("EntityId2", out object? entityId2))
+                {
+                    long id1 = world.GetEntityByName((string)entityId1)!.Id;
+                    long id2 = world.GetEntityByName((string)entityId2)!.Id;
+
+                    if (id1 > id2)
+                    {
+                        // Swap the values to satisfy the CHECK (EntityId1 < EntityId2) constraint.
+                        dataToInsert["EntityId1"] = id2;
+                        dataToInsert["EntityId2"] = id1;
+                    }
+                    else
+                    {
+                        dataToInsert["EntityId1"] = id1;
+                        dataToInsert["EntityId2"] = id2;
+                    }
+                }
+
+                try
+                {
+                    // With the IDs now ordered, this insert will respect the CHECK constraint.
+                    world.Query(tableName).Insert(dataToInsert);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error inserting relation for table '{tableName}': {ex.Message}. Check data for duplicates or other constraint violations.");
+                }
+            }
+        }
+        Console.WriteLine("Parser Third Pass: Completed.");
+    }
+
     /// <summary>
     /// Parses a consolidated list of entity XElements and populates the world.
     /// It uses a two-pass approach: first creating all entities, then setting up components and relationships.
