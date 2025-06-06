@@ -1,4 +1,3 @@
-using AyanamisTower.StellaDB.Model;
 using SqlKata.Execution;
 
 namespace AyanamisTower.StellaDB.Tests;
@@ -19,7 +18,7 @@ public class EntityTests
         var world = new World("TEST", true);
 
         var characterEntity = world.Entity("Example Character");
-        characterEntity.Add<Character>();
+        characterEntity.Add("Character");
         /* Same as
         world.Query("Character").Insert(new
         {
@@ -27,7 +26,7 @@ public class EntityTests
         });
         */
 
-        Assert.True(characterEntity.Has<Character>());
+        Assert.True(characterEntity.Has("Character"));
     }
 
     /// <summary>
@@ -39,11 +38,11 @@ public class EntityTests
         var world = new World("TEST", true);
 
         var characterEntity = world.Entity("Example Character");
-        characterEntity.Add<Character>();
+        characterEntity.Add("Character");
 
         const string newName = "Changed Name";
-        characterEntity.Update(new Name() { Value = newName });
+        characterEntity.Update("Name", new { Value = newName });
 
-        Assert.Equal(newName, characterEntity.Get<Name>().Value);
+        Assert.Equal(newName, characterEntity.Get("Name")?.Value);
     }
 }

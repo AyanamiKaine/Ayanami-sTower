@@ -1,4 +1,3 @@
-using AyanamisTower.StellaDB.Model;
 using SqlKata.Execution;
 
 namespace AyanamisTower.StellaDB;
@@ -79,22 +78,6 @@ public class Entity
     }
 
     /// <summary>
-    /// Updates a component using a strongly-typed approach, an entity must already have this component attached
-    /// other wise an error will be thrown. Keep in Mind that writing your own update query is often much more efficient
-    /// because know at best what data you actually need and what to update. These methods are for convience
-    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
-    /// </summary>
-    /// <typeparam name="ComponentType">Component type</typeparam>
-    /// <param name="component">Component instance</param>
-    /// <returns>This entity for method chaining</returns>
-    public Entity Update<ComponentType>(ComponentType component) where ComponentType : IComponent
-    {
-        component.EntityId = Id;
-        var componentName = typeof(ComponentType).Name;
-        return Update(componentName, component);
-    }
-
-    /// <summary>
     /// Adds a component to an entity
     /// </summary>
     /// <param name="componentName"></param>
@@ -107,19 +90,6 @@ public class Entity
         return this;
     }
 
-    /// <summary>
-    /// Adds a component to an entity. These methods are for convience
-    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
-    /// </summary>
-    /// <typeparam name="ComponentType"></typeparam>
-    /// <param name="component"></param>
-    /// <returns></returns>
-    public Entity Add<ComponentType>(ComponentType component) where ComponentType : IComponent
-    {
-        component.EntityId = Id;
-        var componentName = typeof(ComponentType).Name;
-        return Add(componentName, component);
-    }
 
     /// <summary>
     /// Adds a component for an entity, used for identifier components, that only have one field
@@ -127,11 +97,9 @@ public class Entity
     /// These methods are for convience
     /// to improve the iteration speed when developing. For performance prefer writing your own queries.
     /// </summary>
-    /// <typeparam name="ComponentType"></typeparam>
     /// <returns></returns>
-    public Entity Add<ComponentType>() where ComponentType : class
+    public Entity Add(string componentName)
     {
-        var componentName = typeof(ComponentType).Name;
         World.Query(componentName).Insert(new
         {
             EntityId = Id
@@ -151,17 +119,6 @@ public class Entity
                         .Where("EntityId", Id)
                         .Count<int>();
         return count > 0;
-    }
-
-    /// <summary>
-    /// Checks if entity has a specific component using type. These methods are for convience
-    /// to improve the iteration speed when developing. For performance prefer writing your own queries.
-    /// </summary>
-    /// <typeparam name="T">Component type</typeparam>
-    /// <returns>True if component exists</returns>
-    public bool Has<T>()
-    {
-        return Has(typeof(T).Name);
     }
 
     /// <summary>
