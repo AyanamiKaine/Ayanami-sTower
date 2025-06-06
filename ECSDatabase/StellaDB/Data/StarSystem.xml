@@ -64,4 +64,54 @@
     <Name Value="Tau Ceti"/>
     <Position3D X="88" Y="42" Z="-19"/>
   </Entity>
+    <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Vorash System"/>
+    <Position3D X="1050" Y="-800" Z="320"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Aethelgard"/>
+    <Position3D X="10" Y="5" Z="15"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Glacian's Fall"/>
+    <Position3D X="-450" Y="1200" Z="-750"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Myrrwood Deeps"/>
+    <Position3D X="980" Y="450" Z="-200"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Sanctuary Cluster"/>
+    <Position3D X="-700" Y="-500" Z="600"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Veridian Reach"/>
+    <Position3D X="320" Y="150" Z="80"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="The Ashen Forge"/>
+    <Position3D X="1500" Y="-1100" Z="950"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Arboreal Expanse"/>
+    <Position3D X="-300" Y="-850" Z="-400"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Serenity's Crest"/>
+    <Position3D X="50" Y="80" Z="30"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="The Iron Concord"/>
+    <Position3D X="1200" Y="300" Z="-150"/>
+  </Entity>
 </Entities>
