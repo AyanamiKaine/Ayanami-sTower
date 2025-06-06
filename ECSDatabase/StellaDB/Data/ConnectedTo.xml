@@ -1,4 +1,5 @@
 <ManyToManyRelation>
     <ConnectedTo EntityId1="Sol" EntityId2="Proxima Centauri"/>
+    
     <ConnectedTo EntityId1="Proxima Centauri" EntityId2="Sirius"/>
 </ManyToManyRelation>
