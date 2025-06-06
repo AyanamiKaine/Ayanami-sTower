@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Galaxy Map Editor</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000510;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: grab;
+        }
+
+        canvas.space-panning {
+            cursor: grabbing;
+        }
+
+        canvas.adding {
+            cursor: crosshair;
+        }
+
+        canvas.connecting {
+            cursor: pointer;
+        }
+
+        canvas.deleting {
+            cursor: not-allowed;
+        }
+
+        canvas.dragging-star {
+            cursor: move;
+        }
+
+        .ui-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 150px;
+        }
+
+        #galaxyNameInput {
+            background-color: transparent;
+            border: none;
+            border-bottom: 1px solid #4b5563;
+            color: #a0c4ff;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px;
+            margin-bottom: 5px;
+            outline: none;
+        }
+
+        #galaxyNameInput:focus {
+            border-bottom-color: #6366f1;
+        }
+
+        .ui-panel button {
+            background-color: #374151;
+            color: #e5e7eb;
+            border: 1px solid #4b5563;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .ui-panel button:hover {
+            background-color: #4b5563;
+        }
+
+        .ui-panel button.active {
+            background-color: #4f46e5;
+            border-color: #6366f1;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .ui-panel button.active-delete {
+            background-color: #dc2626;
+            border-color: #f87171;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .info-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 220px;
+            display: none;
+            /* Hidden by default */
+        }
+
+        .info-panel h2 {
+            margin: 0 0 10px 0;
+            color: #a0c4ff;
+            font-size: 16px;
+        }
+
+        .info-panel p {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #d1d5db;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-panel span,
+        .info-panel input {
+            font-weight: bold;
+            color: #fff;
+            background-color: transparent;
+            border: none;
+            text-align: right;
+            outline: none;
+        }
+
+        .info-panel input {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid #4b5563;
+            padding: 2px 4px;
+            width: 120px;
+        }
+
+        .info-panel input:focus {
+            border-bottom-color: #6366f1;
+        }
+
+        .coords-display {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1f2937;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #4b5563;
+            width: 300px;
+            text-align: center;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .modal-content input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #4b5563;
+            background-color: #374151;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .modal-content .modal-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="ui-panel">
+        <input type="text" id="galaxyNameInput" value="My Galaxy">
+        <button id="addStarBtn">Add System</button>
+        <button id="connectStarBtn">Connect</button>
+        <button id="deleteBtn">Delete</button>
+    </div>
+
+    <div id="infoPanel" class="info-panel">
+        <h2 id="infoTitle">Selection Info</h2>
+        <div id="singleSelectInfo">
+            <p>Name: <input type="text" id="infoNameInput"></p>
+            <p>Coords: <span id="infoCoords"></span></p>
+            <p>Connections: <span id="infoConnections"></span></p>
+        </div>
+        <div id="multiSelectInfo" style="display: none;">
+            <p><span id="multiSelectCount">0</span> systems selected</p>
+        </div>
+    </div>
+
+    <div id="coordsDisplay" class="coords-display">X: 0, Y: 0</div>
+
+    <div id="nameModal" class="modal-backdrop">
+        <div class="modal-content">
+            <label for="starNameInput">Enter System Name:</label>
+            <input type="text" id="starNameInput" placeholder="e.g., Sol">
+            <div class="modal-buttons">
+                <button id="confirmNameBtn">Create</button>
+                <button id="cancelNameBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="galaxyCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const MIN_ZOOM = 0.1;
+        const MAX_ZOOM = 15.0;
+        const ZOOM_LERP_FACTOR = 0.2;
+
+        let stars = [];
+        let connections = [];
+        let editorState = {
+            mode: 'pan',
+            isSpacebarPan: false,
+            selection: [], // Array of star IDs
+            groupDrag: null, // {startX, startY, initialPositions: Map<id, {x,y}>}
+            selectionBox: null, // {x1, y1, x2, y2}
+            firstStarForConnection: null,
+            hoveredStar: null,
+            hoveredConnection: null,
+            lastMousePos: { x: 0, y: 0 },
+        };
+        let camera = {
+            x: 0, y: 0,
+            zoom: 1.0, targetZoom: 1.0,
+            isDragging: false,
+            lastX: 0, lastY: 0,
+        };
+        let nextStarId = 0;
+        let pendingStar = null;
+
+        const addStarBtn = document.getElementById('addStarBtn');
+        const connectStarBtn = document.getElementById('connectStarBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const nameModal = document.getElementById('nameModal');
+        const starNameInput = document.getElementById('starNameInput');
+        const confirmNameBtn = document.getElementById('confirmNameBtn');
+        const cancelNameBtn = document.getElementById('cancelNameBtn');
+        const infoPanel = document.getElementById('infoPanel');
+        const infoNameInput = document.getElementById('infoNameInput');
+        const coordsDisplay = document.getElementById('coordsDisplay');
+        const singleSelectInfo = document.getElementById('singleSelectInfo');
+        const multiSelectInfo = document.getElementById('multiSelectInfo');
+
+        function setupCanvasDPI() {
+            const dpi = window.devicePixelRatio || 1;
+            const style = getComputedStyle(canvas);
+            const cssWidth = +style.width.slice(0, -2);
+            const cssHeight = +style.height.slice(0, -2);
+            canvas.setAttribute('width', cssWidth * dpi);
+            canvas.setAttribute('height', cssHeight * dpi);
+            ctx.scale(dpi, dpi);
+        }
+
+        function screenToWorld(x, y) {
+            return {
+                x: (x - canvas.clientWidth / 2) / camera.zoom + camera.x,
+                y: (y - canvas.clientHeight / 2) / camera.zoom + camera.y
+            };
+        }
+
+        function getStarAt(worldX, worldY) {
+            const clickRadius = 15 / camera.zoom;
+            for (let i = stars.length - 1; i >= 0; i--) {
+                const star = stars[i];
+                if (Math.sqrt((worldX - star.x) ** 2 + (worldY - star.y) ** 2) < clickRadius) return star;
+            }
+            return null;
+        }
+
+        function getConnectionAt(worldX, worldY) {
+            const clickThreshold = 5 / camera.zoom;
+            for (const conn of connections) {
+                const p1 = stars.find(s => s.id === conn.p1_id), p2 = stars.find(s => s.id === conn.p2_id);
+                if (!p1 || !p2) continue;
+                const dx = p2.x - p1.x, dy = p2.y - p1.y, lenSq = dx * dx + dy * dy;
+                if (lenSq === 0) continue;
+                let t = ((worldX - p1.x) * dx + (worldY - p1.y) * dy) / lenSq;
+                t = Math.max(0, Math.min(1, t));
+                const closestX = p1.x + t * dx, closestY = p1.y + t * dy;
+                if ((worldX - closestX) ** 2 + (worldY - closestY) ** 2 < clickThreshold ** 2) return conn;
+            }
+            return null;
+        }
+
+        function setMode(newMode) {
+            editorState.mode = (editorState.mode === newMode) ? 'pan' : newMode;
+            editorState.firstStarForConnection = null;
+            addStarBtn.classList.toggle('active', editorState.mode === 'add');
+            connectStarBtn.classList.toggle('active', editorState.mode === 'connect');
+            deleteBtn.classList.toggle('active-delete', editorState.mode === 'delete');
+            updateCursor();
+        }
+
+        function updateCursor() {
+            if (editorState.isSpacebarPan) {
+                canvas.style.cursor = camera.isDragging ? 'grabbing' : 'grab';
+                return;
+            }
+            let cursor = 'grab';
+            if (editorState.groupDrag) cursor = 'move';
+            else if (editorState.mode === 'add') cursor = 'crosshair';
+            else if (editorState.mode === 'connect') cursor = 'pointer';
+            else if (editorState.mode === 'delete') cursor = 'not-allowed';
+            canvas.style.cursor = cursor;
+        }
+
+        function updateInfoPanel() {
+            if (editorState.selection.length === 1) {
+                const star = stars.find(s => s.id === editorState.selection[0]);
+                if (star) {
+                    document.getElementById('infoTitle').textContent = "Selection Info";
+                    infoNameInput.value = star.name;
+                    document.getElementById('infoCoords').textContent = `X: ${star.x.toFixed(1)}, Y: ${star.y.toFixed(1)}`;
+                    const numConnections = connections.filter(c => c.p1_id === star.id || c.p2_id === star.id).length;
+                    document.getElementById('infoConnections').textContent = numConnections;
+                    singleSelectInfo.style.display = 'block';
+                    multiSelectInfo.style.display = 'none';
+                    infoPanel.style.display = 'block';
+                }
+            } else if (editorState.selection.length > 1) {
+                document.getElementById('infoTitle').textContent = "Multiple Selected";
+                document.getElementById('multiSelectCount').textContent = editorState.selection.length;
+                singleSelectInfo.style.display = 'none';
+                multiSelectInfo.style.display = 'block';
+                infoPanel.style.display = 'block';
+            }
+            else {
+                infoPanel.style.display = 'none';
+            }
+        }
+
+        function drawGrid() {
+            const worldTopLeft = screenToWorld(0, 0);
+            const worldBottomRight = screenToWorld(canvas.clientWidth, canvas.clientHeight);
+            let majorSpacing = 100;
+            while (majorSpacing * camera.zoom < 50) majorSpacing *= 10;
+            while (majorSpacing * camera.zoom > 500) majorSpacing /= 10;
+            const minorSpacing = majorSpacing / 10;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.lineWidth = 1 / camera.zoom;
+            for (let x = Math.floor(worldTopLeft.x / minorSpacing) * minorSpacing; x < worldBottomRight.x; x += minorSpacing) {
+                if (x % majorSpacing !== 0) { ctx.beginPath(); ctx.moveTo(x, worldTopLeft.y); ctx.lineTo(x, worldBottomRight.y); ctx.stroke(); }
+            }
+            for (let y = Math.floor(worldTopLeft.y / minorSpacing) * minorSpacing; y < worldBottomRight.y; y += minorSpacing) {
+                if (y % majorSpacing !== 0) { ctx.beginPath(); ctx.moveTo(worldTopLeft.x, y); ctx.lineTo(worldBottomRight.x, y); ctx.stroke(); }
+            }
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+            ctx.lineWidth = 2 / camera.zoom;
+            for (let x = Math.floor(worldTopLeft.x / majorSpacing) * majorSpacing; x < worldBottomRight.x; x += majorSpacing) {
+                ctx.beginPath(); ctx.moveTo(x, worldTopLeft.y); ctx.lineTo(x, worldBottomRight.y); ctx.stroke();
+            }
+            for (let y = Math.floor(worldTopLeft.y / majorSpacing) * majorSpacing; y < worldBottomRight.y; y += majorSpacing) {
+                ctx.beginPath(); ctx.moveTo(worldTopLeft.x, y); ctx.lineTo(worldBottomRight.x, y); ctx.stroke();
+            }
+            ctx.strokeStyle = "rgba(79, 170, 255, 0.3)";
+            ctx.lineWidth = 3 / camera.zoom;
+            ctx.beginPath();
+            ctx.moveTo(0, worldTopLeft.y); ctx.lineTo(0, worldBottomRight.y);
+            ctx.moveTo(worldTopLeft.x, 0); ctx.lineTo(worldBottomRight.x, 0);
+            ctx.stroke();
+        }
+
+        function draw() {
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = '#000510';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(canvas.clientWidth / 2, canvas.clientHeight / 2);
+            ctx.scale(camera.zoom, camera.zoom);
+            ctx.translate(-camera.x, -camera.y);
+
+            drawGrid();
+
+            ctx.lineWidth = 1.5 / camera.zoom;
+            connections.forEach(conn => {
+                const p1 = stars.find(s => s.id === conn.p1_id), p2 = stars.find(s => s.id === conn.p2_id);
+                if (!p1 || !p2) return;
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+                ctx.strokeStyle = (editorState.mode === 'delete' && editorState.hoveredConnection === conn) ? '#ef4444' : 'rgba(100, 150, 255, 0.4)';
+                ctx.stroke();
+            });
+
+            ctx.font = `${12 / camera.zoom}px Inter`;
+            ctx.textAlign = 'center';
+            stars.forEach(star => {
+                if (editorState.selection.includes(star.id)) {
+                    ctx.beginPath(); ctx.arc(star.x, star.y, (10 / camera.zoom), 0, 2 * Math.PI);
+                    ctx.strokeStyle = '#fde047'; ctx.lineWidth = 3 / camera.zoom; ctx.stroke();
+                }
+                ctx.beginPath(); ctx.arc(star.x, star.y, 5 / camera.zoom, 0, 2 * Math.PI);
+                const isHovered = editorState.hoveredStar === star, isSelectedForConnection = editorState.firstStarForConnection === star;
+                if (editorState.mode === 'delete' && isHovered) {
+                    ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 20 / camera.zoom;
+                } else if (isHovered || isSelectedForConnection) {
+                    ctx.fillStyle = '#fde047'; ctx.shadowColor = '#fde047'; ctx.shadowBlur = 20 / camera.zoom;
+                } else {
+                    ctx.fillStyle = '#e5e7eb'; ctx.shadowColor = 'rgba(160, 200, 255, 0.8)'; ctx.shadowBlur = 10 / camera.zoom;
+                }
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#d1d5db';
+                ctx.fillText(star.name, star.x, star.y - 15 / camera.zoom);
+            });
+
+            if (editorState.selectionBox) {
+                ctx.fillStyle = "rgba(79, 170, 255, 0.2)";
+                ctx.strokeStyle = "rgba(129, 199, 255, 0.8)";
+                ctx.lineWidth = 1 / camera.zoom;
+                const { x1, y1, x2, y2 } = editorState.selectionBox;
+                ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+                ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+            }
+
+            ctx.restore();
+        }
+
+        function animate() {
+            const zoomDiff = camera.targetZoom - camera.zoom;
+            if (Math.abs(zoomDiff) > 0.001) {
+                const oldZoom = camera.zoom;
+                camera.zoom += zoomDiff * ZOOM_LERP_FACTOR;
+                const mouseX = editorState.lastMousePos.x - canvas.clientWidth / 2;
+                const mouseY = editorState.lastMousePos.y - canvas.clientHeight / 2;
+                camera.x += mouseX / oldZoom - mouseX / camera.zoom;
+                camera.y += mouseY / oldZoom - mouseY / camera.zoom;
+            } else { camera.zoom = camera.targetZoom; }
+
+            const worldPos = screenToWorld(editorState.lastMousePos.x, editorState.lastMousePos.y);
+            if (editorState.groupDrag) {
+                const dx = worldPos.x - editorState.groupDrag.startX;
+                const dy = worldPos.y - editorState.groupDrag.startY;
+                editorState.groupDrag.initialPositions.forEach((pos, id) => {
+                    const star = stars.find(s => s.id === id);
+                    if (star) {
+                        star.x = pos.x + dx;
+                        star.y = pos.y + dy;
+                    }
+                });
+                if (editorState.selection.length === 1) updateInfoPanel();
+            } else if (editorState.selectionBox) {
+                editorState.selectionBox.x2 = worldPos.x;
+                editorState.selectionBox.y2 = worldPos.y;
+            }
+
+            coordsDisplay.textContent = `X: ${worldPos.x.toFixed(1)}, Y: ${worldPos.y.toFixed(1)}`;
+            editorState.hoveredStar = editorState.groupDrag ? null : getStarAt(worldPos.x, worldPos.y);
+            editorState.hoveredConnection = editorState.hoveredStar ? null : getConnectionAt(worldPos.x, worldPos.y);
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        function onMouseDown(e) {
+            if (e.button !== 0) return;
+            const worldPos = screenToWorld(e.clientX, e.clientY);
+            const clickedStar = getStarAt(worldPos.x, worldPos.y);
+
+            if (editorState.isSpacebarPan) {
+                camera.isDragging = true;
+                camera.lastX = e.clientX; camera.lastY = e.clientY;
+                updateCursor();
+                return;
+            }
+
+            if (editorState.mode === 'delete') {
+                if (clickedStar) {
+                    stars = stars.filter(s => s.id !== clickedStar.id);
+                    connections = connections.filter(c => c.p1_id !== clickedStar.id && c.p2_id !== clickedStar.id);
+                    editorState.selection = editorState.selection.filter(id => id !== clickedStar.id);
+                } else {
+                    const clickedConnection = getConnectionAt(worldPos.x, worldPos.y);
+                    if (clickedConnection) connections = connections.filter(c => c !== clickedConnection);
+                }
+            } else if (editorState.mode === 'add') {
+                pendingStar = { x: worldPos.x, y: worldPos.y };
+                starNameInput.value = ''; nameModal.style.display = 'flex'; starNameInput.focus();
+            } else if (editorState.mode === 'connect') {
+                if (clickedStar) {
+                    if (!editorState.firstStarForConnection) editorState.firstStarForConnection = clickedStar;
+                    else {
+                        if (editorState.firstStarForConnection.id !== clickedStar.id) {
+                            const exists = connections.some(c => (c.p1_id === editorState.firstStarForConnection.id && c.p2_id === clickedStar.id) || (c.p1_id === clickedStar.id && c.p2_id === editorState.firstStarForConnection.id));
+                            if (!exists) connections.push({ p1_id: editorState.firstStarForConnection.id, p2_id: clickedStar.id });
+                        }
+                        editorState.firstStarForConnection = null;
+                    }
+                } else editorState.firstStarForConnection = null;
+            } else { // Pan, Select, or Move mode
+                if (clickedStar) {
+                    if (!editorState.selection.includes(clickedStar.id)) {
+                        editorState.selection = [clickedStar.id];
+                    }
+                    editorState.groupDrag = {
+                        startX: worldPos.x,
+                        startY: worldPos.y,
+                        initialPositions: new Map()
+                    };
+                    editorState.selection.forEach(id => {
+                        const s = stars.find(star => star.id === id);
+                        if (s) editorState.groupDrag.initialPositions.set(id, { x: s.x, y: s.y });
+                    });
+                } else {
+                    editorState.selection = [];
+                    editorState.selectionBox = { x1: worldPos.x, y1: worldPos.y, x2: worldPos.x, y2: worldPos.y };
+                }
+            }
+            updateInfoPanel();
+            updateCursor();
+        }
+
+        function onMouseMove(e) {
+            editorState.lastMousePos = { x: e.clientX, y: e.clientY };
+            if (camera.isDragging) {
+                const dx = e.clientX - camera.lastX, dy = e.clientY - camera.lastY;
+                camera.x -= dx / camera.zoom; camera.y -= dy / camera.zoom;
+                camera.lastX = e.clientX; camera.lastY = e.clientY;
+            }
+        }
+
+        function onMouseUp(e) {
+            if (editorState.groupDrag) {
+                editorState.groupDrag = null;
+            }
+            if (editorState.selectionBox) {
+                const { x1, y1, x2, y2 } = editorState.selectionBox;
+                const minX = Math.min(x1, x2); const maxX = Math.max(x1, x2);
+                const minY = Math.min(y1, y2); const maxY = Math.max(y1, y2);
+                // Correctly assign the new selection
+                const newSelection = stars.filter(s => s.x >= minX && s.x <= maxX && s.y >= minY && s.y <= maxY).map(s => s.id);
+                editorState.selection = newSelection;
+                editorState.selectionBox = null;
+                updateInfoPanel();
+            }
+            if (camera.isDragging) {
+                camera.isDragging = false;
+            }
+            updateCursor();
+        }
+
+        function onWheel(e) {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.01 : 1 / 1.01;
+            const newZoom = camera.targetZoom * factor;
+            camera.targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+        }
+
+        function onResize() { setupCanvasDPI(); }
+
+        confirmNameBtn.addEventListener('click', () => {
+            const name = starNameInput.value.trim();
+            if (name && pendingStar) {
+                stars.push({ id: nextStarId++, name, x: pendingStar.x, y: pendingStar.y });
+                pendingStar = null; nameModal.style.display = 'none';
+            }
+        });
+        cancelNameBtn.addEventListener('click', () => { pendingStar = null; nameModal.style.display = 'none'; });
+        starNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmNameBtn.click(); });
+
+        infoNameInput.addEventListener('input', (e) => {
+            if (editorState.selection.length === 1) {
+                const star = stars.find(s => s.id === editorState.selection[0]);
+                if (star) star.name = e.target.value;
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT') {
+                if (e.code === 'Escape') document.activeElement.blur();
+                return;
+            }
+            if (e.code === 'Space' && !editorState.isSpacebarPan) {
+                e.preventDefault();
+                editorState.isSpacebarPan = true;
+                updateCursor();
+            }
+            if (e.code === 'Escape') {
+                e.preventDefault();
+                editorState.selection = [];
+                setMode('pan');
+                updateInfoPanel();
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                editorState.isSpacebarPan = false;
+                if (camera.isDragging) camera.isDragging = false;
+                updateCursor();
+            }
+        });
+
+        function setup() {
+            setupCanvasDPI();
+            editorState.lastMousePos = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
+            addStarBtn.addEventListener('click', () => setMode('add'));
+            connectStarBtn.addEventListener('click', () => setMode('connect'));
+            deleteBtn.addEventListener('click', () => setMode('delete'));
+            canvas.addEventListener('mousedown', onMouseDown);
+            canvas.addEventListener('mousemove', onMouseMove);
+            canvas.addEventListener('mouseup', onMouseUp);
+            canvas.addEventListener('mouseleave', onMouseUp);
+            canvas.addEventListener('wheel', onWheel, { passive: false });
+            window.addEventListener('resize', onResize);
+            setMode('pan');
+            animate();
+        }
+
+        setup();
+    </script>
+</body>
+
+</html>
