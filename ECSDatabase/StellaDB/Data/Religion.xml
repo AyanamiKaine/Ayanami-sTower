@@ -2,11 +2,11 @@
 
     <Entity>
         <Religion/>
-        <Name>Devotion to the Unmaking</Name>
+        <Name Value="Devotion to the Unmaking"/>
     </Entity>
 
     <Entity>
         <Religion/>
-        <Name>Echoes of the First Silence</Name>
+        <Name Value="Echoes of the First Silence"/>
     </Entity>
 </Entities>

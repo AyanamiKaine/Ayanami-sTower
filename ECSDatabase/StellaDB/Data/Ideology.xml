@@ -2,11 +2,11 @@
 
     <Entity>
         <Ideology/>
-        <Name>Nihilistic Imperative</Name>
+        <Name Value="Nihilistic Imperative"/>
     </Entity>
 
     <Entity>
         <Ideology/>
-        <Name>Harmonic Void Theory</Name>
+        <Name Value="Harmonic Void Theory"/>
     </Entity>
 </Entities>

@@ -2,12 +2,11 @@
 
     <Entity>
         <Culture/>
-        <Name>Deep Seekers</Name>
+        <Name Value="Silent Weave"/>
     </Entity>
 
     <Entity>
         <Culture/>
-        <Name>Silent Weave</Name>
+        <Name Value="Deep Seekers"/>
     </Entity>
-
 </Entities>

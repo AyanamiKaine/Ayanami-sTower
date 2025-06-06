@@ -2,7 +2,7 @@
 
     <Entity>
         <Asteroid/>
-        <Name>Big Berta</Name>
+        <Name Value = "Big Berta" />
     </Entity>
 
 </Entities>
