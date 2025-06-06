@@ -372,64 +372,8 @@ public class World : IDisposable
 
 
     /// <summary>
-    /// Each game world is populated with a set of predefined galaxies
-    /// </summary>
-    private void PredefineGalaxies()
-    {
-        PredefineAndromedaGalaxy();
-        PredefineMilkyWayGalaxy();
-    }
-
-    /// <summary>
-    /// Pre define political polities
-    /// </summary>
-    private void PredefinePolity()
-    {
-        DefineGrandExhangePolity();
-    }
-
-    private void DefineGrandExhangePolity()
-    {
-        // Capital world of the grandExchange
-        var abacus = Entity("Abacus");
-        Query("Planet").Insert(new
-        {
-            EntityId = abacus.Id
-        });
-
-        var grandExchange = Entity("Grand Exchange");
-        Query("Polity").Insert(new
-        {
-            EntityId = grandExchange.Id,
-            LeaderTitle = "Prime Arbiter",
-            Abbreviation = "GE",
-            SeatOfPowerLocationID = abacus.Id
-        });
-    }
-
-    private void DefineVoidWardensPolity()
-    {
-        // Capital world of the Void Wardens9*
-        var veridia = Entity("Veridia");
-        Query("Planet").Insert(new
-        {
-            EntityId = veridia.Id
-        });
-
-        var grandExchange = Entity("Void Wardens");
-        Query("Polity").Insert(new
-        {
-            EntityId = grandExchange.Id,
-            LeaderTitle = "Grand Keeper",
-            Abbreviation = "GK",
-            SeatOfPowerLocationID = veridia.Id
-        });
-    }
-
-
-    /// <summary>
-    /// Finds all XML files in a directory, consolidates their Entity elements,
-    /// and then calls the parser to load the data in a two-pass process.
+    /// Finds all XML files in a directory, consolidates their elements,
+    /// and then calls the parser to load the data in multiple passes.
     /// </summary>
     /// <param name="relativeDirectoryPath">The relative path to the directory containing game data XML files.</param>
     public void LoadDataFromDirectory(string relativeDirectoryPath)
@@ -443,17 +387,33 @@ public class World : IDisposable
             return;
         }
 
-        // Step 1: Read all files and aggregate their <Entity> elements into one list.
+        // Step 1: Read all files and aggregate their elements into separate lists.
         var allEntityElements = new List<XElement>();
+        var allRelationElements = new List<XElement>();
+
         foreach (string filePath in Directory.EnumerateFiles(fullDirectoryPath, "*.xml"))
         {
             try
             {
                 XDocument doc = XDocument.Load(filePath);
-                var entities = doc.Root?.Elements("Entity");
-                if (entities != null)
+                if (doc.Root == null) continue;
+
+                // Aggregate <Entity> elements
+                allEntityElements.AddRange(doc.Root.Elements("Entity"));
+
+                // THE FIX: Check if the root element itself is a relation container,
+                // and also check for nested relation containers for flexibility.
+                if (doc.Root.Name == "ManyToManyRelation")
                 {
-                    allEntityElements.AddRange(entities);
+                    allRelationElements.AddRange(doc.Root.Elements());
+                }
+                else
+                {
+                    // Aggregate all children of any nested <ManyToManyRelation> elements
+                    foreach (var relationRoot in doc.Root.Elements("ManyToManyRelation"))
+                    {
+                        allRelationElements.AddRange(relationRoot.Elements());
+                    }
                 }
             }
             catch (Exception ex)
@@ -461,75 +421,15 @@ public class World : IDisposable
                 Console.WriteLine($"Error reading or parsing XML file {Path.GetFileName(filePath)}: {ex.Message}");
             }
         }
-        Console.WriteLine($"Consolidated {allEntityElements.Count} entities from all files.");
+        Console.WriteLine($"Consolidated {allEntityElements.Count} entities and {allRelationElements.Count} relations from all files.");
 
-        // Step 2: Pass the complete, consolidated list to the parser.
+        // Step 2: Pass the consolidated list of entities to the parser.
         DataParser.ParseAndLoad(this, allEntityElements);
 
+        // Step 3: Pass the consolidated list of relations to the new generic parser method.
+        DataParser.ParseAndLoadRelations(this, allRelationElements);
+
         Console.WriteLine("Finished loading all game data.");
-    }
-    private void PredefineMilkyWayGalaxy()
-    {
-        //Defining an entity with a galaxy component
-        var milkiWay = Entity("Milky Way");
-        Query("Galaxy").Insert(new { EntityId = milkiWay.Id });
-
-        var proximaCentauri = Entity("Proxima Centauri");
-        Query("Entity").Where("Id", proximaCentauri.Id).Update(new { ParentId = milkiWay.Id });
-        Query("StarSystem").Insert(new
-        {
-            EntityId = proximaCentauri.Id,
-        });
-
-        Query("Position3D").Insert(new
-        {
-            EntityId = proximaCentauri.Id,
-            X = 5,
-            Y = 2,
-            Z = 3,
-        });
-
-        var proximaCentauriA = Entity("Proxima Centauri A");
-        proximaCentauriA.ParentId = proximaCentauri.Id;
-        Query("Star").Insert(new
-        {
-            EntityId = proximaCentauriA.Id,
-        });
-
-        var proximaCentauriB = Entity("Proxima Centauri B");
-        Query("Entity").Where("Id", proximaCentauriB.Id).Update(new { ParentId = proximaCentauriA.Id });
-        Query("Planet").Insert(new
-        {
-            EntityId = proximaCentauriB.Id,
-        });
-
-        var sirus = Entity("Sirius");
-        Query("Entity").Where("Id", sirus.Id).Update(new { ParentId = milkiWay.Id });
-        Query("StarSystem").Insert(new
-        {
-            EntityId = sirus.Id,
-        });
-
-        var sirusA = Entity("SiriusA");
-        Query("Entity").Where("Id", sirusA.Id).Update(new { ParentId = sirus.Id });
-        Query("Star").Insert(new
-        {
-            EntityId = sirusA.Id,
-        });
-
-        var sirusB = Entity("SiriusB");
-        Query("Entity").Where("Id", sirusB.Id).Update(new { ParentId = sirus.Id });
-        Query("Star").Insert(new
-        {
-            EntityId = sirusB.Id,
-        });
-    }
-
-    private void PredefineAndromedaGalaxy()
-    {
-        //Defining an entity with a galaxy component
-        var andromeda = Entity("Andromeda");
-        Query("Galaxy").Insert(new { EntityId = andromeda.Id });
     }
 
     /// <summary>
