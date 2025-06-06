@@ -14,4 +14,54 @@
     <Name Value="Sirius"/>
     <Position3D X="-60" Y="-20" Z="-20"/>
   </Entity>
+    <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Alpha Centauri A"/>
+    <Position3D X="28" Y="48" Z="11"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Barnard's Star"/>
+    <Position3D X="15" Y="-5" Z="40"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Vega"/>
+    <Position3D X="-25" Y="80" Z="-15"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Arcturus"/>
+    <Position3D X="110" Y="75" Z="-90"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Betelgeuse"/>
+    <Position3D X="150" Y="-200" Z="100"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Rigel"/>
+    <Position3D X="210" Y="-245" Z="125"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="TRAPPIST-1"/>
+    <Position3D X="120" Y="-80" Z="60"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Kepler-186"/>
+    <Position3D X="-450" Y="150" Z="-50"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Luhman 16"/>
+    <Position3D X="-5" Y="18" Z="-33"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Tau Ceti"/>
+    <Position3D X="88" Y="42" Z="-19"/>
+  </Entity>
 </Entities>
