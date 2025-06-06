@@ -5,4 +5,8 @@
         <Name>Devotion to the Unmaking</Name>
     </Entity>
 
+    <Entity>
+        <Religion/>
+        <Name>Echoes of the First Silence</Name>
+    </Entity>
 </Entities>

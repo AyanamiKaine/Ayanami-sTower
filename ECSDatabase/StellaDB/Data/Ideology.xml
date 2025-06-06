@@ -1,0 +1,12 @@
+<Entities>
+
+    <Entity>
+        <Ideology/>
+        <Name>Nihilistic Imperative</Name>
+    </Entity>
+
+    <Entity>
+        <Ideology/>
+        <Name>Harmonic Void Theory</Name>
+    </Entity>
+</Entities>

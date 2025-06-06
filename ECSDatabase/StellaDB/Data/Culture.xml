@@ -2,7 +2,12 @@
 
     <Entity>
         <Culture/>
-        <Name>The Deep Seekers</Name>
+        <Name>Deep Seekers</Name>
+    </Entity>
+
+    <Entity>
+        <Culture/>
+        <Name>Silent Weave</Name>
     </Entity>
 
 </Entities>
