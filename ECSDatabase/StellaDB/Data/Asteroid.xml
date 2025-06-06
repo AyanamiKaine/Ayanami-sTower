@@ -1,0 +1,8 @@
+<Entities>
+
+    <Entity>
+        <Asteroid/>
+        <Name>Big Berta</Name>
+    </Entity>
+
+</Entities>
