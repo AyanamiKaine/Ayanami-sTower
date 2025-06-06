@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Transactions;
 using AyanamisTower.StellaDB;
-using AyanamisTower.StellaDB.Model;
 using SqlKata.Execution;
 using Entity = AyanamisTower.StellaDB.Entity;
 
@@ -24,7 +23,7 @@ using (var scope = new TransactionScope())
     for (int i = 0; i < numberOfEntities; i++)
     {
         var e = world.Entity();
-        e.Add<Age>(new() { Value = 10 });
+        e.Update("Age", new { Value = 10 + i });
         entities.Add(e);
         entityIds.Add(e.Id);
     }
@@ -54,7 +53,7 @@ for (int i = 0; i < numberOfRuns; i++)
 {
     foreach (var entity in entities)
     {
-        entity.Update<Age>(new() { Value = 10 + i });
+        entity.Update("Age", new { Value = 10 + i });
     }
 }
 stopWatch2.Stop();
