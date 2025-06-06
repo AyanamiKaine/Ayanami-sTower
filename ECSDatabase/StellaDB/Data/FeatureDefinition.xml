@@ -13,23 +13,23 @@
   </Entity>
   <Entity>
     <FeatureDefinition Key="CanExecute"/>
-  <Name>CanExecute</Name>
+    <Name>CanExecute</Name>
   </Entity>
   <Entity>
     <FeatureDefinition Key="CanChangeReligion"/>
-  <Name>CanChangeReligion</Name>
+    <Name>CanChangeReligion</Name>
   </Entity>
   <Entity>
     <FeatureDefinition Key="CanChangeCulture"/>
-  <Name>CanChangeCulture</Name>
+    <Name>CanChangeCulture</Name>
   </Entity>
   <Entity>
     <FeatureDefinition Key="CanChangeIdeology"/>
-  <Name>CanChangeIdeology</Name>
+    <Name>CanChangeIdeology</Name>
   </Entity>
   <Entity>
     <FeatureDefinition Key="CanGetPregnant"/>
-      <Name>CanGetPregnant</Name>
+    <Name>CanGetPregnant</Name>
   </Entity>
   <Entity>
     <FeatureDefinition Key="CanCreateArtifacts"/>
