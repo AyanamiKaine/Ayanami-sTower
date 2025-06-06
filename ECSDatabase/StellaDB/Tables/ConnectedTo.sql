@@ -33,3 +33,34 @@ WHERE (EntityId1 = ? AND EntityId2 = ?)
    -- Note: with CHECK constraint, you only need to check the ordered pair
    -- WHERE (EntityId1 = MIN(?, ?) AND EntityId2 = MAX(?, ?))
 */
+
+
+/*
+
+Getting all systems that are connected to the sol system.
+
+SELECT
+    -- 3. Get the 'Value' (the name) from the Name table for each of the connected IDs.
+    Name.Value AS ConnectedSystemName
+FROM
+    Name
+WHERE
+    -- This 'EntityId' is from the Name table.
+    Name.EntityId IN (
+        -- 2. This subquery produces a list of all entity IDs connected to 'Sol'.
+        SELECT
+            -- This CASE statement finds the ID of the "other" system in the pair.
+            CASE
+                WHEN CT.EntityId1 = (SELECT EntityId FROM Name WHERE Value = 'Sol')
+                THEN CT.EntityId2
+                ELSE CT.EntityId1
+            END
+        FROM
+            ConnectedTo AS CT
+        WHERE
+            -- 1. Find all connection rows that involve Sol's ID.
+            CT.EntityId1 = (SELECT EntityId FROM Name WHERE Value = 'Sol') OR
+            CT.EntityId2 = (SELECT EntityId FROM Name WHERE Value = 'Sol')
+    );
+
+*/
