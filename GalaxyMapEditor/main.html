@@ -103,6 +103,15 @@
             font-weight: bold;
         }
 
+        .io-buttons {
+            margin-top: 10px;
+            border-top: 1px solid #4b5563;
+            padding-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
         .info-panel {
             position: absolute;
             top: 10px;
@@ -191,6 +200,7 @@
             display: none;
             justify-content: center;
             align-items: center;
+            z-index: 100;
         }
 
         .modal-content {
@@ -235,6 +245,10 @@
         <button id="addStarBtn">Add System</button>
         <button id="connectStarBtn">Connect</button>
         <button id="deleteBtn">Delete</button>
+        <div class="io-buttons">
+            <button id="importBtn">Import XML</button>
+            <button id="exportBtn">Export XML</button>
+        </div>
     </div>
 
     <div id="infoPanel" class="info-panel">
@@ -263,6 +277,8 @@
         </div>
     </div>
 
+    <input type="file" id="xmlImporter" accept=".xml" style="display: none;">
+
     <canvas id="galaxyCanvas"></canvas>
 
     <script>
@@ -278,9 +294,9 @@
         let editorState = {
             mode: 'pan',
             isSpacebarPan: false,
-            selection: [], // Array of star IDs
-            groupDrag: null, // {startX, startY, initialPositions: Map<id, {x,y}>}
-            selectionBox: null, // {x1, y1, x2, y2}
+            selection: [],
+            groupDrag: null,
+            selectionBox: null,
             firstStarForConnection: null,
             hoveredStar: null,
             hoveredConnection: null,
@@ -298,6 +314,10 @@
         const addStarBtn = document.getElementById('addStarBtn');
         const connectStarBtn = document.getElementById('connectStarBtn');
         const deleteBtn = document.getElementById('deleteBtn');
+        const importBtn = document.getElementById('importBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const xmlImporter = document.getElementById('xmlImporter');
+        const galaxyNameInput = document.getElementById('galaxyNameInput');
         const nameModal = document.getElementById('nameModal');
         const starNameInput = document.getElementById('starNameInput');
         const confirmNameBtn = document.getElementById('confirmNameBtn');
@@ -554,7 +574,7 @@
                         editorState.firstStarForConnection = null;
                     }
                 } else editorState.firstStarForConnection = null;
-            } else { // Pan, Select, or Move mode
+            } else {
                 if (clickedStar) {
                     if (!editorState.selection.includes(clickedStar.id)) {
                         editorState.selection = [clickedStar.id];
@@ -648,6 +668,7 @@
                 updateInfoPanel();
             }
         });
+
         window.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
@@ -657,18 +678,180 @@
             }
         });
 
+        // --- XML Import/Export ---
+        function exportToXML() {
+            const galaxyName = galaxyNameInput.value.trim() || "My Galaxy";
+
+            // Create a map of star connections for easier lookup
+            const starConnections = new Map();
+            connections.forEach(conn => {
+                const star1 = stars.find(s => s.id === conn.p1_id);
+                const star2 = stars.find(s => s.id === conn.p2_id);
+                if (!star1 || !star2) return;
+
+                if (!starConnections.has(star1.name)) starConnections.set(star1.name, []);
+                if (!starConnections.has(star2.name)) starConnections.set(star2.name, []);
+
+                // Add one-way connection for this schema
+                starConnections.get(star1.name).push(star2.name);
+            });
+
+            let childrenXml = stars.map(star => {
+                let connectedToXml = '';
+                if (starConnections.has(star.name)) {
+                    connectedToXml = starConnections.get(star.name).map(connectedName =>
+                        `
+            <ConnectedTo EntityId2="${connectedName}"/>`
+                    ).join('');
+                }
+
+                return `
+        <Entity>
+            <StarSystem/>
+            <Name Value="${star.name}"/>
+            <Position3D X="${star.x.toFixed(2)}" Y="${star.y.toFixed(2)}" Z="0.00"/>${connectedToXml}
+        </Entity>`;
+            }).join('');
+
+            const fullXml = `<?xml version="1.0" encoding="UTF-8"?>
+<Entity>
+    <Galaxy/>
+    <Name Value="${galaxyName}"/>
+    <Children>${childrenXml}
+    </Children>
+</Entity>`;
+
+            const blob = new Blob([fullXml.trim()], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${galaxyName.replace(/ /g, '_')}.xml`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importFromXML(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "application/xml");
+
+            // Reset current map
+            stars = [];
+            connections = [];
+            nextStarId = 0;
+            editorState.selection = [];
+
+            const galaxyEntity = xmlDoc.querySelector("Entity:has(> Galaxy)");
+            if (!galaxyEntity) {
+                alert("Could not find a root <Entity> with a <Galaxy/> tag.");
+                return;
+            }
+
+            galaxyNameInput.value = galaxyEntity.querySelector("Name")?.getAttribute("Value") || "Imported Galaxy";
+
+            const childrenContainer = galaxyEntity.querySelector("Children");
+            if (!childrenContainer) return;
+
+            // First pass: load all stars
+            const starEntities = childrenContainer.querySelectorAll(":scope > Entity");
+            starEntities.forEach(node => {
+                if (node.querySelector("StarSystem")) {
+                    const name = node.querySelector("Name")?.getAttribute("Value");
+                    const pos = node.querySelector("Position3D");
+                    if (name && pos) {
+                        const x = parseFloat(pos.getAttribute("X"));
+                        const y = parseFloat(pos.getAttribute("Y"));
+                        stars.push({ id: nextStarId++, name, x, y });
+                    }
+                }
+            });
+
+            // Second pass: load all connections
+            starEntities.forEach(node => {
+                const star1Name = node.querySelector("Name")?.getAttribute("Value");
+                const star1 = stars.find(s => s.name === star1Name);
+                if (!star1) return;
+
+                const connectionNodes = node.querySelectorAll("ConnectedTo");
+                connectionNodes.forEach(connNode => {
+                    const star2Name = connNode.getAttribute("EntityId2");
+                    const star2 = stars.find(s => s.name === star2Name);
+                    if (star2) {
+                        // Avoid creating duplicate connections if schema implies two-way
+                        const exists = connections.some(c =>
+                            (c.p1_id === star1.id && c.p2_id === star2.id) ||
+                            (c.p1_id === star2.id && c.p2_id === star1.id)
+                        );
+                        if (!exists) {
+                            connections.push({ p1_id: star1.id, p2_id: star2.id });
+                        }
+                    }
+                });
+            });
+
+            updateInfoPanel();
+        }
+
         function setup() {
             setupCanvasDPI();
             editorState.lastMousePos = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
+
             addStarBtn.addEventListener('click', () => setMode('add'));
             connectStarBtn.addEventListener('click', () => setMode('connect'));
             deleteBtn.addEventListener('click', () => setMode('delete'));
+            exportBtn.addEventListener('click', exportToXML);
+            importBtn.addEventListener('click', () => xmlImporter.click());
+
+            xmlImporter.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        importFromXML(e.target.result);
+                    } catch (err) {
+                        console.error("Error parsing XML file:", err);
+                        alert("Failed to parse XML file. Check console for details.");
+                    }
+                };
+                reader.readAsText(file);
+                event.target.value = null;
+            });
+
             canvas.addEventListener('mousedown', onMouseDown);
             canvas.addEventListener('mousemove', onMouseMove);
             canvas.addEventListener('mouseup', onMouseUp);
             canvas.addEventListener('mouseleave', onMouseUp);
             canvas.addEventListener('wheel', onWheel, { passive: false });
             window.addEventListener('resize', onResize);
+
+            window.addEventListener('keydown', (e) => {
+                if (document.activeElement.tagName === 'INPUT') {
+                    if (e.code === 'Escape') document.activeElement.blur();
+                    return;
+                }
+                if (e.code === 'Space' && !editorState.isSpacebarPan) {
+                    e.preventDefault();
+                    editorState.isSpacebarPan = true;
+                    updateCursor();
+                }
+                if (e.code === 'Escape') {
+                    e.preventDefault();
+                    editorState.selection = [];
+                    setMode('pan');
+                    updateInfoPanel();
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    editorState.isSpacebarPan = false;
+                    if (camera.isDragging) camera.isDragging = false;
+                    updateCursor();
+                }
+            });
+
             setMode('pan');
             animate();
         }
