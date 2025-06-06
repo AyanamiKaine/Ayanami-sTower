@@ -29,7 +29,7 @@ public class QueryTests
         {
             EntityId = characterEntity.Id,
             FeatureId = world.Query("FeatureDefinition")
-                .Where("Key", "CanMarry") // the can_marry feature definition is a pre defined one
+                .Where("Key", "CanMarry") // the CanMarry feature definition is a pre defined one
                 .Select("EntityId")
                 .FirstOrDefault<long>()
         });

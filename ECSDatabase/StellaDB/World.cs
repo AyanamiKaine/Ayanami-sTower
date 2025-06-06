@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Xml.Linq;
 using Microsoft.Data.Sqlite;
 using SqlKata;
 using SqlKata.Compilers;
@@ -31,6 +32,11 @@ public class World : IDisposable
     /// When the world lives only in memory and not on disk it returns true.
     /// </summary>
     public bool InMemory { get; } = false;
+    /// <summary>
+    /// A cache mapping entity names to their IDs for quick lookups.
+    /// </summary>
+    private readonly Dictionary<string, long> _entityNameCache = [];
+
     /// <summary>
     /// Creates a database using a name
     /// </summary>
@@ -68,10 +74,7 @@ public class World : IDisposable
         try
         {
             CreateTables("Tables");
-            LoadFeatureDefinitions();
-            LoadGalaxies();
-            //predefineGalaxies();
-            //PredefinePolity();
+            LoadDataFromDirectory("Data");
         }
         catch (System.Exception ex)
         {
@@ -113,58 +116,32 @@ public class World : IDisposable
     }
 
     /// <summary>
-    /// Creates an entity and returns it.
+    /// Creates a new entity and its associated name component. If the entity name already exists, it retrieves the existing one.
     /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
     public Entity Entity(string? name = null)
     {
+        if (!string.IsNullOrEmpty(name) && _entityNameCache.TryGetValue(name, out long existingId))
+        {
+            return new Entity { Id = existingId, World = this };
+        }
+
         long entityId = -1;
         using var transaction = _connection.BeginTransaction();
         try
         {
-            // 1. Create Entity to get ID
-            using (var entityCmd = _connection.CreateCommand())
+            // The fix is here: instead of new {}, we provide a non-empty object
+            // by setting a nullable column to null. This satisfies SqlKata's requirement.
+            entityId = Query().From("Entity").InsertGetId<long>(new { ParentId = (long?)null });
+
+            if (!string.IsNullOrEmpty(name))
             {
-                entityCmd.Transaction = transaction;
-                entityCmd.CommandText = "INSERT INTO Entity DEFAULT VALUES; SELECT last_insert_rowid();";
-                entityId = (long)entityCmd.ExecuteScalar()!;
+                Query("Name").Insert(new { EntityId = entityId, Value = name });
+                _entityNameCache[name] = entityId; // Add to cache
             }
 
-            // 2. Insert Name into EntityNames
-            using (var nameCmd = _connection.CreateCommand())
-            {
-                nameCmd.Transaction = transaction;
-                nameCmd.CommandText = "INSERT INTO Name (EntityId, Value) VALUES (@EntityId, @Value);";
-                nameCmd.Parameters.AddWithValue("@EntityId", entityId);
-                if (string.IsNullOrEmpty(name))
-                {
-                    nameCmd.Parameters.AddWithValue("@Value", DBNull.Value);
-                }
-                else
-                {
-                    nameCmd.Parameters.AddWithValue("@Value", name);
-                }
-                nameCmd.ExecuteNonQuery();
-            }
             transaction.Commit();
 
-            // We want a dictonary of entities where we can easy get them using their name. 
-            if (!string.IsNullOrEmpty(name))
-                Entities[name] = entityId;
-
-            return new Entity()
-            {
-                Id = entityId,
-                World = this,
-            };
-        }
-        catch (SqliteException ex)
-        {
-            transaction.Rollback();
-            Console.WriteLine($"{ex.Message}");
-            Console.WriteLine($"Error: Entity name '{name}' already exists or another unique constraint failed. Entity not created.");
-            throw; // Re-throw or handle more gracefully
+            return new Entity { Id = entityId, World = this };
         }
         catch
         {
@@ -172,7 +149,27 @@ public class World : IDisposable
             throw;
         }
     }
+    /// <summary>
+    /// Retrieves an entity by its name, using the cache for performance.
+    /// </summary>
+    public Entity? GetEntityByName(string name)
+    {
+        if (_entityNameCache.TryGetValue(name, out long id))
+        {
+            return new Entity { Id = id, World = this };
+        }
 
+        // If not in cache, query the database
+        var result = Query("Name").Where("Value", name).FirstOrDefault();
+        if (result != null)
+        {
+            long entityId = result.EntityId;
+            _entityNameCache[name] = entityId; // Cache the result
+            return new Entity { Id = entityId, World = this };
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Iterates over all defined tables in the specified subfolder to create a database.
@@ -429,29 +426,48 @@ public class World : IDisposable
         });
     }
 
-    private void LoadFeatureDefinitions()
+
+    /// <summary>
+    /// Finds all XML files in a directory, consolidates their Entity elements,
+    /// and then calls the parser to load the data in a two-pass process.
+    /// </summary>
+    /// <param name="relativeDirectoryPath">The relative path to the directory containing game data XML files.</param>
+    public void LoadDataFromDirectory(string relativeDirectoryPath)
     {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "FeatureDefinition.xml");
-        foreach (var key in DataParser.GetFeatureKeys(path))
+        Console.WriteLine($"Consolidating all game data from directory '{relativeDirectoryPath}'...");
+        string fullDirectoryPath = Path.Combine(AppContext.BaseDirectory, relativeDirectoryPath);
+
+        if (!Directory.Exists(fullDirectoryPath))
         {
-            Query("FeatureDefinition").Insert(new
+            Console.WriteLine($"Warning: Data directory not found at '{fullDirectoryPath}'. No data will be loaded.");
+            return;
+        }
+
+        // Step 1: Read all files and aggregate their <Entity> elements into one list.
+        var allEntityElements = new List<XElement>();
+        foreach (string filePath in Directory.EnumerateFiles(fullDirectoryPath, "*.xml"))
+        {
+            try
             {
-                EntityId = Entity(key ?? "").Id,
-                Key = key
-            });
+                XDocument doc = XDocument.Load(filePath);
+                var entities = doc.Root?.Elements("Entity");
+                if (entities != null)
+                {
+                    allEntityElements.AddRange(entities);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading or parsing XML file {Path.GetFileName(filePath)}: {ex.Message}");
+            }
         }
-    }
+        Console.WriteLine($"Consolidated {allEntityElements.Count} entities from all files.");
 
-    private void LoadGalaxies()
-    {
-        var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Galaxy.xml");
-        foreach (var galaxyName in DataParser.GetGalaxyNames(path))
-        {
-            var e = Entity(galaxyName ?? "");
-            Query("Galaxy").Insert(new { EntityId = e.Id });
-        }
-    }
+        // Step 2: Pass the complete, consolidated list to the parser.
+        DataParser.ParseAndLoad(this, allEntityElements);
 
+        Console.WriteLine("Finished loading all game data.");
+    }
     private void PredefineMilkyWayGalaxy()
     {
         //Defining an entity with a galaxy component

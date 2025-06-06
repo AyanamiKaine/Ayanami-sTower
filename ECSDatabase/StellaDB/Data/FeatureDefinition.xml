@@ -1,12 +1,38 @@
-<FeatureDefinitions>
+<Entities>
+  <Entity>
     <FeatureDefinition Key="CanMarry"/>
+    <Name>CanMarry</Name>
+  </Entity>
+  <Entity>
     <FeatureDefinition Key="CanSpeakToVoid"/>
+    <Name>CanSpeakToVoid</Name>
+  </Entity>
+  <Entity>
     <FeatureDefinition Key="CanFlyShips"/>
+    <Name>CanFlyShips</Name>
+  </Entity>
+  <Entity>
     <FeatureDefinition Key="CanExecute"/>
+  <Name>CanExecute</Name>
+  </Entity>
+  <Entity>
     <FeatureDefinition Key="CanChangeReligion"/>
+  <Name>CanChangeReligion</Name>
+  </Entity>
+  <Entity>
     <FeatureDefinition Key="CanChangeCulture"/>
+  <Name>CanChangeCulture</Name>
+  </Entity>
+  <Entity>
     <FeatureDefinition Key="CanChangeIdeology"/>
+  <Name>CanChangeIdeology</Name>
+  </Entity>
+  <Entity>
     <FeatureDefinition Key="CanGetPregnant"/>
+      <Name>CanGetPregnant</Name>
+  </Entity>
+  <Entity>
     <FeatureDefinition Key="CanCreateArtifacts"/>
-</FeatureDefinitions>
-    
+    <Name>CanCreateArtifacts</Name>
+  </Entity>
+</Entities>

@@ -1,5 +1,6 @@
 using System;
 using System.Xml.Linq;
+using SqlKata.Execution;
 
 namespace AyanamisTower.StellaDB;
 
@@ -50,95 +51,139 @@ so we dont have to write Parent=2231 should the id change for any reason we woul
 public static class DataParser
 {
     /// <summary>
-    /// Gets all feature keys defined
+    /// Parses a consolidated list of entity XElements and populates the world.
+    /// It uses a two-pass approach: first creating all entities, then setting up components and relationships.
     /// </summary>
-    /// <param name="relativeFilePath"></param>
-    /// <returns></returns>
-    public static List<string?> GetFeatureKeys(string relativeFilePath)
+    /// <param name="world">The world instance to populate.</param>
+    /// <param name="allEntityElements">A list of all Entity XElements from all data files.</param>
+    public static void ParseAndLoad(World world, List<XElement> allEntityElements)
     {
-        List<string?> featureKeys = [];
         try
         {
-            string baseDirectory = AppContext.BaseDirectory;
-
-            string fullPath = Path.Combine(baseDirectory, relativeFilePath);
-
-            if (!File.Exists(fullPath))
+            // First pass: create all entities to ensure they exist before setting up parent relationships.
+            // This pass guarantees that any entity can be found by name in the second pass, regardless of file order.
+            Console.WriteLine("Parser First Pass: Creating all entities...");
+            foreach (XElement entityElement in allEntityElements)
             {
-                Console.WriteLine($"Error: XML file not found at {fullPath}");
-                return featureKeys; // Return empty list
+                var nameElement = entityElement.Element("Name");
+                string? entityName = null;
+
+                if (nameElement != null)
+                {
+                    entityName = (string?)nameElement.Attribute("Value") ?? nameElement.Value;
+                }
+
+                if (string.IsNullOrEmpty(entityName))
+                {
+                    var firstComponent = entityElement.Elements().FirstOrDefault();
+                    if (firstComponent != null)
+                    {
+                        var keyAttribute = firstComponent.Attribute("Key");
+                        if (keyAttribute != null)
+                        {
+                            entityName = keyAttribute.Value;
+                        }
+                    }
+                }
+
+                // Create the entity if it has a name. world.Entity handles duplicates.
+                if (!string.IsNullOrEmpty(entityName))
+                {
+                    world.Entity(entityName);
+                }
             }
+            Console.WriteLine("Parser First Pass: Completed.");
 
-            // Load the XML document from the file
-            XDocument doc = XDocument.Load(fullPath);
-
-            // Query the document to find all "FeatureDefinition" elements
-            // and then select the value of their "Key" child element.
-            featureKeys = [.. doc.Descendants("FeatureDefinition")
-                               .Select(fd => fd.Attribute("Key")?.Value)
-                               .Where(key => !string.IsNullOrEmpty(key))];
-        }
-        catch (System.Xml.XmlException ex)
-        {
-            Console.WriteLine($"Error: XML parsing error. {ex.Message}");
-            // Handle XML format errors
-        }
-        catch (Exception ex) // Catch-all for other unexpected errors
-        {
-            Console.WriteLine($"An unexpected error occurred: {ex.Message}");
-        }
-
-        return featureKeys;
-    }
-
-    /// <summary>
-    /// Reads the galaxy data from an XML file where galaxy names are attributes,
-    /// and returns the names of the galaxies.
-    /// </summary>
-    /// <param name="relativeFilePath">The relative path to the XML file.</param>
-    /// <returns>A list of galaxy names. Returns an empty list if the file is not found or an error occurs.</returns>
-    public static List<string?> GetGalaxyNames(string relativeFilePath)
-    {
-        List<string?> galaxyNames = [];
-        try
-        {
-            string baseDirectory = AppContext.BaseDirectory;
-
-            // Combine the base directory with the relative file path
-            string fullPath = Path.Combine(baseDirectory, relativeFilePath);
-
-            // Check if the file exists before attempting to load
-            if (!File.Exists(fullPath))
+            // Second pass: process components and parent relationships now that all entities are guaranteed to exist.
+            Console.WriteLine("Parser Second Pass: Processing components and relationships...");
+            foreach (XElement entityElement in allEntityElements)
             {
-                Console.WriteLine($"Error: XML file not found at {fullPath}");
-                // Return empty list if file not found
-                return [];
+                var nameElement = entityElement.Element("Name");
+                string? entityName = null;
+                if (nameElement != null)
+                {
+                    entityName = (string?)nameElement.Attribute("Value") ?? nameElement.Value;
+                }
+
+                if (string.IsNullOrEmpty(entityName))
+                {
+                    var firstComponent = entityElement.Elements().FirstOrDefault();
+                    if (firstComponent != null)
+                    {
+                        var keyAttribute = firstComponent.Attribute("Key");
+                        if (keyAttribute != null)
+                        {
+                            entityName = keyAttribute.Value;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(entityName))
+                {
+                    Console.WriteLine("Warning: Skipping an <Entity> in second pass because it has no identifiable name or key.");
+                    continue;
+                }
+
+                var entity = world.GetEntityByName(entityName);
+                if (entity == null)
+                {
+                    Console.WriteLine($"Error: Could not retrieve entity '{entityName}' during the second pass. It may not have been created correctly in the first pass.");
+                    continue;
+                }
+
+                // Handle Parent relationship
+                var parentAttribute = entityElement.Attribute("Parent");
+                if (parentAttribute != null && !string.IsNullOrEmpty(parentAttribute.Value))
+                {
+                    var parentEntity = world.GetEntityByName(parentAttribute.Value);
+                    if (parentEntity != null)
+                    {
+                        entity.ParentId = parentEntity.Id;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Warning: Parent entity '{parentAttribute.Value}' not found for entity '{entityName}'.");
+                    }
+                }
+
+                // Iterate over all child elements (components) of the <Entity>
+                foreach (XElement componentElement in entityElement.Elements())
+                {
+                    string tableName = componentElement.Name.LocalName;
+
+                    if (tableName == "Name")
+                    {
+                        continue;
+                    }
+
+                    var componentData = new Dictionary<string, object>
+                        {
+                            { "EntityId", entity.Id }
+                        };
+
+                    foreach (XAttribute attribute in componentElement.Attributes())
+                    {
+                        componentData[attribute.Name.LocalName] = attribute.Value;
+                    }
+
+                    try
+                    {
+                        if (!entity.Has(tableName))
+                        {
+                            world.Query(tableName).Insert(componentData);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error inserting component '{tableName}' for entity '{entityName}': {ex.Message}");
+                    }
+                }
             }
-
-            // Load the XML document from the file
-            XDocument doc = XDocument.Load(fullPath);
-
-            galaxyNames = [.. doc.Descendants("Galaxy")       // Find all <Galaxy> elements
-                             .Select(g => g.Attribute("Name")?.Value) // Get the value of the "Name" attribute
-                             .Where(name => !string.IsNullOrEmpty(name))]; // Convert to List
-
-
+            Console.WriteLine("Parser Second Pass: Completed.");
         }
-        catch (System.Xml.XmlException ex)
+        catch (Exception ex)
         {
-            Console.WriteLine($"Error parsing XML file '{relativeFilePath}': {ex.Message}");
-            // Handle XML format errors, or rethrow if critical
-            // Depending on requirements, you might want to return an empty list or throw
+            Console.WriteLine($"An unexpected error occurred during XML parsing: {ex.Message}");
         }
-        catch (IOException ex)
-        {
-            Console.WriteLine($"An I/O error occurred while accessing file '{relativeFilePath}': {ex.Message}");
-        }
-        catch (Exception ex) // Catch other potential exceptions
-        {
-            Console.WriteLine($"An unexpected error occurred while processing file '{relativeFilePath}': {ex.Message}");
-            // Handle other errors, or rethrow if critical
-        }
-        return galaxyNames;
     }
 }

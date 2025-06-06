@@ -1,9 +1,30 @@
-<Planets>
-    <Planet Name="Proxima Centauri A" StarSystem="Proxima Centauri"/>
-    <Planet Name="Proxima Centauri B" StarSystem="Proxima Centauri"/>
-    <Planet Name="Sirius A" StarSystem="Sirius"/>
-    <Planet Name="Sirius B" StarSystem="Sirius"/>
-    <Planet Name="Veridia" StarSystem="Sirius"/>
-    <Planet Name="Morian" StarSystem="Sirius"/>
-    <Planet Name="Abacus" StarSystem="Sirius"/>
-</Planets>
+<Entities>
+    <Entity Parent="Proxima Centauri">
+        <Planet/>
+        <Name Value="Proxima Centauri A"/>
+    </Entity>
+    <Entity Parent="Proxima Centauri">
+        <Planet/>
+        <Name Value="Proxima Centauri B"/>
+    </Entity>
+    <Entity Parent="Sirius">
+        <Planet/>
+        <Name Value="Sirius A"/>
+    </Entity>
+    <Entity Parent="Sirius">
+        <Planet/>
+        <Name Value="Sirius B"/>
+    </Entity>
+    <Entity Parent="Sirius">
+        <Planet/>
+        <Name Value="Veridia"/>
+    </Entity>
+    <Entity Parent="Sirius">
+        <Planet/>
+        <Name Value="Morian"/>
+    </Entity>
+    <Entity Parent="Sirius">
+        <Planet/>
+        <Name Value="Abacus"/>
+    </Entity>
+</Entities>

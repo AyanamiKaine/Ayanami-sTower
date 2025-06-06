@@ -1,4 +1,4 @@
-<ConnectionsTo>
-    <ConnectedTo StarSystem1="Sol" StarSystem2="Proxima Centauri"/>
-    <ConnectedTo StarSystem1="Proxima Centauri" StarSystem2="Sirius"/>
-</ConnectionsTo>
+<ManyToManyRelation>
+    <ConnectedTo EntityId1="Sol" EntityId2="Proxima Centauri"/>
+    <ConnectedTo EntityId1="Proxima Centauri" EntityId2="Sirius"/>
+</ManyToManyRelation>

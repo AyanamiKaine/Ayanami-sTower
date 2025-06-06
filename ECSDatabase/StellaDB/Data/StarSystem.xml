@@ -1,24 +1,17 @@
-<StarSystems>
-
-    <StarSystem Name = "Sol">
-        <Galaxy Name = "Milky Way"/>
-        <Components>
-            <Position X="0" Y="0" Z="0"/>
-        </Components>
-    </StarSystem>
-
-    <StarSystem Name = "Proxima Centauri">
-        <Galaxy Name = "Milky Way"/>
-        <Components>
-            <Position X="30" Y="50" Z="10"/>
-        </Components>
-    </StarSystem>
-
-    <StarSystem Name = "Sirius">
-        <Galaxy Name = "Milky Way"/>
-        <Components>
-            <Position X="-60" Y="-20" Z="-20"/>
-        </Components>
-    </StarSystem>
-    
-</StarSystems>
+<Entities>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Sol"/>
+    <Position3D X="0" Y="0" Z="0"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Proxima Centauri"/>
+    <Position3D X="30" Y="50" Z="10"/>
+  </Entity>
+  <Entity Parent="Milky Way">
+    <StarSystem/>
+    <Name Value="Sirius"/>
+    <Position3D X="-60" Y="-20" Z="-20"/>
+  </Entity>
+</Entities>

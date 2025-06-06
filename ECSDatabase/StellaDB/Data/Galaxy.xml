@@ -1,15 +1,54 @@
-<Galaxies>
-    <Galaxy Name = "Milky Way"/>
-    <Galaxy Name = "Andromeda"/>
-    <Galaxy Name = "Sunflower"/>
-    <Galaxy Name = "Black Eye"/>
-    <Galaxy Name = "Eye of God"/>
-    <Galaxy Name = "Celestial Anchor"/>
-    <Galaxy Name = "Echoes of Infinity"/>
-    <Galaxy Name = "Nyxoria"/>
-    <Galaxy Name = "Elysian Expanse"/>
-    <Galaxy Name = "Void Mother"/>
-    <Galaxy Name = "The Great Unfolding"/>
-    <Galaxy Name = "Chrono-Current"/>
-    <Galaxy Name = "The Watcher's Eye"/>
-</Galaxies>
+<Entities>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Milky Way"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Andromeda"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Sunflower"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Black Eye"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Eye of God"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Celestial Anchor"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Echoes of Infinity"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Nyxoria"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Elysian Expanse"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Void Mother"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="The Great Unfolding"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="Chrono-Current"/>
+  </Entity>
+  <Entity>
+    <Galaxy/>
+    <Name Value="The Watcher's Eye"/>
+  </Entity>
+</Entities>
