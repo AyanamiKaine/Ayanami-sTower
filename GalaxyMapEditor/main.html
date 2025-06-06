@@ -89,6 +89,12 @@
             background-color: #4b5563;
         }
 
+        .ui-panel button:disabled {
+            background-color: #1f2937;
+            color: #4b5563;
+            cursor: not-allowed;
+        }
+
         .ui-panel button.active {
             background-color: #4f46e5;
             border-color: #6366f1;
@@ -103,13 +109,18 @@
             font-weight: bold;
         }
 
+        .history-buttons,
         .io-buttons {
             margin-top: 10px;
             border-top: 1px solid #4b5563;
             padding-top: 10px;
             display: flex;
-            flex-direction: column;
             gap: 10px;
+        }
+
+        .history-buttons button,
+        .io-buttons button {
+            flex-grow: 1;
         }
 
         .info-panel {
@@ -245,9 +256,13 @@
         <button id="addStarBtn">Add System</button>
         <button id="connectStarBtn">Connect</button>
         <button id="deleteBtn">Delete</button>
+        <div class="history-buttons">
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
+        </div>
         <div class="io-buttons">
-            <button id="importBtn">Import XML</button>
-            <button id="exportBtn">Export XML</button>
+            <button id="importBtn">Import</button>
+            <button id="exportBtn">Export</button>
         </div>
     </div>
 
@@ -311,9 +326,15 @@
         let nextStarId = 0;
         let pendingStar = null;
 
+        // --- History Management ---
+        let history = [];
+        let historyIndex = -1;
+
         const addStarBtn = document.getElementById('addStarBtn');
         const connectStarBtn = document.getElementById('connectStarBtn');
         const deleteBtn = document.getElementById('deleteBtn');
+        const undoBtn = document.getElementById('undoBtn');
+        const redoBtn = document.getElementById('redoBtn');
         const importBtn = document.getElementById('importBtn');
         const exportBtn = document.getElementById('exportBtn');
         const xmlImporter = document.getElementById('xmlImporter');
@@ -544,6 +565,7 @@
             const worldPos = screenToWorld(e.clientX, e.clientY);
             const clickedStar = getStarAt(worldPos.x, worldPos.y);
 
+            // Spacebar pan always takes precedence
             if (editorState.isSpacebarPan) {
                 camera.isDragging = true;
                 camera.lastX = e.clientX; camera.lastY = e.clientY;
@@ -551,48 +573,71 @@
                 return;
             }
 
+            // --- The logic is now explicitly separated by mode to prevent fall-through ---
+
             if (editorState.mode === 'delete') {
                 if (clickedStar) {
                     stars = stars.filter(s => s.id !== clickedStar.id);
                     connections = connections.filter(c => c.p1_id !== clickedStar.id && c.p2_id !== clickedStar.id);
                     editorState.selection = editorState.selection.filter(id => id !== clickedStar.id);
+                    saveState();
                 } else {
                     const clickedConnection = getConnectionAt(worldPos.x, worldPos.y);
-                    if (clickedConnection) connections = connections.filter(c => c !== clickedConnection);
+                    if (clickedConnection) {
+                        connections = connections.filter(c => c !== clickedConnection);
+                        saveState();
+                    }
                 }
-            } else if (editorState.mode === 'add') {
+                updateInfoPanel();
+                return; // End delete logic
+            }
+
+            if (editorState.mode === 'add') {
                 pendingStar = { x: worldPos.x, y: worldPos.y };
                 starNameInput.value = ''; nameModal.style.display = 'flex'; starNameInput.focus();
-            } else if (editorState.mode === 'connect') {
+                return; // End add logic
+            }
+
+            if (editorState.mode === 'connect') {
                 if (clickedStar) {
-                    if (!editorState.firstStarForConnection) editorState.firstStarForConnection = clickedStar;
-                    else {
+                    if (!editorState.firstStarForConnection) {
+                        editorState.firstStarForConnection = clickedStar;
+                    } else {
                         if (editorState.firstStarForConnection.id !== clickedStar.id) {
                             const exists = connections.some(c => (c.p1_id === editorState.firstStarForConnection.id && c.p2_id === clickedStar.id) || (c.p1_id === clickedStar.id && c.p2_id === editorState.firstStarForConnection.id));
-                            if (!exists) connections.push({ p1_id: editorState.firstStarForConnection.id, p2_id: clickedStar.id });
+                            if (!exists) {
+                                connections.push({ p1_id: editorState.firstStarForConnection.id, p2_id: clickedStar.id });
+                                saveState();
+                            }
                         }
                         editorState.firstStarForConnection = null;
                     }
-                } else editorState.firstStarForConnection = null;
-            } else {
-                if (clickedStar) {
-                    if (!editorState.selection.includes(clickedStar.id)) {
-                        editorState.selection = [clickedStar.id];
-                    }
-                    editorState.groupDrag = {
-                        startX: worldPos.x,
-                        startY: worldPos.y,
-                        initialPositions: new Map()
-                    };
-                    editorState.selection.forEach(id => {
-                        const s = stars.find(star => star.id === id);
-                        if (s) editorState.groupDrag.initialPositions.set(id, { x: s.x, y: s.y });
-                    });
                 } else {
-                    editorState.selection = [];
-                    editorState.selectionBox = { x1: worldPos.x, y1: worldPos.y, x2: worldPos.x, y2: worldPos.y };
+                    editorState.firstStarForConnection = null;
                 }
+                updateInfoPanel();
+                return; // End connect logic
             }
+
+            // Default 'pan' mode logic (select, move, pan)
+            if (clickedStar) {
+                if (!editorState.selection.includes(clickedStar.id)) {
+                    editorState.selection = [clickedStar.id];
+                }
+                editorState.groupDrag = {
+                    startX: worldPos.x,
+                    startY: worldPos.y,
+                    initialPositions: new Map()
+                };
+                editorState.selection.forEach(id => {
+                    const s = stars.find(star => star.id === id);
+                    if (s) editorState.groupDrag.initialPositions.set(id, { x: s.x, y: s.y });
+                });
+            } else {
+                editorState.selection = [];
+                editorState.selectionBox = { x1: worldPos.x, y1: worldPos.y, x2: worldPos.x, y2: worldPos.y };
+            }
+
             updateInfoPanel();
             updateCursor();
         }
@@ -609,6 +654,7 @@
         function onMouseUp(e) {
             if (editorState.groupDrag) {
                 editorState.groupDrag = null;
+                saveState();
             }
             if (editorState.selectionBox) {
                 const { x1, y1, x2, y2 } = editorState.selectionBox;
@@ -639,11 +685,17 @@
             if (name && pendingStar) {
                 stars.push({ id: nextStarId++, name, x: pendingStar.x, y: pendingStar.y });
                 pendingStar = null; nameModal.style.display = 'none';
+                saveState();
             }
         });
         cancelNameBtn.addEventListener('click', () => { pendingStar = null; nameModal.style.display = 'none'; });
         starNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmNameBtn.click(); });
 
+        infoNameInput.addEventListener('blur', () => {
+            if (editorState.selection.length === 1) {
+                saveState();
+            }
+        });
         infoNameInput.addEventListener('input', (e) => {
             if (editorState.selection.length === 1) {
                 const star = stars.find(s => s.id === editorState.selection[0]);
@@ -667,6 +719,16 @@
                 setMode('pan');
                 updateInfoPanel();
             }
+            // Undo/Redo shortcuts
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                } else if (e.key === 'y' || (e.key === 'Z' && e.shiftKey)) {
+                    e.preventDefault();
+                    redo();
+                }
+            }
         });
 
         window.addEventListener('keyup', (e) => {
@@ -678,33 +740,66 @@
             }
         });
 
+        // --- History Functions ---
+        function saveState() {
+            history = history.slice(0, historyIndex + 1);
+            const currentState = {
+                stars: JSON.parse(JSON.stringify(stars)),
+                connections: JSON.parse(JSON.stringify(connections)),
+                nextStarId: nextStarId
+            };
+            history.push(currentState);
+            historyIndex = history.length - 1;
+            updateUndoRedoButtons();
+        }
+
+        function loadState(state) {
+            stars = JSON.parse(JSON.stringify(state.stars));
+            connections = JSON.parse(JSON.stringify(state.connections));
+            nextStarId = state.nextStarId;
+            editorState.selection = [];
+            updateInfoPanel();
+        }
+
+        function undo() {
+            if (historyIndex > 0) {
+                historyIndex--;
+                loadState(history[historyIndex]);
+                updateUndoRedoButtons();
+            }
+        }
+
+        function redo() {
+            if (historyIndex < history.length - 1) {
+                historyIndex++;
+                loadState(history[historyIndex]);
+                updateUndoRedoButtons();
+            }
+        }
+
+        function updateUndoRedoButtons() {
+            undoBtn.disabled = historyIndex <= 0;
+            redoBtn.disabled = historyIndex >= history.length - 1;
+        }
+
         // --- XML Import/Export ---
         function exportToXML() {
             const galaxyName = galaxyNameInput.value.trim() || "My Galaxy";
-
-            // Create a map of star connections for easier lookup
             const starConnections = new Map();
             connections.forEach(conn => {
                 const star1 = stars.find(s => s.id === conn.p1_id);
                 const star2 = stars.find(s => s.id === conn.p2_id);
                 if (!star1 || !star2) return;
-
                 if (!starConnections.has(star1.name)) starConnections.set(star1.name, []);
                 if (!starConnections.has(star2.name)) starConnections.set(star2.name, []);
-
-                // Add one-way connection for this schema
                 starConnections.get(star1.name).push(star2.name);
             });
-
             let childrenXml = stars.map(star => {
                 let connectedToXml = '';
                 if (starConnections.has(star.name)) {
-                    connectedToXml = starConnections.get(star.name).map(connectedName =>
-                        `
-            <ConnectedTo EntityId2="${connectedName}"/>`
-                    ).join('');
+                    connectedToXml = starConnections.get(star.name).map(connectedName => `
+            <ConnectedTo EntityId2="${connectedName}"/>`).join('');
                 }
-
                 return `
         <Entity>
             <StarSystem/>
@@ -712,7 +807,6 @@
             <Position3D X="${star.x.toFixed(2)}" Y="${star.y.toFixed(2)}" Z="0.00"/>${connectedToXml}
         </Entity>`;
             }).join('');
-
             const fullXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Entity>
     <Galaxy/>
@@ -720,40 +814,25 @@
     <Children>${childrenXml}
     </Children>
 </Entity>`;
-
             const blob = new Blob([fullXml.trim()], { type: 'application/xml' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `${galaxyName.replace(/ /g, '_')}.xml`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            document.body.appendChild(a); a.click();
+            document.body.removeChild(a); URL.revokeObjectURL(url);
         }
 
         function importFromXML(xmlString) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlString, "application/xml");
-
-            // Reset current map
-            stars = [];
-            connections = [];
-            nextStarId = 0;
-            editorState.selection = [];
-
+            stars = []; connections = [];
+            nextStarId = 0; editorState.selection = [];
             const galaxyEntity = xmlDoc.querySelector("Entity:has(> Galaxy)");
-            if (!galaxyEntity) {
-                alert("Could not find a root <Entity> with a <Galaxy/> tag.");
-                return;
-            }
-
+            if (!galaxyEntity) { alert("Could not find a root <Entity> with a <Galaxy/> tag."); return; }
             galaxyNameInput.value = galaxyEntity.querySelector("Name")?.getAttribute("Value") || "Imported Galaxy";
-
             const childrenContainer = galaxyEntity.querySelector("Children");
             if (!childrenContainer) return;
-
-            // First pass: load all stars
             const starEntities = childrenContainer.querySelectorAll(":scope > Entity");
             starEntities.forEach(node => {
                 if (node.querySelector("StarSystem")) {
@@ -766,30 +845,21 @@
                     }
                 }
             });
-
-            // Second pass: load all connections
             starEntities.forEach(node => {
                 const star1Name = node.querySelector("Name")?.getAttribute("Value");
                 const star1 = stars.find(s => s.name === star1Name);
                 if (!star1) return;
-
                 const connectionNodes = node.querySelectorAll("ConnectedTo");
                 connectionNodes.forEach(connNode => {
                     const star2Name = connNode.getAttribute("EntityId2");
                     const star2 = stars.find(s => s.name === star2Name);
                     if (star2) {
-                        // Avoid creating duplicate connections if schema implies two-way
-                        const exists = connections.some(c =>
-                            (c.p1_id === star1.id && c.p2_id === star2.id) ||
-                            (c.p1_id === star2.id && c.p2_id === star1.id)
-                        );
-                        if (!exists) {
-                            connections.push({ p1_id: star1.id, p2_id: star2.id });
-                        }
+                        const exists = connections.some(c => (c.p1_id === star1.id && c.p2_id === star2.id) || (c.p1_id === star2.id && c.p2_id === star1.id));
+                        if (!exists) connections.push({ p1_id: star1.id, p2_id: star2.id });
                     }
                 });
             });
-
+            saveState(); // Save imported state as the new baseline
             updateInfoPanel();
         }
 
@@ -800,6 +870,8 @@
             addStarBtn.addEventListener('click', () => setMode('add'));
             connectStarBtn.addEventListener('click', () => setMode('connect'));
             deleteBtn.addEventListener('click', () => setMode('delete'));
+            undoBtn.addEventListener('click', undo);
+            redoBtn.addEventListener('click', redo);
             exportBtn.addEventListener('click', exportToXML);
             importBtn.addEventListener('click', () => xmlImporter.click());
 
@@ -808,9 +880,7 @@
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    try {
-                        importFromXML(e.target.result);
-                    } catch (err) {
+                    try { importFromXML(e.target.result); } catch (err) {
                         console.error("Error parsing XML file:", err);
                         alert("Failed to parse XML file. Check console for details.");
                     }
@@ -825,34 +895,33 @@
             canvas.addEventListener('mouseleave', onMouseUp);
             canvas.addEventListener('wheel', onWheel, { passive: false });
             window.addEventListener('resize', onResize);
-
             window.addEventListener('keydown', (e) => {
                 if (document.activeElement.tagName === 'INPUT') {
                     if (e.code === 'Escape') document.activeElement.blur();
                     return;
                 }
                 if (e.code === 'Space' && !editorState.isSpacebarPan) {
-                    e.preventDefault();
-                    editorState.isSpacebarPan = true;
-                    updateCursor();
+                    e.preventDefault(); editorState.isSpacebarPan = true; updateCursor();
                 }
                 if (e.code === 'Escape') {
-                    e.preventDefault();
-                    editorState.selection = [];
-                    setMode('pan');
-                    updateInfoPanel();
+                    e.preventDefault(); editorState.selection = [];
+                    setMode('pan'); updateInfoPanel();
+                }
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'z') { e.preventDefault(); undo(); }
+                    else if (e.key === 'y' || (e.key === 'Z' && e.shiftKey)) { e.preventDefault(); redo(); }
                 }
             });
             window.addEventListener('keyup', (e) => {
                 if (e.code === 'Space') {
-                    e.preventDefault();
-                    editorState.isSpacebarPan = false;
+                    e.preventDefault(); editorState.isSpacebarPan = false;
                     if (camera.isDragging) camera.isDragging = false;
                     updateCursor();
                 }
             });
 
             setMode('pan');
+            saveState(); // Save the initial empty state
             animate();
         }
 
