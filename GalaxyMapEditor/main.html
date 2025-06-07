@@ -526,12 +526,24 @@
 
         // --- NEW: Parallax Starfield Configuration ---
         const STAR_LAYERS = [
-            { count: 25000, radius: 0.5, parallax: 0.1, color: 'rgba(255, 255, 255, 0.4)' }, // Farthest, slowest
-            { count: 10000, radius: 0.8, parallax: 0.25, color: 'rgba(255, 255, 255, 0.6)' },
-            { count: 3000, radius: 1.2, parallax: 0.5, color: 'rgba(255, 255, 255, 0.8)' }  // Nearest, fastest
+            // More visible, but fewer stars overall to maintain performance.
+            { count: 2000, radius: 0.8, parallax: 0.1, color: 'rgba(255, 255, 255, 0.5)' },
+            { count: 1000, radius: 1.2, parallax: 0.25, color: 'rgba(255, 255, 255, 0.7)' },
+            { count: 300, radius: 1.6, parallax: 0.5, color: 'rgba(255, 255, 255, 0.9)' }
         ];
         let starfield = [];
         const STARFIELD_BOUNDS = 5000; // The virtual size of the starfield for tiling
+
+        const NEBULA_CONFIG = {
+            count: 15, // The number of nebula clouds
+            colors: [ // A palette of nebula-like colors
+                { r: 168, g: 50, b: 132 },  // Magenta/Purple
+                { r: 50, g: 86, b: 168 },   // Deep Blue
+                { r: 90, g: 34, b: 139 },    // Violet
+            ],
+            parallax: 0.05 // Nebulae move very slowly for a deep background effect
+        };
+        let nebulae = [];
 
         // --- End of New Variables ---
 
@@ -664,7 +676,6 @@
                     stars.push({
                         x: (Math.random() - 0.5) * STARFIELD_BOUNDS,
                         y: (Math.random() - 0.5) * STARFIELD_BOUNDS,
-                        // Add a random value for deterministic but varied shimmer
                         shimmer: Math.random()
                     });
                 }
@@ -672,39 +683,62 @@
             });
         }
 
-        // --- NEW: Function to draw the parallax starfield ---
+        // --- NEW: Function to create nebula data ---
+        function createNebulae() {
+            for (let i = 0; i < NEBULA_CONFIG.count; i++) {
+                const color = NEBULA_CONFIG.colors[Math.floor(Math.random() * NEBULA_CONFIG.colors.length)];
+                nebulae.push({
+                    x: (Math.random() - 0.5) * STARFIELD_BOUNDS,
+                    y: (Math.random() - 0.5) * STARFIELD_BOUNDS,
+                    radius: (Math.random() * 0.5 + 0.5) * 800, // Random radius
+                    color: color
+                });
+            }
+        }
+
         function drawStarfield() {
-            // This function assumes it's being called in a screen-space context (transform is reset).
             const halfWidth = canvas.clientWidth / 2;
             const halfHeight = canvas.clientHeight / 2;
-
             starfield.forEach(layer => {
                 ctx.fillStyle = layer.config.color;
-                ctx.beginPath(); // Begin a path for all stars in this layer for performance.
-
+                ctx.beginPath();
                 layer.stars.forEach(star => {
-                    // Calculate the star's apparent position based on camera movement and parallax effect.
                     const viewX = camera.x * layer.config.parallax;
                     const viewY = camera.y * layer.config.parallax;
-
-                    // The core tiling logic to make the starfield appear infinite.
-                    // It wraps the star's position around the STARFIELD_BOUNDS.
                     let sx = ((star.x - viewX) % STARFIELD_BOUNDS + STARFIELD_BOUNDS) % STARFIELD_BOUNDS - (STARFIELD_BOUNDS / 2);
                     let sy = ((star.y - viewY) % STARFIELD_BOUNDS + STARFIELD_BOUNDS) % STARFIELD_BOUNDS - (STARFIELD_BOUNDS / 2);
-
-                    // Center the tiled coordinates onto the screen.
                     sx += halfWidth;
                     sy += halfHeight;
-
-                    // A subtle shimmer effect to make the stars twinkle.
                     const shimmerFactor = 0.5 + Math.sin((Date.now() / 1500) + star.shimmer * Math.PI * 2) * 0.5;
                     const radius = layer.config.radius * shimmerFactor;
-
-                    // Using ctx.rect() is generally faster for drawing many small points than ctx.arc().
                     ctx.rect(sx, sy, radius, radius);
                 });
+                ctx.fill();
+            });
+        }
 
-                ctx.fill(); // Draw all the star rectangles for this layer in a single call.
+        // --- NEW: Function to draw nebulae ---
+        function drawNebulae() {
+            const halfWidth = canvas.clientWidth / 2;
+            const halfHeight = canvas.clientHeight / 2;
+            nebulae.forEach(nebula => {
+                const viewX = camera.x * NEBULA_CONFIG.parallax;
+                const viewY = camera.y * NEBULA_CONFIG.parallax;
+                let sx = ((nebula.x - viewX) % STARFIELD_BOUNDS + STARFIELD_BOUNDS) % STARFIELD_BOUNDS - (STARFIELD_BOUNDS / 2);
+                let sy = ((nebula.y - viewY) % STARFIELD_BOUNDS + STARFIELD_BOUNDS) % STARFIELD_BOUNDS - (STARFIELD_BOUNDS / 2);
+                sx += halfWidth;
+                sy += halfHeight;
+
+                // Create a radial gradient for a soft cloud effect
+                const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, nebula.radius);
+                const { r, g, b } = nebula.color;
+                // Fade from a faint color in the center to fully transparent
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.15)`);
+                gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+
+                ctx.fillStyle = gradient;
+                // Draw a rectangle covering the nebula's area. Using arc is also fine.
+                ctx.fillRect(sx - nebula.radius, sy - nebula.radius, nebula.radius * 2, nebula.radius * 2);
             });
         }
 
@@ -877,7 +911,7 @@
 
             // Draw the new parallax starfield on top
             drawStarfield();
-
+            drawNebulae();
             ctx.restore();
 
             // --- World/Foreground Rendering ---
