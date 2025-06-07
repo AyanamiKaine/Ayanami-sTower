@@ -714,7 +714,8 @@
                     x = body.x;
                     y = body.y;
                 } else if (body.type === 'asteroid_field') {
-                    drawAsteroidField(body);
+                    const isSelected = editorState.selectedCelestialBodyId === body.id;
+                    drawAsteroidField(body, isSelected);
                 }
 
                 if (body.type !== 'asteroid_field') drawCelestialBody(body, x, y);
@@ -755,11 +756,17 @@
             return points;
         }
 
-        function drawAsteroidField(field) {
+        function drawAsteroidField(field, isSelected) {
             ctx.beginPath();
             ctx.arc(field.x, field.y, field.radius, 0, 2 * Math.PI);
             ctx.fillStyle = "rgba(156, 163, 175, 0.05)";
             ctx.fill();
+
+            if (isSelected) {
+                ctx.strokeStyle = '#fde047';
+                ctx.lineWidth = 3 / camera.zoom;
+                ctx.stroke();
+            }
 
             ctx.fillStyle = '#6b7280';
             (field.asteroids || []).forEach(ast => {
@@ -1553,4 +1560,5 @@
     </script>
 </body>
 
-</html>
+</html>" of the "Enhanced Galaxy Map Editor" document. Now let's work on zooming into the system by scrolling and not by
+double-clicki
