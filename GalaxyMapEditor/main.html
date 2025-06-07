@@ -1034,10 +1034,20 @@
                 return;
             }
 
-            editorState.selectedCelestialBodyId = clickedBody?.id ?? null;
-            if (clickedBody && clickedBody.type !== 'star' && e.ctrlKey) { // Start dragging only if Ctrl is held
-                editorState.draggedBody = clickedBody;
+            // Handle Ctrl+drag for moving selected celestial body from anywhere on canvas
+            if (e.ctrlKey && editorState.selectedCelestialBodyId !== null) {
+                const { body } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
+                if (body && body.type !== 'star') {
+                    editorState.draggedBody = body;
+                    updateInfoPanel();
+                    populateSystemUI();
+                    updateCursor();
+                    return;
+                }
             }
+
+            // Handle celestial body selection
+            editorState.selectedCelestialBodyId = clickedBody?.id ?? null;
 
             updateInfoPanel();
             populateSystemUI();
