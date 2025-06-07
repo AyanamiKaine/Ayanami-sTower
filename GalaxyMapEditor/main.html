@@ -967,16 +967,31 @@
                 return;
             }
 
+            // Handle Ctrl+drag for moving selected objects from anywhere on canvas
+            if (e.ctrlKey && editorState.selection.length > 0) {
+                // Start dragging selected objects regardless of what was clicked
+                editorState.groupDrag = {
+                    startX: worldPos.x,
+                    startY: worldPos.y,
+                    initialPositions: new Map()
+                };
+                editorState.selection.forEach(id => {
+                    const s = stars.find(star => star.id === id);
+                    if (s) editorState.groupDrag.initialPositions.set(id, { x: s.x, y: s.y });
+                });
+                updateInfoPanel();
+                updateCursor();
+                return;
+            }
+
+            // Handle star selection
             if (clickedStar) {
-                if (!editorState.selection.includes(clickedStar.id)) editorState.selection = [clickedStar.id];
-                if (e.ctrlKey) { // Start dragging only if Ctrl is held
-                    editorState.groupDrag = { startX: worldPos.x, startY: worldPos.y, initialPositions: new Map() };
-                    editorState.selection.forEach(id => {
-                        const s = stars.find(star => star.id === id);
-                        if (s) editorState.groupDrag.initialPositions.set(id, { x: s.x, y: s.y });
-                    });
+                // If clicking on an unselected star, select it
+                if (!editorState.selection.includes(clickedStar.id)) {
+                    editorState.selection = [clickedStar.id];
                 }
             } else {
+                // Clicking on empty space - start selection box
                 editorState.selection = [];
                 editorState.selectionBox = { x1: worldPos.x, y1: worldPos.y, x2: worldPos.x, y2: worldPos.y };
             }
@@ -1560,5 +1575,4 @@
     </script>
 </body>
 
-</html>" of the "Enhanced Galaxy Map Editor" document. Now let's work on zooming into the system by scrolling and not by
-double-clicki
+</html>
