@@ -505,8 +505,12 @@
 
         const MAX_HULL_EDGE_LENGTH = 200; // An edge longer than this will be subdivided
         const JIGGLE_FACTOR = 0.5;        // How "bubbly" the subdivided edges become (0 to 1)
+
         const STAR_BUFFER_RADIUS = 40; // The "personal space" radius around each star
         const STAR_BUFFER_POINTS = 6;  // How many points to create in the circle around each star
+
+        const STAR_FADE_START_ZOOM = 0.5; // Below this zoom, stars start to fade/shrink
+        const STAR_FADE_END_ZOOM = 0.2;   // Below this zoom, stars are at their minimum size/opacity
         let editorState = {
             mode: 'pan',
             view: 'galaxy',
@@ -840,18 +844,14 @@
             return newPoints;
         }
 
-        function drawRegions() {
-            // The old PADDING constant is no longer needed here, as padding is done by buffering.
-
+        function drawRegions(regionTextToDraw) {
             regions.forEach(region => {
                 const regionStars = region.starIds.map(id => stars.find(s => s.id === id)).filter(Boolean);
                 if (regionStars.length === 0) return;
 
-                // --- START OF NEW BUFFERING LOGIC ---
+                // --- (The entire shape-drawing logic is unchanged) ---
                 let allBufferedPoints = [];
-
                 if (regionStars.length === 1) {
-                    // Special case for a single star: create a simple circle
                     const star = regionStars[0];
                     for (let i = 0; i < STAR_BUFFER_POINTS * 2; i++) {
                         const angle = (i / (STAR_BUFFER_POINTS * 2)) * 2 * Math.PI;
@@ -861,7 +861,6 @@
                         });
                     }
                 } else {
-                    // For multiple stars, create a buffered point cloud
                     regionStars.forEach(star => {
                         for (let i = 0; i < STAR_BUFFER_POINTS; i++) {
                             const angle = (i / STAR_BUFFER_POINTS) * 2 * Math.PI;
@@ -872,58 +871,51 @@
                         }
                     });
                 }
-
-                // 2. Get the hull of this new, larger point cloud. This hull now has the margin built-in.
                 const bufferedHull = getConvexHull(allBufferedPoints);
                 if (bufferedHull.length < 3) return;
-
-                // 3. Apply the "blobby" effect to the new hull to make it organic.
-                // We pass the original stars to the blob function for a deterministic seed.
                 const blobbyHull = createBlobbyHull(bufferedHull, regionStars);
-                // --- END OF NEW BUFFERING LOGIC ---
-
-
-                // 4. Draw the smoothed, organic shape using the blobby hull.
-                // The drawing logic from here is the same, but it uses our new pre-padded points.
                 ctx.beginPath();
                 ctx.fillStyle = region.color;
                 ctx.strokeStyle = region.color.replace('0.2', '0.6');
                 ctx.lineWidth = 3 / camera.zoom;
-
                 const midpoints = blobbyHull.map((p, i) => {
                     const nextP = blobbyHull[(i + 1) % blobbyHull.length];
                     return { x: (p.x + nextP.x) / 2, y: (p.y + nextP.y) / 2 };
                 });
-
                 ctx.moveTo(midpoints[0].x, midpoints[0].y);
                 for (let i = 0; i < midpoints.length; i++) {
                     const nextMidpoint = midpoints[(i + 1) % midpoints.length];
-                    const controlPoint = blobbyHull[(i + 1) % blobbyHull.length];
+                    const controlPoint = blobbyHull[(i + 1) % midpoints.length];
                     ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, nextMidpoint.x, nextMidpoint.y);
                 }
                 ctx.closePath();
                 ctx.fill();
                 ctx.stroke();
 
-                // --- Name placement logic (using original stars for centering) ---
+                // --- MODIFIED --- Instead of drawing text, save it for later
                 const nameCentroid = regionStars.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
                 nameCentroid.x /= regionStars.length;
                 nameCentroid.y /= regionStars.length;
 
-                ctx.fillStyle = '#ffffff';
-                ctx.font = `bold ${20 / camera.zoom}px Inter`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.shadowColor = 'rgba(0,0,0,0.7)';
-                ctx.shadowBlur = 5 / camera.zoom;
-                ctx.fillText(region.name, nameCentroid.x, nameCentroid.y);
-                ctx.shadowBlur = 0;
+                // Add an object with the text and its coordinates to the drawing list
+                regionTextToDraw.push({
+                    text: region.name,
+                    x: nameCentroid.x,
+                    y: nameCentroid.y
+                });
             });
         }
 
         function drawGalaxyView() {
+            // --- NEW --- Create a list to hold text info for deferred drawing
+            const regionTextToDraw = [];
+
             drawGrid();
-            drawRegions();
+
+            // --- MODIFIED --- Pass the list to the function
+            drawRegions(regionTextToDraw);
+
+            // Draw connections (these will now be UNDER the region text)
             ctx.lineWidth = 1.5 / camera.zoom;
             connections.forEach(conn => {
                 const p1 = stars.find(s => s.id === conn.p1_id), p2 = stars.find(s => s.id === conn.p2_id);
@@ -935,41 +927,50 @@
             ctx.font = `${12 / camera.zoom}px Inter`;
             ctx.textAlign = 'center';
 
-            // --- START OF TEXT FADING LOGIC ---
-            // Calculate the text opacity based on the current zoom level
+            // --- (All the star fading and drawing logic remains the same) ---
             let textAlpha = 1.0;
             if (camera.zoom < TEXT_FADE_START_ZOOM) {
-                // This formula calculates a value from 0.0 to 1.0 as the zoom moves
-                // between the END and START thresholds.
                 textAlpha = (camera.zoom - TEXT_FADE_END_ZOOM) / (TEXT_FADE_START_ZOOM - TEXT_FADE_END_ZOOM);
-                // Clamp the value to ensure it's between 0 and 1.
                 textAlpha = Math.max(0, Math.min(1, textAlpha));
             }
-            // --- END OF TEXT FADING LOGIC ---
-
+            let starFadeRatio = 0;
+            if (camera.zoom < STAR_FADE_START_ZOOM) {
+                starFadeRatio = (STAR_FADE_START_ZOOM - camera.zoom) / (STAR_FADE_START_ZOOM - STAR_FADE_END_ZOOM);
+                starFadeRatio = Math.max(0, Math.min(1, starFadeRatio));
+            }
+            const baseStarSize = 5;
+            const minStarSize = 2;
+            const starSize = baseStarSize - (baseStarSize - minStarSize) * starFadeRatio;
+            const baseStarAlpha = 1.0;
+            const minStarAlpha = 0.3;
+            const starAlpha = baseStarAlpha - (baseStarAlpha - minStarAlpha) * starFadeRatio;
+            const baseShadowBlur = 10;
+            const shadowBlur = baseShadowBlur - baseShadowBlur * starFadeRatio;
             stars.forEach(star => {
-                // Draw selection highlight
                 if (editorState.selection.includes(star.id)) {
                     ctx.beginPath(); ctx.arc(star.x, star.y, (10 / camera.zoom), 0, 2 * Math.PI);
                     ctx.strokeStyle = '#fde047'; ctx.lineWidth = 3 / camera.zoom; ctx.stroke();
                 }
-
-                // Draw the star
-                ctx.beginPath(); ctx.arc(star.x, star.y, 5 / camera.zoom, 0, 2 * Math.PI);
-                const isHovered = editorState.hoveredStar === star, isSelectedForConnection = editorState.firstStarForConnection === star;
-                if (editorState.mode === 'delete' && isHovered) {
-                    ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 20 / camera.zoom;
-                } else if (isHovered || isSelectedForConnection) {
-                    ctx.fillStyle = '#fde047'; ctx.shadowColor = '#fde047'; ctx.shadowBlur = 20 / camera.zoom;
+                ctx.beginPath();
+                const isHovered = editorState.hoveredStar === star;
+                const isSelectedForConnection = editorState.firstStarForConnection === star;
+                if (isHovered || isSelectedForConnection || (editorState.mode === 'delete' && isHovered)) {
+                    ctx.arc(star.x, star.y, baseStarSize / camera.zoom, 0, 2 * Math.PI);
+                    if (editorState.mode === 'delete' && isHovered) {
+                        ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 20 / camera.zoom;
+                    } else {
+                        ctx.fillStyle = '#fde047'; ctx.shadowColor = '#fde047'; ctx.shadowBlur = 20 / camera.zoom;
+                    }
                 } else {
-                    ctx.fillStyle = '#e5e7eb'; ctx.shadowColor = 'rgba(160, 200, 255, 0.8)'; ctx.shadowBlur = 10 / camera.zoom;
+                    ctx.arc(star.x, star.y, starSize / camera.zoom, 0, 2 * Math.PI);
+                    ctx.fillStyle = `rgba(229, 231, 235, ${starAlpha})`;
+                    ctx.shadowColor = `rgba(160, 200, 255, ${starAlpha * 0.8})`;
+                    ctx.shadowBlur = shadowBlur / camera.zoom;
                 }
                 ctx.fill();
                 ctx.shadowBlur = 0;
-
-                // --- MODIFIED --- Draw the text label using the calculated opacity
                 if (textAlpha > 0) {
-                    ctx.fillStyle = `rgba(209, 213, 219, ${textAlpha})`; // Use rgba to apply opacity
+                    ctx.fillStyle = `rgba(209, 213, 219, ${textAlpha})`;
                     ctx.fillText(star.name, star.x, star.y - 15 / camera.zoom);
                 }
             });
@@ -983,6 +984,20 @@
                 ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
             }
+
+            // --- NEW: Final Text Drawing Pass ---
+            // This happens last, so it will be on top of everything else.
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${20 / camera.zoom}px Inter`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0,0,0,0.7)';
+            ctx.shadowBlur = 5 / camera.zoom;
+
+            regionTextToDraw.forEach(item => {
+                ctx.fillText(item.text, item.x, item.y);
+            });
+            ctx.shadowBlur = 0; // Reset shadow
         }
 
         function drawSystemView() {
