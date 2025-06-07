@@ -504,8 +504,9 @@
         ];
 
         const MAX_HULL_EDGE_LENGTH = 200; // An edge longer than this will be subdivided
-        const JIGGLE_FACTOR = 0.4;        // How "bubbly" the subdivided edges become (0 to 1)
-
+        const JIGGLE_FACTOR = 0.5;        // How "bubbly" the subdivided edges become (0 to 1)
+        const STAR_BUFFER_RADIUS = 40; // The "personal space" radius around each star
+        const STAR_BUFFER_POINTS = 6;  // How many points to create in the circle around each star
         let editorState = {
             mode: 'pan',
             view: 'galaxy',
@@ -840,78 +841,74 @@
         }
 
         function drawRegions() {
-            const PADDING = 40;
+            // The old PADDING constant is no longer needed here, as padding is done by buffering.
 
             regions.forEach(region => {
                 const regionStars = region.starIds.map(id => stars.find(s => s.id === id)).filter(Boolean);
-                if (regionStars.length < 2) return;
+                if (regionStars.length === 0) return;
 
-                if (regionStars.length === 2) {
-                    // The capsule logic for 2 stars remains the same and is fine.
-                    const p1 = regionStars[0];
-                    const p2 = regionStars[1];
-                    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+                // --- START OF NEW BUFFERING LOGIC ---
+                let allBufferedPoints = [];
 
-                    ctx.beginPath();
-                    ctx.fillStyle = region.color;
-                    ctx.strokeStyle = region.color.replace('0.2', '0.6');
-                    ctx.lineWidth = 3 / camera.zoom;
-
-                    ctx.arc(p1.x, p1.y, PADDING, angle + Math.PI / 2, angle - Math.PI / 2);
-                    ctx.arc(p2.x, p2.y, PADDING, angle - Math.PI / 2, angle + Math.PI / 2);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
-
-                } else { // 3 or more stars, use the hull
-                    const hullPoints = getConvexHull(regionStars);
-                    if (hullPoints.length < 3) return;
-
-                    // --- THIS IS THE KEY CHANGE ---
-                    // 1. Create the "blobby" hull by subdividing long edges
-                    const blobbyHull = createBlobbyHull(hullPoints, regionStars);
-
-                    // 2. Find the centroid of the NEW blobby hull
-                    const centroid = blobbyHull.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
-                    centroid.x /= blobbyHull.length;
-                    centroid.y /= blobbyHull.length;
-
-                    // 3. Create the padded points from the blobby hull
-                    const paddedHullPoints = blobbyHull.map(p => {
-                        const angle = Math.atan2(p.y - centroid.y, p.x - centroid.x);
-                        return {
-                            x: p.x + PADDING * Math.cos(angle),
-                            y: p.y + PADDING * Math.sin(angle)
-                        };
-                    });
-
-                    // The rest of the drawing logic uses the new padded points
-                    ctx.beginPath();
-                    ctx.fillStyle = region.color;
-                    ctx.strokeStyle = region.color.replace('0.2', '0.6');
-                    ctx.lineWidth = 3 / camera.zoom;
-
-                    const midpoints = paddedHullPoints.map((p, i) => {
-                        const nextP = paddedHullPoints[(i + 1) % paddedHullPoints.length];
-                        return { x: (p.x + nextP.x) / 2, y: (p.y + nextP.y) / 2 };
-                    });
-
-                    ctx.moveTo(midpoints[0].x, midpoints[0].y);
-                    for (let i = 0; i < midpoints.length; i++) {
-                        const nextMidpoint = midpoints[(i + 1) % midpoints.length];
-                        const controlPoint = paddedHullPoints[(i + 1) % paddedHullPoints.length];
-                        ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, nextMidpoint.x, nextMidpoint.y);
+                if (regionStars.length === 1) {
+                    // Special case for a single star: create a simple circle
+                    const star = regionStars[0];
+                    for (let i = 0; i < STAR_BUFFER_POINTS * 2; i++) {
+                        const angle = (i / (STAR_BUFFER_POINTS * 2)) * 2 * Math.PI;
+                        allBufferedPoints.push({
+                            x: star.x + STAR_BUFFER_RADIUS * Math.cos(angle),
+                            y: star.y + STAR_BUFFER_RADIUS * Math.sin(angle)
+                        });
                     }
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.stroke();
+                } else {
+                    // For multiple stars, create a buffered point cloud
+                    regionStars.forEach(star => {
+                        for (let i = 0; i < STAR_BUFFER_POINTS; i++) {
+                            const angle = (i / STAR_BUFFER_POINTS) * 2 * Math.PI;
+                            allBufferedPoints.push({
+                                x: star.x + STAR_BUFFER_RADIUS * Math.cos(angle),
+                                y: star.y + STAR_BUFFER_RADIUS * Math.sin(angle)
+                            });
+                        }
+                    });
                 }
 
-                // --- Name placement logic (unchanged) ---
-                const allPoints = (regionStars.length < 3) ? regionStars : getConvexHull(regionStars);
-                const nameCentroid = allPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
-                nameCentroid.x /= allPoints.length;
-                nameCentroid.y /= allPoints.length;
+                // 2. Get the hull of this new, larger point cloud. This hull now has the margin built-in.
+                const bufferedHull = getConvexHull(allBufferedPoints);
+                if (bufferedHull.length < 3) return;
+
+                // 3. Apply the "blobby" effect to the new hull to make it organic.
+                // We pass the original stars to the blob function for a deterministic seed.
+                const blobbyHull = createBlobbyHull(bufferedHull, regionStars);
+                // --- END OF NEW BUFFERING LOGIC ---
+
+
+                // 4. Draw the smoothed, organic shape using the blobby hull.
+                // The drawing logic from here is the same, but it uses our new pre-padded points.
+                ctx.beginPath();
+                ctx.fillStyle = region.color;
+                ctx.strokeStyle = region.color.replace('0.2', '0.6');
+                ctx.lineWidth = 3 / camera.zoom;
+
+                const midpoints = blobbyHull.map((p, i) => {
+                    const nextP = blobbyHull[(i + 1) % blobbyHull.length];
+                    return { x: (p.x + nextP.x) / 2, y: (p.y + nextP.y) / 2 };
+                });
+
+                ctx.moveTo(midpoints[0].x, midpoints[0].y);
+                for (let i = 0; i < midpoints.length; i++) {
+                    const nextMidpoint = midpoints[(i + 1) % midpoints.length];
+                    const controlPoint = blobbyHull[(i + 1) % blobbyHull.length];
+                    ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, nextMidpoint.x, nextMidpoint.y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // --- Name placement logic (using original stars for centering) ---
+                const nameCentroid = regionStars.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+                nameCentroid.x /= regionStars.length;
+                nameCentroid.y /= regionStars.length;
 
                 ctx.fillStyle = '#ffffff';
                 ctx.font = `bold ${20 / camera.zoom}px Inter`;
