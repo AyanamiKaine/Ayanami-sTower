@@ -315,6 +315,80 @@
             display: flex;
             justify-content: space-around;
         }
+
+        /* Add this with your other panel styles */
+        .regions-panel {
+            position: absolute;
+            bottom: 10px;
+            /* Changed from top */
+            right: 10px;
+            /* Positioned on the right */
+            background-color: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 200px;
+            z-index: 5;
+            /* Ensure it's above the canvas but can be below other modals */
+        }
+
+        .regions-panel h2 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+            color: #a0c4ff;
+            text-align: center;
+        }
+
+        #regionList {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .region-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: background-color 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .region-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .region-item-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        /* Add this to style the assignment dropdown in the info panel */
+        #regionAssignment,
+        #regionAssignment select {
+            width: 100%;
+            color: #fff;
+            background-color: transparent;
+        }
+
+        #regionAssignment select {
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            padding: 4px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -368,6 +442,21 @@
         <div id="multiSelectInfo" style="display: none;">
             <p><span id="multiSelectCount">0</span> systems selected</p>
         </div>
+
+        <div id="regionAssignment" style="display: none;">
+            <p>Region:
+                <select id="regionAssignSelect">
+                    <option value="-1">-- None --</option>
+                </select>
+            </p>
+        </div>
+
+    </div>
+
+    <div id="regionsPanel" class="regions-panel">
+        <h2>Regions</h2>
+        <div id="regionList"></div>
+        <button id="createRegionBtn">Create Region</button>
     </div>
 
     <div id="coordsDisplay" class="coords-display">X: 0, Y: 0</div>
@@ -400,6 +489,23 @@
         const TEXT_FADE_END_ZOOM = 0.4;   // Below this zoom, text is fully invisible
         let stars = [];
         let connections = [];
+
+        let regions = [];
+        let nextRegionId = 0;
+
+        // A nice color palette for the regions.
+        const REGION_COLORS = [
+            'rgba(239, 68, 68, 0.2)',  // Red
+            'rgba(59, 130, 246, 0.2)', // Blue
+            'rgba(34, 197, 94, 0.2)',  // Green
+            'rgba(234, 179, 8, 0.2)',  // Yellow
+            'rgba(168, 85, 247, 0.2)', // Purple
+            'rgba(249, 115, 22, 0.2)'  // Orange
+        ];
+
+        const MAX_HULL_EDGE_LENGTH = 200; // An edge longer than this will be subdivided
+        const JIGGLE_FACTOR = 0.4;        // How "bubbly" the subdivided edges become (0 to 1)
+
         let editorState = {
             mode: 'pan',
             view: 'galaxy',
@@ -458,7 +564,11 @@
         const planetSelectInfo = document.getElementById('planetSelectInfo');
         const moonSelectInfo = document.getElementById('moonSelectInfo');
         const multiSelectInfo = document.getElementById('multiSelectInfo');
-
+        const regionsPanel = document.getElementById('regionsPanel');
+        const regionList = document.getElementById('regionList');
+        const createRegionBtn = document.getElementById('createRegionBtn');
+        const regionAssignment = document.getElementById('regionAssignment');
+        const regionAssignSelect = document.getElementById('regionAssignSelect');
         // --- Functions ---
 
         function setupCanvasDPI() {
@@ -588,9 +698,14 @@
         function updateInfoPanel() {
             const allPanels = [singleSelectInfo, multiSelectInfo, planetSelectInfo, moonSelectInfo];
             allPanels.forEach(p => p.style.display = 'none');
+            regionAssignment.style.display = 'none';
             infoPanel.style.display = 'none';
 
             if (editorState.view === 'galaxy') {
+                if (editorState.selection.length > 0) {
+                    regionAssignment.style.display = 'block';
+                    populateRegionAssignSelect();
+                }
                 if (editorState.selection.length === 1) {
                     const star = stars.find(s => s.id === editorState.selection[0]);
                     if (star) {
@@ -651,8 +766,167 @@
             ctx.restore();
         }
 
+        function getConvexHull(points) {
+            if (points.length <= 2) return points;
+
+            points.sort((a, b) => a.x !== b.x ? a.x - b.x : a.y - b.y);
+
+            const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+            const lower = [];
+            for (const p of points) {
+                while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+                    lower.pop();
+                }
+                lower.push(p);
+            }
+
+            const upper = [];
+            for (let i = points.length - 1; i >= 0; i--) {
+                const p = points[i];
+                while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+                    upper.pop();
+                }
+                upper.push(p);
+            }
+
+            return lower.slice(0, lower.length - 1).concat(upper.slice(0, upper.length - 1));
+        }
+
+        function createBlobbyHull(points, systemStars) {
+            if (points.length < 2) return points;
+
+            const newPoints = [];
+            // A simple seeded random function to make the jiggle deterministic
+            let seed = systemStars.reduce((a, s) => a + s.id, 0);
+            const random = () => {
+                const x = Math.sin(seed++) * 10000;
+                return x - Math.floor(x);
+            };
+
+            for (let i = 0; i < points.length; i++) {
+                const p1 = points[i];
+                const p2 = points[(i + 1) % points.length];
+
+                newPoints.push(p1); // Always add the original vertex
+
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.hypot(dx, dy);
+
+                const subdivisions = Math.floor(dist / MAX_HULL_EDGE_LENGTH);
+                if (subdivisions > 0) {
+                    // Get the perpendicular vector (normalized)
+                    const normX = -dy / dist;
+                    const normY = dx / dist;
+
+                    for (let j = 1; j <= subdivisions; j++) {
+                        const t = j / (subdivisions + 1);
+                        // Create a point along the line
+                        const newX = p1.x + dx * t;
+                        const newY = p1.y + dy * t;
+
+                        // "Jiggle" the point outwards randomly
+                        const jiggle = (random() - 0.5) * MAX_HULL_EDGE_LENGTH * JIGGLE_FACTOR;
+
+                        newPoints.push({
+                            x: newX + normX * jiggle,
+                            y: newY + normY * jiggle
+                        });
+                    }
+                }
+            }
+            return newPoints;
+        }
+
+        function drawRegions() {
+            const PADDING = 40;
+
+            regions.forEach(region => {
+                const regionStars = region.starIds.map(id => stars.find(s => s.id === id)).filter(Boolean);
+                if (regionStars.length < 2) return;
+
+                if (regionStars.length === 2) {
+                    // The capsule logic for 2 stars remains the same and is fine.
+                    const p1 = regionStars[0];
+                    const p2 = regionStars[1];
+                    const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+                    ctx.beginPath();
+                    ctx.fillStyle = region.color;
+                    ctx.strokeStyle = region.color.replace('0.2', '0.6');
+                    ctx.lineWidth = 3 / camera.zoom;
+
+                    ctx.arc(p1.x, p1.y, PADDING, angle + Math.PI / 2, angle - Math.PI / 2);
+                    ctx.arc(p2.x, p2.y, PADDING, angle - Math.PI / 2, angle + Math.PI / 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+
+                } else { // 3 or more stars, use the hull
+                    const hullPoints = getConvexHull(regionStars);
+                    if (hullPoints.length < 3) return;
+
+                    // --- THIS IS THE KEY CHANGE ---
+                    // 1. Create the "blobby" hull by subdividing long edges
+                    const blobbyHull = createBlobbyHull(hullPoints, regionStars);
+
+                    // 2. Find the centroid of the NEW blobby hull
+                    const centroid = blobbyHull.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+                    centroid.x /= blobbyHull.length;
+                    centroid.y /= blobbyHull.length;
+
+                    // 3. Create the padded points from the blobby hull
+                    const paddedHullPoints = blobbyHull.map(p => {
+                        const angle = Math.atan2(p.y - centroid.y, p.x - centroid.x);
+                        return {
+                            x: p.x + PADDING * Math.cos(angle),
+                            y: p.y + PADDING * Math.sin(angle)
+                        };
+                    });
+
+                    // The rest of the drawing logic uses the new padded points
+                    ctx.beginPath();
+                    ctx.fillStyle = region.color;
+                    ctx.strokeStyle = region.color.replace('0.2', '0.6');
+                    ctx.lineWidth = 3 / camera.zoom;
+
+                    const midpoints = paddedHullPoints.map((p, i) => {
+                        const nextP = paddedHullPoints[(i + 1) % paddedHullPoints.length];
+                        return { x: (p.x + nextP.x) / 2, y: (p.y + nextP.y) / 2 };
+                    });
+
+                    ctx.moveTo(midpoints[0].x, midpoints[0].y);
+                    for (let i = 0; i < midpoints.length; i++) {
+                        const nextMidpoint = midpoints[(i + 1) % midpoints.length];
+                        const controlPoint = paddedHullPoints[(i + 1) % paddedHullPoints.length];
+                        ctx.quadraticCurveTo(controlPoint.x, controlPoint.y, nextMidpoint.x, nextMidpoint.y);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                // --- Name placement logic (unchanged) ---
+                const allPoints = (regionStars.length < 3) ? regionStars : getConvexHull(regionStars);
+                const nameCentroid = allPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+                nameCentroid.x /= allPoints.length;
+                nameCentroid.y /= allPoints.length;
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${20 / camera.zoom}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0,0,0,0.7)';
+                ctx.shadowBlur = 5 / camera.zoom;
+                ctx.fillText(region.name, nameCentroid.x, nameCentroid.y);
+                ctx.shadowBlur = 0;
+            });
+        }
+
         function drawGalaxyView() {
             drawGrid();
+            drawRegions();
             ctx.lineWidth = 1.5 / camera.zoom;
             connections.forEach(conn => {
                 const p1 = stars.find(s => s.id === conn.p1_id), p2 = stars.find(s => s.id === conn.p2_id);
@@ -805,6 +1079,75 @@
                 ctx.closePath();
                 ctx.fill();
             });
+        }
+
+        function populateRegionsPanel() {
+            regionList.innerHTML = '';
+            regions.forEach(region => {
+                const item = document.createElement('div');
+                item.className = 'region-item';
+
+                const colorSwatch = document.createElement('div');
+                colorSwatch.className = 'region-item-color';
+                colorSwatch.style.backgroundColor = region.color.replace('0.2', '1.0'); // Use opaque color for swatch
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = region.name;
+
+                item.appendChild(colorSwatch);
+                item.appendChild(nameSpan);
+                regionList.appendChild(item);
+            });
+        }
+
+        function populateRegionAssignSelect() {
+            // Clear existing options but keep the "-- None --" default
+            while (regionAssignSelect.options.length > 1) {
+                regionAssignSelect.remove(1);
+            }
+
+            // Add all current regions to the dropdown
+            regions.forEach(region => {
+                const option = document.createElement('option');
+                option.value = region.id;
+                option.textContent = region.name;
+                regionAssignSelect.appendChild(option);
+            });
+
+            // Find the common region for the current selection
+            let commonRegionId = -1;
+            if (editorState.selection.length > 0) {
+                const firstStarRegion = regions.find(r => r.starIds.includes(editorState.selection[0]));
+                if (firstStarRegion) {
+                    const allInSameRegion = editorState.selection.every(starId => firstStarRegion.starIds.includes(starId));
+                    if (allInSameRegion) {
+                        commonRegionId = firstStarRegion.id;
+                    }
+                }
+            }
+            regionAssignSelect.value = commonRegionId;
+        }
+
+        function assignSelectionToRegion(regionId) {
+            const starIdsToAssign = editorState.selection;
+
+            // First, remove the selected stars from any region they might be in
+            regions.forEach(r => {
+                r.starIds = r.starIds.filter(id => !starIdsToAssign.includes(id));
+            });
+
+            // Then, if a valid region was chosen, add them to it
+            if (regionId !== -1) {
+                const targetRegion = regions.find(r => r.id === regionId);
+                if (targetRegion) {
+                    starIdsToAssign.forEach(id => {
+                        if (!targetRegion.starIds.includes(id)) {
+                            targetRegion.starIds.push(id);
+                        }
+                    });
+                }
+            }
+            saveState();
         }
 
         function deleteSelectedBody() {
@@ -1396,8 +1739,10 @@
             const currentState = {
                 stars: JSON.parse(JSON.stringify(stars)),
                 connections: JSON.parse(JSON.stringify(connections)),
+                regions: JSON.parse(JSON.stringify(regions)), // --- NEW ---
                 nextStarId: nextStarId,
-                nextBodyId: nextBodyId
+                nextBodyId: nextBodyId,
+                nextRegionId: nextRegionId // --- NEW ---
             };
             history.push(currentState);
             historyIndex = history.length - 1;
@@ -1407,8 +1752,10 @@
         function loadState(state) {
             stars = JSON.parse(JSON.stringify(state.stars));
             connections = JSON.parse(JSON.stringify(state.connections));
+            regions = state.regions ? JSON.parse(JSON.stringify(state.regions)) : []; // --- MODIFIED ---
             nextStarId = state.nextStarId;
             nextBodyId = state.nextBodyId;
+            nextRegionId = state.nextRegionId || 0; // --- MODIFIED ---
             editorState.selection = [];
             if (editorState.view === 'system' && !stars.find(s => s.id === editorState.activeSystemId)) {
                 switchToGalaxyView();
@@ -1416,6 +1763,7 @@
                 populateSystemUI();
             }
             updateInfoPanel();
+            populateRegionsPanel();
         }
 
         function undo() {
@@ -1580,6 +1928,8 @@
 
         function setup() {
             setupCanvasDPI();
+            populateRegionsPanel();
+
             editorState.lastMousePos = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
 
             addStarBtn.addEventListener('click', () => setMode('add'));
@@ -1591,6 +1941,27 @@
             exportBtn.addEventListener('click', exportToXML);
             importBtn.addEventListener('click', () => xmlImporter.click());
             backToGalaxyBtn.addEventListener('click', switchToGalaxyView);
+
+            createRegionBtn.addEventListener('click', () => {
+                const regionName = prompt("Enter new region name:");
+                if (regionName && regionName.trim() !== '') {
+                    const newRegion = {
+                        id: nextRegionId++,
+                        name: regionName.trim(),
+                        starIds: [],
+                        color: REGION_COLORS[nextRegionId % REGION_COLORS.length]
+                    };
+                    regions.push(newRegion);
+                    populateRegionsPanel();
+                    saveState();
+                }
+            });
+
+            regionAssignSelect.addEventListener('change', (e) => {
+                const selectedRegionId = parseInt(e.target.value, 10);
+                assignSelectionToRegion(selectedRegionId);
+            });
+
             addPlanetBtn.addEventListener('click', () => {
                 const system = stars.find(s => s.id === editorState.activeSystemId);
                 if (system) {
@@ -1604,6 +1975,7 @@
                     saveState();
                 }
             });
+
             addMoonBtn.addEventListener('click', () => {
                 const system = stars.find(s => s.id === editorState.activeSystemId);
                 const { body: planet } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
