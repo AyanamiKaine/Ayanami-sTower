@@ -316,13 +316,10 @@
             justify-content: space-around;
         }
 
-        /* Add this with your other panel styles */
         .regions-panel {
             position: absolute;
             bottom: 10px;
-            /* Changed from top */
             right: 10px;
-            /* Positioned on the right */
             background-color: rgba(17, 24, 39, 0.8);
             backdrop-filter: blur(5px);
             padding: 12px;
@@ -333,7 +330,6 @@
             gap: 10px;
             width: 200px;
             z-index: 5;
-            /* Ensure it's above the canvas but can be below other modals */
         }
 
         .regions-panel h2 {
@@ -362,7 +358,6 @@
             align-items: center;
             gap: 8px;
             justify-content: space-between;
-            /* This helps position the color input */
         }
 
         .region-item:hover {
@@ -399,7 +394,6 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        /* --- NEW --- Style for the temporary input field when renaming */
         .region-name-input {
             background-color: rgba(0, 0, 0, 0.3);
             border: 1px solid #6366f1;
@@ -412,7 +406,6 @@
             width: 100%;
         }
 
-        /* Add this to style the assignment dropdown in the info panel */
         #regionAssignment,
         #regionAssignment select {
             width: 100%;
@@ -531,6 +524,17 @@
         const canvas = document.getElementById('galaxyCanvas');
         const ctx = canvas.getContext('2d');
 
+        // --- NEW: Parallax Starfield Configuration ---
+        const STAR_LAYERS = [
+            { count: 25000, radius: 0.5, parallax: 0.1, color: 'rgba(255, 255, 255, 0.4)' }, // Farthest, slowest
+            { count: 10000, radius: 0.8, parallax: 0.25, color: 'rgba(255, 255, 255, 0.6)' },
+            { count: 3000, radius: 1.2, parallax: 0.5, color: 'rgba(255, 255, 255, 0.8)' }  // Nearest, fastest
+        ];
+        let starfield = [];
+        const STARFIELD_BOUNDS = 5000; // The virtual size of the starfield for tiling
+
+        // --- End of New Variables ---
+
         const MIN_ZOOM = 0.05;
         const MAX_ZOOM = 15.0;
         const ZOOM_LERP_FACTOR = 0.2;
@@ -640,6 +644,8 @@
             const cssHeight = +style.height.slice(0, -2);
             canvas.setAttribute('width', cssWidth * dpi);
             canvas.setAttribute('height', cssHeight * dpi);
+            // The canvas is now scaled up by DPI, so we need to scale the context back down for drawing.
+            // This ensures our coordinates map 1:1 to CSS pixels.
             ctx.scale(dpi, dpi);
         }
 
@@ -648,6 +654,58 @@
                 x: (x - canvas.clientWidth / 2) / camera.zoom + camera.x,
                 y: (y - canvas.clientHeight / 2) / camera.zoom + camera.y
             };
+        }
+
+        // --- NEW: Function to create the starfield data ---
+        function createStarfield() {
+            STAR_LAYERS.forEach(layer => {
+                const stars = [];
+                for (let i = 0; i < layer.count; i++) {
+                    stars.push({
+                        x: (Math.random() - 0.5) * STARFIELD_BOUNDS,
+                        y: (Math.random() - 0.5) * STARFIELD_BOUNDS,
+                        // Add a random value for deterministic but varied shimmer
+                        shimmer: Math.random()
+                    });
+                }
+                starfield.push({ config: layer, stars: stars });
+            });
+        }
+
+        // --- NEW: Function to draw the parallax starfield ---
+        function drawStarfield() {
+            // This function assumes it's being called in a screen-space context (transform is reset).
+            const halfWidth = canvas.clientWidth / 2;
+            const halfHeight = canvas.clientHeight / 2;
+
+            starfield.forEach(layer => {
+                ctx.fillStyle = layer.config.color;
+                ctx.beginPath(); // Begin a path for all stars in this layer for performance.
+
+                layer.stars.forEach(star => {
+                    // Calculate the star's apparent position based on camera movement and parallax effect.
+                    const viewX = camera.x * layer.config.parallax;
+                    const viewY = camera.y * layer.config.parallax;
+
+                    // The core tiling logic to make the starfield appear infinite.
+                    // It wraps the star's position around the STARFIELD_BOUNDS.
+                    let sx = ((star.x - viewX) % STARFIELD_BOUNDS + STARFIELD_BOUNDS) % STARFIELD_BOUNDS - (STARFIELD_BOUNDS / 2);
+                    let sy = ((star.y - viewY) % STARFIELD_BOUNDS + STARFIELD_BOUNDS) % STARFIELD_BOUNDS - (STARFIELD_BOUNDS / 2);
+
+                    // Center the tiled coordinates onto the screen.
+                    sx += halfWidth;
+                    sy += halfHeight;
+
+                    // A subtle shimmer effect to make the stars twinkle.
+                    const shimmerFactor = 0.5 + Math.sin((Date.now() / 1500) + star.shimmer * Math.PI * 2) * 0.5;
+                    const radius = layer.config.radius * shimmerFactor;
+
+                    // Using ctx.rect() is generally faster for drawing many small points than ctx.arc().
+                    ctx.rect(sx, sy, radius, radius);
+                });
+
+                ctx.fill(); // Draw all the star rectangles for this layer in a single call.
+            });
         }
 
         function getStarAt(worldX, worldY) {
@@ -807,18 +865,29 @@
             }
         }
 
+        // --- UPDATED: Main render loop ---
         function render() {
+            // --- Background Rendering ---
             ctx.save();
-            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // Use screen coordinates for the background
+
+            // Fill the base background color
             ctx.fillStyle = '#000510';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, canvas.width, canvas.height); // Use canvas.width/height for full bitmap clear
+
+            // Draw the new parallax starfield on top
+            drawStarfield();
+
             ctx.restore();
 
+            // --- World/Foreground Rendering ---
             ctx.save();
+            // Apply camera transformations (pan and zoom) for the main content
             ctx.translate(canvas.clientWidth / 2, canvas.clientHeight / 2);
             ctx.scale(camera.zoom, camera.zoom);
             ctx.translate(-camera.x, -camera.y);
 
+            // Draw the appropriate view (galaxy or system)
             if (editorState.view === 'galaxy') {
                 drawGalaxyView();
             } else {
@@ -2075,6 +2144,8 @@
 
         function setup() {
             setupCanvasDPI();
+            // --- NEW: Generate the starfield when the app starts ---
+            createStarfield();
             populateRegionsPanel();
 
             editorState.lastMousePos = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
