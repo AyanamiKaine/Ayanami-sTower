@@ -560,6 +560,11 @@
 
         const STAR_FADE_START_ZOOM = 0.5; // Below this zoom, stars start to fade/shrink
         const STAR_FADE_END_ZOOM = 0.2;   // Below this zoom, stars are at their minimum size/opacity
+
+        const REGION_TEXT_FADE_START_ZOOM = 0.2; // Below this, region names start fading
+        const REGION_TEXT_FADE_END_ZOOM = 0.15;  // Below this, region names are fully invisible
+        const MAX_REGION_FONT_SIZE = 70;         // The maximum font size in screen pixels
+
         let editorState = {
             mode: 'pan',
             view: 'galaxy',
@@ -1037,19 +1042,32 @@
                 ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
             }
 
-            // --- NEW: Final Text Drawing Pass ---
-            // This happens last, so it will be on top of everything else.
-            ctx.fillStyle = '#ffffff';
-            ctx.font = `bold ${20 / camera.zoom}px Inter`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.shadowColor = 'rgba(0,0,0,0.7)';
-            ctx.shadowBlur = 5 / camera.zoom;
+            let regionTextAlpha = 1.0;
+            if (camera.zoom < REGION_TEXT_FADE_START_ZOOM) {
+                regionTextAlpha = (camera.zoom - REGION_TEXT_FADE_END_ZOOM) / (REGION_TEXT_FADE_START_ZOOM - REGION_TEXT_FADE_END_ZOOM);
+                regionTextAlpha = Math.max(0, Math.min(1, regionTextAlpha));
+            }
 
-            regionTextToDraw.forEach(item => {
-                ctx.fillText(item.text, item.x, item.y);
-            });
-            ctx.shadowBlur = 0; // Reset shadow
+            // Only draw if the text is visible
+            if (regionTextAlpha > 0) {
+                // Font size in world space is (20 / camera.zoom). We cap it at a max screen size.
+                const finalFontSize = Math.min(20 / camera.zoom, MAX_REGION_FONT_SIZE);
+
+                // Set styles using the calculated alpha and font size
+                ctx.fillStyle = `rgba(255, 255, 255, ${regionTextAlpha})`;
+                ctx.font = `bold ${finalFontSize}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = `rgba(0, 0, 0, ${regionTextAlpha * 0.7})`;
+                ctx.shadowBlur = 5; // Use a fixed pixel shadow blur for crispness
+
+                // 2. Draw the text from the populated list
+                regionTextToDraw.forEach(item => {
+                    ctx.fillText(item.text, item.x, item.y);
+                });
+
+                ctx.shadowBlur = 0; // Reset shadow
+            }
         }
 
         function drawSystemView() {
