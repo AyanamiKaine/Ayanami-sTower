@@ -361,6 +361,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            justify-content: space-between;
+            /* This helps position the color input */
         }
 
         .region-item:hover {
@@ -372,6 +374,42 @@
             height: 12px;
             border-radius: 3px;
             flex-shrink: 0;
+        }
+
+        .region-color-input {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            border-radius: 4px;
+        }
+
+        .region-color-input::-webkit-color-swatch {
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .region-color-input::-moz-color-swatch {
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* --- NEW --- Style for the temporary input field when renaming */
+        .region-name-input {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid #6366f1;
+            color: #fff;
+            font-family: inherit;
+            font-size: inherit;
+            padding: 2px 4px;
+            border-radius: 3px;
+            outline: none;
+            width: 100%;
         }
 
         /* Add this to style the assignment dropdown in the info panel */
@@ -1112,16 +1150,81 @@
             regions.forEach(region => {
                 const item = document.createElement('div');
                 item.className = 'region-item';
-
-                const colorSwatch = document.createElement('div');
-                colorSwatch.className = 'region-item-color';
-                colorSwatch.style.backgroundColor = region.color.replace('0.2', '1.0'); // Use opaque color for swatch
+                item.dataset.regionId = region.id;
 
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = region.name;
+                nameSpan.style.flexGrow = '1'; // Allow name to take up available space
 
-                item.appendChild(colorSwatch);
+                // --- NEW: Double-click to rename ---
+                nameSpan.addEventListener('dblclick', () => {
+                    const currentName = nameSpan.textContent;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'region-name-input';
+                    input.value = currentName;
+
+                    // Replace the span with the input field
+                    item.replaceChild(input, nameSpan);
+                    input.focus();
+                    input.select();
+
+                    // When the input loses focus (blur) or Enter is pressed, save the new name
+                    const saveName = () => {
+                        const newName = input.value.trim();
+                        if (newName && newName !== currentName) {
+                            region.name = newName;
+                            saveState(); // Save the change
+                        }
+                        // Replace the input field back with the span
+                        nameSpan.textContent = region.name; // Update span with final name
+                        item.replaceChild(nameSpan, input);
+                    };
+
+                    input.addEventListener('blur', saveName);
+                    input.addEventListener('keydown', e => {
+                        if (e.key === 'Enter') {
+                            input.blur(); // Trigger the blur event to save
+                        } else if (e.key === 'Escape') {
+                            input.value = currentName; // Revert change
+                            input.blur();
+                        }
+                    });
+                });
+
+                // --- NEW: Color Picker ---
+                const colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.className = 'region-color-input';
+
+                // Convert the stored rgba color to a hex string for the color input
+                const rgba = region.color.match(/(\d+(\.\d+)?)/g);
+                if (rgba) {
+                    const r = parseInt(rgba[0]).toString(16).padStart(2, '0');
+                    const g = parseInt(rgba[1]).toString(16).padStart(2, '0');
+                    const b = parseInt(rgba[2]).toString(16).padStart(2, '0');
+                    colorInput.value = `#${r}${g}${b}`;
+                }
+
+                // When a new color is selected, update the region's color
+                colorInput.addEventListener('input', (e) => {
+                    const hex = e.target.value;
+                    const r = parseInt(hex.slice(1, 3), 16);
+                    const g = parseInt(hex.slice(3, 5), 16);
+                    const b = parseInt(hex.slice(5, 7), 16);
+
+                    // Update the region color, keeping the 0.2 alpha for the fill
+                    region.color = `rgba(${r}, ${g}, ${b}, 0.2)`;
+                    // No need to save state on every tiny change, wait for final selection
+                });
+
+                // Save state only when the color picker is closed
+                colorInput.addEventListener('change', () => {
+                    saveState();
+                });
+
                 item.appendChild(nameSpan);
+                item.appendChild(colorInput);
                 regionList.appendChild(item);
             });
         }
