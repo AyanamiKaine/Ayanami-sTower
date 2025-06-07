@@ -344,6 +344,7 @@
         <button id="addMoonBtn" style="display:none;">Add Moon</button>
         <button id="addAsteroidBtn">Add Asteroid</button>
         <button id="addAsteroidFieldBtn">Add Ast. Field</button>
+        <button id="deleteBodyBtn">Delete</button>
         <button id="backToGalaxyBtn">Back to Galaxy</button>
     </div>
 
@@ -438,6 +439,7 @@
         const addStarBtn = document.getElementById('addStarBtn');
         const connectStarBtn = document.getElementById('connectStarBtn');
         const deleteBtn = document.getElementById('deleteBtn');
+        const deleteBodyBtn = document.getElementById('deleteBodyBtn');
         const undoBtn = document.getElementById('undoBtn');
         const redoBtn = document.getElementById('redoBtn');
         const importBtn = document.getElementById('importBtn');
@@ -563,6 +565,7 @@
             addStarBtn.classList.toggle('active', editorState.mode === 'add');
             connectStarBtn.classList.toggle('active', editorState.mode === 'connect');
             deleteBtn.classList.toggle('active-delete', editorState.mode === 'delete');
+            deleteBodyBtn.classList.toggle('active-delete', editorState.mode === 'delete');
             addAsteroidBtn.classList.toggle('active', editorState.mode === 'add_asteroid');
             addAsteroidFieldBtn.classList.toggle('active', editorState.mode === 'add_asteroid_field');
             updateCursor();
@@ -781,6 +784,40 @@
                 ctx.fill();
             });
         }
+
+        function deleteSelectedBody() {
+            if (editorState.view !== 'system' || editorState.selectedCelestialBodyId === null) {
+                return;
+            }
+
+            const system = stars.find(s => s.id === editorState.activeSystemId);
+            if (!system) return;
+
+            const { body: bodyToDelete } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
+
+            // Make sure we found a body and it's not the central star
+            if (!bodyToDelete || bodyToDelete.type === 'star') {
+                return;
+            }
+
+            // Filter the main celestial bodies array
+            system.celestialBodies = system.celestialBodies.filter(b => b.id !== bodyToDelete.id);
+
+            // If the deleted body was a planet, we don't need to do anything else.
+            // If it was a moon, we need to remove it from its parent planet's `moons` array.
+            system.celestialBodies.forEach(planet => {
+                if (planet.moons) {
+                    planet.moons = planet.moons.filter(m => m.id !== bodyToDelete.id);
+                }
+            });
+
+            // Reset selection and update UI
+            editorState.selectedCelestialBodyId = null;
+            updateInfoPanel();
+            populateSystemUI();
+            saveState();
+        }
+
 
         function drawCelestialBody(body, x, y) {
             if (editorState.selectedCelestialBodyId === body.id) {
@@ -1526,6 +1563,7 @@
             addStarBtn.addEventListener('click', () => setMode('add'));
             connectStarBtn.addEventListener('click', () => setMode('connect'));
             deleteBtn.addEventListener('click', () => setMode('delete'));
+            deleteBodyBtn.addEventListener('click', () => setMode('delete'));
             undoBtn.addEventListener('click', undo);
             redoBtn.addEventListener('click', redo);
             exportBtn.addEventListener('click', exportToXML);
@@ -1598,6 +1636,14 @@
                         editorState.selection = []; setMode('pan'); updateInfoPanel();
                     }
                 }
+
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (editorState.view === 'system' && editorState.selectedCelestialBodyId !== null) {
+                        e.preventDefault(); // Prevents browser back navigation on backspace
+                        deleteSelectedBody();
+                    }
+                }
+
                 if (e.ctrlKey || e.metaKey) {
                     if (e.key === 'z') { e.preventDefault(); undo(); }
                     else if (e.key === 'y' || (e.key === 'Z' && e.shiftKey)) { e.preventDefault(); redo(); }
