@@ -526,22 +526,19 @@
 
         // --- NEW: Parallax Starfield Configuration ---
         const STAR_LAYERS = [
-            // More visible, but fewer stars overall to maintain performance.
-            { count: 2000, radius: 0.8, parallax: 0.1, color: 'rgba(255, 255, 255, 0.5)' },
-            { count: 1000, radius: 1.2, parallax: 0.25, color: 'rgba(255, 255, 255, 0.7)' },
-            { count: 300, radius: 1.6, parallax: 0.5, color: 'rgba(255, 255, 255, 0.9)' }
+            { count: 1000, minSize: 0.5, maxSize: 1.2, parallax: 0.1, color: 'rgba(255, 255, 255, 0.5)' },
+            { count: 500, minSize: 0.8, maxSize: 1.8, parallax: 0.25, color: 'rgba(255, 255, 255, 0.7)' },
+            { count: 150, minSize: 1.2, maxSize: 2.5, parallax: 0.5, color: 'rgba(255, 255, 255, 0.9)' }
         ];
         let starfield = [];
-        const STARFIELD_BOUNDS = 5000; // The virtual size of the starfield for tiling
+        const STARFIELD_BOUNDS = 5000;
 
         const NEBULA_CONFIG = {
-            count: 15, // The number of nebula clouds
-            colors: [ // A palette of nebula-like colors
-                { r: 168, g: 50, b: 132 },  // Magenta/Purple
-                { r: 50, g: 86, b: 168 },   // Deep Blue
-                { r: 90, g: 34, b: 139 },    // Violet
+            count: 30,
+            colors: [
+                { r: 168, g: 50, b: 132 }, { r: 50, g: 86, b: 168 }, { r: 90, g: 34, b: 139 },
             ],
-            parallax: 0.05 // Nebulae move very slowly for a deep background effect
+            parallax: 0.05
         };
         let nebulae = [];
 
@@ -668,14 +665,16 @@
             };
         }
 
-        // --- NEW: Function to create the starfield data ---
         function createStarfield() {
             STAR_LAYERS.forEach(layer => {
                 const stars = [];
                 for (let i = 0; i < layer.count; i++) {
+                    const sizeRange = layer.maxSize - layer.minSize;
                     stars.push({
                         x: (Math.random() - 0.5) * STARFIELD_BOUNDS,
                         y: (Math.random() - 0.5) * STARFIELD_BOUNDS,
+                        // Assign a base radius within the layer's configured range
+                        baseRadius: Math.random() * sizeRange + layer.minSize,
                         shimmer: Math.random()
                     });
                 }
@@ -683,14 +682,13 @@
             });
         }
 
-        // --- NEW: Function to create nebula data ---
         function createNebulae() {
             for (let i = 0; i < NEBULA_CONFIG.count; i++) {
                 const color = NEBULA_CONFIG.colors[Math.floor(Math.random() * NEBULA_CONFIG.colors.length)];
                 nebulae.push({
                     x: (Math.random() - 0.5) * STARFIELD_BOUNDS,
                     y: (Math.random() - 0.5) * STARFIELD_BOUNDS,
-                    radius: (Math.random() * 0.5 + 0.5) * 800, // Random radius
+                    radius: (Math.random() * 0.5 + 0.5) * 800,
                     color: color
                 });
             }
@@ -710,14 +708,14 @@
                     sx += halfWidth;
                     sy += halfHeight;
                     const shimmerFactor = 0.5 + Math.sin((Date.now() / 1500) + star.shimmer * Math.PI * 2) * 0.5;
-                    const radius = layer.config.radius * shimmerFactor;
+                    // The final radius is the star's base size multiplied by the shimmer effect
+                    const radius = star.baseRadius * shimmerFactor;
                     ctx.rect(sx, sy, radius, radius);
                 });
                 ctx.fill();
             });
         }
 
-        // --- NEW: Function to draw nebulae ---
         function drawNebulae() {
             const halfWidth = canvas.clientWidth / 2;
             const halfHeight = canvas.clientHeight / 2;
@@ -728,16 +726,11 @@
                 let sy = ((nebula.y - viewY) % STARFIELD_BOUNDS + STARFIELD_BOUNDS) % STARFIELD_BOUNDS - (STARFIELD_BOUNDS / 2);
                 sx += halfWidth;
                 sy += halfHeight;
-
-                // Create a radial gradient for a soft cloud effect
                 const gradient = ctx.createRadialGradient(sx, sy, 0, sx, sy, nebula.radius);
                 const { r, g, b } = nebula.color;
-                // Fade from a faint color in the center to fully transparent
                 gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.15)`);
                 gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-
                 ctx.fillStyle = gradient;
-                // Draw a rectangle covering the nebula's area. Using arc is also fine.
                 ctx.fillRect(sx - nebula.radius, sy - nebula.radius, nebula.radius * 2, nebula.radius * 2);
             });
         }
@@ -910,8 +903,8 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height); // Use canvas.width/height for full bitmap clear
 
             // Draw the new parallax starfield on top
-            drawStarfield();
             drawNebulae();
+            drawStarfield();
             ctx.restore();
 
             // --- World/Foreground Rendering ---
@@ -2180,6 +2173,7 @@
             setupCanvasDPI();
             // --- NEW: Generate the starfield when the app starts ---
             createStarfield();
+            createNebulae();
             populateRegionsPanel();
 
             editorState.lastMousePos = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
