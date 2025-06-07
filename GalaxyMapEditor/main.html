@@ -474,6 +474,17 @@
         </div>
     </div>
 
+    <div id="regionNameModal" class="modal-backdrop">
+        <div class="modal-content">
+            <label for="regionNameInput">Enter Region Name:</label>
+            <input type="text" id="regionNameInput" placeholder="e.g., The Veil">
+            <div class="modal-buttons">
+                <button id="confirmRegionNameBtn">Create</button>
+                <button id="cancelRegionNameBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="xmlImporter" accept=".xml" style="display: none;">
 
     <canvas id="galaxyCanvas"></canvas>
@@ -540,7 +551,10 @@
 
         let history = [];
         let historyIndex = -1;
-
+        const regionNameModal = document.getElementById('regionNameModal');
+        const regionNameInput = document.getElementById('regionNameInput');
+        const confirmRegionNameBtn = document.getElementById('confirmRegionNameBtn');
+        const cancelRegionNameBtn = document.getElementById('cancelRegionNameBtn');
         const galaxyUI = document.getElementById('galaxyUI');
         const systemUI = document.getElementById('systemUI');
         const backToGalaxyBtn = document.getElementById('backToGalaxyBtn');
@@ -1955,11 +1969,18 @@
             backToGalaxyBtn.addEventListener('click', switchToGalaxyView);
 
             createRegionBtn.addEventListener('click', () => {
-                const regionName = prompt("Enter new region name:");
-                if (regionName && regionName.trim() !== '') {
+                regionNameInput.value = '';
+                regionNameModal.style.display = 'flex';
+                regionNameInput.focus();
+            });
+
+            // --- NEW: Event listeners for the new Region Name modal ---
+            confirmRegionNameBtn.addEventListener('click', () => {
+                const regionName = regionNameInput.value.trim();
+                if (regionName) {
                     const newRegion = {
                         id: nextRegionId++,
-                        name: regionName.trim(),
+                        name: regionName,
                         starIds: [],
                         color: REGION_COLORS[nextRegionId % REGION_COLORS.length]
                     };
@@ -1967,8 +1988,20 @@
                     populateRegionsPanel();
                     saveState();
                 }
+                regionNameModal.style.display = 'none';
             });
 
+            cancelRegionNameBtn.addEventListener('click', () => {
+                regionNameModal.style.display = 'none';
+            });
+
+            regionNameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    confirmRegionNameBtn.click();
+                } else if (e.key === 'Escape') {
+                    cancelRegionNameBtn.click();
+                }
+            });
             regionAssignSelect.addEventListener('change', (e) => {
                 const selectedRegionId = parseInt(e.target.value, 10);
                 assignSelectionToRegion(selectedRegionId);
