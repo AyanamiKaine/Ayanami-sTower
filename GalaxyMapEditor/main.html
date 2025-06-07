@@ -470,6 +470,11 @@
             <p>Orbit: <input type="number" id="moonOrbitInput" step="1"></p>
             <p>Size: <input type="number" id="moonSizeInput" step="0.1"></p>
         </div>
+        <div id="asteroidFieldSelectInfo" style="display: none;">
+            <p>Name: <input type="text" id="asteroidFieldNameInput"></p>
+            <p>Radius: <input type="number" id="asteroidFieldRadiusInput" step="10"></p>
+            <p>Density: <input type="number" id="asteroidFieldCountInput" step="10"></p>
+        </div>
         <div id="multiSelectInfo" style="display: none;">
             <p><span id="multiSelectCount">0</span> systems selected</p>
         </div>
@@ -524,7 +529,6 @@
         const canvas = document.getElementById('galaxyCanvas');
         const ctx = canvas.getContext('2d');
 
-        // --- NEW: Parallax Starfield Configuration ---
         const STAR_LAYERS = [
             { count: 1000, minSize: 0.5, maxSize: 1.2, parallax: 0.1, color: 'rgba(255, 255, 255, 0.5)' },
             { count: 500, minSize: 0.8, maxSize: 1.8, parallax: 0.25, color: 'rgba(255, 255, 255, 0.7)' },
@@ -534,7 +538,7 @@
         const STARFIELD_BOUNDS = 5000;
 
         const NEBULA_CONFIG = {
-            count: 30,
+            count: 15,
             colors: [
                 { r: 168, g: 50, b: 132 }, { r: 50, g: 86, b: 168 }, { r: 90, g: 34, b: 139 },
             ],
@@ -542,71 +546,45 @@
         };
         let nebulae = [];
 
-        // --- End of New Variables ---
-
         const MIN_ZOOM = 0.05;
         const MAX_ZOOM = 15.0;
         const ZOOM_LERP_FACTOR = 0.2;
-        const TEXT_FADE_START_ZOOM = 0.7; // Below this zoom, text starts fading
-        const TEXT_FADE_END_ZOOM = 0.4;   // Below this zoom, text is fully invisible
+        const TEXT_FADE_START_ZOOM = 0.7;
+        const TEXT_FADE_END_ZOOM = 0.4;
         let stars = [];
         let connections = [];
-
         let regions = [];
         let nextRegionId = 0;
 
-        // A nice color palette for the regions.
         const REGION_COLORS = [
-            'rgba(239, 68, 68, 0.2)',  // Red
-            'rgba(59, 130, 246, 0.2)', // Blue
-            'rgba(34, 197, 94, 0.2)',  // Green
-            'rgba(234, 179, 8, 0.2)',  // Yellow
-            'rgba(168, 85, 247, 0.2)', // Purple
-            'rgba(249, 115, 22, 0.2)'  // Orange
+            'rgba(239, 68, 68, 0.2)', 'rgba(59, 130, 246, 0.2)', 'rgba(34, 197, 94, 0.2)',
+            'rgba(234, 179, 8, 0.2)', 'rgba(168, 85, 247, 0.2)', 'rgba(249, 115, 22, 0.2)'
         ];
 
-        const MAX_HULL_EDGE_LENGTH = 200; // An edge longer than this will be subdivided
-        const JIGGLE_FACTOR = 0.5;        // How "bubbly" the subdivided edges become (0 to 1)
-
-        const STAR_BUFFER_RADIUS = 40; // The "personal space" radius around each star
-        const STAR_BUFFER_POINTS = 6;  // How many points to create in the circle around each star
-
-        const STAR_FADE_START_ZOOM = 0.5; // Below this zoom, stars start to fade/shrink
-        const STAR_FADE_END_ZOOM = 0.2;   // Below this zoom, stars are at their minimum size/opacity
-
-        const REGION_TEXT_FADE_START_ZOOM = 0.2; // Below this, region names start fading
-        const REGION_TEXT_FADE_END_ZOOM = 0.15;  // Below this, region names are fully invisible
-        const MAX_REGION_FONT_SIZE = 70;         // The maximum font size in screen pixels
+        const MAX_HULL_EDGE_LENGTH = 200;
+        const JIGGLE_FACTOR = 0.5;
+        const STAR_BUFFER_RADIUS = 40;
+        const STAR_BUFFER_POINTS = 6;
+        const STAR_FADE_START_ZOOM = 0.5;
+        const STAR_FADE_END_ZOOM = 0.2;
+        const REGION_TEXT_FADE_START_ZOOM = 0.2;
+        const REGION_TEXT_FADE_END_ZOOM = 0.15;
+        const MAX_REGION_FONT_SIZE = 70;
 
         let editorState = {
-            mode: 'pan',
-            view: 'galaxy',
-            activeSystemId: null,
-            selectedCelestialBodyId: null,
-            draggedBody: null,
-            drawingAstField: null,
-            isSpacebarPan: false,
-            selection: [],
-            groupDrag: null,
-            selectionBox: null,
-            firstStarForConnection: null,
-            hoveredStar: null,
-            hoveredBodyId: null,
-            hoveredConnection: null,
-            lastMousePos: { x: 0, y: 0 },
+            mode: 'pan', view: 'galaxy', activeSystemId: null, selectedCelestialBodyId: null,
+            draggedBody: null, drawingAstField: null, isSpacebarPan: false,
+            selection: [], groupDrag: null, selectionBox: null,
+            firstStarForConnection: null, hoveredStar: null, hoveredBodyId: null,
+            hoveredConnection: null, lastMousePos: { x: 0, y: 0 },
         };
-        let camera = {
-            x: 0, y: 0,
-            zoom: 1.0, targetZoom: 1.0,
-            isDragging: false,
-            lastX: 0, lastY: 0,
-        };
+        let camera = { x: 0, y: 0, zoom: 1.0, targetZoom: 1.0, isDragging: false, lastX: 0, lastY: 0, };
         let nextStarId = 0;
         let nextBodyId = 0;
         let pendingStar = null;
-
         let history = [];
         let historyIndex = -1;
+
         const regionNameModal = document.getElementById('regionNameModal');
         const regionNameInput = document.getElementById('regionNameInput');
         const confirmRegionNameBtn = document.getElementById('confirmRegionNameBtn');
@@ -638,13 +616,13 @@
         const singleSelectInfo = document.getElementById('singleSelectInfo');
         const planetSelectInfo = document.getElementById('planetSelectInfo');
         const moonSelectInfo = document.getElementById('moonSelectInfo');
+        const asteroidFieldSelectInfo = document.getElementById('asteroidFieldSelectInfo');
         const multiSelectInfo = document.getElementById('multiSelectInfo');
         const regionsPanel = document.getElementById('regionsPanel');
         const regionList = document.getElementById('regionList');
         const createRegionBtn = document.getElementById('createRegionBtn');
         const regionAssignment = document.getElementById('regionAssignment');
         const regionAssignSelect = document.getElementById('regionAssignSelect');
-        // --- Functions ---
 
         function setupCanvasDPI() {
             const dpi = window.devicePixelRatio || 1;
@@ -653,8 +631,6 @@
             const cssHeight = +style.height.slice(0, -2);
             canvas.setAttribute('width', cssWidth * dpi);
             canvas.setAttribute('height', cssHeight * dpi);
-            // The canvas is now scaled up by DPI, so we need to scale the context back down for drawing.
-            // This ensures our coordinates map 1:1 to CSS pixels.
             ctx.scale(dpi, dpi);
         }
 
@@ -673,7 +649,6 @@
                     stars.push({
                         x: (Math.random() - 0.5) * STARFIELD_BOUNDS,
                         y: (Math.random() - 0.5) * STARFIELD_BOUNDS,
-                        // Assign a base radius within the layer's configured range
                         baseRadius: Math.random() * sizeRange + layer.minSize,
                         shimmer: Math.random()
                     });
@@ -708,7 +683,6 @@
                     sx += halfWidth;
                     sy += halfHeight;
                     const shimmerFactor = 0.5 + Math.sin((Date.now() / 1500) + star.shimmer * Math.PI * 2) * 0.5;
-                    // The final radius is the star's base size multiplied by the shimmer effect
                     const radius = star.baseRadius * shimmerFactor;
                     ctx.rect(sx, sy, radius, radius);
                 });
@@ -739,7 +713,9 @@
             const clickRadius = 15 / camera.zoom;
             for (let i = stars.length - 1; i >= 0; i--) {
                 const star = stars[i];
-                if (Math.sqrt((worldX - star.x) ** 2 + (worldY - star.y) ** 2) < clickRadius) return star;
+                if (Math.sqrt((worldX - star.x) ** 2 + (worldY - star.y) ** 2) < clickRadius) {
+                    return star;
+                }
             }
             return null;
         }
@@ -747,14 +723,25 @@
         function getConnectionAt(worldX, worldY) {
             const clickThreshold = 5 / camera.zoom;
             for (const conn of connections) {
-                const p1 = stars.find(s => s.id === conn.p1_id), p2 = stars.find(s => s.id === conn.p2_id);
+                const p1 = stars.find(s => s.id === conn.p1_id);
+                const p2 = stars.find(s => s.id === conn.p2_id);
                 if (!p1 || !p2) continue;
-                const dx = p2.x - p1.x, dy = p2.y - p1.y, lenSq = dx * dx + dy * dy;
+
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const lenSq = dx * dx + dy * dy;
+
                 if (lenSq === 0) continue;
+
                 let t = ((worldX - p1.x) * dx + (worldY - p1.y) * dy) / lenSq;
                 t = Math.max(0, Math.min(1, t));
-                const closestX = p1.x + t * dx, closestY = p1.y + t * dy;
-                if ((worldX - closestX) ** 2 + (worldY - closestY) ** 2 < clickThreshold ** 2) return conn;
+
+                const closestX = p1.x + t * dx;
+                const closestY = p1.y + t * dy;
+
+                if ((worldX - closestX) ** 2 + (worldY - closestY) ** 2 < clickThreshold ** 2) {
+                    return conn;
+                }
             }
             return null;
         }
@@ -762,17 +749,14 @@
         function getBodyAt(worldX, worldY, system) {
             if (!system) return null;
 
-            // Prioritize small, solid objects first
-            let foundBody = null;
-
-            // Check for planets and their moons
+            // Check planets and moons
             for (const body of system.celestialBodies) {
                 if (body.type !== 'planet') continue;
 
                 let planetX = Math.cos(body.orbitAngle) * body.orbitRadius;
                 let planetY = Math.sin(body.orbitAngle) * body.orbitRadius;
 
-                // Check moons first
+                // Check moons first (as they are "on top" of planets)
                 if (body.moons) {
                     for (const moon of body.moons) {
                         const moonX = planetX + Math.cos(moon.orbitAngle) * moon.orbitRadius;
@@ -784,14 +768,14 @@
                     }
                 }
 
-                // Check planet itself
+                // Check planet
                 const clickRadius = body.size + (5 / camera.zoom);
                 if (Math.sqrt((worldX - planetX) ** 2 + (worldY - planetY) ** 2) < clickRadius) {
                     return body;
                 }
             }
 
-            // Check for individual asteroids and the star
+            // Check non-orbiting bodies (asteroids, system star)
             for (const body of system.celestialBodies) {
                 if (body.type === 'asteroid' || body.type === 'star') {
                     let bodyX = body.type === 'star' ? 0 : body.x;
@@ -803,14 +787,14 @@
                 }
             }
 
-            // Finally, check for asteroid fields if nothing else was clicked
+            // Check asteroid fields
             for (const body of system.celestialBodies) {
                 if (body.type === 'asteroid_field') {
-                    const distSq = (worldX - body.x) ** 2 + (worldY - body.y) ** 2;
-                    if (distSq < body.radius ** 2) return body;
+                    if ((worldX - body.x) ** 2 + (worldY - body.y) ** 2 < body.radius ** 2) {
+                        return body;
+                    }
                 }
             }
-
             return null;
         }
 
@@ -835,15 +819,20 @@
                 return;
             }
             let cursor = 'grab';
-            if (editorState.groupDrag || editorState.draggedBody) cursor = 'move';
-            else if (editorState.mode === 'add' || editorState.mode === 'add_asteroid' || editorState.mode === 'add_asteroid_field') cursor = 'crosshair';
-            else if (editorState.mode === 'connect' || editorState.hoveredBodyId !== null) cursor = 'pointer';
-            else if (editorState.mode === 'delete') cursor = 'not-allowed';
+            if (editorState.groupDrag || editorState.draggedBody) {
+                cursor = 'move';
+            } else if (editorState.mode === 'add' || editorState.mode === 'add_asteroid' || editorState.mode === 'add_asteroid_field') {
+                cursor = 'crosshair';
+            } else if (editorState.mode === 'connect' || editorState.hoveredBodyId !== null) {
+                cursor = 'pointer';
+            } else if (editorState.mode === 'delete') {
+                cursor = 'not-allowed';
+            }
             canvas.style.cursor = cursor;
         }
 
         function updateInfoPanel() {
-            const allPanels = [singleSelectInfo, multiSelectInfo, planetSelectInfo, moonSelectInfo];
+            const allPanels = [singleSelectInfo, multiSelectInfo, planetSelectInfo, moonSelectInfo, asteroidFieldSelectInfo];
             allPanels.forEach(p => p.style.display = 'none');
             regionAssignment.style.display = 'none';
             infoPanel.style.display = 'none';
@@ -888,33 +877,31 @@
                     document.getElementById('moonSizeInput').value = body.size;
                     moonSelectInfo.style.display = 'block';
                     infoPanel.style.display = 'block';
+                } else if (body?.type === 'asteroid_field') {
+                    document.getElementById('infoTitle').textContent = "Asteroid Field";
+                    document.getElementById('asteroidFieldNameInput').value = body.name;
+                    document.getElementById('asteroidFieldRadiusInput').value = body.radius.toFixed(1);
+                    document.getElementById('asteroidFieldCountInput').value = body.count;
+                    asteroidFieldSelectInfo.style.display = 'block';
+                    infoPanel.style.display = 'block';
                 }
             }
         }
 
-        // --- UPDATED: Main render loop ---
         function render() {
-            // --- Background Rendering ---
             ctx.save();
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // Use screen coordinates for the background
-
-            // Fill the base background color
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.fillStyle = '#000510';
-            ctx.fillRect(0, 0, canvas.width, canvas.height); // Use canvas.width/height for full bitmap clear
-
-            // Draw the new parallax starfield on top
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             drawNebulae();
             drawStarfield();
             ctx.restore();
 
-            // --- World/Foreground Rendering ---
             ctx.save();
-            // Apply camera transformations (pan and zoom) for the main content
             ctx.translate(canvas.clientWidth / 2, canvas.clientHeight / 2);
             ctx.scale(camera.zoom, camera.zoom);
             ctx.translate(-camera.x, -camera.y);
 
-            // Draw the appropriate view (galaxy or system)
             if (editorState.view === 'galaxy') {
                 drawGalaxyView();
             } else {
@@ -926,7 +913,6 @@
 
         function getConvexHull(points) {
             if (points.length <= 2) return points;
-
             points.sort((a, b) => a.x !== b.x ? a.x - b.x : a.y - b.y);
 
             const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
@@ -955,42 +941,28 @@
             if (points.length < 2) return points;
 
             const newPoints = [];
-            // A simple seeded random function to make the jiggle deterministic
             let seed = systemStars.reduce((a, s) => a + s.id, 0);
-            const random = () => {
-                const x = Math.sin(seed++) * 10000;
-                return x - Math.floor(x);
-            };
+            const random = () => { let x = Math.sin(seed++) * 10000; return x - Math.floor(x); };
 
             for (let i = 0; i < points.length; i++) {
                 const p1 = points[i];
                 const p2 = points[(i + 1) % points.length];
-
-                newPoints.push(p1); // Always add the original vertex
+                newPoints.push(p1);
 
                 const dx = p2.x - p1.x;
                 const dy = p2.y - p1.y;
                 const dist = Math.hypot(dx, dy);
-
                 const subdivisions = Math.floor(dist / MAX_HULL_EDGE_LENGTH);
+
                 if (subdivisions > 0) {
-                    // Get the perpendicular vector (normalized)
                     const normX = -dy / dist;
                     const normY = dx / dist;
-
                     for (let j = 1; j <= subdivisions; j++) {
                         const t = j / (subdivisions + 1);
-                        // Create a point along the line
                         const newX = p1.x + dx * t;
                         const newY = p1.y + dy * t;
-
-                        // "Jiggle" the point outwards randomly
                         const jiggle = (random() - 0.5) * MAX_HULL_EDGE_LENGTH * JIGGLE_FACTOR;
-
-                        newPoints.push({
-                            x: newX + normX * jiggle,
-                            y: newY + normY * jiggle
-                        });
+                        newPoints.push({ x: newX + normX * jiggle, y: newY + normY * jiggle });
                     }
                 }
             }
@@ -1002,39 +974,32 @@
                 const regionStars = region.starIds.map(id => stars.find(s => s.id === id)).filter(Boolean);
                 if (regionStars.length === 0) return;
 
-                // --- (The entire shape-drawing logic is unchanged) ---
                 let allBufferedPoints = [];
                 if (regionStars.length === 1) {
                     const star = regionStars[0];
                     for (let i = 0; i < STAR_BUFFER_POINTS * 2; i++) {
                         const angle = (i / (STAR_BUFFER_POINTS * 2)) * 2 * Math.PI;
-                        allBufferedPoints.push({
-                            x: star.x + STAR_BUFFER_RADIUS * Math.cos(angle),
-                            y: star.y + STAR_BUFFER_RADIUS * Math.sin(angle)
-                        });
+                        allBufferedPoints.push({ x: star.x + STAR_BUFFER_RADIUS * Math.cos(angle), y: star.y + STAR_BUFFER_RADIUS * Math.sin(angle) });
                     }
                 } else {
                     regionStars.forEach(star => {
                         for (let i = 0; i < STAR_BUFFER_POINTS; i++) {
                             const angle = (i / STAR_BUFFER_POINTS) * 2 * Math.PI;
-                            allBufferedPoints.push({
-                                x: star.x + STAR_BUFFER_RADIUS * Math.cos(angle),
-                                y: star.y + STAR_BUFFER_RADIUS * Math.sin(angle)
-                            });
+                            allBufferedPoints.push({ x: star.x + STAR_BUFFER_RADIUS * Math.cos(angle), y: star.y + STAR_BUFFER_RADIUS * Math.sin(angle) });
                         }
                     });
                 }
+
                 const bufferedHull = getConvexHull(allBufferedPoints);
                 if (bufferedHull.length < 3) return;
+
                 const blobbyHull = createBlobbyHull(bufferedHull, regionStars);
                 ctx.beginPath();
                 ctx.fillStyle = region.color;
                 ctx.strokeStyle = region.color.replace('0.2', '0.6');
                 ctx.lineWidth = 3 / camera.zoom;
-                const midpoints = blobbyHull.map((p, i) => {
-                    const nextP = blobbyHull[(i + 1) % blobbyHull.length];
-                    return { x: (p.x + nextP.x) / 2, y: (p.y + nextP.y) / 2 };
-                });
+
+                const midpoints = blobbyHull.map((p, i) => { const nextP = blobbyHull[(i + 1) % blobbyHull.length]; return { x: (p.x + nextP.x) / 2, y: (p.y + nextP.y) / 2 }; });
                 ctx.moveTo(midpoints[0].x, midpoints[0].y);
                 for (let i = 0; i < midpoints.length; i++) {
                     const nextMidpoint = midpoints[(i + 1) % midpoints.length];
@@ -1045,74 +1010,69 @@
                 ctx.fill();
                 ctx.stroke();
 
-                // --- MODIFIED --- Instead of drawing text, save it for later
                 const nameCentroid = regionStars.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
                 nameCentroid.x /= regionStars.length;
                 nameCentroid.y /= regionStars.length;
-
-                // Add an object with the text and its coordinates to the drawing list
-                regionTextToDraw.push({
-                    text: region.name,
-                    x: nameCentroid.x,
-                    y: nameCentroid.y
-                });
+                regionTextToDraw.push({ text: region.name, x: nameCentroid.x, y: nameCentroid.y });
             });
         }
 
         function drawGalaxyView() {
-            // --- NEW --- Create a list to hold text info for deferred drawing
             const regionTextToDraw = [];
-
             drawGrid();
-
-            // --- MODIFIED --- Pass the list to the function
             drawRegions(regionTextToDraw);
 
-            // Draw connections (these will now be UNDER the region text)
             ctx.lineWidth = 1.5 / camera.zoom;
             connections.forEach(conn => {
-                const p1 = stars.find(s => s.id === conn.p1_id), p2 = stars.find(s => s.id === conn.p2_id);
+                const p1 = stars.find(s => s.id === conn.p1_id);
+                const p2 = stars.find(s => s.id === conn.p2_id);
                 if (!p1 || !p2) return;
-                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
                 ctx.strokeStyle = (editorState.mode === 'delete' && editorState.hoveredConnection === conn) ? '#ef4444' : 'rgba(100, 150, 255, 0.4)';
                 ctx.stroke();
             });
+
             ctx.font = `${12 / camera.zoom}px Inter`;
             ctx.textAlign = 'center';
-
-            // --- (All the star fading and drawing logic remains the same) ---
             let textAlpha = 1.0;
             if (camera.zoom < TEXT_FADE_START_ZOOM) {
-                textAlpha = (camera.zoom - TEXT_FADE_END_ZOOM) / (TEXT_FADE_START_ZOOM - TEXT_FADE_END_ZOOM);
-                textAlpha = Math.max(0, Math.min(1, textAlpha));
+                textAlpha = Math.max(0, Math.min(1, (camera.zoom - TEXT_FADE_END_ZOOM) / (TEXT_FADE_START_ZOOM - TEXT_FADE_END_ZOOM)));
             }
+
             let starFadeRatio = 0;
             if (camera.zoom < STAR_FADE_START_ZOOM) {
-                starFadeRatio = (STAR_FADE_START_ZOOM - camera.zoom) / (STAR_FADE_START_ZOOM - STAR_FADE_END_ZOOM);
-                starFadeRatio = Math.max(0, Math.min(1, starFadeRatio));
+                starFadeRatio = Math.max(0, Math.min(1, (STAR_FADE_START_ZOOM - camera.zoom) / (STAR_FADE_START_ZOOM - STAR_FADE_END_ZOOM)));
             }
-            const baseStarSize = 5;
-            const minStarSize = 2;
-            const starSize = baseStarSize - (baseStarSize - minStarSize) * starFadeRatio;
-            const baseStarAlpha = 1.0;
-            const minStarAlpha = 0.3;
-            const starAlpha = baseStarAlpha - (baseStarAlpha - minStarAlpha) * starFadeRatio;
-            const baseShadowBlur = 10;
-            const shadowBlur = baseShadowBlur - baseShadowBlur * starFadeRatio;
+
+            const baseStarSize = 5, minStarSize = 2, starSize = baseStarSize - (baseStarSize - minStarSize) * starFadeRatio;
+            const baseStarAlpha = 1.0, minStarAlpha = 0.3, starAlpha = baseStarAlpha - (baseStarAlpha - minStarAlpha) * starFadeRatio;
+            const baseShadowBlur = 10, shadowBlur = baseShadowBlur - baseShadowBlur * starFadeRatio;
+
             stars.forEach(star => {
                 if (editorState.selection.includes(star.id)) {
-                    ctx.beginPath(); ctx.arc(star.x, star.y, (10 / camera.zoom), 0, 2 * Math.PI);
-                    ctx.strokeStyle = '#fde047'; ctx.lineWidth = 3 / camera.zoom; ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, (10 / camera.zoom), 0, 2 * Math.PI);
+                    ctx.strokeStyle = '#fde047';
+                    ctx.lineWidth = 3 / camera.zoom;
+                    ctx.stroke();
                 }
+
                 ctx.beginPath();
                 const isHovered = editorState.hoveredStar === star;
                 const isSelectedForConnection = editorState.firstStarForConnection === star;
+
                 if (isHovered || isSelectedForConnection || (editorState.mode === 'delete' && isHovered)) {
                     ctx.arc(star.x, star.y, baseStarSize / camera.zoom, 0, 2 * Math.PI);
                     if (editorState.mode === 'delete' && isHovered) {
-                        ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 20 / camera.zoom;
+                        ctx.fillStyle = '#ef4444';
+                        ctx.shadowColor = '#ef4444';
+                        ctx.shadowBlur = 20 / camera.zoom;
                     } else {
-                        ctx.fillStyle = '#fde047'; ctx.shadowColor = '#fde047'; ctx.shadowBlur = 20 / camera.zoom;
+                        ctx.fillStyle = '#fde047';
+                        ctx.shadowColor = '#fde047';
+                        ctx.shadowBlur = 20 / camera.zoom;
                     }
                 } else {
                     ctx.arc(star.x, star.y, starSize / camera.zoom, 0, 2 * Math.PI);
@@ -1120,15 +1080,16 @@
                     ctx.shadowColor = `rgba(160, 200, 255, ${starAlpha * 0.8})`;
                     ctx.shadowBlur = shadowBlur / camera.zoom;
                 }
+
                 ctx.fill();
                 ctx.shadowBlur = 0;
+
                 if (textAlpha > 0) {
                     ctx.fillStyle = `rgba(209, 213, 219, ${textAlpha})`;
                     ctx.fillText(star.name, star.x, star.y - 15 / camera.zoom);
                 }
             });
 
-            // Draw selection box
             if (editorState.selectionBox) {
                 ctx.fillStyle = "rgba(79, 170, 255, 0.2)";
                 ctx.strokeStyle = "rgba(129, 199, 255, 0.8)";
@@ -1140,29 +1101,19 @@
 
             let regionTextAlpha = 1.0;
             if (camera.zoom < REGION_TEXT_FADE_START_ZOOM) {
-                regionTextAlpha = (camera.zoom - REGION_TEXT_FADE_END_ZOOM) / (REGION_TEXT_FADE_START_ZOOM - REGION_TEXT_FADE_END_ZOOM);
-                regionTextAlpha = Math.max(0, Math.min(1, regionTextAlpha));
+                regionTextAlpha = Math.max(0, Math.min(1, (camera.zoom - REGION_TEXT_FADE_END_ZOOM) / (REGION_TEXT_FADE_START_ZOOM - REGION_TEXT_FADE_END_ZOOM)));
             }
 
-            // Only draw if the text is visible
             if (regionTextAlpha > 0) {
-                // Font size in world space is (20 / camera.zoom). We cap it at a max screen size.
                 const finalFontSize = Math.min(20 / camera.zoom, MAX_REGION_FONT_SIZE);
-
-                // Set styles using the calculated alpha and font size
                 ctx.fillStyle = `rgba(255, 255, 255, ${regionTextAlpha})`;
                 ctx.font = `bold ${finalFontSize}px Inter`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.shadowColor = `rgba(0, 0, 0, ${regionTextAlpha * 0.7})`;
-                ctx.shadowBlur = 5; // Use a fixed pixel shadow blur for crispness
-
-                // 2. Draw the text from the populated list
-                regionTextToDraw.forEach(item => {
-                    ctx.fillText(item.text, item.x, item.y);
-                });
-
-                ctx.shadowBlur = 0; // Reset shadow
+                ctx.shadowBlur = 5;
+                regionTextToDraw.forEach(item => { ctx.fillText(item.text, item.x, item.y); });
+                ctx.shadowBlur = 0;
             }
         }
 
@@ -1170,7 +1121,7 @@
             const system = stars.find(s => s.id === editorState.activeSystemId);
             if (!system) return;
 
-            // Draw planetary orbits around the star
+            // Draw orbits
             ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
             ctx.lineWidth = 1 / camera.zoom;
             system.celestialBodies.forEach(body => {
@@ -1181,7 +1132,7 @@
                 }
             });
 
-            // Draw all bodies
+            // Draw bodies
             system.celestialBodies.forEach(body => {
                 let x = 0, y = 0;
                 if (body.type === 'planet') {
@@ -1191,11 +1142,12 @@
                     x = body.x;
                     y = body.y;
                 } else if (body.type === 'asteroid_field') {
-                    const isSelected = editorState.selectedCelestialBodyId === body.id;
-                    drawAsteroidField(body, isSelected);
+                    drawAsteroidField(body, editorState.selectedCelestialBodyId === body.id);
                 }
 
-                if (body.type !== 'asteroid_field') drawCelestialBody(body, x, y);
+                if (body.type !== 'asteroid_field') {
+                    drawCelestialBody(body, x, y);
+                }
 
                 if (body.type === 'planet' && body.moons) {
                     ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
@@ -1212,7 +1164,6 @@
                 }
             });
 
-            // Draw temporary asteroid field radius
             if (editorState.drawingAstField) {
                 const { x, y, radius } = editorState.drawingAstField;
                 ctx.beginPath();
@@ -1223,8 +1174,7 @@
         }
 
         function createAsteroidShape(size) {
-            const points = [];
-            const numPoints = 5 + Math.floor(Math.random() * 4);
+            const points = [], numPoints = 5 + Math.floor(Math.random() * 4);
             for (let i = 0; i < numPoints; i++) {
                 const angle = (i / numPoints) * 2 * Math.PI;
                 const dist = size * (0.7 + Math.random() * 0.3);
@@ -1238,13 +1188,11 @@
             ctx.arc(field.x, field.y, field.radius, 0, 2 * Math.PI);
             ctx.fillStyle = "rgba(156, 163, 175, 0.05)";
             ctx.fill();
-
             if (isSelected) {
                 ctx.strokeStyle = '#fde047';
                 ctx.lineWidth = 3 / camera.zoom;
                 ctx.stroke();
             }
-
             ctx.fillStyle = '#6b7280';
             (field.asteroids || []).forEach(ast => {
                 const x = field.x + ast.x;
@@ -1268,50 +1216,41 @@
 
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = region.name;
-                nameSpan.style.flexGrow = '1'; // Allow name to take up available space
-
-                // --- NEW: Double-click to rename ---
+                nameSpan.style.flexGrow = '1';
                 nameSpan.addEventListener('dblclick', () => {
                     const currentName = nameSpan.textContent;
                     const input = document.createElement('input');
                     input.type = 'text';
                     input.className = 'region-name-input';
                     input.value = currentName;
-
-                    // Replace the span with the input field
                     item.replaceChild(input, nameSpan);
                     input.focus();
                     input.select();
 
-                    // When the input loses focus (blur) or Enter is pressed, save the new name
                     const saveName = () => {
                         const newName = input.value.trim();
                         if (newName && newName !== currentName) {
                             region.name = newName;
-                            saveState(); // Save the change
+                            saveState();
                         }
-                        // Replace the input field back with the span
-                        nameSpan.textContent = region.name; // Update span with final name
+                        nameSpan.textContent = region.name;
                         item.replaceChild(nameSpan, input);
                     };
 
                     input.addEventListener('blur', saveName);
                     input.addEventListener('keydown', e => {
                         if (e.key === 'Enter') {
-                            input.blur(); // Trigger the blur event to save
+                            input.blur();
                         } else if (e.key === 'Escape') {
-                            input.value = currentName; // Revert change
+                            input.value = currentName;
                             input.blur();
                         }
                     });
                 });
 
-                // --- NEW: Color Picker ---
                 const colorInput = document.createElement('input');
                 colorInput.type = 'color';
                 colorInput.className = 'region-color-input';
-
-                // Convert the stored rgba color to a hex string for the color input
                 const rgba = region.color.match(/(\d+(\.\d+)?)/g);
                 if (rgba) {
                     const r = parseInt(rgba[0]).toString(16).padStart(2, '0');
@@ -1320,22 +1259,15 @@
                     colorInput.value = `#${r}${g}${b}`;
                 }
 
-                // When a new color is selected, update the region's color
                 colorInput.addEventListener('input', (e) => {
                     const hex = e.target.value;
                     const r = parseInt(hex.slice(1, 3), 16);
                     const g = parseInt(hex.slice(3, 5), 16);
                     const b = parseInt(hex.slice(5, 7), 16);
-
-                    // Update the region color, keeping the 0.2 alpha for the fill
                     region.color = `rgba(${r}, ${g}, ${b}, 0.2)`;
-                    // No need to save state on every tiny change, wait for final selection
                 });
 
-                // Save state only when the color picker is closed
-                colorInput.addEventListener('change', () => {
-                    saveState();
-                });
+                colorInput.addEventListener('change', () => saveState());
 
                 item.appendChild(nameSpan);
                 item.appendChild(colorInput);
@@ -1344,12 +1276,9 @@
         }
 
         function populateRegionAssignSelect() {
-            // Clear existing options but keep the "-- None --" default
             while (regionAssignSelect.options.length > 1) {
                 regionAssignSelect.remove(1);
             }
-
-            // Add all current regions to the dropdown
             regions.forEach(region => {
                 const option = document.createElement('option');
                 option.value = region.id;
@@ -1357,13 +1286,11 @@
                 regionAssignSelect.appendChild(option);
             });
 
-            // Find the common region for the current selection
             let commonRegionId = -1;
             if (editorState.selection.length > 0) {
                 const firstStarRegion = regions.find(r => r.starIds.includes(editorState.selection[0]));
                 if (firstStarRegion) {
-                    const allInSameRegion = editorState.selection.every(starId => firstStarRegion.starIds.includes(starId));
-                    if (allInSameRegion) {
+                    if (editorState.selection.every(starId => firstStarRegion.starIds.includes(starId))) {
                         commonRegionId = firstStarRegion.id;
                     }
                 }
@@ -1373,13 +1300,9 @@
 
         function assignSelectionToRegion(regionId) {
             const starIdsToAssign = editorState.selection;
-
-            // First, remove the selected stars from any region they might be in
             regions.forEach(r => {
                 r.starIds = r.starIds.filter(id => !starIdsToAssign.includes(id));
             });
-
-            // Then, if a valid region was chosen, add them to it
             if (regionId !== -1) {
                 const targetRegion = regions.find(r => r.id === regionId);
                 if (targetRegion) {
@@ -1394,45 +1317,39 @@
         }
 
         function deleteSelectedBody() {
-            if (editorState.view !== 'system' || editorState.selectedCelestialBodyId === null) {
-                return;
-            }
+            if (editorState.view !== 'system' || editorState.selectedCelestialBodyId === null) return;
 
             const system = stars.find(s => s.id === editorState.activeSystemId);
             if (!system) return;
 
             const { body: bodyToDelete } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
+            if (!bodyToDelete || bodyToDelete.type === 'star') return;
 
-            // Make sure we found a body and it's not the central star
-            if (!bodyToDelete || bodyToDelete.type === 'star') {
-                return;
-            }
-
-            // Filter the main celestial bodies array
+            // Remove from main celestial bodies list
             system.celestialBodies = system.celestialBodies.filter(b => b.id !== bodyToDelete.id);
-
-            // If the deleted body was a planet, we don't need to do anything else.
-            // If it was a moon, we need to remove it from its parent planet's `moons` array.
+            // Remove from any parent's moon list
             system.celestialBodies.forEach(planet => {
                 if (planet.moons) {
                     planet.moons = planet.moons.filter(m => m.id !== bodyToDelete.id);
                 }
             });
 
-            // Reset selection and update UI
             editorState.selectedCelestialBodyId = null;
             updateInfoPanel();
             populateSystemUI();
             saveState();
         }
 
-
         function drawCelestialBody(body, x, y) {
+            // Draw selection highlight
             if (editorState.selectedCelestialBodyId === body.id) {
                 ctx.beginPath();
                 ctx.arc(x, y, body.size + (5 / camera.zoom), 0, 2 * Math.PI);
-                ctx.strokeStyle = '#fde047'; ctx.lineWidth = 3 / camera.zoom; ctx.stroke();
+                ctx.strokeStyle = '#fde047';
+                ctx.lineWidth = 3 / camera.zoom;
+                ctx.stroke();
             }
+
             ctx.beginPath();
             if (body.type === 'asteroid') {
                 if (!body.shape) body.shape = createAsteroidShape(body.size);
@@ -1444,13 +1361,14 @@
             } else {
                 ctx.arc(x, y, body.size, 0, 2 * Math.PI);
             }
+
             ctx.fillStyle = body.type === 'star' ? '#fde047' : (body.type === 'planet' ? '#a0c4ff' : '#9ca3af');
             ctx.shadowColor = ctx.fillStyle;
             ctx.shadowBlur = body.size * 2;
             ctx.fill();
             ctx.shadowBlur = 0;
 
-            if (body.type !== 'asteroid') {
+            if (body.type !== 'asteroid' && body.type !== 'asteroid_field') {
                 ctx.fillStyle = '#fff';
                 ctx.font = `${12 / camera.zoom}px Inter`;
                 ctx.textAlign = 'center';
@@ -1461,31 +1379,53 @@
         function drawGrid() {
             const worldTopLeft = screenToWorld(0, 0);
             const worldBottomRight = screenToWorld(canvas.clientWidth, canvas.clientHeight);
+
             let majorSpacing = 100;
             while (majorSpacing * camera.zoom < 50) majorSpacing *= 10;
             while (majorSpacing * camera.zoom > 500) majorSpacing /= 10;
             const minorSpacing = majorSpacing / 10;
+
             ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
             ctx.lineWidth = 1 / camera.zoom;
             for (let x = Math.floor(worldTopLeft.x / minorSpacing) * minorSpacing; x < worldBottomRight.x; x += minorSpacing) {
-                if (x % majorSpacing !== 0) { ctx.beginPath(); ctx.moveTo(x, worldTopLeft.y); ctx.lineTo(x, worldBottomRight.y); ctx.stroke(); }
+                if (x % majorSpacing !== 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, worldTopLeft.y);
+                    ctx.lineTo(x, worldBottomRight.y);
+                    ctx.stroke();
+                }
             }
             for (let y = Math.floor(worldTopLeft.y / minorSpacing) * minorSpacing; y < worldBottomRight.y; y += minorSpacing) {
-                if (y % majorSpacing !== 0) { ctx.beginPath(); ctx.moveTo(worldTopLeft.x, y); ctx.lineTo(worldBottomRight.x, y); ctx.stroke(); }
+                if (y % majorSpacing !== 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(worldTopLeft.x, y);
+                    ctx.lineTo(worldBottomRight.x, y);
+                    ctx.stroke();
+                }
             }
+
             ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
             ctx.lineWidth = 2 / camera.zoom;
             for (let x = Math.floor(worldTopLeft.x / majorSpacing) * majorSpacing; x < worldBottomRight.x; x += majorSpacing) {
-                ctx.beginPath(); ctx.moveTo(x, worldTopLeft.y); ctx.lineTo(x, worldBottomRight.y); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x, worldTopLeft.y);
+                ctx.lineTo(x, worldBottomRight.y);
+                ctx.stroke();
             }
             for (let y = Math.floor(worldTopLeft.y / majorSpacing) * majorSpacing; y < worldBottomRight.y; y += majorSpacing) {
-                ctx.beginPath(); ctx.moveTo(worldTopLeft.x, y); ctx.lineTo(worldBottomRight.x, y); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(worldTopLeft.x, y);
+                ctx.lineTo(worldBottomRight.x, y);
+                ctx.stroke();
             }
+
             ctx.strokeStyle = "rgba(79, 170, 255, 0.3)";
             ctx.lineWidth = 3 / camera.zoom;
             ctx.beginPath();
-            ctx.moveTo(0, worldTopLeft.y); ctx.lineTo(0, worldBottomRight.y);
-            ctx.moveTo(worldTopLeft.x, 0); ctx.lineTo(worldBottomRight.x, 0);
+            ctx.moveTo(0, worldTopLeft.y);
+            ctx.lineTo(0, worldBottomRight.y);
+            ctx.moveTo(worldTopLeft.x, 0);
+            ctx.lineTo(worldBottomRight.x, 0);
             ctx.stroke();
         }
 
@@ -1498,7 +1438,9 @@
                 const mouseY = editorState.lastMousePos.y - canvas.clientHeight / 2;
                 camera.x += mouseX / oldZoom - mouseX / camera.zoom;
                 camera.y += mouseY / oldZoom - mouseY / camera.zoom;
-            } else { camera.zoom = camera.targetZoom; }
+            } else {
+                camera.zoom = camera.targetZoom;
+            }
 
             const worldPos = screenToWorld(editorState.lastMousePos.x, editorState.lastMousePos.y);
 
@@ -1508,7 +1450,10 @@
                     const dy = worldPos.y - editorState.groupDrag.startY;
                     editorState.groupDrag.initialPositions.forEach((pos, id) => {
                         const star = stars.find(s => s.id === id);
-                        if (star) { star.x = pos.x + dx; star.y = pos.y + dy; }
+                        if (star) {
+                            star.x = pos.x + dx;
+                            star.y = pos.y + dy;
+                        }
                     });
                     if (editorState.selection.length === 1) updateInfoPanel();
                 } else if (editorState.selectionBox) {
@@ -1518,36 +1463,30 @@
                 coordsDisplay.textContent = `X: ${worldPos.x.toFixed(1)}, Y: ${worldPos.y.toFixed(1)}`;
                 editorState.hoveredStar = editorState.groupDrag ? null : getStarAt(worldPos.x, worldPos.y);
                 editorState.hoveredConnection = editorState.hoveredStar ? null : getConnectionAt(worldPos.x, worldPos.y);
-            } else { // System view
-                // --- Start of FIX ---
+            } else {
                 if (editorState.draggedBody) {
                     const system = stars.find(s => s.id === editorState.activeSystemId);
                     const { body, parent } = findBodyAndParent(system, editorState.draggedBody.id);
-
                     if (body) {
                         const targetX = worldPos.x - editorState.draggedBody.offsetX;
                         const targetY = worldPos.y - editorState.draggedBody.offsetY;
-
                         if (body.type === 'asteroid' || body.type === 'asteroid_field') {
                             body.x = targetX;
                             body.y = targetY;
-                        } else { // planet or moon
+                        } else {
                             let parentX = 0, parentY = 0;
                             if (parent) {
                                 parentX = Math.cos(parent.orbitAngle) * parent.orbitRadius;
                                 parentY = Math.sin(parent.orbitAngle) * parent.orbitRadius;
                             }
-                            const dx = targetX - parentX;
-                            const dy = targetY - parentY;
+                            const dx = targetX - parentX, dy = targetY - parentY;
                             body.orbitRadius = Math.sqrt(dx * dx + dy * dy);
                             body.orbitAngle = Math.atan2(dy, dx);
                         }
                         updateInfoPanel();
                     } else {
-                        // Body was probably deleted, stop the drag.
                         editorState.draggedBody = null;
                     }
-                    // --- End of FIX ---
                 } else if (editorState.drawingAstField) {
                     const dx = worldPos.x - editorState.drawingAstField.x;
                     const dy = worldPos.y - editorState.drawingAstField.y;
@@ -1567,8 +1506,11 @@
             const worldPos = screenToWorld(e.clientX, e.clientY);
 
             if (editorState.isSpacebarPan) {
-                camera.isDragging = true; camera.lastX = e.clientX; camera.lastY = e.clientY;
-                updateCursor(); return;
+                camera.isDragging = true;
+                camera.lastX = e.clientX;
+                camera.lastY = e.clientY;
+                updateCursor();
+                return;
             }
 
             if (editorState.view === 'galaxy') {
@@ -1580,6 +1522,7 @@
 
         function handleGalaxyMouseDown(e, worldPos) {
             const clickedStar = getStarAt(worldPos.x, worldPos.y);
+
             if (editorState.mode === 'delete') {
                 if (clickedStar) {
                     stars = stars.filter(s => s.id !== clickedStar.id);
@@ -1599,16 +1542,22 @@
 
             if (editorState.mode === 'add') {
                 pendingStar = { x: worldPos.x, y: worldPos.y };
-                nameInput.value = ''; nameModal.style.display = 'flex'; nameInput.focus();
+                nameInput.value = '';
+                nameModal.style.display = 'flex';
+                nameInput.focus();
                 return;
             }
 
             if (editorState.mode === 'connect') {
                 if (clickedStar) {
-                    if (!editorState.firstStarForConnection) editorState.firstStarForConnection = clickedStar;
-                    else {
+                    if (!editorState.firstStarForConnection) {
+                        editorState.firstStarForConnection = clickedStar;
+                    } else {
                         if (editorState.firstStarForConnection.id !== clickedStar.id) {
-                            const exists = connections.some(c => (c.p1_id === editorState.firstStarForConnection.id && c.p2_id === clickedStar.id) || (c.p1_id === clickedStar.id && c.p2_id === editorState.firstStarForConnection.id));
+                            const exists = connections.some(c =>
+                                (c.p1_id === editorState.firstStarForConnection.id && c.p2_id === clickedStar.id) ||
+                                (c.p1_id === clickedStar.id && c.p2_id === editorState.firstStarForConnection.id)
+                            );
                             if (!exists) {
                                 connections.push({ p1_id: editorState.firstStarForConnection.id, p2_id: clickedStar.id });
                                 saveState();
@@ -1623,14 +1572,8 @@
                 return;
             }
 
-            // Handle Ctrl+drag for moving selected objects from anywhere on canvas
             if (e.ctrlKey && editorState.selection.length > 0) {
-                // Start dragging selected objects regardless of what was clicked
-                editorState.groupDrag = {
-                    startX: worldPos.x,
-                    startY: worldPos.y,
-                    initialPositions: new Map()
-                };
+                editorState.groupDrag = { startX: worldPos.x, startY: worldPos.y, initialPositions: new Map() };
                 editorState.selection.forEach(id => {
                     const s = stars.find(star => star.id === id);
                     if (s) editorState.groupDrag.initialPositions.set(id, { x: s.x, y: s.y });
@@ -1640,14 +1583,11 @@
                 return;
             }
 
-            // Handle star selection
             if (clickedStar) {
-                // If clicking on an unselected star, select it
                 if (!editorState.selection.includes(clickedStar.id)) {
                     editorState.selection = [clickedStar.id];
                 }
             } else {
-                // Clicking on empty space - start selection box
                 editorState.selection = [];
                 editorState.selectionBox = { x1: worldPos.x, y1: worldPos.y, x2: worldPos.x, y2: worldPos.y };
             }
@@ -1690,8 +1630,6 @@
                 return;
             }
 
-            // --- Start of FIX ---
-            // Handle Ctrl+drag for moving selected celestial body from anywhere on canvas
             if (e.ctrlKey && editorState.selectedCelestialBodyId !== null) {
                 const { body, parent } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
                 if (body && body.type !== 'star') {
@@ -1699,7 +1637,7 @@
                     if (body.type === 'asteroid' || body.type === 'asteroid_field') {
                         offsetX = worldPos.x - body.x;
                         offsetY = worldPos.y - body.y;
-                    } else { // planet or moon
+                    } else {
                         let parentX = 0, parentY = 0;
                         if (parent) {
                             parentX = Math.cos(parent.orbitAngle) * parent.orbitRadius;
@@ -1710,25 +1648,15 @@
                         offsetX = worldPos.x - bodyWorldX;
                         offsetY = worldPos.y - bodyWorldY;
                     }
-
-                    // The 'draggedBody' state object now holds the ID and the offset
-                    editorState.draggedBody = {
-                        id: body.id,
-                        offsetX: offsetX,
-                        offsetY: offsetY
-                    };
-
+                    editorState.draggedBody = { id: body.id, offsetX: offsetX, offsetY: offsetY };
                     updateInfoPanel();
                     populateSystemUI();
                     updateCursor();
                     return;
                 }
             }
-            // --- End of FIX ---
 
-            // Handle celestial body selection
             editorState.selectedCelestialBodyId = clickedBody?.id ?? null;
-
             updateInfoPanel();
             populateSystemUI();
             updateCursor();
@@ -1737,9 +1665,12 @@
         function onMouseMove(e) {
             editorState.lastMousePos = { x: e.clientX, y: e.clientY };
             if (camera.isDragging) {
-                const dx = e.clientX - camera.lastX, dy = e.clientY - camera.lastY;
-                camera.x -= dx / camera.zoom; camera.y -= dy / camera.zoom;
-                camera.lastX = e.clientX; camera.lastY = e.clientY;
+                const dx = e.clientX - camera.lastX;
+                const dy = e.clientY - camera.lastY;
+                camera.x -= dx / camera.zoom;
+                camera.y -= dy / camera.zoom;
+                camera.lastX = e.clientX;
+                camera.lastY = e.clientY;
             }
         }
 
@@ -1757,28 +1688,14 @@
                 if (system) {
                     const fieldCount = system.celestialBodies.filter(b => b.type === 'asteroid_field').length;
                     const newField = {
-                        id: nextBodyId++, type: 'asteroid_field', name: `Field ${fieldCount + 1}`,
+                        id: nextBodyId++,
+                        type: 'asteroid_field',
+                        name: `Field ${fieldCount + 1}`,
                         ...editorState.drawingAstField,
                         count: 50 + Math.floor(editorState.drawingAstField.radius / 2),
                         asteroids: []
                     };
-
-                    let seed = newField.id;
-                    const random = () => {
-                        var x = Math.sin(seed++) * 10000;
-                        return x - Math.floor(x);
-                    };
-
-                    for (let i = 0; i < newField.count; i++) {
-                        const angle = random() * 2 * Math.PI;
-                        const dist = random() * newField.radius;
-                        const size = 0.5 + random() * 1.5;
-                        newField.asteroids.push({
-                            x: Math.cos(angle) * dist,
-                            y: Math.sin(angle) * dist,
-                            shape: createAsteroidShape(size)
-                        });
-                    }
+                    regenerateAsteroidsInField(newField);
                     system.celestialBodies.push(newField);
                     saveState();
                 }
@@ -1787,10 +1704,13 @@
             }
             if (editorState.selectionBox) {
                 const { x1, y1, x2, y2 } = editorState.selectionBox;
-                const minX = Math.min(x1, x2); const maxX = Math.max(x1, x2);
-                const minY = Math.min(y1, y2); const maxY = Math.max(y1, y2);
-                const newSelection = stars.filter(s => s.x >= minX && s.x <= maxX && s.y >= minY && s.y <= maxY).map(s => s.id);
-                editorState.selection = newSelection;
+                const minX = Math.min(x1, x2);
+                const maxX = Math.max(x1, x2);
+                const minY = Math.min(y1, y2);
+                const maxY = Math.max(y1, y2);
+                editorState.selection = stars
+                    .filter(s => s.x >= minX && s.x <= maxX && s.y >= minY && s.y <= maxY)
+                    .map(s => s.id);
                 editorState.selectionBox = null;
                 updateInfoPanel();
             }
@@ -1814,7 +1734,8 @@
             editorState.activeSystemId = systemId;
             editorState.selection = [];
             editorState.selectedCelestialBodyId = null;
-            camera.x = 0; camera.y = 0;
+            camera.x = 0;
+            camera.y = 0;
             camera.targetZoom = 1.0;
             galaxyUI.style.display = 'none';
             systemUI.style.display = 'flex';
@@ -1834,12 +1755,18 @@
         }
 
         function findBodyAndParent(system, bodyId) {
-            if (!system || bodyId === null) return { body: null, parent: null };
+            if (!system || bodyId === null) {
+                return { body: null, parent: null };
+            }
             for (const body of system.celestialBodies) {
-                if (body.id === bodyId) return { body, parent: null };
+                if (body.id === bodyId) {
+                    return { body, parent: null };
+                }
                 if (body.moons) {
                     for (const moon of body.moons) {
-                        if (moon.id === bodyId) return { body: moon, parent: body };
+                        if (moon.id === bodyId) {
+                            return { body: moon, parent: body };
+                        }
                     }
                 }
             }
@@ -1855,15 +1782,20 @@
             listEl.innerHTML = '';
 
             let selectedBodyIsPlanet = false;
+
             system.celestialBodies.forEach(body => {
                 const item = document.createElement('div');
                 item.className = 'celestial-body-item';
                 item.textContent = `[${body.type.charAt(0).toUpperCase()}] ${body.name}`;
                 item.dataset.bodyId = body.id;
+
                 if (body.id === editorState.selectedCelestialBodyId) {
                     item.classList.add('selected');
-                    if (body.type === 'planet') selectedBodyIsPlanet = true;
+                    if (body.type === 'planet') {
+                        selectedBodyIsPlanet = true;
+                    }
                 }
+
                 item.addEventListener('click', () => {
                     editorState.selectedCelestialBodyId = body.id;
                     updateInfoPanel();
@@ -1877,9 +1809,11 @@
                         moonItem.className = 'celestial-body-item moon';
                         moonItem.textContent = moon.name;
                         moonItem.dataset.bodyId = moon.id;
+
                         if (moon.id === editorState.selectedCelestialBodyId) {
                             moonItem.classList.add('selected');
                         }
+
                         moonItem.addEventListener('click', (e) => {
                             e.stopPropagation();
                             editorState.selectedCelestialBodyId = moon.id;
@@ -1894,6 +1828,26 @@
             addMoonBtn.style.display = selectedBodyIsPlanet ? 'block' : 'none';
         }
 
+        function regenerateAsteroidsInField(field) {
+            field.asteroids = [];
+            let seed = field.id;
+            const random = () => {
+                var x = Math.sin(seed++) * 10000;
+                return x - Math.floor(x);
+            };
+
+            for (let i = 0; i < field.count; i++) {
+                const angle = random() * 2 * Math.PI;
+                const dist = random() * field.radius;
+                const size = 0.5 + random() * 1.5;
+                field.asteroids.push({
+                    x: Math.cos(angle) * dist,
+                    y: Math.sin(angle) * dist,
+                    shape: createAsteroidShape(size)
+                });
+            }
+        }
+
         function onWheel(e) {
             e.preventDefault();
             const factor = e.deltaY < 0 ? 1.01 : 1 / 1.01;
@@ -1901,32 +1855,82 @@
             camera.targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
         }
 
-        function onResize() { setupCanvasDPI(); }
+        function onResize() {
+            setupCanvasDPI();
+        }
 
         confirmNameBtn.addEventListener('click', () => {
             const name = nameInput.value.trim();
             if (name && pendingStar) {
                 const newStar = {
-                    id: nextStarId++, name, x: pendingStar.x, y: pendingStar.y,
+                    id: nextStarId++,
+                    name,
+                    x: pendingStar.x,
+                    y: pendingStar.y,
                     celestialBodies: [{ id: nextBodyId++, type: 'star', name: name, size: 20 }]
                 };
                 stars.push(newStar);
-                pendingStar = null; nameModal.style.display = 'none';
+                pendingStar = null;
+                nameModal.style.display = 'none';
                 saveState();
             }
         });
-        cancelNameBtn.addEventListener('click', () => { pendingStar = null; nameModal.style.display = 'none'; });
-        nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') confirmNameBtn.click(); });
 
-        infoNameInput.addEventListener('blur', () => { if (editorState.selection.length === 1) saveState(); });
-        infoNameInput.addEventListener('input', (e) => {
-            if (editorState.selection.length === 1) {
-                const star = stars.find(s => s.id === editorState.selection[0]);
-                if (star) star.name = e.target.value;
+        cancelNameBtn.addEventListener('click', () => {
+            pendingStar = null;
+            nameModal.style.display = 'none';
+        });
+
+        nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                confirmNameBtn.click();
             }
         });
 
-        // Planet & Moon Info Panel listeners
+        infoNameInput.addEventListener('blur', () => {
+            if (editorState.selection.length === 1) {
+                saveState();
+            }
+        });
+
+        infoNameInput.addEventListener('input', (e) => {
+            if (editorState.selection.length === 1) {
+                const star = stars.find(s => s.id === editorState.selection[0]);
+                if (star) {
+                    star.name = e.target.value;
+                }
+            }
+        });
+
+        document.getElementById('asteroidFieldNameInput').addEventListener('input', e => {
+            const system = stars.find(s => s.id === editorState.activeSystemId);
+            const { body } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
+            if (body && body.type === 'asteroid_field') {
+                body.name = e.target.value;
+            }
+        });
+        document.getElementById('asteroidFieldNameInput').addEventListener('blur', saveState);
+
+        document.getElementById('asteroidFieldRadiusInput').addEventListener('change', e => {
+            const system = stars.find(s => s.id === editorState.activeSystemId);
+            const { body } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
+            if (body && body.type === 'asteroid_field') {
+                body.radius = +e.target.value;
+                regenerateAsteroidsInField(body);
+                saveState();
+            }
+        });
+
+        document.getElementById('asteroidFieldCountInput').addEventListener('change', e => {
+            const system = stars.find(s => s.id === editorState.activeSystemId);
+            const { body } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
+            if (body && body.type === 'asteroid_field') {
+                body.count = +e.target.value;
+                regenerateAsteroidsInField(body);
+                saveState();
+            }
+        });
+
         ['planet', 'moon'].forEach(type => {
             document.getElementById(`${type}NameInput`).addEventListener('input', e => {
                 const system = stars.find(s => s.id === editorState.activeSystemId);
@@ -1937,12 +1941,18 @@
             document.getElementById(`${type}OrbitInput`).addEventListener('change', e => {
                 const system = stars.find(s => s.id === editorState.activeSystemId);
                 const { body } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
-                if (body) { body.orbitRadius = +e.target.value; saveState(); }
+                if (body) {
+                    body.orbitRadius = +e.target.value;
+                    saveState();
+                }
             });
             document.getElementById(`${type}SizeInput`).addEventListener('change', e => {
                 const system = stars.find(s => s.id === editorState.activeSystemId);
                 const { body } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
-                if (body) { body.size = +e.target.value; saveState(); }
+                if (body) {
+                    body.size = +e.target.value;
+                    saveState();
+                }
             });
         });
 
@@ -1952,40 +1962,55 @@
                 return;
             }
             if (e.code === 'Space' && !editorState.isSpacebarPan) {
-                e.preventDefault(); editorState.isSpacebarPan = true; updateCursor();
+                e.preventDefault();
+                editorState.isSpacebarPan = true;
+                updateCursor();
             }
             if (e.code === 'Escape') {
                 e.preventDefault();
                 if (editorState.view === 'system') {
                     switchToGalaxyView();
                 } else {
-                    editorState.selection = []; setMode('pan'); updateInfoPanel();
+                    editorState.selection = [];
+                    setMode('pan');
+                    updateInfoPanel();
+                }
+            }
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (editorState.view === 'system' && editorState.selectedCelestialBodyId !== null) {
+                    e.preventDefault();
+                    deleteSelectedBody();
                 }
             }
             if (e.ctrlKey || e.metaKey) {
-                if (e.key === 'z') { e.preventDefault(); undo(); }
-                else if (e.key === 'y' || (e.key === 'Z' && e.shiftKey)) { e.preventDefault(); redo(); }
+                if (e.key === 'z') {
+                    e.preventDefault();
+                    undo();
+                } else if (e.key === 'y' || (e.key === 'Z' && e.shiftKey)) {
+                    e.preventDefault();
+                    redo();
+                }
             }
         });
 
         window.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
-                e.preventDefault(); editorState.isSpacebarPan = false;
+                e.preventDefault();
+                editorState.isSpacebarPan = false;
                 if (camera.isDragging) camera.isDragging = false;
                 updateCursor();
             }
         });
 
-        // --- History Functions ---
         function saveState() {
             history = history.slice(0, historyIndex + 1);
             const currentState = {
                 stars: JSON.parse(JSON.stringify(stars)),
                 connections: JSON.parse(JSON.stringify(connections)),
-                regions: JSON.parse(JSON.stringify(regions)), // --- NEW ---
+                regions: JSON.parse(JSON.stringify(regions)),
                 nextStarId: nextStarId,
                 nextBodyId: nextBodyId,
-                nextRegionId: nextRegionId // --- NEW ---
+                nextRegionId: nextRegionId
             };
             history.push(currentState);
             historyIndex = history.length - 1;
@@ -1995,16 +2020,18 @@
         function loadState(state) {
             stars = JSON.parse(JSON.stringify(state.stars));
             connections = JSON.parse(JSON.stringify(state.connections));
-            regions = state.regions ? JSON.parse(JSON.stringify(state.regions)) : []; // --- MODIFIED ---
+            regions = state.regions ? JSON.parse(JSON.stringify(state.regions)) : [];
             nextStarId = state.nextStarId;
             nextBodyId = state.nextBodyId;
-            nextRegionId = state.nextRegionId || 0; // --- MODIFIED ---
+            nextRegionId = state.nextRegionId || 0;
             editorState.selection = [];
+
             if (editorState.view === 'system' && !stars.find(s => s.id === editorState.activeSystemId)) {
                 switchToGalaxyView();
             } else if (editorState.view === 'system') {
                 populateSystemUI();
             }
+
             updateInfoPanel();
             populateRegionsPanel();
         }
@@ -2030,7 +2057,6 @@
             redoBtn.disabled = historyIndex >= history.length - 1;
         }
 
-        // --- XML Import/Export ---
         function exportToXML() {
             const galaxyName = galaxyNameInput.value.trim() || "My Galaxy";
 
@@ -2039,67 +2065,50 @@
                     .filter(c => c.p1_id === star.id)
                     .map(c => stars.find(s => s.id === c.p2_id)?.name)
                     .filter(Boolean)
-                    .map(name => `
-            <ConnectedTo EntityId2="${name}"/>`).join('');
+                    .map(name => `<ConnectedTo EntityId2="${name}"/>`)
+                    .join('');
 
                 const planetsXml = star.celestialBodies
                     .filter(b => b.type === 'planet')
                     .map(p => {
-                        const moonsXml = (p.moons || []).map(m => `
-                    <Entity>
-                        <Moon/>
-                        <Name Value="${m.name}"/>
-                        <Orbit Radius="${m.orbitRadius}"/>
-                        <Size Value="${m.size}"/>
-                    </Entity>`).join('');
-                        return `
-                <Entity>
-                    <Planet/>
-                    <Name Value="${p.name}"/>
-                    <Orbit Radius="${p.orbitRadius}"/>
-                    <Size Value="${p.size}"/>
-                    <Children>${moonsXml}
-                    </Children>
-                </Entity>`;
+                        const moonsXml = (p.moons || [])
+                            .map(m => `<Entity><Moon/><Name Value="${m.name}"/><Orbit Radius="${m.orbitRadius}"/><Size Value="${m.size}"/></Entity>`)
+                            .join('');
+                        return `<Entity><Planet/><Name Value="${p.name}"/><Orbit Radius="${p.orbitRadius}"/><Size Value="${p.size}"/><Children>${moonsXml}</Children></Entity>`;
                     }).join('');
 
-                return `
-        <Entity>
-            <StarSystem/>
-            <Name Value="${star.name}"/>
-            <Position3D X="${star.x.toFixed(2)}" Y="${star.y.toFixed(2)}" Z="0.00"/>${connectionsXml}
-            <Children>${planetsXml}
-            </Children>
-        </Entity>`;
+                return `<Entity><StarSystem/><Name Value="${star.name}"/><Position3D X="${star.x.toFixed(2)}" Y="${star.y.toFixed(2)}" Z="0.00"/>${connectionsXml}<Children>${planetsXml}</Children></Entity>`;
             }).join('');
 
-            const fullXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Entity>
-    <Galaxy/>
-    <Name Value="${galaxyName}"/>
-    <Children>${childrenXml}
-    </Children>
-</Entity>`;
+            const fullXml = `<?xml version="1.0" encoding="UTF-8"?><Entity><Galaxy/><Name Value="${galaxyName}"/><Children>${childrenXml}</Children></Entity>`;
 
             const blob = new Blob([fullXml.trim()], { type: 'application/xml' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `${galaxyName.replace(/ /g, '_')}.xml`;
-            document.body.appendChild(a); a.click();
-            document.body.removeChild(a); URL.revokeObjectURL(url);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function importFromXML(xmlString) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(xmlString, "application/xml");
 
-            stars = []; connections = [];
-            nextStarId = 0; nextBodyId = 0;
+            stars = [];
+            connections = [];
+            nextStarId = 0;
+            nextBodyId = 0;
             editorState.selection = [];
 
             const galaxyEntity = xmlDoc.querySelector("Entity:has(> Galaxy)");
-            if (!galaxyEntity) { alert("Could not find a root <Entity> with a <Galaxy/> tag."); return; }
+            if (!galaxyEntity) {
+                alert("Could not find a root <Entity> with a <Galaxy/> tag.");
+                return;
+            }
+
             galaxyNameInput.value = galaxyEntity.querySelector("Name")?.getAttribute("Value") || "Imported Galaxy";
 
             const childrenContainer = galaxyEntity.querySelector("Children");
@@ -2109,13 +2118,16 @@
             starEntities.forEach(node => {
                 const name = node.querySelector("Name")?.getAttribute("Value");
                 const pos = node.querySelector("Position3D");
+
                 if (name && pos) {
                     const newStar = {
-                        id: nextStarId++, name,
+                        id: nextStarId++,
+                        name,
                         x: parseFloat(pos.getAttribute("X")),
                         y: parseFloat(pos.getAttribute("Y")),
                         celestialBodies: [{ id: nextBodyId++, type: 'star', name: name, size: 20 }]
                     };
+
                     const planetsContainer = node.querySelector(":scope > Children");
                     if (planetsContainer) {
                         planetsContainer.querySelectorAll(":scope > Entity:has(> Planet)").forEach(pNode => {
@@ -2124,10 +2136,10 @@
                             const pSize = pNode.querySelector("Size")?.getAttribute("Value");
                             if (pName && pOrbit && pSize) {
                                 const newPlanet = {
-                                    id: nextBodyId++, type: 'planet', name: pName,
-                                    orbitRadius: parseFloat(pOrbit), size: parseFloat(pSize),
-                                    orbitAngle: Math.random() * 2 * Math.PI, moons: []
+                                    id: nextBodyId++, type: 'planet', name: pName, orbitRadius: parseFloat(pOrbit),
+                                    size: parseFloat(pSize), orbitAngle: Math.random() * 2 * Math.PI, moons: []
                                 };
+
                                 const moonsContainer = pNode.querySelector(":scope > Children");
                                 if (moonsContainer) {
                                     moonsContainer.querySelectorAll(":scope > Entity:has(> Moon)").forEach(mNode => {
@@ -2136,9 +2148,8 @@
                                         const mSize = mNode.querySelector("Size")?.getAttribute("Value");
                                         if (mName && mOrbit && mSize) {
                                             newPlanet.moons.push({
-                                                id: nextBodyId++, type: 'moon', name: mName,
-                                                orbitRadius: parseFloat(mOrbit), size: parseFloat(mSize),
-                                                orbitAngle: Math.random() * 2 * Math.PI
+                                                id: nextBodyId++, type: 'moon', name: mName, orbitRadius: parseFloat(mOrbit),
+                                                size: parseFloat(mSize), orbitAngle: Math.random() * 2 * Math.PI
                                             });
                                         }
                                     });
@@ -2151,16 +2162,23 @@
                 }
             });
 
+            // Second pass for connections
             starEntities.forEach(node => {
                 const star1Name = node.querySelector("Name")?.getAttribute("Value");
                 const star1 = stars.find(s => s.name === star1Name);
                 if (!star1) return;
+
                 node.querySelectorAll("ConnectedTo").forEach(connNode => {
                     const star2Name = connNode.getAttribute("EntityId2");
                     const star2 = stars.find(s => s.name === star2Name);
                     if (star2) {
-                        const exists = connections.some(c => (c.p1_id === star1.id && c.p2_id === star2.id) || (c.p1_id === star2.id && c.p2_id === star1.id));
-                        if (!exists) connections.push({ p1_id: star1.id, p2_id: star2.id });
+                        const exists = connections.some(c =>
+                            (c.p1_id === star1.id && c.p2_id === star2.id) ||
+                            (c.p1_id === star2.id && c.p2_id === star1.id)
+                        );
+                        if (!exists) {
+                            connections.push({ p1_id: star1.id, p2_id: star2.id });
+                        }
                     }
                 });
             });
@@ -2171,11 +2189,9 @@
 
         function setup() {
             setupCanvasDPI();
-            // --- NEW: Generate the starfield when the app starts ---
             createStarfield();
             createNebulae();
             populateRegionsPanel();
-
             editorState.lastMousePos = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2 };
 
             addStarBtn.addEventListener('click', () => setMode('add'));
@@ -2194,7 +2210,6 @@
                 regionNameInput.focus();
             });
 
-            // --- NEW: Event listeners for the new Region Name modal ---
             confirmRegionNameBtn.addEventListener('click', () => {
                 const regionName = regionNameInput.value.trim();
                 if (regionName) {
@@ -2216,15 +2231,12 @@
             });
 
             regionNameInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    confirmRegionNameBtn.click();
-                } else if (e.key === 'Escape') {
-                    cancelRegionNameBtn.click();
-                }
+                if (e.key === 'Enter') confirmRegionNameBtn.click();
+                else if (e.key === 'Escape') cancelRegionNameBtn.click();
             });
+
             regionAssignSelect.addEventListener('change', (e) => {
-                const selectedRegionId = parseInt(e.target.value, 10);
-                assignSelectionToRegion(selectedRegionId);
+                assignSelectionToRegion(parseInt(e.target.value, 10));
             });
 
             addPlanetBtn.addEventListener('click', () => {
@@ -2255,6 +2267,7 @@
                     saveState();
                 }
             });
+
             addAsteroidBtn.addEventListener('click', () => setMode('add_asteroid'));
             addAsteroidFieldBtn.addEventListener('click', () => setMode('add_asteroid_field'));
 
@@ -2263,61 +2276,27 @@
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    try { importFromXML(e.target.result); } catch (err) {
+                    try {
+                        importFromXML(e.target.result);
+                    } catch (err) {
                         console.error("Error parsing XML file:", err);
                         alert("Failed to parse XML file. Check console for details.");
                     }
                 };
                 reader.readAsText(file);
-                event.target.value = null;
+                event.target.value = null; // Reset for same-file re-upload
             });
 
             canvas.addEventListener('mousedown', onMouseDown);
             canvas.addEventListener('mousemove', onMouseMove);
             canvas.addEventListener('mouseup', onMouseUp);
-            canvas.addEventListener('mouseleave', onMouseUp);
+            canvas.addEventListener('mouseleave', onMouseUp); // Handle mouse leaving canvas
             canvas.addEventListener('dblclick', onDoubleClick);
             canvas.addEventListener('wheel', onWheel, { passive: false });
             window.addEventListener('resize', onResize);
-            window.addEventListener('keydown', (e) => {
-                if (document.activeElement.tagName === 'INPUT') {
-                    if (e.code === 'Escape') document.activeElement.blur();
-                    return;
-                }
-                if (e.code === 'Space' && !editorState.isSpacebarPan) {
-                    e.preventDefault(); editorState.isSpacebarPan = true; updateCursor();
-                }
-                if (e.code === 'Escape') {
-                    e.preventDefault();
-                    if (editorState.view === 'system') {
-                        switchToGalaxyView();
-                    } else {
-                        editorState.selection = []; setMode('pan'); updateInfoPanel();
-                    }
-                }
-
-                if (e.key === 'Delete' || e.key === 'Backspace') {
-                    if (editorState.view === 'system' && editorState.selectedCelestialBodyId !== null) {
-                        e.preventDefault(); // Prevents browser back navigation on backspace
-                        deleteSelectedBody();
-                    }
-                }
-
-                if (e.ctrlKey || e.metaKey) {
-                    if (e.key === 'z') { e.preventDefault(); undo(); }
-                    else if (e.key === 'y' || (e.key === 'Z' && e.shiftKey)) { e.preventDefault(); redo(); }
-                }
-            });
-            window.addEventListener('keyup', (e) => {
-                if (e.code === 'Space') {
-                    e.preventDefault(); editorState.isSpacebarPan = false;
-                    if (camera.isDragging) camera.isDragging = false;
-                    updateCursor();
-                }
-            });
 
             setMode('pan');
-            saveState();
+            saveState(); // Initial state for undo
             animate();
         }
 
