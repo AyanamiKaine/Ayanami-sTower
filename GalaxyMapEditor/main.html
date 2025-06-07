@@ -874,24 +874,35 @@
                 editorState.hoveredStar = editorState.groupDrag ? null : getStarAt(worldPos.x, worldPos.y);
                 editorState.hoveredConnection = editorState.hoveredStar ? null : getConnectionAt(worldPos.x, worldPos.y);
             } else { // System view
+                // --- Start of FIX ---
                 if (editorState.draggedBody) {
                     const system = stars.find(s => s.id === editorState.activeSystemId);
                     const { body, parent } = findBodyAndParent(system, editorState.draggedBody.id);
-                    if (body.type === 'asteroid' || body.type === 'asteroid_field') {
-                        body.x = worldPos.x;
-                        body.y = worldPos.y;
-                    } else { // planet or moon
-                        let parentX = 0, parentY = 0;
-                        if (parent) {
-                            parentX = Math.cos(parent.orbitAngle) * parent.orbitRadius;
-                            parentY = Math.sin(parent.orbitAngle) * parent.orbitRadius;
+
+                    if (body) {
+                        const targetX = worldPos.x - editorState.draggedBody.offsetX;
+                        const targetY = worldPos.y - editorState.draggedBody.offsetY;
+
+                        if (body.type === 'asteroid' || body.type === 'asteroid_field') {
+                            body.x = targetX;
+                            body.y = targetY;
+                        } else { // planet or moon
+                            let parentX = 0, parentY = 0;
+                            if (parent) {
+                                parentX = Math.cos(parent.orbitAngle) * parent.orbitRadius;
+                                parentY = Math.sin(parent.orbitAngle) * parent.orbitRadius;
+                            }
+                            const dx = targetX - parentX;
+                            const dy = targetY - parentY;
+                            body.orbitRadius = Math.sqrt(dx * dx + dy * dy);
+                            body.orbitAngle = Math.atan2(dy, dx);
                         }
-                        const dx = worldPos.x - parentX;
-                        const dy = worldPos.y - parentY;
-                        body.orbitRadius = Math.sqrt(dx * dx + dy * dy);
-                        body.orbitAngle = Math.atan2(dy, dx);
+                        updateInfoPanel();
+                    } else {
+                        // Body was probably deleted, stop the drag.
+                        editorState.draggedBody = null;
                     }
-                    updateInfoPanel();
+                    // --- End of FIX ---
                 } else if (editorState.drawingAstField) {
                     const dx = worldPos.x - editorState.drawingAstField.x;
                     const dy = worldPos.y - editorState.drawingAstField.y;
@@ -1034,17 +1045,41 @@
                 return;
             }
 
+            // --- Start of FIX ---
             // Handle Ctrl+drag for moving selected celestial body from anywhere on canvas
             if (e.ctrlKey && editorState.selectedCelestialBodyId !== null) {
-                const { body } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
+                const { body, parent } = findBodyAndParent(system, editorState.selectedCelestialBodyId);
                 if (body && body.type !== 'star') {
-                    editorState.draggedBody = body;
+                    let offsetX, offsetY;
+                    if (body.type === 'asteroid' || body.type === 'asteroid_field') {
+                        offsetX = worldPos.x - body.x;
+                        offsetY = worldPos.y - body.y;
+                    } else { // planet or moon
+                        let parentX = 0, parentY = 0;
+                        if (parent) {
+                            parentX = Math.cos(parent.orbitAngle) * parent.orbitRadius;
+                            parentY = Math.sin(parent.orbitAngle) * parent.orbitRadius;
+                        }
+                        const bodyWorldX = parentX + Math.cos(body.orbitAngle) * body.orbitRadius;
+                        const bodyWorldY = parentY + Math.sin(body.orbitAngle) * body.orbitRadius;
+                        offsetX = worldPos.x - bodyWorldX;
+                        offsetY = worldPos.y - bodyWorldY;
+                    }
+
+                    // The 'draggedBody' state object now holds the ID and the offset
+                    editorState.draggedBody = {
+                        id: body.id,
+                        offsetX: offsetX,
+                        offsetY: offsetY
+                    };
+
                     updateInfoPanel();
                     populateSystemUI();
                     updateCursor();
                     return;
                 }
             }
+            // --- End of FIX ---
 
             // Handle celestial body selection
             editorState.selectedCelestialBodyId = clickedBody?.id ?? null;
@@ -1216,7 +1251,7 @@
 
         function onWheel(e) {
             e.preventDefault();
-            const factor = e.deltaY < 0 ? 1.05 : 1 / 1.05;
+            const factor = e.deltaY < 0 ? 1.01 : 1 / 1.01;
             const newZoom = camera.targetZoom * factor;
             camera.targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
         }
