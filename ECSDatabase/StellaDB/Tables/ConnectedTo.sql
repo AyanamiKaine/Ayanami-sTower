@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS ConnectedTo (
     EntityId1 INTEGER NOT NULL,
     EntityId2 INTEGER NOT NULL,    
+    ConnectionType VARCHAR(50) DEFAULT 'standard',
     PRIMARY KEY (EntityId1, EntityId2),
     FOREIGN KEY (EntityId1) REFERENCES Entity(Id) ON DELETE CASCADE,
     FOREIGN KEY (EntityId2) REFERENCES Entity(Id) ON DELETE CASCADE,
@@ -11,6 +12,7 @@ CREATE TABLE IF NOT EXISTS ConnectedTo (
 -- Indexes for efficient querying (for Option 1)
 CREATE INDEX IF NOT EXISTS idx_connected_to_entity1 ON ConnectedTo(EntityId1);
 CREATE INDEX IF NOT EXISTS idx_connected_to_entity2 ON ConnectedTo(EntityId2);
+CREATE INDEX IF NOT EXISTS idx_connected_to_type ON ConnectedTo(ConnectionType);
 
 -- Example queries for Option 1:
 -- To find all systems connected to a specific system (e.g., EntityId = 5):
