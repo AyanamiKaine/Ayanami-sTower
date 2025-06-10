@@ -17,7 +17,7 @@ The query will determine the performance, bad query == bad performance!
 */
 
 int numberOfRuns = 10;
-int numberOfEntities = 10000;
+int numberOfEntities = 100;
 using (var scope = new TransactionScope())
 {
     for (int i = 0; i < numberOfEntities; i++)
