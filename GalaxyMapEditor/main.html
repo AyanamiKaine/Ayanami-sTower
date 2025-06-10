@@ -1850,7 +1850,7 @@
 
         function onWheel(e) {
             e.preventDefault();
-            const factor = e.deltaY < 0 ? 1.01 : 1 / 1.01;
+            const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15; // THIS IS BUGGED FOR 
             const newZoom = camera.targetZoom * factor;
             camera.targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
         }
