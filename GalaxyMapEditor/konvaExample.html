@@ -9,6 +9,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Konva.js for 2D canvas graphics -->
     <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;700&display=swap"
+        rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -19,29 +23,32 @@
 
         #container {
             touch-action: none;
+            background: #000;
         }
 
         .context-menu {
             display: none;
             position: absolute;
             z-index: 1000;
+            backdrop-filter: blur(5px);
         }
 
         /* Overlays for UI elements */
         .ui-overlay {
             position: absolute;
-            background-color: rgba(17, 24, 39, 0.8);
-            /* bg-gray-900 with opacity */
-            color: #d1d5db;
-            /* text-gray-300 */
-            padding: 0.75rem;
+            background-color: rgba(10, 20, 40, 0.75);
+            color: #94a3b8;
+            /* slate-400 */
+            padding: 0.75rem 1rem;
             border-radius: 0.5rem;
-            border: 1px solid #4b5563;
-            /* border-gray-600 */
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            /* sky-400/30 */
             font-size: 0.875rem;
             line-height: 1.25rem;
             pointer-events: none;
             /* Make sure they don't block canvas events */
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
         }
     </style>
 </head>
@@ -55,47 +62,50 @@
 
     <!-- Instructions Overlay -->
     <div id="instructions-overlay" class="ui-overlay" style="top: 1rem; right: 1rem; max-width: 320px;">
-        <p class="font-bold mb-2 text-white">Quick Guide</p>
-        <ul class="list-disc list-inside space-y-1">
-            <li>**Right-click empty space** to add a new star.</li>
-            <li>**Select one star**, then **right-click another** to connect them.</li>
-            <li>**Drag** on empty space to select multiple systems.</li>
-            <li>**Hold Ctrl + Drag** to pan the map.</li>
+        <p class="font-bold mb-2 text-sky-300">ASTROGRAPHER'S LOG</p>
+        <ul class="list-disc list-inside space-y-1 text-sm">
+            <li>Right-click empty space to chart a new System.</li>
+            <li>Select a system, then right-click another to plot a hyperspace lane.</li>
+            <li>Drag on empty space to select a sector.</li>
+            <li>Hold <code class="bg-sky-900/50 px-1 rounded">Ctrl</code> + Drag to pan the map.</li>
         </ul>
     </div>
 
     <!-- Coordinates Overlay -->
-    <div id="coords-overlay" class="ui-overlay"
-        style="bottom: 1rem; right: 1rem; font-family: 'Courier New', monospace;">
+    <div id="coords-overlay" class="ui-overlay" style="bottom: 1rem; right: 1rem;">
         X: 0 | Y: 0
     </div>
 
 
     <!-- Context Menu for Actions (Connect/Delete) -->
-    <div id="actions-context-menu" class="context-menu bg-gray-700 rounded-md shadow-lg overflow-hidden w-40">
+    <div id="actions-context-menu"
+        class="context-menu bg-gray-800/70 border border-sky-500/30 rounded-md shadow-lg overflow-hidden w-40">
         <button id="connect-button"
-            class="w-full text-left px-4 py-2 text-sm text-cyan-300 hover:bg-cyan-600 hover:text-white transition-colors duration-150">
-            Connect
+            class="w-full text-left px-4 py-2 text-sm text-sky-300 hover:bg-sky-600 hover:text-white transition-colors duration-150">
+            Plot Lane
         </button>
         <button id="delete-button"
             class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500 hover:text-white transition-colors duration-150">
-            Delete
+            Decommission
         </button>
     </div>
 
     <!-- Context Menu for Creating Things -->
-    <div id="create-context-menu" class="context-menu bg-gray-700 rounded-md shadow-lg overflow-hidden w-48">
+    <div id="create-context-menu"
+        class="context-menu bg-gray-800/70 border border-sky-500/30 rounded-md shadow-lg overflow-hidden w-48">
         <button id="create-star-system-button"
             class="w-full text-left px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors duration-150">
-            Create Star System
+            Chart New System
         </button>
     </div>
 
     <!-- Context Menu for Naming a Star -->
-    <div id="name-star-context-menu" class="context-menu bg-gray-700 rounded-md shadow-lg p-3 flex flex-col gap-2">
-        <label for="context-star-name-input" class="text-xs text-gray-400">Enter name and press Enter</label>
-        <input type="text" id="context-star-name-input" placeholder="System Name"
-            class="bg-gray-600 border border-gray-500 rounded-md px-2 py-1 text-white focus:outline-none focus:ring-1 focus:ring-cyan-500">
+    <div id="name-star-context-menu"
+        class="context-menu bg-gray-800/70 border border-sky-500/30 rounded-md shadow-lg p-3 flex flex-col gap-2">
+        <label for="context-star-name-input" class="text-xs text-sky-300 font-sans">System Designation (Press
+            Enter)</label>
+        <input type="text" id="context-star-name-input" placeholder="e.g., Trappist-1"
+            class="bg-gray-900/80 border border-sky-500/50 rounded-md px-2 py-1 text-white focus:outline-none focus:ring-1 focus:ring-sky-400">
     </div>
 
 
@@ -109,7 +119,10 @@
                 draggable: false,
             });
 
-            const gridLayer = new Konva.Layer();
+            const bgLayer = new Konva.Layer({ listening: false });
+            stage.add(bgLayer);
+
+            const gridLayer = new Konva.Layer({ listening: false });
             stage.add(gridLayer);
 
             const linesLayer = new Konva.Layer();
@@ -124,7 +137,12 @@
             let currentTarget = null;
             let contextMenuPos = { x: 0, y: 0 };
             let newStarCoords = { x: 0, y: 0 };
-            const STAR_RADIUS = 12;
+            const STAR_TYPES = [
+                { color: '#FFD2A1', radius: 12, shadow: '#FFD2A1' }, // Yellow Dwarf
+                { color: '#A1C4FF', radius: 16, shadow: '#A1C4FF' }, // Blue Giant
+                { color: '#FFB3A1', radius: 8, shadow: '#FFB3A1' }, // Red Dwarf
+                { color: '#FFFFFF', radius: 14, shadow: '#FFFFFF' }, // White Star
+            ];
 
             // --- UI ELEMENTS ---
             const coordsOverlay = document.getElementById('coords-overlay');
@@ -137,14 +155,14 @@
             const contextStarNameInput = document.getElementById('context-star-name-input');
 
             const selectionRectangle = new Konva.Rect({
-                fill: 'rgba(0, 255, 255, 0.2)',
-                stroke: 'rgba(0, 255, 255, 0.8)',
+                fill: 'rgba(56, 189, 248, 0.15)',
+                stroke: 'rgba(56, 189, 248, 0.8)',
                 strokeWidth: 1,
                 visible: false,
             });
             starsLayer.add(selectionRectangle);
 
-            // --- SELECTION MANAGEMENT & HELPERS ---
+            // --- SELECTION & HELPERS ---
             function selectNode(node) {
                 if (!selectedNodes.includes(node)) {
                     selectedNodes.push(node);
@@ -171,6 +189,24 @@
                 nameStarContextMenu.style.display = 'none';
             }
 
+            // --- AESTHETICS & PERFORMANCE ---
+
+            function createStarryBackground() {
+                const numStars = 500;
+                // Create stars in a large area around the origin, not tied to screen size.
+                // This is more robust and pans/zooms naturally.
+                const areaSize = 8000;
+                for (let i = 0; i < numStars; i++) {
+                    const star = new Konva.Circle({
+                        x: (Math.random() - 0.5) * areaSize,
+                        y: (Math.random() - 0.5) * areaSize,
+                        radius: Math.random() * 1.2,
+                        fill: `rgba(255, 255, 255, ${Math.random() * 0.7 + 0.1})`,
+                    });
+                    bgLayer.add(star);
+                }
+            }
+
             function drawGrid() {
                 gridLayer.removeChildren();
                 const scale = stage.scaleX();
@@ -178,80 +214,73 @@
                 const width = stage.width();
                 const height = stage.height();
 
-                const lineSpacing = 100;
-                const minorLineOpacity = 0.1;
-                const majorLineOpacity = 0.2;
-                const axisColor = '#888888'; // A brighter gray for axes
-                const axisOpacity = 0.6;
+                let lineSpacing = 100;
+                if (scale < 0.3) lineSpacing = 400;
+                else if (scale < 0.6) lineSpacing = 200;
+
+                const minorLineOpacity = 0.08;
+                const majorLineOpacity = 0.15;
+                const axisColor = '#0ea5e9';
+                const axisOpacity = 0.5;
 
                 const x1 = -stagePos.x / scale;
                 const y1 = -stagePos.y / scale;
                 const x2 = (-stagePos.x + width) / scale;
                 const y2 = (-stagePos.y + height) / scale;
 
-                // Draw vertical lines
                 for (let x = Math.floor(x1 / lineSpacing) * lineSpacing; x < x2; x += lineSpacing) {
                     const isAxis = x === 0;
                     gridLayer.add(new Konva.Line({
                         points: [x, y1, x, y2],
-                        stroke: isAxis ? axisColor : 'gray',
-                        strokeWidth: 1 / scale,
+                        stroke: isAxis ? axisColor : '#4b5563',
+                        strokeWidth: isAxis ? 2 / scale : 1 / scale,
                         opacity: isAxis ? axisOpacity : (x % (lineSpacing * 5) === 0 ? majorLineOpacity : minorLineOpacity),
                     }));
                 }
 
-                // Draw horizontal lines
                 for (let y = Math.floor(y1 / lineSpacing) * lineSpacing; y < y2; y += lineSpacing) {
                     const isAxis = y === 0;
                     gridLayer.add(new Konva.Line({
                         points: [x1, y, x2, y],
-                        stroke: isAxis ? axisColor : 'gray',
-                        strokeWidth: 1 / scale,
+                        stroke: isAxis ? axisColor : '#4b5563',
+                        strokeWidth: isAxis ? 2 / scale : 1 / scale,
                         opacity: isAxis ? axisOpacity : (y % (lineSpacing * 5) === 0 ? majorLineOpacity : minorLineOpacity),
                     }));
                 }
                 gridLayer.batchDraw();
             }
 
-            // Animation for pulsing star glow
             new Konva.Animation(frame => {
-                const period = 2000;
-                const amplitude = 5;
-                const glow = amplitude * Math.abs(Math.sin(frame.time * 2 * Math.PI / period));
-                starsLayer.find('.star-group').forEach(group => {
-                    const star = group.findOne('Circle');
-                    if (star) {
-                        star.shadowBlur(10 + glow);
-                    }
+                const period = 3000;
+                const amplitude = 8;
+                const glow = amplitude * (1 + Math.sin(frame.time * 2 * Math.PI / period)) / 2;
+                starsLayer.find('.star').forEach(star => {
+                    star.shadowBlur(10 + glow);
                 });
             }, starsLayer).start();
-
-            // Animation for flowing connection lines
-            new Konva.Animation(frame => {
-                const offset = (frame.time / 100) % 15;
-                connections.forEach(conn => conn.line.dashOffset(-offset));
-            }, linesLayer).start();
-
 
             // --- CORE FUNCTIONS ---
             function createStarSystem(x, y, name) {
                 const group = new Konva.Group({ x, y, draggable: true, name: 'star-group' });
+                const type = STAR_TYPES[Math.floor(Math.random() * STAR_TYPES.length)];
 
                 const selectionRing = new Konva.Circle({
-                    radius: STAR_RADIUS + 6, stroke: 'cyan', strokeWidth: 2,
-                    visible: false, name: 'selection-ring', dash: [4, 4],
+                    radius: type.radius + 6, stroke: '#0ea5e9', strokeWidth: 2,
+                    visible: false, name: 'selection-ring', dash: [6, 4],
                 });
                 group.add(selectionRing);
 
                 const star = new Konva.Circle({
-                    radius: STAR_RADIUS, fill: '#FDB813', stroke: 'rgba(253, 184, 19, 0.5)', strokeWidth: 4,
-                    shadowColor: '#FDB813',
+                    name: 'star',
+                    radius: type.radius, fill: type.color,
+                    stroke: 'rgba(255, 255, 255, 0.5)', strokeWidth: 2,
+                    shadowColor: type.shadow,
                 });
                 group.add(star);
 
                 const label = new Konva.Text({
                     text: name, fontSize: 14, fontFamily: 'Inter, sans-serif',
-                    fill: '#E0E0E0', y: -STAR_RADIUS - 15, align: 'center', width: 150,
+                    fill: '#E0E0E0', y: -type.radius - 15, align: 'center', width: 150,
                 });
                 label.offsetX(label.width() / 2); group.add(label); starsLayer.add(group);
 
@@ -285,10 +314,17 @@
 
                 const line = new Konva.Line({
                     points: [fromNode.x(), fromNode.y(), toNode.x(), toNode.y()],
-                    stroke: 'rgba(100, 150, 255, 0.7)', strokeWidth: 2, lineCap: 'round',
-                    lineJoin: 'round', dash: [10, 5], name: 'connection-line', hitStrokeWidth: 25
+                    stroke: '#38bdf8',
+                    strokeWidth: 1.5,
+                    lineCap: 'round', lineJoin: 'round',
+                    opacity: 0.6,
+                    shadowColor: '#38bdf8',
+                    shadowBlur: 5,
+                    name: 'connection-line', hitStrokeWidth: 25
                 });
-                linesLayer.add(line); connections.push({ line, from: fromNode, to: toNode });
+                linesLayer.add(line);
+                connections.push({ line, from: fromNode, to: toNode });
+                linesLayer.batchDraw();
             }
 
             function updateConnectionsForGroup(group) {
@@ -302,10 +338,14 @@
                 if (!starGroup) return;
                 deselectNode(starGroup);
                 connections = connections.filter(conn => {
-                    if (conn.from === starGroup || conn.to === starGroup) { conn.line.destroy(); return false; }
+                    if (conn.from === starGroup || conn.to === starGroup) {
+                        conn.line.destroy();
+                        return false;
+                    }
                     return true;
                 });
                 starGroup.destroy();
+                linesLayer.batchDraw();
             }
 
             function deleteSelection() {
@@ -318,6 +358,7 @@
                 if (!line) return;
                 connections = connections.filter(conn => conn.line !== line);
                 line.destroy();
+                linesLayer.batchDraw();
             }
 
             // --- DRAG LOGIC ---
@@ -409,7 +450,7 @@
                 starsLayer.batchDraw();
             });
 
-            stage.on('dragmove', drawGrid);
+            stage.on('dragend', drawGrid);
 
             // --- CONTEXT MENU LOGIC ---
             stage.on('contextmenu', function (e) {
@@ -483,7 +524,7 @@
             });
 
             // --- ZOOM FUNCTIONALITY ---
-            const scaleBy = 1.1, minScale = 0.2, maxScale = 10.0;
+            const scaleBy = 1.1, minScale = 0.1, maxScale = 15.0;
             stage.on('wheel', (e) => {
                 e.evt.preventDefault();
                 hideAllContextMenus();
@@ -501,6 +542,7 @@
             });
 
             // --- INITIALIZATION ---
+            createStarryBackground();
             drawGrid();
             createStarSystem(200, 300, 'Sol');
             createStarSystem(600, 400, 'Alpha Centauri');
