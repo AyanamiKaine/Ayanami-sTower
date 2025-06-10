@@ -147,7 +147,9 @@
                 const now = performance.now();
                 // Throttle these DOM updates to avoid layout thrashing
                 if (now - lastInfoUpdateTime > 250) { // Update 4 times a second
-                    objectCounter.textContent = starsLayer.children.length + linesLayer.children.length;
+                    const starCount = starsLayer.find('.star-group').length;
+                    const lineCount = linesLayer.find('.connection-line').length;
+                    objectCounter.textContent = starCount + lineCount;
                     zoomLevel.textContent = stage.scaleX().toFixed(2) + 'x';
                     lastInfoUpdateTime = now;
                 }
@@ -317,7 +319,6 @@
                         perfectDrawEnabled: false
                     });
                     gridLayer.add(line);
-                    cachedGridLines.push(line);
                 }
                 for (let y = Math.floor(y1 / stepY) * stepY; y < y2; y += stepY) {
                     const isAxis = Math.abs(y) < stepY / 2;
@@ -329,7 +330,6 @@
                         perfectDrawEnabled: false
                     });
                     gridLayer.add(line);
-                    cachedGridLines.push(line);
                 }
                 lastGridScale = scale;
                 lastGridPosition = { x: stagePos.x, y: stagePos.y };
@@ -338,7 +338,6 @@
 
             // --- OPTIMIZED ANIMATIONS & MAIN RENDER LOOP ---
             let animationActive = true;
-            const time = performance.now();
 
             function starGlowAnimation(time) {
                 if (!animationActive) return;
@@ -389,10 +388,14 @@
                 starsLayer.find('Text').forEach(text => {
                     text.visible(scale > LOD_THRESHOLDS.HIDE_LABELS);
                 });
+
+                // BUG FIX: Correctly determine ring visibility based on actual selection state.
                 starsLayer.find('.selection-ring').forEach(ring => {
-                    const shouldShow = ring.getAttr('wasVisible') !== false && scale > LOD_THRESHOLDS.HIDE_SELECTION_RINGS;
-                    ring.visible(shouldShow);
+                    const group = ring.getParent();
+                    const isSelected = selectedNodes.includes(group);
+                    ring.visible(isSelected && scale > LOD_THRESHOLDS.HIDE_SELECTION_RINGS);
                 });
+
                 starsLayer.find('.star').forEach(star => {
                     if (scale < LOD_THRESHOLDS.SIMPLIFIED_STARS) {
                         star.shadowBlur(0);
@@ -439,8 +442,6 @@
                 group.on('dragmove', (e) => handleDragMove(e, group));
                 group.on('mouseenter', () => { stage.container().style.cursor = 'pointer'; });
                 group.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
-                // BUG FIX: Do not select the node upon creation.
-                // selectNode(group); 
                 return group;
             }
 
@@ -496,12 +497,11 @@
                 });
                 starGroup.destroy();
                 linesLayer.batchDraw();
+                starsLayer.batchDraw();
             }
 
             function deleteSelection() {
                 [...selectedNodes].forEach(node => deleteStar(node));
-                linesLayer.draw();
-                starsLayer.draw();
             }
 
             function deleteConnection(line) {
@@ -711,11 +711,11 @@
                     updateLevelOfDetail();
                 }, 50);
 
-                // --- FIX: Apply visibility changes to each element in the collection ---
-                // This provides immediate visual feedback during zoom before the debounced update.
                 const scale = stage.scaleX();
                 if (scale < LOD_THRESHOLDS.HIDE_LABELS) {
                     starsLayer.find('Text').forEach(text => text.visible(false));
+                } else {
+                    starsLayer.find('Text').forEach(text => text.visible(true));
                 }
                 const showBgStars = scale > LOD_THRESHOLDS.HIDE_BACKGROUND_STARS;
                 bgLayer.find('.bg-star').forEach(star => star.visible(showBgStars));
