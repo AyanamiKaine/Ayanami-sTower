@@ -43,6 +43,10 @@ so we dont have to write Parent=2231 should the id change for any reason we woul
     <Position X="-60" Y="-20" Z="-20"/>
 </Entity>
 
+TODO:
+See the ExampleGalaxy.xml for an even better way of structuring it. Because it reflects the parent child relationship 
+directly in the xml.
+
 */
 
 /// <summary>
