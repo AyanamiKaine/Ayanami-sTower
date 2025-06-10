@@ -611,7 +611,6 @@
                 updateLevelOfDetail();
             });
 
-            // FIX: Redraw grid during panning for a more responsive feel
             stage.on('dragmove', () => {
                 drawGrid();
             });
@@ -709,9 +708,12 @@
                     y: pointer.y - mousePointTo.y * newScale
                 };
                 stage.position(newPos);
+
+                // FIX: Redraw grid immediately during zoom for a more responsive feel.
+                drawGrid();
+
                 if (zoomTimeout) clearTimeout(zoomTimeout);
                 zoomTimeout = setTimeout(() => {
-                    drawGrid();
                     updateLevelOfDetail();
                 }, 50);
 
