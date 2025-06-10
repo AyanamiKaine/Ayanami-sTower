@@ -389,7 +389,6 @@
                     text.visible(scale > LOD_THRESHOLDS.HIDE_LABELS);
                 });
 
-                // BUG FIX: Correctly determine ring visibility based on actual selection state.
                 starsLayer.find('.selection-ring').forEach(ring => {
                     const group = ring.getParent();
                     const isSelected = selectedNodes.includes(group);
@@ -610,6 +609,11 @@
             stage.on('dragend', () => {
                 drawGrid();
                 updateLevelOfDetail();
+            });
+
+            // FIX: Redraw grid during panning for a more responsive feel
+            stage.on('dragmove', () => {
+                drawGrid();
             });
 
             // --- CONTEXT MENU LOGIC ---
