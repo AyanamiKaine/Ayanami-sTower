@@ -4,11 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Galaxy Map Editor</title>
+    <title>2D Galaxy Map Editor - Performance Enhanced</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Konva.js for 2D canvas graphics -->
     <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+    <!-- Stats.js for performance monitoring -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;700&display=swap"
@@ -18,12 +20,19 @@
             font-family: 'Inter', sans-serif;
             overflow: hidden;
             background-color: #000000;
-            /* Deep space black */
         }
 
         #container {
             touch-action: none;
             background: #000;
+        }
+
+        /* Style for the stats.js panel */
+        #stats-container {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            z-index: 2000;
         }
 
         .context-menu {
@@ -33,27 +42,47 @@
             backdrop-filter: blur(5px);
         }
 
-        /* Overlays for UI elements */
         .ui-overlay {
             position: absolute;
             background-color: rgba(10, 20, 40, 0.75);
             color: #94a3b8;
-            /* slate-400 */
             padding: 0.75rem 1rem;
             border-radius: 0.5rem;
             border: 1px solid rgba(56, 189, 248, 0.3);
-            /* sky-400/30 */
             font-size: 0.875rem;
             line-height: 1.25rem;
             pointer-events: none;
-            /* Make sure they don't block canvas events */
             font-family: 'Orbitron', sans-serif;
             text-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
+        }
+
+        /* Additional info below the stats panel */
+        #performance-info {
+            position: absolute;
+            top: calc(1rem + 58px);
+            /* Position below stats.js panel */
+            left: 1rem;
+            background-color: rgba(10, 20, 40, 0.9);
+            color: #94a3b8;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-family: 'Orbitron', sans-serif;
+            width: 80px;
+            /* Match stats.js width */
         }
     </style>
 </head>
 
 <body class="h-screen">
+    <!-- Container for Stats.js -->
+    <div id="stats-container"></div>
+
+    <!-- Performance Info -->
+    <div id="performance-info">
+        <div>Objects: <span id="object-counter">0</span></div>
+        <div>Zoom: <span id="zoom-level">1.00x</span></div>
+    </div>
 
     <!-- Main Content Area for the Canvas -->
     <main class="w-full h-full relative">
@@ -76,8 +105,7 @@
         X: 0 | Y: 0
     </div>
 
-
-    <!-- Context Menu for Actions (Connect/Delete) -->
+    <!-- Context Menus -->
     <div id="actions-context-menu"
         class="context-menu bg-gray-800/70 border border-sky-500/30 rounded-md shadow-lg overflow-hidden w-40">
         <button id="connect-button"
@@ -89,8 +117,6 @@
             Decommission
         </button>
     </div>
-
-    <!-- Context Menu for Creating Things -->
     <div id="create-context-menu"
         class="context-menu bg-gray-800/70 border border-sky-500/30 rounded-md shadow-lg overflow-hidden w-48">
         <button id="create-star-system-button"
@@ -98,8 +124,6 @@
             Chart New System
         </button>
     </div>
-
-    <!-- Context Menu for Naming a Star -->
     <div id="name-star-context-menu"
         class="context-menu bg-gray-800/70 border border-sky-500/30 rounded-md shadow-lg p-3 flex flex-col gap-2">
         <label for="context-star-name-input" class="text-xs text-sky-300 font-sans">System Designation (Press
@@ -108,9 +132,27 @@
             class="bg-gray-900/80 border border-sky-500/50 rounded-md px-2 py-1 text-white focus:outline-none focus:ring-1 focus:ring-sky-400">
     </div>
 
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // --- PERFORMANCE MONITORING SETUP ---
+            const stats = new Stats();
+            stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+            document.getElementById('stats-container').appendChild(stats.domElement);
+
+            const objectCounter = document.getElementById('object-counter');
+            const zoomLevel = document.getElementById('zoom-level');
+            let lastInfoUpdateTime = 0;
+
+            function updatePerformanceInfo() {
+                const now = performance.now();
+                // Throttle these DOM updates to avoid layout thrashing
+                if (now - lastInfoUpdateTime > 250) { // Update 4 times a second
+                    objectCounter.textContent = starsLayer.children.length + linesLayer.children.length;
+                    zoomLevel.textContent = stage.scaleX().toFixed(2) + 'x';
+                    lastInfoUpdateTime = now;
+                }
+            }
+
             // --- SETUP ---
             const stage = new Konva.Stage({
                 container: 'container',
@@ -118,18 +160,29 @@
                 height: window.innerHeight,
                 draggable: false,
             });
-
             const bgLayer = new Konva.Layer({ listening: false });
             stage.add(bgLayer);
-
             const gridLayer = new Konva.Layer({ listening: false });
             stage.add(gridLayer);
-
             const linesLayer = new Konva.Layer();
             stage.add(linesLayer);
-
             const starsLayer = new Konva.Layer();
             stage.add(starsLayer);
+
+            // --- PERFORMANCE OPTIMIZATIONS ---
+            let gridUpdateTimeout = null;
+            let lastGridUpdate = 0;
+            const GRID_UPDATE_DELAY = 16; // ~60fps max for grid updates
+
+            const LOD_THRESHOLDS = {
+                HIDE_LABELS: 0.3,
+                HIDE_SELECTION_RINGS: 0.2,
+                SIMPLIFIED_STARS: 0.15,
+                HIDE_BACKGROUND_STARS: 0.1
+            };
+            let cachedGridLines = [];
+            let lastGridScale = -1;
+            let lastGridPosition = { x: -999999, y: -999999 };
 
             // --- STATE MANAGEMENT ---
             let connections = [];
@@ -153,7 +206,6 @@
             const createStarSystemButton = document.getElementById('create-star-system-button');
             const nameStarContextMenu = document.getElementById('name-star-context-menu');
             const contextStarNameInput = document.getElementById('context-star-name-input');
-
             const selectionRectangle = new Konva.Rect({
                 fill: 'rgba(56, 189, 248, 0.15)',
                 stroke: 'rgba(56, 189, 248, 0.8)',
@@ -166,135 +218,235 @@
             function selectNode(node) {
                 if (!selectedNodes.includes(node)) {
                     selectedNodes.push(node);
-                    node.findOne('.selection-ring').visible(true);
+                    const ring = node.findOne('.selection-ring');
+                    if (ring) ring.visible(true);
                 }
             }
-
             function deselectNode(node) {
                 const index = selectedNodes.indexOf(node);
                 if (index > -1) {
                     selectedNodes.splice(index, 1);
-                    node.findOne('.selection-ring').visible(false);
+                    const ring = node.findOne('.selection-ring');
+                    if (ring) ring.visible(false);
                 }
             }
-
             function clearSelection() {
-                selectedNodes.forEach(node => node.findOne('.selection-ring').visible(false));
+                selectedNodes.forEach(node => {
+                    const ring = node.findOne('.selection-ring');
+                    if (ring) ring.visible(false);
+                });
                 selectedNodes = [];
             }
-
             function hideAllContextMenus() {
                 actionsContextMenu.style.display = 'none';
                 createContextMenu.style.display = 'none';
                 nameStarContextMenu.style.display = 'none';
             }
 
-            // --- AESTHETICS & PERFORMANCE ---
-
+            // --- OPTIMIZED BACKGROUND GENERATION ---
             function createStarryBackground() {
-                const numStars = 500;
-                // Create stars in a large area around the origin, not tied to screen size.
-                // This is more robust and pans/zooms naturally.
-                const areaSize = 8000;
-                for (let i = 0; i < numStars; i++) {
-                    const star = new Konva.Circle({
-                        x: (Math.random() - 0.5) * areaSize,
-                        y: (Math.random() - 0.5) * areaSize,
-                        radius: Math.random() * 1.2,
-                        fill: `rgba(255, 255, 255, ${Math.random() * 0.7 + 0.1})`,
-                    });
-                    bgLayer.add(star);
+                const numStars = 300;
+                const areaSize = 6000;
+                const chunkSize = 50;
+                let starIndex = 0;
+                function createStarChunk() {
+                    const endIndex = Math.min(starIndex + chunkSize, numStars);
+                    for (let i = starIndex; i < endIndex; i++) {
+                        const star = new Konva.Circle({
+                            x: (Math.random() - 0.5) * areaSize,
+                            y: (Math.random() - 0.5) * areaSize,
+                            radius: Math.random() * 1.2,
+                            fill: `rgba(255, 255, 255, ${Math.random() * 0.7 + 0.1})`,
+                            name: 'bg-star'
+                        });
+                        bgLayer.add(star);
+                    }
+                    starIndex = endIndex;
+                    if (starIndex < numStars) {
+                        setTimeout(createStarChunk, 16); // Non-blocking with a small delay
+                    } else {
+                        bgLayer.batchDraw();
+                    }
                 }
+                createStarChunk();
             }
 
+            // --- OPTIMIZED GRID DRAWING ---
             function drawGrid() {
-                gridLayer.removeChildren();
+                const now = performance.now();
+                if (now - lastGridUpdate < GRID_UPDATE_DELAY) {
+                    if (gridUpdateTimeout) clearTimeout(gridUpdateTimeout);
+                    gridUpdateTimeout = setTimeout(drawGrid, GRID_UPDATE_DELAY);
+                    return;
+                }
+                lastGridUpdate = now;
                 const scale = stage.scaleX();
                 const stagePos = stage.position();
+                const positionChange = Math.abs(stagePos.x - lastGridPosition.x) > 50 ||
+                    Math.abs(stagePos.y - lastGridPosition.y) > 50;
+                const scaleChange = Math.abs(scale - lastGridScale) > 0.05;
+
+                if (!positionChange && !scaleChange && cachedGridLines.length > 0) {
+                    return;
+                }
+                gridLayer.destroyChildren(); // Faster than removeChildren
+                cachedGridLines = [];
                 const width = stage.width();
                 const height = stage.height();
-
                 let lineSpacing = 100;
                 if (scale < 0.3) lineSpacing = 400;
                 else if (scale < 0.6) lineSpacing = 200;
-
-                const minorLineOpacity = 0.08;
-                const majorLineOpacity = 0.15;
+                const minorLineOpacity = Math.max(0.02, 0.08 * scale);
+                const majorLineOpacity = Math.max(0.05, 0.15 * scale);
                 const axisColor = '#0ea5e9';
-                const axisOpacity = 0.5;
-
+                const axisOpacity = Math.max(0.2, 0.5 * scale);
                 const x1 = -stagePos.x / scale;
                 const y1 = -stagePos.y / scale;
                 const x2 = (-stagePos.x + width) / scale;
                 const y2 = (-stagePos.y + height) / scale;
-
-                for (let x = Math.floor(x1 / lineSpacing) * lineSpacing; x < x2; x += lineSpacing) {
-                    const isAxis = x === 0;
-                    gridLayer.add(new Konva.Line({
+                const maxLines = 200;
+                const stepX = Math.max(lineSpacing, (x2 - x1) / maxLines);
+                const stepY = Math.max(lineSpacing, (y2 - y1) / maxLines);
+                for (let x = Math.floor(x1 / stepX) * stepX; x < x2; x += stepX) {
+                    const isAxis = Math.abs(x) < stepX / 2;
+                    const line = new Konva.Line({
                         points: [x, y1, x, y2],
                         stroke: isAxis ? axisColor : '#4b5563',
                         strokeWidth: isAxis ? 2 / scale : 1 / scale,
-                        opacity: isAxis ? axisOpacity : (x % (lineSpacing * 5) === 0 ? majorLineOpacity : minorLineOpacity),
-                    }));
+                        opacity: isAxis ? axisOpacity : (x % (stepX * 5) < stepX ? majorLineOpacity : minorLineOpacity),
+                        perfectDrawEnabled: false
+                    });
+                    gridLayer.add(line);
+                    cachedGridLines.push(line);
                 }
-
-                for (let y = Math.floor(y1 / lineSpacing) * lineSpacing; y < y2; y += lineSpacing) {
-                    const isAxis = y === 0;
-                    gridLayer.add(new Konva.Line({
+                for (let y = Math.floor(y1 / stepY) * stepY; y < y2; y += stepY) {
+                    const isAxis = Math.abs(y) < stepY / 2;
+                    const line = new Konva.Line({
                         points: [x1, y, x2, y],
                         stroke: isAxis ? axisColor : '#4b5563',
                         strokeWidth: isAxis ? 2 / scale : 1 / scale,
-                        opacity: isAxis ? axisOpacity : (y % (lineSpacing * 5) === 0 ? majorLineOpacity : minorLineOpacity),
-                    }));
+                        opacity: isAxis ? axisOpacity : (y % (stepY * 5) < stepY ? majorLineOpacity : minorLineOpacity),
+                        perfectDrawEnabled: false
+                    });
+                    gridLayer.add(line);
+                    cachedGridLines.push(line);
                 }
+                lastGridScale = scale;
+                lastGridPosition = { x: stagePos.x, y: stagePos.y };
                 gridLayer.batchDraw();
             }
 
-            new Konva.Animation(frame => {
-                const period = 3000;
-                const amplitude = 8;
-                const glow = amplitude * (1 + Math.sin(frame.time * 2 * Math.PI / period)) / 2;
-                starsLayer.find('.star').forEach(star => {
-                    star.shadowBlur(10 + glow);
+            // --- OPTIMIZED ANIMATIONS & MAIN RENDER LOOP ---
+            let animationActive = true;
+            const time = performance.now();
+
+            function starGlowAnimation(time) {
+                if (!animationActive) return;
+
+                const period = 4000;
+                const amplitude = 6;
+                const glow = amplitude * (1 + Math.sin(time * 2 * Math.PI / period)) / 2;
+
+                // Only animate visible stars for maximum performance
+                const visibleStars = starsLayer.find('.star').filter(star => {
+                    const group = star.getParent();
+                    return group.isVisible() && isInViewport(group);
                 });
-            }, starsLayer).start();
 
-            // --- CORE FUNCTIONS ---
+                visibleStars.forEach(star => {
+                    star.shadowBlur(8 + glow);
+                });
+            }
+
+            function mainRenderLoop(time) {
+                stats.begin(); // Start performance monitoring
+
+                // Run animations
+                starGlowAnimation(time);
+
+                // Update performance info panel
+                updatePerformanceInfo();
+
+                // We only need to draw the stars layer if animations are active
+                if (animationActive) {
+                    starsLayer.draw();
+                }
+
+                stats.end(); // End performance monitoring
+                requestAnimationFrame(mainRenderLoop); // Continue the loop
+            }
+
+            // Check if an object is within the visible stage area
+            function isInViewport(obj) {
+                const objRect = obj.getClientRect({ skipTransform: false });
+                return objRect.x + objRect.width >= 0 && objRect.x <= stage.width() &&
+                    objRect.y + objRect.height >= 0 && objRect.y <= stage.height();
+            }
+
+            // --- LOD SYSTEM ---
+            function updateLevelOfDetail() {
+                const scale = stage.scaleX();
+                starsLayer.find('Text').forEach(text => {
+                    text.visible(scale > LOD_THRESHOLDS.HIDE_LABELS);
+                });
+                starsLayer.find('.selection-ring').forEach(ring => {
+                    const shouldShow = ring.getAttr('wasVisible') !== false && scale > LOD_THRESHOLDS.HIDE_SELECTION_RINGS;
+                    ring.visible(shouldShow);
+                });
+                starsLayer.find('.star').forEach(star => {
+                    if (scale < LOD_THRESHOLDS.SIMPLIFIED_STARS) {
+                        star.shadowBlur(0);
+                        star.strokeWidth(0);
+                    } else {
+                        star.strokeWidth(2);
+                    }
+                });
+                bgLayer.find('.bg-star').forEach(star => {
+                    star.visible(scale > LOD_THRESHOLDS.HIDE_BACKGROUND_STARS);
+                });
+                animationActive = (scale > LOD_THRESHOLDS.SIMPLIFIED_STARS);
+                starsLayer.batchDraw();
+                bgLayer.batchDraw();
+            }
+
+            // --- CORE FUNCTIONS (Create, Delete, Connect) ---
             function createStarSystem(x, y, name) {
-                const group = new Konva.Group({ x, y, draggable: true, name: 'star-group' });
+                const group = new Konva.Group({
+                    x, y, draggable: true, name: 'star-group', perfectDrawEnabled: false
+                });
                 const type = STAR_TYPES[Math.floor(Math.random() * STAR_TYPES.length)];
-
                 const selectionRing = new Konva.Circle({
                     radius: type.radius + 6, stroke: '#0ea5e9', strokeWidth: 2,
-                    visible: false, name: 'selection-ring', dash: [6, 4],
+                    visible: false, name: 'selection-ring', dash: [6, 4], perfectDrawEnabled: false
                 });
                 group.add(selectionRing);
-
                 const star = new Konva.Circle({
-                    name: 'star',
-                    radius: type.radius, fill: type.color,
+                    name: 'star', radius: type.radius, fill: type.color,
                     stroke: 'rgba(255, 255, 255, 0.5)', strokeWidth: 2,
-                    shadowColor: type.shadow,
+                    shadowColor: type.shadow, shadowBlur: 8, perfectDrawEnabled: false
                 });
                 group.add(star);
-
                 const label = new Konva.Text({
                     text: name, fontSize: 14, fontFamily: 'Inter, sans-serif',
-                    fill: '#E0E0E0', y: -type.radius - 15, align: 'center', width: 150,
+                    fill: '#E0E0E0', y: -type.radius - 15, align: 'center',
+                    width: 150, perfectDrawEnabled: false
                 });
-                label.offsetX(label.width() / 2); group.add(label); starsLayer.add(group);
-
+                label.offsetX(label.width() / 2);
+                group.add(label);
+                starsLayer.add(group);
                 group.on('click', (e) => handleStarClick(e, group));
                 group.on('dragstart', (e) => handleDragStart(e, group));
                 group.on('dragmove', (e) => handleDragMove(e, group));
                 group.on('mouseenter', () => { stage.container().style.cursor = 'pointer'; });
                 group.on('mouseleave', () => { stage.container().style.cursor = 'default'; });
+                // BUG FIX: Do not select the node upon creation.
+                // selectNode(group); 
+                return group;
             }
 
             function handleStarClick(e, group) {
                 if (e.evt.button === 2) return;
                 const isShiftSelect = e.evt.shiftKey;
-
                 if (!isShiftSelect) {
                     const wasAlreadySelected = selectedNodes.includes(group) && selectedNodes.length === 1;
                     clearSelection();
@@ -311,16 +463,11 @@
                     (conn.from === fromNode && conn.to === toNode) || (conn.from === toNode && conn.to === fromNode)
                 );
                 if (exists) return;
-
                 const line = new Konva.Line({
                     points: [fromNode.x(), fromNode.y(), toNode.x(), toNode.y()],
-                    stroke: '#38bdf8',
-                    strokeWidth: 1.5,
-                    lineCap: 'round', lineJoin: 'round',
-                    opacity: 0.6,
-                    shadowColor: '#38bdf8',
-                    shadowBlur: 5,
-                    name: 'connection-line', hitStrokeWidth: 25
+                    stroke: '#38bdf8', strokeWidth: 1.5, lineCap: 'round', lineJoin: 'round',
+                    opacity: 0.6, shadowColor: '#38bdf8', shadowBlur: 3,
+                    name: 'connection-line', hitStrokeWidth: 25, perfectDrawEnabled: false
                 });
                 linesLayer.add(line);
                 connections.push({ line, from: fromNode, to: toNode });
@@ -329,8 +476,11 @@
 
             function updateConnectionsForGroup(group) {
                 connections.forEach(conn => {
-                    if (conn.from === group) { conn.line.points([group.x(), group.y(), conn.to.x(), conn.to.y()]); }
-                    else if (conn.to === group) { conn.line.points([conn.from.x(), conn.from.y(), group.x(), group.y()]); }
+                    if (conn.from === group) {
+                        conn.line.points([group.x(), group.y(), conn.to.x(), conn.to.y()]);
+                    } else if (conn.to === group) {
+                        conn.line.points([conn.from.x(), conn.from.y(), group.x(), group.y()]);
+                    }
                 });
             }
 
@@ -363,10 +513,9 @@
 
             // --- DRAG LOGIC ---
             let dragOffset = new Map();
-
             function handleDragStart(e, group) {
                 if (!selectedNodes.includes(group)) {
-                    clearSelection();
+                    if (!e.evt.shiftKey) clearSelection();
                     selectNode(group);
                     starsLayer.draw();
                 }
@@ -390,7 +539,6 @@
                     updateConnectionsForGroup(node);
                 });
                 linesLayer.batchDraw();
-                starsLayer.batchDraw();
             }
 
             // --- UI & STAGE EVENT LISTENERS ---
@@ -406,40 +554,49 @@
                 if (e.target !== stage || e.evt.button !== 0) { return; }
                 e.evt.preventDefault();
                 if (e.evt.ctrlKey) { stage.draggable(true); return; }
-
-                stage.draggable(false); clearSelection();
+                stage.draggable(false);
+                clearSelection();
                 const pointer = stage.getPointerPosition();
                 const scale = stage.scaleX();
                 const stagePos = stage.position();
                 x1 = (pointer.x - stagePos.x) / scale;
                 y1 = (pointer.y - stagePos.y) / scale;
                 selectionRectangle.setAttrs({ x: x1, y: y1, width: 0, height: 0, visible: true });
+                starsLayer.draw();
             });
 
+            let coordsUpdateTimeout = null;
             stage.on('mousemove', (e) => {
-                const pointer = stage.getPointerPosition();
-                const scale = stage.scaleX();
-                const stagePos = stage.position();
-                const worldX = (pointer.x - stagePos.x) / scale;
-                const worldY = (pointer.y - stagePos.y) / scale;
-                coordsOverlay.innerText = `X: ${worldX.toFixed(0)} | Y: ${worldY.toFixed(0)}`;
+                if (coordsUpdateTimeout) return;
+                coordsUpdateTimeout = setTimeout(() => {
+                    const pointer = stage.getPointerPosition();
+                    const scale = stage.scaleX();
+                    const stagePos = stage.position();
+                    const worldX = (pointer.x - stagePos.x) / scale;
+                    const worldY = (pointer.y - stagePos.y) / scale;
+                    coordsOverlay.innerText = `X: ${worldX.toFixed(0)} | Y: ${worldY.toFixed(0)}`;
+                    coordsUpdateTimeout = null;
+                }, 16);
 
                 if (!selectionRectangle.visible()) { return; }
                 e.evt.preventDefault();
+                const pointer = stage.getPointerPosition();
+                const scale = stage.scaleX();
+                const stagePos = stage.position();
                 const x2 = (pointer.x - stagePos.x) / scale;
                 const y2 = (pointer.y - stagePos.y) / scale;
                 selectionRectangle.setAttrs({
                     x: Math.min(x1, x2), y: Math.min(y1, y2),
                     width: Math.abs(x2 - x1), height: Math.abs(y2 - y1),
                 });
+                starsLayer.draw();
             });
 
             stage.on('mouseup', (e) => {
                 stage.draggable(false);
                 if (!selectionRectangle.visible()) { return; }
                 e.evt.preventDefault();
-                setTimeout(() => { selectionRectangle.visible(false); }, 50);
-
+                setTimeout(() => { selectionRectangle.visible(false); starsLayer.draw(); }, 50);
                 const box = selectionRectangle.getClientRect();
                 const groups = starsLayer.find('.star-group');
                 groups.forEach((group) => {
@@ -450,18 +607,22 @@
                 starsLayer.batchDraw();
             });
 
-            stage.on('dragend', drawGrid);
+            stage.on('dragend', () => {
+                drawGrid();
+                updateLevelOfDetail();
+            });
 
             // --- CONTEXT MENU LOGIC ---
             stage.on('contextmenu', function (e) {
                 e.evt.preventDefault();
                 hideAllContextMenus();
                 let target = e.target;
-
                 const pointer = stage.getPointerPosition();
                 const containerRect = stage.container().getBoundingClientRect();
-                contextMenuPos = { left: containerRect.left + pointer.x + 4 + 'px', top: containerRect.top + pointer.y + 4 + 'px' };
-
+                contextMenuPos = {
+                    left: containerRect.left + pointer.x + 4 + 'px',
+                    top: containerRect.top + pointer.y + 4 + 'px'
+                };
                 if (target === stage) {
                     const scale = stage.scaleX();
                     const stagePos = stage.position();
@@ -481,12 +642,12 @@
                     actionsContextMenu.style.top = contextMenuPos.top;
                 }
             });
-
             stage.on('click', (e) => {
                 if (e.evt.button !== 2) { hideAllContextMenus(); }
                 if (e.target === stage) { clearSelection(); starsLayer.draw(); }
             });
 
+            // --- CONTEXT MENU ACTIONS ---
             connectButton.addEventListener('click', () => {
                 if (currentTarget && currentTarget.hasName('star-group')) {
                     createConnection(selectedNodes[0], currentTarget);
@@ -495,14 +656,12 @@
                 clearSelection();
                 starsLayer.batchDraw();
             });
-
             deleteButton.addEventListener('click', () => {
                 if (selectedNodes.includes(currentTarget)) { deleteSelection(); }
                 else if (currentTarget && currentTarget.hasName('star-group')) { deleteStar(currentTarget); }
                 else if (currentTarget && currentTarget.hasName('connection-line')) { deleteConnection(currentTarget); }
                 hideAllContextMenus();
             });
-
             createStarSystemButton.addEventListener('click', () => {
                 createContextMenu.style.display = 'none';
                 nameStarContextMenu.style.display = 'block';
@@ -510,44 +669,102 @@
                 nameStarContextMenu.style.top = contextMenuPos.top;
                 contextStarNameInput.focus();
             });
-
             function createStarFromContext() {
                 const name = contextStarNameInput.value.trim() || 'Unnamed System';
                 createStarSystem(newStarCoords.x, newStarCoords.y, name);
                 hideAllContextMenus();
                 contextStarNameInput.value = '';
+                updateLevelOfDetail();
             }
-
             contextStarNameInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') createStarFromContext();
                 if (e.key === 'Escape') hideAllContextMenus();
             });
 
-            // --- ZOOM FUNCTIONALITY ---
-            const scaleBy = 1.1, minScale = 0.1, maxScale = 15.0;
+            // --- OPTIMIZED ZOOM FUNCTIONALITY ---
+            const scaleBy = 1.15;
+            const minScale = 0.05;
+            const maxScale = 20.0;
+            let zoomTimeout = null;
             stage.on('wheel', (e) => {
                 e.evt.preventDefault();
                 hideAllContextMenus();
                 const oldScale = stage.scaleX();
                 const pointer = stage.getPointerPosition();
-                const mousePointTo = { x: (pointer.x - stage.x()) / oldScale, y: (pointer.y - stage.y()) / oldScale };
+                const mousePointTo = {
+                    x: (pointer.x - stage.x()) / oldScale,
+                    y: (pointer.y - stage.y()) / oldScale
+                };
                 let direction = e.evt.deltaY > 0 ? -1 : 1;
                 if (e.evt.ctrlKey) { direction = -direction; }
                 let newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
                 newScale = Math.max(minScale, Math.min(maxScale, newScale));
                 stage.scale({ x: newScale, y: newScale });
-                const newPos = { x: pointer.x - mousePointTo.x * newScale, y: pointer.y - mousePointTo.y * newScale };
+                const newPos = {
+                    x: pointer.x - mousePointTo.x * newScale,
+                    y: pointer.y - mousePointTo.y * newScale
+                };
                 stage.position(newPos);
-                drawGrid();
+                if (zoomTimeout) clearTimeout(zoomTimeout);
+                zoomTimeout = setTimeout(() => {
+                    drawGrid();
+                    updateLevelOfDetail();
+                }, 50);
+
+                // --- FIX: Apply visibility changes to each element in the collection ---
+                // This provides immediate visual feedback during zoom before the debounced update.
+                const scale = stage.scaleX();
+                if (scale < LOD_THRESHOLDS.HIDE_LABELS) {
+                    starsLayer.find('Text').forEach(text => text.visible(false));
+                }
+                const showBgStars = scale > LOD_THRESHOLDS.HIDE_BACKGROUND_STARS;
+                bgLayer.find('.bg-star').forEach(star => star.visible(showBgStars));
+
+                stage.batchDraw();
+            });
+
+            // --- KEYBOARD SHORTCUTS ---
+            document.addEventListener('keydown', (e) => {
+                switch (e.key) {
+                    case 'Delete':
+                    case 'Backspace':
+                        if (selectedNodes.length > 0) { e.preventDefault(); deleteSelection(); }
+                        break;
+                    case 'Escape':
+                        clearSelection(); hideAllContextMenus(); starsLayer.draw();
+                        break;
+                    case 'a': case 'A':
+                        if (e.ctrlKey || e.metaKey) {
+                            e.preventDefault();
+                            clearSelection();
+                            starsLayer.find('.star-group').forEach(group => selectNode(group));
+                            starsLayer.draw();
+                        }
+                        break;
+                }
             });
 
             // --- INITIALIZATION ---
             createStarryBackground();
+            const sol = createStarSystem(200, 300, 'Sol');
+            const alpha = createStarSystem(600, 400, 'Alpha Centauri');
+            const proxima = createStarSystem(400, 600, 'Proxima Centauri');
+            const vega = createStarSystem(-200, 100, 'Vega');
+            const sirius = createStarSystem(800, -200, 'Sirius');
+            createConnection(sol, alpha);
+            createConnection(alpha, proxima);
+            createConnection(sol, vega);
+
             drawGrid();
-            createStarSystem(200, 300, 'Sol');
-            createStarSystem(600, 400, 'Alpha Centauri');
-            const groups = starsLayer.find('.star-group');
-            createConnection(groups[0], groups[1]);
+            updateLevelOfDetail();
+
+            // Initial batch draw for all layers
+            setTimeout(() => {
+                stage.batchDraw();
+            }, 100);
+
+            // Start the unified render loop
+            requestAnimationFrame(mainRenderLoop);
         });
     </script>
 </body>
