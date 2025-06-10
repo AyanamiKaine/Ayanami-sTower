@@ -15,4 +15,56 @@
         <Name>Umbral Cult</Name>
     </Entity>
     
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="Lunara" Abbreviation="SL" LeaderTitle="Matriarch" />
+        <Name>Dual Kindoms of Solar and Lunara</Name>
+    </Entity>
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="Grand Temple" Abbreviation="FH" LeaderTitle="High Seeer" />
+        <Name>Firstborn Houses</Name>
+    </Entity>
+
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="Exchange" Abbreviation="GE" LeaderTitle="" />
+        <Name>Golden Exchange</Name>
+    </Entity>
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="" Abbreviation="" LeaderTitle="" />
+        <Name>Void Trader</Name>
+    </Entity>
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="" Abbreviation="" LeaderTitle="" />
+        <Name>Eternal Spire</Name>
+    </Entity>
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="" Abbreviation="" LeaderTitle="" />
+        <Name>Unified Remnant Collective</Name>
+    </Entity>
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="Kryll" Abbreviation="KI" LeaderTitle="" />
+        <Name>Kryll Imperium</Name>
+    </Entity>
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="" Abbreviation="" LeaderTitle="" />
+        <Name>Fringe Collective</Name>
+    </Entity>
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="" Abbreviation="" LeaderTitle="" />
+        <Name>Symphony of Stars</Name>
+    </Entity>
+
+    <Entity>
+        <Polity SeatOfPowerLocationID="" Abbreviation="" LeaderTitle="" />
+        <Name>Verdant Dominion</Name>
+    </Entity>
+
 </Entities>

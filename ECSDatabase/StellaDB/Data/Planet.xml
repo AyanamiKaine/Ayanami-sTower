@@ -1,30 +1,74 @@
 <Entities>
+
     <Entity Parent="Proxima Centauri">
         <Planet/>
         <Name Value="Proxima Centauri A"/>
     </Entity>
+
     <Entity Parent="Proxima Centauri">
         <Planet/>
         <Name Value="Proxima Centauri B"/>
     </Entity>
+
     <Entity Parent="Sirius">
         <Planet/>
         <Name Value="Sirius A"/>
     </Entity>
+
     <Entity Parent="Sirius">
         <Planet/>
         <Name Value="Sirius B"/>
     </Entity>
+
     <Entity Parent="Sirius">
         <Planet/>
         <Name Value="Veridia"/>
     </Entity>
+
     <Entity Parent="Sirius">
         <Planet/>
         <Name Value="Morian"/>
     </Entity>
+
     <Entity Parent="Sirius">
         <Planet/>
         <Name Value="Abacus"/>
     </Entity>
+
+    <Entity Parent="">
+        <Planet/>
+        <Name Value="Solara"/>
+    </Entity>
+
+    <Entity Parent="">
+        <Planet/>
+        <Name Value="Lunara"/>
+    </Entity>
+
+
+    <Entity Parent="">
+        <Planet/>
+        <Name Value="Kryll Prime"/>
+    </Entity>
+
+   <Entity Parent="">
+        <Planet/>
+        <Name Value="Remnov Prime"/>
+    </Entity>
+
+   <Entity Parent="">
+        <Planet/>
+        <Name Value="Alexei's Haven"/>
+    </Entity>
+
+    <Entity Parent="">
+        <Planet/>
+        <Name Value="Collective Deep"/>
+    </Entity>
+
+    <Entity Parent="">
+        <Planet/>
+        <Name Value="Sylvanus"/>
+    </Entity>
+
 </Entities>

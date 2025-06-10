@@ -1,5 +1,5 @@
 <ManyToManyRelation>
-    <ConnectedTo EntityId1="Sol" EntityId2="Proxima Centauri"/>
+    <ConnectedTo EntityId1="Sol" EntityId2="Proxima Centauri" ConnectionType="Hyperspace Line"/>
     
-    <ConnectedTo EntityId1="Proxima Centauri" EntityId2="Sirius"/>
+    <ConnectedTo EntityId1="Proxima Centauri" EntityId2="Sirius" ConnectionType="Hyperspace Line"/>
 </ManyToManyRelation>

@@ -1,12 +1,25 @@
 <Entities>
 
-    <Entity>
-        <Culture/>
-        <Name Value="Silent Weave"/>
-    </Entity>
 
     <Entity>
         <Culture/>
         <Name Value="Deep Seekers"/>
     </Entity>
+
+    <Entity>
+        <Culture/>
+        <Name Value="Sonari"/>
+    </Entity>
+
+   <Entity>
+        <Culture/>
+        <Name Value="Silentari"/>
+    </Entity>
+
+
+    <Entity>
+        <Culture/>
+        <Name Value="Kryll"/>
+    </Entity>
+
 </Entities>

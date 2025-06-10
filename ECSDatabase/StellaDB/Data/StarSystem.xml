@@ -1,114 +1,137 @@
 <Entities>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Sol"/>
     <Position3D X="0" Y="0" Z="0"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Proxima Centauri"/>
     <Position3D X="30" Y="50" Z="10"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Sirius"/>
     <Position3D X="-60" Y="-20" Z="-20"/>
   </Entity>
-    <Entity Parent="Milky Way">
+
+  <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Alpha Centauri A"/>
     <Position3D X="28" Y="48" Z="11"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Barnard's Star"/>
     <Position3D X="15" Y="-5" Z="40"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Vega"/>
     <Position3D X="-25" Y="80" Z="-15"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Arcturus"/>
     <Position3D X="110" Y="75" Z="-90"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Betelgeuse"/>
     <Position3D X="150" Y="-200" Z="100"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Rigel"/>
     <Position3D X="210" Y="-245" Z="125"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="TRAPPIST-1"/>
     <Position3D X="120" Y="-80" Z="60"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Kepler-186"/>
     <Position3D X="-450" Y="150" Z="-50"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Luhman 16"/>
     <Position3D X="-5" Y="18" Z="-33"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Tau Ceti"/>
     <Position3D X="88" Y="42" Z="-19"/>
   </Entity>
-    <Entity Parent="Milky Way">
+
+  <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Vorash System"/>
     <Position3D X="1050" Y="-800" Z="320"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Aethelgard"/>
     <Position3D X="10" Y="5" Z="15"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Glacian's Fall"/>
     <Position3D X="-450" Y="1200" Z="-750"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Myrrwood Deeps"/>
     <Position3D X="980" Y="450" Z="-200"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Sanctuary Cluster"/>
     <Position3D X="-700" Y="-500" Z="600"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Veridian Reach"/>
     <Position3D X="320" Y="150" Z="80"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="The Ashen Forge"/>
     <Position3D X="1500" Y="-1100" Z="950"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Arboreal Expanse"/>
     <Position3D X="-300" Y="-850" Z="-400"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="Serenity's Crest"/>
     <Position3D X="50" Y="80" Z="30"/>
   </Entity>
+
   <Entity Parent="Milky Way">
     <StarSystem/>
     <Name Value="The Iron Concord"/>

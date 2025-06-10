@@ -9,4 +9,10 @@
         <Ideology/>
         <Name Value="Harmonic Void Theory"/>
     </Entity>
+
+    <Entity>
+        <Ideology/>
+        <Name Value="Remnant Collectivism"/>
+    </Entity>
+
 </Entities>
