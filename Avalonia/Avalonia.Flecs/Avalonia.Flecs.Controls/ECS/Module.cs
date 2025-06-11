@@ -119,6 +119,8 @@ namespace Avalonia.Flecs.Controls.ECS
             world.Import<ECSImage>();
             world.Import<ECSShape>();
             world.Import<ECSRectangle>();
+            world.Import<ECSEllipse>();
+            world.Import<ECSLine>();
             world.Import<ECSViewbox>();
 
             AddUIComponentTags(world);
