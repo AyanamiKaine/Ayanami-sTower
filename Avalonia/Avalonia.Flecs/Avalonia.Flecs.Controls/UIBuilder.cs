@@ -492,6 +492,19 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the text of a TextBlock control.
+    /// </summary>
+    public static void SetZIndex<T>(this UIBuilder<T> builder, int zIndex) where T : Visual
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return;
+
+
+
+        builder.Get<Visual>().ZIndex = zIndex;
+    }
+
+    /// <summary>
     /// Sets the text of a button control by adding a textblock control to it.
     /// This is done so you can easily say button.SetFontSize() and changing the
     /// text size of the textblock
