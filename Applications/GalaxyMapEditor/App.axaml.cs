@@ -232,6 +232,8 @@ namespace GalaxyMapEditor
             // Using a single parent control makes it easy to drag the whole group.
             return parent.Child<StackPanel>((stackPanel) =>
             {
+                stackPanel.SetZIndex(10);
+
                 // --- Add ECS Components to the Entity ---
                 stackPanel.Entity
                     .Set(new Position { X = x, Y = y }) // Set initial position data.
