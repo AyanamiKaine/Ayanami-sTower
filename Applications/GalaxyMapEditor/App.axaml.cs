@@ -319,7 +319,7 @@ namespace GalaxyMapEditor
         /// <param name="parent">The canvas builder.</param>
         /// <param name="starSystemA">The first star system's builder.</param>
         /// <param name="starSystemB">The second star system's builder.</param>
-        private void ConnectTwoStarSystems(UIBuilder<Canvas> parent, UIBuilder<Control> starSystemA, UIBuilder<Control> starSystemB)
+        private static void ConnectTwoStarSystems(UIBuilder<Canvas> parent, UIBuilder<Control> starSystemA, UIBuilder<Control> starSystemB)
         {
             parent.Child<Line>((line) =>
             {
