@@ -11,6 +11,21 @@ using AyanamisTower.StellaSharedMemory;
 namespace AyanamisTower.StellaSharedMemory;
 
 /// <summary>
+/// Defines the behavior of the Write method when the buffer is full.
+/// </summary>
+public enum WriteBehavior
+{
+    /// <summary>
+    /// The writer will overwrite the oldest messages if the buffer is full. (Default)
+    /// </summary>
+    Overwrite,
+    /// <summary>
+    /// The writer will block and wait for a reader to consume messages and free up space.
+    /// </summary>
+    Block
+}
+
+/// <summary>
 /// A lightweight static helper to manage atomic operations on the shared buffer header.
 /// The header contains the write position and ticket lock values for multi-writer synchronization.
 /// </summary>
@@ -21,10 +36,18 @@ internal static class SharedHeader
     // 8-15:  Capacity - The total capacity of the data buffer (excluding the header).
     // 16-23: NextTicket - The next available ticket number for a writer.
     // 24-31: CurrentTicket - The ticket number of the writer currently holding the lock.
+    // 32-..: ReaderPositions - A registry for active readers and their current positions.
     public const int WritePosOffset = 0;
     public const int CapacityOffset = 8;
     public const int NextTicketOffset = 16;
     public const int CurrentTicketOffset = 24;
+    public const int ReaderRegistryOffset = 32;
+
+    // We'll reserve space for up to 64 readers. Each reader entry is a long (8 bytes).
+    public const int MaxReaders = 64;
+    public const int ReaderRegistrySize = MaxReaders * sizeof(long);
+    public const int HeaderSize = ReaderRegistryOffset + ReaderRegistrySize;
+
 
     public static unsafe long GetWritePositionVolatile(MemoryMappedViewAccessor accessor)
     {
@@ -42,76 +65,68 @@ internal static class SharedHeader
         finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
     }
 
-    // --- Ticket Lock Helpers ---
-    // The ticket lock system provides a fair, FIFO (First-In, First-Out) queue for multiple writers.
-    // It works like a deli counter:
-    // 1. A writer arrives and takes a number (`NextTicket`).
-    // 2. The writer waits until its number is called (`CurrentTicket`).
-    // 3. When finished, the writer increments the "now serving" number (`CurrentTicket`), allowing the next writer to proceed.
-    // This prevents writer starvation and ensures order.
+    // --- Reader Registry Helpers ---
 
     /// <summary>
-    /// Atomically increments the `NextTicket` counter and returns the *new* value.
-    /// The caller's ticket is the value *before* the increment, so it should use `result - 1`.
-    /// This is the "take a number" step.
+    /// Gets the slowest read position from all registered readers.
     /// </summary>
+    public static unsafe long GetMinimumReaderPosition(MemoryMappedViewAccessor accessor)
+    {
+        long minPos = long.MaxValue;
+        bool anyActive = false;
+        byte* ptr = (byte*)0;
+        accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
+        try
+        {
+            long* readerPtr = (long*)(ptr + ReaderRegistryOffset);
+            for (int i = 0; i < MaxReaders; i++)
+            {
+                long pos = Volatile.Read(ref readerPtr[i]);
+                // A position of -1 indicates an inactive/unregistered reader slot.
+                if (pos != -1)
+                {
+                    anyActive = true;
+                    if (pos < minPos)
+                    {
+                        minPos = pos;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
+
+        // If no readers are active, return the current write position to prevent blocking.
+        return anyActive ? minPos : GetWritePositionVolatile(accessor);
+    }
+
+    // --- Ticket Lock Helpers ---
     public static unsafe long GetNextTicket(MemoryMappedViewAccessor accessor)
     {
         byte* ptr = (byte*)0;
         accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-        try
-        {
-            // Interlocked.Increment is an atomic operation, crucial for preventing race conditions
-            // where multiple writers might try to get a ticket at the same time.
-            return Interlocked.Increment(ref ((long*)(ptr + NextTicketOffset))[0]);
-        }
-        finally
-        {
-            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-        }
+        try { return Interlocked.Increment(ref ((long*)(ptr + NextTicketOffset))[0]); }
+        finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
     }
 
-    /// <summary>
-    /// Reads the `CurrentTicket`, which is the ticket currently being "served".
-    /// A writer compares its own ticket to this value to know when it's their turn.
-    /// This is the "check the 'now serving' display" step.
-    /// </summary>
     public static unsafe long GetCurrentTicket(MemoryMappedViewAccessor accessor)
     {
         byte* ptr = (byte*)0;
         accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-        try
-        {
-            // Volatile.Read ensures we get the latest value written by any process.
-            return Volatile.Read(ref ((long*)(ptr + CurrentTicketOffset))[0]);
-        }
-        finally
-        {
-            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-        }
+        try { return Volatile.Read(ref ((long*)(ptr + CurrentTicketOffset))[0]); }
+        finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
     }
 
-    /// <summary>
-    /// Atomically increments the `CurrentTicket`, signaling that the current writer is done
-    /// and the next writer in the queue can proceed.
-    /// This is the "call the next number" step.
-    /// </summary>
     public static unsafe void AdvanceCurrentTicket(MemoryMappedViewAccessor accessor)
     {
         byte* ptr = (byte*)0;
         accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-        try
-        {
-            // Using Interlocked.Increment ensures this operation is atomic.
-            Interlocked.Increment(ref ((long*)(ptr + CurrentTicketOffset))[0]);
-        }
-        finally
-        {
-            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
-        }
+        try { Interlocked.Increment(ref ((long*)(ptr + CurrentTicketOffset))[0]); }
+        finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
     }
 }
-
 
 /// <summary>
 /// A circular buffer optimized for multiple producers (writers) and multiple consumers (readers).
@@ -119,11 +134,10 @@ internal static class SharedHeader
 /// </summary>
 public class MultiWriterCircularBuffer : IDisposable
 {
-    private const int HeaderSize = 32;
-
     private readonly MemoryMappedFile _mmf;
     private readonly MemoryMappedViewAccessor _accessor;
     private readonly long _dataBufferCapacity;
+    private readonly WriteBehavior _writeBehavior;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MultiWriterCircularBuffer"/> class.
@@ -131,15 +145,16 @@ public class MultiWriterCircularBuffer : IDisposable
     /// <param name="name">The name of the shared memory segment.</param>
     /// <param name="mode">The mode to open the shared memory (Create or Open).</param>
     /// <param name="capacity">The capacity of the buffer in bytes. Required when mode is Create.</param>
-    public MultiWriterCircularBuffer(string name, SharedMemoryMode mode, long capacity = 0)
+    /// <param name="behavior">The behavior to use when the buffer is full. Defaults to Overwrite.</param>
+    public MultiWriterCircularBuffer(string name, SharedMemoryMode mode, long capacity = 0, WriteBehavior behavior = WriteBehavior.Overwrite)
     {
-        if (mode == SharedMemoryMode.Create && capacity <= HeaderSize)
+        if (mode == SharedMemoryMode.Create && capacity <= SharedHeader.HeaderSize)
         {
             throw new ArgumentException("Capacity must be larger than the header size.", nameof(capacity));
         }
 
+        _writeBehavior = behavior;
         string mmfPath = Path.Combine(GetSharedDirectory(), name);
-
         FileMode fileMode = mode == SharedMemoryMode.Create ? FileMode.Create : FileMode.Open;
 
         using (var fs = new FileStream(mmfPath, fileMode, FileAccess.ReadWrite, FileShare.ReadWrite))
@@ -152,12 +167,17 @@ public class MultiWriterCircularBuffer : IDisposable
 
         if (mode == SharedMemoryMode.Create)
         {
-            _dataBufferCapacity = capacity - HeaderSize;
+            _dataBufferCapacity = capacity - SharedHeader.HeaderSize;
             _accessor.Write(SharedHeader.CapacityOffset, _dataBufferCapacity);
             SharedHeader.SetWritePositionVolatile(_accessor, 0);
-            // Initialize ticket system
             _accessor.Write(SharedHeader.NextTicketOffset, 0L);
             _accessor.Write(SharedHeader.CurrentTicketOffset, 0L);
+
+            // Initialize reader registry with -1 (inactive)
+            for (int i = 0; i < SharedHeader.MaxReaders; i++)
+            {
+                _accessor.Write(SharedHeader.ReaderRegistryOffset + (i * sizeof(long)), -1L);
+            }
         }
         else
         {
@@ -172,28 +192,41 @@ public class MultiWriterCircularBuffer : IDisposable
     /// <exception cref="ArgumentException">Thrown when the message is larger than the buffer capacity.</exception>
     public void Write(byte[] message)
     {
-        AcquireLock(); // This now uses the ticket lock logic
+        long requiredSpace = message.Length + 4;
+        if (requiredSpace > _dataBufferCapacity)
+        {
+            throw new ArgumentException("Message is larger than the buffer capacity.", nameof(message));
+        }
+
+        AcquireLock();
         try
         {
-            long requiredSpace = message.Length + 4;
-            if (requiredSpace > _dataBufferCapacity)
+            if (_writeBehavior == WriteBehavior.Block)
             {
-                throw new ArgumentException("Message is larger than the buffer capacity.", nameof(message));
+                WaitForSpace(requiredSpace);
             }
 
-            long currentWritePos = _accessor.ReadInt64(0); // Remember non-volatile read is fine inside lock
+            long currentWritePos = _accessor.ReadInt64(SharedHeader.WritePosOffset);
 
+            // Check for wrap-around
             if (currentWritePos + requiredSpace > _dataBufferCapacity)
             {
+                // Before wrapping, check if the wrapped write would overwrite the slowest reader.
+                if (_writeBehavior == WriteBehavior.Block)
+                {
+                    WaitForWrapSpace(requiredSpace);
+                }
+
+                // Write a zero-length message as a wrap-around marker
                 if (currentWritePos + 4 <= _dataBufferCapacity)
                 {
-                    _accessor.Write(HeaderSize + (int)currentWritePos, 0);
+                    _accessor.Write(SharedHeader.HeaderSize + (int)currentWritePos, 0);
                 }
-                currentWritePos = 0;
+                currentWritePos = 0; // Wrap to the beginning
             }
 
-            _accessor.Write(HeaderSize + (int)currentWritePos, message.Length);
-            _accessor.WriteArray(HeaderSize + (int)currentWritePos + 4, message, 0, message.Length);
+            _accessor.Write(SharedHeader.HeaderSize + (int)currentWritePos, message.Length);
+            _accessor.WriteArray(SharedHeader.HeaderSize + (int)currentWritePos + 4, message, 0, message.Length);
 
             long nextWritePos = currentWritePos + requiredSpace;
 
@@ -201,27 +234,61 @@ public class MultiWriterCircularBuffer : IDisposable
         }
         finally
         {
-            ReleaseLock(); // This now advances the ticket
+            ReleaseLock();
+        }
+    }
+
+    private void WaitForSpace(long requiredSpace)
+    {
+        var spinner = new SpinWait();
+        while (true)
+        {
+            long writePos = SharedHeader.GetWritePositionVolatile(_accessor);
+            long minReadPos = SharedHeader.GetMinimumReaderPosition(_accessor);
+
+            // If minReadPos is "behind" writePos, it's a simple calculation.
+            // If minReadPos is "ahead" of writePos, it means the readers have wrapped around while the writer has not.
+            bool hasWrapped = writePos < minReadPos;
+            long freeSpace = hasWrapped
+                ? minReadPos - writePos
+                : (_dataBufferCapacity - writePos) + minReadPos;
+
+            if (freeSpace > requiredSpace)
+            {
+                return; // Enough space
+            }
+            spinner.SpinOnce(-1);
+        }
+    }
+
+    private void WaitForWrapSpace(long requiredSpace)
+    {
+        var spinner = new SpinWait();
+        while (true)
+        {
+            long minReadPos = SharedHeader.GetMinimumReaderPosition(_accessor);
+            // If the slowest reader is at position 0, we can't wrap.
+            // If the required space is larger than the slowest reader's position, we can't wrap.
+            if (minReadPos > 0 && requiredSpace < minReadPos)
+            {
+                return; // Enough space at the start of the buffer
+            }
+            spinner.SpinOnce(-1);
         }
     }
 
     private void AcquireLock()
     {
-        // 1. Atomically get our ticket number.
         long myTicket = SharedHeader.GetNextTicket(_accessor) - 1;
-
-        // 2. Wait until the current ticket matches ours.
-        // SpinWait is an efficient way to wait for short periods without yielding the thread immediately.
         var spinner = new SpinWait();
         while (SharedHeader.GetCurrentTicket(_accessor) != myTicket)
         {
-            spinner.SpinOnce(-1); // A parameter of -1 is optimized for yielding on multi-core systems.
+            spinner.SpinOnce(-1);
         }
     }
 
     private void ReleaseLock()
     {
-        // 3. Our work is done, advance the ticket to let the next process in.
         SharedHeader.AdvanceCurrentTicket(_accessor);
     }
 
@@ -242,28 +309,27 @@ public class MultiWriterCircularBuffer : IDisposable
 /// </summary>
 public class LockFreeBufferReader : IDisposable
 {
-    private const int HeaderSize = 32;
-    private readonly string _readerStatePath;
     private readonly MemoryMappedFile _mmf;
     private readonly MemoryMappedViewAccessor _accessor;
     private long _currentReadPos;
+    private readonly int _readerSlot;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="LockFreeBufferReader"/> class.
     /// </summary>
     /// <param name="logName">The name of the shared memory segment to read from.</param>
-    /// <param name="readerName">The unique name for this reader instance.</param>
-    public LockFreeBufferReader(string logName, string readerName)
+    public LockFreeBufferReader(string logName)
     {
-        _readerStatePath = Path.Combine(GetSharedDirectory(), $"{logName}-reader-{readerName}.state");
-
         string mmfPath = Path.Combine(GetSharedDirectory(), logName);
-        var fs = new FileStream(mmfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        var fs = new FileStream(mmfPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
 
-        _mmf = MemoryMappedFile.CreateFromFile(fs, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, false);
-        _accessor = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+        _mmf = MemoryMappedFile.CreateFromFile(fs, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+        // Open with ReadWrite access to update our position in the header
+        _accessor = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite);
 
-        _currentReadPos = LoadReaderState() ?? SharedHeader.GetWritePositionVolatile(_accessor);
+        _readerSlot = RegisterReader();
+        _currentReadPos = SharedHeader.GetWritePositionVolatile(_accessor);
+        UpdateReaderPosition(_currentReadPos);
     }
 
     /// <summary>
@@ -276,45 +342,72 @@ public class LockFreeBufferReader : IDisposable
 
         if (_currentReadPos == writePos) return null;
 
+        // This handles the case where the writer has wrapped around but we haven't yet.
         if (_currentReadPos > writePos)
         {
-            _currentReadPos = writePos;
-            // We should give the user to option to manually safe, or to activate the automatic safe here
-            // safing the reader state is a high latency operation because it results in a context switch.
-            //SaveReaderState(_currentReadPos);
-            return null;
+            _currentReadPos = 0; // Follow the wrap
         }
 
-        int messageLength = _accessor.ReadInt32(HeaderSize + _currentReadPos);
+        int messageLength = _accessor.ReadInt32(SharedHeader.HeaderSize + _currentReadPos);
 
+        // A zero-length message is a signal that the writer has wrapped around.
         if (messageLength == 0)
         {
             _currentReadPos = 0;
-            //SaveReaderState(_currentReadPos);
+            UpdateReaderPosition(_currentReadPos);
+            // After wrapping, immediately try to read from the new position.
             return Read();
         }
 
+        if (_currentReadPos + 4 + messageLength > writePos && writePos > _currentReadPos)
+        {
+            // The writer has not yet finished writing this message fully.
+            return null;
+        }
+
         byte[] message = new byte[messageLength];
-        _accessor.ReadArray(HeaderSize + _currentReadPos + 4, message, 0, messageLength);
+        _accessor.ReadArray(SharedHeader.HeaderSize + _currentReadPos + 4, message, 0, messageLength);
 
         _currentReadPos += messageLength + 4;
-        //SaveReaderState(_currentReadPos);
+        UpdateReaderPosition(_currentReadPos);
 
         return message;
     }
 
-    private long? LoadReaderState()
+    private int RegisterReader()
     {
-        if (!File.Exists(_readerStatePath)) return null;
-        try { return BitConverter.ToInt64(File.ReadAllBytes(_readerStatePath)); }
-        catch { return null; }
+        for (int i = 0; i < SharedHeader.MaxReaders; i++)
+        {
+            long offset = SharedHeader.ReaderRegistryOffset + (i * sizeof(long));
+            // Attempt to claim an empty slot (-1) by setting it to 0.
+            long currentValue = Interlocked.CompareExchange(ref GetRef(offset), 0, -1);
+            if (currentValue == -1)
+            {
+                return i; // Successfully claimed slot i
+            }
+        }
+        throw new InvalidOperationException("Maximum number of readers reached.");
     }
 
-    // Maybe turning this to a public method?
-    private void SaveReaderState(long position)
+    private void UnregisterReader()
     {
-        try { File.WriteAllBytes(_readerStatePath, BitConverter.GetBytes(position)); }
-        catch { /* Handle errors */ }
+        if (_readerSlot != -1)
+        {
+            // Set our slot back to -1 to mark it as inactive.
+            UpdateReaderPosition(-1);
+        }
+    }
+
+    private void UpdateReaderPosition(long position)
+    {
+        Volatile.Write(ref GetRef(SharedHeader.ReaderRegistryOffset + (_readerSlot * sizeof(long))), position);
+    }
+
+    private unsafe ref long GetRef(long offset)
+    {
+        byte* ptr = (byte*)0;
+        _accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
+        return ref *(long*)(ptr + offset);
     }
 
     private static string GetSharedDirectory() => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/shm" : Path.GetTempPath();
@@ -322,6 +415,7 @@ public class LockFreeBufferReader : IDisposable
     /// <inheritdoc/>
     public void Dispose()
     {
+        UnregisterReader();
         _accessor?.Dispose();
         _mmf?.Dispose();
         GC.SuppressFinalize(this);
