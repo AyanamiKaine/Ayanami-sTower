@@ -56,6 +56,18 @@ namespace GalaxyMapEditor
     /// </summary>
     public struct Draggable { }
 
+    /// <summary>
+    /// A component to hold the state of the canvas's transformation (zoom and pan).
+    /// </summary>
+    public struct CanvasTransform
+    {
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        public double Scale;
+        public double TranslateX;
+        public double TranslateY;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+    }
+
 
     /// <summary>
     /// Galaxy map editor
@@ -81,6 +93,11 @@ namespace GalaxyMapEditor
         private Point _dragStartPoint; // Position where the drag started relative to the control
         private Point _lastMousePosition; // Last known mouse position on the canvas for context menu
 
+        private Entity _canvasTransformEntity; // Single entity to hold the CanvasTransform component.
+
+        private bool _isPanning;
+        private Point _panStartMousePosition;
+
         /// <inheritdoc/>
         public override void Initialize()
         {
@@ -93,6 +110,10 @@ namespace GalaxyMapEditor
             _world.Component<StarSystem>();
             _world.Component<Connection>();
             _world.Component<Draggable>();
+            _world.Component<CanvasTransform>();
+
+            _canvasTransformEntity = _world.Entity("CanvasTransformSingleton")
+                                           .Set(new CanvasTransform { Scale = 1.0, TranslateX = 0, TranslateY = 0 });
 
             AvaloniaXamlLoader.Load(this);
 
@@ -119,6 +140,9 @@ namespace GalaxyMapEditor
                         var canvasBuilder = grid.Child<Canvas>((canvas) =>
                         {
                             canvas.SetBackground(new SolidColorBrush(Colors.Transparent)); // Ensure canvas can receive input
+                                                                                           // Attach the canvas control to our transform entity so the system can find it.
+                            var canvasControl = canvas.Get<Canvas>();
+                            _canvasTransformEntity.Set(canvasControl);
 
                             // This rectangle acts as the background and the target for the "Add Star System" context menu.
                             canvas.Child<Rectangle>((rectangle) =>
@@ -126,7 +150,8 @@ namespace GalaxyMapEditor
                                 rectangle
                                     .SetFill(new SolidColorBrush(Color.FromArgb(50, 0, 0, 20))) // A dark blue space background
                                     .SetWidth(5000)
-                                    .SetHeight(5000);
+                                    .SetHeight(5000)
+                                    .SetZIndex(-10);
 
                                 // The context menu for the background
                                 var menu = _world.UI<MenuFlyout>(
@@ -140,8 +165,11 @@ namespace GalaxyMapEditor
                                                     .SetHeader("Add Star System")
                                                     .OnClick((_, _) =>
                                                     {
-                                                        // Create a new star system at the last clicked position
-                                                        CreateStarSystem(canvas, _lastMousePosition.X, _lastMousePosition.Y);
+                                                        ref readonly var transform = ref _canvasTransformEntity.Get<CanvasTransform>();
+                                                        // Transform mouse position from screen space to world space for correct placement.
+                                                        var worldX = (_lastMousePosition.X - transform.TranslateX) / transform.Scale;
+                                                        var worldY = (_lastMousePosition.Y - transform.TranslateY) / transform.Scale;
+                                                        CreateStarSystem(canvas, worldX, worldY);
                                                     });
                                             }
                                         );
@@ -157,12 +185,75 @@ namespace GalaxyMapEditor
                             // Connect the two star systems
                             ConnectTwoStarSystems(canvas, starSystemA, starSystemB);
                         });
+
+                        grid
+                                                .OnPointerWheelChanged((_, e) => HandleZoom(e))
+                                                .OnPointerPressed((s, e) =>
+                                                {
+                                                    var pointProps = e.GetCurrentPoint(s as Visual).Properties;
+                                                    if (pointProps.IsMiddleButtonPressed)
+                                                    {
+                                                        _isPanning = true;
+                                                        _panStartMousePosition = e.GetPosition(null); // Position relative to top-level window
+                                                        e.Pointer.Capture(s as InputElement);
+                                                        e.Handled = true;
+                                                    }
+                                                })
+                                                .OnPointerMoved((s, e) =>
+                                                {
+                                                    _lastMousePosition = e.GetPosition(s as Visual); // Track mouse for context menu
+                                                    if (_isPanning)
+                                                    {
+                                                        HandlePan(e);
+                                                    }
+                                                })
+                                                .OnPointerReleased((s, e) =>
+                                                {
+                                                    if (_isPanning)
+                                                    {
+                                                        _isPanning = false;
+                                                        e.Pointer.Capture(null);
+                                                        e.Handled = true;
+                                                    }
+                                                });
+
+
                     });
                 });
             _mainWindow = MainWindow.Get<Window>();
 
             // --- Initialize ECS Systems ---
             InitializeSystems();
+        }
+
+        private void HandleZoom(PointerWheelEventArgs e)
+        {
+            ref var transform = ref _canvasTransformEntity.GetMut<CanvasTransform>();
+            var oldScale = transform.Scale;
+            var newScale = oldScale * (e.Delta.Y > 0 ? 1.1 : 1 / 1.1);
+            newScale = Math.Clamp(newScale, 0.1, 5.0); // Clamp zoom level
+
+            // Get the mouse position relative to the grid that contains the canvas
+            var mousePos = e.GetPosition(e.Source as Control);
+
+            // Calculate the new translation to keep the point under the mouse stationary
+            transform.TranslateX = mousePos.X - (mousePos.X - transform.TranslateX) * (newScale / oldScale);
+            transform.TranslateY = mousePos.Y - (mousePos.Y - transform.TranslateY) * (newScale / oldScale);
+            transform.Scale = newScale;
+
+            e.Handled = true;
+        }
+
+        private void HandlePan(PointerEventArgs e)
+        {
+            var currentMousePosition = e.GetPosition(null); // Position relative to top-level window
+            var delta = currentMousePosition - _panStartMousePosition;
+
+            ref var transform = ref _canvasTransformEntity.GetMut<CanvasTransform>();
+            transform.TranslateX += delta.X;
+            transform.TranslateY += delta.Y;
+
+            _panStartMousePosition = currentMousePosition; // Update start position for next move event
         }
 
         /// <summary>
@@ -208,6 +299,35 @@ namespace GalaxyMapEditor
                     line.EndPoint = endPoint;
                 });
 
+            _world.System<CanvasTransform, Canvas>("UpdateCanvasTransform")
+            .Each((ref CanvasTransform transform, ref Canvas canvas) =>
+            {
+                if (canvas.RenderTransform is not TransformGroup group)
+                {
+                    // Initialize the transforms if they don't exist.
+                    var scale = new ScaleTransform(transform.Scale, transform.Scale);
+                    var translate = new TranslateTransform(transform.TranslateX, transform.TranslateY);
+                    group = new TransformGroup();
+                    group.Children.Add(scale);
+                    group.Children.Add(translate);
+                    canvas.RenderTransform = group;
+                }
+
+                var scaleTransform = group.Children[0] as ScaleTransform;
+                var translateTransform = group.Children[1] as TranslateTransform;
+
+                if (scaleTransform != null)
+                {
+                    scaleTransform.ScaleX = transform.Scale;
+                    scaleTransform.ScaleY = transform.Scale;
+                }
+                if (translateTransform != null)
+                {
+                    translateTransform.X = transform.TranslateX;
+                    translateTransform.Y = transform.TranslateY;
+                }
+            });
+
             // Set the world to run these systems automatically.
             // For a UI app, running on a timer is a good approach.
             var worldProgressTimer = new DispatcherTimer
@@ -232,7 +352,7 @@ namespace GalaxyMapEditor
             // Using a single parent control makes it easy to drag the whole group.
             return parent.Child<StackPanel>((stackPanel) =>
             {
-                stackPanel.SetZIndex(10);
+                stackPanel.SetZIndex(1);
 
                 // --- Add ECS Components to the Entity ---
                 stackPanel.Entity
@@ -324,6 +444,7 @@ namespace GalaxyMapEditor
             parent.Child<Line>((line) =>
             {
                 line
+                    .SetZIndex(0)
                     .SetStroke(new SolidColorBrush(Color.FromRgb(100, 100, 200)))
                     .SetStrokeThickness(2);
 
