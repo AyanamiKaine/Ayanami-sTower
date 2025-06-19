@@ -20,6 +20,9 @@
     <PackageVersion Include="Flecs.NET.Release" Version="4.0.4-build.548" />
     <!--End-->
     <PackageVersion Include="MemoryPack" Version="1.21.4" />
+    <PackageVersion Include="MessagePack" Version="3.1.4" />
+    <PackageVersion Include="System.Formats.Cbor" Version="9.0.6" />
+    <PackageVersion Include="protobuf-net" Version="3.2.52" />
     <PackageVersion Include="MagicOnion.Server" Version="7.0.4" />
     <PackageVersion Include="MagicOnion.Client" Version="7.0.4" />
     <PackageVersion Include="Metalama.Framework" Version="2025.1.5" />
