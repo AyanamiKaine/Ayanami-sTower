@@ -194,6 +194,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaSharedM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaSharedMemory.Tests", "Tests\AyanamisTower.StellaSharedMemory.Tests\AyanamisTower.StellaSharedMemory.Tests.csproj", "{E68102F3-7704-43C5-ACE0-320745B3525F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DynamicWorld", "DynamicWorld", "{8B265BDF-09AA-7A04-EED3-AA244C06BB7E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatternMatchingDynamicWorld", "Explorations\DynamicWorld\PatternMatchingDynamicWorld\PatternMatchingDynamicWorld.csproj", "{51C6F9D1-3755-4772-B18E-7F26480CAB38}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -996,6 +1000,18 @@ Global
 		{E68102F3-7704-43C5-ACE0-320745B3525F}.Release|x64.Build.0 = Release|Any CPU
 		{E68102F3-7704-43C5-ACE0-320745B3525F}.Release|x86.ActiveCfg = Release|Any CPU
 		{E68102F3-7704-43C5-ACE0-320745B3525F}.Release|x86.Build.0 = Release|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Debug|x64.Build.0 = Debug|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Debug|x86.Build.0 = Debug|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|x64.ActiveCfg = Release|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|x64.Build.0 = Release|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|x86.ActiveCfg = Release|Any CPU
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1074,5 +1090,7 @@ Global
 		{67B9359A-0D6F-43F8-9C65-FA5759191CE3} = {66320409-64EC-F7C5-3DEF-65E7510DAAD1}
 		{6EDA5562-3300-4392-A925-DEEAE076F376} = {6A4E8F47-C8EA-47C9-E659-E3CCD80E8011}
 		{E68102F3-7704-43C5-ACE0-320745B3525F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{8B265BDF-09AA-7A04-EED3-AA244C06BB7E} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
+		{51C6F9D1-3755-4772-B18E-7F26480CAB38} = {8B265BDF-09AA-7A04-EED3-AA244C06BB7E}
 	EndGlobalSection
 EndGlobal
