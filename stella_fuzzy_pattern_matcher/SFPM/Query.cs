@@ -1,5 +1,6 @@
-using System.Diagnostics.CodeAnalysis;
 using NLog;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace AyanamisTower.SFPM;
 
@@ -25,10 +26,10 @@ public class Query
     }
 
     /// <summary>
-    /// Matches the query's fact source against a list of rules.
+    /// Matches the query's fact source against a collection of rules.
     /// </summary>
-    /// <param name="rules">The list of rules to match against.</param>
-    public void Match(List<Rule> rules)
+    /// <param name="rules">The collection of rules to match against.</param>
+    public void Match(IEnumerable<Rule> rules)
     {
         ArgumentNullException.ThrowIfNull(rules);
         Logger.ConditionalDebug(
