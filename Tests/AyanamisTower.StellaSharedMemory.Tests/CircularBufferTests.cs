@@ -51,7 +51,7 @@ public class CircularBufferTests : IDisposable
         var message = Encoding.UTF8.GetBytes("Hello, Stella!");
 
         using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity);
-        using var reader = new LockFreeBufferReader(name, "Reader1");
+        using var reader = new LockFreeBufferReader(name);
 
         // Act
         writer.Write(message);
@@ -71,7 +71,7 @@ public class CircularBufferTests : IDisposable
         var originalMessage = new TestMessage(1, "Live long and prosper.", DateTime.UtcNow);
 
         using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity);
-        using var reader = new LockFreeBufferReader(name, "Reader1");
+        using var reader = new LockFreeBufferReader(name);
 
         // Act
         writer.Write(originalMessage, _serializer);
@@ -94,7 +94,7 @@ public class CircularBufferTests : IDisposable
         var capacity = 1024;
 
         using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity);
-        using var reader = new LockFreeBufferReader(name, "Reader1");
+        using var reader = new LockFreeBufferReader(name);
 
         // Act
         var result = reader.TryRead(_serializer, out TestMessage? message);
@@ -111,7 +111,7 @@ public class CircularBufferTests : IDisposable
         var name = GetUniqueName("ReadEmptyTest");
         var capacity = 1024;
         using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity);
-        using var reader = new LockFreeBufferReader(name, "Reader1");
+        using var reader = new LockFreeBufferReader(name);
 
         // Act
         var readMessage = reader.Read();
@@ -125,30 +125,36 @@ public class CircularBufferTests : IDisposable
     {
         // Arrange
         var name = GetUniqueName("WrapAroundOverwriteTest");
-        var capacity = 128; // Small capacity to force a wrap and overwrite.
-        var message1 = new byte[80];
-        var message2 = new byte[30];
-        Array.Fill(message1, (byte) 1);
-        Array.Fill(message2, (byte) 2);
+        var capacity = 2048; // Small capacity to force a wrap
+        var message1 = new byte[400];
+        var message2 = new byte[400];
+        var message3 = new byte[400]; // This will overwrite message1
+        Array.Fill(message1, (byte)1);
+        Array.Fill(message2, (byte)2);
+        Array.Fill(message3, (byte)3);
 
-        using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity);
-        using var reader = new LockFreeBufferReader(name, "Reader1");
+        using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity, WriteBehavior.Overwrite);
+        using var reader = new LockFreeBufferReader(name);
 
         // Act
-        writer.Write(message1); // This fills most of the buffer.
-        writer.Write(message2); // This wraps around and overwrites the start of message1.
+        writer.Write(message1);
+        writer.Write(message2);
+        // At this point the buffer is full. The next write will wrap around.
+
+        // Reader reads the first message, advancing its position.
+        Assert.Equal(message1, reader.Read());
+
+        // Now writer writes the third message. Since the reader has moved,
+        // it overwrites the space previously held by message1.
+        writer.Write(message3);
 
         // Assert
-        // The reader starts at the beginning, where message2 has been written.
-        var readMessage = reader.Read();
-        var shouldBeNull = reader.Read();
+        var readMsg2 = reader.Read();
+        var readMsg3 = reader.Read();
 
-        // We should read message2 because it overwrote message1.
-        Assert.NotNull(readMessage);
-        Assert.Equal(message2, readMessage);
-
-        // After reading the only message, the buffer should appear empty to the reader.
-        Assert.Null(shouldBeNull);
+        Assert.Equal(message2, readMsg2);
+        Assert.Equal(message3, readMsg3); // We read message3 because it overwrote message1's slot
+        Assert.Null(reader.Read());
     }
 
     [Fact]
@@ -156,8 +162,8 @@ public class CircularBufferTests : IDisposable
     {
         // Arrange
         var name = GetUniqueName("TooLargeTest");
-        var capacity = 100;
-        var largeMessage = new byte[200];
+        var capacity = 1000;
+        var largeMessage = new byte[2000];
 
         using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity);
 
@@ -176,8 +182,8 @@ public class CircularBufferTests : IDisposable
         var message2 = Encoding.UTF8.GetBytes("Message 2");
 
         using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity);
-        using var reader1 = new LockFreeBufferReader(name, "Reader1");
-        using var reader2 = new LockFreeBufferReader(name, "Reader2");
+        using var reader1 = new LockFreeBufferReader(name);
+        using var reader2 = new LockFreeBufferReader(name);
 
         // Act: Write two messages
         writer.Write(message1);
@@ -208,7 +214,7 @@ public class CircularBufferTests : IDisposable
         // FIX: The reader must be created BEFORE the writers start.
         // This ensures its initial read position is at the beginning of the buffer (0),
         // not at the end of the buffer after all writes are complete.
-        using var reader = new LockFreeBufferReader(name, "Reader1");
+        using var reader = new LockFreeBufferReader(name);
         var tasks = new List<Task>();
 
         // Act
@@ -268,6 +274,87 @@ public class CircularBufferTests : IDisposable
                 }
             }
         }
+    }
+
+    // --- Backpressure Tests ---
+
+    [Fact]
+    public async Task Writer_Blocks_When_Buffer_Is_Full_And_Unblocks_After_Read()
+    {
+        // Arrange
+        var name = GetUniqueName("BlockUnblockTest");
+        const int capacity = 2048; // Capacity for ~3 messages
+        var message1 = new byte[400];
+        var message2 = new byte[400];
+        var message3 = new byte[400];
+        Array.Fill(message1, (byte)1);
+        Array.Fill(message2, (byte)2);
+        Array.Fill(message3, (byte)3);
+
+        using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity, WriteBehavior.Block);
+        using var reader = new LockFreeBufferReader(name);
+
+        // Act
+        writer.Write(message1);
+        writer.Write(message2);
+
+        var writerTask = Task.Run(() => writer.Write(message3));
+
+        // Assert
+        var isBlocked = await Task.WhenAny(writerTask, Task.Delay(500)) == writerTask;
+        Assert.True(isBlocked, "Writer should block when buffer is full.");
+
+        var readMsg1 = reader.Read();
+        Assert.Equal(message1, readMsg1);
+
+        var completedTask = await Task.WhenAny(writerTask, Task.Delay(500));
+        var completedInTime = completedTask == writerTask;
+        Assert.True(completedInTime, "Writer should unblock and complete after a read.");
+
+        await writerTask; // Ensure the writer task is complete
+
+        var readMsg2 = reader.Read();
+        var readMsg3 = reader.Read();
+        Assert.Equal(message2, readMsg2);
+    }
+
+    [Fact]
+    public async Task Writer_Blocks_On_Slowest_Reader()
+    {
+        // Arrange
+        var name = GetUniqueName("SlowestReaderTest");
+        var capacity = 2048;
+        var message1 = new byte[400];
+        var message2 = new byte[400];
+        var message3 = new byte[400];
+
+        using var writer = new MultiWriterCircularBuffer(name, SharedMemoryMode.Create, capacity, WriteBehavior.Block);
+        using var fastReader = new LockFreeBufferReader(name);
+        using var slowReader = new LockFreeBufferReader(name);
+
+        // Act
+        writer.Write(message1);
+        writer.Write(message2);
+
+        Assert.Equal(message1, fastReader.Read());
+        Assert.Equal(message2, fastReader.Read());
+
+        var writerTask = Task.Run(() => writer.Write(message3));
+
+        // Assert
+        var isBlocked = await Task.WhenAny(writerTask, Task.Delay(500)) == writerTask;
+        Assert.True(isBlocked, "Writer should block based on the slowest reader.");
+
+        Assert.Equal(message1, slowReader.Read());
+
+        var completedTask = await Task.WhenAny(writerTask, Task.Delay(500));
+        var completedInTime = completedTask == writerTask;
+        Assert.True(completedInTime, "Writer should unblock after the slowest reader makes progress.");
+
+        await writerTask; // Ensure the writer task is complete
+
+        Assert.Equal(message2, slowReader.Read());
+        Assert.Equal(message3, slowReader.Read());
     }
 
     private static string GetSharedDirectory() => OperatingSystem.IsLinux() ? "/dev/shm" : Path.GetTempPath();
