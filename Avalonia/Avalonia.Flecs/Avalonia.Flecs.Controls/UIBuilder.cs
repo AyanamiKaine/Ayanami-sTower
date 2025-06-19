@@ -494,14 +494,15 @@ public static class UIBuilderExtensions
     /// <summary>
     /// Sets the text of a TextBlock control.
     /// </summary>
-    public static void SetZIndex<T>(this UIBuilder<T> builder, int zIndex) where T : Visual
+    public static UIBuilder<T> SetZIndex<T>(this UIBuilder<T> builder, int zIndex) where T : Visual
     {
         if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
-            return;
+            return builder;
 
 
 
         builder.Get<Visual>().ZIndex = zIndex;
+        return builder;
     }
 
     /// <summary>
@@ -1350,6 +1351,28 @@ public static class UIBuilderExtensions
         builder.Get<InputElement>().PointerReleased += onPointerRelease;
         return builder;
     }
+
+
+    /// <summary>
+    /// Adds an on pointer wheel changed event to the input element
+    /// </summary>
+    /// <typeparam name="T">The type of InputElement</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="onPointerWheelChanged">The event handler to be called when the pointer wheel changes</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> OnPointerWheelChanged<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerWheelEventArgs>? onPointerWheelChanged
+    )
+        where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerWheelChanged += onPointerWheelChanged;
+        return builder;
+    }
+
 
     /// <summary>
     /// Remove an on pointer released event to the input element
