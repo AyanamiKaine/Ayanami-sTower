@@ -10,7 +10,7 @@
     <IsAotCompatible>true</IsAotCompatible>
 
     <PackageId>StellaFuzzyPatternMatcher</PackageId>         
-    <Version>1.0.3</Version>                     
+    <Version>1.0.4</Version>                     
     <Authors>Ayanami</Authors>     
     <Title>Stella Fuzzy Pattern Matcher (SFPM)</Title>              
     <Description>A lightweight C# library for rule-based pattern matching with support for fuzzy matching and priority-based rule selection..</Description> 
