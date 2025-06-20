@@ -492,6 +492,20 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Sets the text of a TextBlock control.
+    /// </summary>
+    public static UIBuilder<T> SetZIndex<T>(this UIBuilder<T> builder, int zIndex) where T : Visual
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+
+
+        builder.Get<Visual>().ZIndex = zIndex;
+        return builder;
+    }
+
+    /// <summary>
     /// Sets the text of a button control by adding a textblock control to it.
     /// This is done so you can easily say button.SetFontSize() and changing the
     /// text size of the textblock
@@ -895,6 +909,22 @@ public static class UIBuilderExtensions
     }
 
     /// <summary>
+    /// Gets the current position of an element
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="builder"></param>
+    /// <param name="relativeTo"></param> =>
+    /// <returns></returns>
+    public static Point GetPosition<T>(this UIBuilder<T> builder, Visual relativeTo)
+    where T : Visual
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return new(0, 0);
+
+        return builder.Get<Visual>().TranslatePoint(new Point(0, 0), relativeTo) ?? new(0, 0);
+    }
+
+    /// <summary>
     /// Set the stroke thickness of a shape
     /// </summary>
     /// <param name="builder"></param>
@@ -910,6 +940,46 @@ public static class UIBuilderExtensions
             return builder;
 
         builder.Get<Shape>().StrokeThickness = strokeThickness;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the start point of a Line control.
+    /// </summary>
+    /// <typeparam name="T">The type of Line</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="startPoint">The Point representing the start position of the line</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetStartPoint<T>(
+    this UIBuilder<T> builder,
+    Point startPoint
+)
+    where T : Line
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Line>().StartPoint = startPoint;
+        return builder;
+    }
+
+    /// <summary>
+    /// Sets the end point of a Line control.
+    /// </summary>
+    /// <typeparam name="T">The type of Line</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="endPoint">The Point representing the end position of the line</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> SetEndPoint<T>(
+    this UIBuilder<T> builder,
+    Point endPoint
+)
+    where T : Line
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<Line>().EndPoint = endPoint;
         return builder;
     }
 
@@ -1281,6 +1351,28 @@ public static class UIBuilderExtensions
         builder.Get<InputElement>().PointerReleased += onPointerRelease;
         return builder;
     }
+
+
+    /// <summary>
+    /// Adds an on pointer wheel changed event to the input element
+    /// </summary>
+    /// <typeparam name="T">The type of InputElement</typeparam>
+    /// <param name="builder">The UI builder</param>
+    /// <param name="onPointerWheelChanged">The event handler to be called when the pointer wheel changes</param>
+    /// <returns>The builder for method chaining</returns>
+    public static UIBuilder<T> OnPointerWheelChanged<T>(
+        this UIBuilder<T> builder,
+        EventHandler<PointerWheelEventArgs>? onPointerWheelChanged
+    )
+        where T : InputElement
+    {
+        if (!builder.Entity.IsValid() || !builder.Entity.IsAlive() || builder.Entity == 0)
+            return builder;
+
+        builder.Get<InputElement>().PointerWheelChanged += onPointerWheelChanged;
+        return builder;
+    }
+
 
     /// <summary>
     /// Remove an on pointer released event to the input element
