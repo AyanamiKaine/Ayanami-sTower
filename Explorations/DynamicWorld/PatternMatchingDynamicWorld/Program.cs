@@ -219,8 +219,10 @@ public class GameSimulation
                 _worldState.SetValue("GuardIsAwake", false);
                 _worldState.SetValue("HasRock", false);
             }
-        );
-        item.Priority = 5;
+        )
+        {
+            Priority = 5,
+        };
         _gameRules.Add(item);
 
         // --- DOOR AND MOVEMENT RULES ---
