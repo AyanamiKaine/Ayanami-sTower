@@ -36,4 +36,3 @@ public interface ISerializer
     /// <returns>True if deserialization was successful and the result is not null, otherwise false.</returns>
     bool TryDeserialize<T>(byte[] data, [MaybeNullWhen(false)] out T result);
 }
-
