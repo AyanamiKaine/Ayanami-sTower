@@ -37,10 +37,13 @@ public static class RuleEnumerableExtensions
     {
         var ruleList = rules.ToList();
         if (!ruleList.Any())
+        {
             throw new ArgumentException(
                 message: "Rules collection cannot be empty.",
                 paramName: nameof(rules)
             );
+        }
+
         return ruleList.MaxBy(keySelector: r => r.CriteriaCount)!;
     }
 
@@ -54,10 +57,13 @@ public static class RuleEnumerableExtensions
     {
         var ruleList = rules.ToList();
         if (!ruleList.Any())
+        {
             throw new ArgumentException(
                 message: "Rules collection cannot be empty.",
                 paramName: nameof(rules)
             );
+        }
+
         return ruleList.MinBy(keySelector: r => r.CriteriaCount)!;
     }
 
