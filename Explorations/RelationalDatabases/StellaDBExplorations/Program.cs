@@ -29,20 +29,22 @@ using (var scope = new TransactionScope())
     }
     scope.Complete();
 }
+
 // Test 1: All operations in one transaction
 var stopWatch = Stopwatch.StartNew();
 using (var scope = new TransactionScope())
 {
     for (int i = 0; i < numberOfRuns; i++)
     {
-        world.Query("Age")
-             .Increment("Value", 1);
+        world.Query("Age").Increment("Value", 1);
     }
     stopWatch.Stop();
     scope.Complete();
 }
 Console.WriteLine($"One Query Total Time: {stopWatch.ElapsedMilliseconds} ms");
-Console.WriteLine($"One Query Average: {(double)stopWatch.ElapsedTicks / numberOfRuns / TimeSpan.TicksPerMicrosecond:F2} μs per operation");
+Console.WriteLine(
+    $"One Query Average: {(double)stopWatch.ElapsedTicks / numberOfRuns / TimeSpan.TicksPerMicrosecond:F2} μs per operation"
+);
 
 // Test 2: Each iteration in its own transaction
 var stopWatch2 = Stopwatch.StartNew();
@@ -60,4 +62,6 @@ stopWatch2.Stop();
 scope2.Complete();
 
 Console.WriteLine($"Many Queries Total Time: {stopWatch2.ElapsedMilliseconds} ms");
-Console.WriteLine($"Many Queries Average: {(double)stopWatch2.ElapsedTicks / numberOfRuns / TimeSpan.TicksPerMicrosecond:F2} μs per operation");
+Console.WriteLine(
+    $"Many Queries Average: {(double)stopWatch2.ElapsedTicks / numberOfRuns / TimeSpan.TicksPerMicrosecond:F2} μs per operation"
+);
