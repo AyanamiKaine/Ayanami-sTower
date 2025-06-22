@@ -469,9 +469,6 @@ public class World : IDisposable
         // Step 2: Pass the consolidated list of entities to the parser.
         DataParser.ParseAndLoad(this, allEntityElements);
 
-        // Step 3: Pass the consolidated list of relations to the new generic parser method.
-        DataParser.ParseAndLoadRelations(this, allRelationElements);
-
         Console.WriteLine("Finished loading all game data.");
     }
 
