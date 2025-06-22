@@ -1,5 +1,6 @@
 [
     "Entity",
+    "Memory",
     "Name",
     "Position2D",
     "Position3D",
