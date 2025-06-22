@@ -50,10 +50,13 @@ public static class RuleListExtensions
     public static Rule MostSpecificRule(this List<Rule> rules)
     {
         if (rules.Count == 0)
+        {
             throw new ArgumentException(
                 message: "Rules list cannot be empty.",
                 paramName: nameof(rules)
             );
+        }
+
         return rules.MaxBy(keySelector: r => r.CriteriaCount)!;
     }
 
@@ -70,10 +73,13 @@ public static class RuleListExtensions
     public static Rule LeastSpecificRule(this List<Rule> rules)
     {
         if (rules.Count == 0)
+        {
             throw new ArgumentException(
                 message: "Rules list cannot be empty.",
                 paramName: nameof(rules)
             );
+        }
+
         return rules.MinBy(keySelector: r => r.CriteriaCount)!;
     }
 
