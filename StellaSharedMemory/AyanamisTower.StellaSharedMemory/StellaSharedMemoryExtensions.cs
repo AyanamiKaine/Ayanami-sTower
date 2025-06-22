@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using AyanamisTower.StellaSharedMemory.Serialization;
 
 namespace AyanamisTower.StellaSharedMemory;
+
 /// <summary>
 /// Provides extension methods for reading and writing serializable objects.
 /// </summary>
@@ -40,12 +41,20 @@ public static class StellaSharedMemoryExtensions
 
         using var reader = new BinaryReader(viewStream, System.Text.Encoding.UTF8, true);
         if (viewStream.Length < 4)
-            throw new EndOfStreamException("Shared memory is too small to contain a length prefix.");
+        {
+            throw new EndOfStreamException(
+                "Shared memory is too small to contain a length prefix."
+            );
+        }
 
         int length = reader.ReadInt32();
 
         if (viewStream.Length < 4 + length)
-            throw new EndOfStreamException("Shared memory content is shorter than the expected length.");
+        {
+            throw new EndOfStreamException(
+                "Shared memory content is shorter than the expected length."
+            );
+        }
 
         byte[] data = reader.ReadBytes(length);
         return serializer.Deserialize<T>(data);
@@ -59,7 +68,11 @@ public static class StellaSharedMemoryExtensions
     /// <param name="serializer">The serializer to use.</param>
     /// <param name="result">When this method returns, contains the deserialized object if successful; otherwise, the default value for T.</param>
     /// <returns>true if an object was read and deserialized successfully; otherwise, false.</returns>
-    public static bool TryRead<T>(this SharedMemory sharedMemory, ISerializer serializer, [MaybeNullWhen(false)] out T result)
+    public static bool TryRead<T>(
+        this SharedMemory sharedMemory,
+        ISerializer serializer,
+        [MaybeNullWhen(false)] out T result
+    )
     {
         var viewStream = sharedMemory.ViewStream;
         viewStream.Seek(0, SeekOrigin.Begin);
