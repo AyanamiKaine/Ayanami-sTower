@@ -4,11 +4,10 @@ using SqlKata.Execution;
 
 namespace AyanamisTower.StellaDB;
 
-
 /*
 TODO:
-There must be a way to easily add components to data. We need a generic parse method that can infere based on 
-the structure what tables and attributes should be used. 
+There must be a way to easily add components to data. We need a generic parse method that can infere based on
+the structure what tables and attributes should be used.
 
 <StarSystem Name = "Sirius">
     <Galaxy Name = "Milky Way"/>
@@ -19,7 +18,7 @@ the structure what tables and attributes should be used.
 
 Here we should understand that every element in components is another table and its attributes are columns in it.
 
-Maybe every element is a another table associated with the entity. And the attributes for an element are the columns so 
+Maybe every element is a another table associated with the entity. And the attributes for an element are the columns so
 we need to rewrite the xml structure like so:
 <StarSystem Name = "Sirius", Galaxy = "Milky Way">
     <Position X="-60" Y="-20" Z="-20"/>
@@ -44,7 +43,7 @@ so we dont have to write Parent=2231 should the id change for any reason we woul
 </Entity>
 
 TODO:
-See the ExampleGalaxy.xml for an even better way of structuring it. Because it reflects the parent child relationship 
+See the ExampleGalaxy.xml for an even better way of structuring it. Because it reflects the parent child relationship
 directly in the xml.
 
 */
@@ -54,7 +53,6 @@ directly in the xml.
 /// </summary>
 public static class DataParser
 {
-
     /// <summary>
     /// Generically parses many-to-many relationship elements and populates the corresponding tables.
     /// This should be called only after all entities have been created.
@@ -86,7 +84,9 @@ public static class DataParser
                     }
                     else
                     {
-                        Console.WriteLine($"Warning: Could not resolve entity name '{value}' for column '{columnName}' in relation '{tableName}'. Skipping this relation.");
+                        Console.WriteLine(
+                            $"Warning: Could not resolve entity name '{value}' for column '{columnName}' in relation '{tableName}'. Skipping this relation."
+                        );
                         allEntitiesFound = false;
                         break; // Stop processing attributes for this invalid relation
                     }
@@ -100,7 +100,10 @@ public static class DataParser
 
             if (allEntitiesFound)
             {
-                if (dataToInsert.TryGetValue("EntityId1", out object? entityId1) && dataToInsert.TryGetValue("EntityId2", out object? entityId2))
+                if (
+                    dataToInsert.TryGetValue("EntityId1", out object? entityId1)
+                    && dataToInsert.TryGetValue("EntityId2", out object? entityId2)
+                )
                 {
                     long id1 = world.GetEntityByName((string)entityId1)!.Id;
                     long id2 = world.GetEntityByName((string)entityId2)!.Id;
@@ -125,7 +128,9 @@ public static class DataParser
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error inserting relation for table '{tableName}': {ex.Message}. Check data for duplicates or other constraint violations.");
+                    Console.WriteLine(
+                        $"Error inserting relation for table '{tableName}': {ex.Message}. Check data for duplicates or other constraint violations."
+                    );
                 }
             }
         }
@@ -202,14 +207,18 @@ public static class DataParser
 
                 if (string.IsNullOrEmpty(entityName))
                 {
-                    Console.WriteLine("Warning: Skipping an <Entity> in second pass because it has no identifiable name or key.");
+                    Console.WriteLine(
+                        "Warning: Skipping an <Entity> in second pass because it has no identifiable name or key."
+                    );
                     continue;
                 }
 
                 var entity = world.GetEntityByName(entityName);
                 if (entity == null)
                 {
-                    Console.WriteLine($"Error: Could not retrieve entity '{entityName}' during the second pass. It may not have been created correctly in the first pass.");
+                    Console.WriteLine(
+                        $"Error: Could not retrieve entity '{entityName}' during the second pass. It may not have been created correctly in the first pass."
+                    );
                     continue;
                 }
 
@@ -224,7 +233,9 @@ public static class DataParser
                     }
                     else
                     {
-                        Console.WriteLine($"Warning: Parent entity '{parentAttribute.Value}' not found for entity '{entityName}'.");
+                        Console.WriteLine(
+                            $"Warning: Parent entity '{parentAttribute.Value}' not found for entity '{entityName}'."
+                        );
                     }
                 }
 
@@ -239,9 +250,9 @@ public static class DataParser
                     }
 
                     var componentData = new Dictionary<string, object>
-                        {
-                            { "EntityId", entity.Id }
-                        };
+                    {
+                        { "EntityId", entity.Id },
+                    };
 
                     foreach (XAttribute attribute in componentElement.Attributes())
                     {
@@ -257,7 +268,9 @@ public static class DataParser
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error inserting component '{tableName}' for entity '{entityName}': {ex.Message}");
+                        Console.WriteLine(
+                            $"Error inserting component '{tableName}' for entity '{entityName}': {ex.Message}"
+                        );
                     }
                 }
             }
