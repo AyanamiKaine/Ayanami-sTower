@@ -8,10 +8,11 @@ using TaskStatus = FluidHTN.TaskStatus;
 
 public enum CoffeeAIWorldState
 {
-    HasCoffee,        // Does the agent have coffee? (0 = no, 1 = yes)
-    AtCoffeeMachine,  // Is the agent at the coffee machine? (0 = no, 1 = yes)
-    HasCup,           // Does the agent have a cup? (0 = no, 1 = yes)
+    HasCoffee, // Does the agent have coffee? (0 = no, 1 = yes)
+    AtCoffeeMachine, // Is the agent at the coffee machine? (0 = no, 1 = yes)
+    HasCup, // Does the agent have a cup? (0 = no, 1 = yes)
     CoffeeMachine_Ready // Is the coffee machine ready to brew? (0 = no, 1 = yes)
+    ,
     // Add other states if needed, e.g., ingredients available
 }
 
@@ -34,7 +35,9 @@ public class CoffeeAIContext : BaseContext
 
     public override IPlannerState PlannerState { get; protected set; }
 
-    public CoffeeAIContext(Agent agent /*, CoffeeWorld world*/)
+    public CoffeeAIContext(
+        Agent agent /*, CoffeeWorld world*/
+    )
     {
         Agent = agent;
         // World = world;
@@ -90,13 +93,17 @@ public class DefaultPlannerState : IPlannerState
     public Action<IEffect>? OnApplyEffect { get; set; }
     public Action<FluidHTN.PrimitiveTasks.IPrimitiveTask>? OnCurrentTaskFailed { get; set; }
     public Action<FluidHTN.PrimitiveTasks.IPrimitiveTask>? OnCurrentTaskContinues { get; set; }
-    public Action<FluidHTN.PrimitiveTasks.IPrimitiveTask, FluidHTN.Conditions.ICondition>? OnCurrentTaskExecutingConditionFailed { get; set; }
+    public Action<
+        FluidHTN.PrimitiveTasks.IPrimitiveTask,
+        FluidHTN.Conditions.ICondition
+    >? OnCurrentTaskExecutingConditionFailed { get; set; }
 }
 
 public enum AgentProcessingMode
 {
-    NeedsNewPlan,    // Agent needs to run a full decomposition to find a new plan.
-    ExecutingPlan    // Agent has a plan and is focused on executing its next step.
+    NeedsNewPlan, // Agent needs to run a full decomposition to find a new plan.
+    ExecutingPlan // Agent has a plan and is focused on executing its next step.
+    ,
 }
 
 public class Agent
@@ -106,10 +113,13 @@ public class Agent
     private Domain<CoffeeAIContext> _domain;
     private AgentProcessingMode _currentMode = AgentProcessingMode.NeedsNewPlan;
 
-    public Agent(/* CoffeeWorld world */)
+    public Agent( /* CoffeeWorld world */
+    )
     {
         _planner = new Planner<CoffeeAIContext>();
-        Context = new CoffeeAIContext(this /*, world */);
+        Context = new CoffeeAIContext(
+            this /*, world */
+        );
         // Context.Init() is called in CoffeeAIContext constructor
 
         _domain = BuildDomain(); // Your existing BuildDomain method
@@ -124,18 +134,25 @@ public class Agent
         // Check if we need to switch from ExecutingPlan to NeedsNewPlan
         if (_currentMode == AgentProcessingMode.ExecutingPlan)
         {
-            bool isPlanEmpty = Context.PlannerState.Plan == null ||
-                               (Context.PlannerState.Plan.Count == 0 && Context.PlannerState.CurrentTask == null);
+            bool isPlanEmpty =
+                Context.PlannerState.Plan == null
+                || (
+                    Context.PlannerState.Plan.Count == 0 && Context.PlannerState.CurrentTask == null
+                );
             bool lastTaskFailed = Context.PlannerState.LastStatus == TaskStatus.Failure;
 
             if (isPlanEmpty)
             {
-                Console.WriteLine("Agent: Current plan completed or is empty. Switching to NeedsNewPlan.");
+                Console.WriteLine(
+                    "Agent: Current plan completed or is empty. Switching to NeedsNewPlan."
+                );
                 _currentMode = AgentProcessingMode.NeedsNewPlan;
             }
             else if (lastTaskFailed)
             {
-                Console.WriteLine("Agent: Last task failed. Switching to NeedsNewPlan to find an alternative.");
+                Console.WriteLine(
+                    "Agent: Last task failed. Switching to NeedsNewPlan to find an alternative."
+                );
                 _currentMode = AgentProcessingMode.NeedsNewPlan;
             }
         }
@@ -143,23 +160,32 @@ public class Agent
         // Process based on current mode
         if (_currentMode == AgentProcessingMode.NeedsNewPlan)
         {
-            Console.WriteLine("Agent: Mode is NeedsNewPlan. Performing planning (and potentially first step execution)...");
+            Console.WriteLine(
+                "Agent: Mode is NeedsNewPlan. Performing planning (and potentially first step execution)..."
+            );
             _planner.Tick(_domain, Context); // This will decompose and find a plan.
-                                             // It will also execute the first task if it's instantaneous.
+            // It will also execute the first task if it's instantaneous.
 
             // After a planning tick, if a plan is now active, switch to execution mode for the next AI update.
             if (Context.PlannerState.CurrentTask != null || (Context.PlannerState.Plan?.Count > 0))
             {
-                Console.WriteLine("Agent: New plan established. Switching to ExecutingPlan for subsequent updates.");
+                Console.WriteLine(
+                    "Agent: New plan established. Switching to ExecutingPlan for subsequent updates."
+                );
                 _currentMode = AgentProcessingMode.ExecutingPlan;
             }
             else
             {
                 // Stay in NeedsNewPlan if no viable plan was found (e.g., agent might just idle).
                 // The planner.Tick would have found the Idle task if nothing else.
-                Console.WriteLine("Agent: Planning did not result in a new multi-step plan, or an idle task was chosen. Will re-evaluate next update if necessary.");
+                Console.WriteLine(
+                    "Agent: Planning did not result in a new multi-step plan, or an idle task was chosen. Will re-evaluate next update if necessary."
+                );
                 // If idling, it effectively completed its "plan" (the idle task), so it might go back to NeedsNewPlan.
-                if (Context.PlannerState.CurrentTask?.Name == "Idle" && Context.PlannerState.LastStatus == TaskStatus.Success)
+                if (
+                    Context.PlannerState.CurrentTask?.Name == "Idle"
+                    && Context.PlannerState.LastStatus == TaskStatus.Success
+                )
                 {
                     // This ensures that if Idle is the only thing to do, it doesn't get stuck in ExecutingPlan with an empty plan.
                     _currentMode = AgentProcessingMode.NeedsNewPlan;
@@ -168,7 +194,9 @@ public class Agent
         }
         else // AgentProcessingMode.ExecutingPlan
         {
-            Console.WriteLine("Agent: Mode is ExecutingPlan. Executing next step of the current plan...");
+            Console.WriteLine(
+                "Agent: Mode is ExecutingPlan. Executing next step of the current plan..."
+            );
             // We expect Planner.Tick to execute the CurrentTask (if it was 'Continue')
             // or dequeue the next task from the Plan and execute it.
             // It should *not* perform a full, expensive replan unless the current task fails
@@ -182,10 +210,14 @@ public class Agent
     private void PrintAgentStatus()
     {
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"AI Status: HasCoffee={Context.GetState(CoffeeAIWorldState.HasCoffee)}, AtMachine={Context.GetState(CoffeeAIWorldState.AtCoffeeMachine)}, HasCup={Context.GetState(CoffeeAIWorldState.HasCup)}, MachineReady={Context.GetState(CoffeeAIWorldState.CoffeeMachine_Ready)}");
+        Console.WriteLine(
+            $"AI Status: HasCoffee={Context.GetState(CoffeeAIWorldState.HasCoffee)}, AtMachine={Context.GetState(CoffeeAIWorldState.AtCoffeeMachine)}, HasCup={Context.GetState(CoffeeAIWorldState.HasCup)}, MachineReady={Context.GetState(CoffeeAIWorldState.CoffeeMachine_Ready)}"
+        );
         if (Context.PlannerState.CurrentTask != null)
         {
-            Console.WriteLine($"Current Task: {Context.PlannerState.CurrentTask.Name} (Status: {Context.PlannerState.LastStatus})");
+            Console.WriteLine(
+                $"Current Task: {Context.PlannerState.CurrentTask.Name} (Status: {Context.PlannerState.LastStatus})"
+            );
         }
         else
         {
@@ -193,7 +225,9 @@ public class Agent
         }
         if (Context.PlannerState.Plan?.Count > 0)
         {
-            Console.WriteLine($"Tasks in Plan Queue: {Context.PlannerState.Plan.Count} (Next: {Context.PlannerState.Plan.Peek().Name})");
+            Console.WriteLine(
+                $"Tasks in Plan Queue: {Context.PlannerState.Plan.Count} (Next: {Context.PlannerState.Plan.Peek().Name})"
+            );
         }
         else
         {
@@ -201,7 +235,6 @@ public class Agent
         }
         Console.ResetColor();
     }
-
 
     private void LogDecomposition()
     {
@@ -228,46 +261,77 @@ public class Agent
 
     private Domain<CoffeeAIContext> BuildDomain()
     {
-
         /*
         You might wonder: "How can I make it so task take a certain amount of time?"
 
         Its quite easy. When a task gets executed its execution time is the time for the task.
 
         Wdim: Imagine a animation playing instead of printing to the console. The next task gets
-        executed as soon as the animation is finished. We could also add a new world state like 
-        can move or "Its his turn". When thinking about a turn based game. In many games that 
-        are realtime most actions are animations that get executed and when finished executed the 
-        next step in their plan gets done. 
+        executed as soon as the animation is finished. We could also add a new world state like
+        can move or "Its his turn". When thinking about a turn based game. In many games that
+        are realtime most actions are animations that get executed and when finished executed the
+        next step in their plan gets done.
         Imagine Walking Animation -> Picking Up Animation -> Drinking Animation;
         */
 
         var builder = new DomainBuilder<CoffeeAIContext>("GetCoffeeDomain");
 
         // This is a CompoundTask
-        builder.Select("Get Coffee")
-            .Condition("Doesn't have coffee", ctx => ctx.GetState(CoffeeAIWorldState.HasCoffee) == 0)
+        builder
+            .Select("Get Coffee")
+            .Condition(
+                "Doesn't have coffee",
+                ctx => ctx.GetState(CoffeeAIWorldState.HasCoffee) == 0
+            )
             .Action("Go To Coffee Machine")
-                .Condition("Not at coffee machine", ctx => ctx.GetState(CoffeeAIWorldState.AtCoffeeMachine) == 0)
-                .Do(GoToCoffeeMachine)
-                .Effect("At coffee machine", EffectType.PlanAndExecute, (ctx, type) => ctx.SetState(CoffeeAIWorldState.AtCoffeeMachine, true, type))
+            .Condition(
+                "Not at coffee machine",
+                ctx => ctx.GetState(CoffeeAIWorldState.AtCoffeeMachine) == 0
+            )
+            .Do(GoToCoffeeMachine)
+            .Effect(
+                "At coffee machine",
+                EffectType.PlanAndExecute,
+                (ctx, type) => ctx.SetState(CoffeeAIWorldState.AtCoffeeMachine, true, type)
+            )
             .End()
             .Action("Take Cup")
-                .Condition("At coffee machine", ctx => ctx.GetState(CoffeeAIWorldState.AtCoffeeMachine) == 1)
-                .Condition("Doesn't have cup", ctx => ctx.GetState(CoffeeAIWorldState.HasCup) == 0)
-                .Do(TakeCup)
-                .Effect("Has cup", EffectType.PlanAndExecute, (ctx, type) => ctx.SetState(CoffeeAIWorldState.HasCup, true, type))
+            .Condition(
+                "At coffee machine",
+                ctx => ctx.GetState(CoffeeAIWorldState.AtCoffeeMachine) == 1
+            )
+            .Condition("Doesn't have cup", ctx => ctx.GetState(CoffeeAIWorldState.HasCup) == 0)
+            .Do(TakeCup)
+            .Effect(
+                "Has cup",
+                EffectType.PlanAndExecute,
+                (ctx, type) => ctx.SetState(CoffeeAIWorldState.HasCup, true, type)
+            )
             .End()
             .Action("Brew Coffee")
-                .Condition("At coffee machine", ctx => ctx.GetState(CoffeeAIWorldState.AtCoffeeMachine) == 1)
-                .Condition("Has cup", ctx => ctx.GetState(CoffeeAIWorldState.HasCup) == 1)
-                .Condition("Coffee machine ready", ctx => ctx.GetState(CoffeeAIWorldState.CoffeeMachine_Ready) == 1)
-                .Do(BrewCoffee)
-                .Effect("Has coffee", EffectType.PlanAndExecute, (ctx, type) => ctx.SetState(CoffeeAIWorldState.HasCoffee, true, type))
-                // Optional: Make machine not ready after brewing to show state change
-                .Effect("Coffee machine not ready", EffectType.PlanAndExecute, (ctx, type) => ctx.SetState(CoffeeAIWorldState.CoffeeMachine_Ready, false, type))
+            .Condition(
+                "At coffee machine",
+                ctx => ctx.GetState(CoffeeAIWorldState.AtCoffeeMachine) == 1
+            )
+            .Condition("Has cup", ctx => ctx.GetState(CoffeeAIWorldState.HasCup) == 1)
+            .Condition(
+                "Coffee machine ready",
+                ctx => ctx.GetState(CoffeeAIWorldState.CoffeeMachine_Ready) == 1
+            )
+            .Do(BrewCoffee)
+            .Effect(
+                "Has coffee",
+                EffectType.PlanAndExecute,
+                (ctx, type) => ctx.SetState(CoffeeAIWorldState.HasCoffee, true, type)
+            )
+            // Optional: Make machine not ready after brewing to show state change
+            .Effect(
+                "Coffee machine not ready",
+                EffectType.PlanAndExecute,
+                (ctx, type) => ctx.SetState(CoffeeAIWorldState.CoffeeMachine_Ready, false, type)
+            )
             .End()
-        .End();
+            .End();
 
         /*
 
@@ -285,9 +349,7 @@ public class Agent
             })
         .End();
         */
-        builder.Action("Idle")
-            .Do(Idle)
-        .End();
+        builder.Action("Idle").Do(Idle).End();
 
         return builder.Build();
     }
