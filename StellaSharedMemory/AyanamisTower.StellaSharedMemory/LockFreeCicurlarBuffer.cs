@@ -19,10 +19,11 @@ public enum WriteBehavior
     /// The writer will overwrite the oldest messages if the buffer is full. (Default)
     /// </summary>
     Overwrite,
+
     /// <summary>
     /// The writer will block and wait for a reader to consume messages and free up space.
     /// </summary>
-    Block
+    Block,
 }
 
 /// <summary>
@@ -48,21 +49,35 @@ internal static class SharedHeader
     public const int ReaderRegistrySize = MaxReaders * sizeof(long);
     public const int HeaderSize = ReaderRegistryOffset + ReaderRegistrySize;
 
-
     public static unsafe long GetWritePositionVolatile(MemoryMappedViewAccessor accessor)
     {
         byte* ptr = (byte*)0;
         accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-        try { return Volatile.Read(ref ((long*)(ptr + WritePosOffset))[0]); }
-        finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
+        try
+        {
+            return Volatile.Read(ref ((long*)(ptr + WritePosOffset))[0]);
+        }
+        finally
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
     }
 
-    public static unsafe void SetWritePositionVolatile(MemoryMappedViewAccessor accessor, long value)
+    public static unsafe void SetWritePositionVolatile(
+        MemoryMappedViewAccessor accessor,
+        long value
+    )
     {
         byte* ptr = (byte*)0;
         accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-        try { Volatile.Write(ref ((long*)(ptr + WritePosOffset))[0], value); }
-        finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
+        try
+        {
+            Volatile.Write(ref ((long*)(ptr + WritePosOffset))[0], value);
+        }
+        finally
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
     }
 
     // --- Reader Registry Helpers ---
@@ -107,24 +122,42 @@ internal static class SharedHeader
     {
         byte* ptr = (byte*)0;
         accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-        try { return Interlocked.Increment(ref ((long*)(ptr + NextTicketOffset))[0]); }
-        finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
+        try
+        {
+            return Interlocked.Increment(ref ((long*)(ptr + NextTicketOffset))[0]);
+        }
+        finally
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
     }
 
     public static unsafe long GetCurrentTicket(MemoryMappedViewAccessor accessor)
     {
         byte* ptr = (byte*)0;
         accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-        try { return Volatile.Read(ref ((long*)(ptr + CurrentTicketOffset))[0]); }
-        finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
+        try
+        {
+            return Volatile.Read(ref ((long*)(ptr + CurrentTicketOffset))[0]);
+        }
+        finally
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
     }
 
     public static unsafe void AdvanceCurrentTicket(MemoryMappedViewAccessor accessor)
     {
         byte* ptr = (byte*)0;
         accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
-        try { Interlocked.Increment(ref ((long*)(ptr + CurrentTicketOffset))[0]); }
-        finally { accessor.SafeMemoryMappedViewHandle.ReleasePointer(); }
+        try
+        {
+            Interlocked.Increment(ref ((long*)(ptr + CurrentTicketOffset))[0]);
+        }
+        finally
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+        }
     }
 }
 
@@ -146,21 +179,38 @@ public class MultiWriterCircularBuffer : IDisposable
     /// <param name="mode">The mode to open the shared memory (Create or Open).</param>
     /// <param name="capacity">The capacity of the buffer in bytes. Required when mode is Create.</param>
     /// <param name="behavior">The behavior to use when the buffer is full. Defaults to Overwrite.</param>
-    public MultiWriterCircularBuffer(string name, SharedMemoryMode mode, long capacity = 0, WriteBehavior behavior = WriteBehavior.Overwrite)
+    public MultiWriterCircularBuffer(
+        string name,
+        SharedMemoryMode mode,
+        long capacity = 0,
+        WriteBehavior behavior = WriteBehavior.Overwrite
+    )
     {
         if (mode == SharedMemoryMode.Create && capacity <= SharedHeader.HeaderSize)
         {
-            throw new ArgumentException("Capacity must be larger than the header size.", nameof(capacity));
+            throw new ArgumentException(
+                "Capacity must be larger than the header size.",
+                nameof(capacity)
+            );
         }
 
         _writeBehavior = behavior;
         string mmfPath = Path.Combine(GetSharedDirectory(), name);
         FileMode fileMode = mode == SharedMemoryMode.Create ? FileMode.Create : FileMode.Open;
 
-        using (var fs = new FileStream(mmfPath, fileMode, FileAccess.ReadWrite, FileShare.ReadWrite))
+        using (
+            var fs = new FileStream(mmfPath, fileMode, FileAccess.ReadWrite, FileShare.ReadWrite)
+        )
         {
             long mmfCapacity = mode == SharedMemoryMode.Create ? capacity : fs.Length;
-            _mmf = MemoryMappedFile.CreateFromFile(fs, null, mmfCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+            _mmf = MemoryMappedFile.CreateFromFile(
+                fs,
+                null,
+                mmfCapacity,
+                MemoryMappedFileAccess.ReadWrite,
+                HandleInheritability.None,
+                false
+            );
         }
 
         _accessor = _mmf.CreateViewAccessor();
@@ -195,7 +245,10 @@ public class MultiWriterCircularBuffer : IDisposable
         long requiredSpace = message.Length + 4;
         if (requiredSpace > _dataBufferCapacity)
         {
-            throw new ArgumentException("Message is larger than the buffer capacity.", nameof(message));
+            throw new ArgumentException(
+                "Message is larger than the buffer capacity.",
+                nameof(message)
+            );
         }
 
         AcquireLock();
@@ -226,7 +279,12 @@ public class MultiWriterCircularBuffer : IDisposable
             }
 
             _accessor.Write(SharedHeader.HeaderSize + (int)currentWritePos, message.Length);
-            _accessor.WriteArray(SharedHeader.HeaderSize + (int)currentWritePos + 4, message, 0, message.Length);
+            _accessor.WriteArray(
+                SharedHeader.HeaderSize + (int)currentWritePos + 4,
+                message,
+                0,
+                message.Length
+            );
 
             long nextWritePos = currentWritePos + requiredSpace;
 
@@ -292,7 +350,8 @@ public class MultiWriterCircularBuffer : IDisposable
         SharedHeader.AdvanceCurrentTicket(_accessor);
     }
 
-    private static string GetSharedDirectory() => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/shm" : Path.GetTempPath();
+    private static string GetSharedDirectory() =>
+        RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/shm" : Path.GetTempPath();
 
     /// <inheritdoc/>
     public void Dispose()
@@ -302,7 +361,6 @@ public class MultiWriterCircularBuffer : IDisposable
         GC.SuppressFinalize(this);
     }
 }
-
 
 /// <summary>
 /// An independent, lock-free reader for a circular buffer.
@@ -323,7 +381,14 @@ public class LockFreeBufferReader : IDisposable
         string mmfPath = Path.Combine(GetSharedDirectory(), logName);
         var fs = new FileStream(mmfPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
 
-        _mmf = MemoryMappedFile.CreateFromFile(fs, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+        _mmf = MemoryMappedFile.CreateFromFile(
+            fs,
+            null,
+            0,
+            MemoryMappedFileAccess.ReadWrite,
+            HandleInheritability.None,
+            false
+        );
         // Open with ReadWrite access to update our position in the header
         _accessor = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite);
 
@@ -340,7 +405,8 @@ public class LockFreeBufferReader : IDisposable
     {
         long writePos = SharedHeader.GetWritePositionVolatile(_accessor);
 
-        if (_currentReadPos == writePos) return null;
+        if (_currentReadPos == writePos)
+            return null;
 
         // This handles the case where the writer has wrapped around but we haven't yet.
         if (_currentReadPos > writePos)
@@ -366,7 +432,12 @@ public class LockFreeBufferReader : IDisposable
         }
 
         byte[] message = new byte[messageLength];
-        _accessor.ReadArray(SharedHeader.HeaderSize + _currentReadPos + 4, message, 0, messageLength);
+        _accessor.ReadArray(
+            SharedHeader.HeaderSize + _currentReadPos + 4,
+            message,
+            0,
+            messageLength
+        );
 
         _currentReadPos += messageLength + 4;
         UpdateReaderPosition(_currentReadPos);
@@ -400,7 +471,10 @@ public class LockFreeBufferReader : IDisposable
 
     private void UpdateReaderPosition(long position)
     {
-        Volatile.Write(ref GetRef(SharedHeader.ReaderRegistryOffset + (_readerSlot * sizeof(long))), position);
+        Volatile.Write(
+            ref GetRef(SharedHeader.ReaderRegistryOffset + (_readerSlot * sizeof(long))),
+            position
+        );
     }
 
     private unsafe ref long GetRef(long offset)
@@ -410,7 +484,8 @@ public class LockFreeBufferReader : IDisposable
         return ref *(long*)(ptr + offset);
     }
 
-    private static string GetSharedDirectory() => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/shm" : Path.GetTempPath();
+    private static string GetSharedDirectory() =>
+        RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "/dev/shm" : Path.GetTempPath();
 
     /// <inheritdoc/>
     public void Dispose()

@@ -1,10 +1,9 @@
-﻿using MessagePack;
+﻿using System.Diagnostics.CodeAnalysis;
 using MemoryPack;
+using MessagePack;
 using ProtoBuf;
-using System.Diagnostics.CodeAnalysis;
 
 namespace AyanamisTower.StellaSharedMemory.Serialization;
-
 
 /// <summary>
 /// Serializes objects using System.Text.Json.
@@ -13,8 +12,10 @@ public class JsonSerializer : ISerializer
 {
     /// <inheritdoc/>
     public byte[] Serialize<T>(T obj) => System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(obj);
+
     /// <inheritdoc/>
     public T Deserialize<T>(byte[] data) => System.Text.Json.JsonSerializer.Deserialize<T>(data)!;
+
     /// <inheritdoc/>
     public bool TryDeserialize<T>(byte[] data, [MaybeNullWhen(false)] out T result)
     {
@@ -39,6 +40,7 @@ public class MessagePackObjectSerializer : ISerializer
 {
     /// <inheritdoc/>
     public byte[] Serialize<T>(T obj) => MessagePackSerializer.Serialize(obj);
+
     /// <inheritdoc/>
     public T Deserialize<T>(byte[] data) => MessagePackSerializer.Deserialize<T>(data);
 
@@ -68,8 +70,10 @@ public class MemoryPackObjectSerializer : ISerializer
 {
     /// <inheritdoc/>
     public byte[] Serialize<T>(T obj) => MemoryPackSerializer.Serialize(obj);
+
     /// <inheritdoc/>
     public T Deserialize<T>(byte[] data) => MemoryPackSerializer.Deserialize<T>(data)!;
+
     /// <inheritdoc/>
     public bool TryDeserialize<T>(byte[] data, [MaybeNullWhen(false)] out T result)
     {
@@ -99,6 +103,7 @@ public class ProtobufObjectSerializer : ISerializer
         Serializer.Serialize(stream, obj);
         return stream.ToArray();
     }
+
     /// <inheritdoc/>
     public T Deserialize<T>(byte[] data)
     {

@@ -4,8 +4,8 @@
 using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Threading;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace AyanamisTower.StellaSharedMemory;
 
@@ -22,7 +22,7 @@ public enum SharedMemoryMode
     /// <summary>
     /// Opens an existing shared memory segment.
     /// </summary>
-    Open
+    Open,
 }
 
 /// <summary>
@@ -57,7 +57,10 @@ public class SharedMemory : IDisposable
         {
             if (mode == SharedMemoryMode.Create && capacity <= 0)
             {
-                throw new ArgumentException("Capacity must be greater than zero when creating a new shared memory file.", nameof(capacity));
+                throw new ArgumentException(
+                    "Capacity must be greater than zero when creating a new shared memory file.",
+                    nameof(capacity)
+                );
             }
 
             // If we are in 'Open' mode, we must wait for the file to exist first.
@@ -67,10 +70,22 @@ public class SharedMemory : IDisposable
             }
 
             FileMode fileMode = mode == SharedMemoryMode.Create ? FileMode.Create : FileMode.Open;
-            _fileStream = new FileStream(mmfPath, fileMode, FileAccess.ReadWrite, FileShare.ReadWrite);
+            _fileStream = new FileStream(
+                mmfPath,
+                fileMode,
+                FileAccess.ReadWrite,
+                FileShare.ReadWrite
+            );
 
             long mmfCapacity = mode == SharedMemoryMode.Create ? capacity : _fileStream.Length;
-            _memoryMappedFile = MemoryMappedFile.CreateFromFile(_fileStream, null, mmfCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false);
+            _memoryMappedFile = MemoryMappedFile.CreateFromFile(
+                _fileStream,
+                null,
+                mmfCapacity,
+                MemoryMappedFileAccess.ReadWrite,
+                HandleInheritability.None,
+                false
+            );
             ViewStream = _memoryMappedFile.CreateViewStream();
         }
         catch
@@ -114,7 +129,14 @@ public class SharedMemory : IDisposable
         {
             try
             {
-                using (new FileStream(_lockPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
+                using (
+                    new FileStream(
+                        _lockPath,
+                        FileMode.CreateNew,
+                        FileAccess.ReadWrite,
+                        FileShare.None
+                    )
+                )
                 {
                     return; // Lock acquired
                 }
@@ -139,7 +161,8 @@ public class SharedMemory : IDisposable
         // Wait up to 10 seconds for the file to appear.
         for (int i = 0; i < 100; i++)
         {
-            if (File.Exists(path)) return true;
+            if (File.Exists(path))
+                return true;
             Thread.Sleep(100);
         }
         return false;
