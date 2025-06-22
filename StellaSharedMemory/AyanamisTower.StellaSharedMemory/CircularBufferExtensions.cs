@@ -16,7 +16,11 @@ public static class CircularBufferExtensions
     /// <summary>
     /// Writes a serializable object to the circular buffer.
     /// </summary>
-    public static void Write<T>(this MultiWriterCircularBuffer buffer, T data, ISerializer serializer)
+    public static void Write<T>(
+        this MultiWriterCircularBuffer buffer,
+        T data,
+        ISerializer serializer
+    )
     {
         byte[] bytes = serializer.Serialize(data);
         buffer.Write(bytes);
@@ -40,7 +44,11 @@ public static class CircularBufferExtensions
     /// Attempts to read a serializable object from the circular buffer. Does not throw on failure.
     /// </summary>
     /// <returns>true if an object was read and deserialized successfully; otherwise, false.</returns>
-    public static bool TryRead<T>(this LockFreeBufferReader reader, ISerializer serializer, [MaybeNullWhen(false)] out T result)
+    public static bool TryRead<T>(
+        this LockFreeBufferReader reader,
+        ISerializer serializer,
+        [MaybeNullWhen(false)] out T result
+    )
     {
         byte[]? data = reader.Read();
         if (data == null)
