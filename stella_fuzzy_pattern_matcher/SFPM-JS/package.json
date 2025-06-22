@@ -1,0 +1,18 @@
+{
+  "name": "sfpm-js",
+  "module": "sfpm.js",
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "bench": "bun run ./bench/sfpm.bench.js"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "mitata": "^1.0.34"
+  }
+}
