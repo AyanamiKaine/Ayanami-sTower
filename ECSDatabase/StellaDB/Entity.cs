@@ -2,21 +2,23 @@ using SqlKata.Execution;
 
 namespace AyanamisTower.StellaDB;
 
-
 /// <summary>
 /// Represents an entity in the game world
 /// </summary>
 public class Entity
 {
     private string? _cachedName;
+
     /// <summary>
     /// Id of the entity, its used to find attached component of the entity
     /// </summary>
     public required long Id { get; init; }
+
     /// <summary>
     /// World where the entity lives in
     /// </summary>
     public required World World { get; init; }
+
     /// <summary>
     /// Name of the entity (cached after first access)
     /// </summary>
@@ -24,17 +26,16 @@ public class Entity
     {
         get
         {
-            _cachedName ??= World.Query("Name")
-                                  .Where("EntityId", Id)
-                                  .Select("Value")
-                                  .FirstOrDefault<string>();
+            _cachedName ??= World
+                .Query("Name")
+                .Where("EntityId", Id)
+                .Select("Value")
+                .FirstOrDefault<string>();
             return _cachedName;
         }
         set
         {
-            World.Query("Name")
-                .Where("EntityId", Id)
-                .Update(new { Value = value });
+            World.Query("Name").Where("EntityId", Id).Update(new { Value = value });
             _cachedName = value;
         }
     }
@@ -46,17 +47,9 @@ public class Entity
     {
         get
         {
-            return World.Query("Entity")
-                                  .Where("Id", Id)
-                                  .Select("ParentId")
-                                  .FirstOrDefault<long?>();
+            return World.Query("Entity").Where("Id", Id).Select("ParentId").FirstOrDefault<long?>();
         }
-        set
-        {
-            World.Query("Entity")
-                .Where("Id", Id)
-                .Update(new { ParentId = value });
-        }
+        set { World.Query("Entity").Where("Id", Id).Update(new { ParentId = value }); }
     }
 
     /// <summary>
@@ -70,9 +63,7 @@ public class Entity
     /// <returns>This entity for method chaining</returns>
     public Entity Update(string componentName, object data)
     {
-        World.Query(componentName)
-            .Where("EntityId", Id)
-            .Update(data);
+        World.Query(componentName).Where("EntityId", Id).Update(data);
 
         return this;
     }
@@ -90,7 +81,6 @@ public class Entity
         return this;
     }
 
-
     /// <summary>
     /// Adds a component for an entity, used for identifier components, that only have one field
     /// the entity id, so we have a star table where each entity id in the table says, is a star.
@@ -100,10 +90,7 @@ public class Entity
     /// <returns></returns>
     public Entity Add(string componentName)
     {
-        World.Query(componentName).Insert(new
-        {
-            EntityId = Id
-        });
+        World.Query(componentName).Insert(new { EntityId = Id });
         return this;
     }
 
@@ -115,9 +102,7 @@ public class Entity
     /// <returns>True if component exists</returns>
     public bool Has(string componentName)
     {
-        var count = World.Query(componentName)
-                        .Where("EntityId", Id)
-                        .Count<int>();
+        var count = World.Query(componentName).Where("EntityId", Id).Count<int>();
         return count > 0;
     }
 
@@ -129,9 +114,7 @@ public class Entity
     /// <returns>Component data or null if not found</returns>
     public dynamic? Get(string componentName)
     {
-        return World.Query(componentName)
-                         .Where("EntityId", Id)
-                         .FirstOrDefault();
+        return World.Query(componentName).Where("EntityId", Id).FirstOrDefault();
     }
 
     /// <summary>
@@ -144,9 +127,7 @@ public class Entity
     {
         var componentName = typeof(T).Name;
 
-        return World.Query(componentName)
-                         .Where("EntityId", Id)
-                         .FirstOrDefault<T>();
+        return World.Query(componentName).Where("EntityId", Id).FirstOrDefault<T>();
     }
 
     /// <summary>
@@ -156,8 +137,10 @@ public class Entity
     /// <returns>true if the specified Entity is equal to the current Entity; otherwise, false</returns>
     public bool Equals(Entity? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
 
         // Two entities are equal if they have the same ID and belong to the same World
         return Id == other.Id && ReferenceEquals(World, other.World);
@@ -190,7 +173,8 @@ public class Entity
     /// <returns>true if the Entity instances are equal; otherwise, false</returns>
     public static bool operator ==(Entity? left, Entity? right)
     {
-        if (left is null) return right is null;
+        if (left is null)
+            return right is null;
         return left.Equals(right);
     }
 
