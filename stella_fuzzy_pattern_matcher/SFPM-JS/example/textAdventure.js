@@ -16,6 +16,41 @@ const Location = Object.freeze({
 });
 
 /**
+ * A simple Levenshtein distance function to find the similarity between two strings.
+ * This helps in detecting typos.
+ * @param {string} s1 The first string.
+ * @param {string} s2 The second string.
+ * @returns {number} The number of edits to get from s1 to s2.
+ */
+const getLevenshteinDistance = (s1, s2) => {
+    s1 = s1.toLowerCase();
+    s2 = s2.toLowerCase();
+
+    const costs = [];
+    for (let i = 0; i <= s1.length; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= s2.length; j++) {
+            if (i === 0) {
+                costs[j] = j;
+            } else {
+                if (j > 0) {
+                    let newValue = costs[j - 1];
+                    if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+                        newValue =
+                            Math.min(Math.min(newValue, lastValue), costs[j]) +
+                            1;
+                    }
+                    costs[j - 1] = lastValue;
+                    lastValue = newValue;
+                }
+            }
+        }
+        if (i > 0) costs[s2.length] = lastValue;
+    }
+    return costs[s2.length];
+};
+
+/**
  * The main class that drives the game simulation.
  * It manages the world state, game rules, and the main game loop.
  */
@@ -484,6 +519,20 @@ class GameSimulation {
         this._gameRules.push(
             new Rule(
                 [
+                    /*
+                    Do you notice something?
+                    We do not write defensive logic, like does not have key.
+
+                    Why? 
+
+                    Because we write instead rules that are more specific like, hasIronKey
+                    and the most specific key is always selected first. Sorcery implements 
+                    them https://youtu.be/HZft_U4Fc-U?si=RPYTQuu1hqJtoN43&t=1368 
+                    (Narrative Sorcery: Coherent Storytelling in an Open World)
+
+                    I dont like that because we should write rules so they depend only the information
+                    they really need.
+                    */
                     new Criteria("GameCommand", "go west", Operator.Equal),
                     new Criteria(
                         "PlayerLocation",
@@ -495,6 +544,63 @@ class GameSimulation {
                     console.log(
                         "\nA heavy iron door blocks your way. It looks like it needs a large, important key."
                     )
+            )
+        );
+
+        // --- FALLBACK RULE ---
+        // This rule acts as a catch-all for any command that doesn't match a more specific rule.
+        this._gameRules.push(
+            new Rule(
+                [
+                    new Criteria(
+                        "GameCommand",
+                        (cmd) => typeof cmd === "string" && cmd.length > 0,
+                        Operator.Predicate
+                    ),
+                ],
+                () => {
+                    const command = this._worldState.get("GameCommand");
+                    const validCommands = [
+                        "look",
+                        "take key",
+                        "take bread",
+                        "take water",
+                        "take rock",
+                        "drink water",
+                        "use bread",
+                        "throw rock",
+                        "throw bread",
+                        "unlock door",
+                        "go north",
+                        "go south",
+                        "go east",
+                        "go west",
+                        "help",
+                        "quit",
+                    ];
+
+                    let bestMatch = null;
+                    let minDistance = 3; // Only suggest if the typo is 1 or 2 letters off.
+
+                    for (const validCmd of validCommands) {
+                        const distance = getLevenshteinDistance(
+                            command,
+                            validCmd
+                        );
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            bestMatch = validCmd;
+                        }
+                    }
+
+                    if (bestMatch) {
+                        console.log(`\nDid you mean "${bestMatch}"?`);
+                    } else {
+                        console.log("\nThat doesn't seem to do anything.");
+                    }
+                },
+                "Default Fallback",
+                -1 // A negative priority ensures it's chosen last.
             )
         );
     }
