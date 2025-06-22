@@ -128,13 +128,14 @@ public class World : IDisposable
             return new Entity { Id = existingId, World = this };
         }
 
-        long entityId = -1;
         using var transaction = _connection.BeginTransaction();
         try
         {
             // The fix is here: instead of new {}, we provide a non-empty object
             // by setting a nullable column to null. This satisfies SqlKata's requirement.
-            entityId = Query().From("Entity").InsertGetId<long>(new { ParentId = (long?)null });
+            long entityId = Query()
+                .From("Entity")
+                .InsertGetId<long>(new { ParentId = (long?)null });
 
             if (!string.IsNullOrEmpty(name))
             {
