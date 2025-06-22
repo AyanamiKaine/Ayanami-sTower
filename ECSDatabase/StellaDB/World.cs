@@ -21,17 +21,21 @@ public class World : IDisposable
     /// Name of the game
     /// </summary>
     public string Name { get; }
+
     /// <summary>
     /// Given the entity name get the entity id.
     /// </summary>
     public Dictionary<string, long> Entities = [];
     private readonly string _databaseFilePath = string.Empty;
+
     // Connection string for an in-memory SQLite database
     private readonly string _connectionString = string.Empty;
+
     /// <summary>
     /// When the world lives only in memory and not on disk it returns true.
     /// </summary>
     public bool InMemory { get; } = false;
+
     /// <summary>
     /// A cache mapping entity names to their IDs for quick lookups.
     /// </summary>
@@ -70,7 +74,6 @@ public class World : IDisposable
         if (enabledOptimizations)
             EnableOptimizations();
 
-
         try
         {
             CreateTables("Tables");
@@ -82,9 +85,9 @@ public class World : IDisposable
         }
 
         // simply generates Plain Old Class Object based on the tables.
-        // this is used to store tables directly in memory. 
+        // this is used to store tables directly in memory.
         // For directly accessing them, where performance is needed
-        // Todo: Implement it so the generator runs before. 
+        // Todo: Implement it so the generator runs before.
         //var generatedClasses = _connection.GenerateAllTables();
         //Console.WriteLine(generatedClasses);
     }
@@ -149,6 +152,7 @@ public class World : IDisposable
             throw;
         }
     }
+
     /// <summary>
     /// Retrieves an entity by its name, using the cache for performance.
     /// </summary>
@@ -187,7 +191,9 @@ public class World : IDisposable
 
         if (orderedSqlFilenames == null || orderedSqlFilenames.Count == 0)
         {
-            Console.WriteLine("Warning: No schema files found or schema order is empty. No tables will be created.");
+            Console.WriteLine(
+                "Warning: No schema files found or schema order is empty. No tables will be created."
+            );
             return;
         }
 
@@ -202,17 +208,24 @@ public class World : IDisposable
             {
                 if (string.IsNullOrWhiteSpace(sqlFileName))
                 {
-                    Console.WriteLine($"Warning: Empty filename found in schema order at position {fileCounter}. Skipping.");
+                    Console.WriteLine(
+                        $"Warning: Empty filename found in schema order at position {fileCounter}. Skipping."
+                    );
                     fileCounter++;
                     continue;
                 }
 
-                string fullSqlFilePath = Path.Combine(tablesFolderPath, sqlFileName.Trim()) + ".sql"; // Trim whitespace from filename
-                Console.WriteLine($"Processing SQL file ({fileCounter}/{orderedSqlFilenames.Count}): {fullSqlFilePath}");
+                string fullSqlFilePath =
+                    Path.Combine(tablesFolderPath, sqlFileName.Trim()) + ".sql"; // Trim whitespace from filename
+                Console.WriteLine(
+                    $"Processing SQL file ({fileCounter}/{orderedSqlFilenames.Count}): {fullSqlFilePath}"
+                );
 
                 if (!File.Exists(fullSqlFilePath))
                 {
-                    Console.Error.WriteLine($"Error: SQL file '{sqlFileName}' not found at '{fullSqlFilePath}'. Aborting table creation.");
+                    Console.Error.WriteLine(
+                        $"Error: SQL file '{sqlFileName}' not found at '{fullSqlFilePath}'. Aborting table creation."
+                    );
                     transaction.Rollback(); // Rollback changes made so far
                     Console.WriteLine("Transaction rolled back due to missing SQL file.");
                     return; // Or throw an exception
@@ -222,7 +235,9 @@ public class World : IDisposable
 
                 if (string.IsNullOrWhiteSpace(sqlScriptContent))
                 {
-                    Console.WriteLine($"Warning: SQL file '{sqlFileName}' is empty. Skipping execution.");
+                    Console.WriteLine(
+                        $"Warning: SQL file '{sqlFileName}' is empty. Skipping execution."
+                    );
                     fileCounter++;
                     continue;
                 }
@@ -244,8 +259,12 @@ public class World : IDisposable
         }
         catch (SqliteException ex)
         {
-            Console.Error.WriteLine($"SQLite Error during table creation: {ex.Message} (SQLite Error Code: {ex.SqliteErrorCode})");
-            Console.Error.WriteLine("Error likely occurred while processing file being pointed to by the counter or the one before it if an earlier file had an issue not caught by basic checks.");
+            Console.Error.WriteLine(
+                $"SQLite Error during table creation: {ex.Message} (SQLite Error Code: {ex.SqliteErrorCode})"
+            );
+            Console.Error.WriteLine(
+                "Error likely occurred while processing file being pointed to by the counter or the one before it if an earlier file had an issue not caught by basic checks."
+            );
             try
             {
                 transaction.Rollback();
@@ -259,7 +278,9 @@ public class World : IDisposable
         }
         catch (IOException ex)
         {
-            Console.Error.WriteLine($"I/O Error during table creation (e.g., reading SQL file): {ex.Message}");
+            Console.Error.WriteLine(
+                $"I/O Error during table creation (e.g., reading SQL file): {ex.Message}"
+            );
             try
             {
                 transaction.Rollback();
@@ -273,7 +294,9 @@ public class World : IDisposable
         }
         catch (Exception ex) // Catch-all for other unexpected errors
         {
-            Console.Error.WriteLine($"An unexpected error occurred during table creation: {ex.Message}");
+            Console.Error.WriteLine(
+                $"An unexpected error occurred during table creation: {ex.Message}"
+            );
             try
             {
                 transaction.Rollback();
@@ -289,7 +312,8 @@ public class World : IDisposable
 
     private void EnableOptimizations()
     {
-        const string optimizeDBCommand = @"
+        const string optimizeDBCommand =
+            @"
         -- Performance and setup PRAGMAs for in-memory database
             /*
             If the application running SQLite crashes, the data will be safe, but the database might become corrupted if the operating system crashes or the computer loses power before that data has been written to the disk surface. On the other hand, commits can be orders of magnitude faster with synchronous OFF.
@@ -324,7 +348,9 @@ public class World : IDisposable
 
             if (string.IsNullOrWhiteSpace(jsonString))
             {
-                Console.WriteLine($"Warning: The file '{filePath}' is empty or contains only whitespace.");
+                Console.WriteLine(
+                    $"Warning: The file '{filePath}' is empty or contains only whitespace."
+                );
                 return []; // Return an empty list
             }
 
@@ -336,7 +362,9 @@ public class World : IDisposable
             {
                 // This might happen if the JSON content is "null" literally,
                 // or if deserialization results in null for some reason.
-                Console.WriteLine($"Warning: Deserialization of '{filePath}' resulted in a null list. The JSON might be 'null' or malformed in a specific way.");
+                Console.WriteLine(
+                    $"Warning: Deserialization of '{filePath}' resulted in a null list. The JSON might be 'null' or malformed in a specific way."
+                );
                 return [];
             }
 
@@ -350,17 +378,23 @@ public class World : IDisposable
         catch (JsonException ex)
         {
             // This catches errors during JSON parsing/deserialization.
-            Console.Error.WriteLine($"Error: Could not parse the JSON file '{filePath}'. Details: {ex.Message}");
+            Console.Error.WriteLine(
+                $"Error: Could not parse the JSON file '{filePath}'. Details: {ex.Message}"
+            );
             if (ex.LineNumber.HasValue && ex.BytePositionInLine.HasValue)
             {
-                Console.Error.WriteLine($"Error occurred near Line: {ex.LineNumber + 1}, Position: {ex.BytePositionInLine + 1}");
+                Console.Error.WriteLine(
+                    $"Error occurred near Line: {ex.LineNumber + 1}, Position: {ex.BytePositionInLine + 1}"
+                );
             }
             return []; // Or throw
         }
         catch (IOException ex)
         {
             // Catches other I/O errors, e.g., file access permissions.
-            Console.Error.WriteLine($"Error: An I/O error occurred while reading '{filePath}'. Details: {ex.Message}");
+            Console.Error.WriteLine(
+                $"Error: An I/O error occurred while reading '{filePath}'. Details: {ex.Message}"
+            );
             return []; // Or throw
         }
         catch (Exception ex) // Catch-all for any other unexpected errors
@@ -370,7 +404,6 @@ public class World : IDisposable
         }
     }
 
-
     /// <summary>
     /// Finds all XML files in a directory, consolidates their elements,
     /// and then calls the parser to load the data in multiple passes.
@@ -378,12 +411,16 @@ public class World : IDisposable
     /// <param name="relativeDirectoryPath">The relative path to the directory containing game data XML files.</param>
     public void LoadDataFromDirectory(string relativeDirectoryPath)
     {
-        Console.WriteLine($"Consolidating all game data from directory '{relativeDirectoryPath}'...");
+        Console.WriteLine(
+            $"Consolidating all game data from directory '{relativeDirectoryPath}'..."
+        );
         string fullDirectoryPath = Path.Combine(AppContext.BaseDirectory, relativeDirectoryPath);
 
         if (!Directory.Exists(fullDirectoryPath))
         {
-            Console.WriteLine($"Warning: Data directory not found at '{fullDirectoryPath}'. No data will be loaded.");
+            Console.WriteLine(
+                $"Warning: Data directory not found at '{fullDirectoryPath}'. No data will be loaded."
+            );
             return;
         }
 
@@ -396,7 +433,8 @@ public class World : IDisposable
             try
             {
                 XDocument doc = XDocument.Load(filePath);
-                if (doc.Root == null) continue;
+                if (doc.Root == null)
+                    continue;
 
                 // Aggregate <Entity> elements
                 allEntityElements.AddRange(doc.Root.Elements("Entity"));
@@ -418,10 +456,14 @@ public class World : IDisposable
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error reading or parsing XML file {Path.GetFileName(filePath)}: {ex.Message}");
+                Console.WriteLine(
+                    $"Error reading or parsing XML file {Path.GetFileName(filePath)}: {ex.Message}"
+                );
             }
         }
-        Console.WriteLine($"Consolidated {allEntityElements.Count} entities and {allRelationElements.Count} relations from all files.");
+        Console.WriteLine(
+            $"Consolidated {allEntityElements.Count} entities and {allRelationElements.Count} relations from all files."
+        );
 
         // Step 2: Pass the consolidated list of entities to the parser.
         DataParser.ParseAndLoad(this, allEntityElements);
