@@ -579,6 +579,13 @@ class GameSimulation {
                         "quit",
                     ];
 
+                    // If the command is valid but no rule was triggered, it means the context was wrong.
+                    if (validCommands.includes(command)) {
+                        console.log("\nYou can't do that right now.");
+                        return; // Exit the payload early.
+                    }
+
+                    // If the command is not in the valid list, check for typos.
                     let bestMatch = null;
                     let minDistance = 3; // Only suggest if the typo is 1 or 2 letters off.
 
@@ -596,7 +603,7 @@ class GameSimulation {
                     if (bestMatch) {
                         console.log(`\nDid you mean "${bestMatch}"?`);
                     } else {
-                        console.log("\nThat doesn't seem to do anything.");
+                        console.log("\nI don't understand that command.");
                     }
                 },
                 "Default Fallback",
