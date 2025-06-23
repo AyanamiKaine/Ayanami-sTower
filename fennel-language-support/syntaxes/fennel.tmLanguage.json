@@ -1,0 +1,115 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "Fennel",
+    "scopeName": "source.fennel",
+    "fileTypes": [
+      "fnl"
+    ],
+    "patterns": [
+      {
+        "include": "#comment"
+      },
+      {
+        "include": "#string"
+      },
+      {
+        "include": "#expression"
+      },
+      {
+        "include": "#constant"
+      },
+      {
+        "include": "#number"
+      },
+      {
+        "include": "#symbol"
+      }
+    ],
+    "repository": {
+      "comment": {
+        "name": "comment.line.semicolon.fennel",
+        "match": ";.*$"
+      },
+      "string": {
+        "name": "string.quoted.double.fennel",
+        "begin": "\"",
+        "end": "\"",
+        "patterns": [
+          {
+            "name": "constant.character.escape.fennel",
+            "match": "\\\\."
+          }
+        ]
+      },
+      "expression": {
+        "name": "meta.expression.fennel",
+        "begin": "\\(",
+        "end": "\\)",
+        "beginCaptures": {
+          "0": {
+            "name": "punctuation.definition.list.begin.fennel"
+          }
+        },
+        "endCaptures": {
+          "0": {
+            "name": "punctuation.definition.list.end.fennel"
+          }
+        },
+        "patterns": [
+          {
+            "include": "#callable"
+          },
+          {
+            "include": "#expression"
+          },
+          {
+            "include": "#comment"
+          },
+          {
+            "include": "#string"
+          },
+          {
+            "include": "#number"
+          },
+          {
+            "include": "#constant"
+          },
+          {
+            "include": "#symbol"
+          }
+        ]
+      },
+      "callable": {
+        "patterns": [
+          {
+            "name": "keyword.control.fennel",
+            "match": "\\b(fn|var|local|global|set|let|if|do|each|for|while|tset|quote|unquote|macro|macros|eval-compiler|import-macros|require-macros|pick-values|values|lua|λ)\\b"
+          },
+          {
+            "name": "support.function.macro.fennel",
+            "match": "\\b(->|->>|-?>|-?>>|\\?\\.|doto|when|with-open|collect|icollect|fcollect|accumulate|faccumulate|partial|lambda|macrodebug|case|match|case-try|match-try)\\b"
+          },
+          {
+            "name": "keyword.operator.fennel",
+            "match": "\\b(\\+|-|\\*|/|%|\\^|==|~=|!=|<=|>=|<|>|and|or|not|#|\\.\\.)\\b"
+          },
+          {
+            "name": "entity.name.function.fennel",
+            "match": "\\b[a-zA-Z_][a-zA-Z0-9_\\-?*!<>=\\.]*\\b"
+          }
+        ]
+      },
+      "number": {
+        "name": "constant.numeric.fennel",
+        "match": "\\b-?[0-9]+(?:\\.[0-9]+)?(?:[eE][-+]?[0-9]+)?\\b"
+      },
+      "constant": {
+        "name": "constant.language.fennel",
+        "match": "\\b(true|false|nil)\\b"
+      },
+      "symbol": {
+        "name": "variable.other.fennel",
+        "match": "[a-zA-Z_#:][a-zA-Z0-9_\\-?*!<>=\\.]*"
+      }
+    }
+  }

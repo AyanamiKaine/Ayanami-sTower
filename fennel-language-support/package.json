@@ -1,0 +1,40 @@
+{
+    "name": "fennel-language-support",
+    "displayName": "Fennel Language Support",
+    "description": "Syntax highlighting and autocompletion for the Fennel language",
+    "publisher": "Ayanami Kaine",
+    "version": "0.0.1",
+    "engines": {
+      "vscode": "^1.80.0"
+    },
+    "main": "./extension.js",
+    "activationEvents": [
+        "onLanguage:fennel"
+    ],
+    "categories": [
+      "Programming Languages"
+    ],
+    "contributes": {
+      "languages": [
+        {
+          "id": "fennel",
+          "aliases": [
+            "Fennel",
+            "fennel"
+          ],
+          "extensions": [
+            ".fnl"
+          ],
+          "configuration": "./language-configuration.json"
+        }
+      ],
+      "grammars": [
+        {
+          "language": "fennel",
+          "scopeName": "source.fennel",
+          "path": "./syntaxes/fennel.tmLanguage.json"
+        }
+      ]
+    }
+  }
+  
