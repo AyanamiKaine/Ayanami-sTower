@@ -204,6 +204,6 @@ describe("Feature Mixin", () => {
         expect(angelicTrait.hasFeature(canFly)).toBe(true);
 
         expect(myCharacter.hasFeature(immuneToPoison)).toBe(true);
-        expect(myCharacter.hasFeature(canFly)).toBe(true);
+        expect(myCharacter.hasFeature("CanFly")).toBe(true);
     });
 });
