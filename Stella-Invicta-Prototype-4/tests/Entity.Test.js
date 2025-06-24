@@ -6,6 +6,9 @@ import { polity } from "../src/mixins/Polity";
 import { connectedTo } from "../src/mixins/ConnectedTo";
 import { trait } from "../src/mixins/Trait";
 import { hasTraits } from "../src/mixins/HasTraits";
+import { character } from "../src/mixins/Character";
+import { featureDefinition } from "../src/mixins/FeatureDefinition";
+import { hasFeatures } from "../src/mixins/HasFeatures";
 
 describe("Entity Constructor Tests", () => {
     test("EntityShouldHaveAName", () => {
@@ -155,12 +158,48 @@ describe("Trait Mixin", () => {
             name: "Toxic Atmosphere",
         }).with(trait, false);
 
-        console.log(toxicAtmosphereTrait);
-
         korriban.with(hasTraits);
 
         korriban.addTrait(toxicAtmosphereTrait);
 
         expect(korriban.hasTrait(toxicAtmosphereTrait)).toBe(true);
+    });
+});
+
+describe("Feature Mixin", () => {
+    test("EntitiesCanHaveFeatures", () => {
+        const canFly = new Entity({ name: "Flight" }).with(
+            featureDefinition,
+            "CanFly",
+            "Allows movement through the air.",
+            "movement"
+        );
+
+        const immuneToPoison = new Entity({
+            name: "Poison Immunity",
+        }).with(
+            featureDefinition,
+            "ImmuneToPoison",
+            "Grants immunity to all forms of poison.",
+            "defense"
+        );
+
+        const angelicTrait = new Entity({ name: "Angelic" }).with(trait, true);
+        angelicTrait.with(hasFeatures);
+
+        // Add the defined features to the 'Angelic' trait itself.
+        angelicTrait.addFeature(canFly);
+        angelicTrait.addFeature(immuneToPoison);
+
+        const myCharacter = new Entity({ name: "Seraphina" });
+        myCharacter.with(character); // Mark as a character.
+        myCharacter.with(hasTraits); // Give the ability to have traits.
+
+        // Add the 'Angelic' trait to Seraphina.
+        myCharacter.addTrait(angelicTrait);
+
+        expect(myCharacter.hasTrait(angelicTrait)).toBe(true);
+        expect(angelicTrait.hasFeature(immuneToPoison)).toBe(true);
+        expect(angelicTrait.hasFeature(canFly)).toBe(true);
     });
 });
