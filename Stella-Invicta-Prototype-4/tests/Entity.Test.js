@@ -7,7 +7,7 @@ import { connectedTo } from "../mixins/ConnectedTo";
 
 describe("Entity Constructor Tests", () => {
     test("EntityShouldHaveAName", () => {
-        const e = new Entity("Karl");
+        const e = new Entity({ name: "Karl" });
 
         expect(e.name).toBe("Karl");
     });
@@ -19,8 +19,8 @@ describe("Entity Constructor Tests", () => {
     });
 
     test("EntitesCanHaveAParent", () => {
-        const parent = new Entity("Parent");
-        const child = new Entity("child", parent);
+        const parent = new Entity({ name: "parent" });
+        const child = new Entity({ name: "child", parent: parent });
 
         expect(child.parent).toBe(parent);
         expect(parent.children.at(0)).toBe(child);
@@ -29,14 +29,14 @@ describe("Entity Constructor Tests", () => {
 
 describe("Adding Mixins to Entities", () => {
     test("AddingMixin", () => {
-        const e = new Entity("Karl");
+        const e = new Entity({ name: "Karl" });
         e.with(health, 20);
 
         expect(e.health).toBe(20);
     });
 
     test("EntityHasMixin", () => {
-        const e = new Entity("Karl");
+        const e = new Entity({ name: "Karl" });
         e.with(health, 20);
 
         expect(e.has(health)).toBe(true);
@@ -45,7 +45,7 @@ describe("Adding Mixins to Entities", () => {
 
 describe("Health Mixin", () => {
     test("TakingDamage", () => {
-        const e = new Entity("Karl");
+        const e = new Entity({ name: "Karl" });
         e.with(health, 20);
 
         e.takeDamage(30);
@@ -54,7 +54,7 @@ describe("Health Mixin", () => {
     });
 
     test("HealingDamage", () => {
-        const e = new Entity("Karl");
+        const e = new Entity({ name: "Karl" });
         e.with(health, 20);
 
         e.heal(10);
@@ -65,7 +65,7 @@ describe("Health Mixin", () => {
 
 describe("Tag Mixins", () => {
     test("EntityCanHaveTags", () => {
-        const e = new Entity("Karl");
+        const e = new Entity({ name: "Karl" });
 
         // tags or identifiers are just empty functions
         // they are simply used to say entity IsA character
@@ -77,7 +77,7 @@ describe("Tag Mixins", () => {
     });
 
     test("EntityHasCorrectTag", () => {
-        const e = new Entity("Karl");
+        const e = new Entity({ name: "Karl" });
 
         // tags or identifiers are just empty functions
         // they are simply used to say entity IsA character
@@ -95,8 +95,8 @@ describe("Tag Mixins", () => {
 
 describe("Polity Mixin", () => {
     test("EntityCanBeAPolity", () => {
-        const e = new Entity("Umbral Cult");
-        const morian = new Entity("Morian");
+        const e = new Entity({ name: "Umbral Cult" });
+        const morian = new Entity({ name: "Morian" });
 
         e.with(polity, morian, "VA", "Voice of the Abyss");
         expect(e.has(polity)).toBe(true);
@@ -107,9 +107,9 @@ describe("Polity Mixin", () => {
 
 describe("Orbits Mixin", () => {
     test("EntityCanOrbitAnotherEntity", () => {
-        const sun = new Entity("Sun");
-        const earth = new Entity("Earth");
-        const moon = new Entity("Moon");
+        const sun = new Entity({ name: "Sun" });
+        const earth = new Entity({ name: "Earth" });
+        const moon = new Entity({ name: "Moon" });
         earth.with(orbits, sun);
         moon.with(orbits, earth);
 
@@ -122,9 +122,9 @@ describe("Orbits Mixin", () => {
 
 describe("ManyToManyRelationship Mixin", () => {
     test("EntityCanHaveManyToManyRelationshipComponent", () => {
-        const sol = new Entity("Sol");
-        const alphaCentauri = new Entity("Alpha Centauri");
-        const korriban = new Entity("Korriban");
+        const sol = new Entity({ name: "Sol" });
+        const alphaCentauri = new Entity({ name: "Alpha Centauri" });
+        const korriban = new Entity({ name: "Korriban" });
 
         // This relation is symetrically, this means
         // when we say that a is connected to b then
