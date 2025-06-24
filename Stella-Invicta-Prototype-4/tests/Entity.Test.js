@@ -1,9 +1,9 @@
 import { test, expect, describe } from "bun:test";
 import { Entity } from "../src/Entity";
-import { health } from "../mixins/Health";
-import { orbits } from "../mixins/Orbits";
-import { polity } from "../mixins/Polity";
-import { connectedTo } from "../mixins/ConnectedTo";
+import { health } from "../src/mixins/Health";
+import { orbits } from "../src/mixins/Orbits";
+import { polity } from "../src/mixins/Polity";
+import { connectedTo } from "../src/mixins/ConnectedTo";
 
 describe("Entity Constructor Tests", () => {
     test("EntityShouldHaveAName", () => {
@@ -69,7 +69,7 @@ describe("Tag Mixins", () => {
 
         // tags or identifiers are just empty functions
         // they are simply used to say entity IsA character
-        const character = () => { };
+        const character = () => {};
 
         e.with(character);
 
@@ -81,9 +81,9 @@ describe("Tag Mixins", () => {
 
         // tags or identifiers are just empty functions
         // they are simply used to say entity IsA character
-        const character = () => { };
-        const starSystem = () => { };
-        const planet = () => { };
+        const character = () => {};
+        const starSystem = () => {};
+        const planet = () => {};
 
         e.with(character);
 
