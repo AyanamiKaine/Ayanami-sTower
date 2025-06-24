@@ -4,6 +4,8 @@ import { health } from "../src/mixins/Health";
 import { orbits } from "../src/mixins/Orbits";
 import { polity } from "../src/mixins/Polity";
 import { connectedTo } from "../src/mixins/ConnectedTo";
+import { trait } from "../src/mixins/Trait";
+import { hasTraits } from "../src/mixins/HasTraits";
 
 describe("Entity Constructor Tests", () => {
     test("EntityShouldHaveAName", () => {
@@ -143,5 +145,22 @@ describe("ManyToManyRelationship Mixin", () => {
 
         expect(sol.isConnectedTo(korriban)).toBe(true);
         expect(korriban.isConnectedTo(sol)).toBe(true);
+    });
+});
+
+describe("Trait Mixin", () => {
+    test("EntitiesAreTraitsAndCanHaveTraits", () => {
+        const korriban = new Entity({ name: "Korriban" });
+        const toxicAtmosphereTrait = new Entity({
+            name: "Toxic Atmosphere",
+        }).with(trait, false);
+
+        console.log(toxicAtmosphereTrait);
+
+        korriban.with(hasTraits);
+
+        korriban.addTrait(toxicAtmosphereTrait);
+
+        expect(korriban.hasTrait(toxicAtmosphereTrait)).toBe(true);
     });
 });
