@@ -2,10 +2,17 @@
   "name": "stella_invicta",
   "module": "main.js",
   "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "bench": "bun run ./bench/movementSystem.bench.js"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "mitata": "^1.0.34"
   }
 }
