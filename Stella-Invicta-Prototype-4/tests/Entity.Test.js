@@ -192,14 +192,18 @@ describe("Feature Mixin", () => {
         angelicTrait.addFeature(immuneToPoison);
 
         const myCharacter = new Entity({ name: "Seraphina" });
-        myCharacter.with(character); // Mark as a character.
-        myCharacter.with(hasTraits); // Give the ability to have traits.
-
+        myCharacter
+            .with(character) // Mark as a character.
+            .with(hasTraits) // Give the ability to have traits.
+            .with(hasFeatures); // The character can also have its own direct features!
         // Add the 'Angelic' trait to Seraphina.
         myCharacter.addTrait(angelicTrait);
 
         expect(myCharacter.hasTrait(angelicTrait)).toBe(true);
         expect(angelicTrait.hasFeature(immuneToPoison)).toBe(true);
         expect(angelicTrait.hasFeature(canFly)).toBe(true);
+
+        expect(myCharacter.hasFeature(immuneToPoison)).toBe(true);
+        expect(myCharacter.hasFeature(canFly)).toBe(true);
     });
 });

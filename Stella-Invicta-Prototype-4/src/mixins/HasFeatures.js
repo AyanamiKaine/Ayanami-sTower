@@ -1,3 +1,6 @@
+import { featureDefinition } from "./FeatureDefinition.js";
+import { hasTraits } from "./HasTraits.js"; // We need to be aware of the hasTraits mixin.
+
 /**
  * A mixin that gives an entity the ability to possess a collection of features.
  * This can be applied to characters, traits, cultures, or any other entity
@@ -32,21 +35,45 @@ export const hasFeatures = (entity) => {
     };
 
     /**
-     * Checks if this entity possesses a specific feature.
-     * This is a powerful helper that can check by the feature entity object or by its unique string key.
-     * @param {object|string} featureIdentifier - The feature entity object or its string key.
+     * Checks if this entity possesses a specific feature, either directly
+     * or through one of its traits.
+     * @param {object|string} featureIdentifier - The feature entity object or its unique string key.
      * @returns {boolean}
      */
     entity.hasFeature = function (featureIdentifier) {
+        // Step 1: Check for the feature directly on this entity.
         if (typeof featureIdentifier === "string") {
             for (const feature of this.features) {
                 if (feature.key === featureIdentifier) {
-                    return true;
+                    return true; // Found it directly.
                 }
             }
-            return false;
+        } else if (this.features.has(featureIdentifier)) {
+            return true; // Found it directly.
         }
-        return this.features.has(featureIdentifier);
+
+        // Step 2: If not found, check for the feature within any traits this entity possesses.
+        // This requires the entity to also have the `hasTraits` mixin.
+        if (
+            this.has &&
+            typeof this.has === "function" &&
+            this.has(hasTraits) &&
+            this.getTraits
+        ) {
+            for (const trait of this.getTraits()) {
+                // If the trait can have features and has the one we're looking for...
+                if (
+                    trait.hasFeature &&
+                    typeof trait.hasFeature === "function" &&
+                    trait.hasFeature(featureIdentifier)
+                ) {
+                    return true; // Found it on a trait!
+                }
+            }
+        }
+
+        // If we've checked everywhere and haven't found it.
+        return false;
     };
 
     /**
