@@ -1,8 +1,11 @@
+import Graph from "graphology";
 import { Entity } from "./Entity.js";
 
 export class Game {
     constructor() {
         this.entities = [];
+        // Non hierarchically entity relationships are modeled using graph
+        this.relationships = new Graph();
     }
 
     /**
@@ -19,6 +22,7 @@ export class Game {
         });
 
         this.entities.push(entity);
+        this.relationships.addNode(entity.id, { entity: entity });
         return entity;
     }
 }
