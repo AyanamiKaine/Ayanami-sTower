@@ -3,9 +3,14 @@ import { Game } from "../src/game";
 import Graph from "graphology";
 
 /*
-The question remains, should we remove all relationship mixins 
-and should instead use a Graph datastructure to model them?
-*/
+    The question remains, should we remove all relationship mixins 
+    and should instead use a Graph datastructure to model them?
+
+    Simple hierarchly relationships can be put in mixins like parent and 
+    orbits, complex non-hierarchily relationships should be put into a graph
+    those are, character relationships, isAllied with, etc. Everything that 
+    would form a complex web should be a graph.
+    */
 
 describe("Relationship Example", () => {
     test("GalaxyMap Relationship Example", () => {
