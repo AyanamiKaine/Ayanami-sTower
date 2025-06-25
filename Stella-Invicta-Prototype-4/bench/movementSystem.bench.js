@@ -1,7 +1,7 @@
 import { run, bench, summary } from "mitata";
 import { Game } from "../src/game";
-import { velocity3D } from "../src/mixins/Velocity3D";
-import { position3D } from "../src/mixins/Position3D";
+import { velocity2D } from "../src/mixins/Velocity3D";
+import { position2D } from "../src/mixins/Position3D";
 // --- Global Setup ---
 
 const game = new Game();
@@ -18,8 +18,8 @@ const MovementSystem = (entities, deltaTime) => {
 
 for (let i = 0; i < 10000; i++) {
     let e = game.createEntity(`Entity-${i}`);
-    e.with(velocity3D, { x: 1, y: 1, z: 1 });
-    e.with(position3D);
+    e.with(velocity2D, { x: 1, y: 1, z: 1 });
+    e.with(position2D);
 }
 
 // --- Benchmarks ---
