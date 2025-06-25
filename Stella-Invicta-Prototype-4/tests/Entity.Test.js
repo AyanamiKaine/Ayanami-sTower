@@ -207,3 +207,18 @@ describe("Feature Mixin", () => {
         expect(myCharacter.hasFeature("CanFly")).toBe(true);
     });
 });
+
+describe("Entity Hierarchy", () => {
+    test("SolarSystem", () => {
+        const milkyWay = new Entity({ name: "Milky Way" });
+
+        const sol = new Entity({ name: "Sol", parent: milkyWay });
+
+        const sun = new Entity({ name: "Sun", parent: sol });
+        const earth = new Entity({ name: "Earth", parent: sol });
+        const moon = new Entity({ name: "Moon", parent: sol });
+
+        earth.with(orbits, sun);
+        moon.with(orbits, earth);
+    });
+});
