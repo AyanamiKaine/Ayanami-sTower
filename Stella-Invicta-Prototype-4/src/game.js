@@ -1,7 +1,7 @@
 import { Entity } from "./Entity.js";
 
 export class Game {
-    constructor() { // Removed 'parameters' as it wasn't being used
+    constructor() {
         this.entities = [];
     }
 
@@ -15,7 +15,7 @@ export class Game {
         // The keys of the object are the "named arguments".
         const entity = new Entity({
             name: name,
-            id: this.entities.length + 1
+            id: this.entities.length + 1,
         });
 
         this.entities.push(entity);
