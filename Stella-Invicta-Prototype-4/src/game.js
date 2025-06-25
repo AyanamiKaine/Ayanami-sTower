@@ -25,4 +25,26 @@ export class Game {
         this.relationships.addNode(entity.id, { entity: entity });
         return entity;
     }
+
+    /**
+     * Adds a directed (one-way) relationship between two entities.
+     * @param {Entity} source - The entity where the relationship originates.
+     * @param {Entity} target - The entity the relationship points to.
+     * @param {object} [attributes={}] - An object describing the relationship (e.g., {type: 'social', status: 'hates'}).
+     */
+    addOneWayRelationship(source, target, attributes = {}) {
+        if (!source || !target) return;
+        this.relationships.addDirectedEdge(source.id, target.id, attributes);
+    }
+
+    /**
+     * Adds an undirected (two-way, symmetrical) relationship between two entities.
+     * @param {Entity} source - One of the entities in the relationship.
+     * @param {Entity} target - The other entity in the relationship.
+     * @param {object} [attributes={}] - An object describing the relationship (e.g., {type: 'physical', connection: 'jump-gate'}).
+     */
+    addSymmetricRelationship(source, target, attributes = {}) {
+        if (!source || !target) return;
+        this.relationships.addUndirectedEdge(source.id, target.id, attributes);
+    }
 }
