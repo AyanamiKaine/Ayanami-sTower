@@ -218,7 +218,6 @@ describe("Entity Hierarchy", () => {
         const earth = new Entity({ name: "Earth", parent: sol });
         const moon = new Entity({ name: "Moon", parent: sol });
 
-        earth.with(orbits, sun);
-        moon.with(orbits, earth);
+        expect(moon.parent.parent).toBe(milkyWay);
     });
 });
