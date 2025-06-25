@@ -29,10 +29,11 @@ describe("Game Systems", () => {
         e.with(velocity3D, { x: 1, y: 1, z: 1 });
         e.with(position3D);
 
-        expect(e.position3D).toEqual({ x: 0, y: 0, z: 0 });
+        expect(e.position3D).toEqual({ x: 0, y: 0, z: 0 })
 
         const MovementSystem = (entities, deltaTime) => {
             for (const entity of entities) {
+                // Act only on entities that have both required components.
                 if (entity.position3D && entity.velocity3D) {
                     entity.position3D.x += entity.velocity3D.x * deltaTime;
                     entity.position3D.y += entity.velocity3D.y * deltaTime;
@@ -41,9 +42,10 @@ describe("Game Systems", () => {
             }
         };
 
-        MovementSystem(game.entities, 1);
+        MovementSystem(game.entities, 1)
 
-        expect(e.position3D).toEqual({ x: 1, y: 1, z: 1 });
+        expect(e.position3D).toEqual({ x: 1, y: 1, z: 1 })
+
 
         expect(e.name).toBe("Karl");
     });
