@@ -1,14 +1,14 @@
 import { test, expect, describe } from "bun:test";
-import { Entity } from "../src/Entity";
-import { health } from "../src/mixins/Health";
-import { orbits } from "../src/mixins/Orbits";
-import { polity } from "../src/mixins/Polity";
-import { connectedTo } from "../src/mixins/ConnectedTo";
-import { trait } from "../src/mixins/Trait";
-import { hasTraits } from "../src/mixins/HasTraits";
-import { character } from "../src/mixins/Character";
-import { featureDefinition } from "../src/mixins/FeatureDefinition";
-import { hasFeatures } from "../src/mixins/HasFeatures";
+import { Entity } from "../src/game/Entity";
+import { health } from "../src/game/mixins/Health";
+import { orbits } from "../src/game/mixins/Orbits";
+import { polity } from "../src/game/mixins/Polity";
+import { connectedTo } from "../src/game/mixins/ConnectedTo";
+import { trait } from "../src/game/mixins/Trait";
+import { hasTraits } from "../src/game/mixins/HasTraits";
+import { character } from "../src/game/mixins/Character";
+import { featureDefinition } from "../src/game/mixins/FeatureDefinition";
+import { hasFeatures } from "../src/game/mixins/HasFeatures";
 
 describe("Entity Constructor Tests", () => {
     test("EntityShouldHaveAName", () => {

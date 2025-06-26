@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { Game } from "../src/game";
+import { Game } from "../src/game/game";
 import Graph from "graphology";
 
 /*

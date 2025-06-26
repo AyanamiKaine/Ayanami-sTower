@@ -1,7 +1,7 @@
 import { test, expect, describe } from "bun:test";
-import { Game } from "../src/game";
-import { velocity3D } from "../src/mixins/Velocity3D";
-import { position3D } from "../src/mixins/Position3D";
+import { Game } from "../src/game/game";
+import { velocity3D } from "../src/game/mixins/Velocity3D";
+import { position3D } from "../src/game/mixins/Position3D";
 
 describe("Game Constructor Tests", () => {
     test("Game can have entities", () => {

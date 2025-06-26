@@ -1,0 +1,1 @@
+Things in the game folder should not refrence anything related to the graphical representation. Entities and the game logic should work without needing to have a working graphical interface. In a later date this will be refactored into a seperate library.

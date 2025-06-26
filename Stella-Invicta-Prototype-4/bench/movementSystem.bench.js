@@ -1,7 +1,7 @@
 import { run, bench, summary } from "mitata";
-import { Game } from "../src/game";
-import { velocity2D } from "../src/mixins/Velocity3D";
-import { position2D } from "../src/mixins/Position3D";
+import { Game } from "../src/game/game";
+import { velocity2D } from "../src/game/mixins/Velocity3D";
+import { position2D } from "../src/game/mixins/Position3D";
 // --- Global Setup ---
 
 const game = new Game();
