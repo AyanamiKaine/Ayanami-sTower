@@ -1,8 +1,8 @@
 import { FancyButton } from "@pixi/ui";
 import { animate } from "motion";
 import type { AnimationPlaybackControls } from "motion/react";
-import type { FederatedWheelEvent, Ticker } from "pixi.js";
-import { Container, Graphics, Rectangle } from "pixi.js";
+import type { FederatedPointerEvent, FederatedWheelEvent, Ticker } from "pixi.js";
+import { Container, Graphics, Point, Rectangle } from "pixi.js";
 
 import { engine } from "../../getEngine";
 import { PausePopup } from "../../popups/PausePopup";
@@ -28,6 +28,11 @@ export class MainScreen extends Container {
   private readonly MIN_ZOOM = 0.2;
   private readonly MAX_ZOOM = 5.0;
 
+  // --- Panning Properties ---
+  private isPanning = false;
+  private lastPanPosition = new Point();
+
+
   constructor() {
     super();
     this.game = new Game();
@@ -38,6 +43,10 @@ export class MainScreen extends Container {
     this.mainContainer.eventMode = 'static';
 
     this.mainContainer.on('wheel', this.onWheelScroll);
+    this.mainContainer.on('pointerdown', this.onPointerDown);
+    this.mainContainer.on('pointerup', this.onPointerUp);
+    this.mainContainer.on('pointerupoutside', this.onPointerUp);
+    this.mainContainer.on('pointermove', this.onPointerMove);
 
     // Right-click event to show the context menu
     this.mainContainer.on('rightclick', (event) => {
@@ -133,6 +142,60 @@ export class MainScreen extends Container {
   /** Fully reset */
   public reset() { }
 
+  private onPointerDown = (event: FederatedPointerEvent) => {
+    // Handle panning with middle mouse button
+    if (event.button === 0 && event.ctrlKey) {
+      this.isPanning = true;
+      this.lastPanPosition.copyFrom(event.global);
+      this.mainContainer.cursor = 'move';
+      // No need to prevent default here as Ctrl+Click doesn't have a strong default browser action.
+      return; // Stop processing other click events
+    }
+
+    // Handle right-click for context menu
+    if (event.button === 2) {
+      event.preventDefault();
+      const menuOptions: ContextMenuOption[] = [
+        {
+          label: 'Add Star System', action: 'add-circle', callback: () => {
+            const star = new StarSystem(this.contextMenu);
+            const localPosition = this.mainContainer.toLocal(event.global);
+            star.position.set(localPosition.x, localPosition.y);
+            this.mainContainer.addChild(star);
+          }, icon: '🌣'
+        },
+      ];
+      this.contextMenu.show(event.global.x, event.global.y, menuOptions);
+    }
+
+    // Hide context menu on left click
+    if (event.button === 0) {
+      this.contextMenu.hide();
+    }
+  }
+
+  private onPointerUp = (event: FederatedPointerEvent) => {
+    // --- THIS IS THE MODIFIED LOGIC ---
+    // Stop panning if the left mouse button is released, and we were panning
+    if (event.button === 0 && this.isPanning) {
+      this.isPanning = false;
+      this.mainContainer.cursor = 'default';
+    }
+  }
+
+  private onPointerMove = (event: FederatedPointerEvent) => {
+    // Move the container if panning is active
+    if (this.isPanning) {
+      const dx = event.global.x - this.lastPanPosition.x;
+      const dy = event.global.y - this.lastPanPosition.y;
+
+      this.mainContainer.x += dx;
+      this.mainContainer.y += dy;
+
+      this.lastPanPosition.copyFrom(event.global);
+    }
+  }
+
   /**
    * Handles zooming the main container based on the mouse wheel.
    * This version uses a direct calculation to ensure the point under the cursor remains stationary.
@@ -173,8 +236,12 @@ export class MainScreen extends Container {
     const centerX = width * 0.5;
     const centerY = height * 0.5;
 
-    this.mainContainer.x = centerX;
-    this.mainContainer.y = centerY;
+    // Only set initial position if it hasn't been panned/zoomed yet
+    if (this.mainContainer.x === 0 && this.mainContainer.y === 0) {
+      this.mainContainer.x = centerX;
+      this.mainContainer.y = centerY;
+    }
+
     this.pauseButton.x = 30;
     this.pauseButton.y = 30;
     this.settingsButton.x = width - 30;
