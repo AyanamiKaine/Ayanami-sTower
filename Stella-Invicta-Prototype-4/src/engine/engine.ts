@@ -40,7 +40,8 @@ export class CreationEngine extends Application {
     opts.resolution ??= getResolution();
     opts.autoDensity = true;
     opts.antialias = true;
-
+    opts.powerPreference = 'high-performance';
+    opts.premultipliedAlpha = true;
     await super.init(opts);
 
     // Append the application canvas to the document body
