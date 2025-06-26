@@ -1,9 +1,9 @@
 export function resize(
-  w: number,
-  h: number,
-  minWidth: number,
-  minHeight: number,
-  letterbox: boolean,
+  w,
+  h,
+  minWidth,
+  minHeight,
+  letterbox,
 ) {
   const aspectRatio = minWidth / minHeight;
   let canvasWidth = w;

@@ -9,18 +9,16 @@ const defaultRoundedBoxOptions = {
   shadowOffset: 22,
 };
 
-export type RoundedBoxOptions = typeof defaultRoundedBoxOptions;
-
 /**
  * Generic rounded box based on a nine-sliced sprite that can be resized freely.
  */
 export class RoundedBox extends Container {
   /** The rectangular area, that scales without distorting rounded corners */
-  private image: NineSliceSprite;
+ image;
   /** Optional shadow matching the box image, with y offest */
-  private shadow?: NineSliceSprite;
+  shadow;
 
-  constructor(options: Partial<RoundedBoxOptions> = {}) {
+  constructor(options = {}) {
     super();
     const opts = { ...defaultRoundedBoxOptions, ...options };
     this.image = new NineSliceSprite({
@@ -55,12 +53,12 @@ export class RoundedBox extends Container {
   }
 
   /** Get the base width, without counting the shadow */
-  public get boxWidth() {
+  get boxWidth() {
     return this.image.width;
   }
 
   /** Get the base height, without counting the shadow */
-  public get boxHeight() {
+  get boxHeight() {
     return this.image.height;
   }
 }

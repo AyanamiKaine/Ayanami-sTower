@@ -2,21 +2,13 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { animate } from 'motion';
 import { engine } from '../getEngine';
 
-// Define the structure for a menu item
-export interface ContextMenuOption {
-    label: string;
-    action: string | 'separator';
-    callback?: () => void;
-    icon?: string; // Optional icon
-}
-
 export class ContextMenu extends Container {
-    private background: Graphics;
-    private shadow: Graphics;
-    private innerBorder: Graphics;
-    private menuWidth = 200;
-    private itemHeight = 32;
-    private padding = 8;
+    background;
+    shadow;
+    innerBorder;
+    menuWidth = 200;
+    itemHeight = 32;
+    padding = 8;
 
     constructor() {
         super();
@@ -40,7 +32,7 @@ export class ContextMenu extends Container {
      * @param y - The vertical position (top-left).
      * @param options - An array of menu item definitions.
      */
-    public async show(x: number, y: number, options: ContextMenuOption[]) {
+    async show(x, y, options = []) {
         if (this.visible) {
             // If it's already visible, hide it instantly before showing the new one
             this.alpha = 0;
@@ -70,7 +62,7 @@ export class ContextMenu extends Container {
     /**
      * Hides the context menu with a fade-out animation.
      */
-    public async hide() {
+    async hide() {
         if (!this.visible) return;
 
         await animate(
@@ -84,7 +76,7 @@ export class ContextMenu extends Container {
     /**
      * Constructs the individual menu items from the options array.
      */
-    private buildMenu(options: ContextMenuOption[]) {
+    buildMenu(options) {
         let currentY = this.padding;
 
         options.forEach((option) => {
@@ -113,7 +105,7 @@ export class ContextMenu extends Container {
     /**
      * Creates a single interactive menu item.
      */
-    private createMenuItem(option: ContextMenuOption): Container {
+    createMenuItem(option) {
         const container = new Container();
 
         // Background for hover and click effects
@@ -171,7 +163,7 @@ export class ContextMenu extends Container {
     /**
      * Draws the main graphical elements (shadow, background, borders).
      */
-    private drawGraphics() {
+    drawGraphics() {
         const menuHeight = this.children.filter(c => c instanceof Container && c.children.length > 0).length * this.itemHeight + this.padding * 6;
 
         // Shadow
@@ -194,7 +186,7 @@ export class ContextMenu extends Container {
     /**
      * Adjusts the menu's final position to ensure it stays within the screen bounds.
      */
-    private adjustPosition(x: number, y: number) {
+    adjustPosition(x, y) {
         const screen = engine().screen;
         let finalX = x;
         let finalY = y;

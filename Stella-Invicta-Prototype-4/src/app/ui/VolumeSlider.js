@@ -8,9 +8,9 @@ import { Label } from "./Label";
  */
 export class VolumeSlider extends Slider {
   /** Message displayed for the slider */
-  public messageLabel: Label;
+messageLabel;
 
-  constructor(label: string, min = -0.1, max = 100, value = 100) {
+  constructor(label, min = -0.1, max = 100, value = 100) {
     const width = 280;
     const height = 20;
     const radius = 20;

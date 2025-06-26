@@ -11,13 +11,11 @@ const defaultButtonOptions = {
   fontSize: 28,
 };
 
-type ButtonOptions = typeof defaultButtonOptions;
-
 /**
  * The big rectangle button, with a label, idle and pressed states
  */
 export class Button extends FancyButton {
-  constructor(options: Partial<ButtonOptions> = {}) {
+  constructor(options = {}) {
     const opts = { ...defaultButtonOptions, ...options };
 
     super({
@@ -60,11 +58,11 @@ export class Button extends FancyButton {
     this.onHover.connect(this.handleHover.bind(this));
   }
 
-  private handleHover() {
+handleHover() {
     engine().audio.sfx.play("main/sounds/sfx-hover.wav");
   }
 
-  private handleDown() {
+  handleDown() {
     engine().audio.sfx.play("main/sounds/sfx-press.wav");
   }
 }
