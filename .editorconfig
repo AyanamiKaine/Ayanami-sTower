@@ -8,3 +8,59 @@ dotnet_diagnostic.CA2254.severity = none
 
 # UIBuilder: Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 dotnet_diagnostic.UIBuilder.severity = suggestion
+
+# This is the root of the project, so stop searching for other .editorconfig files
+root = true
+
+# Apply these rules to all files
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# C# specific settings
+[*.cs]
+# The main setting for line length. Note: This isn't a hard limit.
+# Formatters use it as a guideline for where to wrap if a wrapping rule is triggered.
+max_line_length = 40
+
+# =================================================================
+# C# WRAPPING AND NEW LINE PREFERENCES
+# =================================================================
+# These rules tell the formatter to add new lines to "chop" up code.
+
+# --- Method and Constructor Declarations ---
+# Wrap long parameter lists for methods/constructors.
+# Style options:
+#   wrap_if_long: (default) wraps if the list exceeds max_line_length
+#   do_not_wrap: never wraps
+#   wrap_always: wraps even if it fits on one line (one parameter per line)
+csharp_style_wrap_for_method_declarations = wrap_if_long
+
+# --- Method Call Arguments ---
+# Wrap long argument lists when calling a method.
+csharp_style_wrap_for_method_calls = wrap_if_long
+
+# --- LINQ Queries ---
+# Wrap different clauses in a LINQ query onto new lines.
+csharp_style_wrap_for_linq_query = wrap_if_long
+
+# --- Binary Operators (like +, -, &&, ||) ---
+# Wrap expressions with binary operators if they are too long.
+csharp_style_wrap_for_binary_operators = wrap_if_long
+
+# --- Object and Collection Initializers ---
+# Wrap long object initializers.
+csharp_style_wrap_for_initializer_expressions = wrap_if_long
+
+# --- Embedded Statements (if, while, etc.) ---
+# Do not allow statements on the same line as the `if` condition without braces.
+csharp_style_allow_embedded_statements_on_same_line = false
+
+# --- Chained Method Calls (Fluent APIs) ---
+# This is a common one for long lines.
+# Example: new List<int>().Where(x => x > 5).Select(x => x * 2).ToList();
+csharp_style_wrap_chained_method_calls = wrap_if_long
