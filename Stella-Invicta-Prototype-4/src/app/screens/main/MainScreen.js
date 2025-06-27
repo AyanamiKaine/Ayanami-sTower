@@ -10,6 +10,8 @@ import { Game } from "../../../game/game";
 import { StarSystem } from "../../ui/StarSystem";
 import { position3D } from "../../../game/mixins/Position3D";
 import { StarSystemConnectionLine } from "../../ui/StarSystemConnectionLine";
+import { SelectionManager } from "../../ui/SelectionManager";
+import { getRandomSystemName } from "../../../game/data/Utility";
 
 /**
  * The main screen of the application, responsible for displaying the primary game view,
@@ -24,6 +26,14 @@ export class MainScreen extends Container {
     isConnecting = false;
     connectionSourceStar = null;
 
+    connectionLines = new Map();
+
+    // Add selection-related properties
+    selectionManager;
+    isGroupDragging = false;
+    groupDragStart = { x: 0, y: 0 };
+    groupDragOffset = { x: 0, y: 0 };
+
     constructor() {
         super();
         /** @type {Game} */
@@ -34,12 +44,39 @@ export class MainScreen extends Container {
 
         this.mainContainer.sortableChildren = true;
 
+        let grid = new Graphics()
+            .moveTo(0, 0)
+            .lineTo(0, 10000)
+            .stroke({ color: "003f90", width: 2 });
+
+        grid.moveTo(0, 0)
+            .lineTo(0, -10000)
+            .stroke({ color: "003f90", width: 2 });
+
+        grid.moveTo(0, 0)
+            .lineTo(10000, 0)
+            .stroke({ color: "003f90", width: 2 });
+
+        grid.moveTo(0, 0)
+            .lineTo(-10000, 0)
+            .stroke({ color: "003f90", width: 2 });
+
+        grid.zIndex = -2;
+
+        this.mainContainer.addChild(grid);
+
         this.mainContainer.hitArea = new Rectangle(
             -10000,
             -10000,
             20000,
             20000,
         );
+
+        this.selectionManager = new SelectionManager(this.mainContainer);
+        this.mainContainer.addChild(this.selectionManager);
+
+        // Add keyboard event listeners for Ctrl key
+        this.setupKeyboardListeners();
 
         this.mainContainer.eventMode = "static";
 
@@ -60,8 +97,9 @@ export class MainScreen extends Container {
                         const worldPosition = this.mainContainer.toLocal(
                             event.global,
                         );
-                        const starEntity =
-                            this.game.createEntity("Star System");
+                        const starEntity = this.game.createEntity(
+                            getRandomSystemName(),
+                        );
                         starEntity.with(position3D, {
                             x: worldPosition.x,
                             y: worldPosition.y,
@@ -104,35 +142,125 @@ export class MainScreen extends Container {
         /** @private */
         this.lastPanPosition = new Point();
 
-        const buttonAnimations = {
-            hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },
-            pressed: { props: { scale: { x: 0.9, y: 0.9 } }, duration: 100 },
-        };
-
-        /** @private */
-        this.pauseButton = new FancyButton({
-            defaultView: "icon-pause.png",
-            anchor: 0.5,
-            animations: buttonAnimations,
-        });
-        this.pauseButton.onPress.connect(() =>
-            engine().navigation.presentPopup(PausePopup),
-        );
-        this.addChild(this.pauseButton);
-
-        /** @private */
-        this.settingsButton = new FancyButton({
-            defaultView: "icon-settings.png",
-            anchor: 0.5,
-            animations: buttonAnimations,
-        });
-        this.settingsButton.onPress.connect(() =>
-            engine().navigation.presentPopup(SettingsPopup),
-        );
-        this.addChild(this.settingsButton);
-
         this.contextMenu = new ContextMenu();
         this.addChild(this.contextMenu);
+    }
+
+    setupMainContextMenu() {
+        this.mainContainer.on("rightclick", (event) => {
+            event.preventDefault();
+            const menuOptions = [];
+
+            // Show selection-specific options if items are selected
+            if (this.selectionManager.hasSelection()) {
+                menuOptions.push({
+                    label: `Delete Selected (${this.selectionManager.getSelectedCount()})`,
+                    action: "delete-selected",
+                    callback: () => {
+                        this.selectionManager.deleteSelectedItems();
+                    },
+                    icon: "🗑️",
+                });
+
+                menuOptions.push({
+                    label: "Clear Selection",
+                    action: "clear-selection",
+                    callback: () => {
+                        this.selectionManager.clearSelection();
+                    },
+                    icon: "✖️",
+                });
+
+                menuOptions.push({ action: "separator", label: "" });
+            }
+
+            // Regular "Add Star System" option
+            menuOptions.push({
+                label: "Add Star System",
+                action: "add-circle",
+                callback: () => {
+                    const worldPosition = this.mainContainer.toLocal(
+                        event.global,
+                    );
+                    const starEntity = this.game.createEntity(
+                        getRandomSystemName(),
+                    );
+                    starEntity.with(position3D, {
+                        x: worldPosition.x,
+                        y: worldPosition.y,
+                        z: 0,
+                    });
+
+                    const starSystemView = new StarSystem(
+                        starEntity,
+                        this.contextMenu,
+                        this.mainContainer,
+                        this,
+                    );
+
+                    starSystemView.position.copyFrom(worldPosition);
+                    this.mainContainer.addChild(starSystemView);
+                },
+                icon: "🌟",
+            });
+
+            // Show select all option
+            menuOptions.push({
+                label: "Select All",
+                action: "select-all",
+                callback: () => {
+                    this.selectAllStarSystems();
+                },
+                icon: "🔘",
+            });
+
+            this.contextMenu.show(event.global.x, event.global.y, menuOptions);
+        });
+    }
+
+    setupKeyboardListeners() {
+        // Track Ctrl key state
+        document.addEventListener("keydown", (event) => {
+            if (event.ctrlKey || event.metaKey) {
+                this.selectionManager.setCtrlPressed(true);
+            }
+
+            // Handle keyboard shortcuts
+            if (event.key === "Delete" || event.key === "Backspace") {
+                if (this.selectionManager.hasSelection()) {
+                    this.selectionManager.deleteSelectedItems();
+                    event.preventDefault();
+                }
+            }
+
+            // Ctrl+A to select all
+            if ((event.ctrlKey || event.metaKey) && event.key === "a") {
+                this.selectAllStarSystems();
+                event.preventDefault();
+            }
+
+            // Escape to clear selection
+            if (event.key === "Escape") {
+                this.selectionManager.clearSelection();
+            }
+        });
+
+        document.addEventListener("keyup", (event) => {
+            if (!event.ctrlKey && !event.metaKey) {
+                this.selectionManager.setCtrlPressed(false);
+            }
+        });
+    }
+
+    selectAllStarSystems() {
+        const starSystems = this.mainContainer.children.filter(
+            (child) => child.constructor.name === "StarSystem",
+        );
+
+        this.selectionManager.clearSelection();
+        for (const starSystem of starSystems) {
+            this.selectionManager.addToSelection(starSystem);
+        }
     }
 
     /**
@@ -165,25 +293,99 @@ export class MainScreen extends Container {
                     { type: "connectedTo" },
                 );
 
-                this.connectionLayer = new StarSystemConnectionLine(
-                    [targetStar.x, targetStar.y],
-                    [this.connectionSourceStar.x, this.connectionSourceStar.y],
+                // Create the connection line with star system references
+                const connectionLine = new StarSystemConnectionLine(
+                    this.connectionSourceStar,
+                    targetStar,
                 );
 
-                this.mainContainer.addChild(this.connectionLayer);
+                this.mainContainer.addChild(connectionLine);
+
+                // Store the connection line for updates
+                const connectionKey = this.getConnectionKey(
+                    this.connectionSourceStar,
+                    targetStar,
+                );
+                this.connectionLines.set(connectionKey, connectionLine);
+
+                // Register this connection line with both star systems
+                this.connectionSourceStar.addConnectionLine(connectionLine);
+                targetStar.addConnectionLine(connectionLine);
             }
             // Reset the connection state regardless of success
             this.isConnecting = false;
             this.connectionSourceStar = null;
             this.mainContainer.cursor = "default";
             return; // Exit after handling the connection click
+        } else {
+            this.isConnecting = false;
+            this.connectionSourceStar = null;
+            this.mainContainer.cursor = "default";
         }
 
-        // Hide context menu on left click
         if (event.button === 0) {
+            const worldPosition = this.mainContainer.toLocal(event.global);
+
+            // Check if clicking on a star system
+            const clickedStarSystem = this.getStarSystemAt(event.target);
+
+            if (clickedStarSystem) {
+                // Handle clicking on a star system
+                if (event.ctrlKey || event.metaKey) {
+                    // Toggle selection with Ctrl
+                    this.selectionManager.toggleSelection(clickedStarSystem);
+                } else if (
+                    !this.selectionManager.selectedItems.has(clickedStarSystem)
+                ) {
+                    // Select single item if not already selected
+                    this.selectionManager.clearSelection();
+                    this.selectionManager.addToSelection(clickedStarSystem);
+                }
+
+                // Start group dragging if we have selected items
+                if (this.selectionManager.hasSelection()) {
+                    this.isGroupDragging = true;
+                    this.groupDragStart = {
+                        x: event.global.x,
+                        y: event.global.y,
+                    };
+                    this.mainContainer.cursor = "move";
+                }
+            } else {
+                // Start selection rectangle if not clicking on a star system
+                if (!event.ctrlKey && !event.metaKey) {
+                    this.selectionManager.clearSelection();
+                }
+                this.selectionManager.startSelection(worldPosition);
+            }
+
+            // Hide context menu
             this.contextMenu.hide();
+            return;
+        }
+
+        if (
+            event.button === 0 &&
+            event.ctrlKey &&
+            !this.selectionManager.isSelecting
+        ) {
+            this.isPanning = true;
+            this.lastPanPosition.copyFrom(event.global);
+            this.mainContainer.cursor = "move";
+            return;
         }
     };
+
+    getStarSystemAt(target) {
+        let current = target;
+        while (current) {
+            if (current.constructor.name === "StarSystem") {
+                return current;
+            }
+            current = current.parent;
+        }
+        return null;
+    }
 
     /**
      * Creates a configurable grid pattern using PIXI.Graphics.
@@ -231,6 +433,25 @@ export class MainScreen extends Container {
         return graphics;
     }
 
+    getConnectionKey(starA, starB) {
+        const idA = starA.entity.id;
+        const idB = starB.entity.id;
+        // Create a consistent key regardless of order
+        return idA < idB ? `${idA}-${idB}` : `${idB}-${idA}`;
+    }
+
+    // Method to remove a connection line
+    removeConnectionLine(starA, starB) {
+        const connectionKey = this.getConnectionKey(starA, starB);
+        const connectionLine = this.connectionLines.get(connectionKey);
+
+        if (connectionLine) {
+            this.mainContainer.removeChild(connectionLine);
+            connectionLine.destroy();
+            this.connectionLines.delete(connectionKey);
+        }
+    }
+
     startConnectionMode(sourceStar) {
         this.isConnecting = true;
         this.connectionSourceStar = sourceStar;
@@ -242,7 +463,20 @@ export class MainScreen extends Container {
      * @param {import('pixi.js').FederatedPointerEvent} event
      */
     onPointerUp = (event) => {
-        // Stop panning if the left mouse button is released and we were panning
+        // End selection rectangle
+        if (this.selectionManager.isSelecting) {
+            this.selectionManager.endSelection();
+            return;
+        }
+
+        // End group dragging
+        if (this.isGroupDragging && event.button === 0) {
+            this.isGroupDragging = false;
+            this.mainContainer.cursor = "default";
+            return;
+        }
+
+        // Stop panning
         if (event.button === 0 && this.isPanning) {
             this.isPanning = false;
             this.mainContainer.cursor = "default";
@@ -253,6 +487,28 @@ export class MainScreen extends Container {
      * @param {import('pixi.js').FederatedPointerEvent} event
      */
     onPointerMove = (event) => {
+        // Handle selection rectangle
+        if (this.selectionManager.isSelecting) {
+            const worldPosition = this.mainContainer.toLocal(event.global);
+            this.selectionManager.updateSelection(worldPosition);
+            return;
+        }
+
+        // Handle group dragging
+        if (this.isGroupDragging && this.selectionManager.hasSelection()) {
+            const deltaX = event.global.x - this.groupDragStart.x;
+            const deltaY = event.global.y - this.groupDragStart.y;
+
+            // Convert to world coordinates
+            const worldDeltaX = deltaX / this.mainContainer.scale.x;
+            const worldDeltaY = deltaY / this.mainContainer.scale.y;
+
+            this.selectionManager.moveSelectedItems(worldDeltaX, worldDeltaY);
+
+            this.groupDragStart = { x: event.global.x, y: event.global.y };
+            return;
+        }
+
         // Move the container if panning is active
         if (this.isPanning) {
             const dx = event.global.x - this.lastPanPosition.x;
