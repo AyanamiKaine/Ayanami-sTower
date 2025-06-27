@@ -19,7 +19,7 @@ export class StarSystem extends Container {
     contextMenu;
     stage;
     mainScreen;
-
+    isSelected = false;
     // --- Child Components ---
     circle; // <-- We'll store a reference to the circle graphic
     label; // <-- And a reference to the text label
@@ -27,6 +27,8 @@ export class StarSystem extends Container {
     // --- Dragging Properties ---
     isDragging = false;
     dragOffset = new Point();
+
+    connectionLines = new Set();
 
     constructor(entity, contextMenu, stage, mainScreen) {
         super(); // <-- Important: Call the Container's constructor
@@ -69,6 +71,15 @@ export class StarSystem extends Container {
         this.on("rightclick", this.onRightClick); // Right-click can be on the container
     }
 
+    addConnectionLine(connectionLine) {
+        this.connectionLines.add(connectionLine);
+    }
+
+    // Add method to remove a connection line
+    removeConnectionLine(connectionLine) {
+        this.connectionLines.delete(connectionLine);
+    }
+
     // This is the new method to handle renaming
     rename(newName) {
         if (!newName) return;
@@ -77,13 +88,18 @@ export class StarSystem extends Container {
     }
 
     onDragStart = (event) => {
-        // This logic remains mostly the same
         if (event.button !== 0) return;
 
+        // Check if this star system is part of a selection
+        const mainScreen = this.mainScreen;
+        if (mainScreen && mainScreen.selectionManager.selectedItems.has(this)) {
+            // Let the main screen handle group dragging
+            return;
+        }
+
+        // Handle individual dragging (existing code)
         this.isDragging = true;
-        // Important: get the offset relative to the main container (this), not the circle
         this.dragOffset = this.toLocal(event.global);
-        this.alpha = 0.7;
 
         if (this.parent) {
             this.parent.sortableChildren = true;
@@ -120,25 +136,70 @@ export class StarSystem extends Container {
             if (this.entity.setPosition) {
                 this.entity.setPosition({ x: this.x, y: this.y });
             }
+
+            this.updateConnectionLines();
         }
     };
+
+    updateConnectionLines() {
+        for (const connectionLine of this.connectionLines) {
+            if (connectionLine && connectionLine.redraw) {
+                connectionLine.redraw();
+            }
+        }
+    }
 
     onRightClick = (event) => {
         event.stopPropagation();
         const menuOptions = [];
 
+        // Check if this star system is selected
+        const isSelected =
+            this.mainScreen.selectionManager.selectedItems.has(this);
+        const selectedCount =
+            this.mainScreen.selectionManager.getSelectedCount();
+
+        if (isSelected && selectedCount > 1) {
+            // Show group operations
+            menuOptions.push({
+                label: `Move Selected (${selectedCount})`,
+                action: "move-group",
+                icon: "↔️",
+                callback: () => {
+                    // This could open a dialog for precise positioning
+                    alert(`Moving ${selectedCount} selected star systems`);
+                },
+            });
+
+            menuOptions.push({
+                label: `Delete Selected (${selectedCount})`,
+                action: "delete-group",
+                icon: "🗑️",
+                callback: () => {
+                    if (
+                        confirm(
+                            `Delete ${selectedCount} selected star systems?`,
+                        )
+                    ) {
+                        this.mainScreen.selectionManager.deleteSelectedItems();
+                    }
+                },
+            });
+
+            menuOptions.push({ action: "separator", label: "" });
+        }
+
+        // Individual operations
         menuOptions.push({
             label: "Rename",
             action: "rename",
             icon: "✎",
             callback: () => {
-                // --- Change #3: Implement the rename logic ---
                 const newName = prompt(
                     "Enter a new name for the star system:",
                     this.entity.name,
                 );
                 this.rename(newName);
-                // --- End of Change #3 ---
             },
         });
 
@@ -147,7 +208,6 @@ export class StarSystem extends Container {
             action: "connect",
             icon: "↔️",
             callback: () => {
-                // Call the new method on the MainScreen to enter connection mode
                 this.mainScreen.startConnectionMode(this);
             },
         });
@@ -162,15 +222,73 @@ export class StarSystem extends Container {
                 ),
         });
 
+        if (!isSelected || selectedCount === 1) {
+            menuOptions.push({ action: "separator", label: "" });
+
+            menuOptions.push({
+                label: "Delete",
+                action: "delete",
+                icon: "🗑️",
+                callback: () => {
+                    if (confirm("Delete this star system?")) {
+                        this.destroy();
+                    }
+                },
+            });
+        }
+
+        // Selection operations
         menuOptions.push({ action: "separator", label: "" });
 
-        menuOptions.push({
-            label: "Delete",
-            action: "delete",
-            icon: "🗑️",
-            callback: () => this.destroy(),
-        });
+        if (isSelected) {
+            menuOptions.push({
+                label: "Deselect",
+                action: "deselect",
+                icon: "◯",
+                callback: () => {
+                    this.mainScreen.selectionManager.removeFromSelection(this);
+                },
+            });
+        } else {
+            menuOptions.push({
+                label: "Select",
+                action: "select",
+                icon: "◉",
+                callback: () => {
+                    this.mainScreen.selectionManager.addToSelection(this);
+                },
+            });
+        }
 
         this.contextMenu.show(event.global.x, event.global.y, menuOptions);
     };
+
+    destroy() {
+        // Remove all connection lines before destroying
+        for (const connectionLine of this.connectionLines) {
+            if (connectionLine && !connectionLine.destroyed) {
+                // Remove this star system's reference from the connection line
+                if (connectionLine.starSystemA === this) {
+                    connectionLine.starSystemA = null;
+                } else if (connectionLine.starSystemB === this) {
+                    connectionLine.starSystemB = null;
+                }
+
+                // If both references are null, destroy the connection line
+                if (
+                    !connectionLine.starSystemA ||
+                    !connectionLine.starSystemB
+                ) {
+                    connectionLine.destroy();
+                }
+            }
+        }
+
+        this.connectionLines.clear();
+        super.destroy();
+    }
+
+    setSelected(selected) {
+        this.isSelected = selected;
+    }
 }
