@@ -1,42 +1,87 @@
-import { Graphics, FederatedPointerEvent, Point, Container } from "pixi.js";
+import { Graphics, Text, Point, Container } from "pixi.js";
 import { randomColor } from "../../engine/utils/random";
+import { engine } from "../getEngine";
+import { getResolution } from "../../engine/utils/getResolution";
 
-export class StarSystem extends Graphics {
+// Best practice: Define a consistent style for your labels
+const labelStyle = {
+    fontFamily: "Arial",
+    fontSize: 14,
+    fill: 0xffffff,
+    align: "center",
+    stroke: { color: 0x000000, width: 2, join: "round" },
+    resolution: getResolution() * 2,
+};
+
+export class StarSystem extends Container {
+    // <-- Change #1: Inherit from Container
     entity;
     contextMenu;
-    stage; // Reference to the main stage/container for global events
+    stage;
+    mainScreen;
+
+    // --- Child Components ---
+    circle; // <-- We'll store a reference to the circle graphic
+    label; // <-- And a reference to the text label
 
     // --- Dragging Properties ---
     isDragging = false;
     dragOffset = new Point();
 
-    constructor(entity, contextMenu, stage) {
-        super();
+    constructor(entity, contextMenu, stage, mainScreen) {
+        super(); // <-- Important: Call the Container's constructor
+
         this.entity = entity;
         this.contextMenu = contextMenu;
-        this.stage = stage; // Store the reference to the main container
+        this.stage = stage;
+        this.mainScreen = mainScreen;
+        // --- Change #2: Create child objects ---
+        // Create the circle graphic
+        this.circle = new Graphics();
+        this.circle.circle(0, 0, 15);
+        this.circle.fill(randomColor());
+        this.circle.stroke({ width: 2, color: 0xffffff, alpha: 0.8 });
 
-        // Draw the object itself
-        this.circle(0, 0, 30);
-        this.fill(randomColor());
-        this.stroke({ width: 2, color: 0xffffff, alpha: 0.8 });
+        // Create the text label
+        this.label = new Text({
+            text: this.entity.name || "",
+            style: labelStyle,
+        });
+        this.label.anchor.set(0.5); // Center the text's origin
+        this.label.y = -30; // Position it above the circle
 
-        // Make it interactive
+        // Add the children to this container
+        this.addChild(this.circle);
+        this.addChild(this.label);
+        // --- End of Change #2 ---
+
+        // Make the whole container interactive
         this.eventMode = "static";
         this.cursor = "pointer";
 
-        // Add event listeners
-        this.on("rightclick", this.onRightClick);
-        this.on("pointerdown", this.onDragStart);
-        this.on("pointerup", this.onDragEnd);
-        this.on("pointerupoutside", this.onDragEnd);
-        this.on("pointermove", this.onDragMove);
+        // The hit area now needs to be set on the circle itself,
+        // so only clicking the graphic part triggers interaction.
+        this.circle.eventMode = "static";
+        this.circle.cursor = "pointer";
+
+        // Add event listeners TO THE CIRCLE
+        this.circle.on("pointerdown", this.onDragStart);
+        this.on("rightclick", this.onRightClick); // Right-click can be on the container
+    }
+
+    // This is the new method to handle renaming
+    rename(newName) {
+        if (!newName) return;
+        this.entity.name = newName;
+        this.label.text = newName;
     }
 
     onDragStart = (event) => {
+        // This logic remains mostly the same
         if (event.button !== 0) return;
 
         this.isDragging = true;
+        // Important: get the offset relative to the main container (this), not the circle
         this.dragOffset = this.toLocal(event.global);
         this.alpha = 0.7;
 
@@ -45,18 +90,12 @@ export class StarSystem extends Graphics {
             this.zIndex = 100;
         }
 
-        // --- THE FIX ---
-        // Add the move and up listeners to the main stage, not this object.
-        // This ensures they fire even if the cursor leaves this object.
         this.stage.on("pointermove", this.onDragMove);
         this.stage.on("pointerup", this.onDragEnd);
         this.stage.on("pointerupoutside", this.onDragEnd);
-        // --- End of Fix ---
     };
 
     onDragEnd = (event) => {
-        // This handler might be called for a different object if not dragging,
-        // so we check if this specific instance is being dragged.
         if (!this.isDragging || event.button !== 0) return;
 
         this.isDragging = false;
@@ -67,13 +106,9 @@ export class StarSystem extends Graphics {
             this.parent.sortableChildren = true;
         }
 
-        // --- THE FIX ---
-        // CRITICAL: Remove the global listeners to prevent memory leaks
-        // and unintended behavior on other objects.
         this.stage.off("pointermove", this.onDragMove);
         this.stage.off("pointerup", this.onDragEnd);
         this.stage.off("pointerupoutside", this.onDragEnd);
-        // --- End of Fix ---
     };
 
     onDragMove = (event) => {
@@ -88,10 +123,8 @@ export class StarSystem extends Graphics {
         }
     };
 
-    // --- onRightClick method remains the same ---
     onRightClick = (event) => {
         event.stopPropagation();
-
         const menuOptions = [];
 
         menuOptions.push({
@@ -99,7 +132,23 @@ export class StarSystem extends Graphics {
             action: "rename",
             icon: "✎",
             callback: () => {
-                console.log("rename function to be implemented");
+                // --- Change #3: Implement the rename logic ---
+                const newName = prompt(
+                    "Enter a new name for the star system:",
+                    this.entity.name,
+                );
+                this.rename(newName);
+                // --- End of Change #3 ---
+            },
+        });
+
+        menuOptions.push({
+            label: "Connect To...",
+            action: "connect",
+            icon: "↔️",
+            callback: () => {
+                // Call the new method on the MainScreen to enter connection mode
+                this.mainScreen.startConnectionMode(this);
             },
         });
 
