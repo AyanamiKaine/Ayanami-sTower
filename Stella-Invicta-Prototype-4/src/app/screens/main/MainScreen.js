@@ -623,9 +623,5 @@ export class MainScreen extends Container {
     async hide() {}
 
     /** Auto pause the app when window go out of focus */
-    blur() {
-        if (!engine().navigation.currentPopup) {
-            engine().navigation.presentPopup(PausePopup);
-        }
-    }
+    blur() {}
 }
