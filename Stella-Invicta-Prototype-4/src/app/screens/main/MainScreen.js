@@ -1,6 +1,6 @@
 import { FancyButton } from "@pixi/ui";
 import { animate } from "motion";
-import { Container, Point, Rectangle } from "pixi.js";
+import { Container, Graphics, Point, Rectangle } from "pixi.js";
 
 import { engine } from "../../getEngine";
 import { PausePopup } from "../../popups/PausePopup.";
@@ -8,6 +8,7 @@ import { SettingsPopup } from "../../popups/SettingsPopup";
 import { ContextMenu } from "../../ui/ContextMenu";
 import { Game } from "../../../game/game";
 import { StarSystem } from "../../ui/StarSystem";
+import { position3D } from "../../../game/mixins/Position3D";
 
 /**
  * The main screen of the application, responsible for displaying the primary game view,
@@ -17,6 +18,126 @@ import { StarSystem } from "../../ui/StarSystem";
 export class MainScreen extends Container {
     /** Assets bundles required by this screen */
     static assetBundles = ["main"];
+
+    // --- Connection State ---
+    isConnecting = false;
+    connectionSourceStar = null;
+
+    constructor() {
+        super();
+        /** @type {Game} */
+        this.game = new Game();
+        /** @type {Container} */
+        this.mainContainer = new Container();
+        this.addChild(this.mainContainer);
+
+        this.mainContainer.sortableChildren = true;
+
+        this.mainContainer.hitArea = new Rectangle(
+            -10000,
+            -10000,
+            20000,
+            20000,
+        );
+
+        this.mainContainer.eventMode = "static";
+
+        this.mainContainer.on("wheel", this.onWheelScroll);
+        this.mainContainer.on("pointerdown", this.onPointerDown);
+        this.mainContainer.on("pointerup", this.onPointerUp);
+        this.mainContainer.on("pointerupoutside", this.onPointerUp);
+        this.mainContainer.on("pointermove", this.onPointerMove);
+
+        // Right-click event to show the context menu
+        this.mainContainer.on("rightclick", (event) => {
+            event.preventDefault();
+            const menuOptions = [
+                {
+                    label: "Add Star System",
+                    action: "add-circle",
+                    callback: () => {
+                        const worldPosition = this.mainContainer.toLocal(
+                            event.global,
+                        );
+                        const starEntity =
+                            this.game.createEntity("Star System");
+                        starEntity.with(position3D, {
+                            x: worldPosition.x,
+                            y: worldPosition.y,
+                            z: 0,
+                        });
+
+                        // Pass `this` (the MainScreen instance) as the fourth argument
+                        const starSystemView = new StarSystem(
+                            starEntity,
+                            this.contextMenu,
+                            this.mainContainer,
+                            this,
+                        );
+
+                        starSystemView.position.copyFrom(worldPosition);
+                        this.mainContainer.addChild(starSystemView);
+                    },
+                    icon: "🌣",
+                },
+            ];
+
+            this.contextMenu.show(event.global.x, event.global.y, menuOptions);
+        });
+
+        this.mainContainer.on("pointerdown", () => {
+            this.contextMenu.hide();
+        });
+        /** @private */
+        this.paused = false;
+        /** @private */
+        this.contextMenu;
+        /** @private */
+        this.ZOOM_FACTOR = 1.1;
+        /** @private */
+        this.MIN_ZOOM = 0.2;
+        /** @private */
+        this.MAX_ZOOM = 5.0;
+        /** @private */
+        this.isPanning = false;
+        /** @private */
+        this.lastPanPosition = new Point();
+
+        const buttonAnimations = {
+            hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },
+            pressed: { props: { scale: { x: 0.9, y: 0.9 } }, duration: 100 },
+        };
+
+        /** @private */
+        this.pauseButton = new FancyButton({
+            defaultView: "icon-pause.png",
+            anchor: 0.5,
+            animations: buttonAnimations,
+        });
+        this.pauseButton.onPress.connect(() =>
+            engine().navigation.presentPopup(PausePopup),
+        );
+        this.addChild(this.pauseButton);
+
+        /** @private */
+        this.settingsButton = new FancyButton({
+            defaultView: "icon-settings.png",
+            anchor: 0.5,
+            animations: buttonAnimations,
+        });
+        this.settingsButton.onPress.connect(() =>
+            engine().navigation.presentPopup(SettingsPopup),
+        );
+        this.addChild(this.settingsButton);
+
+        this.contextMenu = new ContextMenu();
+        this.addChild(this.contextMenu);
+
+        this.connectionLayer = new Graphics();
+        this.mainContainer.addChild(this.connectionLayer);
+        // Ensure lines are drawn behind stars
+        this.connectionLayer.zIndex = -1;
+    }
 
     /**
      * @param {import('pixi.js').FederatedPointerEvent} event
@@ -30,11 +151,43 @@ export class MainScreen extends Container {
             return; // Stop processing other click events
         }
 
+        if (this.isConnecting && event.target instanceof Graphics) {
+            // We need to find the StarSystem that owns the clicked graphics object.
+            let targetStar = event.target;
+            while (targetStar.parent && !(targetStar instanceof StarSystem)) {
+                targetStar = targetStar.parent;
+            }
+
+            if (
+                targetStar instanceof StarSystem &&
+                targetStar !== this.connectionSourceStar
+            ) {
+                // Successfully found a target star, create the relationship in the data model
+                this.game.addSymmetricRelationship(
+                    this.connectionSourceStar.entity,
+                    targetStar.entity,
+                    { type: "connectedTo" },
+                );
+            }
+            // Reset the connection state regardless of success
+            this.isConnecting = false;
+            this.connectionSourceStar = null;
+            this.mainContainer.cursor = "default";
+            return; // Exit after handling the connection click
+        }
+
         // Hide context menu on left click
         if (event.button === 0) {
             this.contextMenu.hide();
         }
     };
+
+    startConnectionMode(sourceStar) {
+        this.isConnecting = true;
+        this.connectionSourceStar = sourceStar;
+        this.mainContainer.cursor = "crosshair";
+        this.contextMenu.hide();
+    }
 
     /**
      * @param {import('pixi.js').FederatedPointerEvent} event
@@ -94,103 +247,6 @@ export class MainScreen extends Container {
 
         this.mainContainer.position.set(newPosX, newPosY);
     };
-
-    constructor() {
-        super();
-        /** @type {Game} */
-        this.game = new Game();
-        /** @type {Container} */
-        this.mainContainer = new Container();
-        this.addChild(this.mainContainer);
-        this.mainContainer.hitArea = new Rectangle(
-            -10000,
-            -10000,
-            20000,
-            20000,
-        );
-
-        this.mainContainer.eventMode = "static";
-
-        this.mainContainer.on("wheel", this.onWheelScroll);
-        this.mainContainer.on("pointerdown", this.onPointerDown);
-        this.mainContainer.on("pointerup", this.onPointerUp);
-        this.mainContainer.on("pointerupoutside", this.onPointerUp);
-        this.mainContainer.on("pointermove", this.onPointerMove);
-
-        // Right-click event to show the context menu
-        this.mainContainer.on("rightclick", (event) => {
-            event.preventDefault();
-            const menuOptions = [
-                {
-                    label: "Add Star System",
-                    action: "add-circle",
-                    callback: () => {
-                        const star = new StarSystem(
-                            this.game.createEntity(""), // 1. Pass a placeholder entity object
-                            this.contextMenu, // 2. Pass the context menu
-                            this.mainContainer, // 3. Pass the main container as the stage
-                        );
-                        const localPosition = this.mainContainer.toLocal(
-                            event.global,
-                        );
-                        star.position.set(localPosition.x, localPosition.y);
-                        this.mainContainer.addChild(star);
-                    },
-                    icon: "🌣",
-                },
-            ];
-
-            this.contextMenu.show(event.global.x, event.global.y, menuOptions);
-        });
-
-        this.mainContainer.on("pointerdown", () => {
-            this.contextMenu.hide();
-        });
-        /** @private */
-        this.paused = false;
-        /** @private */
-        this.contextMenu;
-        /** @private */
-        this.ZOOM_FACTOR = 1.1;
-        /** @private */
-        this.MIN_ZOOM = 0.2;
-        /** @private */
-        this.MAX_ZOOM = 5.0;
-        /** @private */
-        this.isPanning = false;
-        /** @private */
-        this.lastPanPosition = new Point();
-
-        const buttonAnimations = {
-            hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },
-            pressed: { props: { scale: { x: 0.9, y: 0.9 } }, duration: 100 },
-        };
-
-        /** @private */
-        this.pauseButton = new FancyButton({
-            defaultView: "icon-pause.png",
-            anchor: 0.5,
-            animations: buttonAnimations,
-        });
-        this.pauseButton.onPress.connect(() =>
-            engine().navigation.presentPopup(PausePopup),
-        );
-        this.addChild(this.pauseButton);
-
-        /** @private */
-        this.settingsButton = new FancyButton({
-            defaultView: "icon-settings.png",
-            anchor: 0.5,
-            animations: buttonAnimations,
-        });
-        this.settingsButton.onPress.connect(() =>
-            engine().navigation.presentPopup(SettingsPopup),
-        );
-        this.addChild(this.settingsButton);
-
-        this.contextMenu = new ContextMenu();
-        this.addChild(this.contextMenu);
-    }
 
     /** Prepare the screen just before showing */
     prepare() {}
