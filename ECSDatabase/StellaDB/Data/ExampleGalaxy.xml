@@ -143,6 +143,5 @@
             <Position3D X="1200" Y="300" Z="-150"/>
             <ConnectedTo EntityId2="Vega" ConnectionType="Hyperspace Line"/>
         </Entity> 
-
-    <Children>
+    </Children>
   </Entity>
