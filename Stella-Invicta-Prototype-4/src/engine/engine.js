@@ -29,6 +29,9 @@ extensions.add(CreationNavigationPlugin);
  * It also initializes the PixiJS application and loads any assets in the `preload` bundle.
  */
 export class CreationEngine extends Application {
+    
+    _wheelListener = null;
+
     /** Initialize the application */
     async init(opts) {
         opts.resizeTo ??= window;
@@ -46,6 +49,17 @@ export class CreationEngine extends Application {
 
         document.addEventListener("contextmenu", (e) => {
             e.preventDefault();
+        });
+
+        this._wheelListener = (event) => {
+            // If the ctrlKey is pressed, prevent the default browser zoom action.
+            if (event.ctrlKey) {
+                event.preventDefault();
+            }
+        };
+        
+        window.addEventListener("wheel", this._wheelListener, {
+            passive: false,
         });
 
         // Init PixiJS assets with this asset manifest
