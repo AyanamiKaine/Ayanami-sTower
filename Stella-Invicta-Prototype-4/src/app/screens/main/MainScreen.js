@@ -9,6 +9,7 @@ import { ContextMenu } from "../../ui/ContextMenu";
 import { Game } from "../../../game/game";
 import { StarSystem } from "../../ui/StarSystem";
 import { position3D } from "../../../game/mixins/Position3D";
+import { StarSystemConnectionLine } from "../../ui/StarSystemConnectionLine";
 
 /**
  * The main screen of the application, responsible for displaying the primary game view,
@@ -132,11 +133,6 @@ export class MainScreen extends Container {
 
         this.contextMenu = new ContextMenu();
         this.addChild(this.contextMenu);
-
-        this.connectionLayer = new Graphics();
-        this.mainContainer.addChild(this.connectionLayer);
-        // Ensure lines are drawn behind stars
-        this.connectionLayer.zIndex = -1;
     }
 
     /**
@@ -168,6 +164,13 @@ export class MainScreen extends Container {
                     targetStar.entity,
                     { type: "connectedTo" },
                 );
+
+                this.connectionLayer = new StarSystemConnectionLine(
+                    [targetStar.x, targetStar.y],
+                    [this.connectionSourceStar.x, this.connectionSourceStar.y],
+                );
+
+                this.mainContainer.addChild(this.connectionLayer);
             }
             // Reset the connection state regardless of success
             this.isConnecting = false;
@@ -181,6 +184,52 @@ export class MainScreen extends Container {
             this.contextMenu.hide();
         }
     };
+
+    /**
+     * Creates a configurable grid pattern using PIXI.Graphics.
+     *
+     * This improved function allows you to define the total width and height of the grid,
+     * the size of each individual cell, and the visual style of the grid lines.
+     *
+     * @param {PIXI.Graphics} graphics - The PIXI.Graphics instance to draw the grid on. This should be cleared beforehand if you're redrawing.
+     * @param {object} config - The configuration object for the grid.
+     * @param {number} config.width - The total width of the grid (e.g., 800).
+     * @param {number} config.height - The total height of the grid (e.g., 600).
+     * @param {number} config.cellSize - The size of each square cell in the grid (e.g., 50).
+     * @param {number} [config.lineColor=0xcccccc] - (Optional) The color of the grid lines in hexadecimal format. Defaults to light gray.
+     * @param {number} [config.lineWidth=1] - (Optional) The thickness of the grid lines in pixels. Defaults to 1.
+     * @returns {PIXI.Graphics} The same Graphics object, now with the grid drawn onto it.
+     */
+    buildGrid(graphics, config) {
+        // --- Parameter Validation & Defaulting ---
+        // Use default values for optional parameters if they aren't provided.
+        const width = config.width;
+        const height = config.height;
+        const cellSize = config.cellSize;
+        const lineColor = config.lineColor ?? 0xcccccc; // Nullish coalescing operator (??) for modern, clean defaults
+        const lineWidth = config.lineWidth ?? 1;
+
+        // A simple check to prevent infinite loops if cellSize is 0 or negative.
+        if (cellSize <= 0) {
+            console.error("cellSize must be a positive number.");
+            return graphics;
+        }
+
+        // Draw the vertical lines
+        // We calculate the number of lines needed based on the total width and cell size.
+        // We loop from x=0 to x=width, incrementing by cellSize each time.
+        for (let x = 0; x <= width; x += cellSize) {
+            graphics.moveTo(x, 0).lineTo(x, height);
+        }
+
+        // Draw the horizontal lines
+        // We loop from y=0 to y=height, incrementing by cellSize each time.
+        for (let y = 0; y <= height; y += cellSize) {
+            graphics.moveTo(0, y).lineTo(width, y);
+        }
+
+        return graphics;
+    }
 
     startConnectionMode(sourceStar) {
         this.isConnecting = true;
