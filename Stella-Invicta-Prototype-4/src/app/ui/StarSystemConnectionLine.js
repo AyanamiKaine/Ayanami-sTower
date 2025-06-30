@@ -7,10 +7,10 @@ export class StarSystemConnectionLine extends Container {
     starSystemB;
     contextMenu;
 
-    constructor(starSystemA, starSystemB) {
+    constructor(starSystemA, starSystemB, contextMenu) {
         super();
         this.zIndex = -1;
-
+        this.eventMode = "static";
         // Store references to the actual star system objects
         this.starSystemA = starSystemA;
         this.starSystemB = starSystemB;
@@ -22,8 +22,7 @@ export class StarSystemConnectionLine extends Container {
         this.redraw();
         this.on("rightclick", this.onRightClick);
 
-        this.contextMenu = new ContextMenu();
-        this.addChild(this.contextMenu);
+        this.contextMenu = contextMenu;
     }
 
     redraw() {
@@ -43,8 +42,6 @@ export class StarSystemConnectionLine extends Container {
 
     onRightClick = (event) => {
         event.stopPropagation();
-        const menuOptions = [];
-        console.log(event)
         this.contextMenu.show(event.global.x, event.global.y, menuOptions);
     };
 

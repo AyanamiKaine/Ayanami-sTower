@@ -144,6 +144,9 @@ export class MainScreen extends Container {
 
         this.contextMenu = new ContextMenu();
         this.addChild(this.contextMenu);
+
+        this.connectionLineContextMenu = new ContextMenu();
+        this.addChild(this.connectionLineContextMenu);
     }
 
     setupMainContextMenu() {
@@ -297,6 +300,7 @@ export class MainScreen extends Container {
                 const connectionLine = new StarSystemConnectionLine(
                     this.connectionSourceStar,
                     targetStar,
+                    this.connectionLineContextMenu,
                 );
 
                 this.mainContainer.addChild(connectionLine);
@@ -526,7 +530,7 @@ export class MainScreen extends Container {
      * @param {import('pixi.js').FederatedWheelEvent} event The federated wheel event from PixiJS.
      */
     onWheelScroll = (event) => {
-        event.preventDefault();
+        //event.preventDefault();
 
         const scroll = event.deltaY;
         if (scroll === 0) return;
@@ -593,31 +597,10 @@ export class MainScreen extends Container {
             this.mainContainer.x = centerX;
             this.mainContainer.y = centerY;
         }
-
-        this.pauseButton.x = 30;
-        this.pauseButton.y = 30;
-        this.settingsButton.x = width - 30;
-        this.settingsButton.y = 30;
     }
 
     /** Show screen with animations */
-    async show() {
-        const elementsToAnimate = [this.pauseButton, this.settingsButton];
-
-        let finalPromise;
-        for (const element of elementsToAnimate) {
-            element.alpha = 0;
-            finalPromise = animate(
-                element,
-                { alpha: 1 },
-                { duration: 0.3, delay: 0.75, ease: "backOut" },
-            );
-        }
-
-        if (finalPromise) {
-            await finalPromise.finished;
-        }
-    }
+    async show() {}
 
     /** Hide screen with animations */
     async hide() {}

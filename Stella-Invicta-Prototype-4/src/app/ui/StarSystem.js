@@ -160,17 +160,6 @@ export class StarSystem extends Container {
             this.mainScreen.selectionManager.getSelectedCount();
 
         if (isSelected && selectedCount > 1) {
-            // Show group operations
-            menuOptions.push({
-                label: `Move Selected (${selectedCount})`,
-                action: "move-group",
-                icon: "↔️",
-                callback: () => {
-                    // This could open a dialog for precise positioning
-                    alert(`Moving ${selectedCount} selected star systems`);
-                },
-            });
-
             menuOptions.push({
                 label: `Delete Selected (${selectedCount})`,
                 action: "delete-group",
