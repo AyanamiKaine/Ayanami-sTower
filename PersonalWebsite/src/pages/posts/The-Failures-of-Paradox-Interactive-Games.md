@@ -1,0 +1,97 @@
+---
+title: "The Failures of Paradox Interactive Games "
+date: 2024-09-06
+tags: "posts"
+permalink: "/blog/{{ title | slug }}/"
+summary: "Paradox Interactive creates incredible grand strategy games, but it seems they dont know what makes them so great."
+---
+
+_I really love grand strategy games. Combined with Hearts of Iron 3/4, Europa Universals 4, Crusader Kings 2/3, Victoria 2/3 I have over 2000 hours in the past 8 Years._
+
+## What I Love
+
+Being part of a dynamic world that evolves adapts and reacts to my actions. The best moments I had where I can tell stories.
+
+I will briefly go over one of my favorite stories I had in CK2 to illustrate the felling I had. Trust me this will matter later when we discuss the shortcomings of old and new grand strategy paradox titles.
+
+### The Rise of the Great Khan
+
+I started as a powerless, moneyless step nomad in the eastern area of modern Ukraine. Over time our raids got more relentless the riders got more plentiful and there was no end in sight of how many riches we can gather. After 3 Generations we finally claimed the title of strongest horde known. Feared for its might.
+
+Having the most powerful army and endless riches can often times end a campaign, there is no more challenges to beat, power is absolute and no one can take it away. (Often times game counter these "too strong" scenarios with introducing some mechanic that will make you quit the game (Simply uniting all other factions against you even though it would make no sense, killing your empire because a number got too high that you cannot manage anymore because of the sheer size of your realm) All those things will certainly have the effect of reducing the power of a "too big" empire, but it will make your players quit, and it's not like such mechanics can't be cheesed or gamed it will simply feel unsatisfactory). So what did I do in CK2?
+
+Interestingly enough the AI in paradox games is usually incredible terrible doing so stupid decisions that you wonder if it does anything more than throwing dice to decide what to do.
+
+But not this **Caliphate**, over the last 200 years his dynasty conquered the entirety of Arabia, Egypt, Spain, Portugal, complete North Africa, Syria, Iraq. Defeated his main rival Iran, and the eastern Roman Empire over and over again. He was unstoppable. At this time he had the second-strongest army in the world (about 20% less than me).
+
+When you play a horde in CK2 you get the `Invasion` Casus Belli. A Casus belli can be used to enforce specific demands like getting a title, freeing a prison, changing religion etc. So what does the **Invasion** Casus Belli do?
+
+You usurp all titles of the character you attack, and you leave the steps behind, but you take all people with you even your army if you had a 40k Horse army you keep it for free, but it cannot replenish so if you lose 10k Horses you only have 30k left, when they are gone they are gone for good.
+
+So I invaded the **Caliphate** bringing over 70k horse to the gates of Baghdad. Storming the castle and capturing the Caliph in mere months. When you capture the character you targeted with a Casus Belli you get automatic 100% war score, meaning you can enforce your demands.
+
+So in just months without many deaths on either side we conquered the entire Arabian Empire. (NOTE: ADD A GRAPHICAL PICTURE HERE)
+
+Now what do we do after conquering the second-mightiest power in the world? We reform it. The majority **Sunni** population where now ruled by a **Tengri** minority. This must change. So we create totally new kingdoms, the kingdom of Egypt, Syria and Iraq just to name a few and give it to those who change give up the Sunni believe for the Tengri one. And no one could deny it. Giving up their Religion for the crown was a small price to pay. As the years past many more people are getting "bribed" to embrace the new way. The Great Khan became known as the _"Great Arabian Conquer"_ loved by the people, bringing peace, security, prosperity and culture to the people and those who could see a better world. And then at the age of 74 he died. Creating a new legendary bloodline where is blood flows, greatness flows.
+
+No one could replace such a great character. But somebody must do it. So his Son at the young age of 24 became the new emperor of the Arabian empire. Too young, too inexperience to fit into the shoes of an emperor.
+
+Remember when I said that people needed to give up their old faith to become kings the strongest vassals of the emperor? In CK2 people may give up their faith on the surface but still in secret believe in the old faith. Turns out **EVERYONE** and I mean **EVERYONE** was part of a secret society of Sunni believe just waiting for a moment of weakness to bring back the old order. (NOTE: ADD A GRAPHICAL PICTURE HERE)
+
+A **massive civil war** starts. Approximately 70% - 80% of the empire fractures into two. The Sunni Revolution has begun.
+
+Our young emperor now must not only fit into the shoes of his father metaphorically, but also in actuality. The greatest challenge he faces is already happening. I couldn't see this a mile away. Over the decades we lost our horse army needing to rely more and more on our vassals. Now there is no single king we need to defeat but several.
+
+The city, our new capital Baghdad gets burned to the ground. But the young emperor escaped with his loyal court. A long and brutal guerrilla campaign against the rebels ensues. Many die. This was not a month-long battle but took around 3 years.
+
+After many battles our emperor claimed victory but paying with his right eye. Losing it in one battle against the Syrian king slaying him in hand-to-hand combat. Proving his place in history as the rightful successor of his father. His shoes might not fit in the beginning, but now they certainly do. Imprisoning everyone that fought on the wrong side of history. Everything to ensure that something like this shall never happen again, so his father's legacy shall be honored for an eternity.
+
+The most loyal vassals where rewarded with new kingdoms proving their loyalty with blood not just with meaningless words as the others did before.
+
+### So what was this story all about?
+
+The game mechanics that enabled this immersive story are actually just a few that singular is quite unimpressive but combined produced an incredible story. The simple fact that we got an Invasion Casus Belli, characters can lie when giving up their faith. The one time horse army. The ability to burn down capitals. The chance to capture characters when we conquer the provinces where they reside and to immediately sue for peace (we could have killed him in prison and his heir would have to sign the peace, but we would lose the 100% war score, increasing the time until victory.) That leaders can fight on the battlefield and kill each other.
+
+A simple feature that has the ability to interact with another simple feature will always be better than a big Event or even a chain of smaller events.
+
+Events, Event Chains, Mission Trees, all hard coded guided stories are a bad design decision. They all remove the ability for the player to achieve a goal in a non-linear way. Many event chains in paradox games can have big impact on the story your character/empire experience but the more positive their effects are the more luck based they will become. Most events function in chance based outcomes those chances might increase based on past decisions and events. But nonetheless an event will spawn because its condition and chance was met not because you created it removing player interaction and immersion.
+
+Many hard work goes into such events while disregarding real features that can interact with other features. Most systems created in modern paradox games cannot interact in meaningful ways with other system. Making it hard or near impossible to create a meaningful player driven emergent story.
+
+So often so many systems are encapsulated into a small region of gameplay that can never or impact other systems simply too little. This makes total sense when you create a complex and complicated system creating interactions with the other 40 systems of various complexity takes too much effort will break too much and will offer too little for the player.
+
+Green numbers goes up is a terrible story.
+
+## What to take away
+
+**Create simple meaningful systems that can interact with each other in meaningful ways**. They don't have to be complex their complexity will unfold from the interaction of many simple systems. Also guarantee reduced complexity.
+
+**Create Lego blocks that are modular and can be pieced together in all ways you can and cannot think of**
+
+And if those interactions have the ability to create a 3 act story structure you are good to go.
+
+### A small example
+
+Creating a system to show the relationship that a character is currently located at a specific province.
+
+Instead of hard-coding this relationship for the character only increase the possible usage to everything. Create functions and relationships that simply work on the fact that the relationship between these two things exist.
+
+The same system can now be used for saying a legendary artifact is currently in the hands of a character or castle or on a ship.
+
+This does not mean we have to directly implement the mechanic of owning artifacts we simply let the door open for us to reuse the same type of relationship.
+
+## Why are Events and Event Chains even created?
+
+And yes focus trees and mission trees in Hoi4 and EU4 are Just a series of event chains, the only difference is that they are more transparent and the player chooses when to complete it and fire the event.
+
+I believe one reason is certainty and control. I have to work on the fact to create interesting situations that are unique and "marketable" events are the most likely choice.
+
+Just imagine telling yourself and your boss that yes you have interesting stories but nothing is hardcoded and is only created as a merger of simple seemingly uninteresting boring features.
+
+A look in modern DLCs for Stellaris, CK3, Victoria 3 and Hoi4 shows the problem quite clearly. Stellaris creates Huge event chains for origins of a civilization that is determined in the beginning. Again leaving no room for this event chain to interact with new global features and mechanics. What often happens is that those old ideas and features need to be revamped to be integrated for the new things resulting in huge amount of time spend to just refactor already there features and mechanics. Something that might be noble to do but is hard to sell. You cannot sell the same DLC again only because you reworked major features in it. Resulting in time and money spend on things you cannot sell. Now time and money will be split between reworking old content and creating new. Trapping you in a circle of constant reworks. Creating new systems simply means you have to rework again and now more and more content. This is one reason why modern paradox flavor features are encapsulated from all other systems so they don't result in a needed rework for every system and the feature itself does not have to be reworked when a new feature arrives.
+
+Sadly this misses the forest for the trees. This makes it near impossible for emerging stories that are truly unique for the player his own story, but instead the game pre defines a story and some outcomes that are "meaningful" but everyone knows that if choice is truly plentiful and meaningful you can do much more than clicking on the fourth option button in a dialog or event box.
+
+True options mean that the player can use many different approaches in solving a problem. Giving the player a box to choice 2–4 options from is not a different approach it's the same.
+
+As long as we chase this approach our stories will fall flat.
