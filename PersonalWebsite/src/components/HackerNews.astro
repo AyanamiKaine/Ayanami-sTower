@@ -1,0 +1,52 @@
+---
+// src/components/HackerNews.astro
+
+const { title, url, author, points, comments, hnUrl, comment, commenter } = Astro.props;
+---
+<aside class="hacker-news-post">
+  <div class="hn-post-header">
+    <p class="hn-title"><a href={url} target="_blank" rel="noopener noreferrer">{title}</a></p>
+    <p class="hn-meta">
+      {points} points by {author} | <a href={hnUrl} target="_blank" rel="noopener noreferrer">{comments} comments</a>
+    </p>
+  </div>
+  
+  <!-- Astro's syntax for conditional rendering. -->
+  <!-- This block will only be included if both 'comment' and 'commenter' are passed in. -->
+  {comment && commenter && (
+    <div class="hn-comment">
+      <blockquote>
+        <p>{comment}</p>
+        <footer>&mdash; <cite>{commenter}</cite></footer>
+      </blockquote>
+    </div>
+  )}
+</aside>
+
+<style>
+/* Scoped styles for the Hacker News component */
+.hacker-news-post {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  background-color: #f8fafc;
+}
+.hn-title a {
+  font-weight: bold;
+  text-decoration: none;
+  color: #1e293b;
+}
+.hn-title a:hover {
+  text-decoration: underline;
+}
+.hn-meta {
+  font-size: 0.9rem;
+  color: #475569;
+}
+.hn-comment {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #cbd5e1;
+}
+</style>

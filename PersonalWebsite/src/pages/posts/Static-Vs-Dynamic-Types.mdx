@@ -1,0 +1,118 @@
+---
+title: "Static Types, Dynamic Types or how believe guides what we use"
+date: 2025-06-22
+tags: "posts"
+layout: ../../layouts/PostLayout.astro
+summary: "I personally alwayes wondered what is actually better to create complex systems that can evolve overtime. A strongly, a static or a dynamic typed system?"
+---
+
+import HackerNews from "../../components/HackerNews.astro";
+import BookQuote from "../../components/BookQuote.astro";
+
+When writing programs I always had the felling that it really didn't matter for small programs (1000 LOC) what I do. Having every possible code smell, bad names, bugs. They all seem to be manageable when my program is only around 1000 LOC.
+
+But when creating complex systems with various components that interact with each other having this much technical debt always resulted in problems adding or changing features. Bringing my speed on incremental improvements down. In this stage architectural decisions and ideas are important for the future.
+
+And my question always was, is strong/static/dynamic typing part of the architectural decision or is it just a stylistic choice?
+
+This moves some runtime errors to compile time. We also get the ability to create types for our domain. A person type for example. Does that mean we cannot create a person type in python? No of course not it simply gives us compile time guarantees, that our type is not "incorrectly" used.
+
+I put "incorrectly" in quotation marks, because when you write a valid method that has the wrong behavior for what you actually want it won't protect you.
+
+## Finding Prove
+
+At this point I thought it can't be that hard finding a study that shows me that one is better than the other. Over the last 20 years there must be some real good amount of studies that I can read. WRONG!
+
+Most studies on the topic are short around only 20 participants, are mostly done by American students.
+
+## What I Feel
+
+Why call it feeling and not opinion? I want to make it clear that subjective what I say here. Many people see opinions and see them as facts, but seldom they see feelings as facts, most of the time people dismiss feelings, for better or worse.
+
+I don't like types that much because I always think that a given type structure depends on context. A customer type should only have the fields needed for a given context. Often times we bloat types because we think we should be able to simply pass them in both.
+
+Types need to be given a name. Naming things is hard especially when a type can be used in two context and should be differently named. **PersonWithCreditCardDetails**, **PersonWithoutCreditCardDetails** are just bad names. Even though they are that explicit.
+
+I actually like structural typing that is found in typescript.
+
+<BookQuote
+    quote="TypeScript is a Structural Type System. A structural type system means that when comparing types, TypeScript only takes into account the members on the type."
+    author="Type Compatibility"
+    source="The TypeScript Docs"
+/>
+
+In general, it seems that much is guided by our feelings. Feelings and believe decide what we use, argue, or <a href="https://en.wikipedia.org/wiki/Law_of_triviality">bike shed</a> for.
+
+Actually I can go on and on. About Test-Driven-Development, batteries-included, platforms, styles, variables-names, s-expressions, Scheme, Common-Lisp, Macros, Code Duplication, Copy-Pasting-Code, DRY, Clean Code, OOP, Functional Programming, Procedural Programming, Performance, XML, XAML, Domain-Specific-Languages, Domain-Driven-Design, Agile, Waterfall, Common-Lisp AGAIN, REPL, Memory Safety, Cost of Defects.
+
+The last one is interesting it's a myth about how important it is to found bugs at design time not runtime (production), because it cost about 100x more fixing production bugs. This is a myth. A good read about myths in software is _"[The Leprechauns of Software](https://leanpub.com/leprechauns/read)"_.
+
+<HackerNews
+    title="The “bugs are 100x more expensive to fix in production” study might not exist"
+    url="https://news.ycombinator.com/item?id=27917595"
+    author="akkartik"
+    points={159}
+    comments={130}
+    hnUrl="https://news.ycombinator.com/item?id=27917857"
+    comment="This article is about the poor state of research in the software field. The 'bugs are 100x more expensive to fix in production' bit is just a glaring example of that. The article isn't in any major way refuting 'bugs are 100x more expensive to fix in production', it's just stating that the study may not exist, so there's no need to defend your beliefs as many are doing in the comments."
+    commenter="whoisthemachine"
+/>
+
+## What Other People Feel
+
+<HackerNews
+    title="The “bugs are 100x more expensive to fix in production” study might not exist"
+    url="https://news.ycombinator.com/item?id=27917595"
+    author="sohkamyung"
+    points={159}
+    comments={130}
+    hnUrl="https://news.ycombinator.com/item?id=27919137"
+    comment="And while 100x might not be true, you KNOW it's a lot more damaging, costly, and disruptive to have to fix a bug that makes it way to production - arguments in favor of testing, canary releases, code reviews, robust programming languages and architectures, etc. They won't stop all issues, but the less that make it to production the better. That one doesn't take language games or political games, I think. It shouldn't anyway."
+    commenter="Cthulhu_"
+/>
+
+"you KNOW...", but does it matter? Some people "know" that vacancies can give autism. Knowing means little. Especially when feelings are wrapped up in "knowing" something, giving it authority and authenticity.
+
+<HackerNews
+    title="Study of 49 programmers: static type system had no effect on development time"
+    url="https://news.ycombinator.com/item?id=4082775"
+    author="akkartik"
+    points={155}
+    comments={187}
+    hnUrl="https://news.ycombinator.com/item?id=4082981"
+    comment="The study may or may not be flawed, but what's really interesting to me is the reaction. We need more science in our computer science, which means more experiments and more results like this. We should also be open to the truth that we use the tools we like because we like them rather than because they're technically superior, even though we pimp them ad nauseum as though they are. I once read an article about a technique Intel had developed for improving cooling of processors by changing the shape of the fan. I related this to some of my co-workers. One of them proceeded to tell me that this can't possibly work, backing up his argument with 'reasoning' based on off-the-cuff remarks about the way air and physics 'must' work. The fact that Intel had actually done this seemed to have no effect on his eagerness to continue the 'debate' about this scientific fact. I have a hard time believing that I get no benefit from using Haskell over Smalltalk, but if a body of science were to appear that cast doubt on that belief, the appropriate thing to do is change the belief, not stand around debating from imagined first principles why all the science is wrong and can't be so. Shut up, design an experiment and go prove it! Perhaps there's little of this kind of actual science in our computer science because it would mean asking hard questions and accepting difficult truths. 'The prisoner falls in love with his chains."
+    commenter="fusiongyro"
+/>
+
+<HackerNews
+    title="Types are a basic tool of software design (2018)"
+    url="https://news.ycombinator.com/item?id=42557692"
+    author="gus_leonel"
+    points={103}
+    comments={118}
+    hnUrl="https://news.ycombinator.com/item?id=42587094"
+    comment="I go a little back and forth on this with my experience in F#, which relies heavily on inferred types. You can write a lot of F# before you need to add type annotations, but eventually, things become a spiderweb. The key issue is when you make a 'small' change to some method/value, the changes ripple through the program creating confusing errors sometimes where the compiler is trying to knit things together. After a while, I found myself adding back types in a decent number of places to 'anchor' the type inference, indicating that a certain type/signature is fixed, and a change should be carefully considered. I still don't know how folks deal with these kinds of changes in weakly typed languages without always allowing bugs to pour into their code over time. But I do love the 'move fast' and low boilerplate aspects of 'typeless' coding."
+    commenter="algorithmsRcool"
+/>
+
+## Bad Faith Arguments Against One or the Other
+
+Another bad faith argument against dynamic typing is "The only reason why people don't use static type systems in the past where because they would fight you, making it cumbersome to program in" i.e. people don't use dynamic type systems because they are better but because static types systems where bad.
+
+Here people focus on deficiencies not on what makes a dynamic type system possibly "better" in expressing ideas. I.e. they focus on deficiencies not on what strengths. They assume strengths as something obvious.
+
+## Bike shedding
+
+If most problems in complex systems are not caused because of logic or type bugs in code but instead caused by wrong requirements i.e. the system behaves as required but produces in combination of other component interactions undesired behavior, types where irrelevant not because they didn't provide any benefit in programming but because the benefits of static types did not improve the safety of the overall system.
+
+<BookQuote
+    quote="Nearly all the serious accidents in which software has been involved in the past twenty years can be traced to requirements flaws, not coding errors. ... There is not only anecdotal but some hard data to support the hypothesis that safety problems in software stem from requirement flaws and not coding errors."
+    author="Nancy Leveson"
+    source="Engineering a Safer World - Systems Thinking Applied to Safety, P.49"
+/>
+
+I find this insight interesting, what if coding errors are irrelevant? What if it really didn't matter what programming language, what operating system, what tools we use? As long as we use at least some and not none?
+
+## But aren't some things better than others?
+
+But we know from first-hand experience that some tools we use to solve problems "feel" better to use than others. We all had the moment where we switched from one tool to another and said wow this is actually better. Being able to compare them and contrast them.
