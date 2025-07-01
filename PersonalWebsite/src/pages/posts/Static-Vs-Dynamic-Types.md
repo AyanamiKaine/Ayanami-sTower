@@ -1,8 +1,8 @@
 ---
 title: "Static Types, Dynamic Types or how believe guides what we use"
 date: 2025-06-22
-layout: "post.njk"
 tags: "posts"
+layout: ../../layouts/PostLayout.astro
 permalink: "/blog/{{ title | slug }}/"
 summary: "I personally alwayes wondered what is actually better to create complex systems that can evolve overtime. A strongly, a static or a dynamic typed system?"
 ---

@@ -2,6 +2,7 @@
 title: "The Failures of Paradox Interactive Games "
 date: 2024-09-06
 tags: "posts"
+layout: ../../layouts/PostLayout.astro
 permalink: "/blog/{{ title | slug }}/"
 summary: "Paradox Interactive creates incredible grand strategy games, but it seems they dont know what makes them so great."
 ---
@@ -88,7 +89,9 @@ I believe one reason is certainty and control. I have to work on the fact to cre
 
 Just imagine telling yourself and your boss that yes you have interesting stories but nothing is hardcoded and is only created as a merger of simple seemingly uninteresting boring features.
 
-A look in modern DLCs for Stellaris, CK3, Victoria 3 and Hoi4 shows the problem quite clearly. Stellaris creates Huge event chains for origins of a civilization that is determined in the beginning. Again leaving no room for this event chain to interact with new global features and mechanics. What often happens is that those old ideas and features need to be revamped to be integrated for the new things resulting in huge amount of time spend to just refactor already there features and mechanics. Something that might be noble to do but is hard to sell. You cannot sell the same DLC again only because you reworked major features in it. Resulting in time and money spend on things you cannot sell. Now time and money will be split between reworking old content and creating new. Trapping you in a circle of constant reworks. Creating new systems simply means you have to rework again and now more and more content. This is one reason why modern paradox flavor features are encapsulated from all other systems so they don't result in a needed rework for every system and the feature itself does not have to be reworked when a new feature arrives.
+A look in modern DLCs for Stellaris, CK3, Victoria 3 and Hoi4 shows the problem quite clearly. Stellaris creates Huge event chains for origins of a civilization that is determined in the beginning. Again leaving no room for this event chain to interact with new global features and mechanics. What often happens is that those old ideas and features need to be revamped to be integrated for the new things resulting in huge amount of time spend to just refactor already there features and mechanics. Something that might be noble to do but is hard to sell. You cannot sell the same DLC again only because you reworked major features in it. Resulting in time and money spend on things you cannot sell. Now time and money will be split between reworking old content and creating new. Trapping you in a circle of constant reworks. 
+
+Creating new systems simply means you have to rework again and now more and more content. This is one reason why modern paradox flavor features are encapsulated from all other systems so they don't result in a needed rework for every system and the feature itself does not have to be reworked when a new feature arrives.
 
 Sadly this misses the forest for the trees. This makes it near impossible for emerging stories that are truly unique for the player his own story, but instead the game pre defines a story and some outcomes that are "meaningful" but everyone knows that if choice is truly plentiful and meaningful you can do much more than clicking on the fourth option button in a dialog or event box.
 
