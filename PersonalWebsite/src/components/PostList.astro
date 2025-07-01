@@ -1,0 +1,61 @@
+---
+const posts = await Astro.glob('../pages/posts/*.mdx');
+
+// 2. Sort posts by date in descending order (newest first)
+posts.sort((a, b) => new Date(b.frontmatter.date).valueOf() - new Date(a.frontmatter.date).valueOf());
+---
+<div class="post-list">
+  {posts.map(post => (
+    <article class="post-item">
+      <a href={post.url} class="post-link">
+        <h2 class="post-title">{post.frontmatter.title}</h2>
+        <p class="post-date">
+          {new Date(post.frontmatter.date).toLocaleDateString('en-us', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        </p>
+        <p class="post-summary">{post.frontmatter.summary}</p>
+      </a>
+    </article>
+  ))}
+</div>
+
+<style>
+.post-list {
+  display: grid;
+  gap: 2rem;
+}
+.post-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  transition: box-shadow 0.2s ease-in-out;
+}
+.post-item:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+.post-link {
+  display: block;
+  padding: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+}
+.post-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: #111827;
+}
+.post-date {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+.post-summary {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+</style>
