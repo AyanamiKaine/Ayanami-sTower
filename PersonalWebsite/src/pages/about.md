@@ -21,13 +21,10 @@ My personal laptop a Microsoft Surface Studio laptop runs Fedora Linux KDE, you 
 ### Languages that I know
 
 -   C#
--   C++
 -   Python
 -   JavaScript
--   Elixir
 -   Common Lisp
 -   Dart
--   Lua
 
 ### Tools
 
