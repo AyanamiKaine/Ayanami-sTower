@@ -15,15 +15,23 @@
         { id: 5, src: 'art/Portrait-study-1536x1436.png', title: 'Potrait', description: '' },
     ];
 
+    const BATCH_SIZE = 12; // How many artworks to load at a time
+    let visibleArtworks = artworks.slice(0, BATCH_SIZE);
+    let page = 1;
+
     // --- State Management ---
     let selectedArtwork = null; // This will hold the artwork object when the modal is open.
     let currentIndex = -1; // To track the current image index for navigation
     let showModal = false;
 
     // --- Functions ---
-    function openModal(artwork, index) {
+    function openModal(artwork) {
+        // Find the global index of the clicked artwork to make navigation work
+        const globalIndex = artworks.findIndex(a => a.id === artwork.id);
+        if (globalIndex === -1) return;
+
         selectedArtwork = artwork;
-        currentIndex = index;
+        currentIndex = globalIndex;
         showModal = true;
         // Prevent background scrolling when modal is open
         document.body.style.overflow = 'hidden';
@@ -77,12 +85,48 @@
         }
     }
 
+    // --- Lazy Loading Logic ---
+    let sentinel; // This will be bound to the sentinel div at the bottom
+
+    function loadMore() {
+        // Check if there are more artworks to load
+        if (visibleArtworks.length >= artworks.length) {
+            return; // All loaded, do nothing
+        }
+
+        const nextPage = page + 1;
+        const newArtworks = artworks.slice(page * BATCH_SIZE, nextPage * BATCH_SIZE);
+        visibleArtworks = [...visibleArtworks, ...newArtworks];
+        page = nextPage;
+    }
+
     onMount(() => {
         window.addEventListener('keydown', handleKeydown);
+
+        // Set up the Intersection Observer to watch the sentinel
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+                loadMore();
+            }
+        }, { 
+            // Start loading when the sentinel is 300px away from the bottom of the viewport
+            rootMargin: '0px 0px 300px 0px' 
+        });
+
+        if (sentinel) {
+            observer.observe(sentinel);
+        }
+        
+        // Cleanup function
+        return () => {
+            window.removeEventListener('keydown', handleKeydown);
+            if (sentinel) {
+                observer.unobserve(sentinel);
+            }
+        };
     });
 
     onDestroy(() => {
-        window.removeEventListener('keydown', handleKeydown);
         // Ensure scrolling is restored if component is destroyed while modal is open
         document.body.style.overflow = 'auto';
     });
@@ -90,10 +134,10 @@
 
 <!-- Gallery Grid -->
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    <!-- CHANGE: Added `index` to the each block to track the current artwork -->
-    {#each artworks as artwork, index (artwork.id)}
+    <!-- CHANGE: Loop over the `visibleArtworks` array -->
+    {#each visibleArtworks as artwork (artwork.id)}
         <button 
-            on:click={() => openModal(artwork, index)}
+            on:click={() => openModal(artwork)}
             class="group relative overflow-hidden rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 h-80 cursor-pointer"
         >
             <img 
@@ -110,6 +154,13 @@
         </button>
     {/each}
 </div>
+
+<!-- Sentinel Element for Intersection Observer -->
+<!-- This invisible element triggers loading more items when it enters the screen -->
+{#if visibleArtworks.length < artworks.length}
+    <div bind:this={sentinel} class="h-1"></div>
+{/if}
+
 
 <!-- Modal for viewing a single artwork -->
 {#if selectedArtwork}
