@@ -9,13 +9,20 @@
       ]
     },
     {
-      "title": "Personal Portfolio Website",
+      "title": "Personal Website",
       "status": "In Progress",
       "description": "The very website you're on now! A personal space to blog, showcase projects, share my creative work, spit my fellings and opinions on.",
       "technologies": ["Astro", "Svelte", "JavaScript"],
       "links": [
         { "name": "GitHub", "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/PersonalWebsite" }
       ]
+    },
+    {
+      "title": "Stella Invicta",
+      "status": "On Hold",
+      "description": "As a fan of all grand strategy. It's my personal dream to some day create my own grand strategy game.",
+      "technologies": [],
+      "links": []
     }
   ]
   
