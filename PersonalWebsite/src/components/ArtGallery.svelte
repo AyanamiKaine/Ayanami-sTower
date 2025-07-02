@@ -157,7 +157,7 @@
     {#each visibleArtworks as artwork (artwork.id)}
         <button 
             on:click={() => openModal(artwork)}
-            class="group relative overflow-hidden rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 h-80 cursor-pointer"
+            class="group relative overflow-hidden rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-opacity-50 h-80 cursor-pointer"
         >
             <img 
                 src={artwork.src} 
