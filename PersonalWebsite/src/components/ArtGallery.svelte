@@ -1,7 +1,7 @@
 <!-- src/components/ArtGallery.svelte -->
 <!-- This Svelte component creates the interactive gallery. -->
 <script>
-    import { onMount, onDestroy } from 'svelte';
+    import { onMount, onDestroy, tick } from 'svelte';
 
     // --- Artwork Data ---
     // This will be populated by fetching a JSON file.
@@ -16,8 +16,8 @@
     let currentIndex = -1; // To track the current image index for navigation
     let showModal = false;
 
-    // --- Functions ---
-    function openModal(artwork) {
+        // --- Functions ---
+        function openModal(artwork) {
         // Find the global index of the clicked artwork to make navigation work
         const globalIndex = allArtworks.findIndex(a => a.id === artwork.id);
         if (globalIndex === -1) return;
@@ -82,8 +82,8 @@
 
     function loadMore() {
         // Check if there are more artworks to load
-        if (visibleArtworks.length >= allArtworks.length) {
-            return; // All loaded, do nothing
+        if (allArtworks.length === 0 || visibleArtworks.length >= allArtworks.length) {
+            return; // All loaded or not ready, do nothing
         }
 
         const nextPage = page + 1;
@@ -93,7 +93,10 @@
     }
 
     onMount(async () => {
-        // Make onMount async to handle the fetch request
+        let observer; // Define observer in a broader scope for cleanup
+
+        window.addEventListener('keydown', handleKeydown);
+
         try {
             const response = await fetch('/artworks.json');
             if (!response.ok) {
@@ -101,35 +104,38 @@
             }
             const data = await response.json();
             
-            // Map the data to include the full src path and a unique ID
             allArtworks = data.map((art, index) => ({
                 ...art,
-                id: index + 1, // Assign a unique ID for Svelte's keyed each block
-                src: `/art/${art.filename}` // Construct the full path
+                id: index + 1,
+                src: `/art/${art.filename}`
             }));
 
-            // Load the first batch of artworks now that we have the data
-            loadMore();
+            // --- Robust Initial Load ---
+            // Load batches until the viewport is full or all items are loaded.
+            do {
+                loadMore();
+                await tick(); // Wait for the DOM to update before checking scroll height.
+            } while (
+                visibleArtworks.length < allArtworks.length &&
+                document.documentElement.scrollHeight <= document.documentElement.clientHeight
+            );
+
+            // --- Setup Intersection Observer for subsequent loads ---
+            // This will now only handle loading when the user actually scrolls.
+            observer = new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting) {
+                    loadMore();
+                }
+            }, { 
+                rootMargin: '0px 0px 300px 0px' 
+            });
+
+            if (sentinel) {
+                observer.observe(sentinel);
+            }
 
         } catch (error) {
             console.error("Could not fetch artworks.json:", error);
-            // You could add logic here to show an error message to the user
-        }
-
-        window.addEventListener('keydown', handleKeydown);
-
-        // Set up the Intersection Observer to watch the sentinel
-        const observer = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting) {
-                loadMore();
-            }
-        }, { 
-            // Start loading when the sentinel is 300px away from the bottom of the viewport
-            rootMargin: '0px 0px 300px 0px' 
-        });
-
-        if (sentinel) {
-            observer.observe(sentinel);
         }
         
         // Cleanup function
@@ -142,7 +148,6 @@
     });
 
     onDestroy(() => {
-        // Ensure scrolling is restored if component is destroyed while modal is open
         document.body.style.overflow = 'auto';
     });
 </script>
