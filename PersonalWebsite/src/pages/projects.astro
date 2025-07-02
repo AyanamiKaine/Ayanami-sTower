@@ -1,0 +1,18 @@
+---
+import Layout from "../layouts/Layout.astro";
+import ProjectsShowcase from "../components/ProjectsShowcase.svelte";
+---
+
+<Layout title="My Projects">
+    <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-800 tracking-tight">
+            My Projects
+        </h1>
+        <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+            Here are some of the projects I've been working on. Feel free to
+            explore and check out the code.
+        </p>
+    </div>
+
+    <ProjectsShowcase client:load />
+</Layout>
