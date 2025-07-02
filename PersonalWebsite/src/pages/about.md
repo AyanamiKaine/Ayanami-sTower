@@ -18,31 +18,32 @@ My personal laptop a Microsoft Surface Studio laptop runs Fedora Linux KDE, you 
 
 ### Languages that I know
 
-- C#
-- C++
-- Python
-- JavaScript
-- Elixir
-- Common Lisp
-- Dart
-- Lua
+-   C#
+-   C++
+-   Python
+-   JavaScript
+-   Elixir
+-   Common Lisp
+-   Dart
+-   Lua
 
 ### Tools
 
-- Visual Studio Code
-- Doom Emacs
-- Fedora Linux
+-   Visual Studio Code
+-   Doom Emacs
+-   Fedora Linux
 
 ### Misc. Competencies
 
-- German
-- English
+-   German
+-   English
+-   Art
 
 ### Things That are Close To My Heart
 
-- My Mom
-- My Friends
-- Friedrich Nietzsche
-- Evangelion
-- Caspar David Friedrich
-- John Singer Sargent
+-   My Mom
+-   My Friends
+-   Friedrich Nietzsche
+-   Evangelion
+-   Caspar David Friedrich
+-   John Singer Sargent
