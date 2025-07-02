@@ -2,6 +2,17 @@
 import projects from "../../public/projects.json";
 import artworks from "../../public/artworks.json";
 
+const posts = await Astro.glob("../pages/posts/*.{md,mdx,astro}");
+
+// Sort posts by date in descending order and get the 4 most recent.
+const recentPosts = posts
+    .sort(
+        (a, b) =>
+            new Date(b.frontmatter.date).valueOf() -
+            new Date(a.frontmatter.date).valueOf()
+    )
+    .slice(0, 4);
+
 const featuredProjects = projects.slice(0, 2);
 const featuredArtworks = artworks.slice(0, 3);
 ---
@@ -97,21 +108,70 @@ const featuredArtworks = artworks.slice(0, 3);
         </div>
     </section>
 
+    <!-- Section: Recent Blog Posts -->
+    <section class="mb-4 mt-24 md:mt-32">
+        <div class="text-center">
+            <h2
+                class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl"
+            >
+                From the Blog
+            </h2>
+            <p class="mt-4 text-lg text-gray-600">
+                My latest thoughts on programming, philosophy, and more.
+            </p>
+        </div>
+        <div
+            class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto"
+        >
+            {
+                recentPosts.map((post) => (
+                    <div class="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col transition-transform hover:scale-[1.02] hover:shadow-xl">
+                        <div class="p-6 flex-grow">
+                            <p class="text-sm text-gray-500">
+                                {new Date(
+                                    post.frontmatter.date
+                                ).toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                })}
+                            </p>
+                            <h3 class="mt-2 text-xl font-bold text-gray-900">
+                                {post.frontmatter.title}
+                            </h3>
+                            <p class="mt-3 text-base text-gray-700">
+                                {post.frontmatter.summary.substring(0, 120)}...
+                            </p>
+                        </div>
+                        <div class="px-6 pt-4 pb-6 bg-gray-50 border-t border-gray-100">
+                            <a
+                                href={post.url}
+                                class="text-sm font-semibold text-blue-600 hover:text-blue-800"
+                            >
+                                Read post <span aria-hidden="true">&rarr;</span>
+                            </a>
+                        </div>
+                    </div>
+                ))
+            }
+        </div>
+    </section>
+
     <!-- Section 3: Favorite Quote -->
-    <section class="mb-4">
-        <div class="max-w-3xl mx-auto">
-            <figure class="bg-gray-100 rounded-lg p-8">
+    <section class="mb-4 mt-24 md:mt-32">
+        <div class="max-w-2xl mx-auto">
+            <figure class="bg-gray-100 rounded-lg p-6">
                 <blockquote
-                    class="text-center text-xl md:text-2xl font-medium leading-9 text-gray-800"
+                    class="text-center text-lg font-medium leading-relaxed text-gray-800"
                 >
                     <p>
-                        The snake which cannot cast its skin has to die. As well
-                        the minds which are prevented from changing their
-                        opinions; they cease to be mind.
+                        “The snake which cannot cast its skin has to die. As
+                        well the minds which are prevented from changing their
+                        opinions; they cease to be mind.”
                     </p>
                 </blockquote>
-                <figcaption class="mt-8">
-                    <div class="text-center text-base text-gray-600">
+                <figcaption class="mt-6">
+                    <div class="text-center text-sm text-gray-600">
                         <span class="font-semibold text-gray-900"
                             >Friedrich Nietzsche</span
                         >,
