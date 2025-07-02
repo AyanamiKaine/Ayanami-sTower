@@ -15,7 +15,33 @@ const { frontmatter } = Astro.props;
         <meta name="generator" content={Astro.generator} />
         <title>Astro Basics</title>
     </head>
+
     <body>
+        <script is:inline>
+            // This script runs on every page that uses this layout.
+            function openExternalLinksInNewTab() {
+                // Get all links on the page.
+                const links = document.querySelectorAll("a");
+
+                // Loop through each link.
+                links.forEach((link) => {
+                    // Check if the link's hostname is different from the current site's hostname.
+                    // This identifies external links.
+                    if (link.hostname !== window.location.hostname) {
+                        // If it's an external link, make it open in a new tab.
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+                    }
+                });
+            }
+
+            // Run the function once the page content has loaded.
+            document.addEventListener(
+                "DOMContentLoaded",
+                openExternalLinksInNewTab
+            );
+        </script>
+
         <Container>
             <Header />
 
