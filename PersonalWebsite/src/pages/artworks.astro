@@ -1,0 +1,31 @@
+---
+// src/pages/artworks.astro
+
+// Import your layout, container, and the Svelte component
+import Layout from "../layouts/Layout.astro"; // Or whatever your layout is called
+import Container from "../components/Container.astro";
+import ArtGallery from "../components/ArtGallery.svelte";
+---
+
+<Layout title="My Artwork">
+    <!-- 1. Use your 'prose' Container ONLY for the page title and description -->
+    <Container>
+        <div class="text-center mb-12">
+            <h1
+                class="text-4xl md:text-5xl font-bold text-gray-800 tracking-tight"
+            >
+                My Artwork Collection
+            </h1>
+            <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+                When is my art done? When I leave it behind. Nothing is finished
+                its only abandoned.
+            </p>
+        </div>
+    </Container>
+
+    <!-- 2. Place the ArtGallery component OUTSIDE of that prose container. -->
+    <!-- You can wrap it in a simple div for spacing if needed. -->
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <ArtGallery client:only="svelte" />
+    </div>
+</Layout>
