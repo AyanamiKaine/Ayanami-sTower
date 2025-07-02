@@ -4,20 +4,12 @@
     import { onMount, onDestroy } from 'svelte';
 
     // --- Artwork Data ---
-    // In a real app, you might fetch this from a CMS or API.
-    // For now, we'll define it here.
-    // IMPORTANT: Replace these with paths to your own images in the `public/` folder.
-    const artworks = [
-        { id: 1, src: '/art/Charlemagne-1.webp', title: 'Charlemagne The Great', description: 'Based on my Ck2 campaign I had with him' },
-        { id: 2, src: 'art/die_grafin-951x1536.png', title: 'Die Gräfin', description: 'Based on my DnD character' },
-        { id: 3, src: 'art/study-painting-1422x1536.png', title: 'Study/Copy', description: '' },
-        { id: 4, src: 'art/Illustration-55-1418x1536.webp', title: 'Illustration', description: '' },
-        { id: 5, src: 'art/Portrait-study-1536x1436.png', title: 'Potrait', description: '' },
-    ];
-
+    // This will be populated by fetching a JSON file.
+    let allArtworks = [];
+    
     const BATCH_SIZE = 12; // How many artworks to load at a time
-    let visibleArtworks = artworks.slice(0, BATCH_SIZE);
-    let page = 1;
+    let visibleArtworks = [];
+    let page = 0; // Start at page 0 to make slicing logic simpler
 
     // --- State Management ---
     let selectedArtwork = null; // This will hold the artwork object when the modal is open.
@@ -27,7 +19,7 @@
     // --- Functions ---
     function openModal(artwork) {
         // Find the global index of the clicked artwork to make navigation work
-        const globalIndex = artworks.findIndex(a => a.id === artwork.id);
+        const globalIndex = allArtworks.findIndex(a => a.id === artwork.id);
         if (globalIndex === -1) return;
 
         selectedArtwork = artwork;
@@ -50,16 +42,16 @@
 
     function showNext() {
         if (currentIndex === -1) return;
-        const nextIndex = (currentIndex + 1) % artworks.length;
+        const nextIndex = (currentIndex + 1) % allArtworks.length;
         currentIndex = nextIndex;
-        selectedArtwork = artworks[nextIndex];
+        selectedArtwork = allArtworks[nextIndex];
     }
 
     function showPrevious() {
         if (currentIndex === -1) return;
-        const prevIndex = (currentIndex - 1 + artworks.length) % artworks.length;
+        const prevIndex = (currentIndex - 1 + allArtworks.length) % allArtworks.length;
         currentIndex = prevIndex;
-        selectedArtwork = artworks[prevIndex];
+        selectedArtwork = allArtworks[prevIndex];
     }
 
     // --- Keyboard Accessibility ---
@@ -90,17 +82,40 @@
 
     function loadMore() {
         // Check if there are more artworks to load
-        if (visibleArtworks.length >= artworks.length) {
+        if (visibleArtworks.length >= allArtworks.length) {
             return; // All loaded, do nothing
         }
 
         const nextPage = page + 1;
-        const newArtworks = artworks.slice(page * BATCH_SIZE, nextPage * BATCH_SIZE);
+        const newArtworks = allArtworks.slice(page * BATCH_SIZE, nextPage * BATCH_SIZE);
         visibleArtworks = [...visibleArtworks, ...newArtworks];
         page = nextPage;
     }
 
-    onMount(() => {
+    onMount(async () => {
+        // Make onMount async to handle the fetch request
+        try {
+            const response = await fetch('/artworks.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            // Map the data to include the full src path and a unique ID
+            allArtworks = data.map((art, index) => ({
+                ...art,
+                id: index + 1, // Assign a unique ID for Svelte's keyed each block
+                src: `/art/${art.filename}` // Construct the full path
+            }));
+
+            // Load the first batch of artworks now that we have the data
+            loadMore();
+
+        } catch (error) {
+            console.error("Could not fetch artworks.json:", error);
+            // You could add logic here to show an error message to the user
+        }
+
         window.addEventListener('keydown', handleKeydown);
 
         // Set up the Intersection Observer to watch the sentinel
@@ -120,7 +135,7 @@
         // Cleanup function
         return () => {
             window.removeEventListener('keydown', handleKeydown);
-            if (sentinel) {
+            if (sentinel && observer) {
                 observer.unobserve(sentinel);
             }
         };
@@ -134,7 +149,6 @@
 
 <!-- Gallery Grid -->
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    <!-- CHANGE: Loop over the `visibleArtworks` array -->
     {#each visibleArtworks as artwork (artwork.id)}
         <button 
             on:click={() => openModal(artwork)}
@@ -157,7 +171,7 @@
 
 <!-- Sentinel Element for Intersection Observer -->
 <!-- This invisible element triggers loading more items when it enters the screen -->
-{#if visibleArtworks.length < artworks.length}
+{#if allArtworks.length > 0 && visibleArtworks.length < allArtworks.length}
     <div bind:this={sentinel} class="h-1"></div>
 {/if}
 
