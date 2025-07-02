@@ -1,5 +1,4 @@
 ---
-
 const postImports = import.meta.glob("../pages/posts/*.mdx", { eager: true });
 const posts = Object.values(postImports);
 
@@ -11,7 +10,7 @@ posts.sort(
 );
 ---
 
-<div class="post-list">
+<div class="post-list mt-10">
     {
         posts.map((post) => (
             <article class="post-item">
