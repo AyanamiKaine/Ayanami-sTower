@@ -36,6 +36,10 @@ if (player.Level >= 10 &&
 }
 ```
 
+Using my created fuzzy-pattern matcher. We abstract a condition as a `Criteria` and bundle them in a `Rule` that if the most conditions in the `Rule` list (not every condition) are met, executes its `payload` `SpawnAncientDragon()`
+
+We decouple where the data comes from, the criteria only care for the key, we could use a dictionary. Your own object or what ever.
+
 ```cs
 var gameEvents = new List<Rule>
 {
@@ -71,4 +75,26 @@ var gameEvents = new List<Rule>
         () => SpawnGoblinAmbush()
     ) { Priority = 1 } // Lower priority.
 };
+```
+Here is a conceptual example building a dummy query.
+
+```cs
+var playerStateForGoblins = new Query()
+    .Add("PlayerLevel", 3) // Too low for dragon
+    .Add("PlayerItems", new List<string> { "Wooden Shield" }) // No MagicSword
+    .Add("CompletedQuests", new List<string>())
+    .Add("TimeOfDay", "Night") // Matches both
+    .Add("Location", "MysticalForest") // Matches both
+    .Add("Health", 80)
+    .Add("MagicPoints", 10) // Too low for dragon
+    .Add("StatusEffects", new List<string>())
+    .Add("Reputation", 10); // Too low for dragon
+
+//  The matcher will find the dragon rule matches only 2/9 criteria.
+//  The goblin rule matches 2/2 criteria.
+//  Even though the match count is the same, the goblin rule is a "perfect" match
+//  for its own criteria, while the dragon one is not. The system will favor
+//  the rule that is most completely fulfilled. If both were equally fulfilled,
+//  it would fall back to priority.
+playerStateForGoblins.Match(gameRules);
 ```
