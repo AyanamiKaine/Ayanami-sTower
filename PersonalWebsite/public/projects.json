@@ -11,7 +11,7 @@
     {
         "title": "Avalonia Flecs",
         "status": "In Progress",
-        "description": "I really dont like xaml/xml. It always felt like fighting it.I was somewhat spoiled by flutter and modern JavaScript front-end frameworks.What I really wanted was a declarative way to declare a UI in code. So I combined the ECS framework Flecs.Net with Avalonia and wrote my own declarative UI-Builder that I can use like any other code. Its directly used in my Stella Learning app.",
+        "description": "I really dont like xaml/xml. It always felt like fighting it. I was somewhat spoiled by flutter and modern JavaScript front-end frameworks. What I really wanted was a declarative way to declare a UI in code. So I combined the ECS framework Flecs.Net with Avalonia and wrote my own declarative UI-Builder that I can use like any other code. Its directly used in my Stella Learning app.",
         "technologies": ["Flecs.Net", "C#", "Avalonia"],
         "links": [
             {
@@ -32,7 +32,9 @@
                 "name": "GitHub",
                 "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/stella_fuzzy_pattern_matcher"
             },
-            { "name": "NuGet", "url": "https://www.nuget.org/packages/StellaFuzzyPatternMatcher" }
+            { "name": "NuGet", "url": "https://www.nuget.org/packages/StellaFuzzyPatternMatcher" },
+            { "name": "Blog Post", "url": "/posts/Writing-a-Fuzzy-Pattern-Matcher-In-CSharp" }
+
         ]
     },
     {
