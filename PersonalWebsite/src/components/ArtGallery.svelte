@@ -71,19 +71,19 @@
 <!-- Gallery Grid -->
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
     {#each artworks as artwork (artwork.id)}
+        <!-- CHANGE: Moved the height constraint to the button to create a uniform container. -->
         <button 
             on:click={() => openModal(artwork)}
-            class="group relative overflow-hidden rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50"
+            class="group relative overflow-hidden rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 h-80"
         >
+            <!-- CHANGE: Image now fills its parent container (`h-full`). -->
             <img 
                 src={artwork.src} 
                 alt={artwork.title} 
                 class="w-full h-full object-cover"
                 loading="lazy"
             />
-            <!-- CHANGE: Added `justify-center` to the container to center the text block horizontally. -->
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-4">
-                <!-- CHANGE: Added `text-center` to the h3 to ensure multi-line text is centered. -->
                 <h3 class="text-white text-lg font-bold opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 text-center">
                     {artwork.title}
                 </h3>
