@@ -3,6 +3,7 @@ import Container from "../components/Container.astro";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import "../styles/global.css";
+const { frontmatter } = Astro.props;
 ---
 
 <!doctype html>
@@ -17,7 +18,39 @@ import "../styles/global.css";
     <body>
         <Container>
             <Header />
-            <slot />
+
+            <main class="post-content">
+                <div class="post-header">
+                    <h1 class="post-title">{frontmatter.title}</h1>
+                    <div class="post-meta">
+                        <span>By {frontmatter.author}</span>
+                        <span class="separator">|</span>
+                        <span>
+                            Published on {
+                                new Date(frontmatter.date).toLocaleDateString(
+                                    "en-us",
+                                    {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                    }
+                                )
+                            }
+                        </span>
+                    </div>
+                    {
+                        frontmatter.tags && (
+                            <div class="post-tags">
+                                {frontmatter.tags.map((tag) => (
+                                    <span class="tag">{tag}</span>
+                                ))}
+                            </div>
+                        )
+                    }
+                </div>
+
+                <slot />
+            </main>
             <Footer />
         </Container>
     </body>
@@ -29,5 +62,57 @@ import "../styles/global.css";
         margin: 0;
         width: 100%;
         height: 100%;
+    }
+
+    /* Add some styles for your new metadata */
+    .post-content {
+        padding: 2rem 0;
+    }
+
+    .post-header {
+        margin-bottom: 2rem;
+        text-align: center;
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 2rem;
+    }
+
+    .post-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin: 0 0 1rem;
+    }
+
+    .post-meta {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    .post-meta .separator {
+        margin: 0 0.5rem;
+    }
+
+    .post-tags {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .tag {
+        background-color: #eef2ff;
+        color: #4338ca;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    /* Styles for the main article content */
+    .post-content article {
+        max-width: 720px; /* Typical width for readable text */
+        margin: 0 auto;
+        line-height: 1.7;
     }
 </style>
