@@ -1,0 +1,74 @@
+---
+title: "Writing a Fuzzy Pattern Matcher in C#"
+date: 2024-12-06
+tags: ["Software", "Gaming"]
+author: "Ayanami Kaine"
+layout: ../../layouts/PostLayout.astro
+summary: "Implementing the AI-driven Dynamic Dialog through Fuzzy Pattern Matching, as shown in the same named GDC talk."
+---
+
+## A Blog Post and Video Spark an Idea 
+
+By sheer coincidence, I came across a blog post written for Starsector. Called ["You Merely Adopted Rules.csv, I Was Born Into It"](https://fractalsoftworks.com/2023/11/13/you-merely-adopted-rules-csv-i-was-born-into-it/). The basic idea is that we have a dialog that queries the world state and based on the world state certain dialog is shown or not shown. While being in the dialog and talking the system also can write to the world state and add data that can be relevant later or only limited to the current dialog.
+
+The same post mentions a [video](https://www.youtube.com/watch?v=tAbBID3N64A) by Left for Dead developer that implemented a dynamic voice over system where characters can react to what is happening. This includes how gets attacked by what, where someone gets attacked, what other NPCs stand nearby, how much health is left, which NPCs already died, etc. Again it's all about the current game state that gets used to dispatch certain actions based on the conditions that are met.
+
+I found the idea that we can dispatch actions based on current state interesting. Creating complex branching trees of dialog/events is not easy. Especially when we write video games where the tree gets reworked every so often and adding new branching becomes cumbersome.
+
+## A Code Example
+
+Imagine we want to trigger an event based on current world state from a list of events and use the one that triggers the most conditions.
+
+```cs
+// Traditional approach with deeply nested conditions
+if (player.Level >= 10 &&
+    player.HasItem("MagicSword") && 
+    !questLog.IsCompleted("DragonSlayer") &&
+    world.TimeOfDay == "Night" &&
+    player.Location == "MysticalForest" &&
+    player.Health > 50 &&
+    player.MagicPoints >= 30 &&
+    !player.HasStatusEffect("Cursed") &&
+    player.Reputation > 100)
+{
+    // Trigger special encounter with ancient dragon
+    SpawnAncientDragon();
+}
+```
+
+```cs
+var gameEvents = new List<Rule>
+{
+    // It's the most specific rule, requiring 9 conditions to be met.
+    new Rule(
+        new List<ICriteria>
+        {
+            new Criteria<int>("PlayerLevel", level => level >= 10),
+            new Criteria<List<string>>("PlayerItems", items => items.Contains("MagicSword")),
+            new Criteria<List<string>>("CompletedQuests", quests => !quests.Contains("DragonSlayer")),
+            new Criteria<string>("TimeOfDay", time => time == "Night"),
+            new Criteria<string>("Location", loc => loc == "MysticalForest"),
+            new Criteria<int>("Health", health => health > 50),
+            new Criteria<int>("MagicPoints", mp => mp >= 30),
+            new Criteria<List<string>>("StatusEffects", effects => !effects.Contains("Cursed")),
+            new Criteria<int>("Reputation", rep => rep > 100)
+        },
+        // This is the action to execute when the rule is the best match.
+        () => SpawnAncientDragon()
+    ) { Priority = 10 }, 
+    // High priority because it's a special event.
+    // We use priority to select the rule with the highest priority when two rules with the same number of 
+    // critera met
+
+    // A second, less specific rule. Only requires the player to be in the forest at night.
+    // This demonstrates how the matcher can fall back to a less perfect match.
+    new Rule(
+        new List<ICriteria>
+        {
+            new Criteria<string>("Location", loc => loc == "MysticalForest"),
+            new Criteria<string>("TimeOfDay", time => time == "Night")
+        },
+        () => SpawnGoblinAmbush()
+    ) { Priority = 1 } // Lower priority.
+};
+```
