@@ -1,6 +1,8 @@
 ---
 title: "About Me"
 permalink: "/about/"
+date: 2025-06-22
+author: "Ayanami Kaine"
 layout: ../layouts/PostLayout.astro
 ---
 
