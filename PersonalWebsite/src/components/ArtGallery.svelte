@@ -13,16 +13,17 @@
         { id: 3, src: 'art/study-painting-1422x1536.png', title: 'Study/Copy', description: '' },
         { id: 4, src: 'art/Illustration-55-1418x1536.webp', title: 'Illustration', description: '' },
         { id: 5, src: 'art/Portrait-study-1536x1436.png', title: 'Potrait', description: '' },
-
     ];
 
     // --- State Management ---
     let selectedArtwork = null; // This will hold the artwork object when the modal is open.
+    let currentIndex = -1; // To track the current image index for navigation
     let showModal = false;
 
     // --- Functions ---
-    function openModal(artwork) {
+    function openModal(artwork, index) {
         selectedArtwork = artwork;
+        currentIndex = index;
         showModal = true;
         // Prevent background scrolling when modal is open
         document.body.style.overflow = 'hidden';
@@ -35,22 +36,41 @@
         // We delay clearing the artwork to allow for the fade-out animation
         setTimeout(() => {
             selectedArtwork = null;
+            currentIndex = -1;
         }, 300);
+    }
+
+    function showNext() {
+        if (currentIndex === -1) return;
+        const nextIndex = (currentIndex + 1) % artworks.length;
+        currentIndex = nextIndex;
+        selectedArtwork = artworks[nextIndex];
+    }
+
+    function showPrevious() {
+        if (currentIndex === -1) return;
+        const prevIndex = (currentIndex - 1 + artworks.length) % artworks.length;
+        currentIndex = prevIndex;
+        selectedArtwork = artworks[prevIndex];
     }
 
     // --- Keyboard Accessibility ---
     function handleKeydown(event) {
-        if (event.key === 'Escape' && selectedArtwork) {
+        if (!selectedArtwork) return; // Do nothing if modal is closed
+
+        if (event.key === 'Escape') {
             closeModal();
+        }
+        if (event.key === 'ArrowRight') {
+            showNext();
+        }
+        if (event.key === 'ArrowLeft') {
+            showPrevious();
         }
     }
 
     function handleDialogKeydown(event) {
-        // This allows closing the dialog by pressing Enter or Space on the backdrop,
-        // which satisfies the accessibility warning.
         if (event.key === 'Enter' || event.key === ' ') {
-            // We check if the event target is the dialog container itself
-            // and not an element inside it (like the close button).
             if (event.currentTarget === event.target) {
                 closeModal();
             }
@@ -70,13 +90,12 @@
 
 <!-- Gallery Grid -->
 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-    {#each artworks as artwork (artwork.id)}
-        <!-- CHANGE: Moved the height constraint to the button to create a uniform container. -->
+    <!-- CHANGE: Added `index` to the each block to track the current artwork -->
+    {#each artworks as artwork, index (artwork.id)}
         <button 
-            on:click={() => openModal(artwork)}
-            class="group relative overflow-hidden rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 h-80"
+            on:click={() => openModal(artwork, index)}
+            class="group relative overflow-hidden rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 h-80 cursor-pointer"
         >
-            <!-- CHANGE: Image now fills its parent container (`h-full`). -->
             <img 
                 src={artwork.src} 
                 alt={artwork.title} 
@@ -108,38 +127,47 @@
         <!-- Modal Backdrop -->
         <div class="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm"></div>
 
+        <!-- Previous Button -->
+        <button
+            on:click|stopPropagation={showPrevious}
+            class="absolute left-4 sm:left-8 top-1/2 -translate-y-1/2 z-[51] text-white bg-black bg-opacity-30 rounded-full p-2 hover:bg-opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+            aria-label="Previous image"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+
         <!-- Modal Content -->
         <div 
-            class="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden transition-transform duration-300"
+            class="relative transition-transform duration-300"
             class:scale-95={!showModal}
             class:scale-100={showModal}
             on:click|stopPropagation
             role="document"
         >
-            <div class="w-full md:w-2/3 h-64 md:h-auto flex-shrink-0">
-                 <img 
-                    src={selectedArtwork.src} 
-                    alt={selectedArtwork.title} 
-                    class="w-full h-full object-contain bg-gray-100"
-                />
-            </div>
-            <div class="flex flex-col p-6 flex-grow">
-                <h2 id="artwork-title" class="text-2xl font-bold text-gray-900 mb-2">{selectedArtwork.title}</h2>
-                <p class="text-gray-700 flex-grow">{selectedArtwork.description}</p>
-                <button 
-                    on:click={closeModal}
-                    class="mt-4 self-end bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800"
-                    aria-label="Close artwork view"
-                >
-                    Close
-                </button>
-            </div>
+             <img 
+                src={selectedArtwork.src} 
+                alt={selectedArtwork.title} 
+                class="block w-auto h-auto max-w-[80vw] sm:max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl"
+            />
         </div>
+
+        <!-- Next Button -->
+        <button
+            on:click|stopPropagation={showNext}
+            class="absolute right-4 sm:right-8 top-1/2 -translate-y-1/2 z-[51] text-white bg-black bg-opacity-30 rounded-full p-2 hover:bg-opacity-50 transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+            aria-label="Next image"
+        >
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
 
         <!-- Close button for accessibility and convenience -->
          <button
             on:click={closeModal}
-            class="absolute top-4 right-4 text-white text-4xl leading-none hover:text-gray-300 focus:outline-none"
+            class="absolute top-4 right-4 text-white text-4xl leading-none hover:text-gray-300 focus:outline-none z-[51]"
             aria-label="Close modal"
         >
             &times;
