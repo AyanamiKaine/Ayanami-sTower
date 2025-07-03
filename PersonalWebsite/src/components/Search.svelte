@@ -13,17 +13,14 @@
 
     // Fetch the search index when the component mounts
     onMount(async () => {
-        console.log("Search component mounted. Fetching data..."); // DEBUG LOG
         try {
             const response = await fetch("/api/search.json");
-            console.log("API Response Status:", response.status); // DEBUG LOG
             if (!response.ok) {
                 throw new Error(
                     `Failed to fetch search data. Status: ${response.status}`,
                 );
             }
             allPages = await response.json();
-            console.log("Fetched pages:", allPages); // DEBUG LOG
 
             if (allPages.length === 0) {
                 console.warn(
@@ -33,13 +30,12 @@
 
             // Configure Fuse.js
             const options = {
-                keys: ["title", "description", "summary"],
+                keys: ["title", "description", "summary", "tags"],
                 includeScore: true,
                 threshold: 0.4,
                 minMatchCharLength: 2,
             };
             fuse = new Fuse(allPages, options);
-            console.log("Fuse.js initialized."); // DEBUG LOG
         } catch (error) {
             console.error("Error initializing search component:", error); // Improved error logging
         } finally {
@@ -52,7 +48,6 @@
         if (fuse && searchQuery.length > 1) {
             const searchResults = fuse.search(searchQuery).slice(0, 10);
             results = searchResults.map((result) => result.item);
-            console.log(`Search for "${searchQuery}":`, results); // DEBUG LOG
         } else {
             // Clear results if the query is too short
             results = [];
@@ -82,6 +77,10 @@
         }
         return text;
     }
+
+    function navigateTo(url: string) {
+        window.location.href = url;
+    }
 </script>
 
 <div class="relative w-full max-w-md mx-auto">
@@ -96,7 +95,7 @@
             on:blur={handleBlur}
             aria-label="Search"
         />
-        <!-- Loading Spinner (optional) -->
+        <!-- Loading Spinner (optional) 
         {#if isLoading}
             <div class="absolute top-1/2 right-4 transform -translate-y-1/2">
                 <div
@@ -104,6 +103,7 @@
                 ></div>
             </div>
         {/if}
+        -->
         <!-- Clear Button -->
         {#if searchQuery && !isLoading}
             <button
@@ -135,15 +135,14 @@
     <!-- Search Results Dropdown -->
     {#if results.length > 0 && isFocused}
         <div
-            class="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-xl"
+            class="absolute z-10 w-full mt-4 bg-white border border-gray-200 rounded-lg shadow-xl"
         >
-            <div class="py-2">
+            <div class="">
                 {#each results as page}
-                    <a
-                        href={page.url}
-                        class="block px-4 py-3 hover:bg-gray-100"
-                    >
-                        <p class="font-semibold text-gray-800">{page.title}</p>
+                    <a href={page.url} on:mousedown|preventDefault={() => navigateTo(page.url)} class="block px-4 hover:bg-gray-100">
+                        <p class="font-semibold text-gray-800 text-left">
+                            {page.title}
+                        </p>
                     </a>
                 {/each}
             </div>
