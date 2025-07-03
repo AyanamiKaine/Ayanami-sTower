@@ -1,18 +1,32 @@
 ---
+// Your nav component, e.g., Nav.astro
 import Search from "./Search.svelte";
 ---
 
-<nav class="flex flex-row justify-center items-center mt-8">
-    <a class="mr-4" href="/">Home</a>
-    <a class="mr-4" href="/blog">Blog</a>
-    <a class="mr-4" href="/artworks">Artworks</a>
-    <a class="mr-4" href="/projects">Projects</a>
-    <a class="mr-4" href="/about">About</a>
+<!-- 
+  - flex-col stacks items vertically on mobile.
+  - md:flex-row switches to horizontal on medium screens and up.
+  - gap-4 adds consistent spacing.
+-->
+<nav
+    class="flex flex-col md:flex-row flex-wrap justify-center items-center mt-8 gap-4 px-4"
+>
+    <a class="mr-0 md:mr-4" href="/">Home</a>
+    <a class="mr-0 md:mr-4" href="/blog">Blog</a>
+    <a class="mr-0 md:mr-4" href="/artworks">Artworks</a>
+    <a class="mr-0 md:mr-4" href="/projects">Projects</a>
+    <a class="mr-0 md:mr-4" href="/about">About</a>
     <a
-        class="mr-4"
+        class="mr-0 md:mr-4"
         href="https://github.com/AyanamiKaine/Ayanami-sTower"
         target="_blank"
         rel="noopener noreferrer">Monorepo</a
     >
-    <Search client:load />
+    <!-- 
+      - This wrapper makes the search bar full-width on mobile 
+        and auto-width on desktop.
+    -->
+    <div class="w-full md:w-auto">
+        <Search client:load />
+    </div>
 </nav>
