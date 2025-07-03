@@ -1,16 +1,41 @@
 {
   "name": "sfpm-js",
-  "module": "sfpm.js",
+  "version": "1.0.0",
+  "description": "A lightweight, dependency-free, forward-chaining inference engine for managing complex state and logic in a declarative way.",
+  "main": "index.js",
   "type": "module",
+  "files": [
+    "src/",
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "bun test",
     "bench": "bun run ./bench/sfpm.bench.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AyanamiKaine/Ayanami-sTower.git#main"
+  },
+  "keywords": [
+    "rules engine",
+    "inference engine",
+    "forward-chaining",
+    "state management",
+    "declarative logic",
+    "game development",
+    "ai",
+    "dialog system",
+    "expert system"
+  ],
+  "author": "Ayanami Kaine",
+  "license": "MIT",
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "mitata": "^1.0.34"

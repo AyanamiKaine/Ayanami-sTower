@@ -1,0 +1,12 @@
+# Ignore development folders and files
+/node_modules
+/tests
+/example
+/bench
+
+# Ignore config files
+.gitignore
+jsconfig.json
+
+# Ignore OS-specific files
+.DS_Store
