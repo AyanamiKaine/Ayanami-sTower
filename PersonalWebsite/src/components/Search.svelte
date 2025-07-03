@@ -144,11 +144,6 @@
                         class="block px-4 py-3 hover:bg-gray-100"
                     >
                         <p class="font-semibold text-gray-800">{page.title}</p>
-                        {#if page.description}
-                            <p class="text-sm text-gray-600 mt-1">
-                                {truncate(page.description, 70)}
-                            </p>
-                        {/if}
                     </a>
                 {/each}
             </div>
