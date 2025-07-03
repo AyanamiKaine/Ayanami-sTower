@@ -1,4 +1,4 @@
-export const GET = async ({ }) => {
+export const GET= async ({ }) => {
     // Retrieve all pages from the /pages/ directory.
     // We are looking for .md, .mdx, and .astro files.
     const allPages = await import.meta.glob(['../**/*.md', '../**/*.mdx', '../**/*.astro']);
@@ -9,6 +9,8 @@ export const GET = async ({ }) => {
         const mod = await allPages[path]();
         let title = '';
         let description = '';
+        let summary = '';
+        let tags = [];
         let url = '';
 
         // Skip layouts, API routes, and other non-page files
@@ -21,6 +23,8 @@ export const GET = async ({ }) => {
             if (mod.frontmatter && mod.frontmatter.title && !mod.frontmatter.draft) {
                 title = mod.frontmatter.title;
                 description = mod.frontmatter.description || '';
+                summary = mod.frontmatter.summary || '';
+                tags = mod.frontmatter.tags || [];
             }
         }
         // Handle Astro files
@@ -30,6 +34,8 @@ export const GET = async ({ }) => {
             if (mod.title && !mod.draft) {
                 title = mod.title;
                 description = mod.description || '';
+                summary = mod.summary || '';
+                tags = mod.tags || [];
             }
         }
 
@@ -45,7 +51,7 @@ export const GET = async ({ }) => {
                 url = '/';
             }
 
-            posts.push({ url, title, description });
+            posts.push({ url, title, description, summary, tags });
         }
     }
 
