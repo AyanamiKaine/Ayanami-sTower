@@ -1,5 +1,8 @@
 ---
-// src/pages/artworks.astro
+export const title = "My Artwork Collection";
+export const description =
+    "A collection of my abandoned artworks. When is my art done? When I leave it behind. Nothing is finished its only abandoned.";
+export const summary = "A gallery of my artwork.";
 
 // Import your layout, container, and the Svelte component
 import Layout from "../layouts/Layout.astro"; // Or whatever your layout is called
@@ -17,7 +20,8 @@ import ArtGallery from "../components/ArtGallery.svelte";
                 My Artwork Collection
             </h1>
             <i class="meta-data mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-                When is my art done? When I leave it behind. Nothing is finished its only abandoned.
+                When is my art done? When I leave it behind. Nothing is finished
+                its only abandoned.
             </i>
         </div>
     </Container>
