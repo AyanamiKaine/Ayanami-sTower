@@ -1,10 +1,10 @@
 ---
-const { title, date } = Astro.props;
+const { title, date, quality = "default" } = Astro.props;
 ---
 
-<div class="timeline-item">
-    <div class="timeline-dot"></div>
-    <div class="timeline-content">
+<div class="timeline-item" data-quality={quality}>
+    <div class={`timeline-dot ${quality}`}></div>
+    <div class={`timeline-content ${quality}`}>
         <div class="timeline-date">{date}</div>
         <h3 class="timeline-title">{title}</h3>
         <div class="timeline-description">
@@ -33,9 +33,57 @@ const { title, date } = Astro.props;
         transition: all 0.2s ease;
     }
 
+    /* Good quality styling */
+    .timeline-dot.good {
+        border-color: #10b981;
+        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+
+    .timeline-content.good {
+        border-left: 4px solid #10b981;
+        background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    }
+
+    .timeline-item:hover .timeline-dot.good {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Bad quality styling */
+    .timeline-dot.bad {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+    }
+
+    .timeline-content.bad {
+        border-left: 4px solid #ef4444;
+        background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    }
+
+    .timeline-item:hover .timeline-dot.bad {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.2);
+    }
+
+    /* Meh quality styling */
+    .timeline-dot.meh {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+    }
+
+    .timeline-content.meh {
+        border-left: 4px solid #f59e0b;
+        background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+    }
+
+    .timeline-item:hover .timeline-dot.meh {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.2);
+    }
+
     .timeline-item:hover .timeline-dot {
         transform: scale(1.1);
-        box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.15);
+        transition: all 0.2s ease;
     }
 
     .timeline-content {
