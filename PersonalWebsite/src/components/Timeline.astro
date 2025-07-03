@@ -1,0 +1,26 @@
+<div class="timeline-container">
+    <slot />
+</div>
+
+<style>
+    .timeline-container {
+        position: relative;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .timeline-container::before {
+        content: "";
+        position: absolute;
+        left: 1.5rem;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: linear-gradient(
+            to bottom,
+            #e5e7eb 0%,
+            #9ca3af 50%,
+            #e5e7eb 100%
+        );
+    }
+</style>
