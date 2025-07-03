@@ -2,14 +2,14 @@
 import projects from "../../public/projects.json";
 import artworks from "../../public/artworks.json";
 
-const posts = await Astro.glob("../pages/posts/*.{md,mdx,astro}");
-
+const postImports = import.meta.glob("../pages/posts/*.{md,mdx,astro}", { eager: true });
+const posts = Object.values(postImports);
 // Sort posts by date in descending order and get the 4 most recent.
 const recentPosts = posts
     .sort(
         (a, b) =>
             new Date(b.frontmatter.date).valueOf() -
-            new Date(a.frontmatter.date).valueOf()
+            new Date(a.frontmatter.date).valueOf(),
     )
     .slice(0, 4);
 
@@ -38,12 +38,10 @@ const featuredArtworks = artworks.slice(0, 3);
             <div class="md:col-span-2 text-center md:text-left">
                 <figure class="mt-6">
                     <blockquote class="text-lg md:text-xl text-gray-600">
-                        <p>
-                            Life is all about creation. Being able to create
+                        <p>Life is all about creation. Being able to create
                             something and call it his/her own is an incredible
                             powerful feeling. To say “I did that!” fullfills a
-                            deeper desire someone has in his heart.
-                        </p>
+                            deeper desire someone has in his heart.</p>
                     </blockquote>
                     <figcaption class="mt-4 text-base text-gray-500 text-right">
                         - Ayanami
@@ -129,7 +127,7 @@ const featuredArtworks = artworks.slice(0, 3);
                         <div class="p-6 flex-grow">
                             <p class="text-sm text-gray-500">
                                 {new Date(
-                                    post.frontmatter.date
+                                    post.frontmatter.date,
                                 ).toLocaleDateString("en-US", {
                                     year: "numeric",
                                     month: "long",
@@ -164,9 +162,11 @@ const featuredArtworks = artworks.slice(0, 3);
                 <blockquote
                     class="text-center text-lg font-medium leading-relaxed text-gray-800"
                 >
-                    <p>The snake which cannot cast its skin has to die. As
-                        well the minds which are prevented from changing their
-                        opinions; they cease to be mind.</p>
+                    <p>
+                        The snake which cannot cast its skin has to die. As well
+                        the minds which are prevented from changing their
+                        opinions; they cease to be mind.
+                    </p>
                 </blockquote>
                 <figcaption class="mt-6">
                     <div class="text-center text-sm text-gray-600">
