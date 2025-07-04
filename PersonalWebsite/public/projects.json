@@ -2,12 +2,13 @@
   {
     "title": "Stella Learning",
     "status": "In Progress",
-    "description": "A (spaced repetition) learning app that integrates with note taking apps like Obsidian. Implementing a flat deck using a priority queue to learn items. You are able to create various kinds of learning items, from simple flash cards to cloze images and using files as learn items. And many many more feature all there to help me (and maybe you) to learn more in less time.",
+    "description": "A (spaced repetition) learning app that integrates with note taking apps like Obsidian. Implementing a flat deck using a priority queue to learn items. You are able to create various kinds of learning items, from simple flash cards to cloze images and using files as learn items. Being able to create summaries for notes using AI and many many more feature all there to help me (and maybe you) to learn more in less time.",
     "technologies": [
       "C#",
       "Avalonia",
       "Multiplatform",
-      "Avalonia Flecs"
+      "Avalonia Flecs",
+      "Gemini"
     ],
     "links": [
       {
