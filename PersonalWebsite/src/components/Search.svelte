@@ -139,7 +139,7 @@
         >
             <div class="">
                 {#each results as page}
-                    <a href={page.url} on:mousedown|preventDefault={() => navigateTo(page.url)} class="block px-4 hover:bg-gray-100">
+                    <a href={page.url} on:mousedown|preventDefault={() => navigateTo(page.url)} class="block p-4 hover:bg-gray-100">
                         <p class="font-semibold text-gray-800 text-left">
                             {page.title}
                         </p>
