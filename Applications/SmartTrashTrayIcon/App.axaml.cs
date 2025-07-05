@@ -112,7 +112,7 @@ public class App : Application
 
             _timer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromSeconds(5)
+                Interval = TimeSpan.FromMinutes(5)
             };
             _timer.Tick += UpdateToolTip;
             _timer.Start();
