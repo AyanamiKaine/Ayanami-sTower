@@ -208,7 +208,7 @@
              <img 
                 src={selectedArtwork.src} 
                 alt={selectedArtwork.title} 
-                class="block w-auto h-auto max-w-[80vw] sm:max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl"
+                class="block w-auto h-auto max-w-[95vw] sm:max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl"
             />
         </div>
         <button
