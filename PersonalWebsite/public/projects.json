@@ -20,7 +20,7 @@
   {
     "title": "Smart Trash Tray Icon",
     "status": "Completed",
-    "description": "A lightweight, cross-platform tray utility for managing your system's trash bin. Built with .NET and Avalonia UI, it provides a simple way to monitor and manage your deleted files on Windows, macOS, and Linux, including real-time size display in the tooltip. All in less than 300 lines of code",
+    "description": "A lightweight, cross-platform tray utility for managing your system's trash bin. Built with .NET and Avalonia UI, it provides a simple way to monitor and manage your deleted files on Windows, macOS, and Linux, including real-time size display in the tooltip. All in less than 300 lines of code.",
     "technologies": [
       "C#",
       "Avalonia",
