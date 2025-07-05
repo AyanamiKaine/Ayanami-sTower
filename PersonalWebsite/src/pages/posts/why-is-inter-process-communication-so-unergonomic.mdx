@@ -1,0 +1,42 @@
+---
+title: "Why is interprocess communication (IPC) so unergonomic"
+date: 2025-07-05
+tags: ["IPC", "Programming"]
+author: "Ayanami Kaine"
+layout: ../../layouts/PostLayout.astro
+summary: ""
+---
+
+For some reason the idea to have multiple programs written in different programming languages that work together by sending messages never let me go. Writing a render in C++ and the game logic in Julia. Having them communicate by sending various messages. It always intrigued me. 
+
+Having the ability to replace for example the render with a version written in C# that just needs to adhere to what message need to be accepted and send to others, felt so good.
+
+## Communication is not Free
+
+The sad thing is that communication is not free, there is always a communication overhead. This overhead often results in latency and additional complexity. We need to handle the latency, crashes in servers. Having multiple processes communicating with each other is a distributed system.
+
+All problems that a distributed system has this system would also have.
+
+## Smalltalk Lost
+
+Many of the complexities that arise from a local distributed system should be solved by the operating system. Programming languages like Erlang/Elixir that run on the [Beam](https://www.erlang-solutions.com/blog/the-beam-erlangs-virtual-machine/) shows what abstractions should exist to make our life easier.  
+
+There are incredible videos by Alan Kay showing the power of an operating system and language runtime that make it possible for programs to cooperate.
+
+<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;">
+  <iframe 
+    src="https://www.youtube.com/embed/6ZdxiQoOBgs?start=2425" 
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+    allowfullscreen 
+    title="Alan Kay on Object-Oriented Programming (Embedded YouTube Video)">
+  </iframe>
+</div>
+
+The best communication we have between programs {new Date().getFullYear() - 1987} years later is exporting and importing files. What a shame.
+
+## Walled Garden
+
+A real disgrace is the walled garden we are creating with software as a service (SaaS). So many APIs that could be used for communication between programs is locked behind interfaces on the web or in GUIs. Cloud services are not there to empower the user but to chain him. And that is a disgrace.
+
+Most programmers and managers don't feel shamed when they create such gardens, but they should.
