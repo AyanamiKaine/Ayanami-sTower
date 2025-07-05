@@ -18,23 +18,6 @@
     ]
   },
   {
-    "title": "Smart Trash Tray Icon",
-    "status": "Completed",
-    "description": "A lightweight, cross-platform tray utility for managing your system's trash bin. Built with .NET and Avalonia UI, it provides a simple way to monitor and manage your deleted files on Windows, macOS, and Linux, including real-time size display in the tooltip. All in less than 300 lines of code.",
-    "technologies": [
-      "C#",
-      "Avalonia",
-      "Multiplatform",
-      "Avalonia Flecs"
-    ],
-    "links": [
-      {
-        "name": "GitHub",
-        "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/Applications/SmartTrashTrayIcon"
-      }
-    ]
-  },  
-  {
     "title": "Stella Fuzzy Pattern Matcher (SFPM)",
     "status": "Completed",
     "description": "The main problem I wanted to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem.",
@@ -61,6 +44,23 @@
       }
     ]
   },
+  {
+    "title": "Smart Trash Tray Icon",
+    "status": "Completed",
+    "description": "A lightweight, cross-platform tray utility for managing your system's trash bin. Built with .NET and Avalonia UI, it provides a simple way to monitor and manage your deleted files on Windows, macOS, and Linux, including real-time size display in the tooltip. All in less than 300 lines of code.",
+    "technologies": [
+      "C#",
+      "Avalonia",
+      "Multiplatform",
+      "Avalonia Flecs"
+    ],
+    "links": [
+      {
+        "name": "GitHub",
+        "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/Applications/SmartTrashTrayIcon"
+      }
+    ]
+  },  
   {
     "title": "Avalonia Flecs",
     "status": "In Progress",
