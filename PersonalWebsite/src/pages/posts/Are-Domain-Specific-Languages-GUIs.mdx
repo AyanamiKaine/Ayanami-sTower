@@ -2,14 +2,201 @@
 title: "Are Domain Specific Languages just GUIs?"
 date: 2025-07-04
 author: "Ayanami Kaine"
-tags: ["Programming", "Domain-Specific-Languages"]
+tags: ["Programming", "Domain-Specific-Languages", "Raku"]
 layout: ../../layouts/PostLayout.astro
 summary: "While reading a book by Martin Fowler about Domain-Specific-Languages (same name as the book), I wondered if interacting with a GUI app is a form of Domain Specific Language."
 ---
 
-I always found domain-specific-languages facinating the ability to model a solution to a problem in the 
-language of the domain, seems like a really powerfull idea.
+I always found domain-specific-languages fascinating the ability to model a solution to a problem in the 
+language of the domain, seems like a really powerful idea.
 
 While reading the opinions of others especially regarding lisp and its ability use macros to create DSLs.
 
-But man do some people hate DSLs, "everybody just creates their own little language that I have to learn."
+But man do some people hate DSLs, "everybody just creates their own little language that I have to learn." While I never agreed that needed to learn something is a negative, I can understand that it's a trade-off between the power you get by learning and using a DSL and the time invested in it.
+
+A DSL always seems so foreign, imagine being a perfect C++ developer (I know, quite unrealistic ...) and having a DSL that you have to use that you don't know. It feels somewhat wrong using it, instead of C++. You know how you could solve the problem in C++, even if more boilerplate and code in general is needed from your perspective it would need less time and energy to use C++ instead.
+
+Personally I always found that it's not about speed gains when using a DSL but about perspective. Using the language of the domain to solve a problem sets us in the right mind set. I don't like this argument because It's way too much based on feelings. Using a DSL it feels like I am much closer to the problem and the solution.
+
+## Problems with Domain-Specific-Languages
+
+One major roadblock in creating and using DLSs is that most programming languages don't make it easy to create and maintain them. Most often third party libraries are used to create parsers and trying to morph the already existing programming language into something that it can't handle good.
+
+Then there is the missing tooling support. Going back to the C++ example, C++ has tooling support left and right. You have debugger, IDEs, a vast amount of people that are knowledge in C++ itself. Your own DSL will have nothing of that.
+
+## Programming Languages That are Good for Creating DLSs
+
+The common DSL programming language family that is often mentioned is lisp and its macros. From [Common Lisp](https://lispcookbook.github.io/cl-cookbook/macros.html), [Scheme](https://en.wikipedia.org/wiki/Scheme_(programming_language)) to [Racket](https://racket-lang.org/). Some languages like Racket make it really easy to integrate DSLs into each other and use multiple at the same time.
+
+But we will not talk about Lisp languages because I think too many people already talked about them, their trade-offs, how to use them, why, etc. Instead, I want to look at [Raku](https://raku.org/).
+
+## A bit of History
+
+Raku was previously called Perl 6 as it was the direct evolution of Perl 5. But it diverted so much from it that the creator of Perl and the comity decided to call it Raku instead to make it clear that its much different. It's not a Python 2 to Python 3 situation. Especially because at the time of developing Raku, the development of Perl 5 started to pick up pace again. So to [avoid confusion](https://github.com/Raku/problem-solving/issues/81) Perl 6 was named Raku.
+
+## Unicode Everywhere!
+
+One remarkable thing in Raku is that you can use any Unicode symbol and that you can define any operator you can think of. Let's look at an example to illustrate how these small changes can have a major impact.
+
+Imagine the following scenario you want to sum up a list of numbers.
+
+```cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class Program
+{
+    public static void Main()
+    {
+        var numbers = new List<int> { 5, 10, 15, 20 };
+
+        // Using Linq
+        int total = numbers.Sum();
+
+        Console.WriteLine($"The list of numbers is: [{string.Join(", ", numbers)}]");
+        Console.WriteLine($"The sum (using numbers.Sum()) is: {total}"); // Output: 50
+    }
+}
+```
+
+In Raku we can define our own prefix operator ∑.
+
+```raku
+sub prefix:<∑> (List $list) {
+    # The .sum method on a list does the actual work.
+    return $list.sum;
+}
+
+my @numbers = 5, 10, 15, 20;
+
+my $total = ∑ @numbers;
+
+say "The list of numbers is: @numbers[]";
+say "The sum (using ∑ @numbers) is: $total"; # Output: 50
+```
+
+When defining operators in Raku we can of course also define their precedence. Here is a more complex scenario defining a dot product operator (⋅) for vectors.
+
+```raku
+sub infix:<⋅> is tighter(&[*,/]) {*}
+
+multi sub infix:<⋅> (List @a, List @b) {
+    die "Vectors must have the same dimension" unless @a.elems == @b.elems;
+    return (@a Z* @b).sum;
+}
+
+my @vector1 = 1, 3, -5;
+my @vector2 = 4, -2, -1;
+
+my $result = @vector1 ⋅ @vector2;
+
+# The calculation is: (1*4) + (3*-2) + (-5*-1) = 4 - 6 + 5 = 3
+say "Vector 1: @vector1[]";
+say "Vector 2: @vector2[]";
+say "Dot Product (using @vector1 ⋅ @vector2): $result";
+```
+
+For C# this would look like this:
+```cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public static class VectorExtensions
+{
+    public static int DotProduct(this IEnumerable<int> a, IEnumerable<int> b)
+    {
+        if (a.Count() != b.Count())
+        {
+            throw new ArgumentException("Vectors must have the same dimension");
+        }
+        return a.Zip(b, (x, y) => x * y).Sum();
+    }
+}
+
+public class Program
+{
+    public static void Main()
+    {
+        var vector1 = new[] { 1, 3, -5 };
+        var vector2 = new[] { 4, -2, -1 };
+        int result = vector1.DotProduct(vector2);
+
+        Console.WriteLine($"Vector 1: [{string.Join(", ", vector1)}]");
+        Console.WriteLine($"Vector 2: [{string.Join(", ", vector2)}]");
+        Console.WriteLine($"Dot Product (using vector1.DotProduct(vector2)): {result}");
+    }
+}
+```
+
+## No Need to Create Your Own Parser.
+
+Because we can use any Unicode, can define our own operators and decide their precedence creating a DSL is a breeze. I would argue that there is no other programming language that make it that easy to create them. Raku has so many other wild ideas. Do you know `yacc` or `ANTLR`? Yea know image those are part of Raku by default. In Raku those are called [grammars](https://docs.raku.org/language/grammar_tutorial)
+
+## Precise Fractional Math
+
+Do you know the problem of calculating 0.1 + 0.2 ?
+
+```javascript
+0.1 + 0.2 = 0.30000000000000004;
+```
+This is one reason why you can't say 0.1 + 0.2 == 0.3 and expect it to be true.
+
+In Raku it just works.
+
+```raku
+my $result = 0.1 + 0.2;
+
+say $result;           # Output: 0.3
+say $result.WHAT;      # Output: (Rat)
+say $result.nude;      # Output: (3 10), showing the numerator and denominator
+
+# You can work directly with fractions
+my $a = 1/3;
+my $b = 1/6;
+say $a + $b;           # Output: 0.5 (which is exactly 1/2)
+```
+
+## Kebab-case in a C like language
+
+Usually in C like languages you cannot have kebab-case because having two variables and writing a-b is the same as a - b. In Raku it just works.
+
+```raku
+sub calculate-gross-price (Int $net-price, Int $tax-rate) {
+    return $net-price * (1 + $tax-rate / 100);
+}
+
+my $net-item-price = 200;
+my $vat-tax-rate = 19;
+
+my $final-price = calculate-gross-price($net-item-price, $vat-tax-rate);
+
+say "The final price is: $final-price"; # Output: The final price is: 238
+```
+
+In C# this would not work, and we would have instead written it like so:
+
+```cs
+using System;
+
+public class Program
+{
+    // public static decimal Calculate-Gross-Price(...) { ... } // This is a syntax error.
+    public static decimal CalculateGrossPrice(int netPrice, int taxRate)
+    {
+        return netPrice * (1 + taxRate / 100m);
+    }
+
+    public static void Main()
+    {
+        // var net-item-price = 200; // This is a syntax error.
+        var netItemPrice = 200;
+        var vatTaxRate = 19;
+
+        var finalPrice = CalculateGrossPrice(netItemPrice, vatTaxRate);
+
+        Console.WriteLine($"The final price is: {finalPrice}"); // Output: The final price is: 238
+    }
+}
+```
