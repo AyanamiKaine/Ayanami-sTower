@@ -24,7 +24,8 @@
     "technologies": [
       "C#",
       "Avalonia",
-      "Multiplatform"
+      "Multiplatform",
+      "Avalonia Flecs"
     ],
     "links": [
       {
