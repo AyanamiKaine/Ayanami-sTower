@@ -53,7 +53,7 @@
                             </span>
                         {/if}
                     </div>
-                    <p class="text-gray-700 mb-4 text-sm leading-relaxed">
+                    <p class="text-gray-700 mb-4 text-sm leading-relaxed text-justify">
                         {project.description}
                     </p>
                 </div>
