@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>preview</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <ApplicationIcon>Assets\trash-icon.ico</ApplicationIcon>
+    <AssemblyName>SmartTrashTrayIcon</AssemblyName>
+  </PropertyGroup>
+
+
+	<PropertyGroup Condition=" '$(OS)' != 'Windows_NT' ">
+		<TargetFramework>net9.0</TargetFramework>
+	</PropertyGroup>
+	<PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+		<TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+		<Compile Remove="NullImpl_WindowsNotificationManager.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	    <PackageReference Include="YamlDotNet" />
+        <PackageReference Include="DotNetEnv" />
+        <PackageReference Include="Google_GenerativeAI" />
+        <PackageReference Include="HtmlAgilityPack" />
+        <PackageReference Include="PDFsharp" />
+        <PackageReference Include="Clowd.Clipboard.Avalonia" />
+        <PackageReference Include="System.Reactive" />
+        <PackageReference Include="Mono.Posix.NETStandard" />
+        <PackageReference Include="CommunityToolkit.Mvvm" />
+        <PackageReference Include="Avalonia" />
+        <PackageReference Include="Avalonia.Desktop" />
+        <PackageReference Include="Avalonia.Themes.Fluent" />
+        <PackageReference Include="Avalonia.Fonts.Inter" />
+        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" />
+        <PackageReference Include="Flecs.NET.Debug" />
+	    <PackageReference Include="Flecs.NET.Release" />    
+	    <PackageReference Include="FluentAvaloniaUI" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" />  
+    </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../Avalonia/Avalonia.Flecs/Avalonia.Flecs.Controls/Avalonia.Flecs.Controls.csproj" />
+    <ProjectReference Include="../../Avalonia/Avalonia.Flecs/Avalonia.Flecs.FluentUI.Controls/Avalonia.Flecs.FluentUI.Controls.csproj" />
+    <ProjectReference Include="../../Avalonia/Avalonia.Flecs/Avalonia.Flecs.Util/Avalonia.Flecs.Util.csproj" />
+    <ProjectReference Include="../../Avalonia/Avalonia.Flecs/DesktopNotifications/DesktopNotifications.Avalonia/DesktopNotifications.Avalonia.csproj" />
+    <ProjectReference Include="..\..\Avalonia\Toast\Toast.csproj" />
+    <ProjectReference Include="..\..\CsFSRS\FSRS\FsrsSharp.csproj" />
+    <ProjectReference Include="..\..\WebAPI\AyanamisTower.WebAPI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <Content Include="Assets\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\" />
+  </ItemGroup>
+</Project>

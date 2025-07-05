@@ -198,6 +198,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DynamicWorld", "DynamicWorl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PatternMatchingDynamicWorld", "Explorations\DynamicWorld\PatternMatchingDynamicWorld\PatternMatchingDynamicWorld.csproj", "{51C6F9D1-3755-4772-B18E-7F26480CAB38}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartTrashTrayIcon", "Applications\SmartTrashTrayIcon\SmartTrashTrayIcon.csproj", "{D4C036FA-AA03-4157-BAD1-675B88C0A951}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1012,6 +1014,18 @@ Global
 		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|x64.Build.0 = Release|Any CPU
 		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|x86.ActiveCfg = Release|Any CPU
 		{51C6F9D1-3755-4772-B18E-7F26480CAB38}.Release|x86.Build.0 = Release|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Debug|x64.Build.0 = Debug|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Debug|x86.Build.0 = Debug|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Release|x64.ActiveCfg = Release|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Release|x64.Build.0 = Release|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Release|x86.ActiveCfg = Release|Any CPU
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1092,5 +1106,6 @@ Global
 		{E68102F3-7704-43C5-ACE0-320745B3525F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{8B265BDF-09AA-7A04-EED3-AA244C06BB7E} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
 		{51C6F9D1-3755-4772-B18E-7F26480CAB38} = {8B265BDF-09AA-7A04-EED3-AA244C06BB7E}
+		{D4C036FA-AA03-4157-BAD1-675B88C0A951} = {A10A91C2-6485-6656-963B-F6FCBC812542}
 	EndGlobalSection
 EndGlobal
