@@ -1,0 +1,218 @@
+---
+// This component takes an image source and alt text, and makes the image
+// open in a full-screen modal when clicked.
+
+export interface Props {
+    src: string;
+    alt: string;
+    class?: string;
+}
+
+const { src, alt, class: className } = Astro.props;
+
+// Generate a unique ID for each component instance to link the image to its modal.
+// This ensures that clicking one image opens the correct modal.
+const uniqueId = `modal-${crypto.randomUUID()}`;
+---
+
+<!-- 
+  Scoped styles for the component. These styles will only apply to the
+  elements within this component file, preventing conflicts with other styles.
+-->
+<style>
+    .clickable-image {
+        cursor: zoom-in;
+        transition:
+            transform 0.2s ease-in-out,
+            box-shadow 0.2s ease-in-out;
+        border-radius: 0.5rem;
+        display: block; /* Ensures proper layout and margin handling */
+        max-width: 100%;
+        height: auto;
+    }
+
+    .clickable-image:hover {
+        transform: scale(1.02);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* The semi-transparent background overlay for the modal */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.85);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition:
+            opacity 0.3s ease,
+            visibility 0.3s ease;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+
+    /* Class to show the modal */
+    .modal-overlay.is-visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Container for the large image inside the modal */
+    .modal-content {
+        position: relative;
+        max-width: 90vw;
+        max-height: 90vh;
+        display: flex;
+        animation: zoomIn 0.3s ease-out;
+    }
+
+    @keyframes zoomIn {
+        from {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .modal-content img {
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 0.5rem;
+    }
+
+    /* The 'X' button to close the modal */
+    .modal-close {
+        position: absolute;
+        top: -2.5rem;
+        right: -1rem;
+        font-size: 2.5rem;
+        font-family: Arial, sans-serif;
+        color: white;
+        cursor: pointer;
+        background: none;
+        border: none;
+        line-height: 1;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        transition: transform 0.2s ease;
+    }
+
+    .modal-close:hover {
+        transform: scale(1.1);
+    }
+
+    /* Responsive adjustments for the close button on smaller screens */
+    @media (max-width: 768px) {
+        .modal-close {
+            top: 0.5rem;
+            right: 1rem;
+            font-size: 2rem;
+            color: #fff;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 2.5rem;
+        }
+    }
+</style>
+
+<!-- The visible image on the page. We add a data attribute to find it with the script -->
+<img
+    src={src}
+    alt={alt}
+    class:list={[className, "clickable-image"]}
+    data-modal-trigger={uniqueId}
+/>
+
+<!-- The hidden modal that will pop up when the image is clicked -->
+<div id={uniqueId} class="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" aria-label="Close image view"
+            >&times;</button
+        >
+        <img src={src} alt={`Large view of ${alt}`} />
+    </div>
+</div>
+
+<!-- 
+  This client-side script is processed by Astro. It will be included on the page
+  only once, even if you use this component multiple times.
+-->
+<script>
+    /**
+     * Manages the behavior of a single modal instance.
+     */
+    class Modal {
+        modal;
+        closeButton;
+        trigger;
+
+        constructor(modalElement) {
+            if (!modalElement) return;
+            this.modal = modalElement;
+            this.closeButton = this.modal.querySelector(".modal-close");
+            // Find the image that triggers this modal using the data attribute
+            this.trigger = document.querySelector(
+                `[data-modal-trigger="${this.modal.id}"]`
+            );
+
+            // Bind event listeners
+            this.trigger?.addEventListener("click", () => this.open());
+            this.closeButton?.addEventListener("click", () => this.close());
+            // Close the modal if the user clicks on the background overlay
+            this.modal.addEventListener("click", (e) => {
+                if (e.target === this.modal) {
+                    this.close();
+                }
+            });
+        }
+
+        open() {
+            this.modal.classList.add("is-visible");
+            // Prevent the page from scrolling in the background
+            document.body.style.overflow = "hidden";
+        }
+
+        close() {
+            this.modal.classList.remove("is-visible");
+            // Restore page scrolling
+            document.body.style.overflow = "";
+        }
+    }
+
+    // Initialize all modals on the page once the DOM is ready.
+    document.addEventListener("DOMContentLoaded", () => {
+        const modals = document.querySelectorAll(".modal-overlay");
+        modals.forEach((modal) => new Modal(modal));
+
+        // Add global keyboard support for closing the active modal with the Escape key.
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                const visibleModal = document.querySelector(
+                    ".modal-overlay.is-visible"
+                );
+                if (visibleModal) {
+                    // We can't call the `close` method directly, but we can simulate a click
+                    // on its close button or simply remove the class.
+                    visibleModal.classList.remove("is-visible");
+                    document.body.style.overflow = "";
+                }
+            }
+        });
+    });
+</script>
