@@ -13,3 +13,47 @@
     color: #6b7280;
     font-size: 0.9rem;
 }
+
+.prose code::before,
+.prose code::after {
+    content: "" !important;
+}
+
+/* Enhanced inline code styling that works with prose */
+.prose code:not(pre code) {
+    background-color: #f1f5f9 !important;
+    color: #f6f9ff !important;
+    padding: 0.2em 0.4em !important;
+    margin: 0 !important;
+    font-size: 0.85em !important;
+    border-radius: 6px !important;
+    font-family: "Courier New", Courier, monospace !important;
+    border: 1px solid #e2e8f0;
+}
+
+/* Ensure backticks don't show */
+.prose code:not(pre code):before,
+.prose code:not(pre code):after {
+    content: "" !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    .prose code:not(pre code) {
+        background-color: #b8bdc4 !important;
+        color: #363636 !important;
+    }
+}
+
+/* Also ensure the prose class doesn't interfere */
+.prose :not(pre) > code {
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+    font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+    .prose :not(pre) > code {
+        background-color: #334155 !important;
+        color: #f1f5f9 !important;
+    }
+}
