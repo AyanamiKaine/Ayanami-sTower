@@ -1,0 +1,36 @@
+---
+title: "Glazing  Raku"
+date: 2025-07-06
+author: "Ayanami Kaine"
+tags: ["Programming", "Raku"]
+layout: ../../layouts/PostLayout.astro
+summary: "Rakus design philosophy touches something in my that only lisp before did."
+---
+
+Always when I see Raku code and write my self some, I always feel like there are design decisions that are crazy at first but later make so much sense.
+
+## The Sigil
+
+A sigil in Raku determines how a variable should be treated. In JavaScript, we can write 
+
+```js
+let hello = () => Console.Log("Hello, World!")
+```
+
+```js
+let hello = "Hello, World";
+```
+
+In Raku we explicitly have to say that hello is a function using the sigil `&`
+
+```raku
+my &hello = sub { say "Hello, World!" }
+```
+
+```raku
+my $hello = "Hello, World";
+```
+
+Sigils are a concept I only know related to Ruby, and know that they do exist also in Perl 5 but work a little different. For more on Raku sigils read the [doc](https://docs.raku.org/language/variables#Sigils).
+
+The C2 wiki has some [great discussions](https://wiki.c2.com/?TheProblemWithSigils) about some problems others have with sigils. 
