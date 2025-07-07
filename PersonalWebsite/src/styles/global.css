@@ -57,3 +57,55 @@
         color: #f1f5f9 !important;
     }
 }
+
+/* Style the footnote reference link in the main text (e.g., [1]) */
+a[data-footnote-ref] {
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.4;
+    transition: all 0.2s ease-in-out;
+}
+
+
+/* Style the footnotes section container */
+.footnotes {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.9em;
+}
+
+.footnotes .sr-only { display: none; } /* Hide the screen-reader heading */
+
+.footnotes ol { padding-left: 1.25rem; }
+
+.footnotes li {
+    margin-bottom: 0.75rem;
+    color: #4b5563;
+}
+
+.footnotes li p { display: inline; }
+
+/* Style the back-to-text link (replaces the ugly arrow) */
+a[data-footnote-backref] {
+    font-size: 0; /* KEY FIX: Hide the original '↩' character */
+    font-weight: 500;
+    text-decoration: none;
+    color: #6b7280;
+    margin-left: 0.25rem;
+    border-bottom: 1px dotted #9ca3af;
+    transition: all 0.2s ease-in-out;
+}
+
+a[data-footnote-backref]:hover {
+    color: #111827;
+    border-bottom-style: solid;
+}
+
+/* Use a pseudo-element to create a custom back-link */
+a[data-footnote-backref]::after {
+    content: '↑'; /* You can change this to 'Back' or '↑' */
+    font-size: 1.2rem; /* KEY FIX: Restore font size for the visible content */
+}
