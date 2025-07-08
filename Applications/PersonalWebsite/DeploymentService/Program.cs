@@ -13,6 +13,8 @@ static class DeploymentService
     private const string RepoPath = "/home/ayanami/Ayanami-sTower/";
     private const string ImageName = "my-personal-website";
     private const string StateFile = "/home/ayanami/deployment.state";
+    private const string ProjectPath = "/home/ayanami/Ayanami-sTower/PersonalWebsite/";
+
     private const string NginxUpstreamConfig = "/etc/nginx/astro_upstream.conf";
 
     private const int BluePort = 8080;
@@ -74,8 +76,7 @@ static class DeploymentService
 
             // Step 3: Pull changes and build the new image.
             await RunProcessAsync("git", "pull", RepoPath);
-            await RunProcessAsync("podman", $"build -t {ImageName}:latest .", RepoPath);
-
+            await RunProcessAsync("podman", $"build -t {ImageName}:latest .", ProjectPath);
             // Step 4: Stop any old standby container and start the new one.
             await RunProcessAsync("podman", $"rm -f astro-site-{standbyColor}", workingDirectory: RepoPath, ignoreErrors: true);
             await RunProcessAsync("podman", $"run -d --name astro-site-{standbyColor} -p {standbyPort}:80 {ImageName}:latest", RepoPath);
