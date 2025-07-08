@@ -27,6 +27,8 @@ static class DeploymentService
     {
         Console.WriteLine("Starting Website Deployment Service...");
 
+        TriggerDeployment();
+
         using var watcher = new FileSystemWatcher(RepoPath)
         {
             IncludeSubdirectories = true,
@@ -62,13 +64,6 @@ static class DeploymentService
 
         try
         {
-            // Step 1: Check for actual new commits. File changes might happen for other reasons.
-            if (!await HasNewCommits())
-            {
-                Console.WriteLine("No new commits found. Skipping deployment.");
-                return;
-            }
-
             // Step 2: Determine live and standby environments.
             string liveColor = File.Exists(StateFile) ? await File.ReadAllTextAsync(StateFile) : "blue";
             string standbyColor = liveColor == "blue" ? "green" : "blue";
