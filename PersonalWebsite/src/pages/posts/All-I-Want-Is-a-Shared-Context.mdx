@@ -7,31 +7,31 @@ layout: ../../layouts/PostLayout.astro
 summary: "I dont want a globally shared datastructure or a database that connects to all my programs. Instead I want a shared context between all of them."
 ---
 
-There already exists a shared context and that is the OS environment or we could argue the internet as a 
+There already exists a shared context and that is the OS environment, or we could argue the internet as a 
 whole is also a shared context.
 
-I invisoned it as a way to send messages to programs but every program could see and react on the message
+I envisioned it as a way to send messages to programs, but every program could see and react on the message
 send to the program because it was passed through the shared context. 
-Yes its an event bus alla [Kafka](https://kafka.apache.org/) or [RabbitMQ](https://www.rabbitmq.com/) 
+Yes it's an event bus alla [Kafka](https://kafka.apache.org/) or [RabbitMQ](https://www.rabbitmq.com/) 
 
 But they are mostly created for distributed programs that do not run on the same 
 local machine. The sad part is there exists multiple ways we can 
-send events to processes but their are cumbersome to use.
+send events to processes, but there are cumbersome to use.
 
 ## But Why?
 
-I am facinated by the human body and nature in general. The way so many different substances circulate 
-throughout our body is incredible, while cells dont share their own space, each has a membrane holding
+I am fascinated by the human body and nature in general. The way so many different substances circulate 
+throughout our body is incredible, while cells don't share their own space, each has a membrane holding
 something and guarding that not everything goes in. Still our body as a whole as a fast interconnected
-circular system where at various stages multiple substance are in the same place, our blood, stommach, 
-mouth, etc. Its inhabitated with many different kinds if organism that all interact with each other.
+circular system where at various stages multiple substance are in the same place, our blood, stomach, 
+mouth, etc. It's inhabited with many different kinds if organism that all interact with each other.
 
-These interactions are not encapuslated but instead are observable, often its observed by others via markers
-like on part of your body reacting to a higher level of bloodsugar. Here bloodsugar is the marker. 
+These interactions are not encapsulated but instead are observable, often its observed by others via markers
+like on part of your body reacting to a higher level of blood sugar. Here blood sugar is the marker. 
 
-Most programming system dont really allow for such markers even though they would be quite conviennent to use.
+Most programming system don't really allow for such markers even though they would be quite convenient to use.
 
-Communication can be explicity, talking to each other directly or explicit observing each other.
+Communication can be explicit, talking to each other directly or explicit observing each other.
 
 I simply want to bring this idea to a more viable state. Where all different kinds of programs can better
 react on each other and talk to each other more efficient.
@@ -40,7 +40,7 @@ react on each other and talk to each other more efficient.
 
 Our goal is to have a fast communication between multiple programs where multiple programs can read and write to.
 The first thing that comes to my mind is a message queue. Having multiple readers is seldom a problem, multiple
-writers is definitly a problem.
+writers is definitely a problem.
 
 The question now is how should this message queue look like? We now that it needs to support local processes first
 we need low latency and "high enough" throughput. We want to make it possible to send many small messages if the
@@ -57,5 +57,5 @@ kernel has such an incredible latency cost. That it will always dominate the ove
 There is only one IPC mechanism that does not result in kernel calls for reading and writing. And that is shared
 memory.
 
-Here the biggest problem is organizing readers and writers so they dont block each other and trash performance.
-Also you can imagine what other problems might happen when we have 30 readers, 5 writers.
+Here the biggest problem is organizing readers and writers so they don't block each other and trash performance.
+Also, you can imagine what other problems might happen when we have 30 readers, 5 writers.
