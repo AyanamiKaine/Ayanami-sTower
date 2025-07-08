@@ -28,9 +28,6 @@
 	<ItemGroup>
 	    <PackageReference Include="YamlDotNet" />
         <PackageReference Include="DotNetEnv" />
-        <PackageReference Include="Google_GenerativeAI" />
-        <PackageReference Include="HtmlAgilityPack" />
-        <PackageReference Include="PDFsharp" />
         <PackageReference Include="Clowd.Clipboard.Avalonia" />
         <PackageReference Include="System.Reactive" />
         <PackageReference Include="Mono.Posix.NETStandard" />
@@ -53,8 +50,6 @@
     <ProjectReference Include="../../Avalonia/Avalonia.Flecs/Avalonia.Flecs.Util/Avalonia.Flecs.Util.csproj" />
     <ProjectReference Include="../../Avalonia/Avalonia.Flecs/DesktopNotifications/DesktopNotifications.Avalonia/DesktopNotifications.Avalonia.csproj" />
     <ProjectReference Include="..\..\Avalonia\Toast\Toast.csproj" />
-    <ProjectReference Include="..\..\CsFSRS\FSRS\FsrsSharp.csproj" />
-    <ProjectReference Include="..\..\WebAPI\AyanamisTower.WebAPI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
