@@ -37,7 +37,7 @@ static class DeploymentService
         try
         {
             // Trigger initial deployment first
-            await TriggerDeployment(_cancellationTokenSource.Token, isInitialDeployment: true);
+            await TriggerDeployment(_cancellationTokenSource.Token);
 
             // Only watch the source code directory, not the entire repo
             // This prevents git operations from triggering new deployments
@@ -99,7 +99,7 @@ static class DeploymentService
         _debounceTimer?.Dispose();
         _debounceTimer = new Timer(_ =>
         {
-            _ = Task.Run(async () => await TriggerDeployment(_cancellationTokenSource.Token, isInitialDeployment: false));
+            _ = Task.Run(async () => await TriggerDeployment(_cancellationTokenSource.Token));
         }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
     }
 
@@ -122,7 +122,7 @@ static class DeploymentService
                name.EndsWith(".log");
     }
 
-    private static async Task TriggerDeployment(CancellationToken cancellationToken = default, bool isInitialDeployment = false)
+    private static async Task TriggerDeployment(CancellationToken cancellationToken = default)
     {
         // Prevent concurrent deployments
         lock (_deploymentLock)
@@ -137,23 +137,10 @@ static class DeploymentService
 
         try
         {
-            Console.WriteLine($"\n--- {DateTime.Now}: Starting deployment check. ---");
+            Console.WriteLine($"\n--- {DateTime.Now}: Starting deployment. ---");
 
             if (cancellationToken.IsCancellationRequested)
                 return;
-
-            // Check if there are actually new commits before proceeding
-            // Skip this check for initial deployment to ensure containers are running
-            if (!isInitialDeployment && !await HasNewCommits(cancellationToken))
-            {
-                Console.WriteLine("No new commits found, skipping deployment.");
-                return;
-            }
-
-            if (isInitialDeployment)
-            {
-                Console.WriteLine("Initial deployment - ensuring containers are running...");
-            }
 
             // Step 2: Determine live and standby environments.
             string liveColor = File.Exists(StateFile) ? await File.ReadAllTextAsync(StateFile, cancellationToken) : "blue";
@@ -207,22 +194,6 @@ static class DeploymentService
             {
                 _deploymentInProgress = false;
             }
-        }
-    }
-
-    private static async Task<bool> HasNewCommits(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await RunProcessAsync("git", "fetch", RepoPath, cancellationToken: cancellationToken);
-            var local = await RunProcessAsync("git", "rev-parse @", RepoPath, cancellationToken: cancellationToken);
-            var remote = await RunProcessAsync("git", "rev-parse @{u}", RepoPath, cancellationToken: cancellationToken);
-            return local.Trim() != remote.Trim();
-        }
-        catch
-        {
-            // If we can't check, assume there are changes to be safe
-            return true;
         }
     }
 
