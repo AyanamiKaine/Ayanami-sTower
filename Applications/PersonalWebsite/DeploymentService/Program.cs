@@ -36,6 +36,9 @@ static class DeploymentService
 
         try
         {
+            // Trigger initial deployment first
+            await TriggerDeployment(_cancellationTokenSource.Token, isInitialDeployment: true);
+
             // Only watch the source code directory, not the entire repo
             // This prevents git operations from triggering new deployments
             using var watcher = new FileSystemWatcher(ProjectPath) // Watch only the project directory
@@ -53,9 +56,6 @@ static class DeploymentService
 
             Console.WriteLine($"Watching for changes in: {ProjectPath}");
             Console.WriteLine("Service is running. Press Ctrl+C to exit.");
-
-            // Trigger initial deployment
-            await TriggerDeployment(_cancellationTokenSource.Token);
 
             // Wait until cancellation is requested
             await Task.Delay(Timeout.Infinite, _cancellationTokenSource.Token);
@@ -99,7 +99,7 @@ static class DeploymentService
         _debounceTimer?.Dispose();
         _debounceTimer = new Timer(_ =>
         {
-            _ = Task.Run(async () => await TriggerDeployment(_cancellationTokenSource.Token));
+            _ = Task.Run(async () => await TriggerDeployment(_cancellationTokenSource.Token, isInitialDeployment: false));
         }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
     }
 
@@ -122,7 +122,7 @@ static class DeploymentService
                name.EndsWith(".log");
     }
 
-    private static async Task TriggerDeployment(CancellationToken cancellationToken = default)
+    private static async Task TriggerDeployment(CancellationToken cancellationToken = default, bool isInitialDeployment = false)
     {
         // Prevent concurrent deployments
         lock (_deploymentLock)
@@ -143,10 +143,16 @@ static class DeploymentService
                 return;
 
             // Check if there are actually new commits before proceeding
-            if (!await HasNewCommits(cancellationToken))
+            // Skip this check for initial deployment to ensure containers are running
+            if (!isInitialDeployment && !await HasNewCommits(cancellationToken))
             {
                 Console.WriteLine("No new commits found, skipping deployment.");
                 return;
+            }
+
+            if (isInitialDeployment)
+            {
+                Console.WriteLine("Initial deployment - ensuring containers are running...");
             }
 
             // Step 2: Determine live and standby environments.
