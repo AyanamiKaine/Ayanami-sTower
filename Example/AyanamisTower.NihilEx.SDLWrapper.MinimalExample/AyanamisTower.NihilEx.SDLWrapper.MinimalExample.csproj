@@ -12,11 +12,7 @@
   <ItemGroup>
     <PackageReference Include="NLog" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="NLog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\NihilEx.SDL\AyanamisTower.NihilEx.SDLWrapper.csproj" />
   </ItemGroup>

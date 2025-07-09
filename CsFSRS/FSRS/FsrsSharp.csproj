@@ -12,10 +12,4 @@
 
   <ItemGroup>
   </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="NLogFSRS.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 </Project>

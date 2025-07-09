@@ -14,12 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="NLog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="SDL3-CS"/>
     <PackageReference Include="SDL3-CS.Native"/>
     <PackageReference Include="Flecs.NET.Debug"/>

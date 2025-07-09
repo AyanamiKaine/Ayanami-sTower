@@ -14,10 +14,4 @@
     <PackageReference Include="CS-Script"/>
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="NLog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
 </Project>
