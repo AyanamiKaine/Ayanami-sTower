@@ -28,6 +28,7 @@
     <PackageVersion Include="Metalama.Framework" Version="2025.1.5" />
     <PackageVersion Include="Metalama.Patterns.Contracts" Version="2025.1.5" />
     <PackageVersion Include="Metalama.Patterns.Observability" Version="2025.1.5" />
+    <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
