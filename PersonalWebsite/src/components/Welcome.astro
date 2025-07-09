@@ -11,7 +11,7 @@ const recentPosts = posts
     .sort(
         (a, b) =>
             new Date(b.frontmatter.date).valueOf() -
-            new Date(a.frontmatter.date).valueOf(),
+            new Date(a.frontmatter.date).valueOf()
     )
     .slice(0, 4);
 
@@ -27,9 +27,8 @@ const featuredArtworks = artworks.slice(0, 3);
         >
             <!-- Portrait Image -->
             <div class="md:col-span-1 flex justify-center">
-                <!-- IMPORTANT: Place your portrait image at /public/img/portrait.png -->
                 <img
-                    src="/art/die_grafin-951x1536.png"
+                    src="/art/die_grafin-951x1536.webp"
                     alt="A self-drawn portrait of Ayanami"
                     class="w-48 h-48 md:w-64 md:h-64 rounded-full object-cover shadow-lg ring-4 ring-white"
                     onerror="this.onerror=null;this.src='https://placehold.co/256x256/e2e8f0/4a5568?text=Portrait';"
@@ -131,7 +130,7 @@ const featuredArtworks = artworks.slice(0, 3);
                         <div class="p-6 flex-grow">
                             <p class="text-sm text-gray-500">
                                 {new Date(
-                                    post.frontmatter.date,
+                                    post.frontmatter.date
                                 ).toLocaleDateString("en-US", {
                                     year: "numeric",
                                     month: "long",
