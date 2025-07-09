@@ -29,6 +29,14 @@ static class DeploymentService
         await TriggerDeployment();
     }
 
+    private static async Task<bool> HasNewCommits()
+    {
+        await RunProcessAsync("git", "fetch", RepoPath);
+        var local = await RunProcessAsync("git", "rev-parse @", RepoPath);
+        var remote = await RunProcessAsync("git", "rev-parse @{u}", RepoPath);
+        return local.Trim() != remote.Trim();
+    }
+
     private static async Task TriggerDeployment(CancellationToken cancellationToken = default)
     {
 
