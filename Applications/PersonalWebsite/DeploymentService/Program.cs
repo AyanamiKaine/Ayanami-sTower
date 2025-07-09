@@ -24,115 +24,18 @@ static class DeploymentService
 
     public static async Task Main(string[] _)
     {
-        Console.WriteLine("Starting Website Deployment Service...");
-
-        // Handle Ctrl+C gracefully
-        Console.CancelKeyPress += (_, e) =>
-        {
-            e.Cancel = true;
-            Console.WriteLine("\nShutdown requested...");
-            _cancellationTokenSource.Cancel();
-        };
-
-        try
-        {
-            // Trigger initial deployment first
-            await TriggerDeployment(_cancellationTokenSource.Token);
-
-            // Only watch the source code directory, not the entire repo
-            // This prevents git operations from triggering new deployments
-            using var watcher = new FileSystemWatcher(ProjectPath) // Watch only the project directory
-            {
-                IncludeSubdirectories = true,
-                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite,
-                EnableRaisingEvents = true
-            };
-
-            // Filter out temporary files and build artifacts
-            watcher.Changed += OnFileChanged;
-            watcher.Created += OnFileChanged;
-            watcher.Deleted += OnFileChanged;
-            watcher.Renamed += OnFileChanged;
-
-            Console.WriteLine($"Watching for changes in: {ProjectPath}");
-            Console.WriteLine("Service is running. Press Ctrl+C to exit.");
-
-            // Wait until cancellation is requested
-            await Task.Delay(Timeout.Infinite, _cancellationTokenSource.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            Console.WriteLine("Service shutting down gracefully...");
-        }
-        finally
-        {
-            _debounceTimer?.Dispose();
-            _cancellationTokenSource.Dispose();
-        }
-    }
-
-    private static void OnFileChanged(object sender, FileSystemEventArgs e)
-    {
-        if (_cancellationTokenSource.Token.IsCancellationRequested)
-            return;
-
-        // Filter out files that shouldn't trigger deployments
-        if (ShouldIgnoreFile(e.Name))
-        {
-            Console.WriteLine($"Ignoring file change: {e.Name}");
-            return;
-        }
-
-        // Check if deployment is already in progress
-        lock (_deploymentLock)
-        {
-            if (_deploymentInProgress)
-            {
-                Console.WriteLine($"Deployment in progress, ignoring change: {e.ChangeType} - {e.Name}");
-                return;
-            }
-        }
-
-        Console.WriteLine($"Change detected: {e.ChangeType} - {e.Name}");
-
-        // Reset the debounce timer
-        _debounceTimer?.Dispose();
-        _debounceTimer = new Timer(_ =>
-        {
-            _ = Task.Run(async () => await TriggerDeployment(_cancellationTokenSource.Token));
-        }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
-    }
-
-    private static bool ShouldIgnoreFile(string? fileName)
-    {
-        if (string.IsNullOrEmpty(fileName))
-            return true;
-
-        var name = fileName.ToLowerInvariant();
-
-        // Ignore temporary files, build artifacts, and system files
-        return name.EndsWith(".tmp") ||
-               name.EndsWith(".swp") ||
-               name.EndsWith("~") ||
-               name.StartsWith(".") ||
-               name.Contains("node_modules") ||
-               name.Contains("dist") ||
-               name.Contains("build") ||
-               name.Contains(".git") ||
-               name.EndsWith(".log");
+        Console.WriteLine($"\n--- {DateTime.Now}: C# Deployer started by systemd timer. ---");
+        // The rest of the code is the same TriggerDeployment and helper methods...
+        await TriggerDeployment();
     }
 
     private static async Task TriggerDeployment(CancellationToken cancellationToken = default)
     {
-        // Prevent concurrent deployments
-        lock (_deploymentLock)
+
+        if (!await HasNewCommits())
         {
-            if (_deploymentInProgress)
-            {
-                Console.WriteLine("Deployment already in progress, skipping...");
-                return;
-            }
-            _deploymentInProgress = true;
+            Console.WriteLine("No new commits found. Exiting.");
+            return;
         }
 
         try
