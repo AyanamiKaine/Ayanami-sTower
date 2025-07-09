@@ -4,12 +4,6 @@
       <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="NLog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
 	<ItemGroup>
         <PackageReference Include="Metalama.Framework" />
         <PackageReference Include="Metalama.Patterns.Contracts" />
