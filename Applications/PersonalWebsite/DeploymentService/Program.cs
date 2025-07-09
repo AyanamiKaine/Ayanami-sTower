@@ -8,6 +8,16 @@ namespace AyanamisTower.PersonalWebsite;
 
 static class DeploymentService
 {
+
+
+    private enum StatusLevel
+    {
+        Info,
+        Success,
+        Warning,
+        Error
+    }
+
     // --- Configuration ---
     private const string RepoPath = "/home/ayanami/Ayanami-sTower/";
     private const string ImageName = "my-personal-website";
@@ -16,6 +26,7 @@ static class DeploymentService
     private const string NginxUpstreamConfig = "/etc/nginx/astro_upstream.conf";
     private const int BluePort = 8080;
     private const int GreenPort = 8081;
+    private const string EmailCliPath = "/home/ayanami/Ayanami-sTower/Build/bin/AyanamisTower.EmailSenderCLI/Release/net9.0";
 
     public static async Task Main(string[] _)
     {
@@ -34,7 +45,7 @@ static class DeploymentService
 
     private static async Task<bool> IsLiveContainerRunning()
     {
-        if (!File.Exists(StateFile)) return false; 
+        if (!File.Exists(StateFile)) return false;
 
         string liveColor = await File.ReadAllTextAsync(StateFile);
         string containerName = $"astro-site-{liveColor}";
@@ -44,6 +55,33 @@ static class DeploymentService
         string result = await RunProcessAsync("podman", $"ps --filter name={containerName} --filter status=running --format \"{{{{.ID}}}}\"", RepoPath, ignoreErrors: true);
 
         return !string.IsNullOrWhiteSpace(result);
+    }
+
+    /// <summary>
+    /// Sends an email notification by executing the external EmailSenderCLI tool.
+    /// </summary>
+    private static async Task SendNotificationAsync(StatusLevel level, string subject, string message)
+    {
+        if (!File.Exists(EmailCliPath))
+        {
+            Console.WriteLine($"Warning: Email CLI executable not found at '{EmailCliPath}'. Skipping notification.");
+            return;
+        }
+
+        try
+        {
+            string subcommand = level.ToString().ToLower();
+            // The CLI expects: <subcommand> "<subject>" "<message>"
+            string args = $"{subcommand} \"{subject}\" \"{message}\"";
+
+            Console.WriteLine($"Executing notification CLI to send {level} email...");
+            await RunProcessAsync(EmailCliPath, args, workingDirectory: RepoPath);
+            Console.WriteLine("Email notification CLI executed successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"!!! CRITICAL: Failed to execute email notification CLI. Error: {ex.Message}");
+        }
     }
 
     private static async Task TriggerDeployment(CancellationToken cancellationToken = default)
@@ -71,6 +109,11 @@ static class DeploymentService
                 Console.WriteLine("New commits detected. Starting deployment.");
             }
 
+            string startReason = !isLive ? "Live container is not running. Forcing deployment to recover."
+                                   : "New commits detected. Starting deployment.";
+            Console.WriteLine(startReason);
+            await SendNotificationAsync(StatusLevel.Info, "Deployment Started", startReason);
+
             if (cancellationToken.IsCancellationRequested)
                 return;
 
@@ -95,7 +138,9 @@ static class DeploymentService
             await Task.Delay(5000, cancellationToken); // Give the container time to start.
             if (!await IsHealthy(standbyPort, cancellationToken))
             {
+                var failureMsg = $"Health check FAILED for container astro-site-{standbyColor} on port {standbyPort}. Aborting deployment.";
                 Console.WriteLine("!!! Health check FAILED. Aborting deployment.");
+                await SendNotificationAsync(StatusLevel.Error, "Deployment FAILED", failureMsg);
                 return;
             }
             Console.WriteLine("Health check PASSED.");
@@ -107,7 +152,10 @@ static class DeploymentService
 
             // Step 7: Update state and clean up.
             await File.WriteAllTextAsync(StateFile, standbyColor, cancellationToken);
-            Console.WriteLine($"SUCCESS! {standbyColor} is now LIVE.");
+
+            var successMsg = $"Deployment successful! {standbyColor} is now LIVE.";
+            Console.WriteLine($"SUCCESS! {successMsg}");
+            await SendNotificationAsync(StatusLevel.Success, "Deployment Successful", successMsg);
 
             await RunProcessAsync("podman", $"stop astro-site-{liveColor}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
             Console.WriteLine("--- Deployment Complete ---\n");
@@ -115,10 +163,13 @@ static class DeploymentService
         catch (OperationCanceledException)
         {
             Console.WriteLine("Deployment cancelled.");
+            await SendNotificationAsync(StatusLevel.Warning, "Deployment Cancelled", "The deployment process was cancelled.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"!!! An error occurred during deployment: {ex.Message}");
+            var errorMsg = $"An unexpected error occurred during deployment: {ex.Message}\n\nStack Trace:\n{ex.StackTrace}";
+            Console.WriteLine($"!!! {errorMsg}");
+            await SendNotificationAsync(StatusLevel.Error, "Deployment FAILED", errorMsg);
         }
     }
 
