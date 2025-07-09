@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace AyanamisTower.PersonalWebsite;
 
 static class DeploymentService
 {
-
-
     private enum StatusLevel
     {
         Info,
@@ -31,7 +31,6 @@ static class DeploymentService
     public static async Task Main(string[] _)
     {
         Console.WriteLine($"\n--- {DateTime.Now}: C# Deployer started by systemd timer. ---");
-        // The rest of the code is the same TriggerDeployment and helper methods...
         await TriggerDeployment();
     }
 
@@ -50,8 +49,6 @@ static class DeploymentService
         string liveColor = await File.ReadAllTextAsync(StateFile);
         string containerName = $"astro-site-{liveColor}";
 
-        // This command asks Podman for running containers with the exact name.
-        // If it returns any text, the container exists and is running.
         string result = await RunProcessAsync("podman", $"ps --filter name={containerName} --filter status=running --format \"{{{{.ID}}}}\"", RepoPath, ignoreErrors: true);
 
         return !string.IsNullOrWhiteSpace(result);
@@ -71,11 +68,12 @@ static class DeploymentService
         try
         {
             string subcommand = level.ToString().ToLower();
-            // The CLI expects: <subcommand> "<subject>" "<message>"
-            string args = $"{subcommand} \"{subject}\" \"{message}\"";
+
+            string args = $"{subcommand} \"{subject.Replace("\"", "\\\"")}\" \"{message.Replace("\"", "\\\"")}\"";
 
             Console.WriteLine($"Executing notification CLI to send {level} email...");
-            await RunProcessAsync(EmailCliPath, args, workingDirectory: RepoPath);
+            // We now use a shell to interpret the arguments string correctly.
+            await RunProcessAsync("/bin/bash", $"-c '{EmailCliPath} {args}'", workingDirectory: RepoPath);
             Console.WriteLine("Email notification CLI executed successfully.");
         }
         catch (Exception ex)
@@ -88,36 +86,24 @@ static class DeploymentService
     {
         try
         {
-
             bool isLive = await IsLiveContainerRunning();
             bool hasNewCommits = await HasNewCommits();
 
-            // We only exit if the site is already running AND there are no new changes.
             if (isLive && !hasNewCommits)
             {
                 Console.WriteLine("Site is running and no new commits found. Exiting.");
                 return;
             }
 
-            if (!isLive)
-            {
-                Console.WriteLine("Live container is not running. Forcing deployment to recover.");
-            }
+            string startReason = !isLive
+                ? "Live container is not running. Forcing deployment to recover."
+                : "New commits detected. Starting deployment.";
 
-            if (hasNewCommits)
-            {
-                Console.WriteLine("New commits detected. Starting deployment.");
-            }
-
-            string startReason = !isLive ? "Live container is not running. Forcing deployment to recover."
-                                   : "New commits detected. Starting deployment.";
             Console.WriteLine(startReason);
             await SendNotificationAsync(StatusLevel.Info, "Deployment Started", startReason);
 
-            if (cancellationToken.IsCancellationRequested)
-                return;
+            if (cancellationToken.IsCancellationRequested) return;
 
-            // Step 2: Determine live and standby environments.
             string liveColor = File.Exists(StateFile) ? await File.ReadAllTextAsync(StateFile, cancellationToken) : "blue";
             string standbyColor = liveColor == "blue" ? "green" : "blue";
             int livePort = liveColor == "blue" ? BluePort : GreenPort;
@@ -125,17 +111,14 @@ static class DeploymentService
 
             Console.WriteLine($"Current LIVE: {liveColor} ({livePort}). Deploying to STANDBY: {standbyColor} ({standbyPort}).");
 
-            // Step 3: Pull changes and build the new image.
             await RunProcessAsync("git", "pull", RepoPath, cancellationToken: cancellationToken);
             await RunProcessAsync("podman", $"build -t {ImageName}:latest .", ProjectPath, cancellationToken: cancellationToken);
 
-            // Step 4: Stop any old standby container and start the new one.
             await RunProcessAsync("podman", $"rm -f astro-site-{standbyColor}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
-            await RunProcessAsync("podman", $"run -d --name astro-site-{standbyColor} -p {standbyPort}:80 {ImageName}:latest", RepoPath, cancellationToken: cancellationToken);
+            await RunProcessAsync("podman", $"run -d --name astro-site-{standbyColor} -p {standbyPort}:4321 {ImageName}:latest", RepoPath, cancellationToken: cancellationToken);
 
-            // Step 5: Health Check.
             Console.WriteLine("Performing health check...");
-            await Task.Delay(5000, cancellationToken); // Give the container time to start.
+            await Task.Delay(5000, cancellationToken);
             if (!await IsHealthy(standbyPort, cancellationToken))
             {
                 var failureMsg = $"Health check FAILED for container astro-site-{standbyColor} on port {standbyPort}. Aborting deployment.";
@@ -145,12 +128,10 @@ static class DeploymentService
             }
             Console.WriteLine("Health check PASSED.");
 
-            // Step 6: Switch Nginx traffic.
             Console.WriteLine("Switching Nginx traffic...");
             await RunProcessAsync("sudo", $"tee {NginxUpstreamConfig}", workingDirectory: RepoPath, input: $"server 127.0.0.1:{standbyPort};", cancellationToken: cancellationToken);
             await RunProcessAsync("sudo", "systemctl reload nginx", RepoPath, cancellationToken: cancellationToken);
 
-            // Step 7: Update state and clean up.
             await File.WriteAllTextAsync(StateFile, standbyColor, cancellationToken);
 
             var successMsg = $"Deployment successful! {standbyColor} is now LIVE.";
@@ -190,6 +171,9 @@ static class DeploymentService
     private static Task<string> RunProcessAsync(string command, string args, string workingDirectory, string? input = null, bool ignoreErrors = false, CancellationToken cancellationToken = default)
     {
         Console.WriteLine($"> Running: {command} {args}");
+        var tcs = new TaskCompletionSource<string>();
+
+        // *** FIX: Use ShellExecute = false and pass arguments to bash -c for proper parsing ***
         var process = new Process
         {
             StartInfo =
@@ -200,21 +184,14 @@ static class DeploymentService
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 RedirectStandardInput = input != null,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                UseShellExecute = false, // Must be false for redirection
+                CreateNoWindow = true,
             }
         };
 
-        var tcs = new TaskCompletionSource<string>();
-
-        // Handle cancellation
         var registration = cancellationToken.Register(() =>
         {
-            try
-            {
-                process?.Kill();
-            }
-            catch { }
+            try { process?.Kill(true); } catch { } // Kill entire process tree
             tcs.TrySetCanceled();
         });
 
@@ -227,6 +204,11 @@ static class DeploymentService
 
             if (process.ExitCode == 0)
             {
+                if (!string.IsNullOrEmpty(error))
+                {
+                    // Sometimes commands write warnings to stderr but still succeed.
+                    Console.WriteLine($"Warning from command '{command} {args}': {error}");
+                }
                 tcs.TrySetResult(output);
             }
             else
@@ -237,13 +219,25 @@ static class DeploymentService
                 }
                 else
                 {
-                    tcs.TrySetException(new Exception($"Command '{command} {args}' failed with exit code {process.ExitCode}.\nError: {error}"));
+                    var fullError = new StringBuilder();
+                    fullError.AppendLine($"Command '{command} {args}' failed with exit code {process.ExitCode}.");
+                    if (!string.IsNullOrWhiteSpace(output)) fullError.AppendLine($"Output:\n{output}");
+                    if (!string.IsNullOrWhiteSpace(error)) fullError.AppendLine($"Error:\n{error}");
+                    tcs.TrySetException(new Exception(fullError.ToString()));
                 }
             }
             process.Dispose();
         };
 
-        process.Start();
+        try
+        {
+            process.Start();
+        }
+        catch (Exception ex)
+        {
+            tcs.SetException(new Exception($"Failed to start process '{command}'. Is it in your PATH? Error: {ex.Message}"));
+            return tcs.Task;
+        }
 
         if (input != null)
         {
@@ -251,6 +245,8 @@ static class DeploymentService
             process.StandardInput.Close();
         }
 
+        // Wait for the process to exit, but don't block the main thread
+        // The TaskCompletionSource handles the continuation.
         return tcs.Task;
     }
 }
