@@ -117,8 +117,8 @@ static class DeploymentService
 
             await RunProcessAsync("podman", $"rm -f astro-site-{standbyColor}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
             await RunProcessAsync(
-                "podman",
-                $"run -d --rm --name astro-site-{standbyColor} -p {standbyPort}:80 {ImageName}:latest",
+                "systemd-run",
+                $"--user --service-type=exec --unit=astro-site-{standbyColor} podman run --rm --name astro-site-{standbyColor} -p {standbyPort}:80 {ImageName}:latest",
                 RepoPath,
                 cancellationToken: cancellationToken);
 
