@@ -196,7 +196,7 @@ static class DeploymentService
         });
 
         process.EnableRaisingEvents = true;
-        process.Exited += (sender, e) =>
+        process.Exited += async (sender, e) =>
         {
             registration.Dispose();
             string output = process.StandardOutput.ReadToEnd();
@@ -223,6 +223,7 @@ static class DeploymentService
                     if (!string.IsNullOrWhiteSpace(output)) fullError.AppendLine($"Output:\n{output}");
                     if (!string.IsNullOrWhiteSpace(error)) fullError.AppendLine($"Error:\n{error}");
                     tcs.TrySetException(new Exception(fullError.ToString()));
+                    await SendNotificationAsync(StatusLevel.Error, "Deployment FAILED", fullError.ToString());
                 }
             }
             process.Dispose();
