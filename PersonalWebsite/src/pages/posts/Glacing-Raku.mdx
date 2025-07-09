@@ -38,8 +38,8 @@ The C2 wiki has some [great discussions](https://wiki.c2.com/?TheProblemWithSigi
 ## Calling C++
 
 Something that shocked me a little bit was that Raku [can call into C++](https://github.com/rakudo/rakudo/blob/main/t/04-nativecall/13-cpp-mangling.t). 
-It can construct an Raku object with the fields and methods of an C++ object.
+It can construct a Raku object with the fields and methods of an C++ object.
 I thought this was not possible because of C++ name mangling. After reading how
-names are mangeld by each compiler its actually possible to account for each compiler 
-mangling. They dont say that the way the names are mangled is stable and wont guarantee
+names are mangled by each compiler its actually possible to account for each compiler 
+mangling. They don't say that the way the names are mangled is stable and won't guarantee
 that, but it works. 
