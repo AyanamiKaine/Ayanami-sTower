@@ -32,18 +32,44 @@ static class DeploymentService
         return local.Trim() != remote.Trim();
     }
 
+    private static async Task<bool> IsLiveContainerRunning()
+    {
+        if (!File.Exists(StateFile)) return false; 
+
+        string liveColor = await File.ReadAllTextAsync(StateFile);
+        string containerName = $"astro-site-{liveColor}";
+
+        // This command asks Podman for running containers with the exact name.
+        // If it returns any text, the container exists and is running.
+        string result = await RunProcessAsync("podman", $"ps --filter name={containerName} --filter status=running --format \"{{{{.ID}}}}\"", RepoPath, ignoreErrors: true);
+
+        return !string.IsNullOrWhiteSpace(result);
+    }
+
     private static async Task TriggerDeployment(CancellationToken cancellationToken = default)
     {
-
-        if (!await HasNewCommits())
-        {
-            Console.WriteLine("No new commits found. Exiting.");
-            return;
-        }
-
         try
         {
-            Console.WriteLine($"\n--- {DateTime.Now}: Starting deployment. ---");
+
+            bool isLive = await IsLiveContainerRunning();
+            bool hasNewCommits = await HasNewCommits();
+
+            // We only exit if the site is already running AND there are no new changes.
+            if (isLive && !hasNewCommits)
+            {
+                Console.WriteLine("Site is running and no new commits found. Exiting.");
+                return;
+            }
+
+            if (!isLive)
+            {
+                Console.WriteLine("Live container is not running. Forcing deployment to recover.");
+            }
+
+            if (hasNewCommits)
+            {
+                Console.WriteLine("New commits detected. Starting deployment.");
+            }
 
             if (cancellationToken.IsCancellationRequested)
                 return;
