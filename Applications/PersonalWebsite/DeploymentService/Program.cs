@@ -1,22 +1,20 @@
-﻿using System;
+﻿// Refactored DeploymentService.cs
+
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
+using AyanamisTower.Email; // --- CHANGE: Added using statement for the email library
 
 namespace AyanamisTower.PersonalWebsite;
 
 static class DeploymentService
 {
-    private enum StatusLevel
-    {
-        Info,
-        Success,
-        Warning,
-        Error
-    }
+    // --- CHANGE: The StatusLevel enum is no longer needed here.
+    // It will use the one defined in the AyanamisTower.Email namespace.
 
     // --- Configuration ---
     private const string RepoPath = "/home/ayanami/Ayanami-sTower/";
@@ -26,7 +24,15 @@ static class DeploymentService
     private const string NginxUpstreamConfig = "/etc/nginx/astro_upstream.conf";
     private const int BluePort = 8080;
     private const int GreenPort = 8081;
-    private const string EmailCliPath = "/home/ayanami/Ayanami-sTower/Build/bin/AyanamisTower.EmailSenderCLI/Release/net9.0/AyanamisTower.EmailSenderCLI";
+
+    // --- CHANGE: The path to the email CLI is no longer needed.
+    // private const string EmailCliPath = "/home/ayanami/Ayanami-sTower/Build/bin/AyanamisTower.EmailSenderCLI/Release/net9.0/AyanamisTower.EmailSenderCLI";
+
+    // --- CHANGE: Added a static instance of the EmailStatusService.
+    // This service will be used to send all email notifications.
+    // It will automatically pick up its configuration from environment variables.
+    private static readonly EmailStatusService _emailService = new EmailStatusService();
+
 
     public static async Task Main(string[] _)
     {
@@ -55,36 +61,27 @@ static class DeploymentService
     }
 
     /// <summary>
-    /// Sends an email notification by executing the external EmailSenderCLI tool.
+    /// --- REFACTORED METHOD ---
+    /// Sends an email notification by directly using the EmailStatusService library.
+    /// This is cleaner, more efficient, and safer than invoking an external CLI tool.
     /// </summary>
     private static async Task SendNotificationAsync(StatusLevel level, string subject, string message)
     {
-        if (!File.Exists(EmailCliPath))
-        {
-            Console.WriteLine($"Warning: Email CLI executable not found at '{EmailCliPath}'. Skipping notification.");
-            return;
-        }
-
         try
         {
-            string subcommand = level.ToString().ToLower();
-
-            string subjectForShell = subject.Replace("'", "'\\''");
-            string messageForShell = message.Replace("'", "'\\''");
-
-            string script = $"{EmailCliPath} {subcommand} \"{subjectForShell}\" \"{messageForShell}\"";
-
-            string bashArgs = $"-c '{script}'";
-
-            Console.WriteLine($"Executing notification CLI to send {level} email...");
-            await RunProcessAsync("/bin/bash", bashArgs, workingDirectory: RepoPath);
-            Console.WriteLine("Email notification CLI executed successfully.");
+            Console.WriteLine($"Sending {level} email notification...");
+            // Directly call the library method. It handles formatting and sending.
+            await _emailService.SendStatusUpdateAsync(subject, message, level);
+            Console.WriteLine("Email notification sent successfully via library.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"!!! CRITICAL: Failed to execute email notification CLI. Error: {ex.Message}");
+            // Log the error to the console, but don't let a notification failure
+            // interrupt the core deployment process.
+            Console.WriteLine($"!!! CRITICAL: Failed to send email notification via library. Error: {ex.Message}");
         }
     }
+
 
     private static async Task TriggerDeployment(CancellationToken cancellationToken = default)
     {
@@ -121,8 +118,8 @@ static class DeploymentService
             await RunProcessAsync("podman", $"rm -f astro-site-{standbyColor}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
             await RunProcessAsync("podman", $"run -d --name astro-site-{standbyColor} -p {standbyPort}:4321 {ImageName}:latest", RepoPath, cancellationToken: cancellationToken);
 
-            Console.WriteLine("Performing health check...");
-            await Task.Delay(5000, cancellationToken);
+            Console.WriteLine("Performing health check... first waiting 20 seconds");
+            await Task.Delay(20000, cancellationToken);
             if (!await IsHealthy(standbyPort, cancellationToken))
             {
                 var failureMsg = $"Health check FAILED for container astro-site-{standbyColor} on port {standbyPort}. Aborting deployment.";
@@ -187,14 +184,14 @@ static class DeploymentService
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 RedirectStandardInput = input != null,
-                UseShellExecute = false, // Must be false for redirection
+                UseShellExecute = false,
                 CreateNoWindow = true,
             }
         };
 
         var registration = cancellationToken.Register(() =>
         {
-            try { process?.Kill(true); } catch { } // Kill entire process tree
+            try { process?.Kill(true); } catch { }
             tcs.TrySetCanceled();
         });
 
@@ -209,7 +206,6 @@ static class DeploymentService
             {
                 if (!string.IsNullOrEmpty(error))
                 {
-                    // Sometimes commands write warnings to stderr but still succeed.
                     Console.WriteLine($"Warning from command '{command} {args}': {error}");
                 }
                 tcs.TrySetResult(output);
