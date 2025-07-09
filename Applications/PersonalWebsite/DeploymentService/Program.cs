@@ -69,11 +69,15 @@ static class DeploymentService
         {
             string subcommand = level.ToString().ToLower();
 
-            string args = $"{subcommand} \"{subject.Replace("\"", "\\\"")}\" \"{message.Replace("\"", "\\\"")}\"";
+            string subjectForShell = subject.Replace("'", "'\\''");
+            string messageForShell = message.Replace("'", "'\\''");
+
+            string script = $"{EmailCliPath} {subcommand} \"{subjectForShell}\" \"{messageForShell}\"";
+
+            string bashArgs = $"-c '{script}'";
 
             Console.WriteLine($"Executing notification CLI to send {level} email...");
-            // We now use a shell to interpret the arguments string correctly.
-            await RunProcessAsync("/bin/bash", $"-c '{EmailCliPath} {args}'", workingDirectory: RepoPath);
+            await RunProcessAsync("/bin/bash", bashArgs, workingDirectory: RepoPath);
             Console.WriteLine("Email notification CLI executed successfully.");
         }
         catch (Exception ex)
@@ -173,7 +177,6 @@ static class DeploymentService
         Console.WriteLine($"> Running: {command} {args}");
         var tcs = new TaskCompletionSource<string>();
 
-        // *** FIX: Use ShellExecute = false and pass arguments to bash -c for proper parsing ***
         var process = new Process
         {
             StartInfo =
@@ -245,8 +248,6 @@ static class DeploymentService
             process.StandardInput.Close();
         }
 
-        // Wait for the process to exit, but don't block the main thread
-        // The TaskCompletionSource handles the continuation.
         return tcs.Task;
     }
 }
