@@ -17,11 +17,6 @@ static class DeploymentService
     private const int BluePort = 8080;
     private const int GreenPort = 8081;
 
-    private static Timer? _debounceTimer;
-    private static readonly CancellationTokenSource _cancellationTokenSource = new();
-    private static bool _deploymentInProgress = false;
-    private static readonly object _deploymentLock = new();
-
     public static async Task Main(string[] _)
     {
         Console.WriteLine($"\n--- {DateTime.Now}: C# Deployer started by systemd timer. ---");
@@ -98,13 +93,6 @@ static class DeploymentService
         catch (Exception ex)
         {
             Console.WriteLine($"!!! An error occurred during deployment: {ex.Message}");
-        }
-        finally
-        {
-            lock (_deploymentLock)
-            {
-                _deploymentInProgress = false;
-            }
         }
     }
 
