@@ -10,7 +10,19 @@ import "../styles/global.css";
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" href="/path/to/favicon-light.svg" />
+
+        <link
+            rel="icon"
+            href="/path/to/favicon-light.svg"
+            media="(prefers-color-scheme: light)"
+        />
+
+        <link
+            rel="icon"
+            href="/path/to/favicon-dark.svg"
+            media="(prefers-color-scheme: dark)"
+        />
         <meta name="generator" content={Astro.generator} />
         <title>Ayanami's Little Place</title>
     </head>
