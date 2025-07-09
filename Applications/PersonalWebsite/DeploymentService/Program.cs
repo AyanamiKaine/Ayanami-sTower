@@ -116,7 +116,7 @@ static class DeploymentService
             await RunProcessAsync("podman", $"build -t {ImageName}:latest .", ProjectPath, cancellationToken: cancellationToken);
 
             await RunProcessAsync("podman", $"rm -f astro-site-{standbyColor}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
-            await RunProcessAsync("podman", $"run -d --name astro-site-{standbyColor} -p {standbyPort}:4321 {ImageName}:latest", RepoPath, cancellationToken: cancellationToken);
+            await RunProcessAsync("podman", $"run -d --name astro-site-{standbyColor} -p {standbyPort}:80 {ImageName}:latest", RepoPath, cancellationToken: cancellationToken);
 
             Console.WriteLine("Performing health check... first waiting 5 seconds");
             await Task.Delay(5000, cancellationToken);
