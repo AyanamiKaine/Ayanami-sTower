@@ -1,0 +1,44 @@
+---
+title: "How Modular can Software be?"
+date: 2025-07-11
+author: "Ayanami Kaine"
+tags: ["Obsession", "Programming"]
+layout: ../../layouts/PostLayout.astro
+summary: "One thing that gets teached over and over again is: 'how write modular software'. But how modular can we be?"
+---
+
+I am quite obsessed with modular software. Dreaming of the day when I can call into all different kinds of languages and simply use them. Using one library written in
+Java and calling it in Lua is not that easy. It all comes down to writing wrappers of some sort. Anything but ergonomic.
+
+To make something modular we need to create a stable interface and the modular should have only small transient dependencies.
+
+## The Monkey Pawn
+
+<img
+  src="/monkey_pawn_meme.webp"
+  alt="Monkey Pawn Meme"
+  style={{
+    width: '75%',
+    display: 'block',
+    marginLeft: 'auto',
+    marginRight: 'auto'
+  }}
+/>
+
+Communication of every form has some overhead. This is true for the natural world as well as for computation. Because of different calling conventions even if multiple programming languages are natively compiled to a shared library and are just assembly code they still can't interact with each other. 
+
+More problems occur when shared libraries need a runtime to be present. In a C# library where one function returns a string who owns that string? The creator or user? In essences, it's about who owns the memory. Of course, we could just do copies left and right. 
+
+This brings us to the next major problem.
+
+## Latency
+
+It's all about latency. Doing copies destroys caches results in load instructions and even the most simply operation like adding two numbers would mostly spend not doing calculations but instead doing loads.
+
+A `load` instruction takes around ~150 cycles. Now imagine have two `load` instructions each taking 150 cycles and the actual add instruction just one cycle. That's an astonish ratio of 1/300. Now image the data needs to travel over the network.
+
+Frequently used data needs to be locally close. So using multiple languages in a module/component is out of the question. But using multiple languages in a system is much more "viable". It all comes down to the question of how much latency you can endure. 
+
+## The Future
+
+One day my programming environment will, by default have all the distributed computing goodies found in Erlang/Elixir ready to be used by any language and much of the communication overhead is reduced.
