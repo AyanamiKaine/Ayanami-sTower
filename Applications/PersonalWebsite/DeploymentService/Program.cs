@@ -26,7 +26,7 @@ static class DeploymentService
     private const string NginxUpstreamConfig = "/etc/nginx/astro_upstream.conf";
     private const int BluePort = 8080;
     private const int GreenPort = 8081;
-    private const string EmailCliPath = "/home/ayanami/Ayanami-sTower/Build/bin/AyanamisTower.EmailSenderCLI/Release/net9.0";
+    private const string EmailCliPath = "/home/ayanami/Ayanami-sTower/Build/bin/AyanamisTower.EmailSenderCLI/Release/net9.0/AyanamisTower.EmailSenderCLI";
 
     public static async Task Main(string[] _)
     {
