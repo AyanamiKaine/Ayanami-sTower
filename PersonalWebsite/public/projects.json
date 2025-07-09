@@ -84,7 +84,7 @@
   {
     "title": "Personal Website",
     "status": "In Progress",
-    "description": "The very website you're on now! A personal space to blog, showcase projects, share my creative work, spit my feelings and opinions on. My site uses continuous integration and every time my personal pages changes it automatically redeploys using blue/green deployment",
+    "description": "The very website you're on now! A personal space to blog, showcase projects, share my creative work, spit my feelings and opinions on. My site uses continuous integration and every time my personal pages changes it automatically redeploys using blue/green deployment.",
     "technologies": [
       "Astro",
       "Svelte",
