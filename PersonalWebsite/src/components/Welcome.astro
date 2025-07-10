@@ -8,10 +8,11 @@ const postImports = import.meta.glob("../pages/posts/*.{md,mdx,astro}", {
 const posts = Object.values(postImports);
 // Sort posts by date in descending order and get the 4 most recent.
 const recentPosts = posts
+    .filter((post) => post.frontmatter.published)
     .sort(
-        (a, b) =>
-            new Date(b.frontmatter.date).valueOf() -
-            new Date(a.frontmatter.date).valueOf()
+            (a, b) =>
+                new Date(b.frontmatter.date).valueOf() -
+                new Date(a.frontmatter.date).valueOf()
     )
     .slice(0, 4);
 
