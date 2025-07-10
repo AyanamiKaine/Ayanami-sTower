@@ -69,7 +69,7 @@ describe("World and Entity API", () => {
 
         // Test relationships
         const newPlayerChildren = newWorld.getChildren(playerEntity.id);
-        expect(newPlayerChildren).toContain(String(followerEntity.id));
+        expect(newPlayerChildren).toContain(followerEntity.id); 
 
         // A deep comparison of the graph structure is a very robust test
         expect(newWorld.relationshipGraph.export()).toEqual(world.relationshipGraph.export());
@@ -158,8 +158,9 @@ describe("Galaxy Map Simulation", () => {
         // Assertions for parent/child relationships
         const milkyWayChildren = world.getChildren(milkyWay.id);
         expect(milkyWayChildren.length).toBe(3);
-        expect(milkyWayChildren).toContain(sol.id.toString());
-        expect(world.getParents(sol.id)).toContain(milkyWay.id.toString());
+        expect(milkyWayChildren).toContain(sol.id);
+        expect(world.getParents(sol.id)).toContain(milkyWay.id);
+        
 
         const andromedaChildren = world.getChildren(andromeda.id);
         expect(andromedaChildren.length).toBe(1);
@@ -192,8 +193,8 @@ describe("Galaxy Map Simulation", () => {
 
         const newMilkyWayChildren = newWorld.getChildren(milkyWay.id);
         expect(newMilkyWayChildren.length).toBe(3);
-        expect(newMilkyWayChildren).toContain(sol.id.toString());
-        expect(newWorld.getParents(sol.id)).toContain(milkyWay.id.toString());
+        expect(newMilkyWayChildren).toContain(sol.id);
+        expect(newWorld.getParents(sol.id)).toContain(milkyWay.id);
 
         const newSolConnections = newWorld.getConnectionsWithDetails(sol.id);
         const newSolToAlphaCentauri = newSolConnections.find(c => c.neighbor == alphaCentauri.id);
