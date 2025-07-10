@@ -27,6 +27,142 @@ class Frozen {
     }
 }
 
+class Sprite {
+    constructor(name = "default") {
+        this.spriteName = name;
+    }
+}
+class ShieldEffect {
+    constructor(strength = 50) {
+        this.strength = strength;
+    }
+}
+
+/**
+ * Heals entities with Health, but will not target entities that are Frozen.
+ */
+class CautiousHealingSystem extends System {
+    constructor() {
+        super([Health, new Not(Frozen)]);
+    }
+
+    execute(query, world, deltaTime) {
+        query.forEach(({ components }) => {
+            const health = components.get(Health);
+            health.value += 5 * deltaTime;
+        });
+    }
+}
+
+/**
+ * Renders entities with a Position and Sprite.
+ * Also checks for an optional ShieldEffect to render an additional graphic.
+ * (Modified for testing to record actions instead of logging to console)
+ */
+class RenderingSystem extends System {
+    constructor() {
+        super([Position, Sprite, new Optional(ShieldEffect)]);
+        this.renderedItems = []; // Test-friendly log
+    }
+
+    execute(query, world, deltaTime) {
+        query.forEach(({ entity, components }) => {
+            const log = {
+                entity: entity,
+                sprite: components.get(Sprite).spriteName,
+                hasShield: components.has(ShieldEffect),
+            };
+            this.renderedItems.push(log);
+        });
+    }
+}
+
+describe("Systems with Query Modifiers", () => {
+    let world;
+
+    beforeEach(() => {
+        world = new World();
+        // Register all components
+        world.registerComponent(Health);
+        world.registerComponent(Frozen);
+        world.registerComponent(Position);
+        world.registerComponent(Sprite);
+        world.registerComponent(ShieldEffect);
+    });
+
+    test("CautiousHealingSystem should only heal entities that are not Frozen", () => {
+        // Setup entities
+        const normalEntity = world.createEntity().set(new Health(100));
+        const frozenEntity = world
+            .createEntity()
+            .set(new Health(100))
+            .set(new Frozen());
+        const entityWithoutHealth = world.createEntity().set(new Frozen());
+
+        // Setup system
+        const healingSystem = new CautiousHealingSystem();
+        world.registerSystem(healingSystem);
+
+        // Run the world update
+        const deltaTime = 1;
+        world.update(deltaTime);
+
+        // Assertions
+        const normalEntityHealth = world.getComponent(normalEntity.id, Health);
+        const frozenEntityHealth = world.getComponent(frozenEntity.id, Health);
+
+        // The normal entity should have been healed
+        expect(normalEntityHealth.value).toBe(105);
+
+        // The frozen entity's health should be unchanged
+        expect(frozenEntityHealth.value).toBe(100);
+    });
+
+    test("RenderingSystem should process all entities with required components and detect optional ones", () => {
+        // Setup entities
+        const spriteOnlyEntity = world
+            .createEntity()
+            .set(new Position())
+            .set(new Sprite("player"));
+        const spriteWithShieldEntity = world
+            .createEntity()
+            .set(new Position())
+            .set(new Sprite("enemy"))
+            .set(new ShieldEffect());
+        const positionOnlyEntity = world.createEntity().set(new Position()); // Should not be rendered
+
+        // Setup system
+        const renderingSystem = new RenderingSystem();
+        world.registerSystem(renderingSystem);
+
+        // Run the world update
+        world.update(1);
+
+        // Assertions
+        const rendered = renderingSystem.renderedItems;
+
+        // The system should have processed two entities
+        expect(rendered.length).toBe(2);
+
+        // Find the log for the first entity
+        const renderedSpriteOnly = rendered.find(
+            (r) => r.entity === spriteOnlyEntity.id
+        );
+        expect(renderedSpriteOnly).toBeDefined();
+        expect(renderedSpriteOnly.sprite).toBe("player");
+        expect(renderedSpriteOnly.hasShield).toBe(false);
+
+        // Find the log for the second entity
+        const renderedWithShield = rendered.find(
+            (r) => r.entity === spriteWithShieldEntity.id
+        );
+        expect(renderedWithShield).toBeDefined();
+        expect(renderedWithShield.sprite).toBe("enemy");
+        expect(renderedWithShield.hasShield).toBe(true);
+    });
+});
+
+
 describe("Query Modifiers (`Not`, `Optional`)", () => {
     let world;
 
