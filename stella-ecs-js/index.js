@@ -1,6 +1,28 @@
 import Graph from "graphology";
 
 /**
+ * @class Not
+ * @description A query modifier to exclude entities that have a specific component.
+ * @param {Function|string} component - The component class or name to exclude.
+ */
+export class Not {
+    constructor(component) {
+        this.component = component;
+    }
+}
+
+/**
+ * @class Optional
+ * @description A query modifier to include a component in the query result if it exists, without requiring it.
+ * @param {Function|string} component - The component class or name to optionally include.
+ */
+export class Optional {
+    constructor(component) {
+        this.component = component;
+    }
+}
+
+/**
  * @class Entity
  * @description A wrapper around an entity ID that provides a fluent API for manipulating components and relationships.
  */
@@ -155,7 +177,6 @@ class Archetype {
         // If the removed entity was not the last one, update the map for the moved entity
         if (indexToRemove !== lastIndex) {
             this.entityMap.set(lastEntityId, indexToRemove);
-            // The return value is clarified. `newIndex` is the index where the moved entity now resides.
             return { movedEntityId: lastEntityId, newIndex: indexToRemove };
         }
 
@@ -315,7 +336,7 @@ class ComponentFactory {
 
 /**
  * @class World
- * @description The main container for entities, components, and systems. Manages the entire state of the ECS using a scalable bitmask implementation that supports a large number of components.
+ * @description The main container for entities, components, and systems. Manages the entire state of the ECS.
  */
 export class World {
     /**
@@ -343,7 +364,7 @@ export class World {
     }
 
     /**
-     * Registers a component class with the world, assigning it a unique index and bitmask position.
+     * Registers a component class with the world.
      * @param {Function} ComponentClass - The component class to register.
      */
     registerComponent(ComponentClass) {
@@ -371,7 +392,7 @@ export class World {
     }
 
     /**
-     * Destroys an entity, removing it from all systems and relationships.
+     * Destroys an entity.
      * @param {number} entityId - The ID of the entity to destroy.
      */
     destroyEntity(entityId) {
@@ -386,10 +407,10 @@ export class World {
     }
 
     /**
-     * Adds a component to an entity. This may cause the entity to move to a new archetype.
+     * Adds a component to an entity.
      * @param {number} entityId - The ID of the entity.
-     * @param {object|string} componentOrName - The component instance or the name of a dynamic component.
-     * @param {object} [initialValues={}] - Initial values if creating a component by name.
+     * @param {object|string} componentOrName - The component instance or name.
+     * @param {object} [initialValues={}] - Initial values if creating by name.
      */
     addComponent(entityId, componentOrName, initialValues = {}) {
         let component;
@@ -445,9 +466,9 @@ export class World {
     }
 
     /**
-     * Removes a component from an entity. This may cause the entity to move to a new archetype.
+     * Removes a component from an entity.
      * @param {number} entityId - The ID of the entity.
-     * @param {Function|string} componentClassOrName - The component class or name to remove.
+     * @param {Function|string} componentClassOrName - The component class or name.
      */
     removeComponent(entityId, componentClassOrName) {
         const oldArchetype = this.entityArchetypeMap.get(entityId);
@@ -483,10 +504,10 @@ export class World {
     }
 
     /**
-     * Retrieves a specific component instance from an entity.
+     * Retrieves a component from an entity.
      * @param {number} entityId - The ID of the entity.
-     * @param {Function|string} componentClassOrName - The component class or name to retrieve.
-     * @returns {object|undefined} The component instance, or undefined if not found.
+     * @param {Function|string} componentClassOrName - The component class or name.
+     * @returns {object|undefined} The component instance.
      */
     getComponent(entityId, componentClassOrName) {
         const archetype = this.entityArchetypeMap.get(entityId);
@@ -501,10 +522,10 @@ export class World {
     }
 
     /**
-     * Checks if an entity has a specific component.
+     * Checks if an entity has a component.
      * @param {number} entityId - The ID of the entity.
-     * @param {Function|string} componentClassOrName - The component class or name to check for.
-     * @returns {boolean} True if the entity has the component, false otherwise.
+     * @param {Function|string} componentClassOrName - The component class or name.
+     * @returns {boolean}
      */
     hasComponent(entityId, componentClassOrName) {
         const archetype = this.entityArchetypeMap.get(entityId);
@@ -523,9 +544,6 @@ export class World {
     }
 
     /**
-     * Gets a component class constructor from either a class reference or its string name.
-     * @param {Function|string} componentClassOrName - The component class or its name.
-     * @returns {Function|undefined} The component class constructor, or undefined if not found.
      * @private
      */
     _getComponentClass(componentClassOrName) {
@@ -540,9 +558,6 @@ export class World {
     }
 
     /**
-     * Finds an existing archetype for a given bitmask array or creates a new one.
-     * @param {number[]} bitmask - The component bitmask array for the archetype.
-     * @returns {Archetype} The found or newly created archetype.
      * @private
      */
     _findOrCreateArchetype(bitmask) {
@@ -593,50 +608,25 @@ export class World {
         }
     }
 
-    /**
-     * Gets the children of an entity (out-neighbors in a directed graph).
-     * @param {number} entityId - The ID of the parent entity.
-     * @returns {number[]} An array of child entity IDs, guaranteed to be numbers.
-     */
     getChildren(entityId) {
-        // FIX: Ensure returned IDs are always numbers for API consistency.
         return this.relationshipGraph.outNeighbors(entityId).map(Number);
     }
 
-    /**
-     * Gets the parents of an entity (in-neighbors in a directed graph).
-     * @param {number} entityId - The ID of the child entity.
-     * @returns {number[]} An array of parent entity IDs, guaranteed to be numbers.
-     */
     getParents(entityId) {
-        // FIX: Ensure returned IDs are always numbers for API consistency.
         return this.relationshipGraph.inNeighbors(entityId).map(Number);
     }
 
-    /**
-     * Gets all connected entities (neighbors in the graph, regardless of direction).
-     * @param {number} entityId - The ID of the entity.
-     * @returns {number[]} An array of connected entity IDs, guaranteed to be numbers.
-     */
     getConnections(entityId) {
-        // FIX: Ensure returned IDs are always numbers for API consistency.
         return this.relationshipGraph.neighbors(entityId).map(Number);
     }
 
-    /**
-     * Gets detailed information about all connections for an entity.
-     * @param {number} entityId - The ID of the entity.
-     * @returns {Array<{neighbor: number, kind: 'directed'|'undirected', attributes: object}>} An array of connection details.
-     */
     getConnectionsWithDetails(entityId) {
         const connections = [];
         this.relationshipGraph.forEachEdge(
             entityId,
             (edge, attributes, source, target) => {
-                // FIX: Use loose equality `==` to handle string vs number keys after deserialization.
                 const neighborId = source == entityId ? target : source;
                 connections.push({
-                    // FIX: Ensure the returned neighbor ID is always a number.
                     neighbor: Number(neighborId),
                     kind: this.relationshipGraph.isDirected(edge)
                         ? "directed"
@@ -654,9 +644,28 @@ export class World {
         this.systems.push(system);
     }
 
-    query(componentClassesOrNames) {
-        const cacheKey = componentClassesOrNames
-            .map((c) => (typeof c === "string" ? c : c.name))
+    /**
+     * Queries the world for entities that have a given set of components.
+     * Supports `Not` and `Optional` modifiers.
+     * @param {Array<Function|string|Not|Optional>} queryParts - The components to query for.
+     * @returns {Archetype[]} The archetypes that match the query.
+     */
+    query(queryParts) {
+        // --- IMPLEMENTATION CHANGED ---
+        // Create a stable cache key based on component names and modifiers.
+        const cacheKey = queryParts
+            .map((c) => {
+                if (c instanceof Not) {
+                    const comp = c.component;
+                    return `!${typeof comp === "string" ? comp : comp.name}`;
+                }
+                if (c instanceof Optional) {
+                    const comp = c.component;
+                    // Optional is handled by the system, not the query itself, so no special prefix needed for the cache key.
+                    return `${typeof comp === "string" ? comp : comp.name}`;
+                }
+                return typeof c === "string" ? c : c.name;
+            })
             .sort()
             .join(",");
 
@@ -664,35 +673,66 @@ export class World {
             return this.queryCache.get(cacheKey);
         }
 
-        const archetypes = this._performQuery(componentClassesOrNames);
-        this.queryCache.set(cacheKey, archetypes);
-        return archetypes;
+        const matchingArchetypes = this._performQuery(queryParts);
+        this.queryCache.set(cacheKey, matchingArchetypes);
+        return matchingArchetypes;
     }
 
-    _performQuery(componentClassesOrNames) {
+    /**
+     * @private
+     */
+    _performQuery(queryParts) {
+        // --- IMPLEMENTATION CHANGED ---
         const numWords = Math.ceil(this.nextComponentType / 32) || 1;
-        const queryBitmask = new Array(numWords).fill(0);
+        const requiredBitmask = new Array(numWords).fill(0);
+        const excludeBitmask = new Array(numWords).fill(0);
 
-        for (const classOrName of componentClassesOrNames) {
-            const ComponentClass = this._getComponentClass(classOrName);
+        // First, parse the query parts to build the required and exclusion bitmasks.
+        for (const part of queryParts) {
+            let ComponentClass;
+            let isExclusion = false;
+
+            if (part instanceof Not) {
+                ComponentClass = this._getComponentClass(part.component);
+                isExclusion = true;
+            } else if (part instanceof Optional) {
+                // Optional components don't affect archetype matching, so we skip them here.
+                continue;
+            } else {
+                ComponentClass = this._getComponentClass(part);
+            }
+
             if (ComponentClass && this.componentTypes.has(ComponentClass)) {
                 const { wordIndex, bit } =
                     this.componentTypes.get(ComponentClass);
-                queryBitmask[wordIndex] |= bit;
+                if (isExclusion) {
+                    excludeBitmask[wordIndex] |= bit;
+                } else {
+                    requiredBitmask[wordIndex] |= bit;
+                }
             } else {
-                return [];
+                // If a required component (not Not or Optional) isn't registered,
+                // the query can never find any matches.
+                if (!(part instanceof Not) && !(part instanceof Optional)) {
+                    return [];
+                }
             }
         }
 
         const matchingArchetypes = [];
+        // The traverse function recursively explores the archetype trie.
         const traverse = (node) => {
             for (const value of node.values()) {
                 if (value instanceof Archetype) {
                     let isMatch = true;
-                    for (let i = 0; i < queryBitmask.length; i++) {
+                    for (let i = 0; i < requiredBitmask.length; i++) {
+                        // An archetype is a match if:
+                        // 1. It has all the bits from the requiredBitmask.
+                        // 2. It has none of the bits from the excludeBitmask.
                         if (
-                            (value.id[i] & queryBitmask[i]) !==
-                            queryBitmask[i]
+                            (value.id[i] & requiredBitmask[i]) !==
+                                requiredBitmask[i] ||
+                            (value.id[i] & excludeBitmask[i]) !== 0
                         ) {
                             isMatch = false;
                             break;
@@ -702,6 +742,7 @@ export class World {
                         matchingArchetypes.push(value);
                     }
                 } else if (value instanceof Map) {
+                    // Continue traversing if it's another node in the trie.
                     traverse(value);
                 }
             }
@@ -719,13 +760,8 @@ export class World {
 
     // --- Serialization methods ---
 
-    /**
-     * Serializes the entire world state to a JSON object.
-     * @returns {object} A JSON-serializable representation of the world.
-     */
     toJSON() {
         const allArchetypes = [];
-        // Helper function to recursively traverse the archetype trie.
         const traverse = (node) => {
             for (const value of node.values()) {
                 if (value instanceof Archetype) {
@@ -775,20 +811,11 @@ export class World {
         };
     }
 
-    /**
-     * Creates a new World instance from a serialized JSON object.
-     * @param {object} json - The serialized world data.
-     * @param {object} [options] - Options for deserialization.
-     * @param {System[]} [options.systems=[]] - An array of system instances to register in the new world.
-     * @param {Function[]} [options.staticComponents=[]] - An array of static component classes that should be registered.
-     * @returns {World} A new World instance populated with the deserialized state.
-     */
     static fromJSON(json, { systems = [], staticComponents = [] } = {}) {
         const world = new World({
             graphType: json.graph?.options?.type || "mixed",
         });
 
-        // Register static and dynamic components. This must be done before creating entities.
         for (const ComponentClass of staticComponents) {
             world.registerComponent(ComponentClass);
         }
@@ -798,16 +825,13 @@ export class World {
 
         world.nextEntityID = json.nextEntityID;
 
-        // Import graph structure. This creates the nodes for the entities.
         if (json.graph) {
             world.relationshipGraph.import(json.graph);
         }
 
-        // Re-create entities and add their components. This will build the archetype trie.
         for (const entityData of json.entities) {
             const entityId = entityData.id;
 
-            // Ensure the entity node exists from the graph import
             if (!world.relationshipGraph.hasNode(entityId)) {
                 console.warn(
                     `Serialized entity ${entityId} not found in graph, creating it.`
@@ -839,8 +863,6 @@ export class World {
                 }
             }
 
-            // Find the correct archetype and add the entity in one shot.
-            // This efficiently builds the archetype trie.
             if (componentsMap.size > 0) {
                 const targetArchetype =
                     world._findOrCreateArchetype(finalBitmask);
@@ -849,7 +871,6 @@ export class World {
             }
         }
 
-        // Register systems
         for (const system of systems) {
             world.registerSystem(system);
         }
@@ -860,32 +881,34 @@ export class World {
 
 /**
  * @class System
- * @description Base class for all systems. Systems contain the logic that operates on entities with specific components.
+ * @description Base class for all systems.
  */
 export class System {
     /**
-     * @param {Array<string|Function>} [queryComponentNames=[]] - An array of component names or classes that this system operates on.
+     * @param {Array<string|Function|Not|Optional>} [queryParts=[]] - Components this system operates on.
      */
-    constructor(queryComponentNames = []) {
-        this.queryComponentNames = queryComponentNames;
+    constructor(queryParts = []) {
+        this.queryParts = queryParts;
     }
 
     /**
-     * Called by the world on each update tick. Queries for relevant entities and passes them to the execute method.
+     * Called by the world on each update tick.
      * @param {World} world - The world instance.
      * @param {number} deltaTime - The time elapsed since the last update.
      */
     update(world, deltaTime) {
-        const archetypes = world.query(this.queryComponentNames);
-        if (archetypes.length > 0) {
-            const queryResult = new QueryResult(archetypes);
+        // world.query returns an array of matching archetypes.
+        const matchingArchetypes = world.query(this.queryParts);
+        if (matchingArchetypes.length > 0) {
+            // We construct the QueryResult here, inside the system.
+            const queryResult = new QueryResult(matchingArchetypes);
             this.execute(queryResult, world, deltaTime);
         }
     }
 
     /**
      * The main logic of the system. This method must be implemented by subclasses.
-     * @param {QueryResult} entities - The result of the query, containing entities that match the system's component requirements.
+     * @param {QueryResult} entities - The result of the query.
      * @param {World} world - The world instance.
      * @param {number} deltaTime - The time elapsed since the last update.
      */
