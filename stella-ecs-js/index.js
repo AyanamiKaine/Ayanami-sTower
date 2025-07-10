@@ -67,6 +67,51 @@ class Archetype {
 }
 
 /**
+ * @class QueryResult
+ * @description An iterable result of a world query, abstracting away archetypes.
+ * @private
+ */
+class QueryResult {
+    constructor(archetypes) {
+        this.archetypes = archetypes;
+        this.count = archetypes.reduce((sum, arch) => sum + arch.entityList.length, 0);
+    }
+
+    /**
+     * The main iterator that yields each entity and its components.
+     */
+    *[Symbol.iterator]() {
+        for (const archetype of this.archetypes) {
+            for (let i = 0; i < archetype.entityList.length; i++) {
+                const entityId = archetype.entityList[i];
+
+                // Lazily create a map of components for this specific entity
+                const components = new Map();
+                for (const ComponentClass of archetype.componentClasses) {
+                    components.set(ComponentClass, archetype.componentArrays.get(ComponentClass)[i]);
+                }
+
+                yield {
+                    entity: entityId,
+                    components: components
+                };
+            }
+        }
+    }
+
+    /**
+     * Provides a convenient forEach method, similar to Array.prototype.forEach.
+     * @param {function({entity: number, components: Map<Function, object>})} callback
+     */
+    forEach(callback) {
+        for (const result of this) {
+            callback(result);
+        }
+    }
+}
+
+
+/**
  * @class ComponentFactory
  * @description Manages the definition and creation of components from string names and JSON schemas.
  */
@@ -235,6 +280,8 @@ export class World {
             if (ComponentClass && this.componentTypes.has(ComponentClass)) {
                 queryBitmask |= this.componentTypes.get(ComponentClass);
             } else {
+                // If any component in the query is not registered, the query can't match anything.
+                console.warn(`Query contains unregistered component: ${classOrName}.`);
                 return [];
             }
         }
@@ -255,10 +302,6 @@ export class World {
         }
     }
 
-    /**
-     * Serializes the entire world state to a JSON object.
-     * @returns {object} A JSON-serializable representation of the world.
-     */
     toJSON() {
         const entities = [];
         for (const archetype of this.archetypes.values()) {
@@ -278,7 +321,6 @@ export class World {
 
         const componentDefinitions = [];
         for (const [name, ComponentClass] of this.componentFactory.definitions.entries()) {
-            // Create a dummy instance to get the schema
             const instance = new ComponentClass();
             const schema = {};
             for (const key in instance) {
@@ -295,31 +337,19 @@ export class World {
         };
     }
 
-    /**
-     * Deserializes world state from a JSON object.
-     * @param {object} json - The JSON object to deserialize from.
-     * @param {object} options - Options for deserialization.
-     * @param {System[]} [options.systems=[]] - An array of system instances to register with the new world.
-     * @param {Function[]} [options.staticComponents=[]] - An array of static component classes to register.
-     * @returns {World} A new World instance populated with the deserialized state.
-     */
     static fromJSON(json, { systems = [], staticComponents = [] } = {}) {
         const world = new World();
         world.nextEntityID = json.nextEntityID;
 
-        // Register all known static components first.
         for (const ComponentClass of staticComponents) {
             world.registerComponent(ComponentClass);
         }
 
-        // Define all dynamic components
         for (const def of json.componentDefinitions) {
             world.componentFactory.define(def.name, def.schema);
         }
 
-        // Create all entities and add their components efficiently
         for (const entityData of json.entities) {
-            // Ensure entity IDs are created in sequence
             while (world.nextEntityID <= entityData.id) {
                 world.createEntity();
             }
@@ -330,11 +360,8 @@ export class World {
             for (const componentData of entityData.components) {
                 const ComponentClass = world.getComponentClassByName(componentData.type);
                 if (ComponentClass) {
-                    // THIS IS THE FIX: Create a default instance, then apply the saved data.
-                    // This works for any constructor signature.
                     const componentInstance = new ComponentClass();
                     Object.assign(componentInstance, componentData.data);
-
                     componentsMap.set(ComponentClass, componentInstance);
                     finalBitmask |= world.componentTypes.get(ComponentClass);
                 } else {
@@ -349,12 +376,10 @@ export class World {
             }
         }
 
-        // Import graph data
         if (json.graph) {
             world.relationshipGraph.import(json.graph);
         }
 
-        // Register systems
         for (const system of systems) {
             world.registerSystem(system);
         }
@@ -372,14 +397,28 @@ export class System {
         this.queryComponentNames = queryComponentNames;
     }
 
+    /**
+     * Called by the world on each update cycle.
+     * @param {World} world - The world instance.
+     * @param {number} deltaTime - The time elapsed since the last update.
+     */
     update(world, deltaTime) {
         const archetypes = world.query(this.queryComponentNames);
         if (archetypes.length > 0) {
-            this.execute(world, archetypes, deltaTime);
+            const queryResult = new QueryResult(archetypes);
+            // We pass the world as well, as systems might need to get components
+            // that are not part of their primary query (e.g., checking for a tag component).
+            this.execute(queryResult, world, deltaTime);
         }
     }
 
-    execute(world, archetypes, deltaTime) {
+    /**
+     * The main logic of the system. This method should be implemented by subclasses.
+     * @param {QueryResult} entities - An iterable object containing the entities and their components that match the system's query.
+     * @param {World} world - The world instance, for accessing global state or other components.
+     * @param {number} deltaTime - The time elapsed since the last update.
+     */
+    execute(entities, world, deltaTime) {
         throw new Error("System must implement an execute method.");
     }
 }

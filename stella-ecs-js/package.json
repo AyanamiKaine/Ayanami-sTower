@@ -1,5 +1,5 @@
 {
-  "name": "stella-ecs",
+  "name": "stella-ecs-js",
   "module": "index.js",
   "type": "module",
   "devDependencies": {

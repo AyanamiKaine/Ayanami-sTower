@@ -6,31 +6,36 @@ class Renderable { constructor(char = '?', color = 'white') { this.char = char; 
 class Player { }
 
 // --- STATIC (PRE-DEFINED) SYSTEM ---
+// This system is now much cleaner and easier to read.
+// It doesn't know or care about "archetypes".
 class RenderSystem extends System {
     constructor() {
+        // Define the components this system operates on.
         super([Position, Renderable]);
     }
 
-    execute(world, archetypes, deltaTime) {
-        console.log(`RenderSystem is processing ${archetypes.length} archetypes:`);
+    /**
+     * @param {QueryResult} entities - An iterable containing all entities that have Position and Renderable components.
+     * @param {World} world - The world instance.
+     * @param {number} deltaTime - The time since the last frame.
+     */
+    execute(entities, world, deltaTime) {
+        console.log(`RenderSystem is processing ${entities.count} entities:`);
 
-        for (const archetype of archetypes) {
-            const positions = archetype.componentArrays.get(Position);
-            const renderables = archetype.componentArrays.get(Renderable);
+        // The 'for...of' loop is now the primary, ergonomic way to iterate.
+        for (const { entity, components } of entities) {
+            // Get the components from the pre-fetched map.
+            const pos = components.get(Position);
+            const render = components.get(Renderable);
 
-            for (let i = 0; i < archetype.entityList.length; i++) {
-                const entityId = archetype.entityList[i];
-                const pos = positions[i];
-                const render = renderables[i];
+            // We can still use the world to get components not in our primary query.
+            const isPlayer = world.getComponent(entity, Player);
+            const hasMana = world.getComponent(entity, 'Mana');
 
-                const isPlayer = world.getComponent(entityId, Player);
-                const hasMana = world.getComponent(entityId, 'Mana');
+            let playerTag = isPlayer ? '[PLAYER]' : '';
+            let manaTag = hasMana ? `[MANA: ${hasMana.value.toFixed(0)}]` : '';
 
-                let playerTag = isPlayer ? '[PLAYER]' : '';
-                let manaTag = hasMana ? `[MANA: ${hasMana.value.toFixed(0)}]` : '';
-
-                console.log(`  -> ${render.char} ${playerTag} at (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) ${manaTag}`);
-            }
+            console.log(`  -> ${render.char} ${playerTag} at (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) ${manaTag}`);
         }
     }
 }
@@ -45,22 +50,24 @@ world.componentFactory.define('Mana', { value: 100, max: 150 });
 world.componentFactory.define('Health', { value: 80, max: 100 });
 
 // --- DYNAMIC SYSTEM DEFINITION ---
+// The logic for dynamic systems is also vastly simplified.
 const manaRegenSystemLogic = `
-    for (const archetype of archetypes) {
-        const ManaClass = world.getComponentClassByName('Mana');
-        const PositionClass = world.getComponentClassByName('Position');
+    // Get component classes once from the world for efficiency.
+    const ManaClass = world.getComponentClassByName('Mana');
+    const PositionClass = world.getComponentClassByName('Position');
 
-        if (!ManaClass || !PositionClass) continue;
+    // 'entities' is the iterable QueryResult.
+    // The system author only needs to know about this simple loop.
+    for (const { components } of entities) {
+        const mana = components.get(ManaClass);
+        const pos = components.get(PositionClass);
 
-        const manas = archetype.componentArrays.get(ManaClass);
-        const positions = archetype.componentArrays.get(PositionClass);
-
-        for (let i = 0; i < archetype.entityList.length; i++) {
-            const mana = manas[i];
+        // It's good practice to ensure components exist before using them.
+        if (mana && pos) {
             if (mana.value < mana.max) {
                 mana.value += 5 * deltaTime;
             }
-            const pos = positions[i];
+            // Just a little effect to show it's working
             pos.y += Math.sin(mana.value / 10) * 0.1;
         }
     }
@@ -69,7 +76,8 @@ const manaRegenSystemLogic = `
 const DynamicManaSystem = class extends System {
     constructor() {
         super(['Mana', Position]);
-        this.execute = new Function('world', 'archetypes', 'deltaTime', manaRegenSystemLogic);
+        // The signature of the new Function must match what System.update provides.
+        this.execute = new Function('entities', 'world', 'deltaTime', manaRegenSystemLogic);
     }
 }
 
@@ -96,7 +104,7 @@ world.addComponent(staticEntity, new Renderable('X', 'red'));
 
 // --- RUNNING THE SIMULATION ---
 console.log('\n--- Starting Simulation Loop ---');
-world.update(0);
+world.update(0.16); // Run a single frame
 
 
 // --- SERIALIZATION DEMO ---
@@ -107,15 +115,13 @@ function runSerializationDemo() {
     const worldState = world.toJSON();
     const jsonString = JSON.stringify(worldState, null, 2);
     console.log('Serialized World State:');
-    console.log(jsonString);
+    // console.log(jsonString); // Keep this commented for cleaner output unless debugging
 
     // 2. Create a new world from the serialized state
     console.log('\n--- Deserializing into a new World ---');
 
-    // Define the list of static components used in your application
     const staticComponents = [Position, Renderable, Player];
 
-    // Pass the systems and static components to the new world
     const newWorld = World.fromJSON(worldState, {
         systems: systemsToRegister,
         staticComponents: staticComponents
@@ -123,13 +129,12 @@ function runSerializationDemo() {
 
     // 3. Run an update on the new world to prove it was restored
     console.log('\n--- Running first update on the NEW (deserialized) world ---');
-    newWorld.update(0);
+    newWorld.update(0.16);
     console.log('--- Serialization Demo Complete ---');
 }
 
 
-// Run the demo and then exit
+// Run the demo after a short delay
 setTimeout(() => {
     runSerializationDemo();
-    process.exit();
-}, 1000);
+}, 500);
