@@ -43,3 +43,33 @@ I thought this was not possible because of C++ name mangling. After reading how
 names are mangled by each compiler its actually possible to account for each compiler 
 mangling. They don't say that the way the names are mangled is stable and won't guarantee
 that, but it works. 
+
+## Memoization
+
+A common optimization is caching output values of a function so we dont have to recompute them over and over again. The example given is usually the fibonacci sequence. In Raku we can add the `is cached` trait to a function, to enable automatic memoization.
+
+```Raku
+sub fib(Int $n where * >= 0) is cached {
+    return 1 if $n < 2;
+
+    return fib($n - 1) + fib($n - 2);
+}
+```
+
+And in python using no automatic memoization:
+
+```Python
+fib_cache = {}
+
+def fib_manual(n):
+    if n in fib_cache:
+        return fib_cache[n]
+    
+    if n < 2:
+        result = 1
+    else:
+        result = fib_manual(n - 1) + fib_manual(n - 2)
+    
+    fib_cache[n] = result
+    return result
+```
