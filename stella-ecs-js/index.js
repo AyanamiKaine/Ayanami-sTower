@@ -136,9 +136,8 @@ class Archetype {
 
 /**
  * @class QueryResult
- * @private
  */
-class QueryResult {
+export class QueryResult {
     constructor(archetypes) {
         this.archetypes = archetypes;
         this.count = archetypes.reduce((sum, arch) => sum + arch.entityList.length, 0);
