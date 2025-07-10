@@ -399,6 +399,9 @@ export class World {
         const archetype = this.entityArchetypeMap.get(entityId);
         if (archetype) {
             archetype.removeEntity(entityId);
+            if (archetype.entityList.length === 0) {
+                this._removeArchetypeFromTrie(archetype);
+            }
         }
         this.entityArchetypeMap.delete(entityId);
         if (this.relationshipGraph.hasNode(entityId)) {
@@ -458,6 +461,9 @@ export class World {
                 components.set(C, oldArchetype.componentArrays.get(C)[index]);
             }
             oldArchetype.removeEntity(entityId);
+            if (oldArchetype.entityList.length === 0) {
+                this._removeArchetypeFromTrie(oldArchetype);
+            }
         }
         components.set(ComponentClass, component);
 
@@ -499,6 +505,11 @@ export class World {
         }
 
         oldArchetype.removeEntity(entityId);
+
+        if (oldArchetype.entityList.length === 0) {
+            this._removeArchetypeFromTrie(oldArchetype);
+        }
+
         newArchetype.addEntity(entityId, components);
         this.entityArchetypeMap.set(entityId, newArchetype);
     }
@@ -590,6 +601,36 @@ export class World {
         this.queryCache.clear();
 
         return newArchetype;
+    }
+
+    /**
+     * Removes an archetype from the trie using its bitmask.
+     * @param {Archetype} archetypeToRemove The archetype to remove.
+     * @private
+     */
+    _removeArchetypeFromTrie(archetypeToRemove) {
+        const bitmask = archetypeToRemove.id;
+        if (!bitmask || bitmask.length === 0) return;
+
+        let currentNode = this.archetypeTrie;
+        // Traverse to the parent of the node to be removed
+        for (let i = 0; i < bitmask.length - 1; i++) {
+            const word = bitmask[i];
+            if (!currentNode.has(word)) {
+                // This case should ideally not be hit if logic is correct
+                return;
+            }
+            currentNode = currentNode.get(word);
+        }
+
+        const lastWord = bitmask[bitmask.length - 1];
+        if (currentNode.has(lastWord)) {
+            currentNode.delete(lastWord);
+            // Note: This doesn't prune empty parent Map objects from the trie.
+            // This prevents a complex recursive cleanup, and the memory impact
+            // of empty Maps is negligible compared to the Archetype objects.
+            // The primary leak of holding onto Archetype objects is solved.
+        }
     }
 
     // --- Relationship API ---
