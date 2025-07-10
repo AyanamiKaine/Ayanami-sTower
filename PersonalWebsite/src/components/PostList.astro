@@ -1,6 +1,6 @@
 ---
 const postImports = import.meta.glob("../pages/posts/*.mdx", { eager: true });
-const posts = Object.values(postImports);
+let posts = Object.values(postImports);
 
 // 2. Sort posts by date in descending order (newest first)
 posts.sort(
@@ -8,6 +8,8 @@ posts.sort(
         new Date(b.frontmatter.date).valueOf() -
         new Date(a.frontmatter.date).valueOf()
 );
+
+posts = posts.filter((post) => post.frontmatter.published);
 ---
 
 <div class="post-list mt-10">
