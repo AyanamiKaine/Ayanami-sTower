@@ -19,11 +19,6 @@ class Archetype {
         this.entityList = [];
     }
 
-    /**
-     * Adds an entity and its components to this archetype's arrays.
-     * @param {number} entityId - The ID of the entity.
-     * @param {Map<Function, object>} components - A map of the entity's component instances.
-     */
     addEntity(entityId, components) {
         const index = this.entityList.length;
         this.entityMap.set(entityId, index);
@@ -34,11 +29,6 @@ class Archetype {
         }
     }
 
-    /**
-     * Removes an entity from this archetype using the efficient "swap and pop" method.
-     * @param {number} entityId - The ID of the entity to remove.
-     * @returns {{movedEntityId: number|null, oldIndex: number}} Information about the entity that was moved to fill the gap.
-     */
     removeEntity(entityId) {
         const indexToRemove = this.entityMap.get(entityId);
         const lastIndex = this.entityList.length - 1;
@@ -56,7 +46,6 @@ class Archetype {
 
         this.entityMap.delete(entityId);
 
-        // Important: If we removed an entity that wasn't the last one, we need to update the moved entity's index
         if (indexToRemove !== lastIndex) {
             this.entityMap.set(lastEntityId, indexToRemove);
             return { movedEntityId: lastEntityId, oldIndex: lastIndex };
@@ -77,32 +66,19 @@ class QueryResult {
         this.count = archetypes.reduce((sum, arch) => sum + arch.entityList.length, 0);
     }
 
-    /**
-     * The main iterator that yields each entity and its components.
-     */
     *[Symbol.iterator]() {
         for (const archetype of this.archetypes) {
             for (let i = 0; i < archetype.entityList.length; i++) {
                 const entityId = archetype.entityList[i];
-
-                // Lazily create a map of components for this specific entity
                 const components = new Map();
                 for (const ComponentClass of archetype.componentClasses) {
                     components.set(ComponentClass, archetype.componentArrays.get(ComponentClass)[i]);
                 }
-
-                yield {
-                    entity: entityId,
-                    components: components
-                };
+                yield { entity: entityId, components: components };
             }
         }
     }
 
-    /**
-     * Provides a convenient forEach method, similar to Array.prototype.forEach.
-     * @param {function({entity: number, components: Map<Function, object>})} callback
-     */
     forEach(callback) {
         for (const result of this) {
             callback(result);
@@ -150,7 +126,11 @@ class ComponentFactory {
  * @description The main container for entities, components, and systems, using an archetype-based architecture.
  */
 export class World {
-    constructor() {
+    /**
+     * @param {object} [options] - World configuration options.
+     * @param {('directed'|'undirected'|'mixed')} [options.graphType='mixed'] - The type of graph to use for entity relationships. Defaults to 'mixed' for maximum flexibility.
+     */
+    constructor({ graphType = 'mixed' } = {}) {
         this.nextEntityID = 0;
         this.systems = [];
         this.componentFactory = new ComponentFactory(this);
@@ -164,8 +144,8 @@ export class World {
         this.archetypes = new Map(); // Map<bitmask, Archetype>
         this.entityArchetypeMap = new Map(); // Map<EntityID, Archetype>
 
-        // Graphology for entity relationships
-        this.relationshipGraph = new Graph({ type: 'directed', allowSelfLoops: false });
+        // Graphology for entity relationships, now defaults to 'mixed'
+        this.relationshipGraph = new Graph({ type: graphType, allowSelfLoops: false });
     }
 
     registerComponent(ComponentClass) {
@@ -204,11 +184,10 @@ export class World {
         const oldBitmask = oldArchetype ? oldArchetype.id : 0;
         const newBitmask = oldBitmask | this.componentTypes.get(ComponentClass);
 
-        if (oldBitmask === newBitmask) return; // Already has this component type
+        if (oldBitmask === newBitmask) return;
 
         const newArchetype = this._findOrCreateArchetype(newBitmask);
 
-        // Collect existing components
         const components = new Map();
         if (oldArchetype) {
             const index = oldArchetype.entityMap.get(entityId);
@@ -219,7 +198,6 @@ export class World {
         }
         components.set(ComponentClass, component);
 
-        // Add to new archetype
         newArchetype.addEntity(entityId, components);
         this.entityArchetypeMap.set(entityId, newArchetype);
     }
@@ -266,6 +244,95 @@ export class World {
         return newArchetype;
     }
 
+    // --- Relationship API ---
+
+    /**
+     * Adds a directed relationship (source -> target) between two entities.
+     * @param {number} source - The source entity ID.
+     * @param {number} target - The target entity ID.
+     * @param {object} [attributes] - Optional attributes for the relationship (e.g., {type: 'leaderOf'}).
+     */
+    addDirectedRelationship(source, target, attributes = {}) {
+        if (!this.relationshipGraph.hasNode(source) || !this.relationshipGraph.hasNode(target)) {
+            console.error("Cannot add relationship: one or both entities do not exist.", { source, target });
+            return;
+        }
+        this.relationshipGraph.addDirectedEdge(source, target, attributes);
+    }
+
+    /**
+     * Adds an undirected relationship (source <-> target) between two entities.
+     * @param {number} source - The first entity ID.
+     * @param {number} target - The second entity ID.
+     * @param {object} [attributes] - Optional attributes for the relationship (e.g., {type: 'alliedWith'}).
+     */
+    addUndirectedRelationship(source, target, attributes = {}) {
+        if (!this.relationshipGraph.hasNode(source) || !this.relationshipGraph.hasNode(target)) {
+            console.error("Cannot add relationship: one or both entities do not exist.", { source, target });
+            return;
+        }
+        this.relationshipGraph.addUndirectedEdge(source, target, attributes);
+    }
+
+    /**
+     * Removes a relationship between two entities.
+     * @param {number} source - The source entity ID.
+     * @param {number} target - The target entity ID.
+     */
+    removeRelationship(source, target) {
+        if (this.relationshipGraph.hasEdge(source, target)) {
+            this.relationshipGraph.dropEdge(source, target);
+        }
+    }
+
+    /**
+     * Gets the children of an entity (outgoing neighbors in a directed relationship).
+     * @param {number} entityId - The ID of the entity.
+     * @returns {string[]} An array of child entity IDs.
+     */
+    getChildren(entityId) {
+        return this.relationshipGraph.outNeighbors(entityId);
+    }
+
+    /**
+     * Gets the parents of an entity (incoming neighbors in a directed relationship).
+     * @param {number} entityId - The ID of the entity.
+     * @returns {string[]} An array of parent entity IDs.
+     */
+    getParents(entityId) {
+        return this.relationshipGraph.inNeighbors(entityId);
+    }
+
+    /**
+     * Gets all connected entities, regardless of direction.
+     * @param {number} entityId - The ID of the entity.
+     * @returns {string[]} An array of connected entity IDs.
+     */
+    getConnections(entityId) {
+        return this.relationshipGraph.neighbors(entityId);
+    }
+
+    /**
+     * Gets detailed information about all connections for an entity.
+     * @param {number} entityId - The ID of the entity.
+     * @returns {Array<{neighbor: string, kind: ('directed'|'undirected'), attributes: object}>}
+     */
+    getConnectionsWithDetails(entityId) {
+        const connections = [];
+        this.relationshipGraph.forEachEdge(entityId, (edge, attributes, source, target) => {
+            const neighbor = source == entityId ? target : source;
+            connections.push({
+                neighbor: neighbor,
+                kind: this.relationshipGraph.isDirected(edge) ? 'directed' : 'undirected',
+                attributes: attributes
+            });
+        });
+        return connections;
+    }
+
+
+    // --- System and World Update ---
+
     registerSystem(system) {
         this.systems.push(system);
         console.log(`System '${system.constructor.name}' registered.`);
@@ -280,7 +347,6 @@ export class World {
             if (ComponentClass && this.componentTypes.has(ComponentClass)) {
                 queryBitmask |= this.componentTypes.get(ComponentClass);
             } else {
-                // If any component in the query is not registered, the query can't match anything.
                 console.warn(`Query contains unregistered component: ${classOrName}.`);
                 return [];
             }
@@ -301,6 +367,8 @@ export class World {
             system.update(this, deltaTime);
         }
     }
+
+    // --- Serialization ---
 
     toJSON() {
         const entities = [];
@@ -338,7 +406,7 @@ export class World {
     }
 
     static fromJSON(json, { systems = [], staticComponents = [] } = {}) {
-        const world = new World();
+        const world = new World({ graphType: json.graph?.options?.type || 'mixed' });
         world.nextEntityID = json.nextEntityID;
 
         for (const ComponentClass of staticComponents) {
@@ -397,27 +465,14 @@ export class System {
         this.queryComponentNames = queryComponentNames;
     }
 
-    /**
-     * Called by the world on each update cycle.
-     * @param {World} world - The world instance.
-     * @param {number} deltaTime - The time elapsed since the last update.
-     */
     update(world, deltaTime) {
         const archetypes = world.query(this.queryComponentNames);
         if (archetypes.length > 0) {
             const queryResult = new QueryResult(archetypes);
-            // We pass the world as well, as systems might need to get components
-            // that are not part of their primary query (e.g., checking for a tag component).
             this.execute(queryResult, world, deltaTime);
         }
     }
 
-    /**
-     * The main logic of the system. This method should be implemented by subclasses.
-     * @param {QueryResult} entities - An iterable object containing the entities and their components that match the system's query.
-     * @param {World} world - The world instance, for accessing global state or other components.
-     * @param {number} deltaTime - The time elapsed since the last update.
-     */
     execute(entities, world, deltaTime) {
         throw new Error("System must implement an execute method.");
     }
