@@ -1,4 +1,4 @@
-import Graph from 'graphology';
+import Graph from "graphology";
 
 /**
  * @class Entity
@@ -78,53 +78,81 @@ export class Entity {
      * @returns {Entity} The entity instance for chaining.
      */
     connectTo(otherEntity, attributes) {
-        this.world.addUndirectedRelationship(this.id, otherEntity.id, attributes);
+        this.world.addUndirectedRelationship(
+            this.id,
+            otherEntity.id,
+            attributes
+        );
         return this;
     }
 }
 
-
 /**
  * @class Archetype
+ * @description Manages a collection of entities that all have the same set of components. This is a performance optimization.
  * @private
  */
 class Archetype {
+    /**
+     * @param {number} id - The bitmask representing the component signature of this archetype.
+     * @param {Function[]} componentClasses - An array of component classes that define this archetype.
+     */
     constructor(id, componentClasses) {
         this.id = id;
         this.componentClasses = componentClasses;
-        this.componentArrays = new Map(componentClasses.map(C => [C, []]));
+        // Map from ComponentClass to an array of component instances
+        this.componentArrays = new Map(componentClasses.map((C) => [C, []]));
+        // Map from entityId to its index in the entityList and componentArrays
         this.entityMap = new Map();
+        // A packed array of entity IDs in this archetype
         this.entityList = [];
     }
 
+    /**
+     * Adds an entity and its components to this archetype.
+     * @param {number} entityId - The ID of the entity to add.
+     * @param {Map<Function, object>} components - A map of component classes to component instances.
+     */
     addEntity(entityId, components) {
         const index = this.entityList.length;
         this.entityMap.set(entityId, index);
         this.entityList.push(entityId);
 
         for (const ComponentClass of this.componentClasses) {
-            this.componentArrays.get(ComponentClass).push(components.get(ComponentClass));
+            this.componentArrays
+                .get(ComponentClass)
+                .push(components.get(ComponentClass));
         }
     }
 
+    /**
+     * Removes an entity from this archetype using a swap-and-pop method for efficiency.
+     * @param {number} entityId - The ID of the entity to remove.
+     * @returns {{movedEntityId: number|null, oldIndex: number}} An object containing the ID of the entity that was moved to fill the gap, and its old index.
+     */
     removeEntity(entityId) {
         const indexToRemove = this.entityMap.get(entityId);
-        if (indexToRemove === undefined) return { movedEntityId: null, oldIndex: -1 };
+        if (indexToRemove === undefined)
+            return { movedEntityId: null, oldIndex: -1 };
 
         const lastIndex = this.entityList.length - 1;
         const lastEntityId = this.entityList[lastIndex];
 
+        // Swap the last element with the one to remove for all component arrays
         for (const ComponentClass of this.componentClasses) {
             const array = this.componentArrays.get(ComponentClass);
             array[indexToRemove] = array[lastIndex];
             array.pop();
         }
 
+        // Update the entity list
         this.entityList[indexToRemove] = lastEntityId;
         this.entityList.pop();
 
+        // Update the entity map
         this.entityMap.delete(entityId);
 
+        // If the removed entity was not the last one, update the map for the moved entity
         if (indexToRemove !== lastIndex) {
             this.entityMap.set(lastEntityId, indexToRemove);
             return { movedEntityId: lastEntityId, oldIndex: lastIndex };
@@ -136,26 +164,44 @@ class Archetype {
 
 /**
  * @class QueryResult
+ * @description A container for the results of a world query, providing an iterable interface.
  */
 export class QueryResult {
+    /**
+     * @param {Archetype[]} archetypes - An array of archetypes that match the query.
+     */
     constructor(archetypes) {
         this.archetypes = archetypes;
-        this.count = archetypes.reduce((sum, arch) => sum + arch.entityList.length, 0);
+        this.count = archetypes.reduce(
+            (sum, arch) => sum + arch.entityList.length,
+            0
+        );
     }
 
+    /**
+     * Makes the QueryResult iterable, yielding each entity and its components.
+     * @yields {{entity: number, components: Map<Function, object>}}
+     */
     *[Symbol.iterator]() {
         for (const archetype of this.archetypes) {
             for (let i = 0; i < archetype.entityList.length; i++) {
                 const entityId = archetype.entityList[i];
                 const components = new Map();
                 for (const ComponentClass of archetype.componentClasses) {
-                    components.set(ComponentClass, archetype.componentArrays.get(ComponentClass)[i]);
+                    components.set(
+                        ComponentClass,
+                        archetype.componentArrays.get(ComponentClass)[i]
+                    );
                 }
                 yield { entity: entityId, components: components };
             }
         }
     }
 
+    /**
+     * Executes a callback for each entity in the query result.
+     * @param {function({entity: number, components: Map<Function, object>})} callback - The function to execute for each entity.
+     */
     forEach(callback) {
         for (const result of this) {
             callback(result);
@@ -163,32 +209,55 @@ export class QueryResult {
     }
 }
 
-
 /**
  * @class ComponentFactory
+ * @description Manages the definition and creation of dynamic components from string names.
  * @private
  */
 class ComponentFactory {
+    /**
+     * @param {World} world - A reference to the world.
+     */
     constructor(world) {
         this.world = world;
         this.definitions = new Map();
     }
+
+    /**
+     * Defines a new component type dynamically.
+     * @param {string} name - The name of the component.
+     * @param {object} schema - An object defining the default properties of the component.
+     * @returns {Function} The newly created component class.
+     */
     define(name, schema) {
         const DynamicComponent = class {
             constructor(initialValues = {}) {
                 Object.assign(this, schema, initialValues);
             }
         };
-        Object.defineProperty(DynamicComponent, 'name', { value: name });
+        Object.defineProperty(DynamicComponent, "name", { value: name });
         this.definitions.set(name, DynamicComponent);
         this.world.registerComponent(DynamicComponent);
         return DynamicComponent;
     }
+
+    /**
+     * Creates an instance of a dynamically defined component.
+     * @param {string} name - The name of the component to create.
+     * @param {object} [initialValues] - The initial values for the component's properties.
+     * @returns {object|null} A new component instance, or null if the definition doesn't exist.
+     */
     create(name, initialValues) {
         const ComponentClass = this.definitions.get(name);
         if (!ComponentClass) return null;
         return new ComponentClass(initialValues);
     }
+
+    /**
+     * Retrieves the class constructor for a dynamically defined component.
+     * @param {string} name - The name of the component class to retrieve.
+     * @returns {Function|undefined} The component class, or undefined if not found.
+     */
     getClass(name) {
         return this.definitions.get(name);
     }
@@ -196,10 +265,14 @@ class ComponentFactory {
 
 /**
  * @class World
- * @description The main container for entities, components, and systems.
+ * @description The main container for entities, components, and systems. Manages the entire state of the ECS.
  */
 export class World {
-    constructor({ graphType = 'mixed' } = {}) {
+    /**
+     * @param {object} [options] - Configuration options for the world.
+     * @param {string} [options.graphType='mixed'] - The type of graph to use for relationships ('mixed', 'directed', 'undirected').
+     */
+    constructor({ graphType = "mixed" } = {}) {
         this.nextEntityID = 0;
         this.systems = [];
         this.componentFactory = new ComponentFactory(this);
@@ -208,14 +281,23 @@ export class World {
         this.nextComponentType = 0;
         this.archetypes = new Map();
         this.entityArchetypeMap = new Map();
-        this.relationshipGraph = new Graph({ type: graphType, allowSelfLoops: false });
+        this.relationshipGraph = new Graph({
+            type: graphType,
+            allowSelfLoops: false,
+        });
     }
 
+    /**
+     * Registers a component class with the world, assigning it a unique bitmask.
+     * @param {Function} ComponentClass - The component class to register.
+     */
     registerComponent(ComponentClass) {
         if (!this.componentTypes.has(ComponentClass)) {
             const bit = 1 << this.nextComponentType;
             if (this.nextComponentType >= 32) {
-                console.error("Maximum number of component types (32) exceeded.");
+                console.error(
+                    "Maximum number of component types (32) exceeded."
+                );
                 return;
             }
             this.componentTypes.set(ComponentClass, bit);
@@ -249,11 +331,19 @@ export class World {
         }
     }
 
-
+    /**
+     * Adds a component to an entity. This may cause the entity to move to a new archetype.
+     * @param {number} entityId - The ID of the entity.
+     * @param {object|string} componentOrName - The component instance or the name of a dynamic component.
+     * @param {object} [initialValues={}] - Initial values if creating a component by name.
+     */
     addComponent(entityId, componentOrName, initialValues = {}) {
         let component;
-        if (typeof componentOrName === 'string') {
-            component = this.componentFactory.create(componentOrName, initialValues);
+        if (typeof componentOrName === "string") {
+            component = this.componentFactory.create(
+                componentOrName,
+                initialValues
+            );
             if (!component) return;
         } else {
             component = componentOrName;
@@ -267,10 +357,11 @@ export class World {
         const oldBitmask = oldArchetype ? oldArchetype.id : 0;
         const newBitmask = oldBitmask | this.componentTypes.get(ComponentClass);
 
-        if (oldBitmask === newBitmask) return;
+        if (oldBitmask === newBitmask) return; // Already has this component type
 
         const newArchetype = this._findOrCreateArchetype(newBitmask);
 
+        // Collect existing components
         const components = new Map();
         if (oldArchetype) {
             const index = oldArchetype.entityMap.get(entityId);
@@ -281,12 +372,13 @@ export class World {
         }
         components.set(ComponentClass, component);
 
+        // Add to the new archetype
         newArchetype.addEntity(entityId, components);
         this.entityArchetypeMap.set(entityId, newArchetype);
     }
 
     /**
-     * Removes a component from an entity.
+     * Removes a component from an entity. This may cause the entity to move to a new archetype.
      * @param {number} entityId - The ID of the entity.
      * @param {Function|string} componentClassOrName - The component class or name to remove.
      */
@@ -314,23 +406,36 @@ export class World {
             }
         }
 
+        // Move entity to the new archetype
         oldArchetype.removeEntity(entityId);
         newArchetype.addEntity(entityId, components);
         this.entityArchetypeMap.set(entityId, newArchetype);
     }
 
-
+    /**
+     * Retrieves a specific component instance from an entity.
+     * @param {number} entityId - The ID of the entity.
+     * @param {Function|string} componentClassOrName - The component class or name to retrieve.
+     * @returns {object|undefined} The component instance, or undefined if not found.
+     */
     getComponent(entityId, componentClassOrName) {
         const archetype = this.entityArchetypeMap.get(entityId);
         if (!archetype) return undefined;
 
         const ComponentClass = this._getComponentClass(componentClassOrName);
-        if (!ComponentClass || !archetype.componentArrays.has(ComponentClass)) return undefined;
+        if (!ComponentClass || !archetype.componentArrays.has(ComponentClass))
+            return undefined;
 
         const index = archetype.entityMap.get(entityId);
         return archetype.componentArrays.get(ComponentClass)[index];
     }
 
+    /**
+     * Checks if an entity has a specific component.
+     * @param {number} entityId - The ID of the entity.
+     * @param {Function|string} componentClassOrName - The component class or name to check for.
+     * @returns {boolean} True if the entity has the component, false otherwise.
+     */
     hasComponent(entityId, componentClassOrName) {
         const archetype = this.entityArchetypeMap.get(entityId);
         if (!archetype) return false;
@@ -340,29 +445,38 @@ export class World {
         return (archetype.id & componentBit) !== 0;
     }
 
+    /**
+     * Gets a component class constructor from either a class reference or its string name.
+     * @param {Function|string} componentClassOrName - The component class or its name.
+     * @returns {Function|undefined} The component class constructor, or undefined if not found.
+     * @private
+     */
     _getComponentClass(componentClassOrName) {
-        // If it's not a string, it's already a class constructor.
-        if (typeof componentClassOrName !== 'string') {
+        if (typeof componentClassOrName !== "string") {
             return componentClassOrName;
         }
 
-        // It's a string name. First, check the dynamic component factory.
-        const dynamicClass = this.componentFactory.getClass(componentClassOrName);
+        const dynamicClass =
+            this.componentFactory.getClass(componentClassOrName);
         if (dynamicClass) {
             return dynamicClass;
         }
 
-        // If not found, iterate through all registered static components.
         for (const componentClass of this.componentTypes.keys()) {
             if (componentClass.name === componentClassOrName) {
                 return componentClass;
             }
         }
 
-        // Return undefined if no class is found for the given name.
         return undefined;
     }
 
+    /**
+     * Finds an existing archetype for a given bitmask or creates a new one.
+     * @param {number} bitmask - The component bitmask for the archetype.
+     * @returns {Archetype} The found or newly created archetype.
+     * @private
+     */
     _findOrCreateArchetype(bitmask) {
         if (this.archetypes.has(bitmask)) {
             return this.archetypes.get(bitmask);
@@ -383,52 +497,102 @@ export class World {
 
     // --- Relationship API ---
 
+    /**
+     * Adds a directed relationship (e.g., parent-child) from a source entity to a target entity.
+     * @param {number} source - The ID of the source entity.
+     * @param {number} target - The ID of the target entity.
+     * @param {object} [attributes={}] - Optional attributes for the relationship edge.
+     */
     addDirectedRelationship(source, target, attributes = {}) {
         this.relationshipGraph.addDirectedEdge(source, target, attributes);
     }
 
+    /**
+     * Adds an undirected relationship (e.g., connection) between two entities.
+     * @param {number} source - The ID of the first entity.
+     * @param {number} target - The ID of the second entity.
+     * @param {object} [attributes={}] - Optional attributes for the relationship edge.
+     */
     addUndirectedRelationship(source, target, attributes = {}) {
         this.relationshipGraph.addUndirectedEdge(source, target, attributes);
     }
 
+    /**
+     * Removes a relationship between two entities.
+     * @param {number} source - The ID of the source entity.
+     * @param {number} target - The ID of the target entity.
+     */
     removeRelationship(source, target) {
         if (this.relationshipGraph.hasEdge(source, target)) {
             this.relationshipGraph.dropEdge(source, target);
         }
     }
 
+    /**
+     * Gets the children of an entity (out-neighbors in a directed graph).
+     * @param {number} entityId - The ID of the parent entity.
+     * @returns {string[]} An array of child entity IDs.
+     */
     getChildren(entityId) {
         return this.relationshipGraph.outNeighbors(String(entityId));
     }
 
+    /**
+     * Gets the parents of an entity (in-neighbors in a directed graph).
+     * @param {number} entityId - The ID of the child entity.
+     * @returns {string[]} An array of parent entity IDs.
+     */
     getParents(entityId) {
         return this.relationshipGraph.inNeighbors(String(entityId));
     }
 
+    /**
+     * Gets all connected entities (neighbors in the graph, regardless of direction).
+     * @param {number} entityId - The ID of the entity.
+     * @returns {string[]} An array of connected entity IDs.
+     */
     getConnections(entityId) {
         return this.relationshipGraph.neighbors(String(entityId));
     }
 
+    /**
+     * Gets detailed information about all connections for an entity.
+     * @param {number} entityId - The ID of the entity.
+     * @returns {Array<{neighbor: string, kind: 'directed'|'undirected', attributes: object}>} An array of connection details.
+     */
     getConnectionsWithDetails(entityId) {
         const connections = [];
-        this.relationshipGraph.forEachEdge(String(entityId), (edge, attributes, source, target) => {
-            const neighbor = source == entityId ? target : source;
-            connections.push({
-                neighbor: neighbor,
-                kind: this.relationshipGraph.isDirected(edge) ? 'directed' : 'undirected',
-                attributes: attributes
-            });
-        });
+        this.relationshipGraph.forEachEdge(
+            String(entityId),
+            (edge, attributes, source, target) => {
+                const neighbor = source == entityId ? target : source;
+                connections.push({
+                    neighbor: neighbor,
+                    kind: this.relationshipGraph.isDirected(edge)
+                        ? "directed"
+                        : "undirected",
+                    attributes: attributes,
+                });
+            }
+        );
         return connections;
     }
 
-
     // --- System and World Update ---
 
+    /**
+     * Registers a system to be updated on each world tick.
+     * @param {System} system - The system instance to register.
+     */
     registerSystem(system) {
         this.systems.push(system);
     }
 
+    /**
+     * Queries for archetypes that match a set of component classes.
+     * @param {Array<Function|string>} componentClassesOrNames - An array of component classes or names to query for.
+     * @returns {Archetype[]} An array of matching archetypes.
+     */
     query(componentClassesOrNames) {
         let queryBitmask = 0;
         for (const classOrName of componentClassesOrNames) {
@@ -436,6 +600,7 @@ export class World {
             if (ComponentClass && this.componentTypes.has(ComponentClass)) {
                 queryBitmask |= this.componentTypes.get(ComponentClass);
             } else {
+                // If any component is not found, the query can't match anything.
                 return [];
             }
         }
@@ -449,6 +614,10 @@ export class World {
         return matchingArchetypes;
     }
 
+    /**
+     * Updates the world state by running all registered systems.
+     * @param {number} deltaTime - The time elapsed since the last update.
+     */
     update(deltaTime) {
         for (const system of this.systems) {
             system.update(this, deltaTime);
@@ -457,6 +626,10 @@ export class World {
 
     // --- Serialization ---
 
+    /**
+     * Serializes the entire world state to a JSON object.
+     * @returns {object} A JSON-serializable representation of the world.
+     */
     toJSON() {
         const entities = [];
         for (const archetype of this.archetypes.values()) {
@@ -464,10 +637,11 @@ export class World {
                 const entityId = archetype.entityList[i];
                 const components = [];
                 for (const ComponentClass of archetype.componentClasses) {
-                    const componentInstance = archetype.componentArrays.get(ComponentClass)[i];
+                    const componentInstance =
+                        archetype.componentArrays.get(ComponentClass)[i];
                     components.push({
                         type: ComponentClass.name,
-                        data: { ...componentInstance }
+                        data: { ...componentInstance },
                     });
                 }
                 entities.push({ id: entityId, components });
@@ -475,7 +649,10 @@ export class World {
         }
 
         const componentDefinitions = [];
-        for (const [name, ComponentClass] of this.componentFactory.definitions.entries()) {
+        for (const [
+            name,
+            ComponentClass,
+        ] of this.componentFactory.definitions.entries()) {
             const instance = new ComponentClass();
             const schema = {};
             for (const key in instance) {
@@ -488,15 +665,24 @@ export class World {
             nextEntityID: this.nextEntityID,
             componentDefinitions,
             entities,
-            graph: this.relationshipGraph.export()
+            graph: this.relationshipGraph.export(),
         };
     }
 
+    /**
+     * Creates a new World instance from a serialized JSON object.
+     * @param {object} json - The serialized world data.
+     * @param {object} [options] - Options for deserialization.
+     * @param {System[]} [options.systems=[]] - An array of system instances to register in the new world.
+     * @param {Function[]} [options.staticComponents=[]] - An array of static component classes that should be registered.
+     * @returns {World} A new World instance populated with the deserialized state.
+     */
     static fromJSON(json, { systems = [], staticComponents = [] } = {}) {
-        // 1. Create a new world. Its graph is empty.
-        const world = new World({ graphType: json.graph?.options?.type || 'mixed' });
+        const world = new World({
+            graphType: json.graph?.options?.type || "mixed",
+        });
 
-        // 2. Register all components
+        // Register static and dynamic components
         for (const ComponentClass of staticComponents) {
             world.registerComponent(ComponentClass);
         }
@@ -504,48 +690,52 @@ export class World {
             world.componentFactory.define(def.name, def.schema);
         }
 
-        // 3. Import the graph structure first. This populates the graph with nodes (entities) and edges.
+        // Import graph structure and set next entity ID
         if (json.graph) {
             world.relationshipGraph.import(json.graph);
         }
-
-        // 4. Set the next entity ID to ensure new entities don't conflict.
         world.nextEntityID = json.nextEntityID;
 
-        // 5. Now, iterate through the entity data and add components to the entities that already exist as nodes in the graph.
+        // Re-create entities and add their components
         for (const entityData of json.entities) {
             const entityId = entityData.id;
 
             if (!world.relationshipGraph.hasNode(entityId)) {
-                console.warn(`Serialized entity ${entityId} not found in graph, skipping.`);
+                console.warn(
+                    `Serialized entity ${entityId} not found in graph, skipping.`
+                );
                 continue;
             }
 
             let finalBitmask = 0;
             const componentsMap = new Map();
 
-            // Collect all components for this entity first
             for (const componentData of entityData.components) {
-                const ComponentClass = world._getComponentClass(componentData.type);
+                const ComponentClass = world._getComponentClass(
+                    componentData.type
+                );
                 if (ComponentClass) {
                     const componentInstance = new ComponentClass();
                     Object.assign(componentInstance, componentData.data);
                     componentsMap.set(ComponentClass, componentInstance);
                     finalBitmask |= world.componentTypes.get(ComponentClass);
                 } else {
-                    console.error(`Could not find component class for type "${componentData.type}" during deserialization.`);
+                    console.error(
+                        `Could not find component class for type "${componentData.type}" during deserialization.`
+                    );
                 }
             }
 
-            // Now, find the correct archetype and add the entity in one shot.
+            // Find the correct archetype and add the entity in one shot
             if (finalBitmask > 0) {
-                const targetArchetype = world._findOrCreateArchetype(finalBitmask);
+                const targetArchetype =
+                    world._findOrCreateArchetype(finalBitmask);
                 targetArchetype.addEntity(entityId, componentsMap);
                 world.entityArchetypeMap.set(entityId, targetArchetype);
             }
         }
 
-        // 6. Register systems
+        // Register systems
         for (const system of systems) {
             world.registerSystem(system);
         }
@@ -556,13 +746,21 @@ export class World {
 
 /**
  * @class System
- * @description Base class for all systems.
+ * @description Base class for all systems. Systems contain the logic that operates on entities with specific components.
  */
 export class System {
+    /**
+     * @param {Array<string|Function>} [queryComponentNames=[]] - An array of component names or classes that this system operates on.
+     */
     constructor(queryComponentNames = []) {
         this.queryComponentNames = queryComponentNames;
     }
 
+    /**
+     * Called by the world on each update tick. Queries for relevant entities and passes them to the execute method.
+     * @param {World} world - The world instance.
+     * @param {number} deltaTime - The time elapsed since the last update.
+     */
     update(world, deltaTime) {
         const archetypes = world.query(this.queryComponentNames);
         if (archetypes.length > 0) {
@@ -571,6 +769,12 @@ export class System {
         }
     }
 
+    /**
+     * The main logic of the system. This method must be implemented by subclasses.
+     * @param {QueryResult} entities - The result of the query, containing entities that match the system's component requirements.
+     * @param {World} world - The world instance.
+     * @param {number} deltaTime - The time elapsed since the last update.
+     */
     execute(entities, world, deltaTime) {
         throw new Error("System must implement an execute method.");
     }
