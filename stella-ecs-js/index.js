@@ -94,7 +94,7 @@ export class Entity {
  */
 class Archetype {
     /**
-     * @param {number} id - The bitmask representing the component signature of this archetype.
+     * @param {number[]} id - The bitmask array representing the component signature of this archetype.
      * @param {Function[]} componentClasses - An array of component classes that define this archetype.
      */
     constructor(id, componentClasses) {
@@ -265,7 +265,7 @@ class ComponentFactory {
 
 /**
  * @class World
- * @description The main container for entities, components, and systems. Manages the entire state of the ECS.
+ * @description The main container for entities, components, and systems. Manages the entire state of the ECS using a scalable bitmask implementation that supports a large number of components.
  */
 export class World {
     /**
@@ -276,9 +276,12 @@ export class World {
         this.nextEntityID = 0;
         this.systems = [];
         this.componentFactory = new ComponentFactory(this);
+        // Map<ComponentClass, { index: number, wordIndex: number, bit: number }>
         this.componentTypes = new Map();
+        // Map<number, ComponentClass> (global component index to class)
         this.componentClasses = new Map();
         this.nextComponentType = 0;
+        // Map<string, Archetype> (key is bitmask.join(','))
         this.archetypes = new Map();
         this.entityArchetypeMap = new Map();
         this.relationshipGraph = new Graph({
@@ -288,22 +291,19 @@ export class World {
     }
 
     /**
-     * Registers a component class with the world, assigning it a unique bitmask.
+     * Registers a component class with the world, assigning it a unique index and bitmask position.
      * @param {Function} ComponentClass - The component class to register.
      */
     registerComponent(ComponentClass) {
-        if (!this.componentTypes.has(ComponentClass)) {
-            const bit = 1 << this.nextComponentType;
-            if (this.nextComponentType >= 32) {
-                console.error(
-                    "Maximum number of component types (32) exceeded."
-                );
-                return;
-            }
-            this.componentTypes.set(ComponentClass, bit);
-            this.componentClasses.set(bit, ComponentClass);
-            this.nextComponentType++;
-        }
+        if (this.componentTypes.has(ComponentClass)) return;
+
+        const index = this.nextComponentType;
+        const wordIndex = Math.floor(index / 32);
+        const bit = 1 << index % 32;
+
+        this.componentTypes.set(ComponentClass, { index, wordIndex, bit });
+        this.componentClasses.set(index, ComponentClass);
+        this.nextComponentType++;
     }
 
     /**
@@ -353,15 +353,27 @@ export class World {
             this.registerComponent(ComponentClass);
         }
 
+        const numWords = Math.ceil(this.nextComponentType / 32) || 1;
         const oldArchetype = this.entityArchetypeMap.get(entityId);
-        const oldBitmask = oldArchetype ? oldArchetype.id : 0;
-        const newBitmask = oldBitmask | this.componentTypes.get(ComponentClass);
+        const oldBitmask = oldArchetype
+            ? [...oldArchetype.id]
+            : new Array(numWords).fill(0);
 
-        if (oldBitmask === newBitmask) return; // Already has this component type
+        while (oldBitmask.length < numWords) {
+            oldBitmask.push(0);
+        }
+
+        const { wordIndex, bit } = this.componentTypes.get(ComponentClass);
+
+        if (oldArchetype && (oldBitmask[wordIndex] & bit) !== 0) {
+            return;
+        }
+
+        const newBitmask = [...oldBitmask];
+        newBitmask[wordIndex] |= bit;
 
         const newArchetype = this._findOrCreateArchetype(newBitmask);
 
-        // Collect existing components
         const components = new Map();
         if (oldArchetype) {
             const index = oldArchetype.entityMap.get(entityId);
@@ -372,7 +384,6 @@ export class World {
         }
         components.set(ComponentClass, component);
 
-        // Add to the new archetype
         newArchetype.addEntity(entityId, components);
         this.entityArchetypeMap.set(entityId, newArchetype);
     }
@@ -389,15 +400,19 @@ export class World {
         const ComponentClass = this._getComponentClass(componentClassOrName);
         if (!ComponentClass) return;
 
-        const componentBit = this.componentTypes.get(ComponentClass);
-        if (!componentBit || (oldArchetype.id & componentBit) === 0) {
-            return; // Entity doesn't have this component
+        const componentInfo = this.componentTypes.get(ComponentClass);
+        if (!componentInfo) return;
+
+        const { wordIndex, bit } = componentInfo;
+
+        if ((oldArchetype.id[wordIndex] & bit) === 0) {
+            return;
         }
 
-        const newBitmask = oldArchetype.id & ~componentBit;
+        const newBitmask = [...oldArchetype.id];
+        newBitmask[wordIndex] &= ~bit;
         const newArchetype = this._findOrCreateArchetype(newBitmask);
 
-        // Collect components, skipping the one to be removed
         const components = new Map();
         const index = oldArchetype.entityMap.get(entityId);
         for (const C of oldArchetype.componentClasses) {
@@ -406,7 +421,6 @@ export class World {
             }
         }
 
-        // Move entity to the new archetype
         oldArchetype.removeEntity(entityId);
         newArchetype.addEntity(entityId, components);
         this.entityArchetypeMap.set(entityId, newArchetype);
@@ -441,8 +455,14 @@ export class World {
         if (!archetype) return false;
         const ComponentClass = this._getComponentClass(componentClassOrName);
         if (!ComponentClass) return false;
-        const componentBit = this.componentTypes.get(ComponentClass);
-        return (archetype.id & componentBit) !== 0;
+        const componentInfo = this.componentTypes.get(ComponentClass);
+        if (!componentInfo) return false;
+
+        const { wordIndex, bit } = componentInfo;
+
+        if (wordIndex >= archetype.id.length) return false;
+
+        return (archetype.id[wordIndex] & bit) !== 0;
     }
 
     /**
@@ -472,26 +492,29 @@ export class World {
     }
 
     /**
-     * Finds an existing archetype for a given bitmask or creates a new one.
-     * @param {number} bitmask - The component bitmask for the archetype.
+     * Finds an existing archetype for a given bitmask array or creates a new one.
+     * @param {number[]} bitmask - The component bitmask array for the archetype.
      * @returns {Archetype} The found or newly created archetype.
      * @private
      */
     _findOrCreateArchetype(bitmask) {
-        if (this.archetypes.has(bitmask)) {
-            return this.archetypes.get(bitmask);
+        const key = bitmask.join(",");
+        if (this.archetypes.has(key)) {
+            return this.archetypes.get(key);
         }
 
         const componentClasses = [];
         for (let i = 0; i < this.nextComponentType; i++) {
-            const bit = 1 << i;
-            if ((bitmask & bit) === bit) {
-                componentClasses.push(this.componentClasses.get(bit));
+            const { wordIndex, bit } = this.componentTypes.get(
+                this.componentClasses.get(i)
+            );
+            if ((bitmask[wordIndex] & bit) === bit) {
+                componentClasses.push(this.componentClasses.get(i));
             }
         }
 
         const newArchetype = new Archetype(bitmask, componentClasses);
-        this.archetypes.set(bitmask, newArchetype);
+        this.archetypes.set(key, newArchetype);
         return newArchetype;
     }
 
@@ -594,20 +617,33 @@ export class World {
      * @returns {Archetype[]} An array of matching archetypes.
      */
     query(componentClassesOrNames) {
-        let queryBitmask = 0;
+        const numWords = Math.ceil(this.nextComponentType / 32) || 1;
+        const queryBitmask = new Array(numWords).fill(0);
+
         for (const classOrName of componentClassesOrNames) {
             const ComponentClass = this._getComponentClass(classOrName);
             if (ComponentClass && this.componentTypes.has(ComponentClass)) {
-                queryBitmask |= this.componentTypes.get(ComponentClass);
+                const { wordIndex, bit } =
+                    this.componentTypes.get(ComponentClass);
+                queryBitmask[wordIndex] |= bit;
             } else {
-                // If any component is not found, the query can't match anything.
                 return [];
             }
         }
 
         const matchingArchetypes = [];
         for (const archetype of this.archetypes.values()) {
-            if ((archetype.id & queryBitmask) === queryBitmask) {
+            if (archetype.id.length < queryBitmask.length) continue;
+
+            let isMatch = true;
+            for (let i = 0; i < queryBitmask.length; i++) {
+                if ((archetype.id[i] & queryBitmask[i]) !== queryBitmask[i]) {
+                    isMatch = false;
+                    break;
+                }
+            }
+
+            if (isMatch) {
                 matchingArchetypes.push(archetype);
             }
         }
@@ -707,7 +743,9 @@ export class World {
                 continue;
             }
 
-            let finalBitmask = 0;
+            let finalBitmask = new Array(
+                Math.ceil(world.nextComponentType / 32) || 1
+            ).fill(0);
             const componentsMap = new Map();
 
             for (const componentData of entityData.components) {
@@ -718,7 +756,9 @@ export class World {
                     const componentInstance = new ComponentClass();
                     Object.assign(componentInstance, componentData.data);
                     componentsMap.set(ComponentClass, componentInstance);
-                    finalBitmask |= world.componentTypes.get(ComponentClass);
+                    const { wordIndex, bit } =
+                        world.componentTypes.get(ComponentClass);
+                    finalBitmask[wordIndex] |= bit;
                 } else {
                     console.error(
                         `Could not find component class for type "${componentData.type}" during deserialization.`
@@ -727,7 +767,7 @@ export class World {
             }
 
             // Find the correct archetype and add the entity in one shot
-            if (finalBitmask > 0) {
+            if (componentsMap.size > 0) {
                 const targetArchetype =
                     world._findOrCreateArchetype(finalBitmask);
                 targetArchetype.addEntity(entityId, componentsMap);
