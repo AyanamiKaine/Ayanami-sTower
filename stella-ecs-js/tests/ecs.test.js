@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { World, System, Entity, QueryResult } from "../index.js"; // Adjust path to your index.js as needed
+import { World, System, Entity, QueryResult } from "../index.js"; 
 
 // --- Define components needed for the test ---
 class Position { constructor(x = 0, y = 0) { this.x = x; this.y = y; } }
