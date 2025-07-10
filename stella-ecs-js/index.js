@@ -164,7 +164,7 @@ class Archetype {
 
 /**
  * @class QueryResult
- * @description A container for the results of a world query, providing an iterable interface.
+ * @description A container for the results of a world query, providing an iterable interface and array-like methods.
  */
 export class QueryResult {
     /**
@@ -172,10 +172,7 @@ export class QueryResult {
      */
     constructor(archetypes) {
         this.archetypes = archetypes;
-        this.count = archetypes.reduce(
-            (sum, arch) => sum + arch.entityList.length,
-            0
-        );
+        this.count = archetypes.reduce((sum, arch) => sum + arch.entityList.length, 0);
     }
 
     /**
@@ -188,10 +185,7 @@ export class QueryResult {
                 const entityId = archetype.entityList[i];
                 const components = new Map();
                 for (const ComponentClass of archetype.componentClasses) {
-                    components.set(
-                        ComponentClass,
-                        archetype.componentArrays.get(ComponentClass)[i]
-                    );
+                    components.set(ComponentClass, archetype.componentArrays.get(ComponentClass)[i]);
                 }
                 yield { entity: entityId, components: components };
             }
@@ -200,12 +194,58 @@ export class QueryResult {
 
     /**
      * Executes a callback for each entity in the query result.
-     * @param {function({entity: number, components: Map<Function, object>})} callback - The function to execute for each entity.
+     * @param {function({entity: number, components: Map<Function, object>}, number): void} callback - The function to execute for each entity.
      */
     forEach(callback) {
+        let index = 0;
         for (const result of this) {
-            callback(result);
+            callback(result, index++);
         }
+    }
+
+    /**
+     * Creates a new array populated with the results of calling a provided function on every element in the query result.
+     * @param {function({entity: number, components: Map<Function, object>}, number): any} callback - Function that is called for every element.
+     * @returns {any[]} A new array with each element being the result of the callback function.
+     */
+    map(callback) {
+        const results = [];
+        let index = 0;
+        for (const result of this) {
+            results.push(callback(result, index++));
+        }
+        return results;
+    }
+
+    /**
+     * Creates a new array with all elements that pass the test implemented by the provided function.
+     * @param {function({entity: number, components: Map<Function, object>}, number): boolean} callback - Function to test each element. Return true to keep the element, false otherwise.
+     * @returns {Array<{entity: number, components: Map<Function, object>}>} A new array with the elements that pass the test.
+     */
+    filter(callback) {
+        const results = [];
+        let index = 0;
+        for (const result of this) {
+            if (callback(result, index++)) {
+                results.push(result);
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Returns the first element in the query result that satisfies the provided testing function.
+     * @param {function({entity: number, components: Map<Function, object>}, number): boolean} callback - Function to execute on each value.
+     * @returns {{entity: number, components: Map<Function, object>}|undefined} The first element that satisfies the condition; otherwise, undefined.
+     */
+    find(callback) {
+        let index = 0;
+        for (const result of this) {
+            if (callback(result, index++)) {
+                return result;
+            }
+        }
+        return undefined;
     }
 }
 
