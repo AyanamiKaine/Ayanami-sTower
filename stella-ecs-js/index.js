@@ -95,6 +95,7 @@ export class Entity {
 
     /**
      * Creates an undirected connection to another entity.
+     * Entity <-> otherEntity
      * @param {Entity} otherEntity - The entity to connect with.
      * @param {object} [attributes] - Optional attributes for the relationship.
      * @returns {Entity} The entity instance for chaining.
