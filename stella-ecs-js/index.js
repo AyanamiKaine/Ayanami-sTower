@@ -128,12 +128,12 @@ class Archetype {
     /**
      * Removes an entity from this archetype using a swap-and-pop method for efficiency.
      * @param {number} entityId - The ID of the entity to remove.
-     * @returns {{movedEntityId: number|null, oldIndex: number}} An object containing the ID of the entity that was moved to fill the gap, and its old index.
+     * @returns {{movedEntityId: number|null, newIndex: number}} An object containing the ID of the entity that was moved to fill the gap, and the index it was moved to.
      */
     removeEntity(entityId) {
         const indexToRemove = this.entityMap.get(entityId);
         if (indexToRemove === undefined)
-            return { movedEntityId: null, oldIndex: -1 };
+            return { movedEntityId: null, newIndex: -1 };
 
         const lastIndex = this.entityList.length - 1;
         const lastEntityId = this.entityList[lastIndex];
@@ -155,10 +155,11 @@ class Archetype {
         // If the removed entity was not the last one, update the map for the moved entity
         if (indexToRemove !== lastIndex) {
             this.entityMap.set(lastEntityId, indexToRemove);
-            return { movedEntityId: lastEntityId, oldIndex: lastIndex };
+            // The return value is clarified. `newIndex` is the index where the moved entity now resides.
+            return { movedEntityId: lastEntityId, newIndex: indexToRemove };
         }
 
-        return { movedEntityId: null, oldIndex: lastIndex };
+        return { movedEntityId: null, newIndex: lastIndex };
     }
 }
 
@@ -172,7 +173,10 @@ export class QueryResult {
      */
     constructor(archetypes) {
         this.archetypes = archetypes;
-        this.count = archetypes.reduce((sum, arch) => sum + arch.entityList.length, 0);
+        this.count = archetypes.reduce(
+            (sum, arch) => sum + arch.entityList.length,
+            0
+        );
     }
 
     /**
@@ -185,7 +189,10 @@ export class QueryResult {
                 const entityId = archetype.entityList[i];
                 const components = new Map();
                 for (const ComponentClass of archetype.componentClasses) {
-                    components.set(ComponentClass, archetype.componentArrays.get(ComponentClass)[i]);
+                    components.set(
+                        ComponentClass,
+                        archetype.componentArrays.get(ComponentClass)[i]
+                    );
                 }
                 yield { entity: entityId, components: components };
             }
@@ -285,11 +292,14 @@ class ComponentFactory {
      * Creates an instance of a dynamically defined component.
      * @param {string} name - The name of the component to create.
      * @param {object} [initialValues] - The initial values for the component's properties.
-     * @returns {object|null} A new component instance, or null if the definition doesn't exist.
+     * @returns {object} A new component instance.
+     * @throws {Error} If the component definition doesn't exist.
      */
     create(name, initialValues) {
         const ComponentClass = this.definitions.get(name);
-        if (!ComponentClass) return null;
+        if (!ComponentClass) {
+            throw new Error(`Component with name "${name}" is not defined.`);
+        }
         return new ComponentClass(initialValues);
     }
 
@@ -316,14 +326,16 @@ export class World {
         this.nextEntityID = 0;
         this.systems = [];
         this.componentFactory = new ComponentFactory(this);
-        // Map<ComponentClass, { index: number, wordIndex: number, bit: number }>
+
         this.componentTypes = new Map();
-        // Map<number, ComponentClass> (global component index to class)
         this.componentClasses = new Map();
+        this.componentClassNames = new Map();
         this.nextComponentType = 0;
-        // Map<string, Archetype> (key is bitmask.join(','))
-        this.archetypes = new Map();
+
+        this.archetypeTrie = new Map();
         this.entityArchetypeMap = new Map();
+        this.queryCache = new Map();
+
         this.relationshipGraph = new Graph({
             type: graphType,
             allowSelfLoops: false,
@@ -343,6 +355,8 @@ export class World {
 
         this.componentTypes.set(ComponentClass, { index, wordIndex, bit });
         this.componentClasses.set(index, ComponentClass);
+        this.componentClassNames.set(ComponentClass.name, ComponentClass);
+
         this.nextComponentType++;
     }
 
@@ -384,10 +398,10 @@ export class World {
                 componentOrName,
                 initialValues
             );
-            if (!component) return;
         } else {
             component = componentOrName;
         }
+
         const ComponentClass = component.constructor;
         if (!this.componentTypes.has(ComponentClass)) {
             this.registerComponent(ComponentClass);
@@ -406,6 +420,8 @@ export class World {
         const { wordIndex, bit } = this.componentTypes.get(ComponentClass);
 
         if (oldArchetype && (oldBitmask[wordIndex] & bit) !== 0) {
+            const index = oldArchetype.entityMap.get(entityId);
+            oldArchetype.componentArrays.get(ComponentClass)[index] = component;
             return;
         }
 
@@ -493,13 +509,14 @@ export class World {
     hasComponent(entityId, componentClassOrName) {
         const archetype = this.entityArchetypeMap.get(entityId);
         if (!archetype) return false;
+
         const ComponentClass = this._getComponentClass(componentClassOrName);
         if (!ComponentClass) return false;
+
         const componentInfo = this.componentTypes.get(ComponentClass);
         if (!componentInfo) return false;
 
         const { wordIndex, bit } = componentInfo;
-
         if (wordIndex >= archetype.id.length) return false;
 
         return (archetype.id[wordIndex] & bit) !== 0;
@@ -515,20 +532,11 @@ export class World {
         if (typeof componentClassOrName !== "string") {
             return componentClassOrName;
         }
-
         const dynamicClass =
             this.componentFactory.getClass(componentClassOrName);
-        if (dynamicClass) {
-            return dynamicClass;
-        }
+        if (dynamicClass) return dynamicClass;
 
-        for (const componentClass of this.componentTypes.keys()) {
-            if (componentClass.name === componentClassOrName) {
-                return componentClass;
-            }
-        }
-
-        return undefined;
+        return this.componentClassNames.get(componentClassOrName);
     }
 
     /**
@@ -538,53 +546,47 @@ export class World {
      * @private
      */
     _findOrCreateArchetype(bitmask) {
-        const key = bitmask.join(",");
-        if (this.archetypes.has(key)) {
-            return this.archetypes.get(key);
+        let currentNode = this.archetypeTrie;
+        for (let i = 0; i < bitmask.length - 1; i++) {
+            const word = bitmask[i];
+            if (!currentNode.has(word)) {
+                currentNode.set(word, new Map());
+            }
+            currentNode = currentNode.get(word);
+        }
+
+        const lastWord = bitmask[bitmask.length - 1];
+        if (currentNode.has(lastWord)) {
+            return currentNode.get(lastWord);
         }
 
         const componentClasses = [];
         for (let i = 0; i < this.nextComponentType; i++) {
-            const { wordIndex, bit } = this.componentTypes.get(
-                this.componentClasses.get(i)
-            );
-            if ((bitmask[wordIndex] & bit) === bit) {
-                componentClasses.push(this.componentClasses.get(i));
+            const ComponentClass = this.componentClasses.get(i);
+            const { wordIndex, bit } = this.componentTypes.get(ComponentClass);
+            if ((bitmask[wordIndex] & bit) !== 0) {
+                componentClasses.push(ComponentClass);
             }
         }
 
         const newArchetype = new Archetype(bitmask, componentClasses);
-        this.archetypes.set(key, newArchetype);
+        currentNode.set(lastWord, newArchetype);
+
+        this.queryCache.clear();
+
         return newArchetype;
     }
 
     // --- Relationship API ---
 
-    /**
-     * Adds a directed relationship (e.g., parent-child) from a source entity to a target entity.
-     * @param {number} source - The ID of the source entity.
-     * @param {number} target - The ID of the target entity.
-     * @param {object} [attributes={}] - Optional attributes for the relationship edge.
-     */
     addDirectedRelationship(source, target, attributes = {}) {
         this.relationshipGraph.addDirectedEdge(source, target, attributes);
     }
 
-    /**
-     * Adds an undirected relationship (e.g., connection) between two entities.
-     * @param {number} source - The ID of the first entity.
-     * @param {number} target - The ID of the second entity.
-     * @param {object} [attributes={}] - Optional attributes for the relationship edge.
-     */
     addUndirectedRelationship(source, target, attributes = {}) {
         this.relationshipGraph.addUndirectedEdge(source, target, attributes);
     }
 
-    /**
-     * Removes a relationship between two entities.
-     * @param {number} source - The ID of the source entity.
-     * @param {number} target - The ID of the target entity.
-     */
     removeRelationship(source, target) {
         if (this.relationshipGraph.hasEdge(source, target)) {
             this.relationshipGraph.dropEdge(source, target);
@@ -594,43 +596,48 @@ export class World {
     /**
      * Gets the children of an entity (out-neighbors in a directed graph).
      * @param {number} entityId - The ID of the parent entity.
-     * @returns {string[]} An array of child entity IDs.
+     * @returns {number[]} An array of child entity IDs, guaranteed to be numbers.
      */
     getChildren(entityId) {
-        return this.relationshipGraph.outNeighbors(String(entityId));
+        // FIX: Ensure returned IDs are always numbers for API consistency.
+        return this.relationshipGraph.outNeighbors(entityId).map(Number);
     }
 
     /**
      * Gets the parents of an entity (in-neighbors in a directed graph).
      * @param {number} entityId - The ID of the child entity.
-     * @returns {string[]} An array of parent entity IDs.
+     * @returns {number[]} An array of parent entity IDs, guaranteed to be numbers.
      */
     getParents(entityId) {
-        return this.relationshipGraph.inNeighbors(String(entityId));
+        // FIX: Ensure returned IDs are always numbers for API consistency.
+        return this.relationshipGraph.inNeighbors(entityId).map(Number);
     }
 
     /**
      * Gets all connected entities (neighbors in the graph, regardless of direction).
      * @param {number} entityId - The ID of the entity.
-     * @returns {string[]} An array of connected entity IDs.
+     * @returns {number[]} An array of connected entity IDs, guaranteed to be numbers.
      */
     getConnections(entityId) {
-        return this.relationshipGraph.neighbors(String(entityId));
+        // FIX: Ensure returned IDs are always numbers for API consistency.
+        return this.relationshipGraph.neighbors(entityId).map(Number);
     }
 
     /**
      * Gets detailed information about all connections for an entity.
      * @param {number} entityId - The ID of the entity.
-     * @returns {Array<{neighbor: string, kind: 'directed'|'undirected', attributes: object}>} An array of connection details.
+     * @returns {Array<{neighbor: number, kind: 'directed'|'undirected', attributes: object}>} An array of connection details.
      */
     getConnectionsWithDetails(entityId) {
         const connections = [];
         this.relationshipGraph.forEachEdge(
-            String(entityId),
+            entityId,
             (edge, attributes, source, target) => {
-                const neighbor = source == entityId ? target : source;
+                // FIX: Use loose equality `==` to handle string vs number keys after deserialization.
+                const neighborId = source == entityId ? target : source;
                 connections.push({
-                    neighbor: neighbor,
+                    // FIX: Ensure the returned neighbor ID is always a number.
+                    neighbor: Number(neighborId),
                     kind: this.relationshipGraph.isDirected(edge)
                         ? "directed"
                         : "undirected",
@@ -643,20 +650,26 @@ export class World {
 
     // --- System and World Update ---
 
-    /**
-     * Registers a system to be updated on each world tick.
-     * @param {System} system - The system instance to register.
-     */
     registerSystem(system) {
         this.systems.push(system);
     }
 
-    /**
-     * Queries for archetypes that match a set of component classes.
-     * @param {Array<Function|string>} componentClassesOrNames - An array of component classes or names to query for.
-     * @returns {Archetype[]} An array of matching archetypes.
-     */
     query(componentClassesOrNames) {
+        const cacheKey = componentClassesOrNames
+            .map((c) => (typeof c === "string" ? c : c.name))
+            .sort()
+            .join(",");
+
+        if (this.queryCache.has(cacheKey)) {
+            return this.queryCache.get(cacheKey);
+        }
+
+        const archetypes = this._performQuery(componentClassesOrNames);
+        this.queryCache.set(cacheKey, archetypes);
+        return archetypes;
+    }
+
+    _performQuery(componentClassesOrNames) {
         const numWords = Math.ceil(this.nextComponentType / 32) || 1;
         const queryBitmask = new Array(numWords).fill(0);
 
@@ -672,43 +685,60 @@ export class World {
         }
 
         const matchingArchetypes = [];
-        for (const archetype of this.archetypes.values()) {
-            if (archetype.id.length < queryBitmask.length) continue;
-
-            let isMatch = true;
-            for (let i = 0; i < queryBitmask.length; i++) {
-                if ((archetype.id[i] & queryBitmask[i]) !== queryBitmask[i]) {
-                    isMatch = false;
-                    break;
+        const traverse = (node) => {
+            for (const value of node.values()) {
+                if (value instanceof Archetype) {
+                    let isMatch = true;
+                    for (let i = 0; i < queryBitmask.length; i++) {
+                        if (
+                            (value.id[i] & queryBitmask[i]) !==
+                            queryBitmask[i]
+                        ) {
+                            isMatch = false;
+                            break;
+                        }
+                    }
+                    if (isMatch) {
+                        matchingArchetypes.push(value);
+                    }
+                } else if (value instanceof Map) {
+                    traverse(value);
                 }
             }
+        };
 
-            if (isMatch) {
-                matchingArchetypes.push(archetype);
-            }
-        }
+        traverse(this.archetypeTrie);
         return matchingArchetypes;
     }
 
-    /**
-     * Updates the world state by running all registered systems.
-     * @param {number} deltaTime - The time elapsed since the last update.
-     */
     update(deltaTime) {
         for (const system of this.systems) {
             system.update(this, deltaTime);
         }
     }
 
-    // --- Serialization ---
+    // --- Serialization methods ---
 
     /**
      * Serializes the entire world state to a JSON object.
      * @returns {object} A JSON-serializable representation of the world.
      */
     toJSON() {
+        const allArchetypes = [];
+        // Helper function to recursively traverse the archetype trie.
+        const traverse = (node) => {
+            for (const value of node.values()) {
+                if (value instanceof Archetype) {
+                    allArchetypes.push(value);
+                } else if (value instanceof Map) {
+                    traverse(value);
+                }
+            }
+        };
+        traverse(this.archetypeTrie);
+
         const entities = [];
-        for (const archetype of this.archetypes.values()) {
+        for (const archetype of allArchetypes) {
             for (let i = 0; i < archetype.entityList.length; i++) {
                 const entityId = archetype.entityList[i];
                 const components = [];
@@ -758,7 +788,7 @@ export class World {
             graphType: json.graph?.options?.type || "mixed",
         });
 
-        // Register static and dynamic components
+        // Register static and dynamic components. This must be done before creating entities.
         for (const ComponentClass of staticComponents) {
             world.registerComponent(ComponentClass);
         }
@@ -766,21 +796,23 @@ export class World {
             world.componentFactory.define(def.name, def.schema);
         }
 
-        // Import graph structure and set next entity ID
+        world.nextEntityID = json.nextEntityID;
+
+        // Import graph structure. This creates the nodes for the entities.
         if (json.graph) {
             world.relationshipGraph.import(json.graph);
         }
-        world.nextEntityID = json.nextEntityID;
 
-        // Re-create entities and add their components
+        // Re-create entities and add their components. This will build the archetype trie.
         for (const entityData of json.entities) {
             const entityId = entityData.id;
 
+            // Ensure the entity node exists from the graph import
             if (!world.relationshipGraph.hasNode(entityId)) {
                 console.warn(
-                    `Serialized entity ${entityId} not found in graph, skipping.`
+                    `Serialized entity ${entityId} not found in graph, creating it.`
                 );
-                continue;
+                world.relationshipGraph.addNode(entityId);
             }
 
             let finalBitmask = new Array(
@@ -796,6 +828,7 @@ export class World {
                     const componentInstance = new ComponentClass();
                     Object.assign(componentInstance, componentData.data);
                     componentsMap.set(ComponentClass, componentInstance);
+
                     const { wordIndex, bit } =
                         world.componentTypes.get(ComponentClass);
                     finalBitmask[wordIndex] |= bit;
@@ -806,7 +839,8 @@ export class World {
                 }
             }
 
-            // Find the correct archetype and add the entity in one shot
+            // Find the correct archetype and add the entity in one shot.
+            // This efficiently builds the archetype trie.
             if (componentsMap.size > 0) {
                 const targetArchetype =
                     world._findOrCreateArchetype(finalBitmask);
