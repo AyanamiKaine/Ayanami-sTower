@@ -48,7 +48,7 @@ that, but it works.
 
 A common optimization is caching output values of a function so we dont have to recompute them over and over again. The example given is usually the fibonacci sequence. In Raku we can add the `is cached` trait to a function, to enable automatic memoization.
 
-```Raku
+```raku
 sub fib(Int $n where * >= 0) is cached {
     return 1 if $n < 2;
 
@@ -58,7 +58,7 @@ sub fib(Int $n where * >= 0) is cached {
 
 And in python using no automatic memoization:
 
-```Python
+```python
 fib_cache = {}
 
 def fib_manual(n):
