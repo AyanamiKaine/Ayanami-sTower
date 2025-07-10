@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { World, QueryResult } from "../index.js"; // Adjust path as needed
+import { World, QueryResult } from "../stella-ecs.js"; // Adjust path as needed
 
 // --- Components for Query Tests ---
 class Position {

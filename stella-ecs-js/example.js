@@ -1,11 +1,21 @@
-import { World, System } from './index.js';
+import { World, System } from "./stella-ecs.js";
 
 // --- STATIC (PRE-DEFINED) COMPONENTS ---
-class Position { constructor(x = 0, y = 0) { this.x = x; this.y = y; } }
-class Renderable { constructor(char = '?', color = 'white') { this.char = char; this.color = color; } }
-class Player { }
-class Follower { }
-class Ally { }
+class Position {
+    constructor(x = 0, y = 0) {
+        this.x = x;
+        this.y = y;
+    }
+}
+class Renderable {
+    constructor(char = "?", color = "white") {
+        this.char = char;
+        this.color = color;
+    }
+}
+class Player {}
+class Follower {}
+class Ally {}
 
 // --- STATIC (PRE-DEFINED) SYSTEMS ---
 class RenderSystem extends System {
@@ -21,12 +31,16 @@ class RenderSystem extends System {
             const render = components.get(Renderable);
 
             const isPlayer = world.getComponent(entity, Player);
-            const hasMana = world.getComponent(entity, 'Mana');
+            const hasMana = world.getComponent(entity, "Mana");
 
-            let playerTag = isPlayer ? '[PLAYER]' : '';
-            let manaTag = hasMana ? `[MANA: ${hasMana.value.toFixed(0)}]` : '';
+            let playerTag = isPlayer ? "[PLAYER]" : "";
+            let manaTag = hasMana ? `[MANA: ${hasMana.value.toFixed(0)}]` : "";
 
-            console.log(`  -> ${render.char} ${playerTag} at (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}) ${manaTag}`);
+            console.log(
+                `  -> ${render.char} ${playerTag} at (${pos.x.toFixed(
+                    2
+                )}, ${pos.y.toFixed(2)}) ${manaTag}`
+            );
         }
     }
 }
@@ -52,23 +66,24 @@ class RelationshipSystem extends System {
 
             for (const conn of connections) {
                 const { neighbor, kind, attributes } = conn;
-                const type = attributes.type || 'N/A';
-                console.log(`    -> Found a ${kind} relationship of type '${type}' with entity ${neighbor}`);
+                const type = attributes.type || "N/A";
+                console.log(
+                    `    -> Found a ${kind} relationship of type '${type}' with entity ${neighbor}`
+                );
             }
         }
     }
 }
 
-
 // --- SIMULATION SETUP ---
-console.log('--- Initializing ECS World ---');
+console.log("--- Initializing ECS World ---");
 // The world now defaults to 'mixed' graph type, no need to specify it.
 const world = new World();
 
 // --- DYNAMIC DEFINITION ---
-console.log('\n--- Defining Components Dynamically ---');
-world.componentFactory.define('Mana', { value: 100, max: 150 });
-world.componentFactory.define('Health', { value: 80, max: 100 });
+console.log("\n--- Defining Components Dynamically ---");
+world.componentFactory.define("Mana", { value: 100, max: 150 });
+world.componentFactory.define("Health", { value: 80, max: 100 });
 
 // --- DYNAMIC SYSTEM DEFINITION ---
 const manaRegenSystemLogic = `
@@ -90,76 +105,87 @@ const manaRegenSystemLogic = `
 
 const DynamicManaSystem = class extends System {
     constructor() {
-        super(['Mana', Position]);
-        this.execute = new Function('entities', 'world', 'deltaTime', manaRegenSystemLogic);
+        super(["Mana", Position]);
+        this.execute = new Function(
+            "entities",
+            "world",
+            "deltaTime",
+            manaRegenSystemLogic
+        );
     }
-}
+};
 
 // --- REGISTERING SYSTEMS ---
-console.log('\n--- Registering Systems ---');
+console.log("\n--- Registering Systems ---");
 const systemsToRegister = [
     new RenderSystem(),
     new DynamicManaSystem(),
-    new RelationshipSystem()
+    new RelationshipSystem(),
 ];
 for (const system of systemsToRegister) {
     world.registerSystem(system);
 }
 
-
 // --- CREATING ENTITIES & RELATIONSHIPS ---
-console.log('\n--- Creating Entities & Relationships ---');
+console.log("\n--- Creating Entities & Relationships ---");
 const playerEntity = world.createEntity();
 world.addComponent(playerEntity, new Player());
 world.addComponent(playerEntity, new Position(10, 10));
-world.addComponent(playerEntity, new Renderable('P', 'cyan'));
-world.addComponent(playerEntity, 'Mana');
+world.addComponent(playerEntity, new Renderable("P", "cyan"));
+world.addComponent(playerEntity, "Mana");
 
 const followerEntity = world.createEntity();
 world.addComponent(followerEntity, new Follower());
 world.addComponent(followerEntity, new Position(5, 5));
-world.addComponent(followerEntity, new Renderable('F', 'yellow'));
+world.addComponent(followerEntity, new Renderable("F", "yellow"));
 
 const allyEntity = world.createEntity();
 world.addComponent(allyEntity, new Ally());
 world.addComponent(allyEntity, new Position(15, 15));
-world.addComponent(allyEntity, new Renderable('A', 'lime'));
+world.addComponent(allyEntity, new Renderable("A", "lime"));
 
 // Use the new, explicit API to create both types of relationships.
 // 1. A directed relationship: The player leads the follower.
-world.addDirectedRelationship(playerEntity, followerEntity, { type: 'leaderOf' });
-console.log(`Created DIRECTED relationship: Player (${playerEntity}) -> Follower (${followerEntity})`);
+world.addDirectedRelationship(playerEntity, followerEntity, {
+    type: "leaderOf",
+});
+console.log(
+    `Created DIRECTED relationship: Player (${playerEntity}) -> Follower (${followerEntity})`
+);
 
 // 2. An undirected relationship: The player is allied with the ally.
-world.addUndirectedRelationship(playerEntity, allyEntity, { type: 'alliedWith' });
-console.log(`Created UNDIRECTED relationship: Player (${playerEntity}) <-> Ally (${allyEntity})`);
-
+world.addUndirectedRelationship(playerEntity, allyEntity, {
+    type: "alliedWith",
+});
+console.log(
+    `Created UNDIRECTED relationship: Player (${playerEntity}) <-> Ally (${allyEntity})`
+);
 
 // --- RUNNING THE SIMULATION ---
-console.log('\n--- Starting Simulation Loop ---');
+console.log("\n--- Starting Simulation Loop ---");
 world.update(0.16); // Run a single frame
-
 
 // --- SERIALIZATION DEMO ---
 function runSerializationDemo() {
-    console.log('\n\n--- Running Serialization Demo ---');
+    console.log("\n\n--- Running Serialization Demo ---");
 
     const worldState = world.toJSON();
 
-    console.log('\n--- Deserializing into a new World ---');
+    console.log("\n--- Deserializing into a new World ---");
 
     const staticComponents = [Position, Renderable, Player, Follower, Ally];
 
     const newWorld = World.fromJSON(worldState, {
         systems: systemsToRegister,
-        staticComponents: staticComponents
+        staticComponents: staticComponents,
     });
 
-    console.log('\n--- Running first update on the NEW (deserialized) world ---');
+    console.log(
+        "\n--- Running first update on the NEW (deserialized) world ---"
+    );
     newWorld.update(0.16);
-    console.log('--- Serialization Demo Complete ---');
+    console.log("--- Serialization Demo Complete ---");
 }
-
 
 // Run the demo after a short delay
 setTimeout(() => {

@@ -1,11 +1,25 @@
 import { test, expect, describe } from "bun:test";
-import { World, System, Entity } from "../index.js"; // Adjust path as needed
+import { World, System, Entity } from "../stella-ecs.js"; // Adjust path as needed
 
 // --- Components for System Tests ---
-class Position { constructor(x = 0, y = 0) { this.x = x; this.y = y; } }
-class Velocity { constructor(dx = 0, dy = 0) { this.dx = dx; this.dy = dy; } }
-class Health { constructor(value = 100) { this.value = value; } }
-class TakesDamage { } // A "tag" component
+class Position {
+    constructor(x = 0, y = 0) {
+        this.x = x;
+        this.y = y;
+    }
+}
+class Velocity {
+    constructor(dx = 0, dy = 0) {
+        this.dx = dx;
+        this.dy = dy;
+    }
+}
+class Health {
+    constructor(value = 100) {
+        this.value = value;
+    }
+}
+class TakesDamage {} // A "tag" component
 
 // --- Systems for Testing ---
 
@@ -41,24 +55,23 @@ class DamageSystem extends System {
 }
 
 describe("ECS Systems", () => {
-
     test("MovementSystem should update entity positions", () => {
         const world = new World();
         world.registerSystem(new MovementSystem());
 
-        const movingEntity = world.createEntity()
+        const movingEntity = world
+            .createEntity()
             .set(new Position(10, 20))
             .set(new Velocity(5, -2));
 
-        const staticEntity = world.createEntity()
-            .set(new Position(100, 100));
+        const staticEntity = world.createEntity().set(new Position(100, 100));
 
         // Run the world update
         world.update(2.0); // deltaTime of 2 seconds
 
         const pos = movingEntity.get(Position);
         expect(pos.x).toBe(10 + 5 * 2.0); // 20
-        expect(pos.y).toBe(20 + (-2) * 2.0); // 16
+        expect(pos.y).toBe(20 + -2 * 2.0); // 16
 
         // Ensure the static entity was not affected
         const staticPos = staticEntity.get(Position);
@@ -69,15 +82,14 @@ describe("ECS Systems", () => {
         const world = new World();
         world.registerSystem(new DamageSystem(15));
 
-        const vulnerableEntity = world.createEntity()
+        const vulnerableEntity = world
+            .createEntity()
             .set(new Health(100))
             .set(new TakesDamage());
 
-        const invulnerableEntity = world.createEntity()
-            .set(new Health(50)); // Has health but no TakesDamage tag
+        const invulnerableEntity = world.createEntity().set(new Health(50)); // Has health but no TakesDamage tag
 
-        const toughEntity = world.createEntity()
-            .set(new TakesDamage()); // Has tag but no Health component
+        const toughEntity = world.createEntity().set(new TakesDamage()); // Has tag but no Health component
 
         world.update(1.0);
 
@@ -93,7 +105,8 @@ describe("ECS Systems", () => {
         const world = new World();
         world.registerSystem(new MovementSystem());
 
-        const entity = world.createEntity()
+        const entity = world
+            .createEntity()
             .set(new Position(0, 0))
             .set(new Velocity(10, 10));
 
@@ -115,8 +128,7 @@ describe("ECS Systems", () => {
         const world = new World();
         world.registerSystem(new DamageSystem(25));
 
-        const entity = world.createEntity()
-            .set(new Health(100));
+        const entity = world.createEntity().set(new Health(100));
 
         // First update, entity should not take damage
         world.update(1.0);

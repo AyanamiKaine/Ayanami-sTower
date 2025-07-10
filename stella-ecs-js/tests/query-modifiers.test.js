@@ -1,4 +1,4 @@
-import { World, Not, Optional, System, QueryResult } from "../index.js";
+import { World, Not, Optional, System, QueryResult } from "../stella-ecs.js";
 
 // Define some simple components for testing purposes
 class Position {
@@ -161,7 +161,6 @@ describe("Systems with Query Modifiers", () => {
         expect(renderedWithShield.hasShield).toBe(true);
     });
 });
-
 
 describe("Query Modifiers (`Not`, `Optional`)", () => {
     let world;
