@@ -1,0 +1,14 @@
+{
+  "name": "stella-ecs",
+  "module": "index.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "graphology": "^0.26.0"
+  }
+}
