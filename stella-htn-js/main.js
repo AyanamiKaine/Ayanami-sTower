@@ -421,60 +421,580 @@ export class Planner {
 }
 
 /**
- * Manages the step-by-step execution of a plan and monitors for interruptions.
+ * Manages interruption policies and prevents infinite re-planning loops.
  */
-export class PlanExecutor {
-    /**
-     * @param {Array<PrimitiveTask>} plan - The plan to execute.
-     * @param {object} context - The context for the plan.
-     */
-    constructor(plan, context) {
-        this.plan = [...plan];
-        this.context = context;
-        this.currentIndex = 0;
+export class InterruptionManager {
+    constructor(config = {}) {
+        this.config = {
+            maxReplanAttempts: 3,
+            cooldownDuration: 1000, // ms
+            backoffMultiplier: 2,
+            enableCooldown: true,
+            ...config,
+        };
+
+        this.replanHistory = new Map(); // taskName -> { count, lastAttempt, cooldownUntil }
+        this.activeInterruptors = new Map(); // interruptorId -> InterruptorState
+        this.logCallback = () => {};
     }
 
-    isDone() {
-        return this.currentIndex >= this.plan.length;
+    setLogCallback(callback) {
+        this.logCallback = callback;
+    }
+
+    log(type, message, data = {}) {
+        this.logCallback(type, message, data);
     }
 
     /**
-     * Executes the next step of the plan.
-     * @param {function(WorldStateProxy): (boolean|object)} [monitor] - A function to check for plan-invalidating world changes.
-     * If it returns `true` or an object like `{interrupted: true}`, execution stops.
-     * @param {WorldStateProxy} [worldState] - The current world state, required if a monitor is used.
-     * @returns {{interrupted: boolean, task: PrimitiveTask|null, reason?: any}} - The result of the step.
+     * Registers an interruptor that can check for plan invalidation.
+     * @param {string} id - Unique identifier for this interruptor
+     * @param {object} interruptor - The interruptor configuration
      */
-    tick(monitor, worldState) {
-        if (this.isDone()) {
-            return { interrupted: false, task: null };
+    registerInterruptor(id, interruptor) {
+        this.activeInterruptors.set(id, {
+            ...interruptor,
+            id,
+            lastTriggered: 0,
+            triggerCount: 0,
+        });
+    }
+
+    unregisterInterruptor(id) {
+        this.activeInterruptors.delete(id);
+    }
+
+    /**
+     * Checks if we can attempt to replan for a given task.
+     * @param {string} taskName - The name of the task being replanned
+     * @returns {boolean} Whether replanning is allowed
+     */
+    canReplan(taskName) {
+        const now = Date.now();
+        const history = this.replanHistory.get(taskName);
+
+        if (!history) return true;
+
+        // Check if we're still in cooldown
+        if (this.config.enableCooldown && now < history.cooldownUntil) {
+            this.log(
+                "warn",
+                `Replan blocked for ${taskName}: still in cooldown`,
+                {
+                    remainingCooldown: history.cooldownUntil - now,
+                }
+            );
+            return false;
         }
 
-        if (monitor && worldState) {
-            const monitorResult = monitor(worldState);
-            const wasInterrupted =
-                (typeof monitorResult === "boolean" &&
-                    monitorResult === true) ||
-                (monitorResult && monitorResult.interrupted);
+        // Check if we've exceeded max attempts
+        if (history.count >= this.config.maxReplanAttempts) {
+            this.log(
+                "warn",
+                `Replan blocked for ${taskName}: max attempts exceeded`,
+                {
+                    attempts: history.count,
+                    maxAttempts: this.config.maxReplanAttempts,
+                }
+            );
+            return false;
+        }
 
-            if (wasInterrupted) {
-                this.log("PlanExecutor: Monitor triggered. Plan interrupted.");
-                // If the monitor returns a detailed object, pass it through. Otherwise, create a default one.
-                return typeof monitorResult === "object"
-                    ? monitorResult
-                    : { interrupted: true, task: null };
+        return true;
+    }
+
+    /**
+     * Records a replan attempt and updates cooldown.
+     * @param {string} taskName - The name of the task being replanned
+     */
+    recordReplanAttempt(taskName) {
+        const now = Date.now();
+        const history = this.replanHistory.get(taskName) || {
+            count: 0,
+            lastAttempt: 0,
+            cooldownUntil: 0,
+        };
+
+        history.count++;
+        history.lastAttempt = now;
+
+        if (this.config.enableCooldown) {
+            const cooldownDuration =
+                this.config.cooldownDuration *
+                Math.pow(this.config.backoffMultiplier, history.count - 1);
+            history.cooldownUntil = now + cooldownDuration;
+        }
+
+        this.replanHistory.set(taskName, history);
+
+        this.log("info", `Recorded replan attempt for ${taskName}`, {
+            attempt: history.count,
+            cooldownUntil: history.cooldownUntil,
+        });
+    }
+
+    /**
+     * Resets the replan history for a task (e.g., when a plan succeeds).
+     * @param {string} taskName - The name of the task
+     */
+    resetReplanHistory(taskName) {
+        this.replanHistory.delete(taskName);
+        this.log("info", `Reset replan history for ${taskName}`);
+    }
+
+    /**
+     * Checks all registered interruptors and returns the reason for interruption if any.
+     * @param {WorldStateProxy} worldState - Current world state
+     * @param {object} context - Current execution context
+     * @param {PrimitiveTask} currentTask - The task being executed
+     * @returns {object|null} Interruption result or null if no interruption
+     */
+    checkInterruptions(worldState, context, currentTask) {
+        const now = Date.now();
+
+        for (const [id, interruptor] of this.activeInterruptors) {
+            try {
+                const result = interruptor.check(
+                    worldState,
+                    context,
+                    currentTask
+                );
+
+                if (result && result.interrupted) {
+                    interruptor.lastTriggered = now;
+                    interruptor.triggerCount++;
+
+                    this.log("info", `Interruption triggered by ${id}`, {
+                        reason: result.reason,
+                        triggerCount: interruptor.triggerCount,
+                    });
+
+                    return {
+                        ...result,
+                        interruptorId: id,
+                        timestamp: now,
+                    };
+                }
+            } catch (error) {
+                this.log("error", `Interruptor ${id} threw an error:`, error);
             }
         }
 
-        const task = this.plan[this.currentIndex];
-        task.executeOperator(this.context);
-        this.currentIndex++;
-
-        return { interrupted: false, task };
+        return null;
     }
 
-    // Added a simple log method for consistency, can be overridden.
-    log(message) {
-        console.log(message);
+    /**
+     * Clears old replan history entries to prevent memory leaks.
+     * @param {number} maxAge - Maximum age in milliseconds (default: 5 minutes)
+     */
+    cleanup(maxAge = 300000) {
+        const now = Date.now();
+        const cutoff = now - maxAge;
+
+        for (const [taskName, history] of this.replanHistory) {
+            if (history.lastAttempt < cutoff) {
+                this.replanHistory.delete(taskName);
+            }
+        }
+    }
+}
+
+/**
+ * Plan executor with sophisticated interruption handling and automatic replanning.
+ */
+export class PlanExecutor {
+    constructor(plan, context, options = {}) {
+        this.plan = [...plan];
+        this.context = context;
+        this.currentIndex = 0;
+        this.interruptionManager =
+            options.interruptionManager || new InterruptionManager();
+        this.planner = options.planner; // Reference to planner for replanning
+        this.rootTask = options.rootTask; // Original task for replanning
+        this.logCallback = options.logCallback || (() => {});
+
+        // State management
+        this.state = "running"; // 'running', 'interrupted', 'completed', 'failed'
+        this.lastInterruption = null;
+        this.executionStartTime = Date.now();
+
+        // Set up logging
+        this.interruptionManager.setLogCallback(this.logCallback);
+    }
+
+    isDone() {
+        return (
+            this.currentIndex >= this.plan.length || this.state === "completed"
+        );
+    }
+
+    isFailed() {
+        return this.state === "failed";
+    }
+
+    isInterrupted() {
+        return this.state === "interrupted";
+    }
+
+    /**
+     * Executes the next step with intelligent interruption handling.
+     * @param {WorldStateProxy} worldState - Current world state
+     * @param {object} options - Execution options, e.g., { enableReplanning: true }
+     * @returns {object} Execution result with a status like 'executing', 'completed', 'failed', 'replanned'.
+     */
+    tick(worldState, options = {}) {
+        if (this.isDone()) {
+            if (this.state !== "completed") {
+                this.state = "completed";
+                this.logCallback(
+                    "success",
+                    "Plan execution completed successfully."
+                );
+            }
+            return {
+                status: "completed",
+                task: null,
+                executionTime: Date.now() - this.executionStartTime,
+            };
+        }
+
+        if (this.isFailed()) {
+            return {
+                status: "failed",
+                task: null,
+                reason: this.lastInterruption,
+            };
+        }
+
+        const currentTask = this.plan[this.currentIndex];
+
+        // Check for interruptions before executing
+        const interruption = this.interruptionManager.checkInterruptions(
+            worldState,
+            this.context,
+            currentTask
+        );
+
+        if (interruption) {
+            return this.handleInterruption(interruption, worldState, options);
+        }
+
+        // Execute the task
+        try {
+            // Check primitive task conditions again right before execution, as the world might have changed.
+            if (
+                currentTask.conditions &&
+                !currentTask.conditions(worldState, this.context)
+            ) {
+                const conditionFailure = {
+                    interrupted: true,
+                    reason: "preconditions_failed",
+                    taskName: currentTask.name,
+                    message: `Preconditions failed for ${currentTask.name} just before execution.`,
+                };
+                return this.handleInterruption(
+                    conditionFailure,
+                    worldState,
+                    options
+                );
+            }
+
+            currentTask.executeOperator(this.context);
+
+            // It's crucial to apply the effects to the *actual* world state proxy, not a simulated one.
+            if (currentTask.effects) {
+                currentTask.effects(worldState, this.context);
+            }
+
+            this.currentIndex++;
+
+            // Check if the plan is now complete after this step
+            if (this.isDone()) {
+                this.state = "completed";
+                this.logCallback(
+                    "success",
+                    "Plan execution completed successfully."
+                );
+                return {
+                    status: "completed",
+                    task: currentTask,
+                    progress: 1,
+                    executionTime: Date.now() - this.executionStartTime,
+                };
+            }
+
+            return {
+                status: "executing",
+                task: currentTask,
+                progress: this.currentIndex / this.plan.length,
+            };
+        } catch (error) {
+            this.logCallback(
+                "error",
+                `Task execution failed: ${currentTask.name}`,
+                error
+            );
+            const executionFailure = {
+                interrupted: true,
+                reason: "execution_failed",
+                taskName: currentTask.name,
+                error: error.message,
+            };
+            return this.handleInterruption(
+                executionFailure,
+                worldState,
+                options
+            );
+        }
+    }
+
+    /**
+     * Handles interruptions with automatic replanning if possible.
+     * @param {object} interruption - The interruption details
+     * @param {WorldStateProxy} worldState - Current world state
+     * @param {object} options - Execution options
+     * @returns {object} Handling result
+     */
+    handleInterruption(interruption, worldState, options = {}) {
+        this.state = "interrupted";
+        this.lastInterruption = interruption;
+
+        this.logCallback("warn", "Plan interrupted", interruption);
+
+        // If replanning is disabled or not possible, enter failed state
+        if (!options.enableReplanning || !this.planner || !this.rootTask) {
+            this.state = "failed";
+            return {
+                status: "failed",
+                interruption,
+                reason: "replanning_not_available",
+            };
+        }
+
+        // Check if we are allowed to replan (cooldown, max attempts)
+        const taskName = this.rootTask.name || "unknown_root_task";
+        if (!this.interruptionManager.canReplan(taskName)) {
+            this.state = "failed";
+            return {
+                status: "failed",
+                interruption,
+                reason: "replan_cooldown_or_max_attempts",
+            };
+        }
+
+        // Attempt to replan
+        try {
+            this.interruptionManager.recordReplanAttempt(taskName);
+
+            const replanResult = this.planner.findPlan({
+                tasks: this.rootTask,
+                worldState: worldState, // Use the current, changed world state
+                context: this.context,
+            });
+
+            if (replanResult && replanResult.plan.length > 0) {
+                // Successfully replanned
+                this.interruptionManager.resetReplanHistory(taskName);
+                this.plan = [...replanResult.plan];
+                this.context = replanResult.context;
+                this.currentIndex = 0;
+                this.state = "running";
+
+                this.logCallback(
+                    "success",
+                    "Successfully replanned after interruption",
+                    {
+                        newPlanLength: this.plan.length,
+                        reason: interruption.reason,
+                    }
+                );
+
+                return {
+                    status: "replanned",
+                    interruption,
+                    newPlan: this.plan,
+                    newPlanLength: this.plan.length,
+                };
+            } else {
+                // Replanning failed to find a new plan
+                this.state = "failed";
+                this.logCallback(
+                    "error",
+                    "Replanning failed to find a valid plan.",
+                    { reason: interruption.reason }
+                );
+                return {
+                    status: "failed",
+                    interruption,
+                    reason: "replanning_failed",
+                };
+            }
+        } catch (error) {
+            this.logCallback("error", "Replanning threw an error", error);
+            this.state = "failed";
+            return {
+                status: "failed",
+                interruption,
+                reason: "replanning_error",
+                error: error.message,
+            };
+        }
+    }
+
+    /**
+     * Resets the executor state for a fresh start.
+     */
+    reset() {
+        this.currentIndex = 0;
+        this.state = "running";
+        this.lastInterruption = null;
+        this.executionStartTime = Date.now();
+    }
+
+    /**
+     * Gets current execution statistics.
+     * @returns {object} Execution stats
+     */
+    getStats() {
+        return {
+            totalTasks: this.plan.length,
+            completedTasks: this.currentIndex,
+            progress:
+                this.plan.length > 0 ? this.currentIndex / this.plan.length : 0,
+            state: this.state,
+            executionTime: Date.now() - this.executionStartTime,
+            lastInterruption: this.lastInterruption,
+        };
+    }
+}
+
+/**
+ * Utility class for creating common interruptors.
+ */
+export class InterruptorFactory {
+    /**
+     * Creates an interruptor that checks if a target entity still exists.
+     * @param {string} targetKey - The key in context that holds the target
+     * @param {string} entityCollection - The collection name in world state
+     * @returns {object} Interruptor configuration
+     */
+    static createTargetExistsInterruptor(targetKey, entityCollection) {
+        return {
+            check: (worldState, context, currentTask) => {
+                const target = context[targetKey];
+                if (!target) return null;
+
+                const entities = worldState.get(entityCollection) || [];
+                const targetExists = entities.some((e) => e.id === target.id);
+
+                if (!targetExists) {
+                    return {
+                        interrupted: true,
+                        reason: "target_no_longer_exists",
+                        targetId: target.id,
+                        message: `Target ${target.id} no longer exists`,
+                    };
+                }
+                return null;
+            },
+        };
+    }
+
+    /**
+     * Creates an interruptor that checks if the agent is still alive/functional.
+     * @param {string} agentKey - The key in context that holds the agent
+     * @param {string} entityCollection - The collection name in world state
+     * @returns {object} Interruptor configuration
+     */
+    static createAgentHealthInterruptor(agentKey, entityCollection) {
+        return {
+            check: (worldState, context, currentTask) => {
+                const agent = context[agentKey];
+                if (!agent) return null;
+
+                const entities = worldState.get(entityCollection) || [];
+                const currentAgent = entities.find((e) => e.id === agent.id);
+
+                if (!currentAgent || currentAgent.health <= 0) {
+                    return {
+                        interrupted: true,
+                        reason: "agent_dead",
+                        agentId: agent.id,
+                        message: `Agent ${agent.id} is dead or missing`,
+                    };
+                }
+                return null;
+            },
+        };
+    }
+
+    /**
+     * Creates an interruptor that checks if a resource is still available.
+     * @param {string} resourceName - The name of the resource to check
+     * @param {number} requiredAmount - The minimum amount required
+     * @returns {object} Interruptor configuration
+     */
+    static createResourceInterruptor(resourceName, requiredAmount) {
+        return {
+            check: (worldState, context, currentTask) => {
+                const currentAmount = worldState.get(resourceName) || 0;
+
+                if (currentAmount < requiredAmount) {
+                    return {
+                        interrupted: true,
+                        reason: "insufficient_resources",
+                        resourceName,
+                        required: requiredAmount,
+                        available: currentAmount,
+                        message: `Insufficient ${resourceName}: need ${requiredAmount}, have ${currentAmount}`,
+                    };
+                }
+                return null;
+            },
+        };
+    }
+
+    /**
+     * Creates an interruptor that checks if a task type should be interrupted.
+     * @param {Array<string>} taskNames - Task names to monitor
+     * @param {function} condition - Function that returns interruption if condition is met
+     * @returns {object} Interruptor configuration
+     */
+    static createTaskSpecificInterruptor(taskNames, condition) {
+        return {
+            check: (worldState, context, currentTask) => {
+                if (!taskNames.includes(currentTask.name)) {
+                    return null;
+                }
+
+                return condition(worldState, context, currentTask);
+            },
+        };
+    }
+
+    /**
+     * Creates an interruptor that triggers after a certain time limit.
+     * @param {number} timeLimit - Time limit in milliseconds
+     * @returns {object} Interruptor configuration
+     */
+    static createTimeoutInterruptor(timeLimit) {
+        const startTime = Date.now();
+
+        return {
+            check: (worldState, context, currentTask) => {
+                const elapsed = Date.now() - startTime;
+
+                if (elapsed > timeLimit) {
+                    return {
+                        interrupted: true,
+                        reason: "timeout",
+                        timeLimit,
+                        elapsed,
+                        message: `Execution timeout: ${elapsed}ms > ${timeLimit}ms`,
+                    };
+                }
+                return null;
+            },
+        };
     }
 }
