@@ -122,8 +122,6 @@ const fleeToSafety = new PrimitiveTask("Flee to Safety", {
 });
 const standAlert = new PrimitiveTask("Stand Alert", {});
 
-// NO LONGER NEEDED: const useSmartObject = new PrimitiveTask(...)
-
 console.log("--- Defining AI Compound Tasks ---");
 const patrolRoute = new CompoundTask("Patrol Route", [
     {
