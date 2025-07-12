@@ -8,7 +8,7 @@ import {
     smartActionLibrary,
     SmartObjectTask,
     TaskDiscoverer,
-} from "../main.js";
+} from "../stella-htn.js";
 
 // =============================================================================
 // 1. DEFINE SMART ACTION LOGIC

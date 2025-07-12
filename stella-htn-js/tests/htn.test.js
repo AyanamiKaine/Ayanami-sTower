@@ -12,7 +12,7 @@ import {
     smartActionLibrary,
     TaskDiscoverer,
     SmartObjectTask,
-} from "../main"; // Assuming your updated library is in main.js
+} from "../stella-htn";
 
 // Helper function to run the async generator planner to completion.
 // This simplifies all the tests that need to get a final plan.

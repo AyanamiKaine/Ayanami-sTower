@@ -1,6 +1,6 @@
 {
   "name": "stella-htn-js",
-  "module": "main.js",
+  "module": "stella-htn.js",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest"
