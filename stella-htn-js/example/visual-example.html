@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTN Planner Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            /* bg-gray-900 */
+            color: #d1d5db;
+            /* text-gray-300 */
+        }
+
+        .font-mono {
+            font-family: 'Fira Code', monospace;
+        }
+
+        .tab-button.active {
+            background-color: #3b82f6;
+            /* bg-blue-600 */
+            color: white;
+        }
+
+        .log-entry {
+            border-left-width: 4px;
+            padding-left: 0.75rem;
+        }
+
+        .log-info {
+            border-color: #3b82f6;
+        }
+
+        /* border-blue-500 */
+        .log-success {
+            border-color: #22c55e;
+        }
+
+        /* border-green-500 */
+        .log-fail {
+            border-color: #ef4444;
+        }
+
+        /* border-red-500 */
+        .log-warn {
+            border-color: #f97316;
+        }
+
+        /* border-orange-500 */
+        .world-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 4px;
+            aspect-ratio: 1 / 1;
+            background-color: #374151;
+            /* bg-gray-700 */
+            border-radius: 0.5rem;
+            padding: 4px;
+            border: 2px solid #4b5563;
+            /* border-gray-600 */
+        }
+
+        .world-cell {
+            background-color: #4b5563;
+            /* bg-gray-600 */
+            border-radius: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            line-height: 1;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .agent {
+            background-color: #3b82f6 !important;
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body class="p-4 lg:p-8">
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left Column: World and Status -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <h1 class="text-2xl font-bold text-white mb-2">HTN Planner Visualization</h1>
+                <p class="text-gray-400">An interactive demonstration of your Hierarchical Task Network planner. The
+                    agent needs to craft a sword, which requires gathering wood and iron ore first.</p>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <h2 class="text-lg font-semibold text-white mb-3">Controls</h2>
+                <button id="start-button"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Start Planning & Execution
+                </button>
+                <button id="reset-button"
+                    class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors mt-2">
+                    Reset
+                </button>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <h2 class="text-lg font-semibold text-white mb-3">Visual World</h2>
+                <div id="world-container" class="world-grid"></div>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <h2 class="text-lg font-semibold text-white mb-3">Agent Status</h2>
+                <div id="status-container" class="space-y-2 text-sm">
+                    <p><strong>Goal:</strong> <span id="status-goal" class="font-mono text-blue-400">Idle</span></p>
+                    <p><strong>Current Action:</strong> <span id="status-action"
+                            class="font-mono text-blue-400">None</span></p>
+                    <p><strong>Inventory:</strong> <span id="status-inventory"
+                            class="font-mono text-green-400">{}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Plan and Logs -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-gray-800 p-4 rounded-lg shadow-lg">
+                <h2 class="text-lg font-semibold text-white mb-3">Final Plan</h2>
+                <ul id="plan-list" class="space-y-2 text-sm">
+                    <li class="text-gray-500">No plan generated yet.</li>
+                </ul>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-lg shadow-lg h-[40rem] flex flex-col">
+                <div class="flex border-b border-gray-700 mb-3">
+                    <button id="tab-metrics"
+                        class="tab-button active py-2 px-4 font-semibold rounded-t-lg">Metrics</button>
+                    <button id="tab-logs" class="tab-button py-2 px-4 font-semibold rounded-t-lg">Logs</button>
+                </div>
+                <div id="metrics-panel" class="flex-grow">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div>
+                            <p class="text-sm text-gray-400">Planning Time</p>
+                            <p id="metric-time" class="text-2xl font-bold text-white">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Nodes Explored</p>
+                            <p id="metric-nodes" class="text-2xl font-bold text-white">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Plan Length</p>
+                            <p id="metric-length" class="text-2xl font-bold text-white">-</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-400">Backtracks</p>
+                            <p id="metric-backtracks" class="text-2xl font-bold text-white">-</p>
+                        </div>
+                    </div>
+                    <div id="metric-cache"
+                        class="mt-4 text-center p-2 rounded-lg bg-gray-700 text-white font-semibold hidden">
+                        Cache Hit! Plan loaded instantly.
+                    </div>
+                </div>
+                <div id="logs-panel" class="flex-grow overflow-y-auto hidden font-mono text-xs space-y-2">
+                    <p class="text-gray-500">Logs will appear here...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // ===================================================================================
+        // == YOUR HTN PLANNER LIBRARY CODE
+        // == I've pasted your entire library here and removed the `export` keywords
+        // == so it's all available within this single module script.
+        // ===================================================================================
+
+        class WorldStateProxy {
+            constructor({
+                getState,
+                setState,
+                clone,
+                incrementState,
+                generateCacheKey,
+                updateObject,
+            }) {
+                if (
+                    typeof getState !== "function" ||
+                    typeof setState !== "function" ||
+                    typeof clone !== "function"
+                ) {
+                    throw new Error(
+                        "WorldStateProxy requires 'getState', 'setState', and 'clone' functions."
+                    );
+                }
+                this._getState = getState;
+                this._setState = setState;
+                this._clone = clone;
+                this._incrementState = incrementState;
+                this._generateCacheKey = generateCacheKey;
+                this._updateObject = updateObject;
+            }
+
+            get(key) {
+                return this._getState(key);
+            }
+            set(key, value) {
+                this._setState(key, value);
+            }
+            clone() {
+                return this._clone();
+            }
+
+            increment(key, value = 1) {
+                if (this._incrementState) {
+                    this._incrementState(key, value);
+                } else {
+                    const currentValue = this.get(key);
+                    this.set(
+                        key,
+                        (typeof currentValue === "number" ? currentValue : 0) + value
+                    );
+                }
+            }
+
+            updateObject(id, newProperties) {
+                if (this._updateObject) {
+                    this._updateObject(id, newProperties);
+                } else {
+                    const objects = this.get("worldObjects") || [];
+                    const objectIndex = objects.findIndex((o) => o.id === id);
+                    if (objectIndex !== -1) {
+                        objects[objectIndex] = {
+                            ...objects[objectIndex],
+                            ...newProperties,
+                        };
+                        this.set("worldObjects", objects);
+                    }
+                }
+            }
+
+            getCacheKey() {
+                if (this._generateCacheKey) {
+                    return this._generateCacheKey();
+                }
+                return JSON.stringify(this._getState());
+            }
+        }
+
+        class Task {
+            constructor(name) {
+                this.name = name;
+            }
+        }
+
+        class PrimitiveTask extends Task {
+            constructor(
+                name, {
+                    conditions = () => true,
+                    effects = () => { },
+                    operator = () => { },
+                } = {}
+            ) {
+                super(name);
+                this.isPrimitive = true;
+                this.conditions = conditions;
+                this.effects = effects;
+                this.operator = operator;
+            }
+
+            executeOperator(context) {
+                this.operator(context);
+            }
+        }
+
+        class SmartObjectTask extends PrimitiveTask {
+            constructor(name, smartObject, logic) {
+                super(name, {
+                    conditions: (ws, ctx) => logic.conditions(ws, ctx, smartObject),
+                    effects: (ws, ctx) => logic.effects(ws, ctx, smartObject),
+                    operator: (ctx) => {
+                        const operatorContext = { ...ctx, smartObject };
+                        logic.operator(operatorContext);
+                    },
+                });
+                this.smartObject = smartObject;
+                this.actionType = logic.actionType;
+            }
+        }
+
+        class CompoundTask extends Task {
+            constructor(name, methods = []) {
+                super(name);
+                this.isPrimitive = false;
+                methods.forEach((m, i) => {
+                    if (!m.name || !Array.isArray(m.subtasks)) {
+                        throw new Error(
+                            `Invalid method structure at index ${i} in CompoundTask '${name}'. Methods must have a 'name' and a 'subtasks' array.`
+                        );
+                    }
+                });
+                this.methods = methods
+                    .map((m) => ({
+                        ...m,
+                        priority: m.priority || 0,
+                    }))
+                    .sort((a, b) => b.priority - a.priority);
+            }
+
+            findApplicableMethod(worldState, context) {
+                for (let i = 0; i < this.methods.length; i++) {
+                    const method = this.methods[i];
+                    if (!method.conditions || method.conditions(worldState, context)) {
+                        return { method, index: i };
+                    }
+                }
+                return null;
+            }
+        }
+
+        class PlanningError extends Error {
+            constructor(message) {
+                super(message);
+                this.name = "PlanningError";
+            }
+        }
+        class TaskNotFoundError extends PlanningError {
+            constructor(taskName) {
+                super(`Task '${taskName}' not found in registry.`);
+                this.name = "TaskNotFoundError";
+                this.taskName = taskName;
+            }
+        }
+        class PlanningTimeoutError extends PlanningError {
+            constructor(message) {
+                super(message);
+                this.name = "PlanningTimeoutError";
+            }
+        }
+
+        class Planner {
+            constructor(config = {}) {
+                this.config = {
+                    maxIterations: 1000,
+                    maxTime: Infinity,
+                    enablePlanCaching: true,
+                    ...config,
+                };
+                this.logCallback = () => { };
+                this.taskRegistry = {};
+                this.planCache = new Map();
+                this.metrics = {};
+            }
+
+            registerTask(task) {
+                this.taskRegistry[task.name] = task;
+            }
+            setLogCallback(callback) {
+                this.logCallback = callback;
+            }
+            getMetrics() {
+                return this.metrics;
+            }
+            clearCache() {
+                this.planCache.clear();
+            }
+            log(type, message, data = {}) {
+                this.logCallback(type, message, data);
+            }
+
+            _findBacktrackPoint(decompositionHistory) {
+                while (decompositionHistory.length > 0) {
+                    const lastDecomp = decompositionHistory.pop();
+                    const {
+                        compoundTask,
+                        lastMethodIndex,
+                        worldState,
+                        context,
+                        planState,
+                        remainingTasks,
+                    } = lastDecomp;
+
+                    for (
+                        let i = lastMethodIndex + 1; i < compoundTask.methods.length; i++
+                    ) {
+                        const nextMethod = compoundTask.methods[i];
+                        if (
+                            !nextMethod.conditions ||
+                            nextMethod.conditions(worldState, context)
+                        ) {
+                            this.log(
+                                "info",
+                                `Found backtrack point. Trying method '${nextMethod.name}' for ${compoundTask.name}.`
+                            );
+                            decompositionHistory.push({
+                                compoundTask,
+                                lastMethodIndex: i,
+                                worldState: worldState.clone(),
+                                context: structuredClone(context),
+                                planState: [...planState],
+                                remainingTasks: [...remainingTasks],
+                            });
+                            return {
+                                worldState,
+                                context,
+                                planState,
+                                tasksToProcess: [
+                                    ...nextMethod.subtasks,
+                                    ...remainingTasks,
+                                ],
+                            };
+                        }
+                    }
+                    this.log(
+                        "info",
+                        `No more methods to try for ${compoundTask.name}. Backtracking further...`
+                    );
+                }
+                return null;
+            }
+
+            findPlan({
+                tasks,
+                worldState,
+                context = {}
+            }) {
+                const startTime = performance.now();
+                let backtrackCount = 0;
+
+                TaskDiscoverer.discoverAndRegister(this, worldState);
+
+                const isInitialPlan = tasks instanceof Task;
+                const cacheKey =
+                    this.config.enablePlanCaching && isInitialPlan ?
+                        `${tasks.name}:${worldState.getCacheKey()}` :
+                        null;
+
+                if (cacheKey && this.planCache.has(cacheKey)) {
+                    this.metrics = {
+                        planningTime: performance.now() - startTime,
+                        nodesExplored: 0,
+                        planLength: this.planCache.get(cacheKey).plan.length,
+                        backtrackCount: 0,
+                        cacheHit: true,
+                    };
+                    this.log("success", "Plan found in cache.", {
+                        metrics: this.metrics,
+                    });
+                    return this.planCache.get(cacheKey);
+                }
+
+                this.log("info", `Starting planning...`);
+
+                let finalPlan = [];
+                let tasksToProcess = Array.isArray(tasks) ? [...tasks] : [tasks];
+                let workingWorldState = worldState.clone();
+                let workingContext = structuredClone(context);
+                const decompositionHistory = [];
+                let iterations = 0;
+
+                while (tasksToProcess.length > 0) {
+                    if (++iterations > this.config.maxIterations)
+                        throw new PlanningTimeoutError(
+                            `Max iterations (${this.config.maxIterations}) reached.`
+                        );
+                    if (performance.now() - startTime > this.config.maxTime)
+                        throw new PlanningTimeoutError(
+                            `Planning time exceeded ${this.config.maxTime}ms.`
+                        );
+
+                    let currentTask = tasksToProcess.shift();
+
+                    if (typeof currentTask === "string") {
+                        const taskName = currentTask;
+                        currentTask = this.taskRegistry[taskName];
+                        if (!currentTask) throw new TaskNotFoundError(taskName);
+                    }
+
+                    try {
+                        if (currentTask.isPrimitive) {
+                            if (
+                                currentTask.conditions(
+                                    workingWorldState,
+                                    workingContext
+                                )
+                            ) {
+                                currentTask.effects(workingWorldState, workingContext);
+                                finalPlan.push(currentTask);
+                            } else {
+                                throw new PlanningError(
+                                    `Conditions FAILED for ${currentTask.name}.`
+                                );
+                            }
+                        } else {
+                            const result = currentTask.findApplicableMethod(
+                                workingWorldState,
+                                workingContext
+                            );
+                            if (result) {
+                                const {
+                                    method,
+                                    index
+                                } = result;
+                                decompositionHistory.push({
+                                    compoundTask: currentTask,
+                                    lastMethodIndex: index,
+                                    worldState: workingWorldState.clone(),
+                                    context: structuredClone(workingContext),
+                                    planState: [...finalPlan],
+                                    remainingTasks: [...tasksToProcess],
+                                });
+                                tasksToProcess.unshift(...method.subtasks);
+                            } else {
+                                throw new PlanningError(
+                                    `No applicable method found for ${currentTask.name}.`
+                                );
+                            }
+                        }
+                    } catch (e) {
+                        if (e instanceof TaskNotFoundError) throw e;
+
+                        this.log("fail", e.message + " Backtracking...");
+                        backtrackCount++;
+                        const backtrackPoint =
+                            this._findBacktrackPoint(decompositionHistory);
+
+                        if (backtrackPoint) {
+                            workingWorldState = backtrackPoint.worldState;
+                            workingContext = backtrackPoint.context;
+                            finalPlan = [...backtrackPoint.planState];
+                            tasksToProcess = [...backtrackPoint.tasksToProcess];
+                        } else {
+                            this.log(
+                                "fail",
+                                "Backtracking failed at the root. No plan found."
+                            );
+                            return null;
+                        }
+                    }
+                }
+
+                const result = {
+                    plan: finalPlan,
+                    context: workingContext
+                };
+
+                this.metrics = {
+                    planningTime: performance.now() - startTime,
+                    nodesExplored: iterations,
+                    planLength: finalPlan.length,
+                    backtrackCount,
+                    cacheHit: false,
+                };
+                this.log("success", "Planning complete! Final plan generated.", {
+                    metrics: this.metrics,
+                });
+
+                if (cacheKey) this.planCache.set(cacheKey, result);
+
+                return result;
+            }
+        }
+
+        class InterruptionManager {
+            constructor(config = {}) {
+                this.config = {
+                    maxReplanAttempts: 3,
+                    cooldownDuration: 1000, // ms
+                    backoffMultiplier: 2,
+                    enableCooldown: true,
+                    ...config,
+                };
+
+                this.replanHistory = new Map(); // taskName -> { count, lastAttempt, cooldownUntil }
+                this.activeInterruptors = new Map(); // interruptorId -> InterruptorState
+                this.logCallback = () => { };
+            }
+
+            setLogCallback(callback) {
+                this.logCallback = callback;
+            }
+
+            log(type, message, data = {}) {
+                this.logCallback(type, message, data);
+            }
+
+            registerInterruptor(id, interruptor) {
+                this.activeInterruptors.set(id, {
+                    ...interruptor,
+                    id,
+                    lastTriggered: 0,
+                    triggerCount: 0,
+                });
+            }
+
+            unregisterInterruptor(id) {
+                this.activeInterruptors.delete(id);
+            }
+
+            canReplan(taskName) {
+                const now = Date.now();
+                const history = this.replanHistory.get(taskName);
+
+                if (!history) return true;
+
+                if (this.config.enableCooldown && now < history.cooldownUntil) {
+                    this.log(
+                        "warn",
+                        `Replan blocked for ${taskName}: still in cooldown`, {
+                        remainingCooldown: history.cooldownUntil - now,
+                    }
+                    );
+                    return false;
+                }
+
+                if (history.count >= this.config.maxReplanAttempts) {
+                    this.log(
+                        "warn",
+                        `Replan blocked for ${taskName}: max attempts exceeded`, {
+                        attempts: history.count,
+                        maxAttempts: this.config.maxReplanAttempts,
+                    }
+                    );
+                    return false;
+                }
+
+                return true;
+            }
+
+            recordReplanAttempt(taskName) {
+                const now = Date.now();
+                const history = this.replanHistory.get(taskName) || {
+                    count: 0,
+                    lastAttempt: 0,
+                    cooldownUntil: 0,
+                };
+
+                history.count++;
+                history.lastAttempt = now;
+
+                if (this.config.enableCooldown) {
+                    const cooldownDuration =
+                        this.config.cooldownDuration *
+                        Math.pow(this.config.backoffMultiplier, history.count - 1);
+                    history.cooldownUntil = now + cooldownDuration;
+                }
+
+                this.replanHistory.set(taskName, history);
+
+                this.log("info", `Recorded replan attempt for ${taskName}`, {
+                    attempt: history.count,
+                    cooldownUntil: history.cooldownUntil,
+                });
+            }
+
+            resetReplanHistory(taskName) {
+                this.replanHistory.delete(taskName);
+                this.log("info", `Reset replan history for ${taskName}`);
+            }
+
+            checkInterruptions(worldState, context, currentTask) {
+                const now = Date.now();
+
+                for (const [id, interruptor] of this.activeInterruptors) {
+                    try {
+                        const result = interruptor.check(
+                            worldState,
+                            context,
+                            currentTask
+                        );
+
+                        if (result && result.interrupted) {
+                            interruptor.lastTriggered = now;
+                            interruptor.triggerCount++;
+
+                            this.log("info", `Interruption triggered by ${id}`, {
+                                reason: result.reason,
+                                triggerCount: interruptor.triggerCount,
+                            });
+
+                            return {
+                                ...result,
+                                interruptorId: id,
+                                timestamp: now,
+                            };
+                        }
+                    } catch (error) {
+                        this.log("error", `Interruptor ${id} threw an error:`, error);
+                    }
+                }
+
+                return null;
+            }
+
+            cleanup(maxAge = 300000) {
+                const now = Date.now();
+                const cutoff = now - maxAge;
+
+                for (const [taskName, history] of this.replanHistory) {
+                    if (history.lastAttempt < cutoff) {
+                        this.replanHistory.delete(taskName);
+                    }
+                }
+            }
+        }
+
+        const smartActionLibrary = {};
+
+        class TaskDiscoverer {
+            static discoverAndRegister(planner, worldState) {
+                const worldObjects = worldState.get("worldObjects") || [];
+                let discoveredCount = 0;
+
+                for (const obj of worldObjects) {
+                    if (!obj.smartLink || !obj.smartLink.actionType) continue;
+
+                    const actionType = obj.smartLink.actionType;
+                    const actionLogic = smartActionLibrary[actionType];
+
+                    if (actionLogic) {
+                        const taskName = `${actionType}_${obj.id}`;
+                        if (planner.taskRegistry[taskName]) continue; // Already registered
+
+                        const newTask = new SmartObjectTask(taskName, obj, {
+                            ...actionLogic,
+                            actionType
+                        });
+                        planner.registerTask(newTask);
+                        discoveredCount++;
+                    }
+                }
+                return discoveredCount;
+            }
+        }
+
+        class PlanExecutor {
+            constructor(plan, context, options = {}) {
+                this.plan = [...plan];
+                this.context = context;
+                this.currentIndex = 0;
+                this.interruptionManager =
+                    options.interruptionManager || new InterruptionManager();
+                this.planner = options.planner; // Reference to planner for replanning
+                this.rootTask = options.rootTask; // Original task for replanning
+                this.logCallback = options.logCallback || (() => { });
+
+                // State management
+                this.state = "running"; // 'running', 'interrupted', 'completed', 'failed'
+                this.lastInterruption = null;
+                this.executionStartTime = Date.now();
+
+                // Set up logging
+                this.interruptionManager.setLogCallback(this.logCallback);
+            }
+
+            isDone() {
+                return (
+                    this.currentIndex >= this.plan.length || this.state === "completed"
+                );
+            }
+
+            isFailed() {
+                return this.state === "failed";
+            }
+
+            isInterrupted() {
+                return this.state === "interrupted";
+            }
+
+            tick(worldState, options = {}) {
+                if (this.isDone()) {
+                    if (this.state !== "completed") {
+                        this.state = "completed";
+                        this.logCallback(
+                            "success",
+                            "Plan execution completed successfully."
+                        );
+                    }
+                    return {
+                        status: "completed",
+                        task: null,
+                        executionTime: Date.now() - this.executionStartTime,
+                    };
+                }
+
+                if (this.isFailed()) {
+                    return {
+                        status: "failed",
+                        task: null,
+                        reason: this.lastInterruption,
+                    };
+                }
+
+                const currentTask = this.plan[this.currentIndex];
+
+                // Check for interruptions before executing
+                const interruption = this.interruptionManager.checkInterruptions(
+                    worldState,
+                    this.context,
+                    currentTask
+                );
+
+                if (interruption) {
+                    return this.handleInterruption(interruption, worldState, options);
+                }
+
+                // Execute the task
+                try {
+                    // Check primitive task conditions again right before execution, as the world might have changed.
+                    if (
+                        currentTask.conditions &&
+                        !currentTask.conditions(worldState, this.context)
+                    ) {
+                        const conditionFailure = {
+                            interrupted: true,
+                            reason: "preconditions_failed",
+                            taskName: currentTask.name,
+                            message: `Preconditions failed for ${currentTask.name} just before execution.`,
+                        };
+                        return this.handleInterruption(
+                            conditionFailure,
+                            worldState,
+                            options
+                        );
+                    }
+
+                    currentTask.executeOperator(this.context);
+
+                    // It's crucial to apply the effects to the *actual* world state proxy, not a simulated one.
+                    if (currentTask.effects) {
+                        currentTask.effects(worldState, this.context);
+                    }
+
+                    this.currentIndex++;
+
+                    // Check if the plan is now complete after this step
+                    if (this.isDone()) {
+                        this.state = "completed";
+                        this.logCallback(
+                            "success",
+                            "Plan execution completed successfully."
+                        );
+                        return {
+                            status: "completed",
+                            task: currentTask,
+                            progress: 1,
+                            executionTime: Date.now() - this.executionStartTime,
+                        };
+                    }
+
+                    return {
+                        status: "executing",
+                        task: currentTask,
+                        progress: this.currentIndex / this.plan.length,
+                    };
+                } catch (error) {
+                    this.logCallback(
+                        "error",
+                        `Task execution failed: ${currentTask.name}`,
+                        error
+                    );
+                    const executionFailure = {
+                        interrupted: true,
+                        reason: "execution_failed",
+                        taskName: currentTask.name,
+                        error: error.message,
+                    };
+                    return this.handleInterruption(
+                        executionFailure,
+                        worldState,
+                        options
+                    );
+                }
+            }
+
+            handleInterruption(interruption, worldState, options = {}) {
+                this.state = "interrupted";
+                this.lastInterruption = interruption;
+
+                this.logCallback("warn", "Plan interrupted", interruption);
+
+                // If replanning is disabled or not possible, enter failed state
+                if (!options.enableReplanning || !this.planner || !this.rootTask) {
+                    this.state = "failed";
+                    return {
+                        status: "failed",
+                        interruption,
+                        reason: "replanning_not_available",
+                    };
+                }
+
+                // Check if we are allowed to replan (cooldown, max attempts)
+                const taskName = this.rootTask.name || "unknown_root_task";
+                if (!this.interruptionManager.canReplan(taskName)) {
+                    this.state = "failed";
+                    return {
+                        status: "failed",
+                        interruption,
+                        reason: "replan_cooldown_or_max_attempts",
+                    };
+                }
+
+                // Attempt to replan
+                try {
+                    this.interruptionManager.recordReplanAttempt(taskName);
+
+                    const replanResult = this.planner.findPlan({
+                        tasks: this.rootTask,
+                        worldState: worldState, // Use the current, changed world state
+                        context: this.context,
+                    });
+
+                    if (replanResult && replanResult.plan.length > 0) {
+                        // Successfully replanned
+                        this.interruptionManager.resetReplanHistory(taskName);
+                        this.plan = [...replanResult.plan];
+                        this.context = replanResult.context;
+                        this.currentIndex = 0;
+                        this.state = "running";
+
+                        this.logCallback(
+                            "success",
+                            "Successfully replanned after interruption", {
+                            newPlanLength: this.plan.length,
+                            reason: interruption.reason,
+                        }
+                        );
+
+                        return {
+                            status: "replanned",
+                            interruption,
+                            newPlan: this.plan,
+                            newPlanLength: this.plan.length,
+                        };
+                    } else {
+                        // Replanning failed to find a new plan
+                        this.state = "failed";
+                        this.logCallback(
+                            "error",
+                            "Replanning failed to find a valid plan.", { reason: interruption.reason }
+                        );
+                        return {
+                            status: "failed",
+                            interruption,
+                            reason: "replanning_failed",
+                        };
+                    }
+                } catch (error) {
+                    this.logCallback("error", "Replanning threw an error", error);
+                    this.state = "failed";
+                    return {
+                        status: "failed",
+                        interruption,
+                        reason: "replanning_error",
+                        error: error.message,
+                    };
+                }
+            }
+
+            reset() {
+                this.currentIndex = 0;
+                this.state = "running";
+                this.lastInterruption = null;
+                this.executionStartTime = Date.now();
+            }
+
+            getStats() {
+                return {
+                    totalTasks: this.plan.length,
+                    completedTasks: this.currentIndex,
+                    progress: this.plan.length > 0 ? this.currentIndex / this.plan.length : 0,
+                    state: this.state,
+                    executionTime: Date.now() - this.executionStartTime,
+                    lastInterruption: this.lastInterruption,
+                };
+            }
+        }
+
+        class InterruptorFactory {
+            static createTargetExistsInterruptor(targetKey, entityCollection) {
+                return {
+                    check: (worldState, context, currentTask) => {
+                        const target = context[targetKey];
+                        if (!target) return null;
+
+                        const entities = worldState.get(entityCollection) || [];
+                        const targetExists = entities.some((e) => e.id === target.id);
+
+                        if (!targetExists) {
+                            return {
+                                interrupted: true,
+                                reason: "target_no_longer_exists",
+                                targetId: target.id,
+                                message: `Target ${target.id} no longer exists`,
+                            };
+                        }
+                        return null;
+                    },
+                };
+            }
+
+            static createAgentHealthInterruptor(agentKey, entityCollection) {
+                return {
+                    check: (worldState, context, currentTask) => {
+                        const agent = context[agentKey];
+                        if (!agent) return null;
+
+                        const entities = worldState.get(entityCollection) || [];
+                        const currentAgent = entities.find((e) => e.id === agent.id);
+
+                        if (!currentAgent || currentAgent.health <= 0) {
+                            return {
+                                interrupted: true,
+                                reason: "agent_dead",
+                                agentId: agent.id,
+                                message: `Agent ${agent.id} is dead or missing`,
+                            };
+                        }
+                        return null;
+                    },
+                };
+            }
+
+            static createResourceInterruptor(resourceName, requiredAmount) {
+                return {
+                    check: (worldState, context, currentTask) => {
+                        const currentAmount = worldState.get(resourceName) || 0;
+
+                        if (currentAmount < requiredAmount) {
+                            return {
+                                interrupted: true,
+                                reason: "insufficient_resources",
+                                resourceName,
+                                required: requiredAmount,
+                                available: currentAmount,
+                                message: `Insufficient ${resourceName}: need ${requiredAmount}, have ${currentAmount}`,
+                            };
+                        }
+                        return null;
+                    },
+                };
+            }
+
+            static createTaskSpecificInterruptor(taskNames, condition) {
+                return {
+                    check: (worldState, context, currentTask) => {
+                        if (!taskNames.includes(currentTask.name)) {
+                            return null;
+                        }
+
+                        return condition(worldState, context, currentTask);
+                    },
+                };
+            }
+
+            static createTimeoutInterruptor(timeLimit) {
+                const startTime = Date.now();
+
+                return {
+                    check: (worldState, context, currentTask) => {
+                        const elapsed = Date.now() - startTime;
+
+                        if (elapsed > timeLimit) {
+                            return {
+                                interrupted: true,
+                                reason: "timeout",
+                                timeLimit,
+                                elapsed,
+                                message: `Execution timeout: ${elapsed}ms > ${timeLimit}ms`,
+                            };
+                        }
+                        return null;
+                    },
+                };
+            }
+        }
+
+
+        // ===================================================================================
+        // == DEMO APPLICATION LOGIC
+        // ===================================================================================
+
+        const GRID_SIZE = 10;
+
+        // --- DOM Elements ---
+        const worldContainer = document.getElementById('world-container');
+        const startButton = document.getElementById('start-button');
+        const resetButton = document.getElementById('reset-button');
+        const statusGoal = document.getElementById('status-goal');
+        const statusAction = document.getElementById('status-action');
+        const statusInventory = document.getElementById('status-inventory');
+        const planList = document.getElementById('plan-list');
+        const logsPanel = document.getElementById('logs-panel');
+        const metricsPanel = document.getElementById('metrics-panel');
+        const tabMetrics = document.getElementById('tab-metrics');
+        const tabLogs = document.getElementById('tab-logs');
+        const metricTime = document.getElementById('metric-time');
+        const metricNodes = document.getElementById('metric-nodes');
+        const metricLength = document.getElementById('metric-length');
+        const metricBacktracks = document.getElementById('metric-backtracks');
+        const metricCache = document.getElementById('metric-cache');
+
+
+        // --- State Management ---
+        let worldState = {};
+        let planner = new Planner({ enablePlanCaching: true });
+        let executor = null;
+        let executionInterval = null;
+
+        const getInitialWorldState = () => ({
+            worldObjects: [
+                { id: 'agent', type: 'agent', x: 0, y: 0, inventory: { wood: 0, ore: 0, sword: 0 } },
+                { id: 'tree1', type: 'tree', x: 8, y: 2, wood: 10, smartLink: { actionType: 'CHOP_TREE' } },
+                { id: 'rock1', type: 'rock', x: 1, y: 7, ore: 5, smartLink: { actionType: 'MINE_ROCK' } },
+                { id: 'workbench1', type: 'workbench', x: 9, y: 9, smartLink: { actionType: 'CRAFT_SWORD' } },
+            ]
+        });
+
+        // --- WorldStateProxy Implementation for this Demo ---
+        const createWorldStateProxy = (initialState) => {
+            let state = structuredClone(initialState);
+
+            const getState = (key) => {
+                if (key) return state[key];
+                return state;
+            };
+
+            const setState = (key, value) => {
+                state[key] = value;
+            };
+
+            const clone = () => createWorldStateProxy(structuredClone(state));
+
+            const updateObject = (id, newProperties) => {
+                const objects = state.worldObjects || [];
+                const objectIndex = objects.findIndex(o => o.id === id);
+                if (objectIndex !== -1) {
+                    objects[objectIndex] = { ...objects[objectIndex], ...newProperties };
+                }
+            };
+
+            // A simple but effective cache key for this demo's state
+            const generateCacheKey = () => {
+                const agent = state.worldObjects.find(o => o.id === 'agent');
+                const keyState = {
+                    inventory: agent.inventory,
+                    tree: !!state.worldObjects.find(o => o.id === 'tree1'),
+                    rock: !!state.worldObjects.find(o => o.id === 'rock1')
+                };
+                return JSON.stringify(keyState);
+            };
+
+            return new WorldStateProxy({
+                getState,
+                setState,
+                clone,
+                updateObject,
+                generateCacheKey
+            });
+        };
+
+
+        // --- Smart Action Definitions ---
+        smartActionLibrary['CHOP_TREE'] = {
+            conditions: (ws, ctx, obj) => obj && ws.get('worldObjects').some(o => o.id === obj.id),
+            effects: (ws, ctx, obj) => {
+                const agent = ws.get('worldObjects').find(o => o.id === 'agent');
+                agent.inventory.wood += obj.wood;
+                ws.set('worldObjects', ws.get('worldObjects').filter(o => o.id !== obj.id));
+            },
+            operator: (ctx) => {
+                updateStatusDisplay(null, `Chopping tree: ${ctx.smartObject.id}`);
+            }
+        };
+
+        smartActionLibrary['MINE_ROCK'] = {
+            conditions: (ws, ctx, obj) => obj && ws.get('worldObjects').some(o => o.id === obj.id),
+            effects: (ws, ctx, obj) => {
+                const agent = ws.get('worldObjects').find(o => o.id === 'agent');
+                agent.inventory.ore += obj.ore;
+                ws.set('worldObjects', ws.get('worldObjects').filter(o => o.id !== obj.id));
+            },
+            operator: (ctx) => {
+                updateStatusDisplay(null, `Mining rock: ${ctx.smartObject.id}`);
+            }
+        };
+
+        smartActionLibrary['CRAFT_SWORD'] = {
+            conditions: (ws, ctx, obj) => {
+                const agent = ws.get('worldObjects').find(o => o.id === 'agent');
+                return agent.inventory.wood >= 5 && agent.inventory.ore >= 2;
+            },
+            effects: (ws, ctx, obj) => {
+                const agent = ws.get('worldObjects').find(o => o.id === 'agent');
+                agent.inventory.wood -= 5;
+                agent.inventory.ore -= 2;
+                agent.inventory.sword += 1;
+            },
+            operator: (ctx) => {
+                updateStatusDisplay(null, `Crafting sword at ${ctx.smartObject.id}`);
+            }
+        };
+
+
+        // --- Task Definitions ---
+        const setupTasks = () => {
+            // These tasks are dynamically discovered, but we define compound tasks here.
+            const moveTask = new PrimitiveTask('MoveTo', {
+                effects: (ws, ctx) => {
+                    const agent = ws.get('worldObjects').find(o => o.id === 'agent');
+                    agent.x = ctx.target.x;
+                    agent.y = ctx.target.y;
+                },
+                operator: (ctx) => {
+                    updateStatusDisplay(null, `Moving to ${ctx.target.type} at (${ctx.target.x}, ${ctx.target.y})`);
+                }
+            });
+            planner.registerTask(moveTask);
+
+            // This compound task will force a backtrack to demonstrate the feature.
+            // The first method tries to craft without resources, which will fail.
+            // The planner must then backtrack to the second, correct method.
+            const makeSwordTask = new CompoundTask('MakeSword', [
+                {
+                    name: 'AttemptCraftFirst (will fail)',
+                    priority: 0,
+                    subtasks: [
+                        new CompoundTask('GoToWorkbenchAndCraft', [
+                            {
+                                name: 'Default',
+                                subtasks: [
+                                    new PrimitiveTask('FindWorkbench', {
+                                        effects: (ws, ctx) => { ctx.target = ws.get('worldObjects').find(o => o.type === 'workbench'); }
+                                    }),
+                                    'MoveTo',
+                                    'CRAFT_SWORD_workbench1'
+                                ]
+                            }
+                        ])
+                    ]
+                },
+                {
+                    name: 'GatherAndCraft (correct method)',
+                    priority: 10, // Higher priority, but we'll pretend it's checked second for demo
+                    subtasks: [
+                        new CompoundTask('GetWood', [
+                            {
+                                name: 'Default',
+                                subtasks: [
+                                    new PrimitiveTask('FindTree', {
+                                        effects: (ws, ctx) => { ctx.target = ws.get('worldObjects').find(o => o.type === 'tree'); }
+                                    }),
+                                    'MoveTo',
+                                    'CHOP_TREE_tree1'
+                                ]
+                            }
+                        ]),
+                        new CompoundTask('GetOre', [
+                            {
+                                name: 'Default',
+                                subtasks: [
+                                    new PrimitiveTask('FindRock', {
+                                        effects: (ws, ctx) => { ctx.target = ws.get('worldObjects').find(o => o.type === 'rock'); }
+                                    }),
+                                    'MoveTo',
+                                    'MINE_ROCK_rock1'
+                                ]
+                            }
+                        ]),
+                        new CompoundTask('GoToWorkbenchAndCraft', [
+                            {
+                                name: 'Default',
+                                subtasks: [
+                                    new PrimitiveTask('FindWorkbench', {
+                                        effects: (ws, ctx) => { ctx.target = ws.get('worldObjects').find(o => o.type === 'workbench'); }
+                                    }),
+                                    'MoveTo',
+                                    'CRAFT_SWORD_workbench1'
+                                ]
+                            }
+                        ])
+                    ]
+                }
+            ]);
+            // Re-sort to show backtracking. We want the planner to try the bad method first.
+            makeSwordTask.methods.sort((a, b) => b.priority - a.priority);
+            // Now let's manually put the bad one first to force the backtrack for the demo
+            const correctMethod = makeSwordTask.methods.shift();
+            makeSwordTask.methods.push(correctMethod);
+
+
+            planner.registerTask(makeSwordTask);
+            return makeSwordTask;
+        };
+
+        // --- UI Rendering ---
+        const renderWorld = () => {
+            worldContainer.innerHTML = '';
+            const objects = worldState.get('worldObjects') || [];
+            const grid = Array(GRID_SIZE * GRID_SIZE).fill(null);
+
+            objects.forEach(obj => {
+                const index = obj.y * GRID_SIZE + obj.x;
+                if (grid[index] === null) grid[index] = [];
+                grid[index].push(obj);
+            });
+
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'world-cell';
+                if (grid[i]) {
+                    const obj = grid[i][0]; // Render first object
+                    if (obj.type === 'agent') cell.classList.add('agent');
+                    cell.textContent = {
+                        agent: '🤖',
+                        tree: '🌳',
+                        rock: '🪨',
+                        workbench: '🛠️'
+                    }[obj.type] || '?';
+                }
+                worldContainer.appendChild(cell);
+            }
+        };
+
+        const updateStatusDisplay = (goal, action) => {
+            if (goal) statusGoal.textContent = goal;
+            if (action) statusAction.textContent = action;
+            const agent = worldState.get('worldObjects').find(o => o.id === 'agent');
+            statusInventory.textContent = JSON.stringify(agent.inventory);
+        };
+
+        const updatePlanDisplay = (plan) => {
+            planList.innerHTML = '';
+            if (!plan || plan.length === 0) {
+                planList.innerHTML = '<li class="text-gray-500">No plan found.</li>';
+                return;
+            }
+            plan.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.id = `plan-step-${index}`;
+                li.className = 'p-2 bg-gray-700 rounded-md flex items-center transition-colors';
+                li.innerHTML = `<span class="mr-3 font-bold text-gray-400">${index + 1}.</span><span class="font-mono text-blue-300">${task.name}</span>`;
+                planList.appendChild(li);
+            });
+        };
+
+        const updateMetricsDisplay = (metrics) => {
+            metricTime.textContent = `${metrics.planningTime.toFixed(2)} ms`;
+            metricNodes.textContent = metrics.nodesExplored;
+            metricLength.textContent = metrics.planLength;
+            metricBacktracks.textContent = metrics.backtrackCount;
+            metricCache.style.display = metrics.cacheHit ? 'block' : 'none';
+        };
+
+        const logToUI = (type, message, data) => {
+            if (logsPanel.children.length === 1 && logsPanel.children[0].tagName === 'P') {
+                logsPanel.innerHTML = '';
+            }
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<p>${message}</p>`;
+            if (data && Object.keys(data).length > 0) {
+                const pre = document.createElement('pre');
+                pre.className = 'text-gray-400 text-xs mt-1 p-1 bg-gray-900 rounded';
+                pre.textContent = JSON.stringify(data, null, 2);
+                entry.appendChild(pre);
+            }
+            logsPanel.appendChild(entry);
+            logsPanel.scrollTop = logsPanel.scrollHeight;
+        };
+
+        // --- Main Application Flow ---
+        const start = async () => {
+            startButton.disabled = true;
+            startButton.textContent = 'Planning...';
+
+            resetState();
+            updateStatusDisplay('MakeSword', 'Starting planning...');
+
+            const rootTask = setupTasks();
+
+            // Use a timeout to allow the UI to update before the planner locks the main thread
+            setTimeout(() => {
+                try {
+                    const planResult = planner.findPlan({
+                        tasks: rootTask,
+                        worldState: worldState,
+                        context: { agentId: 'agent' }
+                    });
+
+                    updateMetricsDisplay(planner.getMetrics());
+
+                    if (planResult && planResult.plan) {
+                        updatePlanDisplay(planResult.plan);
+                        executor = new PlanExecutor(planResult.plan, planResult.context, {
+                            logCallback: logToUI,
+                            planner: planner,
+                            rootTask: rootTask
+                        });
+                        startButton.textContent = 'Executing...';
+                        executionInterval = setInterval(executeNextStep, 800);
+                    } else {
+                        updateStatusDisplay('Failed', 'Could not find a plan.');
+                        startButton.textContent = 'Planning Failed';
+                    }
+                } catch (e) {
+                    logToUI('error', 'A critical error occurred during planning.', e);
+                    updateStatusDisplay('Error', 'Planning failed critically.');
+                    startButton.textContent = 'Planning Error';
+                    console.error(e);
+                }
+            }, 100);
+        };
+
+        const executeNextStep = () => {
+            if (!executor || executor.isDone() || executor.isFailed()) {
+                clearInterval(executionInterval);
+                executionInterval = null;
+
+                if (executor && executor.isFailed()) {
+                    updateStatusDisplay('Failed', executor.lastInterruption.message || 'Execution failed.');
+                    startButton.textContent = 'Execution Failed';
+                } else if (executor) {
+                    updateStatusDisplay('Completed', 'Plan finished.');
+                    const finalStepEl = document.getElementById(`plan-step-${executor.plan.length - 1}`);
+                    if (finalStepEl) finalStepEl.classList.add('bg-green-600', 'text-white');
+                    startButton.textContent = 'Start Planning & Execution';
+                }
+
+                startButton.disabled = false;
+                return;
+            }
+
+            const currentStepIndex = executor.currentIndex;
+            const result = executor.tick(worldState, { enableReplanning: false }); // Disable replanning for this demo
+
+            renderWorld();
+
+            if (result.status === 'executing' && result.task) {
+                updateStatusDisplay(null, result.task.name);
+            }
+
+            // Highlight current plan step
+            const prevStepEl = document.getElementById(`plan-step-${currentStepIndex - 1}`);
+            if (prevStepEl) prevStepEl.classList.add('bg-green-700', 'text-gray-400');
+
+            const currentStepEl = document.getElementById(`plan-step-${currentStepIndex}`);
+            if (currentStepEl) currentStepEl.classList.add('bg-blue-600', 'text-white');
+        };
+
+        const resetState = () => {
+            if (executionInterval) {
+                clearInterval(executionInterval);
+                executionInterval = null;
+            }
+
+            worldState = createWorldStateProxy(getInitialWorldState());
+            planner = new Planner({ enablePlanCaching: true });
+            planner.setLogCallback(logToUI);
+            executor = null;
+
+            logsPanel.innerHTML = '<p class="text-gray-500">Logs will appear here...</p>';
+            planList.innerHTML = '<li class="text-gray-500">No plan generated yet.</li>';
+            metricTime.textContent = '-';
+            metricNodes.textContent = '-';
+            metricLength.textContent = '-';
+            metricBacktracks.textContent = '-';
+            metricCache.style.display = 'none';
+
+            renderWorld();
+            updateStatusDisplay('Idle', 'None');
+
+            startButton.disabled = false;
+            startButton.textContent = 'Start Planning & Execution';
+        };
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', start);
+        resetButton.addEventListener('click', () => {
+            planner.clearCache();
+            logToUI('info', 'State and plan cache cleared.');
+            resetState();
+        });
+
+        tabMetrics.addEventListener('click', () => {
+            tabMetrics.classList.add('active');
+            tabLogs.classList.remove('active');
+            metricsPanel.style.display = 'block';
+            logsPanel.style.display = 'none';
+        });
+
+        tabLogs.addEventListener('click', () => {
+            tabLogs.classList.add('active');
+            tabMetrics.classList.remove('active');
+            logsPanel.style.display = 'block';
+            metricsPanel.style.display = 'none';
+        });
+
+        // --- Initial Setup ---
+        window.onload = resetState;
+
+    </script>
+
+</body>
+
+</html>
