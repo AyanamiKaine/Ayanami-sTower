@@ -5,7 +5,7 @@ import {
     PlanExecutor,
     PrimitiveTask,
     InterruptionManager,
-    smartActionLibrary, 
+    smartActionLibrary,
     SmartObjectTask,
     TaskDiscoverer,
 } from "../main.js";
@@ -22,7 +22,9 @@ smartActionLibrary.VaultThroughWindow = {
     effects: (ws, ctx, obj) => {
         ws.set("agentPosition", obj.endsAt);
         // This is now clean, declarative, and uses the efficient implementation
-        ws.updateObject(obj.id, { isBroken: true });
+        ws.updateObject(obj.id, {
+            isBroken: true,
+        });
     },
     operator: (ctx) => {
         console.log(
@@ -36,13 +38,10 @@ smartActionLibrary.PickupWeapon = {
     conditions: (ws, ctx, obj) => !ws.get("agentHasWeapon") && !obj.isEquipped,
     effects: (ws, ctx, obj) => {
         ws.set("agentHasWeapon", true);
-        const weapons = ws
-            .get("worldObjects")
-            .filter((o) => o.type === "Weapon");
-        const weaponToEquip = weapons.find((w) => w.id === obj.id);
-        if (weaponToEquip) {
-            weaponToEquip.isEquipped = true;
-        }
+        // In a real system, you'd use the ws.updateObject method for safety and efficiency
+        ws.updateObject(obj.id, {
+            isEquipped: true,
+        });
     },
     operator: (ctx) => {
         console.log(
@@ -71,7 +70,6 @@ let gameState = {
             },
         },
         {
-            // --- NEW WEAPON OBJECT ---
             id: "scattergun_01",
             type: "Weapon",
             isEquipped: false,
@@ -82,9 +80,9 @@ let gameState = {
     ],
 };
 
+// This is a more robust factory for the proxy, similar to the test setup.
 const createWorldStateProxy = (initialState) => {
     let state = structuredClone(initialState);
-    // Create a Map for efficient object lookups
     let objectMap = new Map(state.worldObjects.map((o) => [o.id, o]));
 
     return new WorldStateProxy({
@@ -93,14 +91,15 @@ const createWorldStateProxy = (initialState) => {
         clone: () =>
             createWorldStateProxy({
                 ...state,
-                worldObjects: Array.from(objectMap.values()),
+                worldObjects: Array.from(objectMap.values()).map((o) =>
+                    structuredClone(o)
+                ),
             }),
-        // Provide the efficient update function
         updateObject: (id, newProperties) => {
             if (objectMap.has(id)) {
                 const obj = objectMap.get(id);
-                objectMap.set(id, { ...obj, ...newProperties });
-                // Keep the array in sync if needed, or rebuild it from the map on clone
+                const updatedObj = { ...obj, ...newProperties };
+                objectMap.set(id, updatedObj);
                 state.worldObjects = Array.from(objectMap.values());
             }
         },
@@ -112,7 +111,9 @@ const createWorldStateProxy = (initialState) => {
 // =============================================================================
 
 const attackEnemy = new PrimitiveTask("AttackEnemy", {
-    conditions: (ws) => ws.get("agentPosition") === ws.get("enemyPosition"),
+    conditions: (ws) =>
+        ws.get("agentHasWeapon") &&
+        ws.get("agentPosition") === ws.get("enemyPosition"),
     effects: (ws) => ws.set("enemyDefeated", true),
     operator: () => console.log("[OPERATOR] Agent is attacking!"),
 });
@@ -125,12 +126,9 @@ const getInRange = new CompoundTask("GetInRange", [
     {
         name: "Vault through window to reach enemy",
         conditions: (ws) => ws.get("agentPosition") !== ws.get("enemyPosition"),
-        // The planner will find the task named "VaultThroughWindow_window_01"
-        // which was created by the TaskDiscoverer.
         subtasks: ["VaultThroughWindow_window_01"],
     },
 ]);
-
 
 const engageEnemyGoal = new CompoundTask("EngageEnemyGoal", [
     {
@@ -145,13 +143,11 @@ const engageEnemyGoal = new CompoundTask("EngageEnemyGoal", [
         conditions: (ws) =>
             ws.get("agentHasWeapon") &&
             ws.get("agentPosition") !== ws.get("enemyPosition"),
-        // ✅ Use the string name for recursion
         subtasks: [getInRange, "EngageEnemyGoal"],
     },
     {
         name: "Get a weapon first",
         conditions: (ws) => !ws.get("agentHasWeapon"),
-        // ✅ Use the string name for recursion
         subtasks: ["PickupWeapon_scattergun_01", "EngageEnemyGoal"],
     },
 ]);
@@ -161,17 +157,32 @@ const rootBehavior = new CompoundTask("RootBehavior", [
         name: "Engage Enemy if Visible",
         priority: 10,
         conditions: (ws) => ws.get("enemyVisible"),
-        subtasks: [engageEnemyGoal], // The one true goal is to engage
+        subtasks: [engageEnemyGoal],
     },
     {
         name: "Patrol if Idle",
         priority: 1,
-        subtasks: [patrol], // Fallback behavior
+        subtasks: [patrol],
     },
 ]);
+
 // =============================================================================
 // 4. RUN THE PLANNER
 // =============================================================================
+
+// Helper function to run the async generator planner to completion.
+const runPlannerToCompletion = async (planner, options) => {
+    const generator = planner.findPlan(options);
+    let result = null;
+    while (true) {
+        const { value, done } = await generator.next();
+        if (done) {
+            result = value;
+            break;
+        }
+    }
+    return result;
+};
 
 async function runSimulation() {
     console.log("--- 🚀 STARTING SIMULATION ---");
@@ -193,29 +204,34 @@ async function runSimulation() {
     console.log(
         "\n--- Scenario 1: Enemy is not visible. AI should patrol. ---"
     );
-    let result1 = planner.findPlan({
+    // FIX: Use the async helper and await the result
+    let result1 = await runPlannerToCompletion(planner, {
         tasks: rootBehavior,
         worldState,
         context,
     });
     console.log(
         "Plan found:",
-        result1?.plan.map((t) => t.name) // .plan.map expression expected ERROR
-    ); // Expected: ['Patrol'] //  expected : ERROR
+        result1?.plan.map((t) => t.name)
+    ); // Expected: ['Patrol']
 
     console.log(
         "\n--- Scenario 2: Enemy becomes visible. AI should find a path and attack. ---"
     );
-    worldState.set("enemyVisible", true);
-    let result2 = planner.findPlan({
+    // Use a fresh world state for the second scenario to avoid side-effects
+    let worldState2 = createWorldStateProxy(gameState);
+    worldState2.set("enemyVisible", true);
+
+    // FIX: Use the async helper and await the result
+    let result2 = await runPlannerToCompletion(planner, {
         tasks: rootBehavior,
-        worldState,
+        worldState: worldState2,
         context,
     });
     console.log(
         "Plan found:",
-        result2?.plan.map((t) => t.name) // .plan.map expression expected ERROR
-    ); // Expected: ['VaultThroughWindow_window_01', 'AttackEnemy'] //  expected : ERROR
+        result2?.plan.map((t) => t.name)
+    ); // Expected: ['PickupWeapon_scattergun_01', 'VaultThroughWindow_window_01', 'AttackEnemy']
 
     if (result2) {
         console.log(
@@ -224,12 +240,12 @@ async function runSimulation() {
         const executionWorld = createWorldStateProxy(
             structuredClone(gameState)
         );
-        executionWorld.set("enemyVisible", true); // Make sure enemy is visible for execution
+        executionWorld.set("enemyVisible", true);
 
         const executor = new PlanExecutor(result2.plan, result2.context);
-        while (!executor.isDone()) {
-            // In a real game, each tick would take time. Here we just loop.
-            executor.tick(executionWorld);
+        // FIX: The tick method is now async and must be awaited.
+        while (!executor.isDone() && !executor.isFailed()) {
+            await executor.tick(executionWorld);
         }
         console.log("--- Execution Complete ---");
         console.log("Final World State:", executionWorld.get());
