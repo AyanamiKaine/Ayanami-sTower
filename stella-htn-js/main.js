@@ -104,6 +104,26 @@ export class PrimitiveTask extends Task {
         this.operator(context);
     }
 }
+/**
+ * A specialized PrimitiveTask for handling Smart Object interactions.
+ * It holds a reference to the specific object instance it interacts with.
+ */
+export class SmartObjectTask extends PrimitiveTask {
+    constructor(name, smartObject, logic) {
+        super(name, {
+            // The logic functions are now closures that capture the specific `smartObject`
+            conditions: (ws, ctx) => logic.conditions(ws, ctx, smartObject),
+            effects: (ws, ctx) => logic.effects(ws, ctx, smartObject),
+            operator: (ctx) => {
+                // Automatically add the target object to the context for the operator
+                const operatorContext = { ...ctx, smartObject };
+                logic.operator(operatorContext);
+            },
+        });
+        this.smartObject = smartObject;
+        this.actionType = logic.actionType; // Store the generic action type for reference
+    }
+}
 
 /**
  * Represents a high-level task that can be decomposed into smaller subtasks.
@@ -183,6 +203,9 @@ export class PlanningTimeoutError extends PlanningError {
 /**
  * The main planner class that implements the forward-decomposition HTN algorithm.
  */
+/**
+ * The main planner class that implements the forward-decomposition HTN algorithm.
+ */
 export class Planner {
     constructor(config = {}) {
         this.config = {
@@ -233,9 +256,7 @@ export class Planner {
 
             // Start searching for an alternative method from the index *after* the one that failed.
             for (
-                let i = lastMethodIndex + 1;
-                i < compoundTask.methods.length;
-                i++
+                let i = lastMethodIndex + 1; i < compoundTask.methods.length; i++
             ) {
                 const nextMethod = compoundTask.methods[i];
                 // Check if this new method is applicable in the state *before* the previous failed method was applied.
@@ -286,16 +307,25 @@ export class Planner {
      * @param {object} [options.context={}] - The initial planning context.
      * @returns {object|null} A result object with the plan and final context, or null if no plan is found.
      */
-    findPlan({ tasks, worldState, context = {} }) {
+    findPlan({
+        tasks,
+        worldState,
+        context = {}
+    }) {
         const startTime = performance.now();
         let backtrackCount = 0;
+
+        // --- DYNAMIC TASK DISCOVERY ---
+        // Before planning, discover and register any tasks from smart objects.
+        TaskDiscoverer.discoverAndRegister(this, worldState);
+
 
         // 1. Check Plan Cache
         const isInitialPlan = tasks instanceof Task;
         const cacheKey =
-            this.config.enablePlanCaching && isInitialPlan
-                ? `${tasks.name}:${worldState.getCacheKey()}`
-                : null;
+            this.config.enablePlanCaching && isInitialPlan ?
+            `${tasks.name}:${worldState.getCacheKey()}` :
+            null;
 
         if (cacheKey && this.planCache.has(cacheKey)) {
             this.metrics = {
@@ -361,7 +391,10 @@ export class Planner {
                         workingContext
                     );
                     if (result) {
-                        const { method, index } = result;
+                        const {
+                            method,
+                            index
+                        } = result;
                         decompositionHistory.push({
                             compoundTask: currentTask,
                             lastMethodIndex: index,
@@ -401,7 +434,10 @@ export class Planner {
             }
         }
 
-        const result = { plan: finalPlan, context: workingContext };
+        const result = {
+            plan: finalPlan,
+            context: workingContext
+        };
 
         this.metrics = {
             planningTime: performance.now() - startTime,
@@ -596,6 +632,41 @@ export class InterruptionManager {
                 this.replanHistory.delete(taskName);
             }
         }
+    }
+}
+
+/**
+ * Central repository for the logic of smart actions.
+ * This decouples the "how" from the "what" and "where".
+ */
+export const smartActionLibrary = {};
+
+/**
+ * Discovers tasks from smart objects in the world and registers them with the planner.
+ */
+export class TaskDiscoverer {
+    static discoverAndRegister(planner, worldState) {
+        const worldObjects = worldState.get("worldObjects") || [];
+        let discoveredCount = 0;
+
+        for (const obj of worldObjects) {
+            if (!obj.smartLink || !obj.smartLink.actionType) continue;
+
+            const actionType = obj.smartLink.actionType;
+            const actionLogic = smartActionLibrary[actionType];
+
+            if (actionLogic) {
+                // Create a unique name for this specific instance of the action
+                const taskName = `${actionType}_${obj.id}`;
+                const newTask = new SmartObjectTask(taskName, obj, {
+                    ...actionLogic,
+                    actionType
+                });
+                planner.registerTask(newTask);
+                discoveredCount++;
+            }
+        }
+        return discoveredCount;
     }
 }
 
