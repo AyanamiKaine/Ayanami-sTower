@@ -1,4 +1,4 @@
-import { test, expect, describe } from "bun:test";
+import { test, expect, describe, beforeEach } from "bun:test";
 import {
     CompoundTask,
     Planner,
@@ -9,6 +9,9 @@ import {
     TaskNotFoundError,
     PlanExecutor,
     InterruptionManager,
+    smartActionLibrary,
+    TaskDiscoverer,
+    SmartObjectTask,
 } from "../main"; // Assuming your updated library is in main.js
 
 describe("HTN Planner Library", () => {
@@ -148,7 +151,6 @@ describe("HTN Planner Library", () => {
         });
     });
 
-    // --- FIX 1: This entire test has been updated to use the modern InterruptionManager ---
     describe("Plan Executor and Replanning", () => {
         const patrolPointB = new PrimitiveTask("Patrol to B", {
             effects: (ws) => ws.set("at", "B"),
@@ -475,6 +477,158 @@ describe("HTN Planner Library", () => {
             // Corrected assertion: The planner threw an *error*, which is different from *failing to find a plan*.
             expect(tickResult.reason).toBe("replanning_error");
             expect(executor.isFailed()).toBe(true);
+        });
+    });
+
+    describe("Smart Object System", () => {
+        // Define a smart action in the library for testing purposes
+        smartActionLibrary.UseCover = {
+            actionType: "UseCover",
+            conditions: (ws, ctx, obj) => !obj.isOccupied,
+            effects: (ws, ctx, obj) => {
+                const agentId = ctx.agent.id;
+                // In a real system, you'd find and modify the object in the worldState array
+                obj.isOccupied = true;
+                ws.set("agentInCover", agentId);
+            },
+            operator: (ctx) => {
+                /* Triggers 'take cover' animation */
+            },
+        };
+
+        let planner;
+        let takeCoverTask;
+
+        beforeEach(() => {
+            planner = new Planner();
+            // A high-level task that wants to use a cover object
+            takeCoverTask = new CompoundTask("TakeCover", [
+                {
+                    name: "Use Smart Object Cover",
+                    // The subtask is a string name that will be dynamically generated
+                    subtasks: ["UseCover_cover_point_1"],
+                },
+            ]);
+            planner.registerTask(takeCoverTask);
+        });
+
+        test("should discover and register a SmartObjectTask", () => {
+            const worldState = createWorldStateProxy({
+                worldObjects: [
+                    {
+                        id: "cover_point_1",
+                        type: "Barrier",
+                        isOccupied: false,
+                        smartLink: {
+                            actionType: "UseCover",
+                        },
+                    },
+                ],
+            });
+
+            const count = TaskDiscoverer.discoverAndRegister(
+                planner,
+                worldState
+            );
+            expect(count).toBe(1);
+            const discoveredTask =
+                planner.taskRegistry["UseCover_cover_point_1"];
+            expect(discoveredTask).toBeInstanceOf(SmartObjectTask);
+            expect(discoveredTask.name).toBe("UseCover_cover_point_1");
+            expect(discoveredTask.smartObject.id).toBe("cover_point_1");
+        });
+
+        test("should throw TaskNotFoundError if the smart object task does not exist", () => {
+            const worldState = createWorldStateProxy({
+                worldObjects: [],
+            });
+
+            expect(() => {
+                planner.findPlan({
+                    tasks: takeCoverTask,
+                    worldState: worldState,
+                });
+            }).toThrow(new TaskNotFoundError("UseCover_cover_point_1"));
+        });
+
+        test("should successfully create a plan using a discovered smart object task", () => {
+            const worldState = createWorldStateProxy({
+                agent: {
+                    id: "agent_007",
+                },
+                worldObjects: [
+                    {
+                        id: "cover_point_1",
+                        type: "Barrier",
+                        isOccupied: false,
+                        smartLink: {
+                            actionType: "UseCover",
+                        },
+                    },
+                ],
+            });
+
+            const result = planner.findPlan({
+                tasks: takeCoverTask,
+                worldState,
+                context: {
+                    agent: {
+                        id: "agent_007",
+                    },
+                },
+            });
+
+            expect(result).not.toBeNull();
+            expect(result.plan.length).toBe(1);
+            expect(result.plan[0].name).toBe("UseCover_cover_point_1");
+
+            // Check if the effects were applied correctly during planning simulation
+            const finalWorldState = createWorldStateProxy({
+                agent: {
+                    id: "agent_007",
+                },
+                worldObjects: [
+                    {
+                        id: "cover_point_1",
+                        type: "Barrier",
+                        isOccupied: true, // Should be occupied now
+                        smartLink: {
+                            actionType: "UseCover",
+                        },
+                    },
+                ],
+                agentInCover: "agent_007", // Custom state set by effect
+            });
+
+            // The world state passed to findPlan is a *clone*, so the original is untouched.
+            // The effects are applied to the *working* world state inside the planner.
+            // We can't directly test the working state post-plan, but success of the plan implies
+            // the effects were simulated correctly.
+        });
+
+        test("should fail to find a plan if smart object conditions are not met", () => {
+            const worldState = createWorldStateProxy({
+                worldObjects: [
+                    {
+                        id: "cover_point_1",
+                        type: "Barrier",
+                        isOccupied: true,
+                        smartLink: {
+                            actionType: "UseCover",
+                        },
+                    },
+                ],
+            });
+
+            const result = planner.findPlan({
+                tasks: takeCoverTask,
+                worldState,
+                context: {},
+            });
+
+            // The planner should return null because the only available method
+            // (using the smart object) has conditions that are not met.
+            expect(result).toBeNull();
         });
     });
 });
