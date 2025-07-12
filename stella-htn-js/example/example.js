@@ -8,7 +8,7 @@ import {
     smartActionLibrary, 
     SmartObjectTask,
     TaskDiscoverer,
-} from "./main.js";
+} from "../main.js";
 
 // =============================================================================
 // 1. DEFINE SMART ACTION LOGIC
