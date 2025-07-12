@@ -61,14 +61,17 @@ export class WorldStateProxy {
 
     updateObject(id, newProperties) {
         if (this._updateObject) {
-            // Use the efficient, user-provided implementation if it exists
             this._updateObject(id, newProperties);
         } else {
-            // Provide a reasonable, but potentially slow, fallback
-            const objects = this.get("worldObjects") || [];
+            const objects = this.get("worldObjects");
+            if (!Array.isArray(objects)) {
+                console.warn(
+                    `WorldStateProxy: 'worldObjects' is not an array. Cannot update object.`
+                );
+                return;
+            }
             const objectIndex = objects.findIndex((o) => o.id === id);
             if (objectIndex !== -1) {
-                // Merge new properties into the existing object
                 objects[objectIndex] = {
                     ...objects[objectIndex],
                     ...newProperties,
@@ -193,7 +196,10 @@ export class CompoundTask extends Task {
         for (let i = 0; i < this.methods.length; i++) {
             const method = this.methods[i];
             if (!method.conditions || method.conditions(worldState, context)) {
-                return { method, index: i };
+                return {
+                    method,
+                    index: i,
+                };
             }
         }
         return null;
@@ -224,15 +230,13 @@ export class PlanningTimeoutError extends PlanningError {
 /**
  * The main planner class that implements the forward-decomposition HTN algorithm.
  */
-/**
- * The main planner class that implements the forward-decomposition HTN algorithm.
- */
 export class Planner {
     constructor(config = {}) {
         this.config = {
             maxIterations: 1000,
             maxTime: Infinity, // Milliseconds
             enablePlanCaching: true,
+            frameBudget: 4, // Default to 4ms for planning per frame/tick.
             ...config,
         };
         this.logCallback = () => {};
@@ -257,54 +261,40 @@ export class Planner {
         this.logCallback(type, message, data);
     }
 
-    /**
-     * Finds the next point in the decomposition history to backtrack to.
-     * This implementation is optimized to avoid re-filtering arrays by using the stored method index.
-     * @param {Array<object>} decompositionHistory - The history of decompositions.
-     * @returns {object|null} A state object to restore to, or null if no backtrack point is found.
-     */
     _findBacktrackPoint(decompositionHistory) {
         while (decompositionHistory.length > 0) {
             const lastDecomp = decompositionHistory.pop();
             const {
                 compoundTask,
                 lastMethodIndex,
-                worldState,
-                context,
+                worldStateSnapshot,
+                contextSnapshot,
                 planState,
                 remainingTasks,
             } = lastDecomp;
 
-            // Start searching for an alternative method from the index *after* the one that failed.
             for (
-                let i = lastMethodIndex + 1; i < compoundTask.methods.length; i++
+                let i = lastMethodIndex + 1;
+                i < compoundTask.methods.length;
+                i++
             ) {
                 const nextMethod = compoundTask.methods[i];
-                // Check if this new method is applicable in the state *before* the previous failed method was applied.
                 if (
                     !nextMethod.conditions ||
-                    nextMethod.conditions(worldState, context)
+                    nextMethod.conditions(worldStateSnapshot, contextSnapshot)
                 ) {
                     this.log(
                         "info",
                         `Found backtrack point. Trying method '${nextMethod.name}' for ${compoundTask.name}.`
                     );
-
-                    // We found a valid alternative. Push its state onto the history so we can backtrack from it later if needed.
                     decompositionHistory.push({
-                        compoundTask,
+                        ...lastDecomp,
                         lastMethodIndex: i,
-                        worldState: worldState.clone(),
-                        context: structuredClone(context),
-                        planState: [...planState],
-                        remainingTasks: [...remainingTasks],
                     });
-
-                    // Return the state required for the planner to resume.
                     return {
-                        worldState,
-                        context,
-                        planState,
+                        worldState: worldStateSnapshot,
+                        context: contextSnapshot,
+                        planState: planState,
                         tasksToProcess: [
                             ...nextMethod.subtasks,
                             ...remainingTasks,
@@ -317,162 +307,156 @@ export class Planner {
                 `No more methods to try for ${compoundTask.name}. Backtracking further...`
             );
         }
-        return null; // No backtrack points left.
+        return null;
     }
 
-    /**
-     * Core planning logic. Can be used for initial planning or replanning.
-     * @param {object} options - The options for finding a plan.
-     * @param {Task | Array<Task|string>} options.tasks - The root task or initial task list.
-     * @param {WorldStateProxy} options.worldState - The initial state of the world.
-     * @param {object} [options.context={}] - The initial planning context.
-     * @returns {object|null} A result object with the plan and final context, or null if no plan is found.
-     */
-    findPlan({
-        tasks,
-        worldState,
-        context = {}
-    }) {
-        const startTime = performance.now();
-        let backtrackCount = 0;
+    async *findPlan({ tasks, worldState, context = {} }) {
+        const overallStartTime = performance.now();
+        let frameStartTime = overallStartTime;
 
-        // --- DYNAMIC TASK DISCOVERY ---
-        // Before planning, discover and register any tasks from smart objects.
+        // FIX: Initialize metrics object for every run
+        this.metrics = {
+            iterations: 0,
+            backtrackCount: 0,
+            planningTime: 0,
+            cacheHit: false,
+        };
+
         TaskDiscoverer.discoverAndRegister(this, worldState);
 
-
-        // 1. Check Plan Cache
-        const isInitialPlan = tasks instanceof Task;
         const cacheKey =
-            this.config.enablePlanCaching && isInitialPlan ?
-            `${tasks.name}:${worldState.getCacheKey()}` :
-            null;
+            this.config.enablePlanCaching && tasks instanceof Task
+                ? `${tasks.name}:${worldState.getCacheKey()}`
+                : null;
 
         if (cacheKey && this.planCache.has(cacheKey)) {
-            this.metrics = {
-                planningTime: performance.now() - startTime,
-                nodesExplored: 0,
-                planLength: this.planCache.get(cacheKey).plan.length,
-                backtrackCount: 0,
-                cacheHit: true,
+            this.metrics.cacheHit = true;
+            this.metrics.planningTime = performance.now() - overallStartTime;
+            // Yield once to indicate completion, then return the cached value
+            yield {
+                status: "completed",
+                fromCache: true,
             };
-            this.log("success", "Plan found in cache.", {
-                metrics: this.metrics,
-            });
             return this.planCache.get(cacheKey);
         }
 
-        this.log("info", `Starting planning...`);
+        this.log("info", `Starting incremental planning...`);
 
-        let finalPlan = [];
         let tasksToProcess = Array.isArray(tasks) ? [...tasks] : [tasks];
         let workingWorldState = worldState.clone();
-        let workingContext = structuredClone(context); // Use structuredClone for performance
+        let workingContext = structuredClone(context);
+        let finalPlan = [];
         const decompositionHistory = [];
-        let iterations = 0;
 
         while (tasksToProcess.length > 0) {
-            // 2. Check Time and Iteration Limits
-            if (++iterations > this.config.maxIterations)
-                throw new PlanningTimeoutError(
-                    `Max iterations (${this.config.maxIterations}) reached.`
-                );
-            if (performance.now() - startTime > this.config.maxTime)
-                throw new PlanningTimeoutError(
-                    `Planning time exceeded ${this.config.maxTime}ms.`
-                );
+            this.metrics.iterations++;
 
-            let currentTask = tasksToProcess.shift();
-
-            if (typeof currentTask === "string") {
-                const taskName = currentTask;
-                currentTask = this.taskRegistry[taskName];
-                if (!currentTask) throw new TaskNotFoundError(taskName);
+            if (this.metrics.iterations > this.config.maxIterations) {
+                // FIX: Throw timeout error correctly from within the generator
+                throw new PlanningTimeoutError(
+                    `Planning timed out after ${this.config.maxIterations} iterations.`
+                );
             }
 
-            try {
-                if (currentTask.isPrimitive) {
-                    if (
-                        currentTask.conditions(
-                            workingWorldState,
-                            workingContext
-                        )
-                    ) {
-                        currentTask.effects(workingWorldState, workingContext);
-                        finalPlan.push(currentTask);
-                    } else {
-                        throw new PlanningError(
-                            `Conditions FAILED for ${currentTask.name}.`
-                        );
-                    }
-                } else {
-                    // Compound Task
-                    const result = currentTask.findApplicableMethod(
-                        workingWorldState,
-                        workingContext
+            if (this.metrics.iterations % 20 === 0) {
+                const now = performance.now();
+                if (now - frameStartTime > this.config.frameBudget) {
+                    this.log(
+                        "info",
+                        `Frame budget of ${this.config.frameBudget}ms exceeded. Yielding...`
                     );
-                    if (result) {
-                        const {
-                            method,
-                            index
-                        } = result;
-                        decompositionHistory.push({
-                            compoundTask: currentTask,
-                            lastMethodIndex: index,
-                            worldState: workingWorldState.clone(),
-                            context: structuredClone(workingContext),
-                            planState: [...finalPlan],
-                            remainingTasks: [...tasksToProcess],
-                        });
-                        tasksToProcess.unshift(...method.subtasks);
-                    } else {
-                        throw new PlanningError(
-                            `No applicable method found for ${currentTask.name}.`
-                        );
-                    }
+                    yield {
+                        status: "running",
+                        iterations: this.metrics.iterations,
+                    };
+                    await new Promise((resolve) => setTimeout(resolve, 0));
+                    frameStartTime = performance.now();
                 }
-            } catch (e) {
-                if (e instanceof TaskNotFoundError) throw e;
+            }
 
-                this.log("fail", e.message + " Backtracking...");
-                backtrackCount++;
-                const backtrackPoint =
-                    this._findBacktrackPoint(decompositionHistory);
+            let currentTaskOrName = tasksToProcess.shift();
+            let currentTask = null;
 
-                if (backtrackPoint) {
-                    // Restore state from the successful backtrack point
-                    workingWorldState = backtrackPoint.worldState;
-                    workingContext = backtrackPoint.context;
-                    finalPlan = [...backtrackPoint.planState];
-                    tasksToProcess = [...backtrackPoint.tasksToProcess];
+            // FIX: Handle task lookup when task is specified by name (string)
+            if (typeof currentTaskOrName === "string") {
+                currentTask = this.taskRegistry[currentTaskOrName];
+                if (!currentTask) {
+                    throw new TaskNotFoundError(currentTaskOrName);
+                }
+            } else {
+                currentTask = currentTaskOrName;
+            }
+
+            if (currentTask.isPrimitive) {
+                if (currentTask.conditions(workingWorldState, workingContext)) {
+                    currentTask.effects(workingWorldState, workingContext);
+                    finalPlan.push(currentTask);
                 } else {
                     this.log(
                         "fail",
-                        "Backtracking failed at the root. No plan found."
+                        `Conditions FAILED for ${currentTask.name}. Backtracking...`
                     );
-                    return null;
+                    this.metrics.backtrackCount++;
+                    const backtrackState =
+                        this._findBacktrackPoint(decompositionHistory);
+                    if (backtrackState) {
+                        workingWorldState = backtrackState.worldState.clone();
+                        workingContext = structuredClone(
+                            backtrackState.context
+                        );
+                        finalPlan = [...backtrackState.planState];
+                        tasksToProcess = backtrackState.tasksToProcess;
+                    } else {
+                        this.log("fail", "Backtracking failed. No plan found.");
+                        return null;
+                    }
+                }
+            } else {
+                // Compound Task
+                const result = currentTask.findApplicableMethod(
+                    workingWorldState,
+                    workingContext
+                );
+                if (result) {
+                    const { method, index } = result;
+                    decompositionHistory.push({
+                        compoundTask: currentTask,
+                        lastMethodIndex: index,
+                        worldStateSnapshot: workingWorldState.clone(),
+                        contextSnapshot: structuredClone(workingContext),
+                        planState: [...finalPlan],
+                        remainingTasks: [...tasksToProcess],
+                    });
+                    tasksToProcess.unshift(...method.subtasks);
+                } else {
+                    this.log(
+                        "fail",
+                        `No applicable method found for ${currentTask.name}. Backtracking...`
+                    );
+                    this.metrics.backtrackCount++;
+                    const backtrackState =
+                        this._findBacktrackPoint(decompositionHistory);
+                    if (backtrackState) {
+                        workingWorldState = backtrackState.worldState.clone();
+                        workingContext = structuredClone(
+                            backtrackState.context
+                        );
+                        finalPlan = [...backtrackState.planState];
+                        tasksToProcess = backtrackState.tasksToProcess;
+                    } else {
+                        this.log("fail", "Backtracking failed. No plan found.");
+                        return null;
+                    }
                 }
             }
         }
 
+        this.metrics.planningTime = performance.now() - overallStartTime;
         const result = {
             plan: finalPlan,
-            context: workingContext
+            context: workingContext,
         };
-
-        this.metrics = {
-            planningTime: performance.now() - startTime,
-            nodesExplored: iterations,
-            planLength: finalPlan.length,
-            backtrackCount,
-            cacheHit: false,
-        };
-        this.log("success", "Planning complete! Final plan generated.", {
-            metrics: this.metrics,
-        });
-
         if (cacheKey) this.planCache.set(cacheKey, result);
-
         return result;
     }
 }
@@ -503,11 +487,6 @@ export class InterruptionManager {
         this.logCallback(type, message, data);
     }
 
-    /**
-     * Registers an interruptor that can check for plan invalidation.
-     * @param {string} id - Unique identifier for this interruptor
-     * @param {object} interruptor - The interruptor configuration
-     */
     registerInterruptor(id, interruptor) {
         this.activeInterruptors.set(id, {
             ...interruptor,
@@ -521,18 +500,12 @@ export class InterruptionManager {
         this.activeInterruptors.delete(id);
     }
 
-    /**
-     * Checks if we can attempt to replan for a given task.
-     * @param {string} taskName - The name of the task being replanned
-     * @returns {boolean} Whether replanning is allowed
-     */
     canReplan(taskName) {
         const now = Date.now();
         const history = this.replanHistory.get(taskName);
 
         if (!history) return true;
 
-        // Check if we're still in cooldown
         if (this.config.enableCooldown && now < history.cooldownUntil) {
             this.log(
                 "warn",
@@ -544,7 +517,6 @@ export class InterruptionManager {
             return false;
         }
 
-        // Check if we've exceeded max attempts
         if (history.count >= this.config.maxReplanAttempts) {
             this.log(
                 "warn",
@@ -560,10 +532,6 @@ export class InterruptionManager {
         return true;
     }
 
-    /**
-     * Records a replan attempt and updates cooldown.
-     * @param {string} taskName - The name of the task being replanned
-     */
     recordReplanAttempt(taskName) {
         const now = Date.now();
         const history = this.replanHistory.get(taskName) || {
@@ -590,22 +558,11 @@ export class InterruptionManager {
         });
     }
 
-    /**
-     * Resets the replan history for a task (e.g., when a plan succeeds).
-     * @param {string} taskName - The name of the task
-     */
     resetReplanHistory(taskName) {
         this.replanHistory.delete(taskName);
         this.log("info", `Reset replan history for ${taskName}`);
     }
 
-    /**
-     * Checks all registered interruptors and returns the reason for interruption if any.
-     * @param {WorldStateProxy} worldState - Current world state
-     * @param {object} context - Current execution context
-     * @param {PrimitiveTask} currentTask - The task being executed
-     * @returns {object|null} Interruption result or null if no interruption
-     */
     checkInterruptions(worldState, context, currentTask) {
         const now = Date.now();
 
@@ -640,10 +597,6 @@ export class InterruptionManager {
         return null;
     }
 
-    /**
-     * Clears old replan history entries to prevent memory leaks.
-     * @param {number} maxAge - Maximum age in milliseconds (default: 5 minutes)
-     */
     cleanup(maxAge = 300000) {
         const now = Date.now();
         const cutoff = now - maxAge;
@@ -658,7 +611,6 @@ export class InterruptionManager {
 
 /**
  * Central repository for the logic of smart actions.
- * This decouples the "how" from the "what" and "where".
  */
 export const smartActionLibrary = {};
 
@@ -677,11 +629,13 @@ export class TaskDiscoverer {
             const actionLogic = smartActionLibrary[actionType];
 
             if (actionLogic) {
-                // Create a unique name for this specific instance of the action
                 const taskName = `${actionType}_${obj.id}`;
+                // Avoid re-registering the same task instance
+                if (planner.taskRegistry[taskName]) continue;
+
                 const newTask = new SmartObjectTask(taskName, obj, {
                     ...actionLogic,
-                    actionType
+                    actionType,
                 });
                 planner.registerTask(newTask);
                 discoveredCount++;
@@ -701,16 +655,15 @@ export class PlanExecutor {
         this.currentIndex = 0;
         this.interruptionManager =
             options.interruptionManager || new InterruptionManager();
-        this.planner = options.planner; // Reference to planner for replanning
-        this.rootTask = options.rootTask; // Original task for replanning
+        this.planner = options.planner;
+        this.replanFn = options.replanFn;
+        this.rootTask = options.rootTask;
         this.logCallback = options.logCallback || (() => {});
 
-        // State management
         this.state = "running"; // 'running', 'interrupted', 'completed', 'failed'
         this.lastInterruption = null;
         this.executionStartTime = Date.now();
 
-        // Set up logging
         this.interruptionManager.setLogCallback(this.logCallback);
     }
 
@@ -728,13 +681,7 @@ export class PlanExecutor {
         return this.state === "interrupted";
     }
 
-    /**
-     * Executes the next step with intelligent interruption handling.
-     * @param {WorldStateProxy} worldState - Current world state
-     * @param {object} options - Execution options, e.g., { enableReplanning: true }
-     * @returns {object} Execution result with a status like 'executing', 'completed', 'failed', 'replanned'.
-     */
-    tick(worldState, options = {}) {
+    async tick(worldState, options = {}) {
         if (this.isDone()) {
             if (this.state !== "completed") {
                 this.state = "completed";
@@ -760,7 +707,6 @@ export class PlanExecutor {
 
         const currentTask = this.plan[this.currentIndex];
 
-        // Check for interruptions before executing
         const interruption = this.interruptionManager.checkInterruptions(
             worldState,
             this.context,
@@ -771,9 +717,7 @@ export class PlanExecutor {
             return this.handleInterruption(interruption, worldState, options);
         }
 
-        // Execute the task
         try {
-            // Check primitive task conditions again right before execution, as the world might have changed.
             if (
                 currentTask.conditions &&
                 !currentTask.conditions(worldState, this.context)
@@ -793,14 +737,12 @@ export class PlanExecutor {
 
             currentTask.executeOperator(this.context);
 
-            // It's crucial to apply the effects to the *actual* world state proxy, not a simulated one.
             if (currentTask.effects) {
                 currentTask.effects(worldState, this.context);
             }
 
             this.currentIndex++;
 
-            // Check if the plan is now complete after this step
             if (this.isDone()) {
                 this.state = "completed";
                 this.logCallback(
@@ -840,21 +782,12 @@ export class PlanExecutor {
         }
     }
 
-    /**
-     * Handles interruptions with automatic replanning if possible.
-     * @param {object} interruption - The interruption details
-     * @param {WorldStateProxy} worldState - Current world state
-     * @param {object} options - Execution options
-     * @returns {object} Handling result
-     */
-    handleInterruption(interruption, worldState, options = {}) {
+    async handleInterruption(interruption, worldState, options = {}) {
         this.state = "interrupted";
         this.lastInterruption = interruption;
-
         this.logCallback("warn", "Plan interrupted", interruption);
 
-        // If replanning is disabled or not possible, enter failed state
-        if (!options.enableReplanning || !this.planner || !this.rootTask) {
+        if (!options.enableReplanning || !this.replanFn || !this.rootTask) {
             this.state = "failed";
             return {
                 status: "failed",
@@ -863,7 +796,6 @@ export class PlanExecutor {
             };
         }
 
-        // Check if we are allowed to replan (cooldown, max attempts)
         const taskName = this.rootTask.name || "unknown_root_task";
         if (!this.interruptionManager.canReplan(taskName)) {
             this.state = "failed";
@@ -874,68 +806,69 @@ export class PlanExecutor {
             };
         }
 
-        // Attempt to replan
         try {
             this.interruptionManager.recordReplanAttempt(taskName);
-
-            const replanResult = this.planner.findPlan({
+            const replanGenerator = this.replanFn({
                 tasks: this.rootTask,
-                worldState: worldState, // Use the current, changed world state
+                worldState: worldState,
                 context: this.context,
             });
 
-            if (replanResult && replanResult.plan.length > 0) {
-                // Successfully replanned
-                this.interruptionManager.resetReplanHistory(taskName);
-                this.plan = [...replanResult.plan];
-                this.context = replanResult.context;
-                this.currentIndex = 0;
-                this.state = "running";
+            // FIX: This is a simplified helper to run the generator to completion for the executor.
+            const runGenerator = async () => {
+                let lastValue;
+                while (true) {
+                    const { value, done } = await replanGenerator.next();
+                    if (done) {
+                        return value;
+                    }
+                    lastValue = value;
+                }
+            };
+            const replanResult = await runGenerator();
 
+            if (replanResult && replanResult.plan.length > 0) {
                 this.logCallback(
                     "success",
-                    "Successfully replanned after interruption",
-                    {
-                        newPlanLength: this.plan.length,
-                        reason: interruption.reason,
-                    }
+                    "Replanning successful. New plan generated."
                 );
-
+                this.plan = replanResult.plan;
+                this.context = replanResult.context;
+                this.reset(); // Reset executor state for the new plan
+                this.interruptionManager.resetReplanHistory(taskName);
                 return {
                     status: "replanned",
                     interruption,
                     newPlan: this.plan,
-                    newPlanLength: this.plan.length,
                 };
             } else {
-                // Replanning failed to find a new plan
                 this.state = "failed";
                 this.logCallback(
                     "error",
-                    "Replanning failed to find a valid plan.",
-                    { reason: interruption.reason }
+                    "Replanning failed: No new plan could be found."
                 );
                 return {
                     status: "failed",
                     interruption,
-                    reason: "replanning_failed",
+                    reason: "replan_failed_to_find_plan",
                 };
             }
         } catch (error) {
-            this.logCallback("error", "Replanning threw an error", error);
             this.state = "failed";
+            this.logCallback(
+                "error",
+                "Replanning failed with a critical error.",
+                error
+            );
             return {
                 status: "failed",
                 interruption,
                 reason: "replanning_error",
-                error: error.message,
+                error,
             };
         }
     }
 
-    /**
-     * Resets the executor state for a fresh start.
-     */
     reset() {
         this.currentIndex = 0;
         this.state = "running";
@@ -943,10 +876,6 @@ export class PlanExecutor {
         this.executionStartTime = Date.now();
     }
 
-    /**
-     * Gets current execution statistics.
-     * @returns {object} Execution stats
-     */
     getStats() {
         return {
             totalTasks: this.plan.length,
@@ -956,137 +885,6 @@ export class PlanExecutor {
             state: this.state,
             executionTime: Date.now() - this.executionStartTime,
             lastInterruption: this.lastInterruption,
-        };
-    }
-}
-
-/**
- * Utility class for creating common interruptors.
- */
-export class InterruptorFactory {
-    /**
-     * Creates an interruptor that checks if a target entity still exists.
-     * @param {string} targetKey - The key in context that holds the target
-     * @param {string} entityCollection - The collection name in world state
-     * @returns {object} Interruptor configuration
-     */
-    static createTargetExistsInterruptor(targetKey, entityCollection) {
-        return {
-            check: (worldState, context, currentTask) => {
-                const target = context[targetKey];
-                if (!target) return null;
-
-                const entities = worldState.get(entityCollection) || [];
-                const targetExists = entities.some((e) => e.id === target.id);
-
-                if (!targetExists) {
-                    return {
-                        interrupted: true,
-                        reason: "target_no_longer_exists",
-                        targetId: target.id,
-                        message: `Target ${target.id} no longer exists`,
-                    };
-                }
-                return null;
-            },
-        };
-    }
-
-    /**
-     * Creates an interruptor that checks if the agent is still alive/functional.
-     * @param {string} agentKey - The key in context that holds the agent
-     * @param {string} entityCollection - The collection name in world state
-     * @returns {object} Interruptor configuration
-     */
-    static createAgentHealthInterruptor(agentKey, entityCollection) {
-        return {
-            check: (worldState, context, currentTask) => {
-                const agent = context[agentKey];
-                if (!agent) return null;
-
-                const entities = worldState.get(entityCollection) || [];
-                const currentAgent = entities.find((e) => e.id === agent.id);
-
-                if (!currentAgent || currentAgent.health <= 0) {
-                    return {
-                        interrupted: true,
-                        reason: "agent_dead",
-                        agentId: agent.id,
-                        message: `Agent ${agent.id} is dead or missing`,
-                    };
-                }
-                return null;
-            },
-        };
-    }
-
-    /**
-     * Creates an interruptor that checks if a resource is still available.
-     * @param {string} resourceName - The name of the resource to check
-     * @param {number} requiredAmount - The minimum amount required
-     * @returns {object} Interruptor configuration
-     */
-    static createResourceInterruptor(resourceName, requiredAmount) {
-        return {
-            check: (worldState, context, currentTask) => {
-                const currentAmount = worldState.get(resourceName) || 0;
-
-                if (currentAmount < requiredAmount) {
-                    return {
-                        interrupted: true,
-                        reason: "insufficient_resources",
-                        resourceName,
-                        required: requiredAmount,
-                        available: currentAmount,
-                        message: `Insufficient ${resourceName}: need ${requiredAmount}, have ${currentAmount}`,
-                    };
-                }
-                return null;
-            },
-        };
-    }
-
-    /**
-     * Creates an interruptor that checks if a task type should be interrupted.
-     * @param {Array<string>} taskNames - Task names to monitor
-     * @param {function} condition - Function that returns interruption if condition is met
-     * @returns {object} Interruptor configuration
-     */
-    static createTaskSpecificInterruptor(taskNames, condition) {
-        return {
-            check: (worldState, context, currentTask) => {
-                if (!taskNames.includes(currentTask.name)) {
-                    return null;
-                }
-
-                return condition(worldState, context, currentTask);
-            },
-        };
-    }
-
-    /**
-     * Creates an interruptor that triggers after a certain time limit.
-     * @param {number} timeLimit - Time limit in milliseconds
-     * @returns {object} Interruptor configuration
-     */
-    static createTimeoutInterruptor(timeLimit) {
-        const startTime = Date.now();
-
-        return {
-            check: (worldState, context, currentTask) => {
-                const elapsed = Date.now() - startTime;
-
-                if (elapsed > timeLimit) {
-                    return {
-                        interrupted: true,
-                        reason: "timeout",
-                        timeLimit,
-                        elapsed,
-                        message: `Execution timeout: ${elapsed}ms > ${timeLimit}ms`,
-                    };
-                }
-                return null;
-            },
         };
     }
 }
