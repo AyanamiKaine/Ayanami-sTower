@@ -1,16 +1,37 @@
 {
   "name": "stella-ecs-js",
-  "module": "stella-ecs.js",
+  "version": "1.0.0",
+  "description": "A high-performance Entity Component System (ECS) library for modern JavaScript and TypeScript applications.",
+  "main": "stella-ecs.js",
   "type": "module",
+  "files": [
+    "src/",
+    "stella-ecs.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "bench": "bun run ./bench/stella-ecs.bench.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YourUsername/stella-ecs-js.git"
+  },
+  "keywords": [
+    "ecs",
+    "entity component system",
+    "gamedev",
+    "state management",
+    "performance"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5"
-  },
-  "scripts": {
-    "test": "bun test",
-    "bench": "bun run ./bench/stella-ecs.bench.js"
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "graphology": "^0.26.0",
