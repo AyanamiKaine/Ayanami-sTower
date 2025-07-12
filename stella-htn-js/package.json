@@ -1,11 +1,40 @@
 {
   "name": "stella-htn-js",
-  "module": "stella-htn.js",
+  "version": "1.0.0",
+  "description": "A flexible Hierarchical Task Network (HTN) planner for creating complex AI behaviors in JavaScript.",
+  "main": "stella-htn.js",
   "type": "module",
+  "files": [
+    "src/",
+    "stella-htn.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "bench": "bun run ./bench/stella-htn.bench.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YourUsername/stella-htn-js.git"
+  },
+  "keywords": [
+    "htn",
+    "hierarchical task network",
+    "ai",
+    "planning",
+    "gamedev",
+    "ai behavior"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "mitata": "^1.0.34"
   }
 }
