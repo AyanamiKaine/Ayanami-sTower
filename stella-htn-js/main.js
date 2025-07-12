@@ -16,6 +16,7 @@ export class WorldStateProxy {
         clone,
         incrementState,
         generateCacheKey,
+        updateObject,
     }) {
         if (
             typeof getState !== "function" ||
@@ -33,6 +34,7 @@ export class WorldStateProxy {
         // Optional: A function to generate a unique key for the current state for caching.
         // If not provided, the planner will fall back to a slower stringify method.
         this._generateCacheKey = generateCacheKey;
+        this._updateObject = updateObject;
     }
 
     get(key) {
@@ -54,6 +56,25 @@ export class WorldStateProxy {
                 key,
                 (typeof currentValue === "number" ? currentValue : 0) + value
             );
+        }
+    }
+
+    updateObject(id, newProperties) {
+        if (this._updateObject) {
+            // Use the efficient, user-provided implementation if it exists
+            this._updateObject(id, newProperties);
+        } else {
+            // Provide a reasonable, but potentially slow, fallback
+            const objects = this.get("worldObjects") || [];
+            const objectIndex = objects.findIndex((o) => o.id === id);
+            if (objectIndex !== -1) {
+                // Merge new properties into the existing object
+                objects[objectIndex] = {
+                    ...objects[objectIndex],
+                    ...newProperties,
+                };
+                this.set("worldObjects", objects);
+            }
         }
     }
 
