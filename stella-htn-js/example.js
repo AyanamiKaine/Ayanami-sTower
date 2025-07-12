@@ -20,16 +20,9 @@ smartActionLibrary.VaultThroughWindow = {
     // `obj` is the specific smart object instance from the world
     conditions: (ws, ctx, obj) => !obj.isBroken,
     effects: (ws, ctx, obj) => {
-        // Update the agent's position
         ws.set("agentPosition", obj.endsAt);
-        // Modify the state of the specific smart object in the world
-        const windows = ws
-            .get("worldObjects")
-            .filter((o) => o.type === "Window");
-        const windowToBreak = windows.find((w) => w.id === obj.id);
-        if (windowToBreak) {
-            windowToBreak.isBroken = true;
-        }
+        // This is now clean, declarative, and uses the efficient implementation
+        ws.updateObject(obj.id, { isBroken: true });
     },
     operator: (ctx) => {
         console.log(
@@ -88,12 +81,29 @@ let gameState = {
         },
     ],
 };
+
 const createWorldStateProxy = (initialState) => {
     let state = structuredClone(initialState);
+    // Create a Map for efficient object lookups
+    let objectMap = new Map(state.worldObjects.map((o) => [o.id, o]));
+
     return new WorldStateProxy({
         getState: (key) => (key ? state[key] : state),
         setState: (key, value) => (state[key] = value),
-        clone: () => createWorldStateProxy(state),
+        clone: () =>
+            createWorldStateProxy({
+                ...state,
+                worldObjects: Array.from(objectMap.values()),
+            }),
+        // Provide the efficient update function
+        updateObject: (id, newProperties) => {
+            if (objectMap.has(id)) {
+                const obj = objectMap.get(id);
+                objectMap.set(id, { ...obj, ...newProperties });
+                // Keep the array in sync if needed, or rebuild it from the map on clone
+                state.worldObjects = Array.from(objectMap.values());
+            }
+        },
     });
 };
 
@@ -111,7 +121,6 @@ const patrol = new PrimitiveTask("Patrol", {
     operator: () => console.log("[OPERATOR] Agent is patrolling..."),
 });
 
-// This is the key part: The method's subtask refers to a *dynamically generated* task name.
 const getInRange = new CompoundTask("GetInRange", [
     {
         name: "Vault through window to reach enemy",
@@ -122,23 +131,42 @@ const getInRange = new CompoundTask("GetInRange", [
     },
 ]);
 
-const rootBehavior = new CompoundTask("RootBehavior", [
+
+const engageEnemyGoal = new CompoundTask("EngageEnemyGoal", [
     {
-        name: "Get Weapon if Needed",
-        priority: 20, // Highest priority
-        conditions: (ws) => ws.get("enemyVisible") && !ws.get("agentHasWeapon"),
-        subtasks: ["PickupWeapon_scattergun_01"], // Task name is dynamically generated
+        name: "Attack when ready",
+        conditions: (ws) =>
+            ws.get("agentHasWeapon") &&
+            ws.get("agentPosition") === ws.get("enemyPosition"),
+        subtasks: [attackEnemy],
     },
     {
-        name: "Engage Enemy",
+        name: "Get in range after getting weapon",
+        conditions: (ws) =>
+            ws.get("agentHasWeapon") &&
+            ws.get("agentPosition") !== ws.get("enemyPosition"),
+        // ✅ Use the string name for recursion
+        subtasks: [getInRange, "EngageEnemyGoal"],
+    },
+    {
+        name: "Get a weapon first",
+        conditions: (ws) => !ws.get("agentHasWeapon"),
+        // ✅ Use the string name for recursion
+        subtasks: ["PickupWeapon_scattergun_01", "EngageEnemyGoal"],
+    },
+]);
+
+const rootBehavior = new CompoundTask("RootBehavior", [
+    {
+        name: "Engage Enemy if Visible",
         priority: 10,
-        conditions: (ws) => ws.get("enemyVisible") && ws.get("agentHasWeapon"),
-        subtasks: [getInRange, attackEnemy],
+        conditions: (ws) => ws.get("enemyVisible"),
+        subtasks: [engageEnemyGoal], // The one true goal is to engage
     },
     {
         name: "Patrol if Idle",
         priority: 1,
-        subtasks: [patrol],
+        subtasks: [patrol], // Fallback behavior
     },
 ]);
 // =============================================================================
@@ -153,6 +181,7 @@ async function runSimulation() {
     planner.registerTask(patrol);
     planner.registerTask(getInRange);
     planner.registerTask(rootBehavior);
+    planner.registerTask(engageEnemyGoal);
 
     let worldState = createWorldStateProxy(gameState);
     let context = {
