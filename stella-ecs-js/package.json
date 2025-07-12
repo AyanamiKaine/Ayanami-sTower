@@ -1,6 +1,6 @@
 {
   "name": "stella-ecs-js",
-  "module": "index.js",
+  "module": "stella-ecs.js",
   "type": "module",
   "devDependencies": {
     "@types/bun": "latest"
