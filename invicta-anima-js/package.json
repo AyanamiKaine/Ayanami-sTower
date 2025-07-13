@@ -1,0 +1,13 @@
+{
+  "name": "invicta-anima-js",
+  "module": "main.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "dependencies": {
+    "sfpm-js": "C:/Users/ayanami/Ayanami-sTower/stella_fuzzy_pattern_matcher/SFPM-JS",
+    "stella-ecs-js": "C:/Users/ayanami/Ayanami-sTower/stella-ecs-js",
+    "stella-htn-js": "C:/Users/ayanami/Ayanami-sTower/stella-htn-js"
+  }
+}
