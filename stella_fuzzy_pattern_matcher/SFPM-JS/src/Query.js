@@ -25,7 +25,7 @@ export class Query {
     /**
      * @param {import('./Rule').Rule[]} rules
      */
-    match(rules) {
-        match(rules, this._factSource);
+    match(rules, ...data) {
+        match(rules, this._factSource, ...data);
     }
 }

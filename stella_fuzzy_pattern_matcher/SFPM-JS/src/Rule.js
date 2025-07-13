@@ -3,7 +3,7 @@
 export class Rule {
     /**
      * @param {import('./Criteria').Criteria[]} criterias
-     * @param {() => void} payload
+     * @param {(...data) => void} payload
      * @param {string} [name='']
      * @param {number} [priority=0]
      */
@@ -36,7 +36,7 @@ export class Rule {
         return { isTrue: true, matchedCriteriaCount: this.criteriaCount };
     }
 
-    executePayload() {
-        this.payload();
+    executePayload(...data) {
+        this.payload(...data);
     }
 }

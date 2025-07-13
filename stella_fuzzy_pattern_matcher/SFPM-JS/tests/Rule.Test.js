@@ -76,6 +76,52 @@ describe("Rule Evaluation", () => {
     });
 });
 
+describe("rule abitrary payload data", () => {
+    test("We can add abitrary data to payloads, that can be accessed in payloads", () => {
+        let gameData = {
+            name: "",
+        };
+
+        let payloadTrigger = { value: false };
+        const rules = [
+            new Rule(
+                [
+                    new Criteria(
+                        "who",
+                        (who) => who === "Nick",
+                        Operator.Predicate
+                    ),
+                    new Criteria(
+                        "concept",
+                        (concept) => concept === "onHit",
+                        Operator.Predicate
+                    ),
+                ],
+                (gameData, payloadTrigger) => {
+                    gameData.name = "Nick";
+                    payloadTrigger.value = true;
+                }
+            ),
+        ];
+
+        const facts = new DictionaryFactSource(
+            new Map([
+                ["who", "Nick"],
+                ["concept", "onHit"],
+                ["curMap", "circus"],
+                ["health", 0.66],
+                ["nearAllies", 2],
+                ["hitBy", "zombieClown"],
+            ])
+        );
+
+        match(rules, facts, gameData, payloadTrigger);
+
+        expect(gameData.name).toBe("Nick");
+        expect(payloadTrigger.value).toBe(true);
+    });
+});
+
 describe("Rule Matching Logic", () => {
     test("RandomRuleSelectionIfMultipleRulesMatchWithSamePriority", () => {
         let rule1Executed = false;

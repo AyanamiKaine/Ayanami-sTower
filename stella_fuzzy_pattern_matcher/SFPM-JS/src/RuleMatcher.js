@@ -38,7 +38,7 @@ export function leastSpecificRule(rules) {
  * @param {import('./Rule').Rule[]} rules
  * @param {import('./FactSource').FactSource} facts
  */
-export function match(rules, facts) {
+export function match(rules, facts, ...data) {
     const matchedRules = rules.filter((rule) => rule.evaluate(facts).isTrue);
 
     if (matchedRules.length === 0) {
@@ -46,7 +46,7 @@ export function match(rules, facts) {
     }
 
     if (matchedRules.length === 1) {
-        matchedRules[0].executePayload();
+        matchedRules[0].executePayload(...data);
         return;
     }
 
@@ -56,7 +56,7 @@ export function match(rules, facts) {
     );
 
     if (bestRules.length === 1) {
-        bestRules[0].executePayload();
+        bestRules[0].executePayload(...data);
         return;
     }
 
@@ -66,10 +66,10 @@ export function match(rules, facts) {
     );
 
     if (priorityCandidates.length === 1) {
-        priorityCandidates[0].executePayload();
+        priorityCandidates[0].executePayload(...data);
         return;
     }
 
     const randomIndex = Math.floor(Math.random() * priorityCandidates.length);
-    priorityCandidates[randomIndex].executePayload();
+    priorityCandidates[randomIndex].executePayload(...data);
 }
