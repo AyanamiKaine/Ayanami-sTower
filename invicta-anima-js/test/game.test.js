@@ -2,6 +2,9 @@ import { test, expect, describe } from "bun:test";
 import { Criteria, Operator, Rule } from "sfpm-js";
 import { Game } from "../src/Game";
 import { Query } from "sfpm-js";
+import { QueryResult } from "stella-ecs-js";
+
+class Player {}
 
 describe("Game", () => {
     test("Progressing the game world should increase the current tick count", () => {
@@ -9,6 +12,18 @@ describe("Game", () => {
         game.tick();
 
         expect(game.currentTick).toBe(1);
+    });
+
+    test("Get player entity", () => {
+        const game = new Game();
+        let player = game.world.createEntity().set(new Player());
+        let queryResult = new QueryResult(game.world.query([Player]));
+
+
+        expect(queryResult.count).toBe(1);
+        queryResult.forEach(({ entity, components }) => {
+            expect(components.has(Player)).toBe(true);
+        });
     });
 
     test("Can select player options", () => {
