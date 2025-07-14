@@ -31,20 +31,20 @@ export class Game {
      * They have goals and desires to fullfill. Some of those desires and goals will have dire
      * consequnces in the world.
      */
-    Tick() {
+    tick() {
         this.world.update();
         this.currentTick += 1;
     }
 
-    UpdateCurrentPlayerOptions(query) {
+    updateCurrentPlayerOptions(query) {
         query.match(this.currentGameRules);
     }
 
-    ShowCurrentPlayerOptions() {
+    showCurrentPlayerOptions() {
         console.log(this.currentPlayerOptions);
     }
 
-    AddScenario(scenario) {
+    addScenario(scenario) {
         this.scenarios.set(scenario.name, scenario.rules);
     }
 
