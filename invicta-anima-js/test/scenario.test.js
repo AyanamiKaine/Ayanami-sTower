@@ -77,7 +77,7 @@ describe("Scenario", () => {
         expect(scenario.world).toBe(game.world);
         expect(scenario.rules).toBe(scenarioRules);
 
-        game.AddScenario(scenario);
+        game.addScenario(scenario);
         expect(game.scenarios.size).toBe(1);
     });
 
@@ -154,7 +154,7 @@ describe("Scenario", () => {
         expect(scenario.world).toBe(game.world);
         expect(scenario.rules).toBe(scenarioRules);
 
-        game.AddScenario(scenario);
+        game.addScenario(scenario);
         game.removeScenario(scenario);
         expect(game.scenarios.size).toBe(0);
     });
