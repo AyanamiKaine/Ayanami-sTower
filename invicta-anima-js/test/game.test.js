@@ -6,7 +6,7 @@ import { Query } from "sfpm-js";
 describe("Game", () => {
     test("Progressing the game world should increase the current tick count", () => {
         const game = new Game();
-        game.Tick();
+        game.tick();
 
         expect(game.currentTick).toBe(1);
     });
