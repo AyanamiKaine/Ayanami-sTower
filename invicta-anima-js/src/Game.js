@@ -48,10 +48,23 @@ export class Game {
         this.scenarios.set(scenario.name, scenario.rules);
     }
 
-    RemoveScenario(scenario) {
+    removeScenario(scenario) {
         this.scenarios.delete(scenario.name);
     }
-    RemoveScenarioByName(scenarioName) {
+
+    removeScenarioByName(scenarioName) {
         this.scenarios.delete(scenarioName);
+    }
+
+    selectPlayerOption(optionIndex) {
+        const selectedOption = this.currentPlayerOptions.get(optionIndex);
+
+        if (selectedOption && typeof selectedOption.action === "function") {
+            selectedOption.action(this.world);
+        } else {
+            console.error(
+                `Error: Invalid option index "${optionIndex}". No action found.`
+            );
+        }
     }
 }
