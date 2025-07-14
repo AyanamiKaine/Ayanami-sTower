@@ -1,7 +1,10 @@
 {
   "name": "invicta-anima-js",
-  "module": "main.js",
+  "module": "index.js",
   "type": "module",
+  "scripts": {
+    "dev": "bun --watch index.js"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

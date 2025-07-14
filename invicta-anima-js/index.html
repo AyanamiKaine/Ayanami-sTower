@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Adventure on Mars</title>
+    <!-- Using Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Using Google Fonts for better typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <style>
+        /* Applying the Inter font to the whole page */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-mono {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Style for the game options buttons */
+        .game-option-btn {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .game-option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white flex items-center justify-center h-screen antialiased">
+    <main
+        class="text-center bg-gray-800/50 backdrop-blur-sm border border-gray-700 p-8 sm:p-12 rounded-2xl shadow-2xl max-w-2xl w-full mx-4">
+        <h1 id="game-title" class="text-3xl sm:text-4xl font-bold text-cyan-400 mb-2">
+            Meeting on Mars
+        </h1>
+        <p id="game-narrative" class="text-lg text-gray-300 mb-8">
+            You are standing on the red dust of Mars. A person named Marena is in front of you. What do you do?
+        </p>
+
+        <!-- Container for game options -->
+        <div id="game-options" class="flex flex-col space-y-4">
+            <!-- Game options will be dynamically inserted here -->
+            <div class="text-gray-400">Loading game...</div>
+        </div>
+
+        <!-- Debug Information Panel -->
+        <div id="debug-panel"
+            class="mt-8 text-left text-xs bg-gray-900/80 border border-gray-700 rounded-lg p-4 font-mono">
+            <h3 class="text-sm font-bold text-yellow-300 mb-2 tracking-wider">-- DEBUG INFO --</h3>
+            <div id="debug-content">
+                <p class="text-gray-500">Awaiting server response...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Client-Side Game Logic ---
+        const optionsContainer = document.getElementById('game-options');
+        const debugContent = document.getElementById('debug-content');
+
+        /**
+         * Renders the player's choices as buttons on the screen.
+         * @param {Array<Object>} options - An array of option objects from the server.
+         */
+        function renderOptions(options) {
+            optionsContainer.innerHTML = '';
+            if (!options || options.length === 0) {
+                optionsContainer.innerHTML = '<p class="text-gray-500">You have left the conversation. Refresh to start over.</p>';
+                return;
+            }
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.dataset.optionId = option.id;
+                button.textContent = option.text;
+                button.className = 'game-option-btn w-full bg-gray-700/50 hover:bg-cyan-500/50 border border-gray-600 text-white font-medium py-3 px-5 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400';
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        /**
+         * Renders the debug information from the server.
+         * @param {Object} debug - The debug object from the server.
+         */
+        function renderDebugInfo(debug) {
+            if (!debug) {
+                debugContent.innerHTML = '<p class="text-red-400">No debug info received.</p>';
+                return;
+            }
+            let html = `<p><span class="text-gray-400">Tick:</span> <span class="text-white font-bold">${debug.tick}</span></p>`;
+            html += '<p class="text-gray-400 mt-2">Game State:</p><ul class="list-disc list-inside pl-2">';
+            for (const [key, value] of Object.entries(debug.gameState)) {
+                html += `<li><span class="text-cyan-400">${key}:</span> <span class="text-green-400">${JSON.stringify(value)}</span></li>`;
+            }
+            html += '</ul>';
+            debugContent.innerHTML = html;
+        }
+
+        /**
+         * Fetches the current game options and debug info from the server.
+         */
+        async function fetchInitialData() {
+            try {
+                const response = await fetch('/api/game');
+                if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
+                const { options, debug } = await response.json();
+                renderOptions(options);
+                renderDebugInfo(debug);
+            } catch (error) {
+                console.error('Error:', error);
+                optionsContainer.innerHTML = `<p class="text-red-500">Error loading game: ${error.message}</p>`;
+                debugContent.innerHTML = `<p class="text-red-500">Failed to load debug info.</p>`;
+            }
+        }
+
+        /**
+         * Sends the player's selected action and gets updated game data.
+         * @param {number} optionId - The ID of the selected option.
+         */
+        async function selectOption(optionId) {
+            try {
+                const response = await fetch('/api/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ optionId }),
+                });
+                if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
+                const { options, debug } = await response.json();
+                renderOptions(options);
+                renderDebugInfo(debug);
+            } catch (error) {
+                console.error('Error:', error);
+                optionsContainer.innerHTML = `<p class="text-red-500">Error processing action: ${error.message}</p>`;
+            }
+        }
+
+        // --- Event Listener ---
+        optionsContainer.addEventListener('click', (event) => {
+            if (event.target.tagName === 'BUTTON') {
+                const optionId = parseInt(event.target.dataset.optionId, 10);
+                optionsContainer.innerHTML = '<div class="text-gray-400">Processing...</div>';
+                selectOption(optionId);
+            }
+        });
+
+        // --- Initial Game Load ---
+        document.addEventListener('DOMContentLoaded', fetchInitialData);
+    </script>
+</body>
+
+</html>
