@@ -2,6 +2,8 @@ import { World } from "stella-ecs-js";
 import { Character } from "./components/Character";
 import { Name } from "./components/Name";
 import { Age } from "./components/Age";
+import { Attribute } from "./components/Attribute";
+import { Trait } from "./components/Trait";
 
 export class Game {
     constructor(parameters) {
@@ -19,6 +21,8 @@ export class Game {
         this.world.registerComponent(Character);
         this.world.registerComponent(Name);
         this.world.registerComponent(Age);
+        this.world.registerComponent(Attribute);
+        this.world.registerComponent(Trait);
     }
 
     /**
