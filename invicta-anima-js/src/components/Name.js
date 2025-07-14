@@ -1,5 +1,5 @@
 export class Name {
     constructor(value) {
-        this.value;
+        this.value = value;
     }
 }
