@@ -155,7 +155,7 @@ describe("Scenario", () => {
         expect(scenario.rules).toBe(scenarioRules);
 
         game.AddScenario(scenario);
-        game.RemoveScenario(scenario);
+        game.removeScenario(scenario);
         expect(game.scenarios.size).toBe(0);
     });
 });
