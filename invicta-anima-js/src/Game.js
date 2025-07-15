@@ -20,7 +20,7 @@ export class Game {
         this.scenarios = new Map();
 
         this.gameState = new Map();
-        this.dialogueManager = new DialogueManager(this.gameState);
+        this.dialogueManager = new DialogueManager(this);
 
 
         this.world.registerComponent(Character);

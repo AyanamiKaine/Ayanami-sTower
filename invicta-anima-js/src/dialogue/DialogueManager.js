@@ -1,10 +1,10 @@
 import { Query } from 'sfpm-js';
 
 export class DialogueManager {
-    constructor(gameState) {
+    constructor(game) {
         this.allNodes = new Map(); // Stores all dialogue nodes, keyed by their ID.
         this.activeNode = null;
-        this.gameState = gameState; // A reference to the game's state map.
+        this.game = game; // A reference to the game's state map.
     }
 
     /**
@@ -52,7 +52,7 @@ export class DialogueManager {
 
         // The query object's fact source is what we need to pass to the criteria.
         // Your Query class correctly creates a DictionaryFactSource internally.
-        const query = new Query(this.gameState);
+        const query = new Query(this.game.gameState);
         const factSource = query._factSource; // Get the underlying fact source
         //console.log(factSource)
         for (const response of this.activeNode.playerResponses) {
@@ -72,7 +72,7 @@ export class DialogueManager {
                     action: () => {
                         // 1. Execute the response's specific action, if any
                         if (response.action) {
-                            response.action(this.gameState);
+                            response.action(this.game);
                         }
                         // 2. Transition to the next node
                         if (response.nextNodeId) {

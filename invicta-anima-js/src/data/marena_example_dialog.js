@@ -8,7 +8,7 @@ export const marenaDialogue = [
         new PlayerResponse(
             "[TALK] Who are you?",
             'marena_intro_reveal_name',
-            (gameState) => gameState.set('knowsMarena', true), // Action to perform
+            (game) => game.gameState.set('knowsMarena', true), // Action to perform
             [new Criteria('knowsMarena', false, Operator.Equal)] // Condition for this option
         ),
         new PlayerResponse(
