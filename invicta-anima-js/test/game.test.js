@@ -3,6 +3,8 @@ import { Criteria, Operator, Rule } from "sfpm-js";
 import { Game } from "../src/Game";
 import { Query } from "sfpm-js";
 import { QueryResult } from "stella-ecs-js";
+import { Planet } from "../src/components/Planet";
+import { Name } from "../src/components/Name";
 
 class Player {}
 
@@ -18,7 +20,6 @@ describe("Game", () => {
         const game = new Game();
         let player = game.world.createEntity().set(new Player());
         let queryResult = new QueryResult(game.world.query([Player]));
-
 
         expect(queryResult.count).toBe(1);
         queryResult.forEach(({ entity, components }) => {
@@ -194,5 +195,17 @@ describe("Game", () => {
         query.match(gameRules, game);
 
         expect(game.currentPlayerOptions.size).toBe(2);
+    });
+
+    test("Creating a small example world", () => {
+        const game = new Game();
+        
+        
+        let krell = game.world
+            .createEntity()
+            .set(new Planet())
+            .set(new Name("Krell"));
+
+        expect(krell.get(Name).value).toBe("Krell")
     });
 });
