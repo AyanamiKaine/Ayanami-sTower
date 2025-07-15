@@ -9,8 +9,8 @@
     "@types/bun": "latest"
   },
   "dependencies": {
-    "sfpm-js": "C:/Users/ayanami/Ayanami-sTower/stella_fuzzy_pattern_matcher/SFPM-JS",
-    "stella-ecs-js": "C:/Users/ayanami/Ayanami-sTower/stella-ecs-js",
-    "stella-htn-js": "C:/Users/ayanami/Ayanami-sTower/stella-htn-js"
+    "sfpm-js": "../stella_fuzzy_pattern_matcher/SFPM-JS",
+    "stella-ecs-js": "../stella-ecs-js",
+    "stella-htn-js": "../stella-htn-js"
   }
 }
