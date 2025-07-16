@@ -78,7 +78,7 @@
       type: 'condition',
       position: { x: -250, y: 450 },
       data: {
-        expression: 'player.strength > 10'
+        expression: 'player.get("Strength").Value > 10'
       }
     },
     // 5A. The outcome if the condition is true.
