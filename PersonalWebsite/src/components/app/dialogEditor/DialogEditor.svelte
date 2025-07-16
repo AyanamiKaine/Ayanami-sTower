@@ -1,6 +1,7 @@
 <script>
   import { SvelteFlow, Controls, Background, BackgroundVariant, NodeToolbar } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
+  import { setContext } from 'svelte';
 
   // Make sure you've renamed ContextMenu.svelte to NodeContextMenu.svelte
   import NodeContextMenu from './contextMenus/NodeContextMenu.svelte';
@@ -8,13 +9,19 @@
   import PaneContextMenu from './contextMenus/PaneContextMenu.svelte'; // 1. Import the new component
   import ConditionNode from './nodes/ConditionNode.svelte'; // 1. Import the new node
   import DialogNode from './nodes/DialogNode.svelte';
-    import AnnotationNode from './nodes/AnnotationNode.svelte';
+  import AnnotationNode from './nodes/AnnotationNode.svelte';
   // 2. Create a nodeTypes object to register your custom node
   const nodeTypes = {
     condition: ConditionNode,
     dialog: DialogNode,
     annotation: AnnotationNode
   };
+
+  let player = $state({
+    strength: 5
+  });
+
+  setContext('player-state', player);
 
     let nodes = $state.raw([
     // 1. The conversation begins.
@@ -178,7 +185,6 @@
 </script>
 
 <div style="width: 100%; height: 100%;">
-  
     <SvelteFlow 
     {nodeTypes}
     bind:nodes 

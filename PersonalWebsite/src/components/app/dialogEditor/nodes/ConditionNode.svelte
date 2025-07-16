@@ -1,6 +1,7 @@
 <script>
   // 1. Import useEdges
   import { Handle, Position, useEdges, useNodes  } from '@xyflow/svelte';
+  import { getContext } from 'svelte';
 
   // 2. Get the node's `id` from props, in addition to `data`
   let { data, id } = $props();
@@ -10,6 +11,9 @@
   const nodes = useNodes();
 
   let result = $state(null);
+
+  const player = getContext('player-state');
+
 
 function handleInput(event) {
     const newExpression = event.target.value;
@@ -24,11 +28,11 @@ function handleInput(event) {
 
   function evaluateExpression() {
     try {
-      const func = new Function(`return ${data.expression}`);
-      const evalResult = func();
+      const func = new Function('player', `return ${data.expression}`);
+      const evalResult = func(player); // Pass the player object here
       result = evalResult === true;
 
-      // 4. NEW LOGIC: Find and update the outgoing edges
+
       edges.current = edges.current.map((edge) => {
         // Find edges originating from this specific node instance
         if (edge.source === id) {
