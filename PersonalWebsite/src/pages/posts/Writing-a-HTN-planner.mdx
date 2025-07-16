@@ -1,0 +1,32 @@
+---
+title: "Writing a HTN-Planner"
+date: 2025-07-12
+author: "Ayanami Kaine"
+tags: ["HTN", "Planner", "AI", "Programming"]
+layout: ../../layouts/PostLayout.astro
+summary: "Complex ai that creates a living world is amazing if it works, if not uff."
+published: false
+---
+
+I was reading the [Game AI Pro I](https://www.gameaipro.com/) and chapter 12 (Exploring HTN Planners through Example) sparked my interest. I heard HTN in context of the video game Fear. In Fear an AI[^1] planner system was implemented. 
+
+Here the planner was inspired by a system called [STRIPS](https://en.wikipedia.org/wiki/Stanford_Research_Institute_Problem_Solver) from 1971. 
+
+The basic premise is that we define a goal, like searching for an enemy. Having state like where the NPC currently is and actions the planner can use to achieve this goal. Actions have conditions that need to be met so they could be executed.
+
+That's why we call such a system Goal Oriented Action (GOAP) Planning. Because we define a Goal and the AI-system tries to create a plan that fulfills it. It then generates a Finite-State-Machine. 
+
+This state-machine has three states `Goto`, `Animate` and `Use Smart Object`. See [Three States and a Plan: The A.I. of F.E.A.R.](https://www.gamedevs.org/uploads/three-states-plan-ai-of-fear.pdf) 
+
+Other AI systems commonly used are [behavior-trees](https://en.wikipedia.org/wiki/Behavior_tree_(artificial_intelligence,_robotics_and_control)).
+
+## What even is a HTN-Planner?
+
+HTN-Planner are hierarchical-task-networks. Here is the basic idea, we decompose a complex task into multiple subtask, define actions that can solve subtasks.
+
+It seems that we have to do more in an HTN-Planner where the GOAP seems to be conceptually easier to use because we have to do less.
+
+This is true, but a GOAP comes with one problem: Sometimes the designer of an AI wants to have more granular control what the AI actually does. HTN allows for that. 
+    
+
+[^1]: Yes AI meant in the distant past of 15 years ago something different. AI was heavily inspired based on so-called expert systems that were often written in LISP. After the big [AI winter](https://en.wikipedia.org/wiki/AI_winter) it was something of the past.
