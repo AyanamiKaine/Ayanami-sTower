@@ -5,7 +5,6 @@
   "main": "stella-htn.js",
   "type": "module",
   "files": [
-    "src/",
     "stella-htn.js",
     "README.md",
     "LICENSE"
@@ -16,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/YourUsername/stella-htn-js.git"
+    "url": "git+https://github.com/AyanamiKaine/stella-htn-js.git"
   },
   "keywords": [
     "htn",
@@ -26,15 +25,11 @@
     "gamedev",
     "ai behavior"
   ],
-  "author": "Your Name",
+  "author": "Ayanami Kaine",
   "license": "MIT",
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
+    "@types/bun": "latest",
+    "mitata": "^1.0.34",
     "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "mitata": "^1.0.34"
   }
 }
