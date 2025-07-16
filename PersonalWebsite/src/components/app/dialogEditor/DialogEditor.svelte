@@ -2,7 +2,7 @@
   import { SvelteFlow, Controls, Background, BackgroundVariant, NodeToolbar } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
   import { setContext } from 'svelte';
-
+  import { World } from 'stella-ecs-js';
   // Make sure you've renamed ContextMenu.svelte to NodeContextMenu.svelte
   import NodeContextMenu from './contextMenus/NodeContextMenu.svelte';
   import EdgeContextMenu from './contextMenus/EdgeContextMenu.svelte';
@@ -17,9 +17,20 @@
     annotation: AnnotationNode
   };
 
-  let player = $state({
-    strength: 5
-  });
+  let world = $state(new World);
+
+  class Player {}
+  class Strength {
+    constructor(value)
+    {
+        this.Value = value;
+    }
+  }
+
+
+  let player = world.createEntity()
+    .set(new Player())
+    .set(new Strength(20));
 
   setContext('player-state', player);
 
