@@ -1,0 +1,10 @@
+---
+import AppLayout from "../../layouts/AppLayout.astro";
+import SimpleFlow from "../../components/SimpleFlow.svelte";
+---
+
+<AppLayout title="Dialog Editor">
+    <div class="w-full h-full bg-gray-800">
+        <SimpleFlow client:load />
+    </div>
+</AppLayout>
