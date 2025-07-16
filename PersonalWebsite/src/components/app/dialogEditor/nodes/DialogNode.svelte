@@ -25,6 +25,7 @@
       id="menu-text-input-{id}"
       name="menuText"
       rows="2"
+      class="nodrag"
       value={data.menuText || ''}
       oninput={handleInput}
       placeholder="Player's choice..."
@@ -35,6 +36,7 @@
       id="speech-text-input-{id}"
       name="speechText"
       rows="4"
+      class="nodrag"
       value={data.speechText || ''}
       oninput={handleInput}
       placeholder="Character's response..."

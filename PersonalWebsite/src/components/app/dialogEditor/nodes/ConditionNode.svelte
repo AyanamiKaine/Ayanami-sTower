@@ -67,6 +67,7 @@ function handleInput(event) {
     <input
       id="expression-input-{id}"
       type="text"
+      class="nodrag"
       value={data.expression}
       oninput={handleInput}
       placeholder="e.g., 10 > 5"
