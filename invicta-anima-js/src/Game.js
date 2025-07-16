@@ -4,6 +4,7 @@ import { Name } from "./components/Name";
 import { Age } from "./components/Age";
 import { Attribute } from "./components/Attribute";
 import { Trait } from "./components/Trait";
+import { DialogueManager } from './dialogue/DialogueManager';
 
 export class Game {
     constructor(parameters) {
@@ -17,6 +18,10 @@ export class Game {
         this.currentPlayerOptions = new Map();
         this.currentGameRules = [];
         this.scenarios = new Map();
+
+        this.gameState = new Map();
+        this.dialogueManager = new DialogueManager(this);
+
 
         this.world.registerComponent(Character);
         this.world.registerComponent(Name);
@@ -36,8 +41,19 @@ export class Game {
         this.currentTick += 1;
     }
 
-    updateCurrentPlayerOptions(query) {
-        query.match(this.currentGameRules);
+    updateCurrentPlayerOptions() {
+        if (this.dialogueManager.activeNode) {
+            // If we are in a conversation, get options from the dialogue manager
+            this.currentPlayerOptions = this.dialogueManager.getCurrentOptions(); // ERROR currentPlayerOptions is not defined
+            //console.log(this.currentPlayerOptions)
+
+        } else {
+            // Otherwise, run the global rules for non-dialogue actions
+            const query = new Query(this.gameState);
+            this.currentPlayerOptions.clear(); // Clear old options
+            query.match(this.currentGameRules, this); // The payload will populate the map
+        }
+        //console.debug(this.gameState)
     }
 
     showCurrentPlayerOptions() {
@@ -58,13 +74,12 @@ export class Game {
 
     selectPlayerOption(optionIndex) {
         const selectedOption = this.currentPlayerOptions.get(optionIndex);
-
         if (selectedOption && typeof selectedOption.action === "function") {
-            selectedOption.action(this.world);
+            selectedOption.action();
+            this.tick();
+            this.updateCurrentPlayerOptions();
         } else {
-            console.error(
-                `Error: Invalid option index "${optionIndex}". No action found.`
-            );
+            console.error(`Error: Invalid option index "${optionIndex}". No action found.`);
         }
     }
 }
