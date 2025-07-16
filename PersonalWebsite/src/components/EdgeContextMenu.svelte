@@ -1,25 +1,30 @@
 <script>
   import { useSvelteFlow } from '@xyflow/svelte';
 
-  // These props are passed from the main flow component
   let { id, top, left, right, bottom, onclick } = $props();
-
   const { deleteElements } = useSvelteFlow();
 
+ function handleKeyDown(event) {
+    if (event.key === 'Escape') {
+      onclick();
+    }
+  }
+
   function deleteEdge() {
-    // We tell Svelte Flow to delete the edge with the given id
     deleteElements({ edges: [{ id }] });
   }
 </script>
 
 <div
   role="menu"
+  tabindex="-1"
   style:top={top ? `${top}px` : undefined}
   style:left={left ? `${left}px` : undefined}
   style:right={right ? `${right}px` : undefined}
   style:bottom={bottom ? `${bottom}px` : undefined}
   class="context-menu"
   onclick={onclick}
+  onkeydown={handleKeyDown}
 >
   <button role="menuitem" onclick={deleteEdge}>Delete connection</button>
 </div>
