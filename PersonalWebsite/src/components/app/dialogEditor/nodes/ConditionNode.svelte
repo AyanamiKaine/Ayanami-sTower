@@ -27,6 +27,12 @@ function handleInput(event) {
   }
 
   function evaluateExpression() {
+    if (!player) {
+      console.error("Player state context not found!");
+      result = null;
+      return;
+    }
+
     try {
       const func = new Function('player', `return ${data.expression}`);
       const evalResult = func(player); // Pass the player object here
