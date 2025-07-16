@@ -1,29 +1,48 @@
 <script>
-  import { Handle, Position } from '@xyflow/svelte';
+  // 1. Import useEdges
+  import { Handle, Position, useEdges } from '@xyflow/svelte';
 
-  // The 'data' prop is passed by Svelte Flow and contains our node-specific data.
-  let { data } = $props();
+  // 2. Get the node's `id` from props, in addition to `data`
+  let { data, id } = $props();
 
-  // We use local state to track the evaluation result.
+  // 3. Get a writable reference to the edges store
+  const edges = useEdges();
+
   let result = $state(null);
 
-  /**
-   * Evaluates the JavaScript expression from the input field.
-   *
-   * SECURITY WARNING: This function uses eval(), which can execute arbitrary code.
-   * It is a major security risk if the expressions can be provided by an untrusted source.
-   * For a production application, you MUST use a sandboxed evaluation library.
-   */
   function evaluateExpression() {
     try {
-      // We use a Function constructor here, which is slightly safer than a direct eval()
-      // but still carries significant risk.
       const func = new Function(`return ${data.expression}`);
       const evalResult = func();
-      result = evalResult === true; // Coerce to a strict boolean
+      result = evalResult === true;
+
+      // 4. NEW LOGIC: Find and update the outgoing edges
+      edges.current = edges.current.map((edge) => {
+        // Find edges originating from this specific node instance
+        if (edge.source === id) {
+          // If this edge is connected to the 'true' handle, activate/deactivate it
+          if (edge.sourceHandle === 'true-output') {
+            return { ...edge, animated: result === true };
+          }
+          // If this edge is connected to the 'false' handle, activate/deactivate it
+          if (edge.sourceHandle === 'false-output') {
+            return { ...edge, animated: result === false };
+          }
+        }
+        // Return all other edges unchanged
+        return edge;
+      });
     } catch (error) {
       console.error('Evaluation Error:', error);
-      result = null; // Reset on error
+      result = null;
+
+      // On error, ensure both paths from this node are deactivated
+      edges.current = edges.current.map((edge) => {
+        if (edge.source === id) {
+          return { ...edge, animated: false };
+        }
+        return edge;
+      });
     }
   }
 </script>
@@ -57,7 +76,7 @@
     type="source"
     position={Position.Bottom}
     style="left: 75%;"
-  class={result === false ? 'active' : ''}
+    class={result === false ? 'active' : ''}
   >
     <div class="handle-label">False</div>
   </Handle>
