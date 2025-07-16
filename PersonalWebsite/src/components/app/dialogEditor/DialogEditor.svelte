@@ -45,8 +45,8 @@
       type: 'dialog',
       position: { x: -600, y: 400 },
       data: {
-        menuText: '(Heave the boulder)',
-        speechText: 'Incredible! You lifted it with ease. Thank you!'
+        menuText: '[LEAVE] I am not gonna do that.',
+        speechText: 'I am not gonna do that.'
       }
     },
     {
