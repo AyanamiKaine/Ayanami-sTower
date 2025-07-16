@@ -1,5 +1,5 @@
 <script>
-  import { SvelteFlow, Controls, Background, BackgroundVariant } from '@xyflow/svelte';
+  import { SvelteFlow, Controls, Background, BackgroundVariant, NodeToolbar } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
 
   // Make sure you've renamed ContextMenu.svelte to NodeContextMenu.svelte
@@ -19,13 +19,13 @@
        {
       id: 'intro',
       type: 'input',
-      position: { x: 25, y: -300 },
+      position: { x: 25, y: -350 },
       data: { label: 'Begin of Conversation' }
     },
    {
       id: 'start',
       type: 'dialog',
-      position: { x: -25 , y: -150 },
+      position: { x: -25 , y: -200 },
       data: {
         menuText: 'Start Conversation',
         speechText: 'Greetings, traveler. I need you to lift this heavy boulder. Are you strong enough?'
@@ -38,6 +38,15 @@
       data: {
         // We'll pretend a 'player' object exists for the evaluation
         expression: 'player.strength > 10'
+      }
+    },
+    {
+      id: 'response-leave',
+      type: 'dialog',
+      position: { x: -600, y: 400 },
+      data: {
+        menuText: '(Heave the boulder)',
+        speechText: 'Incredible! You lifted it with ease. Thank you!'
       }
     },
     {
@@ -68,13 +77,16 @@
   
   // New edges to connect the dialog tree nodes.
   let edges = $state.raw([
-    { id: 'e-start-node-check', source: 'intro', target: 'start' },
+    { id: 'e-start-node-check-1', source: 'intro', target: 'start' },
     { id: 'e-start-check', source: 'start', target: 'strength-check' },
-    // Note the use of sourceHandle to connect to the correct output on the condition node
     { id: 'e-check-strong', source: 'strength-check', sourceHandle: 'true-output', target: 'response-strong' },
     { id: 'e-check-weak', source: 'strength-check', sourceHandle: 'false-output', target: 'response-weak' },
-    { id: 'e-strong-end', source: 'response-strong', target: 'end' },
-    { id: 'e-weak-end', source: 'response-weak', target: 'end' }
+    { id: 'e-strong-end-1', source: 'response-strong', target: 'end' },
+    { id: 'e-start-node-check-2', source: 'start', target: 'response-leave' },
+    { id: 'e-strong-end-2', source: 'response-leave', target: 'end' },
+    { id: 'e-weak-end-1', source: 'response-weak', target: 'end' },
+    { id: 'e-weak-end-2', source: 'response-strong', target: 'end' }
+
   ]);
 
   let nodeMenu = $state(null);
@@ -125,7 +137,8 @@
 </script>
 
 <div style="width: 100%; height: 100%;">
-  <SvelteFlow 
+  
+    <SvelteFlow 
     {nodeTypes}
     bind:nodes 
     bind:edges 
