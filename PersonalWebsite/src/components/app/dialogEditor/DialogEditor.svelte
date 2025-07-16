@@ -2,7 +2,7 @@
   import { SvelteFlow, Controls, Background, BackgroundVariant, NodeToolbar } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
   import { setContext } from 'svelte';
-  import { World } from 'stella-ecs-js';
+  // import { World } from 'stella-ecs-js';
   // Make sure you've renamed ContextMenu.svelte to NodeContextMenu.svelte
   import NodeContextMenu from './contextMenus/NodeContextMenu.svelte';
   import EdgeContextMenu from './contextMenus/EdgeContextMenu.svelte';
