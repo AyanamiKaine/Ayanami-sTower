@@ -28,9 +28,9 @@
   }
 
 
-  let player = world.createEntity()
+  let player = $state(world.createEntity()
     .set(new Player())
-    .set(new Strength(20));
+    .set(new Strength(20)));
 
   setContext('player-state', player);
 
