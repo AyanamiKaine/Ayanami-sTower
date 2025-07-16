@@ -3,14 +3,15 @@
   import '@xyflow/svelte/dist/style.css';
 
   // Make sure you've renamed ContextMenu.svelte to NodeContextMenu.svelte
-  import NodeContextMenu from './NodeContextMenu.svelte';
-  import EdgeContextMenu from './EdgeContextMenu.svelte';
-  import PaneContextMenu from './PaneContextMenu.svelte'; // 1. Import the new component
-  import ConditionNode from './ConditionNode.svelte'; // 1. Import the new node
-
+  import NodeContextMenu from './contextMenus/NodeContextMenu.svelte';
+  import EdgeContextMenu from './contextMenus/EdgeContextMenu.svelte';
+  import PaneContextMenu from './contextMenus/PaneContextMenu.svelte'; // 1. Import the new component
+  import ConditionNode from './nodes/ConditionNode.svelte'; // 1. Import the new node
+  import DialogNode from './nodes/DialogNode.svelte';
   // 2. Create a nodeTypes object to register your custom node
   const nodeTypes = {
-    condition: ConditionNode
+    condition: ConditionNode,
+    dialog: DialogNode
   };
 
   let nodes = $state.raw([

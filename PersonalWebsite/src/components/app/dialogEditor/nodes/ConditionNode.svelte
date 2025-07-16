@@ -63,9 +63,9 @@ function handleInput(event) {
   <Handle type="target" position={Position.Top} />
 
   <div class="content">
-    <label for="expression-input">Condition</label>
+    <label for="expression-input-{id}">Condition</label>
     <input
-      id="expression-input"
+      id="expression-input-{id}"
       type="text"
       value={data.expression}
       oninput={handleInput}

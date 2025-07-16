@@ -16,7 +16,10 @@
     let data;
     // Set initial data based on node type
     if (type === 'condition') {
-      data = { expression: 'true' }; // Default expression for the condition node
+      data = { expression: 'true' };
+    } else if (type === 'dialog') {
+      // Provide default values for the dialog node's data
+      data = { menuText: '', speechText: '' };
     } else {
       data = { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node` };
     }
@@ -52,6 +55,8 @@
   <button role="menuitem" onclick={() => createNode('default')}>Add Default Node</button>
   <button role="menuitem" onclick={() => createNode('output')}>Add Output Node</button>
   <button role="menuitem" onclick={() => createNode('condition')}>Add Condition Node</button>
+  <button role="menuitem" onclick={() => createNode('dialog')}>Add Dialog Node</button>
+
 
 </div>
 
