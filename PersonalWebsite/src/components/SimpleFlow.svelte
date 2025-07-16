@@ -2,9 +2,10 @@
   import { SvelteFlow, Controls, Background, BackgroundVariant } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
 
-  // Import both context menu components
-  import NodeContextMenu from './ContextMenu.svelte';
+  // Make sure you've renamed ContextMenu.svelte to NodeContextMenu.svelte
+  import NodeContextMenu from './NodeContextMenu.svelte';
   import EdgeContextMenu from './EdgeContextMenu.svelte';
+  import PaneContextMenu from './PaneContextMenu.svelte'; // 1. Import the new component
 
   let nodes = $state.raw([
     { id: '1', type: 'input', position: { x: 250, y: 25 }, data: { label: 'Input' } },
@@ -17,13 +18,9 @@
     { id: 'e2-3', source: '2', target: '3', animated: true }
   ]);
 
-  // Renamed 'menu' to 'nodeMenu' for clarity
   let nodeMenu = $state(null);
-  // Add a new state variable for the edge menu
   let edgeMenu = $state(null);
-
-  let clientWidth = $state(0);
-  let clientHeight = $state(0);
+  let paneMenu = $state(null); // 2. Add state for the pane menu
 
   const handleNodeContextMenu = ({ event, node }) => {
     event.preventDefault();
@@ -37,7 +34,6 @@
     };
   };
 
-  // Create a new handler for the edge context menu
   const handleEdgeContextMenu = ({ event, edge }) => {
     event.preventDefault();
     const paneBounds = event.target.closest('.svelte-flow').getBoundingClientRect();
@@ -50,21 +46,33 @@
     };
   };
 
+  // 3. Add a handler for the pane's context menu
+  const handlePaneContextMenu = ({ event }) => {
+    event.preventDefault();
+    
+    paneMenu = {
+      top: event.clientY,
+      left: event.clientX,
+      clientX: event.clientX,
+      clientY: event.clientY
+    };
+  };
 
-  // Update handlePaneClick to close both menus
   function handlePaneClick() {
     nodeMenu = null;
     edgeMenu = null;
+    paneMenu = null;
   }
 </script>
 
-<div style="width: 100%; height: 100%;" bind:clientWidth bind:clientHeight>
+<div style="width: 100%; height: 100%;">
   <SvelteFlow 
     bind:nodes 
     bind:edges 
     fitView
     onnodecontextmenu={handleNodeContextMenu}
     onedgecontextmenu={handleEdgeContextMenu}
+    onpanecontextmenu={handlePaneContextMenu}
     onpaneclick={handlePaneClick}
   >
     <Background variant={BackgroundVariant.Dots} />
@@ -88,6 +96,17 @@
         left={edgeMenu.left}
         right={edgeMenu.right}
         bottom={edgeMenu.bottom}
+        onclick={handlePaneClick}
+      />
+    {/if}
+
+    <!-- 5. Conditionally render the new PaneContextMenu -->
+    {#if paneMenu}
+      <PaneContextMenu
+        top={paneMenu.top}
+        left={paneMenu.left}
+        clientX={paneMenu.clientX}
+        clientY={paneMenu.clientY}
         onclick={handlePaneClick}
       />
     {/if}
