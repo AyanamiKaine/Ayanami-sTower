@@ -31,27 +31,42 @@
 
 <style>
   .context-menu {
-    background: #374151;
-    color: #f9fafb;
-    border: 1px solid #4b5563;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    background: #ffffff;
+    color: #1f2937; /* Dark gray text */
+    border: 1px solid #e5e7eb; /* Light gray border */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Softer, modern shadow */
     position: absolute;
     z-index: 10;
-    min-width: 150px;
+    min-width: 180px;
     border-radius: 0.5rem;
     overflow: hidden;
+    padding: 0.25rem; /* Add some internal padding */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   }
+
   .context-menu button {
     background: none;
     border: none;
     color: inherit;
     display: block;
-    padding: 0.5em 1em;
+    padding: 0.5rem 0.75rem;
     text-align: left;
     width: 100%;
     cursor: pointer;
+    font-size: 0.875rem;
+    border-radius: 0.25rem; /* Rounded corners for buttons */
   }
+
   .context-menu button:hover {
-    background: #4b5563;
+    background: #f3f4f6; /* Very light gray hover */
   }
-</style>
+
+  /* Style for the 'Node: id' text in the NodeContextMenu */
+  .context-menu p {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    color: #6b7280; /* Medium gray text */
+    border-bottom: 1px solid #e5e7eb;
+    margin: 0 -0.25rem 0.25rem -0.25rem; /* Adjust for padding */
+  }
+</style>    
