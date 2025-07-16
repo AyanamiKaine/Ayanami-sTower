@@ -1,7 +1,10 @@
 <script>
   import { SvelteFlow, Controls, Background, BackgroundVariant } from '@xyflow/svelte';
   import '@xyflow/svelte/dist/style.css';
-  import ContextMenu from './ContextMenu.svelte';
+
+  // Import both context menu components
+  import NodeContextMenu from './ContextMenu.svelte';
+  import EdgeContextMenu from './EdgeContextMenu.svelte';
 
   let nodes = $state.raw([
     { id: '1', type: 'input', position: { x: 250, y: 25 }, data: { label: 'Input' } },
@@ -14,33 +17,44 @@
     { id: 'e2-3', source: '2', target: '3', animated: true }
   ]);
 
-  let menu = $state(null);
+  // Renamed 'menu' to 'nodeMenu' for clarity
+  let nodeMenu = $state(null);
+  // Add a new state variable for the edge menu
+  let edgeMenu = $state(null);
+
   let clientWidth = $state(0);
   let clientHeight = $state(0);
 
   const handleNodeContextMenu = ({ event, node }) => {
     event.preventDefault();
-    const pane = (event.target).closest('.svelte-flow');
-    if (!pane) return;
-    
-    const paneBounds = pane.getBoundingClientRect();
-    menu = {
+    const paneBounds = event.target.closest('.svelte-flow').getBoundingClientRect();
+    nodeMenu = {
       id: node.id,
       top: event.clientY < paneBounds.height - 200 ? event.clientY : undefined,
       left: event.clientX < paneBounds.width - 200 ? event.clientX : undefined,
-      right:
-        event.clientX >= paneBounds.width - 200
-          ? paneBounds.width - event.clientX
-          : undefined,
-      bottom:
-        event.clientY >= paneBounds.height - 200
-          ? paneBounds.height - event.clientY
-          : undefined,
+      right: event.clientX >= paneBounds.width - 200 ? paneBounds.width - event.clientX : undefined,
+      bottom: event.clientY >= paneBounds.height - 200 ? paneBounds.height - event.clientY : undefined,
     };
   };
 
+  // Create a new handler for the edge context menu
+  const handleEdgeContextMenu = ({ event, edge }) => {
+    event.preventDefault();
+    const paneBounds = event.target.closest('.svelte-flow').getBoundingClientRect();
+    edgeMenu = {
+      id: edge.id,
+      top: event.clientY < paneBounds.height - 200 ? event.clientY : undefined,
+      left: event.clientX < paneBounds.width - 200 ? event.clientX : undefined,
+      right: event.clientX >= paneBounds.width - 200 ? paneBounds.width - event.clientX : undefined,
+      bottom: event.clientY >= paneBounds.height - 200 ? paneBounds.height - event.clientY : undefined,
+    };
+  };
+
+
+  // Update handlePaneClick to close both menus
   function handlePaneClick() {
-    menu = null;
+    nodeMenu = null;
+    edgeMenu = null;
   }
 </script>
 
@@ -50,18 +64,30 @@
     bind:edges 
     fitView
     onnodecontextmenu={handleNodeContextMenu}
+    onedgecontextmenu={handleEdgeContextMenu}
     onpaneclick={handlePaneClick}
   >
     <Background variant={BackgroundVariant.Dots} />
     <Controls />
 
-    {#if menu}
-      <ContextMenu
-        id={menu.id}
-        top={menu.top}
-        left={menu.left}
-        right={menu.right}
-        bottom={menu.bottom}
+    {#if nodeMenu}
+      <NodeContextMenu
+        id={nodeMenu.id}
+        top={nodeMenu.top}
+        left={nodeMenu.left}
+        right={nodeMenu.right}
+        bottom={nodeMenu.bottom}
+        onclick={handlePaneClick}
+      />
+    {/if}
+
+    {#if edgeMenu}
+      <EdgeContextMenu
+        id={edgeMenu.id}
+        top={edgeMenu.top}
+        left={edgeMenu.left}
+        right={edgeMenu.right}
+        bottom={edgeMenu.bottom}
         onclick={handlePaneClick}
       />
     {/if}
