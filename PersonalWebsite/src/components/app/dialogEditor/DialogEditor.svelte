@@ -14,20 +14,72 @@
     dialog: DialogNode
   };
 
-  let nodes = $state.raw([
-    { id: '1', type: 'input', position: { x: 250, y: 25 }, data: { label: 'Input' } },
-    { id: '2', position: { x: 100, y: 125 }, data: { label: 'Default' } },
-    { id: '3', type: 'output', position: { x: 250, y: 250 }, data: { label: 'Output' } }
+   let nodes = $state.raw([
+    
+       {
+      id: 'intro',
+      type: 'input',
+      position: { x: 25, y: -300 },
+      data: { label: 'Begin of Conversation' }
+    },
+   {
+      id: 'start',
+      type: 'dialog',
+      position: { x: -25 , y: -150 },
+      data: {
+        menuText: 'Start Conversation',
+        speechText: 'Greetings, traveler. I need you to lift this heavy boulder. Are you strong enough?'
+      }
+    },
+    {
+      id: 'strength-check',
+      type: 'condition',
+      position: { x: 0, y: 200 },
+      data: {
+        // We'll pretend a 'player' object exists for the evaluation
+        expression: 'player.strength > 10'
+      }
+    },
+    {
+      id: 'response-strong',
+      type: 'dialog',
+      position: { x: -200, y: 400 },
+      data: {
+        menuText: '(Heave the boulder)',
+        speechText: 'Incredible! You lifted it with ease. Thank you!'
+      }
+    },
+    {
+      id: 'response-weak',
+      type: 'dialog',
+      position: { x: 200, y: 400 },
+      data: {
+        menuText: '(Try to lift the boulder and fail)',
+        speechText: 'Hmm. It seems you need to train a bit more. Come back when you are stronger.'
+      }
+    },
+    {
+      id: 'end',
+      type: 'output',
+      position: { x: 25, y: 800 },
+      data: { label: 'End Conversation' }
+    }
   ]);
   
+  // New edges to connect the dialog tree nodes.
   let edges = $state.raw([
-    { id: 'e1-2', source: '1', target: '2' },
-    { id: 'e2-3', source: '2', target: '3', animated: true }
+    { id: 'e-start-node-check', source: 'intro', target: 'start' },
+    { id: 'e-start-check', source: 'start', target: 'strength-check' },
+    // Note the use of sourceHandle to connect to the correct output on the condition node
+    { id: 'e-check-strong', source: 'strength-check', sourceHandle: 'true-output', target: 'response-strong' },
+    { id: 'e-check-weak', source: 'strength-check', sourceHandle: 'false-output', target: 'response-weak' },
+    { id: 'e-strong-end', source: 'response-strong', target: 'end' },
+    { id: 'e-weak-end', source: 'response-weak', target: 'end' }
   ]);
 
   let nodeMenu = $state(null);
   let edgeMenu = $state(null);
-  let paneMenu = $state(null); // 2. Add state for the pane menu
+  let paneMenu = $state(null);
 
   const handleNodeContextMenu = ({ event, node }) => {
     event.preventDefault();

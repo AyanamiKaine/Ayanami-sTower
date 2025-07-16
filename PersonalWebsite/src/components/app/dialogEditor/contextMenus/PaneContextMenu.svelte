@@ -51,9 +51,6 @@
   style:top={top ? `${top}px` : undefined}
   style:left={left ? `${left}px` : undefined}
 >
-  <button role="menuitem" onclick={() => createNode('input')}>Add Input Node</button>
-  <button role="menuitem" onclick={() => createNode('default')}>Add Default Node</button>
-  <button role="menuitem" onclick={() => createNode('output')}>Add Output Node</button>
   <button role="menuitem" onclick={() => createNode('condition')}>Add Condition Node</button>
   <button role="menuitem" onclick={() => createNode('dialog')}>Add Dialog Node</button>
 
