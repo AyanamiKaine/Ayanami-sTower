@@ -14,79 +14,97 @@
     dialog: DialogNode
   };
 
-   let nodes = $state.raw([
-    
-       {
+    let nodes = $state.raw([
+    // 1. The conversation begins.
+    {
       id: 'intro',
       type: 'input',
-      position: { x: 25, y: -350 },
-      data: { label: 'Begin of Conversation' }
+      position: { x: 50, y: -350 },
+      data: { label: 'Begin Conversation' }
     },
-   {
-      id: 'start',
+    // 2. The NPC poses the challenge.
+    {
+      id: 'npc-greeting',
       type: 'dialog',
-      position: { x: -25 , y: -200 },
+      position: { x: 0, y: -200 },
       data: {
         menuText: 'Start Conversation',
         speechText: 'Greetings, traveler. I need you to lift this heavy boulder. Are you strong enough?'
       }
     },
+    // 3A. The player chooses to act. This is a single choice.
+    {
+      id: 'player-action-lift',
+      type: 'dialog',
+      position: { x: -275, y: 100 },
+      data: {
+        menuText: '[ACT] Try to lift the boulder.',
+        speechText: '*You brace yourself and attempt to lift the massive rock...*'
+      }
+    },
+    // 3B. The player chooses to leave.
+    {
+      id: 'player-action-leave',
+      type: 'dialog',
+      position: { x: 350, y: 100 },
+      data: {
+        menuText: '[LEAVE] I think I\'ll pass.',
+        speechText: 'No problem. Maybe some other time.'
+      }
+    },
+    // 4. The player's action leads to a hidden condition check.
     {
       id: 'strength-check',
       type: 'condition',
-      position: { x: 0, y: 200 },
+      position: { x: -250, y: 450 },
       data: {
-        // We'll pretend a 'player' object exists for the evaluation
         expression: 'player.strength > 10'
       }
     },
+    // 5A. The outcome if the condition is true.
     {
-      id: 'response-leave',
+      id: 'outcome-strong',
       type: 'dialog',
-      position: { x: -600, y: 400 },
+      position: { x: -450, y: 650 },
       data: {
-        menuText: '[LEAVE] I am not gonna do that.',
-        speechText: 'I am not gonna do that.'
-      }
-    },
-    {
-      id: 'response-strong',
-      type: 'dialog',
-      position: { x: -200, y: 400 },
-      data: {
-        menuText: '(Heave the boulder)',
+        menuText: '',
         speechText: 'Incredible! You lifted it with ease. Thank you!'
       }
     },
+    // 5B. The outcome if the condition is false.
     {
-      id: 'response-weak',
+      id: 'outcome-weak',
       type: 'dialog',
-      position: { x: 200, y: 400 },
+      position: { x: -50, y: 650 },
       data: {
-        menuText: '(Try to lift the boulder and fail)',
+        menuText: '',
         speechText: 'Hmm. It seems you need to train a bit more. Come back when you are stronger.'
       }
     },
+    // 6. The conversation ends.
     {
       id: 'end',
       type: 'output',
-      position: { x: 25, y: 800 },
+      position: { x: 200, y: 1050 },
       data: { label: 'End Conversation' }
     }
   ]);
   
-  // New edges to connect the dialog tree nodes.
+  // The edges now reflect the new, more logical flow.
   let edges = $state.raw([
-    { id: 'e-start-node-check-1', source: 'intro', target: 'start' },
-    { id: 'e-start-check', source: 'start', target: 'strength-check' },
-    { id: 'e-check-strong', source: 'strength-check', sourceHandle: 'true-output', target: 'response-strong' },
-    { id: 'e-check-weak', source: 'strength-check', sourceHandle: 'false-output', target: 'response-weak' },
-    { id: 'e-strong-end-1', source: 'response-strong', target: 'end' },
-    { id: 'e-start-node-check-2', source: 'start', target: 'response-leave' },
-    { id: 'e-strong-end-2', source: 'response-leave', target: 'end' },
-    { id: 'e-weak-end-1', source: 'response-weak', target: 'end' },
-    { id: 'e-weak-end-2', source: 'response-strong', target: 'end' }
-
+    { id: 'e-intro-greeting', source: 'intro', target: 'npc-greeting' },
+    // The NPC greeting presents two choices to the player.
+    { id: 'e-greeting-lift', source: 'npc-greeting', target: 'player-action-lift' },
+    { id: 'e-greeting-leave', source: 'npc-greeting', target: 'player-action-leave' },
+    // The "lift" action leads to the strength check.
+    { id: 'e-lift-check', source: 'player-action-lift', target: 'strength-check' },
+    // The check's outcomes lead to different NPC responses.
+    { id: 'e-check-strong', source: 'strength-check', sourceHandle: 'true-output', target: 'outcome-strong' },
+    { id: 'e-check-weak', source: 'strength-check', sourceHandle: 'false-output', target: 'outcome-weak' },
+    // All paths eventually lead to the end.
+    { id: 'e-strong-end', source: 'outcome-strong', target: 'end' },
+    { id: 'e-weak-end', source: 'outcome-weak', target: 'end' },
+    { id: 'e-leave-end', source: 'player-action-leave', target: 'end' }
   ]);
 
   let nodeMenu = $state(null);
