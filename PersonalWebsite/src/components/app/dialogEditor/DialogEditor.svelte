@@ -8,10 +8,12 @@
   import PaneContextMenu from './contextMenus/PaneContextMenu.svelte'; // 1. Import the new component
   import ConditionNode from './nodes/ConditionNode.svelte'; // 1. Import the new node
   import DialogNode from './nodes/DialogNode.svelte';
+    import AnnotationNode from './nodes/AnnotationNode.svelte';
   // 2. Create a nodeTypes object to register your custom node
   const nodeTypes = {
     condition: ConditionNode,
-    dialog: DialogNode
+    dialog: DialogNode,
+    annotation: AnnotationNode
   };
 
     let nodes = $state.raw([
@@ -87,6 +89,27 @@
       type: 'output',
       position: { x: 200, y: 1050 },
       data: { label: 'End Conversation' }
+    },
+        {
+      id: 'annotation-1',
+      type: 'annotation',
+      draggable: false, // Make annotations non-interactive
+      position: { x: 0, y: 480 },
+      data: {
+        level: 1,
+        label: 'This node checks a condition.',
+        arrowStyle: 'transform: rotate(180deg); left: -40px; top: -15px;'
+      }
+    },
+    {
+      id: 'annotation-2',
+      type: 'annotation',
+      draggable: false,
+      position: { x: 0, y: 525 },
+      data: {
+        level: 2,
+        label: 'The outcome of the condition determines which path is taken.',
+      }
     }
   ]);
   
