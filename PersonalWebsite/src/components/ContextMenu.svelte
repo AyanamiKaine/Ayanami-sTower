@@ -4,6 +4,12 @@
   let { id, top, left, right, bottom, onclick } = $props();
   const { deleteElements, getNodes, addNodes } = useSvelteFlow();
 
+  function handleKeyDown(event) {
+    if (event.key === 'Escape') {
+      onclick();
+    }
+  }
+
   function duplicateNode() {
     const nodes = getNodes();
     const nodeToDuplicate = nodes.find((node) => node.id === id);
@@ -23,12 +29,14 @@
 
 <div
   role="menu"
+  tabindex="-1"
   style:top={top ? `${top}px` : undefined}
   style:left={left ? `${left}px` : undefined}
   style:right={right ? `${right}px` : undefined}
   style:bottom={bottom ? `${bottom}px` : undefined}
   class="context-menu"
   onclick={onclick}
+  onkeydown={handleKeyDown}
 >
   <p style="margin: 0.5em;">
     <small>Node: {id}</small>
