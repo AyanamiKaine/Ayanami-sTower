@@ -1,14 +1,26 @@
 <script>
   // 1. Import useEdges
-  import { Handle, Position, useEdges } from '@xyflow/svelte';
+  import { Handle, Position, useEdges, useNodes  } from '@xyflow/svelte';
 
   // 2. Get the node's `id` from props, in addition to `data`
   let { data, id } = $props();
 
   // 3. Get a writable reference to the edges store
   const edges = useEdges();
+  const nodes = useNodes();
 
   let result = $state(null);
+
+function handleInput(event) {
+    const newExpression = event.target.value;
+    nodes.current = nodes.current.map((node) => {
+      if (node.id === id) {
+        // Create a new node object with the updated expression
+        return { ...node, data: { ...node.data, expression: newExpression } };
+      }
+      return node;
+    });
+  }
 
   function evaluateExpression() {
     try {
@@ -55,7 +67,8 @@
     <input
       id="expression-input"
       type="text"
-      bind:value={data.expression}
+      value={data.expression}
+      oninput={handleInput}
       placeholder="e.g., 10 > 5"
     />
     <button onclick={evaluateExpression}>Run</button>
@@ -86,7 +99,7 @@
   .condition-node {
     width: 200px;
     background: #ffffff;
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgb(65, 65, 65);
     border-radius: 0.5rem;
     padding: 1rem;
     font-family: sans-serif;
