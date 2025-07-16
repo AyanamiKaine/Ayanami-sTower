@@ -9,20 +9,26 @@
   
   // 2. Get a direct reference to the nodes store
   const nodes = useNodes();
-
+  
   function createNode(type) {
     const position = screenToFlowPosition({ x: clientX, y: clientY });
+
+    let data;
+    // Set initial data based on node type
+    if (type === 'condition') {
+      data = { expression: 'true' }; // Default expression for the condition node
+    } else {
+      data = { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node` };
+    }
 
     const newNode = {
       id: `node-${Date.now()}`,
       type,
       position,
-      data: { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node` }
+      data
     };
 
-    // 3. Instead of calling addNodes, update the store directly
     nodes.current = [...nodes.current, newNode];
-    
     onclick();
   }
 
@@ -45,6 +51,8 @@
   <button role="menuitem" onclick={() => createNode('input')}>Add Input Node</button>
   <button role="menuitem" onclick={() => createNode('default')}>Add Default Node</button>
   <button role="menuitem" onclick={() => createNode('output')}>Add Output Node</button>
+  <button role="menuitem" onclick={() => createNode('condition')}>Add Condition Node</button>
+
 </div>
 
 <style>

@@ -6,6 +6,12 @@
   import NodeContextMenu from './NodeContextMenu.svelte';
   import EdgeContextMenu from './EdgeContextMenu.svelte';
   import PaneContextMenu from './PaneContextMenu.svelte'; // 1. Import the new component
+  import ConditionNode from './ConditionNode.svelte'; // 1. Import the new node
+
+  // 2. Create a nodeTypes object to register your custom node
+  const nodeTypes = {
+    condition: ConditionNode
+  };
 
   let nodes = $state.raw([
     { id: '1', type: 'input', position: { x: 250, y: 25 }, data: { label: 'Input' } },
@@ -67,6 +73,7 @@
 
 <div style="width: 100%; height: 100%;">
   <SvelteFlow 
+    {nodeTypes}
     bind:nodes 
     bind:edges 
     fitView
