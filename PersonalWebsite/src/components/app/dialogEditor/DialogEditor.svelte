@@ -27,6 +27,8 @@
     }
   }
 
+  world.registerComponent(new Player());
+  world.registerComponent(new Strength());
 
   let player = $state(world.createEntity()
     .set(new Player())
@@ -69,7 +71,7 @@
       position: { x: 350, y: 100 },
       data: {
         menuText: '[LEAVE] I think I\'ll pass.',
-        speechText: 'No problem. Maybe some other time.'
+        speechText: 'I think I\'ll pass.'
       }
     },
     // 4. The player's action leads to a hidden condition check.
