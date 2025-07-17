@@ -35,11 +35,22 @@
     world.registerComponent(new Player());
     world.registerComponent(new Strength());
 
-    let player = $state(
+    let playerEntity = $state(
         world.createEntity().set(new Player()).set(new Strength(20)),
     );
 
-    setContext("player-state", player);
+    let dialogState = $state(new Map([
+        ['hasMetGuard', false],
+        ['playerGold', 50],
+        ['playerStrength', 10]
+    ]));
+
+    // 2. Provide the Map to all child components via context.
+    setContext('dialog-state', dialogState);
+    
+    // --- UI variables for managing the Map ---
+    let newKey = $state('');
+    let newValue = $state('');
 
     let nodes = $state.raw([
         // 1. The conversation begins.
@@ -87,7 +98,11 @@
             type: "condition",
             position: { x: -250, y: 450 },
             data: {
-                expression: 'player.get("Strength").Value > 10',
+                mode: "builder",
+                key: "playerStrength",
+                operator: "GreaterThanOrEqual", // Storing the key of the enum
+                value: "10",
+                expression: "state.get('playerStrength') >= 10",
             },
         },
         // 5A. The outcome if the condition is true.
@@ -122,7 +137,7 @@
             id: "annotation-1",
             type: "annotation",
             draggable: false, // Make annotations non-interactive
-            position: { x: 0, y: 480 },
+            position: { x: 100, y: 480 },
             data: {
                 level: 1,
                 label: "This node checks a condition.",
@@ -134,7 +149,7 @@
             id: "annotation-2",
             type: "annotation",
             draggable: false,
-            position: { x: 0, y: 525 },
+            position: { x: 100, y: 525 },
             data: {
                 level: 2,
                 label: "The outcome of the condition determines which path is taken.",
@@ -159,7 +174,7 @@
                 level: 2,
                 label: "Right click on a node to delete it.",
             },
-        }
+        },
     ]);
 
     // The edges now reflect the new, more logical flow.

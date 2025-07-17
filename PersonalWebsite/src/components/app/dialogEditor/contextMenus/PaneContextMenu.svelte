@@ -16,7 +16,13 @@
     let data;
     // Set initial data based on node type
     if (type === 'condition') {
-      data = { expression: 'true' };
+      data = { 
+        mode: 'builder',
+        key: 'player.strength',
+        operator: 'GreaterThan', // Storing the key of the enum
+        value: '10',
+        expression: 'player.strength > 10'
+      };
     } else if (type === 'dialog') {
       // Provide default values for the dialog node's data
       data = { menuText: '', speechText: '' };
