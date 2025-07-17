@@ -100,7 +100,7 @@
     }
 </script>
 
-<div class="condition-node nodrag">
+<div class="condition-node">
     <Handle type="target" position={Position.Top} />
 
     <div class="mode-toggle">
