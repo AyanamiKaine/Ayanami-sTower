@@ -3,7 +3,10 @@ const isHomepage = Astro.url.pathname === "/";
 
 const siteDetails = {
     name: "Ayanami's Little Place",
-    url: "https://ayanamikaine.com/", // Replace with your actual domain
+    url: "https://ayanamikaine.com/",
+    description:
+        "Welcome to Ayanami's Little Place - a personal blog about technology, thoughts, and creative projects.",
+    author: "Ayanami Kaine",
 };
 
 // src/layouts/BaseLayout.astro
@@ -15,6 +18,14 @@ export interface Props {
 
 const { title } = Astro.props;
 
+// Create full title
+const fullTitle = isHomepage
+    ? `${title} - ${siteDetails.name}`
+    : `${title} | ${siteDetails.name}`;
+
+// Get canonical URL
+const canonicalURL = new URL(Astro.url.pathname, siteDetails.url);
+
 // Import global styles here so they apply everywhere.
 import "../styles/global.css";
 ---
@@ -23,17 +34,14 @@ import "../styles/global.css";
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta
-            name="description"
-            content="A description of your awesome site."
-        />
+        <title>{fullTitle}</title>
+        <meta name="title" content={fullTitle} />
+        <meta name="description" content={siteDetails.description} />
+        <meta name="author" content={siteDetails.author} />
+        <link rel="canonical" href={canonicalURL} />
         <meta name="viewport" content="width=device-width" />
 
-        <link
-            rel="icon"
-            href="/favicon.svg"
-            type="image/svg+xml"
-        />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
         <link
             rel="icon"
@@ -57,6 +65,11 @@ import "../styles/global.css";
                         "@type": "WebSite",
                         name: siteDetails.name,
                         url: siteDetails.url,
+                        description: siteDetails.description,
+                        author: {
+                            "@type": "Person",
+                            name: siteDetails.author,
+                        },
                     })}
                 />
             )
