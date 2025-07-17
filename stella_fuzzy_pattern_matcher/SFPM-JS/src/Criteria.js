@@ -1,5 +1,3 @@
-// src/Criteria.js
-
 /**
  * @enum {Symbol}
  */
@@ -12,6 +10,10 @@ export const Operator = Object.freeze({
     NotEqual: Symbol("NotEqual"),
     Predicate: Symbol("Predicate"),
 });
+
+const operatorToString = (opSymbol) => Object.keys(Operator).find(key => Operator[key] === opSymbol);
+const stringToOperator = (opString) => Operator[opString];
+
 
 export class Criteria {
     /**
@@ -42,6 +44,10 @@ export class Criteria {
     evaluate(facts) {
         const actualValue = facts.getFact(this.factName);
 
+        //console.log(
+        //    `[DEBUG] Evaluating Criteria: FactName='${this.factName}', Expected='${this.expectedValue}', //Actual='${actualValue}'`
+        //);
+
         if (actualValue === undefined) {
             return false;
         }
@@ -66,5 +72,43 @@ export class Criteria {
             default:
                 return false;
         }
+    }
+
+    /**
+       * Serializes the Criteria instance to a JSON-compatible object.
+       * Throws an error if the operator is 'Predicate' as functions cannot be serialized.
+       * @returns {{factName: string, expectedValue: any, operator: string}}
+       */
+    toJSON() {
+        if (this.operator === Operator.Predicate) {
+            throw new Error("Criteria with a Predicate operator cannot be serialized to JSON.");
+        }
+
+        return {
+            factName: this.factName,
+            expectedValue: this.expectedValue,
+            operator: operatorToString(this.operator)
+        };
+    }
+
+    /**
+     * Deserializes a JSON object or string into a Criteria instance.
+     * Throws an error if the operator is 'Predicate'.
+     * @param {string|object} json - The JSON string or object to deserialize.
+     * @returns {Criteria} A new instance of the Criteria class.
+     */
+    static fromJSON(json) {
+        const data = typeof json === 'string' ? JSON.parse(json) : json;
+
+        const operator = stringToOperator(data.operator);
+        if (!operator) {
+            throw new Error(`Unknown operator found during deserialization: '${data.operator}'`);
+        }
+
+        if (operator === Operator.Predicate) {
+            throw new Error("Cannot deserialize a Criteria with a Predicate operator.");
+        }
+
+        return new Criteria(data.factName, data.expectedValue, operator);
     }
 }
