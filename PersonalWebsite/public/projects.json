@@ -121,6 +121,21 @@
     ]
   },
   {
+    "title": "Dialog Editor",
+    "status": "In Progress",
+    "description": "While working on some small story projects I had the desire to create a branching narrative. While some tools out there exist to make this easy like articy:draft X. They dont nicely integrate into my own workflow and of course cost some money. The idea is to be able to create a branching dialog and generate something I can use.",
+    "technologies": [
+      "JavaScript",
+      "Svelte"
+    ],
+    "links": [
+      {
+        "name": "Preview",
+        "url": "apps/DialogEditor/"
+      }
+    ]
+  },
+  {
     "title": "Email Status Service",
     "status": "Completed",
     "description": "A simple .NET utility class designed to send server status updates and deployment notifications via email. It's configured using environment variables and sends color-coded, formatted HTML emails to report successes, warnings, or errors from any C# application.",
