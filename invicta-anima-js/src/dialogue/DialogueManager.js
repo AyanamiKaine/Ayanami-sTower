@@ -56,9 +56,6 @@ export class DialogueManager {
         const factSource = query._factSource; // Get the underlying fact source
         //console.log(factSource)
         for (const response of this.activeNode.playerResponses) {
-            // =======================================================================
-            // THE FIX IS HERE
-            // =======================================================================
             // We now correctly evaluate each criteria and use its direct boolean result.
             const isAvailable = response.conditions.every(criteria => {
                 return criteria.evaluate(factSource);
@@ -68,17 +65,15 @@ export class DialogueManager {
             if (isAvailable) {
                 availableResponses.set(optionIndex, {
                     text: response.text,
-                    // The action now handles both the state change AND the dialogue transition
+                    // The action handles both the state change and the dialogue transition
+                    // We maybe changing this later down the line
                     action: () => {
-                        // 1. Execute the response's specific action, if any
                         if (response.action) {
                             response.action(this.game);
                         }
-                        // 2. Transition to the next node
                         if (response.nextNodeId) {
                             this.activeNode = this.allNodes.get(response.nextNodeId);
                         } else {
-                            // If no next node, the conversation ends
                             this.endDialogue();
                         }
                     }
