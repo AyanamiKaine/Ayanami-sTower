@@ -11,7 +11,7 @@ export const Operator = Object.freeze({
     Predicate: Symbol("Predicate"),
 });
 
-export const operatorSymbols = {
+export const OperatorSymbols = {
     [Operator.Equal]: '===',
     [Operator.NotEqual]: '!==',
     [Operator.GreaterThan]: '>',
