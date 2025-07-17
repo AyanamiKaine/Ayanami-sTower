@@ -1,4 +1,11 @@
 ---
+const isHomepage = Astro.url.pathname === "/";
+
+const siteDetails = {
+    name: "Ayanami's Little Place",
+    url: "https://ayanamikaine.com/", // Replace with your actual domain
+};
+
 // src/layouts/BaseLayout.astro
 
 // We can define props that every page will need, like a title.
@@ -25,13 +32,29 @@ import "../styles/global.css";
         <link
             rel="icon"
             href="/favicon-light.svg"
+            type="image/svg+xml"
             media="(prefers-color-scheme: light)"
         />
         <link
             rel="icon"
             href="/favicon-dark.svg"
+            type="image/svg+xml"
             media="(prefers-color-scheme: dark)"
         />
+
+        {
+            isHomepage && (
+                <script
+                    type="application/ld+json"
+                    set:html={JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebSite",
+                        name: siteDetails.name,
+                        url: siteDetails.url,
+                    })}
+                />
+            )
+        }
 
         <meta name="generator" content={Astro.generator} />
         <title>{title}</title>
