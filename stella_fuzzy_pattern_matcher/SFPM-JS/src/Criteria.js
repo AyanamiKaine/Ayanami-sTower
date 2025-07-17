@@ -11,6 +11,15 @@ export const Operator = Object.freeze({
     Predicate: Symbol("Predicate"),
 });
 
+export const operatorSymbols = {
+    [Operator.Equal]: '===',
+    [Operator.NotEqual]: '!==',
+    [Operator.GreaterThan]: '>',
+    [Operator.LessThan]: '<',
+    [Operator.GreaterThanOrEqual]: '>=',
+    [Operator.LessThanOrEqual]: '<='
+};
+
 const operatorToString = (opSymbol) => Object.keys(Operator).find(key => Operator[key] === opSymbol);
 const stringToOperator = (opString) => Operator[opString];
 
