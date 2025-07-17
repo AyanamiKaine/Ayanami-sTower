@@ -20,7 +20,7 @@
   {
     "title": "Stella Fuzzy Pattern Matcher (SFPM)",
     "status": "Completed",
-    "description": "The main problem I wanted to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem.",
+    "description": "The main problem I wanted to solve is reactivity with changing dynamic contexts. We could rephrase this as branching trees. Imagine a dialog tree that includes many different flags and acknowledges many different variables like how many birds you saw. Conceptually this is nothing more than various deeply nested if else conditions and statements. When those are simple they are simple, when they are complex we have a problem. To solved this I developed a fuzzy pattern matcher that works on a list of rules with various conditions. Both conditions and rules can be changed at runtime.",
     "technologies": [
       "C#",
       "JavaScript"
@@ -44,7 +44,7 @@
       }
     ]
   },
-   {
+  {
     "title": "Stella-ECS-JS",
     "status": "Completed",
     "description": "A high-performance, feature-rich Entity-Component-System (ECS) library for JavaScript and TypeScript. Designed with a modern, fluent API, it uses an archetype-based architecture for efficient iteration and includes a relationship graph to model complex connections between entities. It supports dynamic components and full world serialization.",
@@ -99,7 +99,7 @@
         "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/Applications/SmartTrashTrayIcon"
       }
     ]
-  },  
+  },
   {
     "title": "Avalonia Flecs",
     "status": "In Progress",
