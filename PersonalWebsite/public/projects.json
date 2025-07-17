@@ -121,6 +121,21 @@
     ]
   },
   {
+    "title": "Email Status Service",
+    "status": "Completed",
+    "description": "A simple .NET utility class designed to send server status updates and deployment notifications via email. It's configured using environment variables and sends color-coded, formatted HTML emails to report successes, warnings, or errors from any C# application.",
+    "technologies": [
+      "C#",
+      ".NET"
+    ],
+    "links": [
+      {
+        "name": "GitHub",
+        "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/EmailStatusService"
+      }
+    ]
+  },
+  {
     "title": "Personal Website",
     "status": "In Progress",
     "description": "The very website you're on now! A personal space to blog, showcase projects, share my creative work, spit my feelings and opinions on. My site uses continuous integration and every time my personal pages changes it automatically redeploys using blue/green deployment.",
