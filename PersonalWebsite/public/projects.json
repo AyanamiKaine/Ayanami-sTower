@@ -44,6 +44,45 @@
       }
     ]
   },
+   {
+    "title": "Stella-ECS-JS",
+    "status": "Completed",
+    "description": "A high-performance, feature-rich Entity-Component-System (ECS) library for JavaScript and TypeScript. Designed with a modern, fluent API, it uses an archetype-based architecture for efficient iteration and includes a relationship graph to model complex connections between entities. It supports dynamic components and full world serialization.",
+    "technologies": [
+      "JavaScript",
+      "ECS"
+    ],
+    "links": [
+      {
+        "name": "npm",
+        "url": "https://www.npmjs.com/package/stella-ecs-js"
+      },
+      {
+        "name": "GitHub",
+        "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/stella-ecs-js"
+      }
+    ]
+  },
+  {
+    "title": "Stella-HTN-JS",
+    "status": "Completed",
+    "description": "A flexible and powerful Hierarchical Task Network (HTN) planner for creating complex and emergent AI behaviors in JavaScript. It allows AI to adapt to a changing world through runtime planning, plan interruption, and replanning. It features a system for context-aware 'Smart Objects'.",
+    "technologies": [
+      "JavaScript",
+      "HTN",
+      "AI"
+    ],
+    "links": [
+      {
+        "name": "npm",
+        "url": "https://www.npmjs.com/package/stella-htn-js"
+      },
+      {
+        "name": "GitHub",
+        "url": "https://github.com/AyanamiKaine/Ayanami-sTower/tree/main/stella-htn-js"
+      }
+    ]
+  },
   {
     "title": "Smart Trash Tray Icon",
     "status": "Completed",
