@@ -11,6 +11,9 @@
     const nodes = useNodes();
     let result = $state(null);
 
+
+    // TODO: The condition node should re-evaluate when the dialog state changes.
+
     // This single handler can now update any property in the node's data.
     function handleInput(event) {
         const { name, value } = event.target;
