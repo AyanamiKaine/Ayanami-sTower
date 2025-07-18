@@ -16,11 +16,13 @@
     import ConditionNode from "./nodes/ConditionNode.svelte"; // 1. Import the new node
     import DialogNode from "./nodes/DialogNode.svelte";
     import AnnotationNode from "./nodes/AnnotationNode.svelte";
+    import InstructionNode from './nodes/InstructionNode.svelte';
     // 2. Create a nodeTypes object to register your custom node
     const nodeTypes = {
         condition: ConditionNode,
         dialog: DialogNode,
         annotation: AnnotationNode,
+        instruction: InstructionNode,
     };
 
     let world = $state(new World());

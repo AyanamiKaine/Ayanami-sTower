@@ -26,6 +26,10 @@
     } else if (type === 'dialog') {
       // Provide default values for the dialog node's data
       data = { menuText: '', speechText: '' };
+     } else if (type === 'instruction') {
+      data = {
+        code: "// 'state' is the Dialog State Map\nstate.set('playerGold', state.get('playerGold') + 50);"
+      };
     } else {
       data = { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node` };
     }
@@ -59,7 +63,7 @@
 >
   <button role="menuitem" onclick={() => createNode('condition')}>Add Condition Node</button>
   <button role="menuitem" onclick={() => createNode('dialog')}>Add Dialog Node</button>
-
+  <button role="menuitem" onclick={() => createNode('instruction')}>Add Instruction Node</button>
 
 </div>
 
