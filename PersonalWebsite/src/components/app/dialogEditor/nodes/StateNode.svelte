@@ -1,7 +1,7 @@
 <script>
   import { getContext } from 'svelte';
 
-  const dialogState = getContext('dialog-state');
+  import dialogState from '../../../../lib/state.svelte.js';
 </script>
 
 <div class="state-node">
@@ -10,7 +10,7 @@
     {#if dialogState.size === 0}
       <div class="empty-state">State is empty.</div>
     {:else}
-      {#each [...dialogState.entries()] as [key, value]}
+      {#each [...dialogState.state.entries()] as [key, value]}
         <div class="state-entry">
           <span class="key">{key}:</span>
           <span class="value">{JSON.stringify(value)}</span>

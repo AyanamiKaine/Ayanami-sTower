@@ -4,10 +4,11 @@
     // 1. Import the new operator logic
     import { Operator, OperatorSymbols } from "sfpm-js";
     import { notification } from '../../../../lib/stores'
+    import dialogState from "../../../../lib/state.svelte.js";
+
     let { data, id } = $props();
     const edges = useEdges();
     const nodes = useNodes();
-    const dialogState = getContext("dialog-state");
     let result = $state(null);
 
     // This single handler can now update any property in the node's data.
@@ -40,20 +41,19 @@
         try {
             let evalResult = false;
             if (data.mode === "expression") {
+                // 2. Use the imported state module.
                 const func = new Function("state", `return ${data.expression}`);
-                evalResult = func(dialogState);
+                evalResult = func(dialogState.state);
             } else {
-                // Builder mode evaluation - no eval() needed!
-                const leftVal = dialogState.get(data.key);
+                // 3. Use the imported state module here as well.
+                const leftVal = dialogState.state.get(data.key);
 
                 if (leftVal === undefined) {
-                    // Throw an error that will be caught by the catch block.
                     throw new Error(
                         `Key "${data.key}" not found in dialog state.`,
                     );
                 }
 
-                // Attempt to convert right value to a number if it looks like one
                 const rightVal =
                     !isNaN(parseFloat(data.value)) && isFinite(data.value)
                         ? parseFloat(data.value)

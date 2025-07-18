@@ -50,10 +50,6 @@
         ['playerStrength', 10]
     ]));
 
-    setContext('dialog-state', dialogState);
-    
-    let newKey = $state('');
-    let newValue = $state('');
 
     let nodes = $state.raw([
         // 1. The conversation begins.

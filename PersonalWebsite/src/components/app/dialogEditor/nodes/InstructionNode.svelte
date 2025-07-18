@@ -7,7 +7,7 @@
   let { data, id } = $props();
   const nodes = useNodes();
   // Get the shared dialog state Map
-  let dialogState = getContext('dialog-state');
+  import dialogState from '../../../../lib/state.svelte.js';
 
   // Create a single sandbox instance for this node
   const sandbox = new Sandbox();
@@ -23,21 +23,13 @@
   }
 
   function executeCode() {
-    if (!dialogState) {
-      notification.set(error.message);
-      console.error("Dialog state context not found!");
-      return;
-    }
-    
     try {
-      // Compile the user's code
       const compiled = sandbox.compile(data.code || '');
+      // The sandbox directly mutates the map
+      compiled({ state: dialogState.state }).run();
       
-      compiled({ state: dialogState }).run();
-
-      console.log("Instruction executed. New state:", dialogState);
-
-      dialogState = new Map(dialogState);
+      // We then call update() to trigger the UI refresh
+      dialogState.update(() => {});
 
     } catch (error) {
       notification.set(error.message);
