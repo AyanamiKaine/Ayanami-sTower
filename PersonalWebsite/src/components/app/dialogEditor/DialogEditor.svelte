@@ -9,20 +9,23 @@
     import "@xyflow/svelte/dist/style.css";
     import { setContext } from "svelte";
     import { World } from "stella-ecs-js";
-    // Make sure you've renamed ContextMenu.svelte to NodeContextMenu.svelte
+
     import NodeContextMenu from "./contextMenus/NodeContextMenu.svelte";
     import EdgeContextMenu from "./contextMenus/EdgeContextMenu.svelte";
-    import PaneContextMenu from "./contextMenus/PaneContextMenu.svelte"; // 1. Import the new component
-    import ConditionNode from "./nodes/ConditionNode.svelte"; // 1. Import the new node
+    import PaneContextMenu from "./contextMenus/PaneContextMenu.svelte"; 
+    import ConditionNode from "./nodes/ConditionNode.svelte"; 
     import DialogNode from "./nodes/DialogNode.svelte";
     import AnnotationNode from "./nodes/AnnotationNode.svelte";
     import InstructionNode from './nodes/InstructionNode.svelte';
-    // 2. Create a nodeTypes object to register your custom node
+    import StateNode from './nodes/StateNode.svelte'; 
+
+
     const nodeTypes = {
         condition: ConditionNode,
         dialog: DialogNode,
         annotation: AnnotationNode,
         instruction: InstructionNode,
+        state: StateNode
     };
 
     let world = $state(new World());
@@ -47,10 +50,8 @@
         ['playerStrength', 10]
     ]));
 
-    // 2. Provide the Map to all child components via context.
     setContext('dialog-state', dialogState);
     
-    // --- UI variables for managing the Map ---
     let newKey = $state('');
     let newValue = $state('');
 
@@ -72,6 +73,13 @@
                 speechText:
                     "Greetings, traveler. I need you to lift this heavy boulder. Are you strong enough?",
             },
+        },
+        {
+            id: 'state-display',
+            type: 'state',
+            draggable: false,
+            position: { x: 450, y: -200 },
+            data: {} 
         },
         // 3A. The player chooses to act. This is a single choice.
         {
