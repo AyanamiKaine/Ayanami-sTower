@@ -1,6 +1,7 @@
 ---
 // src/layouts/AppLayout.astro
 import BaseLayout from "./BaseLayout.astro";
+import Notification from "../components/ui/Notification.svelte"; 
 
 export interface Props {
     title: string;
@@ -9,5 +10,6 @@ const { title } = Astro.props;
 ---
 
 <BaseLayout title={title}>
+    <Notification client:only="svelte" />
     <slot />
 </BaseLayout>

@@ -3,7 +3,7 @@
     import { Handle, Position, useEdges, useNodes } from "@xyflow/svelte";
     // 1. Import the new operator logic
     import { Operator, OperatorSymbols } from "sfpm-js";
-
+    import { notification } from '../../../../lib/stores'
     let { data, id } = $props();
     const edges = useEdges();
     const nodes = useNodes();
@@ -84,6 +84,7 @@
             result = evalResult === true;
         } catch (error) {
             console.error("Evaluation Error:", error);
+            notification.set(error.message);
             result = null;
         }
 

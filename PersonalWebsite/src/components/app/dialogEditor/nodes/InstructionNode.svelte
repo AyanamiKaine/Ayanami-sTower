@@ -2,6 +2,7 @@
   import { Handle, Position, useNodes } from '@xyflow/svelte';
   import { getContext } from 'svelte';
   import Sandbox from '@nyariv/sandboxjs';
+  import { notification } from '../../../../lib/stores'
 
   let { data, id } = $props();
   const nodes = useNodes();
@@ -23,6 +24,7 @@
 
   function executeCode() {
     if (!dialogState) {
+      notification.set(error.message);
       console.error("Dialog state context not found!");
       return;
     }
@@ -38,6 +40,7 @@
       dialogState = new Map(dialogState);
 
     } catch (error) {
+      notification.set(error.message);
       console.error("Sandbox Execution Error:", error);
     }
   }
