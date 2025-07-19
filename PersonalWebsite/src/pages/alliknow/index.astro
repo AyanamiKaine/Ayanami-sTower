@@ -1,0 +1,151 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+const allPosts = await Astro.glob("./*/*.mdx");
+const now = new Date();
+const publishedPosts = allPosts.filter((post) => {
+    return post.frontmatter.published && new Date(post.frontmatter.date) <= now;
+});
+
+const postsByCategory = publishedPosts.reduce((acc, post) => {
+    const pathParts = post.url.split("/").filter((p) => p);
+    const category = pathParts[pathParts.length - 2];
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(post);
+    return acc;
+}, {});
+
+for (const category in postsByCategory) {
+    postsByCategory[category].sort((a, b) => {
+        const orderA = a.frontmatter.order ?? Infinity;
+        const orderB = b.frontmatter.order ?? Infinity;
+        if (orderA !== orderB) {
+            return orderA - orderB;
+        }
+        return a.frontmatter.title.localeCompare(b.frontmatter.title);
+    });
+}
+
+const chapterOrder = [
+    "general-science",
+    "art",
+    "computer-science",
+    "philosophy",
+];
+
+const sortedCategories = Object.keys(postsByCategory).sort((a, b) => {
+    const indexA = chapterOrder.indexOf(a);
+    const indexB = chapterOrder.indexOf(b);
+
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB; 
+    if (indexA !== -1) return -1; 
+    if (indexB !== -1) return 1; 
+    return a.localeCompare(b); 
+});
+
+const finalOrderedPosts = [];
+for (const category of sortedCategories) {
+    finalOrderedPosts.push(...postsByCategory[category]);
+}
+const pageNumbers = new Map();
+finalOrderedPosts.forEach((post, index) => {
+    pageNumbers.set(post.url, (index + 1).toString().padStart(3, "0"));
+});
+
+function formatCategoryName(name) {
+    return name
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+}
+---
+
+<Layout title="All I Know - Table of Contents">
+    <div class="max-w-3xl mx-auto">
+        <h1 class="text-5xl font-bold mt-8 text-center">All I Know</h1>
+        <h2 class="text-2xl text-gray-600dark:text-gray-400 mb-12 text-center">
+            Table of Contents
+        </h2>
+
+        <div class="toc">
+            {
+                sortedCategories.length === 0 ? (
+                    <p class="text-center text-gray-500">
+                        No published articles yet. Check back soon!
+                    </p>
+                ) : (
+                    sortedCategories.map((category, index) => (
+                        <section class="toc-chapter">
+                            <h3>
+                                Chapter {index + 1}:{" "}
+                                {formatCategoryName(category)}
+                            </h3>
+                            <ul>
+                                {postsByCategory[category].map((post) => (
+                                    <li class="toc-entry">
+                                        <a href={post.url}>
+                                            <span class="title">
+                                                {post.frontmatter.title}
+                                            </span>
+                                            <span class="leader" />
+                                            <span class="page-number">
+                                                {pageNumbers.get(post.url)}
+                                            </span>
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+                    ))
+                )
+            }
+        </div>
+    </div>
+</Layout>
+
+<style>
+    /* Styles remain the same and will work with the new ordered content */
+    .toc {
+        margin-top: 2rem;
+    }
+    .toc-chapter {
+        margin-bottom: 2.5rem;
+    }
+    .toc-chapter h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        border-bottom: 1px solid var(--theme-border);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        color: var(--theme-text);
+    }
+    .toc-chapter ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    .toc-entry a {
+        display: flex;
+        align-items: baseline;
+        text-decoration: none;
+        color: var(--theme-text-secondary);
+        font-size: 1.1rem;
+        padding: 0.25rem 0;
+        transition: color 0.2s ease-in-out;
+    }
+    .toc-entry a:hover {
+        color: #3b82f6;
+    }
+    .toc-entry .title {
+        white-space: nowrap;
+    }
+    .toc-entry .leader {
+        flex-grow: 1;
+        border-bottom: 2px dotted var(--theme-border);
+        margin: 0 0.5em;
+        transform: translateY(-4px);
+    }
+    .toc-entry .page-number {
+        flex-shrink: 0;
+        font-family: monospace;
+    }
+</style>
