@@ -108,18 +108,24 @@
     <Handle type="target" position={Position.Top} />
 
     <div class="content">
-        <!-- The condition builder is now the only UI -->
-        <div class="builder">
+        <!-- The form is now organized into vertical groups for clarity and space -->
+        <div class="form-group">
+            <label for={`key-input-${id}`}>Key</label>
             <input
+                id={`key-input-${id}`}
                 name="key"
                 type="text"
                 class="nodrag"
                 value={data.key || ""}
                 oninput={handleInput}
-                placeholder="player.strength"
+                placeholder="e.g., player.strength"
             />
-            <select name="operator" class="nodrag" oninput={handleInput}>
-                {#each Object.entries(Operator) as [key, symbol]}
+        </div>
+
+      <div class="form-group">
+            <label for={`operator-select-${id}`}>Operator</label>
+            <select id={`operator-select-${id}`} name="operator" class="nodrag" oninput={handleInput}>
+                {#each Object.entries(Operator).filter(([key]) => key !== 'Predicate') as [key, symbol]}
                     <option
                         value={symbol.toString()}
                         selected={data.operator === key}
@@ -128,17 +134,22 @@
                     </option>
                 {/each}
             </select>
+        </div>
+        
+        <div class="form-group">
+            <label for={`value-input-${id}`}>Value</label>
             <input
+                id={`value-input-${id}`}
                 name="value"
                 type="text"
                 class="nodrag"
                 value={data.value || ""}
                 oninput={handleInput}
-                placeholder="10"
+                placeholder="e.g., 10"
             />
         </div>
 
-        <button class="nodrag" onclick={evaluateExpression}>Run</button>
+        <button class="nodrag" onclick={evaluateExpression}>Evaluate</button>
     </div>
 
     <!-- Output handles for true/false paths -->
@@ -164,66 +175,79 @@
 
 <style>
     .condition-node {
-        width: 300px;
+        width: 320px; /* Slightly wider for more breathing room */
         background: #ffffff;
-        border: 1px solid #a855f7; /* Purple border to distinguish it */
+        border: 1px solid #a855f7;
         border-radius: 0.5rem;
         padding: 1rem;
         font-family: sans-serif;
         font-size: 0.875rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     }
 
     .content {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem; /* Increased gap for better spacing */
+        gap: 0.75rem;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem; /* Adds a small space between label and input */
+    }
+
+    .form-group label {
+        font-weight: 500;
+        font-size: 0.75rem;
+        color: #4b5563;
     }
 
     .content input,
-    .builder select {
+    .content select {
         border: 1px solid #d1d5db;
-        border-radius: 0.25rem;
-        padding: 0.5rem;
+        border-radius: 0.375rem; /* Slightly more rounded */
+        padding: 0.5rem 0.75rem;
         width: 100%;
         box-sizing: border-box;
+        background-color: #f9fafb;
+    }
+    
+    .content input:focus,
+    .content select:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        border-color: #a855f7;
+        box-shadow: 0 0 0 2px #c4b5fd;
     }
 
     .content button {
-        background-color: #3b82f6;
+        margin-top: 0.5rem; /* Add some space above the button */
+        background-color: #8b5cf6;
         color: white;
         border: none;
-        border-radius: 0.25rem;
-        padding: 0.5rem;
+        border-radius: 0.375rem;
+        padding: 0.6rem;
         cursor: pointer;
         font-weight: 600;
+        transition: background-color 0.2s;
     }
 
     .content button:hover {
-        background-color: #2563eb;
+        background-color: #7c3aed;
     }
 
     .handle-label {
         position: absolute;
-        top: 12px; /* Adjusted position */
+        top: 12px;
         font-size: 0.75rem;
         color: #6b7280;
         transform: translateX(-50%);
-        pointer-events: none; /* Make label non-interactive */
+        pointer-events: none;
     }
 
-    /* Style for the "activated" handle */
     :global(.condition-node .svelte-flow__handle.active) {
-        background-color: #22c55e; /* Green */
+        background-color: #22c55e;
     }
 
-    .builder {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .builder select {
-        padding: 0.5rem 0.25rem;
-    }
 </style>
