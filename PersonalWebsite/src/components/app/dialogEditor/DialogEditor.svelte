@@ -57,14 +57,14 @@
         {
             id: "intro",
             type: "input",
-            position: { x: 50, y: -350 },
+            position: { x: 50, y: -450 },
             data: { label: "Begin Conversation" },
         },
         // 2. The NPC poses the challenge.
         {
             id: "npc-greeting",
             type: "dialog",
-            position: { x: 0, y: -200 },
+            position: { x: 0, y: -300 },
             data: {
                 menuText: "Start Conversation",
                 speechText:
@@ -82,8 +82,9 @@
         {
             id: "player-action-lift",
             type: "dialog",
-            position: { x: -275, y: 100 },
+            position: { x: -275, y: 150 },
             data: {
+                speaker: "Player",
                 menuText: "[ACT] Try to lift the boulder.",
                 speechText:
                     "*You brace yourself and attempt to lift the massive rock...*",
@@ -93,8 +94,9 @@
         {
             id: "player-action-leave",
             type: "dialog",
-            position: { x: 350, y: 100 },
+            position: { x: 450, y: 150 },
             data: {
+                speaker: "Player",
                 menuText: "[LEAVE] I think I'll pass.",
                 speechText: "I think I'll pass.",
             },
@@ -103,7 +105,7 @@
         {
             id: "strength-check",
             type: "condition",
-            position: { x: -275, y: 450 },
+            position: { x: -275, y: 550 },
             data: {
                 mode: "builder",
                 key: "playerStrength",
@@ -116,7 +118,7 @@
         {
             id: "outcome-strong",
             type: "dialog",
-            position: { x: -450, y: 850 },
+            position: { x: -450, y: 950 },
             data: {
                 menuText: "",
                 speechText: "Incredible! You lifted it with ease. Thank you!",
@@ -126,7 +128,7 @@
         {
             id: "outcome-weak",
             type: "dialog",
-            position: { x: -50, y: 850 },
+            position: { x: -50, y: 950 },
             data: {
                 menuText: "",
                 speechText:
@@ -137,14 +139,14 @@
         {
             id: "end",
             type: "output",
-            position: { x: 200, y: 1250 },
+            position: { x: 200, y: 1450 },
             data: { label: "End Conversation" },
         },
         {
             id: "annotation-1",
             type: "annotation",
             draggable: false, // Make annotations non-interactive
-            position: { x: 100, y: 480 },
+            position: { x: 100, y: 580 },
             data: {
                 level: 1,
                 label: "This node checks a condition.",
@@ -156,7 +158,7 @@
             id: "annotation-2",
             type: "annotation",
             draggable: false,
-            position: { x: 100, y: 525 },
+            position: { x: 100, y: 625 },
             data: {
                 level: 2,
                 label: "The outcome of the condition determines which dialog option is shown.",
@@ -166,7 +168,7 @@
             id: "annotation-3",
             type: "annotation",
             draggable: false,
-            position: { x: 50, y: 225 },
+            position: { x: 100, y: 225 },
             data: {
                 level: 1,
                 label: "Right click to add new nodes.",
@@ -176,7 +178,7 @@
             id: "annotation-4",
             type: "annotation",
             draggable: false,
-            position: { x: 50, y: 265 },
+            position: { x: 100, y: 265 },
             data: {
                 level: 2,
                 label: "Right click on a node to delete it.",
