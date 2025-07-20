@@ -1,7 +1,6 @@
 <script>
-    import { getContext } from "svelte";
     import { Handle, Position, useEdges, useNodes } from "@xyflow/svelte";
-    // 1. Import the new operator logic
+    // 1. Import operator logic
     import { Operator, OperatorSymbols } from "sfpm-js";
     import { notification } from '../../../../lib/stores'
     import dialogState from "../../../../lib/state.svelte.js";
@@ -14,17 +13,20 @@
 
     // TODO: The condition node should re-evaluate when the dialog state changes.
 
-    // This single handler can now update any property in the node's data.
+    /**
+     * Updates the node's data when an input value changes.
+     * @param {Event} event - The input event from the form element.
+     */
     function handleInput(event) {
         const { name, value } = event.target;
         nodes.current = nodes.current.map((node) => {
             if (node.id === id) {
-                // Find the correct symbol for the operator when the select changes
+                // When the operator dropdown changes, find the corresponding operator key
                 const finalValue =
                     name === "operator"
                         ? Object.keys(Operator).find(
-                              (key) => Operator[key].toString() === value,
-                          )
+                            (key) => Operator[key].toString() === value,
+                        )
                         : value;
 
                 return { ...node, data: { ...node.data, [name]: finalValue } };
@@ -33,65 +35,63 @@
         });
     }
 
-    function setMode(newMode) {
-        nodes.current = nodes.current.map((n) =>
-            n.id === id ? { ...n, data: { ...n.data, mode: newMode } } : n,
-        );
-    }
-
-    // 2. The evaluation logic now handles both modes
+    /**
+     * Evaluates the condition based on the builder inputs.
+     */
     function evaluateExpression() {
         try {
             let evalResult = false;
-            if (data.mode === "expression") {
-                // 2. Use the imported state module.
-                const func = new Function("state", `return ${data.expression}`);
-                evalResult = func(dialogState.state);
-            } else {
-                // 3. Use the imported state module here as well.
-                const leftVal = dialogState.state.get(data.key);
 
-                if (leftVal === undefined) {
-                    throw new Error(
-                        `Key "${data.key}" not found in dialog state.`,
-                    );
-                }
+            // Get the left-hand value from the shared dialog state
+            const leftVal = dialogState.state.get(data.key);
 
-                const rightVal =
-                    !isNaN(parseFloat(data.value)) && isFinite(data.value)
-                        ? parseFloat(data.value)
-                        : data.value;
-
-                const operatorSymbol = Operator[data.operator];
-                switch (operatorSymbol) {
-                    case Operator.Equal:
-                        evalResult = leftVal === rightVal;
-                        break;
-                    case Operator.NotEqual:
-                        evalResult = leftVal !== rightVal;
-                        break;
-                    case Operator.GreaterThan:
-                        evalResult = leftVal > rightVal;
-                        break;
-                    case Operator.LessThan:
-                        evalResult = leftVal < rightVal;
-                        break;
-                    case Operator.GreaterThanOrEqual:
-                        evalResult = leftVal >= rightVal;
-                        break;
-                    case Operator.LessThanOrEqual:
-                        evalResult = leftVal <= rightVal;
-                        break;
-                }
+            if (leftVal === undefined) {
+                throw new Error(
+                    `Key "${data.key}" not found in dialog state.`,
+                );
             }
+
+            // Parse the right-hand value as a number if possible, otherwise use as a string
+            const rightVal =
+                !isNaN(parseFloat(data.value)) && isFinite(data.value)
+                    ? parseFloat(data.value)
+                    : data.value;
+
+            const operatorSymbol = Operator[data.operator];
+            
+            // Perform the comparison based on the selected operator
+            switch (operatorSymbol) {
+                case Operator.Equal:
+                    evalResult = leftVal === rightVal;
+                    break;
+                case Operator.NotEqual:
+                    evalResult = leftVal !== rightVal;
+                    break;
+                case Operator.GreaterThan:
+                    evalResult = leftVal > rightVal;
+                    break;
+                case Operator.LessThan:
+                    evalResult = leftVal < rightVal;
+                    break;
+                case Operator.GreaterThanOrEqual:
+                    evalResult = leftVal >= rightVal;
+                    break;
+                case Operator.LessThanOrEqual:
+                    evalResult = leftVal <= rightVal;
+                    break;
+                default:
+                    throw new Error(`Unsupported operator: ${data.operator}`);
+            }
+            
             result = evalResult === true;
+
         } catch (error) {
             console.error("Evaluation Error:", error);
             notification.set(error.message);
-            result = null;
+            result = null; // Reset result on error
         }
 
-        // Update edges based on result (this logic is unchanged)
+        // Update the outgoing edges to animate the active path
         edges.current = edges.current.map((edge) => {
             if (edge.source === id) {
                 if (edge.sourceHandle === "true-output")
@@ -107,63 +107,41 @@
 <div class="condition-node">
     <Handle type="target" position={Position.Top} />
 
-    <div class="mode-toggle">
-        <button
-            class:active={data.mode !== "expression"}
-            onclick={() => setMode("builder")}>Builder</button
-        >
-        <button
-            class:active={data.mode === "expression"}
-            onclick={() => setMode("expression")}>Expression</button
-        >
-    </div>
-
     <div class="content">
-        {#if data.mode === "expression"}
-            <label for={`expression-input-${id}`}>Expression</label>
+        <!-- The condition builder is now the only UI -->
+        <div class="builder">
             <input
-                id={`expression-input-${id}`}
-                name="expression"
+                name="key"
                 type="text"
                 class="nodrag"
-                value={data.expression}
+                value={data.key || ""}
                 oninput={handleInput}
-                placeholder="e.g., player.strength > 10"
+                placeholder="player.strength"
             />
-        {:else}
-            <div class="builder">
-                <input
-                    name="key"
-                    type="text"
-                    class="nodrag"
-                    value={data.key || ""}
-                    oninput={handleInput}
-                    placeholder="player.strength"
-                />
-                <select name="operator" class="nodrag" oninput={handleInput}>
-                    {#each Object.entries(Operator) as [key, symbol]}
-                        <option
-                            value={symbol.toString()}
-                            selected={data.operator === key}
-                        >
-                            {OperatorSymbols[symbol]}
-                        </option>
-                    {/each}
-                </select>
-                <input
-                    name="value"
-                    type="text"
-                    class="nodrag"
-                    value={data.value || ""}
-                    oninput={handleInput}
-                    placeholder="10"
-                />
-            </div>
-        {/if}
+            <select name="operator" class="nodrag" oninput={handleInput}>
+                {#each Object.entries(Operator) as [key, symbol]}
+                    <option
+                        value={symbol.toString()}
+                        selected={data.operator === key}
+                    >
+                        {OperatorSymbols[symbol]}
+                    </option>
+                {/each}
+            </select>
+            <input
+                name="value"
+                type="text"
+                class="nodrag"
+                value={data.value || ""}
+                oninput={handleInput}
+                placeholder="10"
+            />
+        </div>
 
         <button class="nodrag" onclick={evaluateExpression}>Run</button>
     </div>
 
+    <!-- Output handles for true/false paths -->
     <Handle
         id="true-output"
         type="source"
@@ -198,15 +176,11 @@
     .content {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.75rem; /* Increased gap for better spacing */
     }
 
-    .content label {
-        font-weight: 600;
-        color: #4b5563;
-    }
-
-    .content input {
+    .content input,
+    .builder select {
         border: 1px solid #d1d5db;
         border-radius: 0.25rem;
         padding: 0.5rem;
@@ -228,13 +202,13 @@
         background-color: #2563eb;
     }
 
-    /* Style for the handle labels */
     .handle-label {
         position: absolute;
-        top: 10px;
+        top: 12px; /* Adjusted position */
         font-size: 0.75rem;
         color: #6b7280;
         transform: translateX(-50%);
+        pointer-events: none; /* Make label non-interactive */
     }
 
     /* Style for the "activated" handle */
@@ -242,36 +216,14 @@
         background-color: #22c55e; /* Green */
     }
 
-    .condition-node {
-        border-color: #a855f7; /* Purple border to distinguish it */
-    }
-    .mode-toggle {
-        display: flex;
-        margin-bottom: 1rem;
-        border: 1px solid #d1d5db;
-        border-radius: 0.25rem;
-        overflow: hidden;
-    }
-    .mode-toggle button {
-        flex-grow: 1;
-        padding: 0.25rem;
-        border: none;
-        background: #f9fafb;
-        cursor: pointer;
-    }
-    .mode-toggle button.active {
-        background: #a855f7;
-        color: white;
-    }
     .builder {
         display: grid;
         grid-template-columns: 1fr auto 1fr;
         gap: 0.5rem;
         align-items: center;
     }
+
     .builder select {
-        border: 1px solid #d1d5db;
-        border-radius: 0.25rem;
         padding: 0.5rem 0.25rem;
     }
 </style>
