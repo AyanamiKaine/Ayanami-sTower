@@ -30,8 +30,13 @@
       data = {
         code: "// 'state' is the Dialog State Map\nstate.set('playerGold', state.get('playerGold') + 50);"
       };
-    } else if (type === 'event') {
+    }
+    else if (type === 'entry') {
+        data = { dialogId: `new_dialog_${Date.now()}` };
+    }
+    else if (type === 'event') {
       data = {
+
       };
     } else {
       data = { label: `${type.charAt(0).toUpperCase() + type.slice(1)} Node` };
@@ -64,6 +69,7 @@
   style:top={top ? `${top}px` : undefined}
   style:left={left ? `${left}px` : undefined}
 >
+  <button role="menuitem" onclick={() => createNode('entry')}>Add Entry Node</button>
   <button role="menuitem" onclick={() => createNode('condition')}>Add Condition Node</button>
   <button role="menuitem" onclick={() => createNode('dialog')}>Add Dialog Node</button>
   <button role="menuitem" onclick={() => createNode('instruction')}>Add Instruction Node</button>

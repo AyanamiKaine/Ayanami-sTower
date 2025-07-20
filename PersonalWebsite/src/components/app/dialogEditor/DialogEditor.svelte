@@ -19,8 +19,10 @@
     import InstructionNode from './nodes/InstructionNode.svelte';
     import StateNode from './nodes/StateNode.svelte'; 
     import EventNode from './nodes/EventNode.svelte';
+    import EntryNode from './nodes/EntryNode.svelte';
 
     const nodeTypes = {
+        entry: EntryNode,
         condition: ConditionNode,
         dialog: DialogNode,
         annotation: AnnotationNode,
@@ -53,7 +55,14 @@
 
 
     let nodes = $state.raw([
-        // 1. The conversation begins.
+    {
+            id: "entry-point",
+            type: "entry",
+            position: { x: 450, y: -450 },
+            data: {
+                dialogId: "boulder_strength_check"
+            },
+        },
         {
             id: "intro",
             type: "input",
