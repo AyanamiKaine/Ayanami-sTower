@@ -80,6 +80,7 @@
                     evalResult = leftVal <= rightVal;
                     break;
                 default:
+                    // This case now implicitly handles the filtered 'Predicate' operator
                     throw new Error(`Unsupported operator: ${data.operator}`);
             }
             
@@ -107,6 +108,12 @@
 <div class="condition-node">
     <Handle type="target" position={Position.Top} />
 
+    <!-- Styled header for consistency with other nodes -->
+    <div class="header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 18L12 6M12 6L7 11M12 6L17 11"/></svg>
+        <span>Condition Check</span>
+    </div>
+
     <div class="content">
         <!-- The form is now organized into vertical groups for clarity and space -->
         <div class="form-group">
@@ -122,9 +129,10 @@
             />
         </div>
 
-      <div class="form-group">
+        <div class="form-group">
             <label for={`operator-select-${id}`}>Operator</label>
             <select id={`operator-select-${id}`} name="operator" class="nodrag" oninput={handleInput}>
+                <!-- Filter out the 'Predicate' operator from the dropdown list -->
                 {#each Object.entries(Operator).filter(([key]) => key !== 'Predicate') as [key, symbol]}
                     <option
                         value={symbol.toString()}
@@ -149,7 +157,7 @@
             />
         </div>
 
-        <button class="nodrag" onclick={evaluateExpression}>Evaluate</button>
+        <button class="run-btn nodrag" onclick={evaluateExpression}>Run Condition</button>
     </div>
 
     <!-- Output handles for true/false paths -->
@@ -175,17 +183,29 @@
 
 <style>
     .condition-node {
-        width: 320px; /* Slightly wider for more breathing room */
+        width: 320px;
         background: #ffffff;
         border: 1px solid #a855f7;
         border-radius: 0.5rem;
-        padding: 1rem;
         font-family: sans-serif;
         font-size: 0.875rem;
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        overflow: hidden; /* Important for containing the header's background */
+    }
+    
+    .header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background-color: #f3e8ff; /* Light purple background */
+        color: #6b21a8; /* Dark purple text */
+        font-weight: 600;
+        border-bottom: 1px solid #e9d5ff; /* Lighter purple border */
     }
 
     .content {
+        padding: 1rem;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
@@ -194,7 +214,7 @@
     .form-group {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem; /* Adds a small space between label and input */
+        gap: 0.25rem;
     }
 
     .form-group label {
@@ -206,7 +226,7 @@
     .content input,
     .content select {
         border: 1px solid #d1d5db;
-        border-radius: 0.375rem; /* Slightly more rounded */
+        border-radius: 0.375rem;
         padding: 0.5rem 0.75rem;
         width: 100%;
         box-sizing: border-box;
@@ -221,8 +241,8 @@
         box-shadow: 0 0 0 2px #c4b5fd;
     }
 
-    .content button {
-        margin-top: 0.5rem; /* Add some space above the button */
+    .run-btn {
+        margin-top: 0.5rem;
         background-color: #8b5cf6;
         color: white;
         border: none;
@@ -233,7 +253,7 @@
         transition: background-color 0.2s;
     }
 
-    .content button:hover {
+    .run-btn:hover {
         background-color: #7c3aed;
     }
 
