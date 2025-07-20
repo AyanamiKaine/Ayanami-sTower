@@ -102,7 +102,7 @@
         {
             id: "strength-check",
             type: "condition",
-            position: { x: -250, y: 450 },
+            position: { x: -275, y: 450 },
             data: {
                 mode: "builder",
                 key: "playerStrength",
@@ -115,7 +115,7 @@
         {
             id: "outcome-strong",
             type: "dialog",
-            position: { x: -450, y: 650 },
+            position: { x: -450, y: 850 },
             data: {
                 menuText: "",
                 speechText: "Incredible! You lifted it with ease. Thank you!",
@@ -125,7 +125,7 @@
         {
             id: "outcome-weak",
             type: "dialog",
-            position: { x: -50, y: 650 },
+            position: { x: -50, y: 850 },
             data: {
                 menuText: "",
                 speechText:
@@ -136,7 +136,7 @@
         {
             id: "end",
             type: "output",
-            position: { x: 200, y: 1050 },
+            position: { x: 200, y: 1250 },
             data: { label: "End Conversation" },
         },
         {
@@ -158,7 +158,7 @@
             position: { x: 100, y: 525 },
             data: {
                 level: 2,
-                label: "The outcome of the condition determines which path is taken.",
+                label: "The outcome of the condition determines which dialog option is shown.",
             },
         },
         {
