@@ -18,14 +18,15 @@
     import AnnotationNode from "./nodes/AnnotationNode.svelte";
     import InstructionNode from './nodes/InstructionNode.svelte';
     import StateNode from './nodes/StateNode.svelte'; 
-
+    import EventNode from './nodes/EventNode.svelte';
 
     const nodeTypes = {
         condition: ConditionNode,
         dialog: DialogNode,
         annotation: AnnotationNode,
         instruction: InstructionNode,
-        state: StateNode
+        state: StateNode,
+        event: EventNode
     };
 
     let world = $state(new World());
