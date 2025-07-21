@@ -94,6 +94,7 @@
             type: "dialog",
             position: { x: 0, y: -300 },
             data: {
+                speaker: "generic_npc",
                 menuText: "Start Conversation",
                 speechText:
                     "Greetings, traveler. I need you to lift this heavy boulder. Are you strong enough?",
@@ -181,6 +182,7 @@
             type: "dialog",
             position: { x: -50, y: 950 },
             data: {
+                speaker: "generic_npc",
                 menuText: "",
                 speechText:
                     "Hmm. It seems you need to train a bit more. Come back when you are stronger.",
@@ -226,6 +228,16 @@
             data: {
                 level: 2,
                 label: "Right click on a node to delete it.",
+            },
+        },
+        {
+            id: "annotation-5",
+            type: "annotation",
+            draggable: false,
+            position: { x: -760, y: 1045 },
+            data: {
+                level: 1,
+                label: "Having non speaker is generally an error.",
             },
         },
     ]);
