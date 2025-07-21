@@ -195,6 +195,15 @@
             },
         },
         {
+            id: "transition",
+            type: "transition",
+            draggable: true,
+            position: { x: -260, y: 1545 },
+            data: {
+                dialogId: "quest_part_2",
+            },
+        },
+        {
             id: "annotation-1",
             type: "annotation",
             draggable: false, // Make annotations non-interactive
@@ -295,6 +304,16 @@
             source: "strength-check",
             sourceHandle: "false-output",
             target: "outcome-weak",
+        },
+        {
+            id: "e-transition-1",
+            source: "outcome-strong",
+            target: "transition",
+        },
+        {
+            id: "e-transition-2",
+            source: "outcome-weak",
+            target: "transition",
         }
     ]);
 
