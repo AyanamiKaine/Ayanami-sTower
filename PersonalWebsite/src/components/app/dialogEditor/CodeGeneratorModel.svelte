@@ -24,11 +24,11 @@
 
 </script>
 
-<div class="modal-backdrop" on:click={onClose} on:keydown={e => e.key === 'Escape' && onClose()} role="dialog" aria-modal="true" tabindex="0">
-    <section class="modal-content" role="document">
+<div on:click|stopPropagation class="modal-backdrop" on:click={onClose} on:keydown={e => e.key === 'Escape' && onClose()} role="dialog" aria-modal="true" tabindex="0">
+    <section class="modal-content" role="document" >
         <header class="modal-header">
             <h2>Generated Source Code</h2>
-               <button class="copy-btn" on:click={copyCode} title="Copy code to clipboard">
+               <button class="copy-btn" on:click={copyCode} on:click|stopPropagation title="Copy code to clipboard">
                 {#if copied}
                     <span>✅ Copied!</span>
                 {:else}
@@ -39,7 +39,7 @@
             <button on:click={onClose} class="close-btn" aria-label="Close modal">&times;</button>
         </header>
         <main class="code-container">
-            <pre><code>{generatedCode }</code></pre>
+            <pre><code lang="js">{generatedCode }</code></pre>
         </main>
 </section>
 </div>
@@ -64,7 +64,6 @@
         border-radius: 8px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         width: 80%;
-        max-width: 800px;
         max-height: 80vh;
         display: flex;
         flex-direction: column;
