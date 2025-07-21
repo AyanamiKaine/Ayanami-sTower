@@ -1,6 +1,6 @@
 <script>
-    export let code = '';
-    // This function will be passed in from the parent to close the modal
+    export let generatedCode  = '';
+
     export let onClose = () => {};
 </script>
 
@@ -11,7 +11,7 @@
             <button on:click={onClose} class="close-btn" aria-label="Close modal">&times;</button>
         </header>
         <main class="code-container">
-            <pre><code>{code}</code></pre>
+            <pre><code>{generatedCode }</code></pre>
         </main>
     </div>
 </div>

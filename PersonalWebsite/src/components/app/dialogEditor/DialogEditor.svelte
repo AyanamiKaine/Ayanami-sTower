@@ -35,7 +35,6 @@
         const currentNodes = $state.snapshot(nodes);
         const currentEdges = $state.snapshot(edges);
         generatedCode = generateSourceCode(currentNodes, currentEdges);
-        console.log(generatedCode);
     }
 
 
