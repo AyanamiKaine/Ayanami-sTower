@@ -1,0 +1,34 @@
+---
+title: "To Generate or not Generate That is The Question"
+date: 2025-07-21
+author: "Ayanami Kaine"
+tags: ["JavaScript", "JSON", "Programming"]
+layout: ../../layouts/PostLayout.astro
+permalink: "/blog/{{ title | slug }}/"
+summary: "To generate json or to generate source code that is the question."
+published: true
+---
+
+## Generating JSON
+
+I wanted to develop a node editor for my branching story lines.
+
+While developing a node editor for dialog trees I came to the problem of bridging the gap from creating dialog in a UI to actually using the created dialog in code.
+
+The dialog tree has conditions for branching dialog, instructions that mutate the game state and the ability to dispatch events. Now my problem was how can I actually use this in my game?
+
+My first instinct was generating data in form of JSON or maybe XML. Because I was using JavaScript for the editor and the game I thought JSON would be a good target. But soon a problem emerged. Because of the integrating of conditions and instructions that need to be evaluated, we needed a way to translate conditions to data. 
+
+But if we do that, we inevitably have to create an interpreter for that data. 
+
+This just felt wrong for what ever reason. I really wanted not data in form of JSON or XML. What I really wanted was a program.
+
+## Generating Code
+
+Now we would generate source code and simply execute it. While executing arbitrary code is not safe. We can make it safe using sandbox techniques. I personally like what Figma [has done](https://www.figma.com/blog/an-update-on-plugin-security/) by embedding QuickJS as a WASM module. I personally use [QuickJS Sandbox](https://sebastianwessel.github.io/quickjs/) to achieve the same thing.
+
+## Why?
+
+Sending not only the dialog data but also the program that interprets it is a powerful concept. Alan Kay similarly described something in his talk [The Computer Revolution Hasn't Happened Yet](https://www.youtube.com/watch?v=oKg1hTOQXoY) (If you just want to read the passage see [No Formats, no Format Wars](https://www.loper-os.org/?p=309)). 
+
+Of course generating source code comes with its own hiccups, but its a trade-off I am ready to pay.
