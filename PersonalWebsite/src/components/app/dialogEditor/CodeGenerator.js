@@ -197,6 +197,26 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
             code += `${indent}return; // End of dialog\n`;
             break;
 
+        case "comment": {
+            if (node.data.comment) {
+                const commentLines = node.data.comment.split("\n");
+                for (const line of commentLines) {
+                    code += `${indent}// ${line}\n`;
+                }
+            }
+            // Always continue to the next node in the graph
+            if (children.length > 0) {
+                code += generateForNode(
+                    children[0].target,
+                    indentLevel,
+                    visited,
+                    nodesMap,
+                    adjacencyMap
+                );
+            }
+            break;
+        }
+
         default:
             if (children.length > 0) {
                 code += generateForNode(

@@ -31,6 +31,12 @@
         code: "// 'state' is the Dialog State Map\nstate.set('playerGold', state.get('playerGold') + 50);"
       };
     }
+    else if (type === 'comment')
+    {
+        data = {
+            comment: 'Your comment here'
+        }
+    }
     else if (type === 'entry') {
         data = { dialogId: `new_dialog_${Date.now()}` };
     }
@@ -70,6 +76,7 @@
   style:left={left ? `${left}px` : undefined}
 >
   <button role="menuitem" onclick={() => createNode('entry')}>Add Entry Node</button>
+  <button role="menuitem" onclick={() => createNode('comment')}>Add Comment Node</button>
   <button role="menuitem" onclick={() => createNode('condition')}>Add Condition Node</button>
   <button role="menuitem" onclick={() => createNode('dialog')}>Add Dialog Node</button>
   <button role="menuitem" onclick={() => createNode('instruction')}>Add Instruction Node</button>

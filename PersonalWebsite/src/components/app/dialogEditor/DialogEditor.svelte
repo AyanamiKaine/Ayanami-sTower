@@ -20,7 +20,7 @@
     import StateNode from './nodes/StateNode.svelte'; 
     import EventNode from './nodes/EventNode.svelte';
     import EntryNode from './nodes/EntryNode.svelte';
-
+    import CommentNode from './nodes/CommentNode.svelte';
     import { generateSourceCode } from './CodeGenerator';
     import CodeDisplayModal from './CodeGeneratorModel.svelte';
 
@@ -52,7 +52,8 @@
         annotation: AnnotationNode,
         instruction: InstructionNode,
         state: StateNode,
-        event: EventNode
+        event: EventNode,
+        comment: CommentNode
     };
 
     let world = $state(new World());
