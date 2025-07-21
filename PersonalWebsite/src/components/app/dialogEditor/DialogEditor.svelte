@@ -21,6 +21,31 @@
     import EventNode from './nodes/EventNode.svelte';
     import EntryNode from './nodes/EntryNode.svelte';
 
+    import { generateSourceCode } from './CodeGenerator';
+    import CodeDisplayModal from './CodeGeneratorModel.svelte';
+
+    let generatedCode = $state(null);
+
+    /**
+     * Handles the 'Generate Code' button click. It snapshots the current graph
+     * state and calls the generator service.
+     */
+    function handleGenerateCode() {
+        // Use $state.snapshot to get the plain JS object/array values
+        const currentNodes = $state.snapshot(nodes);
+        const currentEdges = $state.snapshot(edges);
+        generatedCode = generateSourceCode(currentNodes, currentEdges);
+        console.log(generatedCode);
+    }
+
+
+      /**
+     * Closes the code display modal by resetting the state.
+     */
+    function closeCodeModal() {
+        generatedCode = null;
+    }
+
     const nodeTypes = {
         entry: EntryNode,
         condition: ConditionNode,
@@ -58,16 +83,10 @@
     {
             id: "entry-point",
             type: "entry",
-            position: { x: 450, y: -450 },
+            position: { x: 0, y: -650 },
             data: {
                 dialogId: "boulder_strength_check"
             },
-        },
-        {
-            id: "intro",
-            type: "input",
-            position: { x: 50, y: -450 },
-            data: { label: "Begin Conversation" },
         },
         // 2. The NPC poses the challenge.
         {
@@ -110,6 +129,21 @@
                 speechText: "I think I'll pass.",
             },
         },
+        {
+            id: "event-trigger",
+            type: "event",
+            position: { x: 650, y: 600 },
+            data: {
+                eventName: "passedOnBoulder",
+            },
+        },
+        {
+            id: "instruction",
+            type: "instruction",
+            position: { x: 450, y: 850 },
+            data: {
+            },
+        },
         // 4. The player's action leads to a hidden condition check.
         {
             id: "strength-check",
@@ -143,13 +177,6 @@
                 speechText:
                     "Hmm. It seems you need to train a bit more. Come back when you are stronger.",
             },
-        },
-        // 6. The conversation ends.
-        {
-            id: "end",
-            type: "output",
-            position: { x: 200, y: 1450 },
-            data: { label: "End Conversation" },
         },
         {
             id: "annotation-1",
@@ -197,7 +224,7 @@
 
     // The edges now reflect the new, more logical flow.
     let edges = $state.raw([
-        { id: "e-intro-greeting", source: "intro", target: "npc-greeting" },
+        { id: "e-intro-greeting", source: "entry-point", target: "npc-greeting" },
         // The NPC greeting presents two choices to the player.
         {
             id: "e-greeting-lift",
@@ -208,6 +235,16 @@
             id: "e-greeting-leave",
             source: "npc-greeting",
             target: "player-action-leave",
+        },
+        {
+            id: "e-event-trigger",
+            source: "player-action-leave",
+            target: "event-trigger",
+        },
+        {
+            id: "e-event-trigger-2",
+            source: "event-trigger",
+            target: "instruction",
         },
         // The "lift" action leads to the strength check.
         {
@@ -227,11 +264,7 @@
             source: "strength-check",
             sourceHandle: "false-output",
             target: "outcome-weak",
-        },
-        // All paths eventually lead to the end.
-        { id: "e-strong-end", source: "outcome-strong", target: "end" },
-        { id: "e-weak-end", source: "outcome-weak", target: "end" },
-        { id: "e-leave-end", source: "player-action-leave", target: "end" },
+        }
     ]);
 
     let nodeMenu = $state(null);
@@ -309,6 +342,19 @@
     }
 </script>
 
+<div class="ui-layer">
+    <div class="top-controls">
+        <button class="generate-btn" onclick={handleGenerateCode}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            Generate Code
+        </button>
+    </div>
+
+    {#if generatedCode}
+        <CodeDisplayModal {generatedCode} onClose={closeCodeModal} />
+    {/if}
+</div>
+
 <div style="width: 100%; height: 100%;">
     <SvelteFlow
         {nodeTypes}
@@ -360,3 +406,29 @@
         {/if}
     </SvelteFlow>
 </div>
+
+<style>
+    .ui-layer {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 10; /* SvelteFlow default is 4 */
+    }
+    .generate-btn {
+        background-color: #1a1a1a;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 10px 15px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background-color 0.2s;
+    }
+    .generate-btn:hover {
+        background-color: #333;
+    }
+</style>

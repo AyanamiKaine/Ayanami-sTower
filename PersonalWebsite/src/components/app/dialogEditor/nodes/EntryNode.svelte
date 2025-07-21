@@ -40,6 +40,7 @@
         </div>
         <p class="description">This ID is used to reference and trigger this dialog from the game.</p>
     </div>
+       <Handle type="source" position={Position.Bottom} />
 </div>
 
 <style>

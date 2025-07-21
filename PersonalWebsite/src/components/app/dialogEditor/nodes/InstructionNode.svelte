@@ -6,58 +6,56 @@
     let { data, id } = $props();
     const nodes = useNodes();
 
-    // Initialize actions array if it doesn't exist
     if (!data.actions) {
         data.actions = [];
     }
 
-    // --- Action Management ---
-
+    // --- NEW: Helper function to parse input values ---
     /**
-     * Adds a new action of a specific type to the node's action list.
-     * @param {string} type - The type of action to add (e.g., 'setState').
+     * Parses a string input into its most likely type (boolean, number, or string).
+     * @param {string} val The input string from the text field.
+     * @returns {boolean | number | string} The parsed value.
      */
-    function addAction(type) {
-        const newAction = {
-            id: crypto.randomUUID(), // Unique ID for Svelte's keyed each block
-            type: type,
-            key: '',
-            value: '' // 'value' can be used for different purposes (set value, increment amount)
-        };
+    function parseInputValue(val) {
+        if (typeof val !== 'string') return val; // Already parsed or not a string
 
-        const newActions = [...data.actions, newAction];
-        updateNodeActions(newActions);
+        const lowerVal = val.toLowerCase();
+        if (lowerVal === 'true') return true;
+        if (lowerVal === 'false') return false;
+
+        // Use isFinite on the original string to avoid issues with empty strings becoming 0
+        if (val.trim() !== '' && isFinite(val)) {
+            return parseFloat(val);
+        }
+        
+        return val; // Default to string if it's not a boolean or a valid number
     }
 
-    /**
-     * Removes an action from the list by its ID.
-     * @param {string} actionId - The ID of the action to remove.
-     */
+    // --- Action Management ---
+
+    function addAction(type) {
+        const newAction = {
+            id: crypto.randomUUID(),
+            type: type,
+            key: '',
+            value: type === 'setState' ? '' : '1' // Default increment/decrement to 1
+        };
+        updateNodeActions([...data.actions, newAction]);
+    }
+
     function removeAction(actionId) {
         const newActions = data.actions.filter(a => a.id !== actionId);
         updateNodeActions(newActions);
     }
 
-    /**
-     * Updates a specific field of an action.
-     * @param {string} actionId - The ID of the action to update.
-     * @param {Event} event - The input event from the form element.
-     */
     function handleActionInput(actionId, event) {
         const { name, value } = event.target;
-        const newActions = data.actions.map(a => {
-            if (a.id === actionId) {
-                return { ...a, [name]: value };
-            }
-            return a;
-        });
+        const newActions = data.actions.map(a => 
+            a.id === actionId ? { ...a, [name]: value } : a
+        );
         updateNodeActions(newActions);
     }
     
-    /**
-     * Helper function to update the actions in the global nodes store.
-     * @param {Array} newActions - The new array of actions.
-     */
     function updateNodeActions(newActions) {
         nodes.current = nodes.current.map((node) => {
             if (node.id === id) {
@@ -67,56 +65,51 @@
         });
     }
 
+    // --- Execution Logic (Updated) ---
 
-    // --- Execution Logic ---
-
-    /**
-     * Executes all actions in the list sequentially.
-     */
     function executeActions() {
         try {
             data.actions.forEach(action => {
-                // Ensure key is provided for actions that need it
                 if (!action.key) {
                     console.warn(`Skipping action of type '${action.type}' due to missing key.`);
                     return; 
                 }
 
                 switch (action.type) {
-                    case 'setState':
-                        const valueToSet = !isNaN(parseFloat(action.value)) && isFinite(action.value)
-                            ? parseFloat(action.value)
-                            : action.value;
+                    case 'setState': {
+                        // MODIFIED: Use the new parser to handle booleans and numbers
+                        const valueToSet = parseInputValue(action.value);
                         dialogState.state.set(action.key, valueToSet);
                         break;
+                    }
                     
-                    case 'increment':
+                    case 'increment': {
                         const currentIncValue = dialogState.state.get(action.key) || 0;
                         const incAmount = parseFloat(action.value) || 0;
                         if (typeof currentIncValue !== 'number') {
-                             throw new Error(`Cannot increment non-numeric state key: "${action.key}"`);
+                            throw new Error(`Cannot increment non-numeric state key: "${action.key}"`);
                         }
+                        dialogState.state.set(action.key, currentIncValue + incAmount);
                         break;
+                    }
 
-                    case 'decrement':
+                    case 'decrement': {
                         const currentDecValue = dialogState.state.get(action.key) || 0;
                         const decAmount = parseFloat(action.value) || 0;
-                         if (typeof currentDecValue !== 'number') {
-                             throw new Error(`Cannot decrement non-numeric state key: "${action.key}"`);
+                        if (typeof currentDecValue !== 'number') {
+                            throw new Error(`Cannot decrement non-numeric state key: "${action.key}"`);
                         }
+                        dialogState.state.set(action.key, currentDecValue - decAmount);
                         break;
+                    }
                 }
             });
 
-            // Trigger a UI update after all actions are processed
             dialogState.update(() => {});
 
-            if(data.actions.length !== 0)
-            {
+            if(data.actions.length > 0) {
                 notification.set('Instructions executed successfully!');
             }
-
-
         } catch (error) {
             notification.set(error.message);
             console.error("Action Execution Error:", error);
@@ -151,7 +144,7 @@
                     <div class="action-body">
                         {#if action.type === 'setState'}
                             <input name="key" type="text" placeholder="State Key" class="nodrag" value={action.key} oninput={(e) => handleActionInput(action.id, e)} />
-                            <input name="value" type="text" placeholder="Value" class="nodrag" value={action.value} oninput={(e) => handleActionInput(action.id, e)} />
+                            <input name="value" type="text" placeholder="Value (string, number, boolean)" class="nodrag" value={action.value} oninput={(e) => handleActionInput(action.id, e)} />
                         {:else if action.type === 'increment' || action.type === 'decrement'}
                             <input name="key" type="text" placeholder="State Key" class="nodrag" value={action.key} oninput={(e) => handleActionInput(action.id, e)} />
                             <input name="value" type="number" placeholder="Amount" class="nodrag" value={action.value} oninput={(e) => handleActionInput(action.id, e)} />
@@ -175,7 +168,6 @@
 
     <Handle type="source" position={Position.Bottom} />
 </div>
-
 <style>
     .instruction-node {
         width: 320px;
