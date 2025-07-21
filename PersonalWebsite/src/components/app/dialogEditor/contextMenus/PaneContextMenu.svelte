@@ -31,6 +31,10 @@
         code: "// 'state' is the Dialog State Map\nstate.set('playerGold', state.get('playerGold') + 50);"
       };
     }
+    else if (type === 'localState')
+    {
+
+    }
     else if (type === 'comment')
     {
     }
@@ -78,7 +82,6 @@
   <button role="menuitem" onclick={() => createNode('dialog')}>Add Dialog Node</button>
   <button role="menuitem" onclick={() => createNode('instruction')}>Add Instruction Node</button>
   <button role="menuitem" onclick={() => createNode('event')}>Add Event Node</button>
-
 </div>
 
 <style>

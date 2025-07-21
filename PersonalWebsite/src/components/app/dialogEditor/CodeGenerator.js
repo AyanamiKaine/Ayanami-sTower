@@ -85,6 +85,7 @@ function generateForNode(
             // Generate an async function declaration for the entire dialog.
             // We pass in 'state' and 'api' for context.
             code += `async function ${node.data.dialogId}(state, api) {\n`;
+            code += `   let local = {};\n\n`; 
             if (children.length > 0) {
                 code += generateForNode(
                     children[0].target,
@@ -154,8 +155,10 @@ function generateForNode(
         case "condition": {
             const operator = OPERATOR_SYMBOLS[node.data.operator] || "==";
             const value = formatCodeValue(node.data.value); // Use our existing formatter
-            // Conditions now check against the 'state' object.
-            code += `${indent}if (state.${node.data.key} ${operator} ${value}) {\n`;
+            const key = node.data.key;
+
+
+            code += `${indent}if ((local.${key} ?? state.${key}) ${operator} ${value}) {\n`;
             const trueBranch = children.find((e) => e.handle === "true-output");
             if (trueBranch) {
                 code += generateForNode(
@@ -185,6 +188,26 @@ function generateForNode(
             break;
         }
 
+        case 'localState': {
+            if (node.data.key?.trim()) {
+                const value = formatCodeValue(node.data.value);
+                code += `${indent}local.${node.data.key} = ${value};\n`;
+            }
+            // Continue to the next node.
+            if (children.length > 0) {
+                code += generateForNode(
+                    children[0].target,
+                    indentLevel,
+                    visited,
+                    nodesMap,
+                    adjacencyMap,
+                    incomingEdgesMap
+                );
+            }
+            console.log("local state");
+            break;
+        }
+            
         case "instruction": {
             const validActions = node.data.actions?.filter((a) =>
                 a.key?.trim()
