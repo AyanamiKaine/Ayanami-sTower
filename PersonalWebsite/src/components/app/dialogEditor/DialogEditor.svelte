@@ -18,6 +18,7 @@
     import AnnotationNode from "./nodes/AnnotationNode.svelte";
     import InstructionNode from './nodes/InstructionNode.svelte';
     import StateNode from './nodes/StateNode.svelte'; 
+    import CodeNode from './nodes/CodeNode.svelte'; 
     import EventNode from './nodes/EventNode.svelte';
     import EntryNode from './nodes/EntryNode.svelte';
     import CommentNode from './nodes/CommentNode.svelte';
@@ -55,7 +56,8 @@
         state: StateNode,
         event: EventNode,
         comment: CommentNode,
-        localState: LocalStateNode
+        localState: LocalStateNode,
+        code: CodeNode,
     };
 
     let world = $state(new World());

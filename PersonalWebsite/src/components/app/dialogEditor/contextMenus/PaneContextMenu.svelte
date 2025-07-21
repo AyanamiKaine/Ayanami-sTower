@@ -82,6 +82,7 @@
   <button role="menuitem" onclick={() => createNode('dialog')}>Add Dialog Node</button>
   <button role="menuitem" onclick={() => createNode('instruction')}>Add Instruction Node</button>
   <button role="menuitem" onclick={() => createNode('event')}>Add Event Node</button>
+  <button role="menuitem" onclick={() => createNode('code')}>Add Code Node</button>
 </div>
 
 <style>

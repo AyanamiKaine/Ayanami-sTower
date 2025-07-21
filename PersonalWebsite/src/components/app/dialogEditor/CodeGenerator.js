@@ -85,7 +85,7 @@ function generateForNode(
             // Generate an async function declaration for the entire dialog.
             // We pass in 'state' and 'api' for context.
             code += `async function ${node.data.dialogId}(state, api) {\n`;
-            code += `   let local = {};\n\n`; 
+            code += `   let local = {};\n\n`;
             if (children.length > 0) {
                 code += generateForNode(
                     children[0].target,
@@ -157,7 +157,6 @@ function generateForNode(
             const value = formatCodeValue(node.data.value); // Use our existing formatter
             const key = node.data.key;
 
-
             code += `${indent}if ((local.${key} ?? state.${key}) ${operator} ${value}) {\n`;
             const trueBranch = children.find((e) => e.handle === "true-output");
             if (trueBranch) {
@@ -188,7 +187,7 @@ function generateForNode(
             break;
         }
 
-        case 'localState': {
+        case "localState": {
             if (node.data.key?.trim()) {
                 const value = formatCodeValue(node.data.value);
                 code += `${indent}local.${node.data.key} = ${value};\n`;
@@ -207,7 +206,7 @@ function generateForNode(
             console.log("local state");
             break;
         }
-            
+
         case "instruction": {
             const validActions = node.data.actions?.filter((a) =>
                 a.key?.trim()
@@ -246,6 +245,29 @@ function generateForNode(
                 );
             }
             break;
+
+        case "code": {
+            if (node.data.code) {
+                const codeLines = node.data.code.split("\n");
+                code += `${indent}// --- Custom Code Start ---\n`;
+                for (const line of codeLines) {
+                    code += `${indent}${line}\n`;
+                }
+                code += `${indent}// --- Custom Code End ---\n`;
+            }
+
+            if (children.length > 0) {
+                code += generateForNode(
+                    children[0].target,
+                    indentLevel,
+                    visited,
+                    nodesMap,
+                    adjacencyMap,
+                    incomingEdgesMap
+                );
+            }
+            break;
+        }
 
         case "output":
             code += `${indent}return; // End of dialog\n`;
