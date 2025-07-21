@@ -33,9 +33,6 @@
     }
     else if (type === 'comment')
     {
-        data = {
-            comment: 'Your comment here'
-        }
     }
     else if (type === 'entry') {
         data = { dialogId: `new_dialog_${Date.now()}` };
