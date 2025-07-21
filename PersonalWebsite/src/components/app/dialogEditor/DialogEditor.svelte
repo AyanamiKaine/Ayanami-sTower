@@ -386,6 +386,7 @@
         {nodeTypes}
         bind:nodes
         bind:edges
+        minZoom={0.1}
         fitView
         onnodecontextmenu={handleNodeContextMenu}
         onedarticy
