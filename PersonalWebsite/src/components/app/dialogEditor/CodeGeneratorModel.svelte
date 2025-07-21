@@ -24,8 +24,8 @@
 
 </script>
 
-<div class="modal-backdrop" on:click={onClose} role="dialog" aria-modal="true">
-    <div class="modal-content" on:click|stopPropagation>
+<div class="modal-backdrop" on:click={onClose} on:keydown={e => e.key === 'Escape' && onClose()} role="dialog" aria-modal="true" tabindex="0">
+    <section class="modal-content" role="document">
         <header class="modal-header">
             <h2>Generated Source Code</h2>
                <button class="copy-btn" on:click={copyCode} title="Copy code to clipboard">
@@ -41,7 +41,7 @@
         <main class="code-container">
             <pre><code>{generatedCode }</code></pre>
         </main>
-    </div>
+</section>
 </div>
 
 <style>
