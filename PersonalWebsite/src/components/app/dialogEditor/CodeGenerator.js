@@ -300,7 +300,6 @@ export function generateSourceCode(nodes, edges) {
     }
 
     const visited = new Set();
-    console.log(incomingEdgesMap);
     // 👇 Pass the new map to the recursive function
     return generateForNode(
         startNode.id,
