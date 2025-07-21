@@ -9,16 +9,14 @@
 
             try {
                 await navigator.clipboard.writeText(generatedCode);
-                copied = true; // Set state to show feedback
-                
-                // Reset the feedback message after 2 seconds
+                copied = true; 
+
                 setTimeout(() => {
                     copied = false;
                 }, 2000);
 
             } catch (err) {
                 console.error('Failed to copy text: ', err);
-                // Optionally, you could show an error notification here
             }
         }
 
@@ -45,7 +43,7 @@
 </div>
 
 <style>
-    /* Use :global() to prevent scoping issues in production */
+    /* Use :global() to prevent scoping issues in production !*/
     :global(.modal-backdrop) {
         position: fixed;
         top: 0;
