@@ -10,6 +10,8 @@
     import { setContext } from "svelte";
     import { World } from "stella-ecs-js";
 
+    import Portal from '../../Portal.svelte';
+
     import NodeContextMenu from "./contextMenus/NodeContextMenu.svelte";
     import EdgeContextMenu from "./contextMenus/EdgeContextMenu.svelte";
     import PaneContextMenu from "./contextMenus/PaneContextMenu.svelte"; 
@@ -375,9 +377,11 @@
         </button>
     </div>
 
-    {#if generatedCode}
-        <CodeDisplayModal {generatedCode} onClose={closeCodeModal} />
-    {/if}
+{#if generatedCode}
+    <Portal>
+        <CodeDisplayModal {generatedCode}  onClose={closeCodeModal} />
+    </Portal>
+{/if}
 </div>
 
 <div style="width: 100%; height: 100%;">
