@@ -82,8 +82,6 @@ function generateForNode(
 
     switch (node.type) {
         case "entry":
-            // Generate an async function declaration for the entire dialog.
-            // We pass in 'state' and 'api' for context.
             code += `async function ${node.data.dialogId}(state, api) {\n`;
             code += `  let local = {};\n\n`;
             if (children.length > 0) {
@@ -112,7 +110,6 @@ function generateForNode(
                 .filter((n) => n?.type === "dialog");
 
             if (choiceNodes.length > 1) {
-                // Generate an array of choice strings for the helper.
                 const choiceOptions = choiceNodes
                     .map((c) => `"${c.data.menuText.replace(/"/g, '\\"')}"`)
                     .join(", ");
@@ -215,7 +212,6 @@ function generateForNode(
                 code += `${indent}// Instructions\n`;
                 for (const action of validActions) {
                     const actionValue = formatCodeValue(action.value);
-                    // Actions are now calls to helper methods.
                     code += `${indent}api.${action.type}(state, "${action.key}", ${actionValue});\n`;
                 }
             }
@@ -320,7 +316,6 @@ function generateForNode(
  * @returns {string} The complete, human-readable source code.
  */
 export function generateSourceCode(nodes, edges) {
-    // 1. Create efficient lookup maps for nodes and their connections.
     const nodesMap = new Map(nodes.map((node) => [node.id, node]));
     const adjacencyMap = new Map();
     const incomingEdgesMap = new Map();
@@ -345,7 +340,6 @@ export function generateSourceCode(nodes, edges) {
     }
 
     const visited = new Set();
-    // 👇 Pass the new map to the recursive function
     return generateForNode(
         startNode.id,
         0,
