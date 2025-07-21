@@ -144,6 +144,11 @@ static class DeploymentService
             await SendNotificationAsync(StatusLevel.Success, "Deployment Successful", successMsg);
 
             await RunProcessAsync("podman", $"stop astro-site-{liveColor}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+
+            Console.WriteLine("Pruning old container images...");
+            await RunProcessAsync("podman", "image prune -f", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            Console.WriteLine("Image cleanup complete.");
+
             Console.WriteLine("--- Deployment Complete ---\n");
         }
         catch (OperationCanceledException)
