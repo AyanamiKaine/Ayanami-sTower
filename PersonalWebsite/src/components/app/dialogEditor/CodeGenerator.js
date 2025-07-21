@@ -242,6 +242,16 @@ function generateForNode(
             }
             break;
 
+        case "transition": {
+
+            if (node.data.dialogId?.trim()) {
+                code += `${indent}// End current dialog and transition to the next one.\n`;
+                code += `${indent}return api.start_dialog('${node.data.dialogId}', state);\n`;
+            }
+            // This is a terminal node, so we don't process children.
+            break;
+        }
+
         case "code": {
             if (node.data.code) {
                 const codeLines = node.data.code.split("\n");

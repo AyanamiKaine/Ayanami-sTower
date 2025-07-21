@@ -23,6 +23,7 @@
     import EntryNode from './nodes/EntryNode.svelte';
     import CommentNode from './nodes/CommentNode.svelte';
     import LocalStateNode from './nodes/LocalStateNode.svelte';
+    import TransitionNode from './nodes/TransitionNode.svelte';
     import { generateSourceCode } from './CodeGenerator';
     import CodeDisplayModal from './CodeGeneratorModel.svelte';
 
@@ -58,6 +59,7 @@
         comment: CommentNode,
         localState: LocalStateNode,
         code: CodeNode,
+        transition: TransitionNode,
     };
 
     let world = $state(new World());
