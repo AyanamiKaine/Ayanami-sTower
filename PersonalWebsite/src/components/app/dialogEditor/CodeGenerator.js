@@ -85,7 +85,7 @@ function generateForNode(
             // Generate an async function declaration for the entire dialog.
             // We pass in 'state' and 'api' for context.
             code += `async function ${node.data.dialogId}(state, api) {\n`;
-            code += `   let local = {};\n\n`;
+            code += `  let local = {};\n\n`;
             if (children.length > 0) {
                 code += generateForNode(
                     children[0].target,
