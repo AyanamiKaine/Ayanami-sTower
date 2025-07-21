@@ -45,7 +45,8 @@
 </div>
 
 <style>
-    .modal-backdrop {
+    /* Use :global() to prevent scoping issues in production */
+    :global(.modal-backdrop) {
         position: fixed;
         top: 0;
         left: 0;
@@ -57,7 +58,8 @@
         align-items: center;
         z-index: 1000;
     }
-    .modal-content {
+    
+    :global(.modal-content) {
         background: #fff;
         border-radius: 8px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -67,18 +69,21 @@
         display: flex;
         flex-direction: column;
     }
-    .modal-header {
+    
+    :global(.modal-header) {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 1rem 1.5rem;
         border-bottom: 1px solid #eee;
     }
-    .modal-header h2 {
+    
+    :global(.modal-header h2) {
         margin: 0;
         font-size: 1.25rem;
     }
-    .copy-btn {
+    
+    :global(.copy-btn) {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
@@ -92,13 +97,16 @@
         transition: background-color 0.2s;
         white-space: nowrap;
     }
-    .copy-btn:hover {
+    
+    :global(.copy-btn:hover) {
         background-color: #e5e7eb;
     }
-    .copy-btn:active {
+    
+    :global(.copy-btn:active) {
         background-color: #d1d5db;
     }
-    .close-btn {
+    
+    :global(.close-btn) {
         background: none;
         border: none;
         font-size: 2rem;
@@ -107,10 +115,12 @@
         padding: 0;
         color: #888;
     }
-    .close-btn:hover {
+    
+    :global(.close-btn:hover) {
         color: #000;
     }
-    .code-container {
+    
+    :global(.code-container) {
         padding: 1.5rem;
         overflow-y: auto;
         background: #2d2d2d;
@@ -119,8 +129,9 @@
         font-size: 0.9rem;
         flex-grow: 1;
     }
-    pre {
+    
+    :global(.code-container pre) {
         margin: 0;
-        white-space: pre-wrap; /* Allows text to wrap */
+        white-space: pre-wrap;
     }
 </style>
