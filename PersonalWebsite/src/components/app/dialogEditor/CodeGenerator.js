@@ -46,27 +46,21 @@ function formatCodeValue(val) {
  * @returns {string} The generated code for the current branch.
  */
 function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
-    // Base cases for recursion: stop if node is null or already processed.
-    if (!nodeId || visited.has(nodeId)) {
-        return "";
-    }
+    if (!nodeId || visited.has(nodeId)) return "";
     const node = nodesMap.get(nodeId);
-    if (!node) {
-        return "";
-    }
+    if (!node) return "";
 
-    // Mark current node as visited to handle cycles and merged paths
     visited.add(nodeId);
 
     const indent = "  ".repeat(indentLevel);
     let code = "";
     const children = adjacencyMap.get(nodeId) || [];
 
-    // --- Generate code based on the node's type ---
     switch (node.type) {
         case "entry":
-            // Starts a dialog definition block
-            code += `${indent}dialog_start("${node.data.dialogId}") {\n`;
+            // Generate an async function declaration for the entire dialog.
+            // We pass in 'state' and 'helpers' for context.
+            code += `async function ${node.data.dialogId}(state, helpers) {\n`;
             if (children.length > 0) {
                 code += generateForNode(
                     children[0].target,
@@ -76,47 +70,49 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     adjacencyMap
                 );
             }
-            code += `${indent}}\n`;
+            code += `}\n`;
             break;
 
         case "dialog": {
-            const speaker = node.data.speaker
-                ? `${node.data.speaker}: `
-                : "Narrator: ";
-            // Add the speech line for the current node
+            const speaker = node.data.speaker || "UNDEFINED_SPEAKER";
             if (node.data.speechText) {
-                code += `${indent}${speaker}"${node.data.speechText.replace(
-                    /\n/g,
-                    " "
-                )}"\n`;
+                // Dialogue is now an await-ed helper call.
+                const speechText = node.data.speechText.replace(/"/g, '\\"');
+                code += `${indent}await helpers.show_dialog({ speaker: "${speaker}", text: "${speechText}" });\n`;
             }
 
-            // Check if this node presents choices to the player.
-            // This is true if it links to multiple 'dialog' nodes.
             const choiceNodes = children
                 .map((edge) => nodesMap.get(edge.target))
-                .filter((n) => n && n.type === "dialog");
+                .filter((n) => n?.type === "dialog");
 
             if (choiceNodes.length > 1) {
-                code += `${indent}choice {\n`;
-                for (const choice of choiceNodes) {
-                    // Each choice is an option with its own sub-block
-                    code += `${"  ".repeat(indentLevel + 1)}option "${
-                        choice.data.menuText
-                    }" {\n`;
-                    // Recursively generate the code that follows this choice
+                // Generate an array of choice strings for the helper.
+                const choiceOptions = choiceNodes
+                    .map((c) => `"${c.data.menuText.replace(/"/g, '\\"')}"`)
+                    .join(", ");
+                code += `${indent}const choice = await helpers.show_choice([${choiceOptions}]);\n`;
+
+                // Use a switch statement for branching.
+                code += `${indent}switch (choice) {\n`;
+                for (const choiceNode of choiceNodes) {
+                    const menuText = choiceNode.data.menuText.replace(
+                        /"/g,
+                        '\\"'
+                    );
+                    code += `${"  ".repeat(
+                        indentLevel + 1
+                    )}case "${menuText}":\n`;
                     code += generateForNode(
-                        choice.id,
+                        choiceNode.id,
                         indentLevel + 2,
                         visited,
                         nodesMap,
                         adjacencyMap
                     );
-                    code += `${"  ".repeat(indentLevel + 1)}}\n`;
+                    code += `${"  ".repeat(indentLevel + 2)}break;\n`;
                 }
                 code += `${indent}}\n`;
             } else if (children.length > 0) {
-                // If not a choice, just continue the sequence
                 code += generateForNode(
                     children[0].target,
                     indentLevel,
@@ -130,12 +126,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
 
         case "condition": {
             const operator = OPERATOR_SYMBOLS[node.data.operator] || "==";
-            // Ensure string values are quoted in the output
-            const value =
-                !isNaN(parseFloat(node.data.value)) && isFinite(node.data.value)
-                    ? node.data.value
-                    : `"${node.data.value}"`;
-
+            const value = formatCodeValue(node.data.value); // Use our existing formatter
+            // Conditions now check against the 'state' object.
             code += `${indent}if (state.${node.data.key} ${operator} ${value}) {\n`;
             const trueBranch = children.find((e) => e.handle === "true-output");
             if (trueBranch) {
@@ -164,16 +156,16 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
             break;
         }
 
-        case "instruction":
-            const validActions = node.data.actions?.filter(
-                (a) => a.key && a.key.trim() !== ""
+        case "instruction": {
+            const validActions = node.data.actions?.filter((a) =>
+                a.key?.trim()
             );
-
-            if (validActions && validActions.length > 0) {
+            if (validActions?.length > 0) {
                 code += `${indent}// Instructions\n`;
                 for (const action of validActions) {
                     const actionValue = formatCodeValue(action.value);
-                    code += `${indent}${action.type}(state, "${action.key}", ${actionValue});\n`;
+                    // Actions are now calls to helper methods.
+                    code += `${indent}helpers.${action.type}(state, "${action.key}", ${actionValue});\n`;
                 }
             }
             if (children.length > 0) {
@@ -186,9 +178,10 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                 );
             }
             break;
+        }
 
         case "event":
-            code += `${indent}fire_event("${node.data.eventName}");\n`;
+            code += `${indent}helpers.fire_event("${node.data.eventName}");\n`;
             if (children.length > 0) {
                 code += generateForNode(
                     children[0].target,
@@ -201,13 +194,10 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
             break;
 
         case "output":
-            code += `${indent}end_dialog();\n`;
+            code += `${indent}return; // End of dialog\n`;
             break;
 
-        // For simple pass-through or editor-only nodes, just continue to the next one
-        case "input":
-        case "annotation":
-        case "state":
+        default:
             if (children.length > 0) {
                 code += generateForNode(
                     children[0].target,
