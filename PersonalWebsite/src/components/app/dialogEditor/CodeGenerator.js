@@ -45,15 +45,39 @@ function formatCodeValue(val) {
  * @param {Map<string, object[]>} adjacencyMap - A map representing the graph's connections.
  * @returns {string} The generated code for the current branch.
  */
-function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
+function generateForNode(
+    nodeId,
+    indentLevel,
+    visited,
+    nodesMap,
+    adjacencyMap,
+    incomingEdgesMap
+) {
     if (!nodeId || visited.has(nodeId)) return "";
     const node = nodesMap.get(nodeId);
     if (!node) return "";
 
-    visited.add(nodeId);
-
     const indent = "  ".repeat(indentLevel);
     let code = "";
+
+    const incomingSources = incomingEdgesMap.get(nodeId) || [];
+    for (const sourceId of incomingSources) {
+        const sourceNode = nodesMap.get(sourceId);
+        if (sourceNode?.type === "comment" && !visited.has(sourceId)) {
+            // If we found an unvisited incoming comment, generate its code first.
+            if (sourceNode.data.comment) {
+                const commentLines = sourceNode.data.comment.split("\n");
+                for (const line of commentLines) {
+                    code += `${indent}// ${line}\n`;
+                }
+            }
+            // Mark the comment as visited so it's not processed again.
+            visited.add(sourceId);
+        }
+    }
+
+    visited.add(nodeId);
+
     const children = adjacencyMap.get(nodeId) || [];
 
     switch (node.type) {
@@ -67,7 +91,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     indentLevel + 1,
                     visited,
                     nodesMap,
-                    adjacencyMap
+                    adjacencyMap,
+                    incomingEdgesMap
                 );
             }
             code += `}\n`;
@@ -107,7 +132,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                         indentLevel + 2,
                         visited,
                         nodesMap,
-                        adjacencyMap
+                        adjacencyMap,
+                        incomingEdgesMap
                     );
                     code += `${"  ".repeat(indentLevel + 2)}break;\n`;
                 }
@@ -118,7 +144,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     indentLevel,
                     visited,
                     nodesMap,
-                    adjacencyMap
+                    adjacencyMap,
+                    incomingEdgesMap
                 );
             }
             break;
@@ -136,7 +163,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     indentLevel + 1,
                     visited,
                     nodesMap,
-                    adjacencyMap
+                    adjacencyMap,
+                    incomingEdgesMap
                 );
             }
             code += `${indent}} else {\n`;
@@ -149,7 +177,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     indentLevel + 1,
                     visited,
                     nodesMap,
-                    adjacencyMap
+                    adjacencyMap,
+                    incomingEdgesMap
                 );
             }
             code += `${indent}}\n`;
@@ -174,7 +203,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     indentLevel,
                     visited,
                     nodesMap,
-                    adjacencyMap
+                    adjacencyMap,
+                    incomingEdgesMap
                 );
             }
             break;
@@ -188,7 +218,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     indentLevel,
                     visited,
                     nodesMap,
-                    adjacencyMap
+                    adjacencyMap,
+                    incomingEdgesMap
                 );
             }
             break;
@@ -211,7 +242,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     indentLevel,
                     visited,
                     nodesMap,
-                    adjacencyMap
+                    adjacencyMap,
+                    incomingEdgesMap
                 );
             }
             break;
@@ -224,7 +256,8 @@ function generateForNode(nodeId, indentLevel, visited, nodesMap, adjacencyMap) {
                     indentLevel,
                     visited,
                     nodesMap,
-                    adjacencyMap
+                    adjacencyMap,
+                    incomingEdgesMap
                 );
             }
             break;
@@ -245,6 +278,8 @@ export function generateSourceCode(nodes, edges) {
     // 1. Create efficient lookup maps for nodes and their connections.
     const nodesMap = new Map(nodes.map((node) => [node.id, node]));
     const adjacencyMap = new Map();
+    const incomingEdgesMap = new Map();
+
     edges.forEach((edge) => {
         if (!adjacencyMap.has(edge.source)) {
             adjacencyMap.set(edge.source, []);
@@ -252,15 +287,27 @@ export function generateSourceCode(nodes, edges) {
         adjacencyMap
             .get(edge.source)
             .push({ target: edge.target, handle: edge.sourceHandle });
+
+        if (!incomingEdgesMap.has(edge.target)) {
+            incomingEdgesMap.set(edge.target, []);
+        }
+        incomingEdgesMap.get(edge.target).push(edge.source);
     });
 
-    // 2. Find the starting point of the dialog.
     const startNode = nodes.find((n) => n.type === "entry");
     if (!startNode) {
-        return "// ERROR: No 'Dialog Entry' node found in the graph.";
+        return "/* ERROR: No 'Dialog Entry' node found. */";
     }
 
-    // 3. Begin the recursive generation.
     const visited = new Set();
-    return generateForNode(startNode.id, 0, visited, nodesMap, adjacencyMap);
+    console.log(incomingEdgesMap);
+    // 👇 Pass the new map to the recursive function
+    return generateForNode(
+        startNode.id,
+        0,
+        visited,
+        nodesMap,
+        adjacencyMap,
+        incomingEdgesMap
+    );
 }
