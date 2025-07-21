@@ -24,8 +24,8 @@
 
 </script>
 
-<div on:click|stopPropagation class="modal-backdrop" on:click={onClose} on:keydown={e => e.key === 'Escape' && onClose()} role="dialog" aria-modal="true" tabindex="0">
-    <section class="modal-content" role="document" >
+<div class="modal-backdrop" on:click={onClose} on:keydown={e => e.key === 'Escape' && onClose()} role="dialog" aria-modal="true" tabindex="0">
+    <section on:click|stopPropagation class="modal-content" role="document" >
         <header class="modal-header">
             <h2>Generated Source Code</h2>
                <button class="copy-btn" on:click={copyCode} on:click|stopPropagation title="Copy code to clipboard">
