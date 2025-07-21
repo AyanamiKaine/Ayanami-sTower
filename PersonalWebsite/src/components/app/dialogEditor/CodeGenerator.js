@@ -83,8 +83,8 @@ function generateForNode(
     switch (node.type) {
         case "entry":
             // Generate an async function declaration for the entire dialog.
-            // We pass in 'state' and 'helpers' for context.
-            code += `async function ${node.data.dialogId}(state, helpers) {\n`;
+            // We pass in 'state' and 'api' for context.
+            code += `async function ${node.data.dialogId}(state, api) {\n`;
             if (children.length > 0) {
                 code += generateForNode(
                     children[0].target,
@@ -103,7 +103,7 @@ function generateForNode(
             if (node.data.speechText) {
                 // Dialogue is now an await-ed helper call.
                 const speechText = node.data.speechText.replace(/"/g, '\\"');
-                code += `${indent}await helpers.show_dialog({ speaker: "${speaker}", text: "${speechText}" });\n`;
+                code += `${indent}await api.show_dialog({ speaker: "${speaker}", text: "${speechText}" });\n`;
             }
 
             const choiceNodes = children
@@ -115,7 +115,7 @@ function generateForNode(
                 const choiceOptions = choiceNodes
                     .map((c) => `"${c.data.menuText.replace(/"/g, '\\"')}"`)
                     .join(", ");
-                code += `${indent}const choice = await helpers.show_choice([${choiceOptions}]);\n`;
+                code += `${indent}const choice = await api.show_choice([${choiceOptions}]);\n`;
 
                 // Use a switch statement for branching.
                 code += `${indent}switch (choice) {\n`;
@@ -194,7 +194,7 @@ function generateForNode(
                 for (const action of validActions) {
                     const actionValue = formatCodeValue(action.value);
                     // Actions are now calls to helper methods.
-                    code += `${indent}helpers.${action.type}(state, "${action.key}", ${actionValue});\n`;
+                    code += `${indent}api.${action.type}(state, "${action.key}", ${actionValue});\n`;
                 }
             }
             if (children.length > 0) {
@@ -211,7 +211,7 @@ function generateForNode(
         }
 
         case "event":
-            code += `${indent}helpers.fire_event("${node.data.eventName}");\n`;
+            code += `${indent}api.fire_event("${node.data.eventName}");\n`;
             if (children.length > 0) {
                 code += generateForNode(
                     children[0].target,
