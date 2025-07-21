@@ -1,13 +1,41 @@
 <script>
     export let generatedCode  = '';
+    let copied = false;
 
     export let onClose = () => {};
+
+    async function copyCode() {
+            if (!generatedCode) return;
+
+            try {
+                await navigator.clipboard.writeText(generatedCode);
+                copied = true; // Set state to show feedback
+                
+                // Reset the feedback message after 2 seconds
+                setTimeout(() => {
+                    copied = false;
+                }, 2000);
+
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                // Optionally, you could show an error notification here
+            }
+        }
+
 </script>
 
 <div class="modal-backdrop" on:click={onClose} role="dialog" aria-modal="true">
     <div class="modal-content" on:click|stopPropagation>
         <header class="modal-header">
             <h2>Generated Source Code</h2>
+               <button class="copy-btn" on:click={copyCode} title="Copy code to clipboard">
+                {#if copied}
+                    <span>✅ Copied!</span>
+                {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span>Copy</span>
+                {/if}
+            </button>
             <button on:click={onClose} class="close-btn" aria-label="Close modal">&times;</button>
         </header>
         <main class="code-container">
@@ -49,6 +77,26 @@
     .modal-header h2 {
         margin: 0;
         font-size: 1.25rem;
+    }
+    .copy-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        white-space: nowrap;
+    }
+    .copy-btn:hover {
+        background-color: #e5e7eb;
+    }
+    .copy-btn:active {
+        background-color: #d1d5db;
     }
     .close-btn {
         background: none;
