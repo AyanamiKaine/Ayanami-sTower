@@ -100,6 +100,14 @@
             },
         },
         {
+            id: 'comment-example',
+            type: 'comment',
+            position: { x: -450, y: -200 },
+            data: {
+                comment: "Adding comments is easy, they are also automatically added to the generated source code."
+            } 
+        },
+        {
             id: 'state-display',
             type: 'state',
             draggable: false,
@@ -229,6 +237,11 @@
         {
             id: "e-greeting-lift",
             source: "npc-greeting",
+            target: "player-action-lift",
+        },
+        {
+            id: "e-comment",
+            source: "comment-example",
             target: "player-action-lift",
         },
         {
