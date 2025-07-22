@@ -200,7 +200,6 @@ function generateForNode(
                     incomingEdgesMap
                 );
             }
-            console.log("local state");
             break;
         }
 
