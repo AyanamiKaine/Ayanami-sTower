@@ -1,0 +1,94 @@
+---
+title: "Stella-Lang Design Document"
+date: 2025-07-23
+author: "Ayanami Kaine"
+tags: ["Programming", "Language Design"]
+layout: ../../layouts/PostLayout.astro
+summary: "Stella-Lang is an experimental ecs language with the wished ability to execute abitrary code in a sound and safe manner."
+published: true
+---
+
+*This is my personal design document for my toy language stella-lang. It will be updated over time and will include various notes about the language.*
+
+## Idea
+
+The basic idea came from two things. The desire to model domains like we do for games in a `Entity-Component-System` framework and being able to execute arbitrary code.
+
+Most language don't have a safe way to just execute code. Instead, they provide a `eval` function that can execute any code without being able to set permissions or restrict what can run. This usually results in problems down the line because now we need to sanitize the input before. If we missed something we have a problem.
+
+### A list of wishes for sandboxes 
+
+- By default, system-APIs should not work. Instead, we need to give the sandbox permission, also having a virtual file system would be a good idea.
+- Each sandbox must be able to be limited how much CPU or memory it can use. We don't want to be able to execute programs that consume too much. 
+- Sandboxes should be able to also execute arbitrary code.
+- Sandboxes should be able to run in the same process for fast access to shared memory.
+- The user should be able to supply symbols it can read and use. We should make a distinction between what can be read and what can be mutated.
+
+### A list of wishes for the ECS framework
+
+- We should be able to define components at runtime.
+- We should be able to easily model relationships. Similar to how [Flecs](https://www.flecs.dev/flecs/md_docs_2Relationships.html) does it.
+- ECS commands that mutate the world should probably be written in a Command Buffer so we can apply changes to the ECS world in sequential order.
+## The Syntax
+
+The syntax should make it really easy to query entities. Maybe we take a bite out of SQL?
+
+```
+entities with (velocity2D or velocity3D) and (position2D or position3D) without (health or mana)
+```
+
+Here we would get entities that have `velocity2D` or `velocity3D` and `position2D` or `position3D` components but neither `health` nor a `mana` component.
+
+This would represent the most basic query expression. But we should allow for more complex ones like:
+
+```
+entities with velocity2D.x > 0
+```
+
+The desire is to be able to have conditions that filter entities. Here we want entities that have a velocity2D component with a higher x velocity than 0.
+
+Then we should be able to query entities by identifier.
+
+```
+get entity with name == "Tom"
+```
+
+Often times we will have component that just represent one value like a name component or health component. We should be able to define them in a manner so we don't have to write `name.value` but instead simply as `name`.
+
+#### Hierarchical relationships (parent-child):
+
+```
+entities with Transform where parent.name == "World"
+entities with Transform.children[*].Health > 50
+get entity "Player" children with Weapon
+```
+
+#### Graph relationships
+
+```
+entities with (Likes, "Pizza") 
+entities with (ChildOf, ?parent) where parent.name == "Tom"
+entities with (Owns, Weapon) and (Equipped, same)
+```
+- The `same` keyword could refer back to previously matched entities in the query.
+
+#### Relationship traversal
+
+```
+entities connected to "Player" via Friendship
+entities reachable from "RootNode" via ChildOf within 3 hops
+entities with Health < 20 and (Ally, ?friend) where friend.Mana > 100
+```
+
+#### Relationship queries with constraints
+
+```
+entities where count(children with Enemy) > 5
+entities with (Owns, ?item) where item has Weapon and item.damage > 50
+get pairs (Loves, Hates) for entity "Romeo"
+```
+## The Sandbox 
+
+Should sandboxes run on another thread? Probably but this opens the gate for race conditions when the ECS world gets exposed. We could just implement looks for components maybe we are doing that. So no two threads at the same time can mutate ECS data.
+
+How would the runtime look like? We could use Wasm either [wasmtime](https://wasmtime.dev/) or [wasmer](https://wasmer.io/products/runtime). I personally feel that wasmtime could be a good choice. Because its nonprofit while wasmer is for-profit. It does not mean you have to pay for wasmer to use it. Both have different sets of features we have to keep in mind. For example, it seems that wasmer is [able to run clang](https://wasmer.io/posts/clang-in-browser) completely in his runtime.
