@@ -210,6 +210,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.EmailSenderCL
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "wasm-test", "Explorations\wasm-test\wasm-test.csproj", "{E8AC88BB-A39C-4B92-81E9-253A5CEF6E4E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "wasmtime-explorations", "Explorations\wasmtime-explorations\wasmtime-explorations.csproj", "{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1084,6 +1086,18 @@ Global
 		{E8AC88BB-A39C-4B92-81E9-253A5CEF6E4E}.Release|x64.Build.0 = Release|Any CPU
 		{E8AC88BB-A39C-4B92-81E9-253A5CEF6E4E}.Release|x86.ActiveCfg = Release|Any CPU
 		{E8AC88BB-A39C-4B92-81E9-253A5CEF6E4E}.Release|x86.Build.0 = Release|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Debug|x64.Build.0 = Debug|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Debug|x86.Build.0 = Debug|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Release|x64.ActiveCfg = Release|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Release|x64.Build.0 = Release|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Release|x86.ActiveCfg = Release|Any CPU
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1169,5 +1183,6 @@ Global
 		{524CE791-30C8-4353-BA5C-3A6BA174CA37} = {637562D8-58EC-F3E0-3F2D-569F86BA4C8A}
 		{A59F1D9C-71EE-496B-B4D3-87C2AADA47AD} = {A10A91C2-6485-6656-963B-F6FCBC812542}
 		{E8AC88BB-A39C-4B92-81E9-253A5CEF6E4E} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
+		{C19AC4DE-C29B-4B95-95B5-46C9DB8D875C} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
 	EndGlobalSection
 EndGlobal

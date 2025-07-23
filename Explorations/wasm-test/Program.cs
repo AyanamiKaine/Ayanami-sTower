@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using Wasmtime;
 
@@ -6,6 +6,83 @@ static class Program
 {
     static void Main(string[] args)
     {
+        Console.WriteLine("--- Running hello.wat example ---");
+        RunHello();
+        Console.WriteLine("\n-----------------------------------\n");
+
+        Console.WriteLine("--- Running hello_return.wat example ---");
+        RunHelloReturn();
+        Console.WriteLine("\n-----------------------------------\n");
+
+        Console.WriteLine("--- Running hello_two_way.wat example ---");
+        RunHelloTwoWay();
+    }
+
+    static void RunHello()
+    {
+        Console.WriteLine("This example demonstrates calling a C# function from WASM.");
+        using var engine = new Engine();
+        using var linker = new Linker(engine);
+        using var store = new Store(engine);
+
+        // Define the imported function in C# that our WASM module will call.
+        linker.Define(
+            "",
+            "hello",
+            Function.FromCallback(store, () =>
+            {
+                Console.WriteLine("Host (C#) says: Hello!");
+            })
+        );
+
+        using var module = Module.FromTextFile(engine, "hello.wat");
+        var instance = linker.Instantiate(store, module);
+
+        var run = instance.GetAction("run");
+        if (run is null)
+        {
+            Console.WriteLine("Error: 'run' export not found.");
+            return;
+        }
+
+        Console.WriteLine("C# is calling the 'run' export in WASM...");
+        run(); // This will trigger the WASM module to call back into our C# 'hello' function.
+        Console.WriteLine("WASM's 'run' function has completed.");
+        Console.WriteLine("Finished hello.wat example.");
+    }
+
+    static void RunHelloReturn()
+    {
+        Console.WriteLine("This example demonstrates reading a string from WASM memory.");
+        using var engine = new Engine();
+        using var module = Module.FromTextFile(engine, "hello_return.wat");
+        using var store = new Store(engine);
+        var instance = new Instance(store, module);
+
+        var memory = instance.GetMemory("memory");
+        var getGreeting = instance.GetFunction<(int, int)>("get_greeting");
+
+        if (memory is null || getGreeting is null)
+        {
+            Console.WriteLine("Error: A required export was not found.");
+            return;
+        }
+
+        // Call the WASM function to get the pointer and length of the string.
+        (int resultPointer, int resultLength) = getGreeting();
+        Console.WriteLine($"WASM's 'get_greeting' returned pointer={resultPointer}, length={resultLength}");
+
+        // Read the string directly from the module's memory.
+        string result = memory.ReadString(resultPointer, resultLength);
+        Console.WriteLine("\n--- Result from WASM ---");
+        Console.WriteLine(result);
+        Console.WriteLine("------------------------\n");
+        Console.WriteLine("Finished hello_return.wat example.");
+    }
+
+    static void RunHelloTwoWay()
+    {
+        Console.WriteLine("This example demonstrates passing a string to WASM, having WASM process it, and reading the result back.");
         // --- 1. Setup ---
         using var engine = new Engine();
         // Make sure the .wat file is named correctly.
@@ -54,6 +131,6 @@ static class Program
         deallocate(inputPointer, name.Length);
         deallocate(resultPointer, resultLength);
 
-        Console.WriteLine("Finished.");
+        Console.WriteLine("Finished hello_two_way.wat example.");
     }
 }
