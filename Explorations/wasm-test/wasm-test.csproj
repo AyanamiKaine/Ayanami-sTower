@@ -12,7 +12,7 @@
     <PackageReference Include="Wasmtime" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="hello.wat">
+    <Content Include="*.wat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
