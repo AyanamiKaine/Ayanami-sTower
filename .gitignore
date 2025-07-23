@@ -14,6 +14,7 @@ bazel-*
 
 # Raku
 .precomp/
+/Language-Stella-*
 
 # JavaScript/Svelte
 **/dist/

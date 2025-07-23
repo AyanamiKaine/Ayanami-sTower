@@ -1,0 +1,24 @@
+{
+  "authors": [
+    "Ayanami Kaine"
+  ],
+  "build-depends": [
+  ],
+  "depends": [
+  ],
+  "description": "Experimental ECS based language",
+  "license": "Artistic-2.0",
+  "name": "Language::Stella",
+  "perl": "6.d",
+  "provides": {
+    "Language::Stella": "lib/Language/Stella.rakumod"
+  },
+  "resources": [
+  ],
+  "source-url": "",
+  "tags": [
+  ],
+  "test-depends": [
+  ],
+  "version": "0.0.1"
+}

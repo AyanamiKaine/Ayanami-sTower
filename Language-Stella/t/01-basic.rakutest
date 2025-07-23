@@ -1,0 +1,6 @@
+use Test;
+use Language::Stella;
+
+pass "replace me";
+
+done-testing;
