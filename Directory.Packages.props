@@ -35,6 +35,14 @@
     </PackageVersion>
     <PackageVersion Include="NLog" Version="5.4.0" />
     <PackageVersion Include="pythonnet" Version="3.0.5" />
+
+    <!--Wasmtime for dotnet IS NOT UPDATED FOR THE NEWEST VERSTION ON NUGET, WE NEED TO BUILD IT OURSELFES and update it correctly
+    https://github.com/bytecodealliance/wasmtime-dotnet?tab=readme-ov-file just follow those steps to update to the newset wasmtime 
+    version its just changing two lines of code.
+    -->
+    <PackageVersion Include="Wasmtime" Version="35.0.0-dev" />
+    
+    
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
     <PackageVersion Include="DotNetEnv" Version="3.1.1" />
     <PackageVersion Include="Google_GenerativeAI" Version="2.5.6" />
