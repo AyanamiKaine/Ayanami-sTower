@@ -23,10 +23,47 @@ static class Program
         Console.WriteLine("This example demonstrates calling a C# function from WASM.");
         using var engine = new Engine();
         using var linker = new Linker(engine);
+        linker.DefineWasi();
+
         using var store = new Store(engine);
 
+        var wasiConfig = new WasiConfiguration()
+            // This forwards the component's stdout to the host's stdout.
+            .WithInheritedStandardOutput(); 
+
+        store.SetWasiConfiguration(wasiConfig);
+
+        Console.WriteLine("🧩 Loading component with WASI requirement: flecs.wasm");
+
+        using var componentModule = Module.FromFile(engine, "flecs.wasm");
+        var flecsInstance = linker.Instantiate(store, componentModule);
+
+        var createWorld = flecsInstance.GetFunction("create-world");
+        if (createWorld is null)
+        {
+            Console.WriteLine("Error: 'create-world' export not found.");
+            return;
+        }
+        /*
+        There must be a big problem how components can be loaded into the dotnet runtime of 
+        wasmtime. NO THE PROBLEMS LIES IN THE COMPILED WASM FILE, EVEN WHEN WASMTIME ITSELF
+        TRIES TO EXECUTE THE FUNCTION IT JUST HANGS!!! 
+        
+        On a side note using wasmtime run --invoke to call a function with no arguments you say
+        wasmtime run --invoke 'create-world' flecs.wasm NOT 'create-world()' A realy big brain 
+        was working on that implementation, hugely intuitive to us...
+        */
+        //var handle = createWorld.Invoke(); // HANGS HERE!
+
+        Console.WriteLine("\nAvailable functions:");
+
+        foreach (var export in flecsInstance.GetFunctions())
+        {
+            Console.WriteLine($"- {export.Name}");
+        }
+
         // Define the imported function in C# that our WASM module will call.
-        linker.Define(
+            linker.Define(
             "",
             "hello",
             Function.FromCallback(store, () =>
