@@ -138,13 +138,19 @@ public class World
     /// </summary>
     /// <typeparam name="T">The component type whose storage to retrieve.</typeparam>
     /// <returns>The ComponentStorage for the given type.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the component type has not been registered.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the component type could not have been automatically registered.</exception>
     public ComponentStorage<T> GetStorage<T>() where T : struct
     {
         var componentType = typeof(T);
         if (!_componentStorages.TryGetValue(componentType, out var storage))
         {
-            throw new InvalidOperationException($"Component type '{componentType.Name}' has not been registered. Call RegisterComponent<{componentType.Name}>() first.");
+            RegisterComponent<T>();
+
+            if (!_componentStorages.TryGetValue(componentType, out var newlyCreatedStorage))
+            {
+                throw new InvalidOperationException($"Component type '{componentType.Name}' has not been registered. Even though this should have happened automatically you may need to Call RegisterComponent<{componentType.Name}>() manually first.");
+            }
+            return (ComponentStorage<T>)newlyCreatedStorage;
         }
         return (ComponentStorage<T>)storage;
     }
