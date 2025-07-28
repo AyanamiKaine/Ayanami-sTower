@@ -10,8 +10,8 @@ namespace AyanamisTower.StellaEcs.Tests;
 // Test components
 public struct Position { public float X, Y; }
 public struct Velocity { public float Dx, Dy; }
-public struct PlayerTag { } // A tag component
-public struct IsHidden { } // Another tag component
+public struct PlayerTag; // A tag component
+public struct IsHidden; // Another tag component
 
 
 public class WorldTests
