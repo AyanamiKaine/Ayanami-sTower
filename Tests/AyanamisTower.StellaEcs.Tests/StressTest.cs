@@ -95,8 +95,7 @@ public class StressTests
             }
 
             // Simulate a combat system
-            var attackersQuery = world.Query().With<IsAggressive>().Without<Team>().Build();
-            foreach (var attacker in attackersQuery)
+            foreach (var attacker in world.Query().With<IsAggressive>().Without<Team>().Build())
             {
                 // For simplicity, just find a random target to attack
                 var target = allEntities[random.Next(allEntities.Count)];
@@ -107,7 +106,7 @@ public class StressTests
                         world.AddRelationship<IsAttacking>(attacker, target);
                     }
                     ref var targetHealth = ref target.GetMutable<Health>();
-                    targetHealth.Value -= 1;
+                    targetHealth.Value--;
                 }
             }
 
@@ -130,8 +129,7 @@ public class StressTests
 
             // --- Relationship Churn ---
             // Un-follow some entities
-            var followingQuery = world.Query().With<IsFollowing>(allEntities[random.Next(allEntities.Count)]).Build();
-            foreach (var entity in followingQuery)
+            foreach (var entity in world.Query().With<IsFollowing>(allEntities[random.Next(allEntities.Count)]).Build())
             {
                 // 10% chance to stop following
                 if (random.NextDouble() < 0.1)
