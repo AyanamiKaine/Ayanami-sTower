@@ -21,31 +21,34 @@ namespace AyanamisTower.StellaEcs
         /// <summary>
         /// Specifies that the query should only include entities that have a component of type <typeparamref name="T"/>.
         /// </summary>
-        /// <typeparam name="T">The component type to require.</typeparam>
-        /// <returns>The query builder instance for chaining.</returns>
-        public QueryBuilder With<T>() where T : struct
-        {
-            _withTypes.Add(typeof(T));
-            return this;
-        }
+        public QueryBuilder With<T>() where T : struct => With(typeof(T));
 
         /// <summary>
         /// Specifies that the query should exclude any entities that have a component of type <typeparamref name="T"/>.
         /// </summary>
-        /// <typeparam name="T">The component type to exclude.</typeparam>
-        /// <returns>The query builder instance for chaining.</returns>
-        public QueryBuilder Without<T>() where T : struct
+        public QueryBuilder Without<T>() where T : struct => Without(typeof(T));
+
+        /// <summary>
+        /// Specifies that the query should only include entities that have a component of the given type.
+        /// </summary>
+        public QueryBuilder With(Type componentType)
         {
-            _withoutTypes.Add(typeof(T));
+            _withTypes.Add(componentType);
+            return this;
+        }
+
+        /// <summary>
+        /// Specifies that the query should exclude any entities that have a component of the given type.
+        /// </summary>
+        public QueryBuilder Without(Type componentType)
+        {
+            _withoutTypes.Add(componentType);
             return this;
         }
 
         /// <summary>
         /// Constructs the final, immutable query object based on the builder's configuration.
-        /// The resulting query can be used in a foreach loop.
         /// </summary>
-        /// <returns>A <see cref="QueryEnumerable"/> that iterates over the matched entities.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if no 'With' components are specified.</exception>
         public QueryEnumerable Build()
         {
             if (_withTypes.Count == 0)

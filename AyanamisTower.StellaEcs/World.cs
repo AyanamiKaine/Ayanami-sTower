@@ -201,14 +201,83 @@ public class World
         if (IsAlive(entity)) GetStorage<T>().Set(entity.Id, component);
     }
 
-    // --- Query API ---
+    // --- Runtime/Non-Generic API ---
 
     /// <summary>
-    /// Begins a new entity query using a fluent builder pattern.
+    /// Registers a component type with the world at runtime, creating its underlying storage.
+    /// This overload allows registration using a <see cref="Type"/> object.
     /// </summary>
-    /// <returns>A new <see cref="QueryBuilder"/> instance.</returns>
-    public QueryBuilder Query()
+    /// <param name="componentType">The type of component to register (must be a non-primitive struct).</param>
+    /// <param name="capacity">Optional: The maximum number of this component type to store. Defaults to the world's max entities.</param>
+    /// <exception cref="ArgumentException">Thrown if the component type is not a non-primitive struct.</exception>
+    public void RegisterComponent(Type componentType, int? capacity = null)
     {
-        return new QueryBuilder(this);
+        if (!componentType.IsValueType || componentType.IsPrimitive)
+        {
+            throw new ArgumentException("Component type must be a non-primitive struct.", nameof(componentType));
+        }
+        if (_componentStorages.ContainsKey(componentType)) return;
+
+        var storageType = typeof(ComponentStorage<>).MakeGenericType(componentType);
+        var storageCapacity = capacity ?? _maxEntities;
+        var newStorage = Activator.CreateInstance(storageType, storageCapacity, _maxEntities);
+        _componentStorages.Add(componentType, (IComponentStorage)newStorage!);
     }
+
+    /// <summary>
+    /// Adds a component of the specified type to an entity using runtime type information.
+    /// </summary>
+    /// <param name="entity">The entity to which the component will be added.</param>
+    /// <param name="componentType">The type of the component to add.</param>
+    /// <param name="componentData">The component data to add.</param>
+    public void AddComponent(Entity entity, Type componentType, object componentData) => SetComponent(entity, componentType, componentData);
+    /// <summary>
+    /// Removes a component of the specified type from an entity using runtime type information.
+    /// </summary>
+    /// <param name="entity">The entity from which the component will be removed.</param>
+    /// <param name="componentType">The type of the component to remove.</param>
+    public void RemoveComponent(Entity entity, Type componentType)
+    {
+        if (IsAlive(entity) && _componentStorages.TryGetValue(componentType, out var storage))
+        {
+            storage.Remove(entity.Id);
+        }
+    }
+    /// <summary>
+    /// Checks if an entity has a specific component of the given type using runtime type information.
+    /// </summary>
+    /// <param name="entity">The entity to check.</param>
+    /// <param name="componentType">The type of the component to check for.</param>
+    /// <returns>True if the entity has the specified component; otherwise, false.</returns>
+    public bool HasComponent(Entity entity, Type componentType)
+    {
+        return IsAlive(entity) && _componentStorages.TryGetValue(componentType, out var storage) && storage.Has(entity.Id);
+    }
+    /// <summary>
+    /// Gets the component of the specified type from an entity using runtime type information.
+    /// </summary>
+    /// <param name="entity">The entity from which to retrieve the component.</param>
+    /// <param name="componentType">The type of the component to retrieve.</param>
+    /// <returns>The component object if present; otherwise, throws an exception if the entity is not alive.</returns>
+    public object GetComponent(Entity entity, Type componentType)
+    {
+        if (!IsAlive(entity)) throw new InvalidOperationException("Attempted to get component from a dead entity.");
+        return GetStorageUnsafe(componentType).GetAsObject(entity.Id);
+    }
+    /// <summary>
+    /// Adds a new component or updates an existing one for the specified entity using runtime type information.
+    /// </summary>
+    /// <param name="entity">The entity to which the component will be added or updated.</param>
+    /// <param name="componentType">The type of the component to add or update.</param>
+    /// <param name="componentData">The component data to set.</param>
+    public void SetComponent(Entity entity, Type componentType, object componentData)
+    {
+        if (IsAlive(entity)) GetStorageUnsafe(componentType).SetAsObject(entity.Id, componentData);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="QueryBuilder"/> for building and executing entity queries in this world.
+    /// </summary>
+    /// <returns>A new instance of <see cref="QueryBuilder"/> associated with this world.</returns>
+    public QueryBuilder Query() => new(this);
 }

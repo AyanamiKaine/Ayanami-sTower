@@ -67,6 +67,42 @@ public readonly struct Entity(int id, int generation, World? world) : IEquatable
     /// </summary>
     public void Destroy() => _world?.DestroyEntity(this);
 
+    // --- Runtime/Non-Generic API Methods ---
+    /// <summary>
+    /// Adds a component to this entity using its runtime <see cref="Type"/>.
+    /// This is an alias for <see cref="Set(Type, object)"/>.
+    /// </summary>
+    /// <param name="componentType">The runtime type of the component to add.</param>
+    /// <param name="componentData">The component data as a boxed object. The object's type must match the component type.</param>
+    public void Add(Type componentType, object componentData) => _world?.AddComponent(this, componentType, componentData);
+
+    /// <summary>
+    /// Removes a component from this entity using its runtime <see cref="Type"/>.
+    /// </summary>
+    /// <param name="componentType">The runtime type of the component to remove.</param>
+    public void Remove(Type componentType) => _world?.RemoveComponent(this, componentType);
+
+    /// <summary>
+    /// Checks if this entity has a specific component, using its runtime <see cref="Type"/>.
+    /// </summary>
+    /// <param name="componentType">The runtime type of the component to check for.</param>
+    /// <returns>True if the entity has the component; otherwise, false.</returns>
+    public bool Has(Type componentType) => _world?.HasComponent(this, componentType) ?? false;
+
+    /// <summary>
+    /// Gets a component from this entity as a boxed object, using its runtime <see cref="Type"/>.
+    /// </summary>
+    /// <param name="componentType">The runtime type of the component to retrieve.</param>
+    /// <returns>The component data as a boxed object.</returns>
+    public object Get(Type componentType) => _world!.GetComponent(this, componentType);
+
+    /// <summary>
+    /// Adds a new component or updates an existing one for this entity, using its runtime <see cref="Type"/>.
+    /// </summary>
+    /// <param name="componentType">The runtime type of the component to set.</param>
+    /// <param name="componentData">The component data as a boxed object. The object's type must match the component type.</param>
+    public void Set(Type componentType, object componentData) => _world?.SetComponent(this, componentType, componentData);
+
     // --- Overloads and Implementation for Equality ---
 
     /// <summary>

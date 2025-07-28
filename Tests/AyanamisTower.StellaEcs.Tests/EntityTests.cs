@@ -92,5 +92,70 @@ namespace AyanamisTower.StellaEcs.Tests
             Assert.Equal(-1, Entity.Null.Id);
             Assert.Equal(new Entity(-1, 0, null), Entity.Null);
         }
+
+        [Fact]
+        public void RuntimeApi_CorrectlyManipulatesData()
+        {
+            // Arrange
+            var world = new World();
+            var positionType = typeof(Position);
+            world.RegisterComponent(positionType);
+
+            var entity = world.CreateEntity();
+
+            // Act & Assert for Add
+            var positionInstance = Activator.CreateInstance(positionType)!;
+            entity.Add(positionType, positionInstance);
+            Assert.True(entity.Has(positionType));
+
+            // Act & Assert for Get
+            var component = (Position)entity.Get(positionType);
+            Assert.Equal(0, component.X);
+
+            // Act & Assert for Set
+            var newPosition = new Position { X = 123, Y = 456 };
+            entity.Set(positionType, newPosition);
+            component = (Position)entity.Get(positionType);
+            Assert.Equal(123, component.X);
+
+            // Act & Assert for Remove
+            entity.Remove(positionType);
+            Assert.False(entity.Has(positionType));
+        }
+
+        [Fact]
+        public void RuntimeTypeCreation_CanBeUsedWithEcs()
+        {
+            // Arrange: Define a new component type at runtime
+            var fields = new Dictionary<string, Type>
+        {
+            { "Health", typeof(int) },
+            { "Mana", typeof(int) }
+        };
+            Type runtimeStatsComponentType = ComponentFactory.CreateComponentType("RuntimeStatsComponent", fields);
+
+            var world = new World();
+            // Register the newly created type
+            world.RegisterComponent(runtimeStatsComponentType);
+            var entity = world.CreateEntity();
+
+            // Act: Create an instance and set its fields using Reflection
+            object statsInstance = Activator.CreateInstance(runtimeStatsComponentType)!;
+            runtimeStatsComponentType.GetField("Health")!.SetValue(statsInstance, 100);
+            runtimeStatsComponentType.GetField("Mana")!.SetValue(statsInstance, 50);
+
+            // Add the component to the entity
+            entity.Add(runtimeStatsComponentType, statsInstance);
+
+            // Assert: Verify the component exists and its data is correct
+            Assert.True(entity.Has(runtimeStatsComponentType));
+
+            object retrievedComponent = entity.Get(runtimeStatsComponentType);
+            int healthValue = (int)runtimeStatsComponentType.GetField("Health")!.GetValue(retrievedComponent)!;
+            int manaValue = (int)runtimeStatsComponentType.GetField("Mana")!.GetValue(retrievedComponent)!;
+
+            Assert.Equal(100, healthValue);
+            Assert.Equal(50, manaValue);
+        }
     }
 }

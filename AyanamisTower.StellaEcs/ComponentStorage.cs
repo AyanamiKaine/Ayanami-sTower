@@ -171,12 +171,27 @@ public class ComponentStorage<T>(int capacity, int universeSize) : IComponentSto
         return false;
     }
 
+
+    // --- Runtime/Non-Generic API Implementation ---
+
+    void IComponentStorage.SetAsObject(int entityId, object componentData)
+    {
+        // This will throw an InvalidCastException if the type is wrong, which is desired behavior.
+        Set(entityId, (T)componentData);
+    }
+
+    object IComponentStorage.GetAsObject(int entityId)
+    {
+        // This will box the struct into an object, creating a copy.
+        return Get(entityId);
+    }
+
     /// <summary>
     /// Explicitly implements the IComponentStorage.Remove method.
     /// </summary>
     void IComponentStorage.Remove(int entityId)
     {
         // This will call the public Remove(int entityId) method of this class.
-        this.Remove(entityId);
+        Remove(entityId);
     }
 }
