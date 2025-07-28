@@ -14,10 +14,12 @@ namespace AyanamisTower.StellaEcs
         private readonly IComponentStorage _driverStorage; // The smallest set to iterate over
         private readonly IComponentStorage[]? _otherWithStorages;
         private readonly IComponentStorage[]? _withoutStorages;
+        private readonly List<IFilter>? _filters;
 
-        internal QueryEnumerable(World world, List<Type> withTypes, List<Type> withoutTypes)
+        internal QueryEnumerable(World world, List<Type> withTypes, List<Type> withoutTypes, List<IFilter> filters)
         {
             _world = world;
+            _filters = filters.Count > 0 ? filters : null;
 
             // --- The Core Optimization ---
             // 1. Get all 'With' storages and find the one with the fewest components.
@@ -46,7 +48,7 @@ namespace AyanamisTower.StellaEcs
         {
             // Pass the fields directly to the enumerator's constructor
             // to avoid passing a reference to 'this' ref struct.
-            return new Enumerator(_world, _driverStorage, _otherWithStorages, _withoutStorages);
+            return new Enumerator(_world, _driverStorage, _otherWithStorages, _withoutStorages, _filters);
         }
 
         /// <summary>
@@ -58,10 +60,11 @@ namespace AyanamisTower.StellaEcs
             private readonly ReadOnlySpan<int> _driverEntityIds;
             private readonly IComponentStorage[]? _otherWithStorages;
             private readonly IComponentStorage[]? _withoutStorages;
+            private readonly List<IFilter>? _filters;
             private int _index;
 
             // The constructor now takes the required data directly, not a reference to the QueryEnumerable.
-            internal Enumerator(World world, IComponentStorage driverStorage, IComponentStorage[]? otherWithStorages, IComponentStorage[]? withoutStorages)
+            internal Enumerator(World world, IComponentStorage driverStorage, IComponentStorage[]? otherWithStorages, IComponentStorage[]? withoutStorages, List<IFilter>? filters)
             {
                 _world = world;
                 // This is the fix: Access PackedEntities through the interface directly, removing the 'dynamic' call.
@@ -70,6 +73,7 @@ namespace AyanamisTower.StellaEcs
                 _withoutStorages = withoutStorages;
                 _index = -1;
                 Current = default;
+                _filters = filters;
             }
 
             /// <summary>
@@ -81,6 +85,7 @@ namespace AyanamisTower.StellaEcs
                 while (_index < _driverEntityIds.Length)
                 {
                     int entityId = _driverEntityIds[_index];
+                    var entity = _world.GetEntityFromId(entityId);
 
                     // Check if the entity has all the other required components
                     if (_otherWithStorages != null)
@@ -120,8 +125,18 @@ namespace AyanamisTower.StellaEcs
                         }
                     }
 
+                    if (_filters != null)
+                    {
+                        bool allMatch = true;
+                        foreach (var filter in _filters)
+                        {
+                            if (!filter.Matches(entity)) { allMatch = false; break; }
+                        }
+                        if (!allMatch) { _index++; continue; }
+                    }
+
                     // If all checks pass, this is our entity.
-                    Current = _world.GetEntityFromId(entityId);
+                    Current = entity;
                     return true;
                 }
 
