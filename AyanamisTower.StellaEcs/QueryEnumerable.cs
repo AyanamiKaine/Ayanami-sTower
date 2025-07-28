@@ -11,45 +11,78 @@ namespace AyanamisTower.StellaEcs
     public readonly ref struct QueryEnumerable
     {
         private readonly World _world;
-        private readonly IComponentStorage _driverStorage; // The smallest set to iterate over
+        // This is the new, unified driver for the query. It can be populated from components OR relationships.
+        private readonly ReadOnlySpan<Entity> _driverEntities;
         private readonly IComponentStorage[]? _otherWithStorages;
         private readonly IComponentStorage[]? _withoutStorages;
         private readonly List<IFilter>? _filters;
-        // **NEW**: Store relationship filters.
         private readonly List<(Type type, Entity target)>? _withRelationships;
 
         internal QueryEnumerable(World world, List<Type> withTypes, List<Type> withoutTypes, List<IFilter> filters, List<(Type type, Entity target)> withRelationships)
         {
             _world = world;
             _filters = filters.Count > 0 ? filters : null;
-            // **NEW**: Assign relationship filters.
             _withRelationships = withRelationships.Count > 0 ? withRelationships : null;
 
             // --- The Core Optimization ---
-            // 1. Get all 'With' storages and find the one with the fewest components.
+            // It now intelligently determines the best set of entities to iterate over.
+
+            // **FIXED**: Re-introduced the .Where() clause to filter out relationship types from the 'withTypes' list
+            // before trying to get their (non-existent) component storages. This is the critical fix.
             var componentStorages = withTypes
                 .Where(t => !t.IsAssignableTo(typeof(IRelationship)))
                 .Select(world.GetStorageUnsafe).ToList();
 
-            if (componentStorages.Count == 0)
+            IComponentStorage? componentDriver = componentStorages.OrderBy(s => s.Count).FirstOrDefault();
+
+            List<Entity>? relationshipDriver = null;
+            if (_withRelationships != null)
             {
-                // Handle relationship-only queries. We need a driver.
-                // For now, we'll throw, but a more advanced implementation could handle this.
-                // A simple approach would be to iterate all entities, which is slow.
-                // A better one would be to use the reverse map of a relationship as the driver.
-                throw new InvalidOperationException("Query must include at least one component type, not just relationships.");
+                // Find the smallest set of source entities from all relationship filters to act as a potential driver.
+                foreach (var (relType, target) in _withRelationships)
+                {
+                    var storage = world.GetRelationshipStorageUnsafe(relType);
+                    // This is the key: we get the sources from the relationship's reverse map.
+                    var sources = storage.GetSources(target).ToList();
+                    if (relationshipDriver == null || sources.Count < relationshipDriver.Count)
+                    {
+                        relationshipDriver = sources;
+                    }
+                }
             }
 
-            _driverStorage = componentStorages.OrderBy(s => s.Count).First();
+            // --- Determine the query driver ---
+            if (componentDriver == null && relationshipDriver == null)
+            {
+                throw new InvalidOperationException("Query must have at least one 'With' component or relationship specified.");
+            }
 
-            // 2. The rest of the 'With' storages are collected for checking.
-            componentStorages.Remove(_driverStorage);
+            // Case 1: The best driver is a component storage.
+            if (componentDriver != null && (relationshipDriver == null || componentDriver.Count <= relationshipDriver.Count))
+            {
+                var driverSpan = componentDriver.PackedEntities;
+                var entities = new Entity[driverSpan.Length];
+                for (int i = 0; i < driverSpan.Length; i++)
+                {
+                    entities[i] = world.GetEntityFromId(driverSpan[i]);
+                }
+                _driverEntities = new ReadOnlySpan<Entity>(entities);
+                componentStorages.Remove(componentDriver);
+            }
+            // Case 2: The best driver is a relationship's source list.
+            else
+            {
+                _driverEntities = new ReadOnlySpan<Entity>(relationshipDriver!.ToArray());
+            }
+
             _otherWithStorages = componentStorages.Count > 0 ? [.. componentStorages] : null;
 
-            // 3. Collect all 'Without' storages.
             if (withoutTypes.Count > 0)
             {
-                _withoutStorages = withoutTypes.Select(t => world.GetStorageUnsafe(t)).ToArray();
+                // **FIXED**: Ensure we don't try to get storage for relationship types in the 'without' clause either.
+                _withoutStorages = withoutTypes
+                    .Where(t => !t.IsAssignableTo(typeof(IRelationship)))
+                    .Select(t => world.GetStorageUnsafe(t)).ToArray();
             }
             else
             {
@@ -62,9 +95,7 @@ namespace AyanamisTower.StellaEcs
         /// </summary>
         public Enumerator GetEnumerator()
         {
-            // Pass the fields directly to the enumerator's constructor
-            // to avoid passing a reference to 'this' ref struct.
-            return new Enumerator(_world, _driverStorage, _otherWithStorages, _withoutStorages, _filters, _withRelationships);
+            return new Enumerator(_world, _driverEntities, _otherWithStorages, _withoutStorages, _filters, _withRelationships);
         }
 
         /// <summary>
@@ -73,18 +104,17 @@ namespace AyanamisTower.StellaEcs
         public ref struct Enumerator
         {
             private readonly World _world;
-            private readonly ReadOnlySpan<int> _driverEntityIds;
+            private readonly ReadOnlySpan<Entity> _driverEntities;
             private readonly IComponentStorage[]? _otherWithStorages;
             private readonly IComponentStorage[]? _withoutStorages;
             private readonly List<IFilter>? _filters;
             private readonly List<(Type type, Entity target)>? _withRelationships;
             private int _index;
 
-            // The constructor now takes the required data directly, not a reference to the QueryEnumerable.
-            internal Enumerator(World world, IComponentStorage driverStorage, IComponentStorage[]? otherWithStorages, IComponentStorage[]? withoutStorages, List<IFilter>? filters, List<(Type, Entity)>? withRelationships)
+            internal Enumerator(World world, ReadOnlySpan<Entity> driverEntities, IComponentStorage[]? otherWithStorages, IComponentStorage[]? withoutStorages, List<IFilter>? filters, List<(Type, Entity)>? withRelationships)
             {
                 _world = world;
-                _driverEntityIds = driverStorage.PackedEntities;
+                _driverEntities = driverEntities;
                 _otherWithStorages = otherWithStorages;
                 _withoutStorages = withoutStorages;
                 _filters = filters;
@@ -99,10 +129,14 @@ namespace AyanamisTower.StellaEcs
             public bool MoveNext()
             {
                 _index++;
-                while (_index < _driverEntityIds.Length)
+                while (_index < _driverEntities.Length)
                 {
-                    int entityId = _driverEntityIds[_index];
-                    var entity = _world.GetEntityFromId(entityId);
+                    var entity = _driverEntities[_index];
+                    if (!entity.IsAlive())
+                    {
+                        _index++;
+                        continue;
+                    }
 
                     // Check if the entity has all the other required components
                     if (_otherWithStorages != null)
@@ -110,7 +144,7 @@ namespace AyanamisTower.StellaEcs
                         bool allFound = true;
                         foreach (var storage in _otherWithStorages)
                         {
-                            if (!storage.Has(entityId))
+                            if (!storage.Has(entity.Id))
                             {
                                 allFound = false;
                                 break;
@@ -129,7 +163,7 @@ namespace AyanamisTower.StellaEcs
                         bool anyFound = false;
                         foreach (var storage in _withoutStorages)
                         {
-                            if (storage.Has(entityId))
+                            if (storage.Has(entity.Id))
                             {
                                 anyFound = true;
                                 break;
@@ -142,7 +176,7 @@ namespace AyanamisTower.StellaEcs
                         }
                     }
 
-                    // **NEW**: Check if the entity has all the required relationships.
+                    // Check if the entity has all the required relationships.
                     if (_withRelationships != null)
                     {
                         bool allFound = true;
@@ -172,7 +206,6 @@ namespace AyanamisTower.StellaEcs
                         if (!allMatch) { _index++; continue; }
                     }
 
-                    // If all checks pass, this is our entity.
                     Current = entity;
                     return true;
                 }
