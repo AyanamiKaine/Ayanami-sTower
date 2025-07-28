@@ -103,6 +103,42 @@ public readonly struct Entity(int id, int generation, World? world) : IEquatable
     /// <param name="componentData">The component data as a boxed object. The object's type must match the component type.</param>
     public void Set(Type componentType, object componentData) => _world?.SetComponent(this, componentType, componentData);
 
+    /// <summary>
+    /// Adds a relationship of type <typeparamref name="T"/> from this entity to a target entity.
+    /// If the relationship is bidirectional, the reverse relationship (target -> this) is also added.
+    /// </summary>
+    /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
+    /// <param name="target">The entity to which the relationship is directed.</param>
+    public void AddRelationship<T>(Entity target) where T : struct, IRelationship
+        => _world?.AddRelationship<T>(this, target);
+
+    /// <summary>
+    /// Removes a relationship of type <typeparamref name="T"/> from this entity to a target entity.
+    /// If the relationship is bidirectional, the reverse relationship (target -> this) is also removed.
+    /// </summary>
+    /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
+    /// <param name="target">The entity from which the relationship is directed.</param>
+    public void RemoveRelationship<T>(Entity target) where T : struct, IRelationship
+        => _world?.RemoveRelationship<T>(this, target);
+
+    /// <summary>
+    /// Checks if a relationship of type <typeparamref name="T"/> exists from this entity to a target entity.
+    /// </summary>
+    /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
+    /// <param name="target">The target entity of the relationship.</param>
+    /// <returns><c>true</c> if the relationship exists; otherwise, <c>false</c>.</returns>
+    public bool HasRelationship<T>(Entity target) where T : struct, IRelationship
+        => _world?.HasRelationship<T>(this, target) ?? false;
+
+    /// <summary>
+    /// Gets all entities that this entity has a relationship of type <typeparamref name="T"/> with.
+    /// </summary>
+    /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
+    /// <returns>An enumerable collection of target entities.</returns>
+    public IEnumerable<Entity> GetRelationshipTargets<T>() where T : struct, IRelationship
+        => _world?.GetRelationshipTargets<T>(this) ?? Enumerable.Empty<Entity>();
+
+
     // --- Overloads and Implementation for Equality ---
 
     /// <summary>

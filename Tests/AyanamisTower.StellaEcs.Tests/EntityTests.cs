@@ -7,6 +7,9 @@ namespace AyanamisTower.StellaEcs.Tests
 {
     public class EntityTests
     {
+        struct IsParentOf : IRelationship { }
+        struct IsMarriedTo : IBidirectionalRelationship { }
+
         [Fact]
         public void Equals_WithSameIdAndGeneration_ReturnsTrue()
         {
@@ -157,5 +160,57 @@ namespace AyanamisTower.StellaEcs.Tests
             Assert.Equal(100, healthValue);
             Assert.Equal(50, manaValue);
         }
+
+        // --- NEW TEST CASE ---
+        [Fact]
+        public void RelationshipApi_ManipulatesRelationshipsCorrectly()
+        {
+            // Arrange
+            var world = new World();
+
+            // Register relationships with the world
+            world.RegisterRelationship<IsParentOf>();
+            world.RegisterRelationship<IsMarriedTo>();
+
+            var parent = world.CreateEntity();
+            var child1 = world.CreateEntity();
+            var child2 = world.CreateEntity();
+            var spouseA = world.CreateEntity();
+            var spouseB = world.CreateEntity();
+
+            // --- Act & Assert: Uni-directional relationship (Parent/Child) ---
+
+            // Add relationship
+            parent.AddRelationship<IsParentOf>(child1);
+            Assert.True(parent.HasRelationship<IsParentOf>(child1));
+            Assert.False(child1.HasRelationship<IsParentOf>(parent)); // Ensure it's not bidirectional
+
+            // Get targets
+            parent.AddRelationship<IsParentOf>(child2);
+            var children = parent.GetRelationshipTargets<IsParentOf>().ToList();
+            Assert.Equal(2, children.Count);
+            Assert.Contains(child1, children);
+            Assert.Contains(child2, children);
+
+            // Remove relationship
+            parent.RemoveRelationship<IsParentOf>(child1);
+            Assert.False(parent.HasRelationship<IsParentOf>(child1));
+            var updatedChildren = parent.GetRelationshipTargets<IsParentOf>().ToList();
+            Assert.Single(updatedChildren);
+            Assert.Contains(child2, updatedChildren);
+
+            // --- Act & Assert: Bi-directional relationship ---
+
+            // Add relationship
+            spouseA.AddRelationship<IsMarriedTo>(spouseB);
+            Assert.True(spouseA.HasRelationship<IsMarriedTo>(spouseB));
+            Assert.True(spouseB.HasRelationship<IsMarriedTo>(spouseA)); // Check reverse link
+
+            // Remove relationship
+            spouseB.RemoveRelationship<IsMarriedTo>(spouseA);
+            Assert.False(spouseB.HasRelationship<IsMarriedTo>(spouseA));
+            Assert.False(spouseA.HasRelationship<IsMarriedTo>(spouseB)); // Check reverse link is also gone
+        }
+
     }
 }
