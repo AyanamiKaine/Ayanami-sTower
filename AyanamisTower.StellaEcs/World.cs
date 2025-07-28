@@ -104,7 +104,7 @@ public class World
     /// Gets a full Entity handle from a raw entity ID.
     /// This is used internally to reconstruct handles during queries.
     /// </summary>
-    internal Entity GetEntityFromId(int entityId)
+    public Entity GetEntityFromId(int entityId)
     {
         if (entityId < 0 || entityId >= _maxEntities) return Entity.Null;
         return new Entity(entityId, _entityGenerations[entityId], this);
