@@ -70,7 +70,7 @@ public class StellaEcsBenchmarks
     private List<Entity> _entities = null!;
     private Entity _relationshipTarget;
 
-    [Params(1000, 10000)]
+    [Params(1_000, 10_000, 100_000, 1_000_000)]
     public int EntityCount;
 
     [GlobalSetup]
