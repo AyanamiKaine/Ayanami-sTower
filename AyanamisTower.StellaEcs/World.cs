@@ -95,6 +95,16 @@ public class World
         _recycledEntityIds.Enqueue(entity.Id);
     }
 
+    /// <summary>
+    /// Gets a full Entity handle from a raw entity ID.
+    /// This is used internally to reconstruct handles during queries.
+    /// </summary>
+    internal Entity GetEntityFromId(int entityId)
+    {
+        if (entityId < 0 || entityId >= _maxEntities) return Entity.Null;
+        return new Entity(entityId, _entityGenerations[entityId]);
+    }
+
     // --- Component Management ---
 
     /// <summary>
@@ -132,6 +142,18 @@ public class World
             throw new InvalidOperationException($"Component type '{componentType.Name}' has not been registered. Call RegisterComponent<{componentType.Name}>() first.");
         }
         return (ComponentStorage<T>)storage;
+    }
+
+    /// <summary>
+    /// Internal, non-generic version of GetStorage for the query system.
+    /// </summary>
+    internal IComponentStorage GetStorageUnsafe(Type componentType)
+    {
+        if (!_componentStorages.TryGetValue(componentType, out var storage))
+        {
+            throw new InvalidOperationException($"Component type '{componentType.Name}' has not been registered.");
+        }
+        return storage;
     }
 
     /// <summary>
@@ -177,5 +199,16 @@ public class World
     public void SetComponent<T>(Entity entity, T component) where T : struct
     {
         if (IsAlive(entity)) GetStorage<T>().Set(entity.Id, component);
+    }
+
+    // --- Query API ---
+
+    /// <summary>
+    /// Begins a new entity query using a fluent builder pattern.
+    /// </summary>
+    /// <returns>A new <see cref="QueryBuilder"/> instance.</returns>
+    public QueryBuilder Query()
+    {
+        return new QueryBuilder(this);
     }
 }

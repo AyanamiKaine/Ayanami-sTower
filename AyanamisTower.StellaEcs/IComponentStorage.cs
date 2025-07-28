@@ -7,6 +7,11 @@ namespace AyanamisTower.StellaEcs;
 internal interface IComponentStorage
 {
     /// <summary>
+    /// Gets the current number of components stored in this storage.
+    /// </summary>
+    int Count { get; }
+
+    /// <summary>
     /// Checks if the storage contains a component for the given entity ID.
     /// </summary>
     bool Has(int entityId);
@@ -15,4 +20,8 @@ internal interface IComponentStorage
     /// Removes a component for the given entity ID from the storage, if it exists.
     /// </summary>
     void Remove(int entityId);
+    /// <summary>
+    /// Gets a read-only span of the packed entity IDs for efficient iteration.
+    /// </summary>
+    ReadOnlySpan<int> PackedEntities { get; }
 }
