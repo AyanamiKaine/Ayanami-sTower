@@ -10,7 +10,7 @@ namespace AyanamisTower.StellaEcs;
 public class World
 {
     // --- Fields ---
-
+    private readonly Dictionary<Type, IRelationshipStorage> _relationshipStorages = [];
     private readonly int _maxEntities;
     private int _nextEntityId = 0;
 
@@ -18,7 +18,7 @@ public class World
     private readonly Queue<int> _recycledEntityIds = new();
 
     // The core of the World: A dictionary mapping a component Type to its storage object.
-    private readonly Dictionary<Type, IComponentStorage> _componentStorages = new();
+    private readonly Dictionary<Type, IComponentStorage> _componentStorages = [];
     /// <summary>
     /// Stores the current generation for each entity ID.
     /// </summary>
@@ -273,6 +273,87 @@ public class World
     public void SetComponent(Entity entity, Type componentType, object componentData)
     {
         if (IsAlive(entity)) GetStorageUnsafe(componentType).SetAsObject(entity.Id, componentData);
+    }
+
+    /// <summary>
+    /// Register a relationship to the world
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public void RegisterRelationship<T>() where T : struct, IRelationship
+    {
+        var relType = typeof(T);
+        if (_relationshipStorages.ContainsKey(relType)) return;
+        _relationshipStorages.Add(relType, new RelationshipStorage<T>());
+    }
+
+    /// <summary>
+    /// Adds a relationship
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    public void AddRelationship<T>(Entity source, Entity target) where T : struct, IRelationship
+    {
+        if (IsAlive(source) && IsAlive(target))
+        {
+            _relationshipStorages[typeof(T)].Add(source.Id, target);
+        }
+    }
+
+    /// <summary>
+    /// Removes a relationship
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    public void RemoveRelationship<T>(Entity source, Entity target) where T : struct, IRelationship
+    {
+        if (IsAlive(source) && IsAlive(target))
+        {
+            _relationshipStorages[typeof(T)].Remove(source.Id, target);
+        }
+    }
+
+    /// <summary>
+    /// Checks if an entity has a relationship
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    /// <returns></returns>
+    public bool HasRelationship<T>(Entity source, Entity target) where T : struct, IRelationship
+    {
+        return IsAlive(source) && IsAlive(target) && _relationshipStorages[typeof(T)].Has(source.Id, target);
+    }
+
+    /// <summary>
+    /// Returns all relationship targets
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <returns></returns>
+    public IEnumerable<Entity> GetRelationshipTargets<T>(Entity source) where T : struct, IRelationship
+    {
+        if (!IsAlive(source)) return [];
+        return _relationshipStorages[typeof(T)].GetTargets(source.Id);
+    }
+
+    /// <summary>
+    /// When an entity is destroyed, we must clean up all its relationships
+    /// </summary>
+    /// <param name="entity"></param>
+    public void OnDestroyEntity(Entity entity)
+    {
+        foreach (var storage in _relationshipStorages.Values)
+        {
+            storage.RemoveAll(entity.Id);
+        }
+    }
+
+    // Internal method for queries
+    internal IRelationshipStorage GetRelationshipStorageUnsafe(Type relType)
+    {
+        return _relationshipStorages[relType];
     }
 
     /// <summary>

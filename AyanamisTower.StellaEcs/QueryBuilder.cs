@@ -13,10 +13,20 @@ namespace AyanamisTower.StellaEcs
         private readonly List<Type> _withTypes = [];
         private readonly List<Type> _withoutTypes = [];
         private readonly List<IFilter> _filters = [];
+        private readonly List<(Type type, Entity target)> _withRelationships = [];
 
         internal QueryBuilder(World world)
         {
             _world = world;
+        }
+
+        /// <summary>
+        /// Specifies that the query should only include entities that have a relationship of type <typeparamref name="T"/> pointing to a specific target entity.
+        /// </summary>
+        public QueryBuilder With<T>(Entity target) where T : struct, IRelationship
+        {
+            _withRelationships.Add((typeof(T), target));
+            return this;
         }
 
         /// <summary>
