@@ -51,8 +51,8 @@ namespace AyanamisTower.StellaEcs.Tests
             // --- ACT: Serialize and Deserialize ---
             var serializer = new WorldSerializer();
             string json = serializer.Serialize(originalWorld);
-            Console.WriteLine("Serialized World JSON:");
-            Console.WriteLine(json);
+            //Console.WriteLine("Serialized World JSON:");
+            //Console.WriteLine(json);
 
             var newWorld = serializer.Deserialize(json);
 
