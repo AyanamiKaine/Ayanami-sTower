@@ -299,6 +299,31 @@ public class World
         => AddRelationship(source, target, default(T));
 
     /// <summary>
+    /// Adds a bidirectional relationship with the ability to change the data that points from one to the other.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    /// <param name="sourceToTargetData"></param>
+    /// <param name="reverseDataTransformer"></param>
+    public void AddBidirectionalRelationship<T>(
+        Entity source,
+        Entity target,
+        T sourceToTargetData,
+        Func<T, T> reverseDataTransformer) where T : struct, IBidirectionalRelationship
+    {
+        if (IsAlive(source) && IsAlive(target))
+        {
+            var storage = (RelationshipStorage<T>)_relationshipStorages[typeof(T)];
+            storage.Add(source, target, sourceToTargetData);
+
+            var targetToSourceData = reverseDataTransformer(sourceToTargetData);
+            storage.Add(target, source, targetToSourceData);
+        }
+    }
+
+
+    /// <summary>
     /// Removes a relationship between a source and a target entity.
     /// If the relationship type T implements <see cref="IBidirectionalRelationship"/>,
     /// the reverse relationship (target -> source) is also removed automatically.
