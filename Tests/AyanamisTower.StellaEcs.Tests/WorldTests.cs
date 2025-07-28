@@ -214,6 +214,97 @@ public class WorldTests
     }
 
     [Fact]
+    public void DestroyEntity_MakesEntityHandleNotAlive()
+    {
+        // Arrange
+        var world = new World(100);
+        world.RegisterComponent<Position>();
+        Entity entity = world.CreateEntity();
+        entity.Add(new Position());
+
+        // Act
+        entity.Destroy();
+
+        // Assert
+        Assert.False(entity.IsAlive(), "A destroyed entity handle should not be alive.");
+        Assert.False(entity.Has<Position>(), "A destroyed entity should not have components.");
+    }
+
+    [Fact]
+    public void EntityIdAndGeneration_RecyclesIdAndIncrementsGeneration()
+    {
+        // Arrange
+        var world = new World(100);
+
+        // Act
+        Entity entity1 = world.CreateEntity(); // Id=0, Gen=1
+        entity1.Destroy();
+        Entity entity2 = world.CreateEntity(); // Id=0, Gen=2
+
+        // Assert
+        Assert.Equal(entity1.Id, entity2.Id);
+        Assert.Equal(entity1.Generation + 1, entity2.Generation);
+        Assert.True(entity2.IsAlive());
+        Assert.False(entity1.IsAlive());
+    }
+
+    [Fact]
+    public void UsingStaleHandle_OperationsFailSafely()
+    {
+        // Arrange
+        var world = new World(100);
+        world.RegisterComponent<Position>();
+
+        Entity staleHandle = world.CreateEntity();
+        staleHandle.Add(new Position { X = 10, Y = 10 });
+        staleHandle.Destroy();
+
+        Entity liveHandle = world.CreateEntity();
+        liveHandle.Add(new Position { X = 100, Y = 100 });
+
+        // Act & Assert
+        Assert.False(staleHandle.IsAlive());
+        Assert.False(staleHandle.Has<Position>());
+        Assert.Throws<InvalidOperationException>(() => staleHandle.Get<Position>());
+        Assert.Throws<InvalidOperationException>(() => staleHandle.GetMutable<Position>());
+
+        staleHandle.Set(new Position { X = 999, Y = 999 });
+
+        ref readonly var livePosition = ref liveHandle.Get<Position>();
+        Assert.Equal(100, livePosition.X);
+    }
+
+    [Fact]
+    public void EntityApi_CorrectlyManipulatesData()
+    {
+        // Arrange
+        var world = new World(100);
+        world.RegisterComponent<Position>();
+        Entity entity = world.CreateEntity();
+
+        // Act & Assert for Add
+        entity.Add(new Position { X = 10, Y = 20 });
+        Assert.True(entity.Has<Position>());
+
+        // Act & Assert for Get
+        ref readonly var posRead = ref entity.Get<Position>();
+        Assert.Equal(10, posRead.X);
+
+        // Act & Assert for GetMutable
+        ref var posMutable = ref entity.GetMutable<Position>();
+        posMutable.X = 50;
+        Assert.Equal(50, posRead.X);
+
+        // Act & Assert for Set
+        entity.Set(new Position { X = 200, Y = 200 });
+        Assert.Equal(200, posRead.X);
+
+        // Act & Assert for Remove
+        entity.Remove<Position>();
+        Assert.False(entity.Has<Position>());
+    }
+
+    [Fact]
     public void Query_WithoutWithClause_ThrowsException()
     {
         // Arrange

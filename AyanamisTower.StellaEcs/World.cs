@@ -50,7 +50,7 @@ public class World
         if (_recycledEntityIds.Count > 0)
         {
             int id = _recycledEntityIds.Dequeue();
-            return new Entity(id, _entityGenerations[id]);
+            return new Entity(id, _entityGenerations[id], this);
         }
 
         if (_nextEntityId >= _maxEntities)
@@ -61,7 +61,7 @@ public class World
         int newId = _nextEntityId++;
         // A brand new entity still starts with generation 1. This part is correct.
         _entityGenerations[newId] = 1;
-        return new Entity(newId, _entityGenerations[newId]);
+        return new Entity(newId, _entityGenerations[newId], this);
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ public class World
     internal Entity GetEntityFromId(int entityId)
     {
         if (entityId < 0 || entityId >= _maxEntities) return Entity.Null;
-        return new Entity(entityId, _entityGenerations[entityId]);
+        return new Entity(entityId, _entityGenerations[entityId], this);
     }
 
     // --- Component Management ---
