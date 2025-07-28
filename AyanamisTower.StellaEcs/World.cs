@@ -86,11 +86,16 @@ public class World
         // Only destroy if the handle is valid and alive
         if (!IsAlive(entity)) return;
 
+        // Remove all components
         foreach (var storage in _componentStorages.Values)
         {
             storage.Remove(entity.Id);
         }
 
+        // **NEW**: Clean up all relationships involving this entity.
+        OnDestroyEntity(entity);
+
+        // Invalidate the handle by incrementing the generation and recycle the ID.
         _entityGenerations[entity.Id]++;
         _recycledEntityIds.Enqueue(entity.Id);
     }
@@ -287,55 +292,75 @@ public class World
     }
 
     /// <summary>
-    /// Adds a relationship
+    /// Adds a relationship between a source and a target entity.
+    /// If the relationship type T implements <see cref="IBidirectionalRelationship"/>,
+    /// the reverse relationship (target -> source) is also added automatically.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <param name="target"></param>
     public void AddRelationship<T>(Entity source, Entity target) where T : struct, IRelationship
     {
         if (IsAlive(source) && IsAlive(target))
         {
-            _relationshipStorages[typeof(T)].Add(source.Id, target);
+            var storage = _relationshipStorages[typeof(T)];
+            storage.Add(source, target);
+
+            // **NEW**: If it's a bidirectional relationship, add the reverse link too.
+            if (typeof(T).IsAssignableTo(typeof(IBidirectionalRelationship)))
+            {
+                storage.Add(target, source);
+            }
         }
     }
 
     /// <summary>
-    /// Removes a relationship
+    /// Removes a relationship between a source and a target entity.
+    /// If the relationship type T implements <see cref="IBidirectionalRelationship"/>,
+    /// the reverse relationship (target -> source) is also removed automatically.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <param name="target"></param>
     public void RemoveRelationship<T>(Entity source, Entity target) where T : struct, IRelationship
     {
         if (IsAlive(source) && IsAlive(target))
         {
-            _relationshipStorages[typeof(T)].Remove(source.Id, target);
+            var storage = _relationshipStorages[typeof(T)];
+            storage.Remove(source, target);
+
+            // **NEW**: If it's a bidirectional relationship, remove the reverse link too.
+            if (typeof(T).IsAssignableTo(typeof(IBidirectionalRelationship)))
+            {
+                storage.Remove(target, source);
+            }
         }
     }
 
     /// <summary>
     /// Checks if an entity has a relationship
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <param name="target"></param>
-    /// <returns></returns>
     public bool HasRelationship<T>(Entity source, Entity target) where T : struct, IRelationship
     {
-        return IsAlive(source) && IsAlive(target) && _relationshipStorages[typeof(T)].Has(source.Id, target);
+        if (!IsAlive(source) || !IsAlive(target)) return false;
+        // **MODIFIED**: Pass the full source entity to the storage.
+        return _relationshipStorages[typeof(T)].Has(source, target);
+    }
+
+    /// <summary>
+    /// **NEW**: Non-generic version of HasRelationship for the query system.
+    /// </summary>
+    internal bool HasRelationship(Entity source, Entity target, Type relationshipType)
+    {
+        if (!relationshipType.IsAssignableTo(typeof(IRelationship)) || !_relationshipStorages.TryGetValue(relationshipType, out var storage))
+        {
+            return false;
+        }
+        return IsAlive(source) && IsAlive(target) && storage.Has(source, target);
     }
 
     /// <summary>
     /// Returns all relationship targets
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="source"></param>
-    /// <returns></returns>
     public IEnumerable<Entity> GetRelationshipTargets<T>(Entity source) where T : struct, IRelationship
     {
         if (!IsAlive(source)) return [];
-        return _relationshipStorages[typeof(T)].GetTargets(source.Id);
+        // **MODIFIED**: Pass the full source entity to the storage.
+        return _relationshipStorages[typeof(T)].GetTargets(source);
     }
 
     /// <summary>
@@ -350,8 +375,12 @@ public class World
         }
     }
 
-    // Internal method for queries
-    internal IRelationshipStorage GetRelationshipStorageUnsafe(Type relType)
+    /// <summary>
+    /// Internal method for queries
+    /// </summary>
+    /// <param name="relType"></param>
+    /// <returns></returns>
+    public IRelationshipStorage GetRelationshipStorageUnsafe(Type relType)
     {
         return _relationshipStorages[relType];
     }

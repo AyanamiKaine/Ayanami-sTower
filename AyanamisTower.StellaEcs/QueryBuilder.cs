@@ -13,6 +13,7 @@ namespace AyanamisTower.StellaEcs
         private readonly List<Type> _withTypes = [];
         private readonly List<Type> _withoutTypes = [];
         private readonly List<IFilter> _filters = [];
+        // This list stores tuples of (RelationshipType, TargetEntity)
         private readonly List<(Type type, Entity target)> _withRelationships = [];
 
         internal QueryBuilder(World world)
@@ -25,6 +26,9 @@ namespace AyanamisTower.StellaEcs
         /// </summary>
         public QueryBuilder With<T>(Entity target) where T : struct, IRelationship
         {
+            // Also implicitly add the relationship type as a 'With' type to ensure its storage is considered.
+            // This isn't strictly necessary with the current implementation but is good practice.
+            _withTypes.Add(typeof(T));
             _withRelationships.Add((typeof(T), target));
             return this;
         }
@@ -44,7 +48,10 @@ namespace AyanamisTower.StellaEcs
         /// </summary>
         public QueryBuilder With(Type componentType)
         {
-            _withTypes.Add(componentType);
+            if (!componentType.IsAssignableTo(typeof(IRelationship)))
+            {
+                _withTypes.Add(componentType);
+            }
             return this;
         }
 
@@ -62,13 +69,13 @@ namespace AyanamisTower.StellaEcs
         /// The query will only return entities where the component's data satisfies the predicate.
         /// This automatically adds a `With T ()` condition if it doesn't already exist.
         /// </summary>
-        /// <typeparam name="T">The component type to filter on.</typeparam>
-        /// <param name="predicate">A function that takes the component data and returns true if it matches the filter.</param>
-        /// <returns>The query builder instance for chaining.</returns>
         public QueryBuilder Where<T>(Func<T, bool> predicate) where T : struct
         {
             // A 'Where' clause implies a 'With' clause.
-            With<T>();
+            if (!_withTypes.Contains(typeof(T)))
+            {
+                With<T>();
+            }
             _filters.Add(new Filter<T>(predicate));
             return this;
         }
@@ -83,7 +90,7 @@ namespace AyanamisTower.StellaEcs
                 throw new InvalidOperationException("A query must have at least one 'With' component specified.");
             }
 
-            return new QueryEnumerable(_world, _withTypes, _withoutTypes, _filters);
+            return new QueryEnumerable(_world, _withTypes, _withoutTypes, _filters, _withRelationships);
         }
     }
 }
