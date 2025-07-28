@@ -7,7 +7,7 @@ namespace AyanamisTower.StellaEcs;
 /// The generation helps to invalidate handles to entities that have been destroyed.
 /// This is a lightweight, immutable struct.
 /// </summary>
-public readonly struct Entity : IEquatable<Entity>
+public readonly struct Entity(int id, int generation) : IEquatable<Entity>
 {
     /// <summary>
     /// A null/invalid entity handle.
@@ -17,18 +17,12 @@ public readonly struct Entity : IEquatable<Entity>
     /// <summary>
     /// The raw integer ID of the entity. This corresponds to an index in the world's arrays.
     /// </summary>
-    public readonly int Id;
+    public readonly int Id = id;
 
     /// <summary>
     /// The generation of the entity, which is incremented each time the ID is recycled.
     /// </summary>
-    public readonly int Generation;
-
-    internal Entity(int id, int generation)
-    {
-        Id = id;
-        Generation = generation;
-    }
+    public readonly int Generation = generation;
 
     // --- Overloads and Implementation for Equality ---
 
