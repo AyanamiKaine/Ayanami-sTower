@@ -29,7 +29,7 @@ public class World
     /// Initializes a new instance of the <see cref="World"/> class.
     /// </summary>
     /// <param name="maxEntities">The maximum number of entities this world can support. By Default 1 Million</param>
-    public World(int maxEntities = 1000000)
+    public World(int maxEntities = 1_000_000)
     {
         if (maxEntities <= 0) throw new ArgumentOutOfRangeException(nameof(maxEntities), "Maximum entities must be positive.");
         _maxEntities = maxEntities;
