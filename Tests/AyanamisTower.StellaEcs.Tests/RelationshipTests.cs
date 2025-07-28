@@ -14,7 +14,10 @@ public struct IsChildOf : IRelationship { }
 public struct IsFriendOf : IRelationship { }
 // A new, two-way relationship
 public struct IsMarriedTo : IBidirectionalRelationship { }
-
+public struct FriendsWith : IRelationship
+{
+    public int Strength;
+}
 public class RelationshipTests
 {
     private readonly World _world;
@@ -27,6 +30,7 @@ public class RelationshipTests
         _world.RegisterRelationship<IsFriendOf>();
         // Register the new bidirectional relationship
         _world.RegisterRelationship<IsMarriedTo>();
+        _world.RegisterRelationship<FriendsWith>();
     }
 
     [Fact]
@@ -356,5 +360,30 @@ public class RelationshipTests
 
         Assert.Single(results2);
         Assert.Contains(entityB, results2);
+    }
+
+    [Fact]
+    public void Query_RelationshipWithData()
+    {
+        // 3. Create entities
+        var player1 = _world.CreateEntity();
+        var player2 = _world.CreateEntity();
+
+        // 4. Add the relationship with its data
+        player1.AddRelationship(player2, new FriendsWith { Strength = 20 });
+
+        // 5. Check for and retrieve the relationship data
+        if (player1.TryGetRelationship(player2, out FriendsWith friendship))
+        {
+            Assert.Equal(20, friendship.Strength);
+        }
+        else
+        {
+            Assert.Fail("Friendship data was not found");
+        }
+
+        // You can still get targets just like before
+        var friendsOfPlayer1 = player1.GetRelationshipTargets<FriendsWith>().ToList();
+        Assert.Single(friendsOfPlayer1);
     }
 }

@@ -104,13 +104,25 @@ public readonly struct Entity(int id, int generation, World? world) : IEquatable
     public void Set(Type componentType, object componentData) => _world?.SetComponent(this, componentType, componentData);
 
     /// <summary>
-    /// Adds a relationship of type <typeparamref name="T"/> from this entity to a target entity.
-    /// If the relationship is bidirectional, the reverse relationship (target -> this) is also added.
+    /// Adds a relationship with data from this entity to a target entity.
     /// </summary>
-    /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
-    /// <param name="target">The entity to which the relationship is directed.</param>
+    public void AddRelationship<T>(Entity target, T relationshipData) where T : struct, IRelationship
+        => _world?.AddRelationship(this, target, relationshipData);
+
+    /// <summary>
+    /// Adds a relationship from this entity to a target entity using default data.
+    /// </summary>
     public void AddRelationship<T>(Entity target) where T : struct, IRelationship
-        => _world?.AddRelationship<T>(this, target);
+        => _world?.AddRelationship(this, target, default(T));
+
+    /// <summary>
+    /// Tries to get the data associated with a relationship from this entity to a target entity.
+    /// </summary>
+    public bool TryGetRelationship<T>(Entity target, out T relationshipData) where T : struct, IRelationship
+    {
+        // The null-coalescing operator ensures we can call this on a default Entity without a null reference.
+        return _world?.TryGetRelationship(this, target, out relationshipData) ?? ((relationshipData = default), false).Item2;
+    }
 
     /// <summary>
     /// Removes a relationship of type <typeparamref name="T"/> from this entity to a target entity.

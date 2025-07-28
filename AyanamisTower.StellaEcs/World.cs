@@ -292,24 +292,11 @@ public class World
     }
 
     /// <summary>
-    /// Adds a relationship between a source and a target entity.
-    /// If the relationship type T implements <see cref="IBidirectionalRelationship"/>,
-    /// the reverse relationship (target -> source) is also added automatically.
+    /// Adds a relationship between a source and a target entity using default data.
+    /// Useful for relationships that are simple tags.
     /// </summary>
     public void AddRelationship<T>(Entity source, Entity target) where T : struct, IRelationship
-    {
-        if (IsAlive(source) && IsAlive(target))
-        {
-            var storage = _relationshipStorages[typeof(T)];
-            storage.Add(source, target);
-
-            // **NEW**: If it's a bidirectional relationship, add the reverse link too.
-            if (typeof(T).IsAssignableTo(typeof(IBidirectionalRelationship)))
-            {
-                storage.Add(target, source);
-            }
-        }
-    }
+        => AddRelationship(source, target, default(T));
 
     /// <summary>
     /// Removes a relationship between a source and a target entity.
@@ -329,6 +316,41 @@ public class World
                 storage.Remove(target, source);
             }
         }
+    }
+
+    /// <summary>
+    /// Adds a relationship with data between a source and a target entity.
+    /// </summary>
+    public void AddRelationship<T>(Entity source, Entity target, T relationshipData) where T : struct, IRelationship
+    {
+        if (IsAlive(source) && IsAlive(target))
+        {
+            var storage = (RelationshipStorage<T>)_relationshipStorages[typeof(T)];
+            storage.Add(source, target, relationshipData);
+
+            if (typeof(T).IsAssignableTo(typeof(IBidirectionalRelationship)))
+            {
+                storage.Add(target, source, relationshipData); // Also add reverse link with same data
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tries to get the data associated with a relationship between two entities.
+    /// </summary>
+    /// <returns>True if the relationship exists, false otherwise.</returns>
+    public bool TryGetRelationship<T>(Entity source, Entity target, out T relationshipData) where T : struct, IRelationship
+    {
+        if (IsAlive(source) && IsAlive(target))
+        {
+            if (_relationshipStorages.TryGetValue(typeof(T), out var storage))
+            {
+                var typedStorage = (RelationshipStorage<T>)storage;
+                return typedStorage.TryGetData(source, target, out relationshipData);
+            }
+        }
+        relationshipData = default;
+        return false;
     }
 
     /// <summary>
