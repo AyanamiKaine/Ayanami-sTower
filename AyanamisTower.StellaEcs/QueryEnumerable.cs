@@ -24,26 +24,28 @@ namespace AyanamisTower.StellaEcs
             _filters = filters.Count > 0 ? filters : null;
             _withRelationships = withRelationships.Count > 0 ? withRelationships : null;
 
-            // --- The Core Optimization ---
-            // It now intelligently determines the best set of entities to iterate over.
+            // --- 1. Identify Potential Query Drivers ---
+            // The core optimization of the query engine is to iterate over the smallest possible set of entities.
+            // We identify two potential "drivers" for the query:
+            //    a) The component storage with the fewest instances.
+            //    b) The list of entities that have a specific relationship to a target (the "sources").
 
-            // **FIXED**: Re-introduced the .Where() clause to filter out relationship types from the 'withTypes' list
-            // before trying to get their (non-existent) component storages. This is the critical fix.
+            // Potential Driver A: Find the smallest component storage.
+            // We must filter out IRelationship types from the main `withTypes` list, as they don't have standard component storages.
             var componentStorages = withTypes
                 .Where(t => !t.IsAssignableTo(typeof(IRelationship)))
                 .Select(world.GetStorageUnsafe).ToList();
-
             IComponentStorage? componentDriver = componentStorages.OrderBy(s => s.Count).FirstOrDefault();
 
+            // Potential Driver B: Find the smallest list of relationship sources.
             List<Entity>? relationshipDriver = null;
             if (_withRelationships != null)
             {
-                // Find the smallest set of source entities from all relationship filters to act as a potential driver.
+                // Iterate through all relationship filters to find the one that returns the smallest set of source entities.
                 foreach (var (relType, target) in _withRelationships)
                 {
                     var storage = world.GetRelationshipStorageUnsafe(relType);
-                    // This is the key: we get the sources from the relationship's reverse map.
-                    var sources = storage.GetSources(target).ToList();
+                    var sources = storage.GetSources(target).ToList(); // Get entities that point to the target.
                     if (relationshipDriver == null || sources.Count < relationshipDriver.Count)
                     {
                         relationshipDriver = sources;
@@ -51,13 +53,16 @@ namespace AyanamisTower.StellaEcs
                 }
             }
 
-            // --- Determine the query driver ---
+            // --- 2. Choose the Best Driver and Configure the Query ---
+            // A query is only valid if it has at least one 'With' condition to iterate over.
             if (componentDriver == null && relationshipDriver == null)
             {
-                throw new InvalidOperationException("Query must have at least one 'With' component or relationship specified.");
+                // This correctly handles queries that only contain "bare" relationships like .With<IsFollowing>() without a target,
+                // as such a query is not iterable and thus invalid.
+                throw new InvalidOperationException("A query must have at least one 'With' component or a targeted 'With' relationship specified.");
             }
 
-            // Case 1: The best driver is a component storage.
+            // Case 1: The component storage is the best (or only) driver.
             if (componentDriver != null && (relationshipDriver == null || componentDriver.Count <= relationshipDriver.Count))
             {
                 var driverSpan = componentDriver.PackedEntities;
@@ -67,19 +72,24 @@ namespace AyanamisTower.StellaEcs
                     entities[i] = world.GetEntityFromId(driverSpan[i]);
                 }
                 _driverEntities = new ReadOnlySpan<Entity>(entities);
+
+                // The remaining component storages become secondary checks.
                 componentStorages.Remove(componentDriver);
+                _otherWithStorages = componentStorages.Count > 0 ? [.. componentStorages] : null;
             }
-            // Case 2: The best driver is a relationship's source list.
+            // Case 2: The relationship source list is the best driver.
             else
             {
                 _driverEntities = new ReadOnlySpan<Entity>(relationshipDriver!.ToArray());
+
+                // Since the relationship is the driver, ALL component storages become secondary checks.
+                _otherWithStorages = componentStorages.Count > 0 ? [.. componentStorages] : null;
             }
 
-            _otherWithStorages = componentStorages.Count > 0 ? [.. componentStorages] : null;
-
+            // --- 3. Configure 'Without' and 'Filter' Checks ---
+            // This logic remains the same, as it correctly filters out relationships from the 'without' storages.
             if (withoutTypes.Count > 0)
             {
-                // **FIXED**: Ensure we don't try to get storage for relationship types in the 'without' clause either.
                 _withoutStorages = withoutTypes
                     .Where(t => !t.IsAssignableTo(typeof(IRelationship)))
                     .Select(t => world.GetStorageUnsafe(t)).ToArray();
