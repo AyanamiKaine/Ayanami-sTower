@@ -1,7 +1,7 @@
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 using Xunit;
-// Make sure to reference the project containing your ECS classes
+using System;
 using AyanamisTower.StellaEcs;
 
 namespace AyanamisTower.StellaEcs.Tests;
@@ -10,6 +10,12 @@ namespace AyanamisTower.StellaEcs.Tests;
 public struct Position
 {
     public float X, Y;
+}
+
+// Another simple component for testing
+public struct Velocity
+{
+    public float Dx, Dy;
 }
 
 public class WorldTests
@@ -30,6 +36,19 @@ public class WorldTests
     }
 
     [Fact]
+    public void CreateEntity_WhenAtCapacity_ThrowsException()
+    {
+        // Arrange
+        var world = new World(2);
+        world.CreateEntity(); // Entity 0
+        world.CreateEntity(); // Entity 1
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => world.CreateEntity());
+        Assert.Equal("Cannot create new entity: World has reached maximum capacity.", ex.Message);
+    }
+
+    [Fact]
     public void DestroyEntity_MakesEntityHandleNotAlive()
     {
         // Arrange
@@ -44,6 +63,27 @@ public class WorldTests
         // Assert
         Assert.False(world.IsAlive(entity), "A destroyed entity handle should not be alive.");
         Assert.False(world.HasComponent<Position>(entity), "A destroyed entity should not have components.");
+    }
+
+    [Fact]
+    public void DestroyEntity_RemovesAllComponents()
+    {
+        // Arrange
+        var world = new World(100);
+        world.RegisterComponent<Position>();
+        world.RegisterComponent<Velocity>();
+        Entity entity = world.CreateEntity();
+        world.AddComponent(entity, new Position());
+        world.AddComponent(entity, new Velocity());
+
+        // Act
+        world.DestroyEntity(entity);
+        var storagePos = world.GetStorage<Position>();
+        var storageVel = world.GetStorage<Velocity>();
+
+        // Assert
+        Assert.False(storagePos.Has(entity.Id));
+        Assert.False(storageVel.Has(entity.Id));
     }
 
     [Fact]
@@ -83,7 +123,7 @@ public class WorldTests
 
         // Act & Assert
 
-        // 1. Read operations on stale handle should fail or return false
+        // 1. Read operations on stale handle should return false
         Assert.False(world.IsAlive(staleHandle), "Stale handle should not be alive.");
         Assert.False(world.HasComponent<Position>(staleHandle), "HasComponent should return false for a stale handle.");
 
@@ -92,11 +132,14 @@ public class WorldTests
         Assert.Throws<System.InvalidOperationException>(() => world.GetComponentMutable<Position>(staleHandle));
 
         // 3. Write operations on stale handle should do nothing
-        world.SetComponent(staleHandle, new Position { X = 999, Y = 999 });
+        world.AddComponent(staleHandle, new Position { X = 888, Y = 888 }); // Should not add
+        world.SetComponent(staleHandle, new Position { X = 999, Y = 999 }); // Should not set
+        world.RemoveComponent<Position>(staleHandle); // Should not remove anything from the live handle
 
-        // Verify that the operation did not affect the live entity that reused the ID
+        // Verify that the operations did not affect the live entity that reused the ID
         ref readonly var livePosition = ref world.GetComponent<Position>(liveHandle);
         Assert.Equal(100, livePosition.X); // SetComponent on a stale handle should not affect the live entity.
+        Assert.True(world.HasComponent<Position>(liveHandle)); // RemoveComponent on stale handle should not affect live one.
     }
 
     [Fact]
@@ -123,5 +166,33 @@ public class WorldTests
         // Act & Assert for RemoveComponent
         world.RemoveComponent<Position>(entity);
         Assert.False(world.HasComponent<Position>(entity));
+    }
+
+    [Fact]
+    public void GetStorage_ForUnregisteredComponent_ThrowsException()
+    {
+        // Arrange
+        var world = new World(100);
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => world.GetStorage<Position>());
+        Assert.Equal("Component type 'Position' has not been registered. Call RegisterComponent<Position>() first.", ex.Message);
+    }
+
+    [Fact]
+    public void RegisterComponent_CalledTwice_DoesNothing()
+    {
+        // Arrange
+        var world = new World(100);
+
+        // Act
+        world.RegisterComponent<Position>();
+        var storage1 = world.GetStorage<Position>();
+        world.RegisterComponent<Position>(); // Call it again
+        var storage2 = world.GetStorage<Position>();
+
+        // Assert
+        Assert.NotNull(storage1);
+        Assert.Same(storage1, storage2); // Should be the exact same instance
     }
 }
