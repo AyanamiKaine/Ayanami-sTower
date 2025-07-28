@@ -28,7 +28,7 @@ namespace AyanamisTower.StellaEcs.Tests
             // Arrange
             var storage = new ComponentStorage<PositionComponent>(Capacity, UniverseSize);
             var component = new PositionComponent { X = 10, Y = 20 };
-            int entityId = 5;
+            const int entityId = 5;
 
             // Act
             storage.Add(entityId, component);
@@ -58,7 +58,7 @@ namespace AyanamisTower.StellaEcs.Tests
         {
             // Arrange
             var storage = new ComponentStorage<PositionComponent>(Capacity, UniverseSize);
-            int entityId = 5;
+            const int entityId = 5;
             storage.Add(entityId, new PositionComponent { X = 10, Y = 20 });
 
             // Act
@@ -74,10 +74,10 @@ namespace AyanamisTower.StellaEcs.Tests
         {
             // Arrange
             var storage = new ComponentStorage<PositionComponent>(Capacity, UniverseSize);
-            int entityIdToRemove = 5;
+            const int entityIdToRemove = 5;
             var componentToRemove = new PositionComponent { X = 10, Y = 20 };
 
-            int lastEntityId = 15;
+            const int lastEntityId = 15;
             var lastComponent = new PositionComponent { X = 100, Y = 200 };
 
             storage.Add(1, new PositionComponent());
@@ -104,7 +104,7 @@ namespace AyanamisTower.StellaEcs.Tests
         {
             // Arrange
             var storage = new ComponentStorage<PositionComponent>(Capacity, UniverseSize);
-            int entityId = 8;
+            const int entityId = 8;
             storage.Add(entityId, new PositionComponent { X = 1.2f, Y = 3.4f });
 
             // Act & Assert (Get - readonly)
@@ -124,7 +124,7 @@ namespace AyanamisTower.StellaEcs.Tests
         {
             // Arrange
             var storage = new ComponentStorage<PositionComponent>(Capacity, UniverseSize);
-            int entityId = 3;
+            const int entityId = 3;
             var component = new PositionComponent { X = 1, Y = 1 };
 
             // Act
@@ -141,7 +141,7 @@ namespace AyanamisTower.StellaEcs.Tests
         {
             // Arrange
             var storage = new ComponentStorage<PositionComponent>(Capacity, UniverseSize);
-            int entityId = 3;
+            const int entityId = 3;
             storage.Add(entityId, new PositionComponent { X = 1, Y = 1 });
 
             // Act
@@ -159,7 +159,7 @@ namespace AyanamisTower.StellaEcs.Tests
         {
             // Arrange
             var storage = new ComponentStorage<PositionComponent>(Capacity, UniverseSize);
-            int entityId = 7;
+            const int entityId = 7;
             storage.Add(entityId, new PositionComponent { X = 77, Y = 88 });
 
             // Act
@@ -176,14 +176,14 @@ namespace AyanamisTower.StellaEcs.Tests
         {
             // Arrange
             var storage = new ComponentStorage<PositionComponent>(Capacity, UniverseSize);
-            int entityId = 7;
+            const int entityId = 7;
 
             // Act
             bool result = storage.TryGetValue(entityId, out var component);
 
             // Assert
             Assert.False(result);
-            Assert.Equal(default(PositionComponent), component);
+            Assert.Equal(default, component);
         }
 
         [Fact]
