@@ -177,7 +177,7 @@ namespace AyanamisTower.StellaEcs
                     var relData = _helper.Deserialize(relEntry.Data, relType);
 
                     // This should now invoke the correct, non-null method.
-                    addMethod.Invoke(world, new[] { source, target, relData });
+                    addMethod.Invoke(world, [source, target, relData]);
                 }
             }
 
