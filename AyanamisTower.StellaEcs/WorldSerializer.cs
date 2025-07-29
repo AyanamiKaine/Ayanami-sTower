@@ -36,7 +36,7 @@ namespace AyanamisTower.StellaEcs
             snapshot.MaxEntities = (int)maxEntitiesField!.GetValue(world)!;
             snapshot.NextEntityId = (int)nextEntityIdField!.GetValue(world)!;
             snapshot.EntityGenerations = (int[])entityGenerationsField!.GetValue(world)!;
-            snapshot.RecycledEntityIds = new Queue<int>(((Queue<int>)recycledEntityIdsField!.GetValue(world)!));
+            snapshot.RecycledEntityIds = new Queue<int>((Queue<int>)recycledEntityIdsField!.GetValue(world)!);
 
             var componentStorages = (Dictionary<Type, IComponentStorage>)componentStoragesField!.GetValue(world)!;
             var relationshipStorages = (Dictionary<Type, IRelationshipStorage>)relationshipStoragesField!.GetValue(world)!;
@@ -77,9 +77,7 @@ namespace AyanamisTower.StellaEcs
                 snapshot.RelationshipTypes.Add(type.AssemblyQualifiedName!);
 
                 var forwardMapField = storage.GetType().GetField("_forwardMap", BindingFlags.NonPublic | BindingFlags.Instance);
-                var forwardMap = (dynamic)forwardMapField!.GetValue(storage)!;
-
-                foreach (var sourceEntry in forwardMap)
+                foreach (var sourceEntry in (dynamic)forwardMapField!.GetValue(storage)!)
                 {
                     int sourceId = sourceEntry.Key;
                     foreach (var targetEntry in sourceEntry.Value)
