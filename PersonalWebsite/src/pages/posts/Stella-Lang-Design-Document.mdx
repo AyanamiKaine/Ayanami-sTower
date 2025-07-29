@@ -38,15 +38,15 @@ The syntax should make it really easy to query entities. Maybe we take a bite ou
 entities with (velocity2D or velocity3D) and (position2D or position3D) without (health or mana)
 ```
 
-Here we would get entities that have `velocity2D` or `velocity3D` and `position2D` or `position3D` components but neither `health` nor a `mana` component.
+Here we would get entities that have `velocity2D` or `velocity3D` and `position2D` or `position3D` components but neither `health` nor a `mana` component. This would introduce the keywords `with`, `or`, `and`, `without`.
 
 This would represent the most basic query expression. But we should allow for more complex ones like:
 
 ```
-entities with velocity2D.x > 0
+entities with velocity2D where X > 0
 ```
 
-The desire is to be able to have conditions that filter entities. Here we want entities that have a velocity2D component with a higher x velocity than 0.
+The desire is to be able to have conditions that filter entities. Here we want entities that have a velocity2D component with a higher x velocity than 0. We would introduce a `where` keyword.
 
 Then we should be able to query entities by identifier.
 
@@ -55,6 +55,8 @@ entity with name == "Tom"
 ```
 
 Often times we will have component that just represent one value like a name component or health component. We should be able to define them in a manner so we don't have to write `name.value` but instead simply as `name`.
+
+Another desired feature would be being able to write systems that update the ecs world.
 
 #### Hierarchical relationships (parent-child):
 
@@ -88,6 +90,147 @@ entities where count(children with Enemy) > 5
 entities with (Owns, ?item) where item has Weapon and item.damage > 50
 pairs (Loves, Hates) for entity "Romeo"
 ```
+
+### Formal Notation (EBNF)
+
+```EBNF
+(* Stella-Lang EBNF Grammar *)
+(* Main query expressions *)
+
+program = { statement } ;
+
+statement = query_statement | system_definition | component_definition ;
+
+(* Query Statements *)
+query_statement = entity_query | entities_query ;
+
+entity_query = "entity" entity_selector ;
+entities_query = "entities" entity_selector ;
+
+entity_selector = with_clause [ where_clause ] [ relationship_clause ] ;
+
+(* Component and condition clauses *)
+with_clause = "with" component_expression ;
+without_clause = "without" component_expression ;
+where_clause = "where" condition_expression ;
+
+component_expression = component_term { ( "and" | "or" ) component_term } ;
+component_term = component_spec | "(" component_expression ")" | without_clause ;
+
+component_spec = component_name [ component_access ] ;
+component_name = identifier ;
+component_access = "." field_name | "[" index_expression "]" | "." field_name "[" index_expression "]" ;
+
+(* Relationship clauses *)
+relationship_clause = children_clause | connected_clause | reachable_clause | pairs_clause ;
+
+children_clause = "children" [ entity_selector ] ;
+connected_clause = "connected" "to" entity_reference "via" relationship_name ;
+reachable_clause = "reachable" "from" entity_reference "via" relationship_name [ "within" number "hops" ] ;
+pairs_clause = "pairs" "(" relationship_name "," relationship_name ")" "for" entity_reference ;
+
+(* Condition expressions *)
+condition_expression = logical_or_expression ;
+
+logical_or_expression = logical_and_expression { "or" logical_and_expression } ;
+logical_and_expression = equality_expression { "and" equality_expression } ;
+
+equality_expression = relational_expression [ ( "==" | "!=" ) relational_expression ] ;
+relational_expression = additive_expression [ ( "<" | ">" | "<=" | ">=" ) additive_expression ] ;
+
+additive_expression = multiplicative_expression { ( "+" | "-" ) multiplicative_expression } ;
+multiplicative_expression = unary_expression { ( "*" | "/" | "%" ) unary_expression } ;
+
+unary_expression = [ ( "!" | "-" | "+" ) ] primary_expression ;
+
+primary_expression = 
+    | literal
+    | identifier [ component_access ]
+    | entity_reference
+    | relationship_expression
+    | function_call
+    | "(" condition_expression ")";
+
+(* Relationship expressions *)
+relationship_expression = 
+    | "(" relationship_name "," entity_reference ")"
+    | "(" relationship_name "," variable ")"
+    | "(" relationship_name "," "same" ")" ;
+
+relationship_name = identifier ;
+
+field_expression = identifier [ component_access ] ;
+
+function_call = identifier "(" [ argument_list ] ")" ;
+argument_list = condition_expression { "," condition_expression } ;
+
+(* Entity references and variables *)
+entity_reference = 
+    | string_literal
+    | identifier
+    | variable ;
+
+variable = "?" identifier ;
+
+(* Index expressions for array access *)
+index_expression = 
+    | number
+    | "*"
+    | condition_expression ;
+
+(* System definitions *)
+system_definition = "system" identifier "{" { system_statement } "}" ;
+
+system_statement = 
+    | query_statement
+    | assignment_statement
+    | if_statement
+    | for_statement
+    | command_statement ;
+
+assignment_statement = identifier [ component_access ] "=" condition_expression ";" ;
+
+if_statement = "if" "(" condition_expression ")" "{" { system_statement } "}" [ "else" "{" { system_statement } "}" ] ;
+
+for_statement = "for" identifier "in" entity_selector "{" { system_statement } "}" ;
+
+command_statement = command_name "(" [ argument_list ] ")" ";" ;
+command_name = "spawn" | "despawn" | "add_component" | "remove_component" | identifier ;
+
+(* Component definitions *)
+component_definition = "component" identifier "{" { field_definition } "}" ;
+field_definition = field_name ":" type_name [ "=" literal ] ";" ;
+
+(* Basic tokens *)
+identifier = letter { letter | digit | "_" } ;
+field_name = identifier ;
+type_name = "i32" | "f64" | "string" | "bool" | identifier ;
+
+literal = number | string_literal | boolean_literal ;
+number = integer | float ;
+integer = digit { digit } ;
+float = digit { digit } "." digit { digit } ;
+string_literal = '"' { character } '"' ;
+boolean_literal = "true" | "false" ;
+
+letter = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" 
+       | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+       | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M"
+       | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" ;
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+character = letter | digit | " " | "!" | "#" | "$" | "%" | "&" | "'" | "(" | ")" | "*" 
+          | "+" | "," | "-" | "." | "/" | ":" | ";" | "<" | "=" | ">" | "?" | "@" | "[" 
+          | "]" | "^" | "_" | "`" | "{" | "|" | "}" | "~" ;
+
+(* Comments and whitespace *)
+comment = "//" { character } newline | "/*" { character } "*/" ;
+whitespace = " " | "\t" | "\n" | "\r" ;
+newline = "\n" | "\r\n" ;
+```
+
+
 ## The Sandbox 
 
 Should sandboxes run on another thread? Probably but this opens the gate for race conditions when the ECS world gets exposed. We could just implement looks for components maybe we are doing that. So no two threads at the same time can mutate ECS data.
