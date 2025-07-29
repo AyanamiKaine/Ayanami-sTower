@@ -61,7 +61,7 @@ Often times we will have component that just represent one value like a name com
 ```
 entities with Transform where parent.name == "World"
 entities with Transform.children[*].Health > 50
-get entity "Player" children with Weapon
+entity with name "Player" children with Weapon
 ```
 
 #### Graph relationships
@@ -86,7 +86,7 @@ entities with Health < 20 and (Ally, ?friend) where friend.Mana > 100
 ```
 entities where count(children with Enemy) > 5
 entities with (Owns, ?item) where item has Weapon and item.damage > 50
-get pairs (Loves, Hates) for entity "Romeo"
+pairs (Loves, Hates) for entity "Romeo"
 ```
 ## The Sandbox 
 
