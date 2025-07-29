@@ -1,0 +1,49 @@
+---
+title: "What in Gods Name is Happening to Wasm"
+date: 2025-08-1
+author: "Ayanami Kaine"
+tags: ["Drama", "WASM"]
+layout: ../../layouts/PostLayout.astro
+summary: "All I wanted is a way for different languages to write and consume libraries, why I am now reading about WASM, its new component model and how it destroys the web."
+published: true
+---
+
+import HackerNews from "../../components/HackerNews.astro";
+import BookQuote from "../../components/BookQuote.astro";
+
+I am quite interested in ways for all different kinds of languages to produce shared libraries and consume them. Writing a [Java](https://www.graalvm.org/latest/reference-manual/native-image/guides/build-native-shared-library/) library I can use in `Zig` for example. Because of the different runtimes often found in languages and different ABI's it's usually boiling down to the common denominator that is a C shared library.
+
+It would be nice if we instead could define a common interface that is not C that could be targeted by language that don't quite fit into the C-ABI. That is why I was drawn to WASM and its new component model. It [promises](https://component-model.bytecodealliance.org/design/why-component-model.html) a language neutral agnostic way to interop between languages. EXACTLY what I wished for. Being able to easily mix and match languages regardless of their runtime.
+
+I wasn't really interested in the web aspect of WASM. So I was pleasantly surprised when I saw that Wasm implement a common API for POSIX functions. Print, read, standard systems APIs work using [Wasi](https://wasi.dev/).
+
+Now after reading about this new and cool component model and Wasm runtimes that implement it, I though cool lets write some components!
+
+The thing is that creating components is not really something implemented by the languages itself like the C/C++ compiler clang. Instead of directly generating it we [need some sort of wrapper](https://component-model.bytecodealliance.org/language-support/c.html). This works fine. But it is quite cumbersome to do. It's not just like compiling a shared library and saying but instead of a native one make it a Wasm one. The [Bytecode Alliance](https://bytecodealliance.org/) lists [some languages](https://component-model.bytecodealliance.org/language-support.html) where it should be possible to generate components from.
+
+## Wait It's All Rust?
+
+After trying out some other languages and then Rust, it quite dawned on me. The interface file you need to create, so the component can be consumed is heavily suited for Rust and its type system while for other languages it feels a bit off. Notably more Java like languages or JavaScript. I put this thought on a back burner for a while.
+
+But then after searching for some articles and comments on the component model to see how other people feel about and use it. I saw this comment. 
+
+<HackerNews
+    title="Introduction to WebAssembly Components"
+    url="https://radu-matei.com/blog/intro-wasm-components/"
+    author="goranmoomin"
+    points={100}
+    comments={59}
+    hnUrl="https://news.ycombinator.com/item?id=29591071"
+    comment='AssemblyScript maintainer here. Can confirm, other language communities have practically zero influence on the design. In fact, AS was present during "specification" and has been completely annihilated for disagreeing with what the chairing majority has come up with there. Its particularly ironic that the Component Model suddenly targets Web integration again, or that this is now coined "language neutral". In relation, the syntax is more of a minor detail.'
+    commenter="dcode"
+/>
+
+*"annihilated for disagreeing", "Component Model suddenly targets Web integration again"*. Mhhh this does not sound good. Maybe [AssemblyScript](https://www.assemblyscript.org/) wrote more about this? Ohhh yea [they did](https://www.assemblyscript.org/standards-objections.html), and it does not sound good. 
+
+It starts with *"In extraordinary circumstances, when collaboration towards eventual resolution is no longer deemed possible, AssemblyScript may object to individual efforts in context of WebAssembly standardization."* It's an interesting read you should definitely go over. 
+
+The basics are that Wasm components break interoperability with the web and in general with every language that is not like Rust. One major problem is how strings are represented in Wasm components they are represented as UTF-8. Now languages that don't have that as standard for their string representation have to do conversion that is usually quite expensive. And that major improvements for interacting with the DOM in Wasm are laid on ice because other areas that have nothing to do with the Web are being worked on like creating cross language components, ohhhh. Maybe they are onto something.
+
+Personally I thought that the entire Wasm component proposal has nothing to do with the web. It definitely feels like the desire to move Wasm in a direction it was never imagined in. Rust seems to have great control over what happens to Wasm and strongly influences it. I wish for a way for different languages to better work together and share functionality. This in itself has nothing to do with web or Wasm on the first look, but the component model actually promises exactly that, but it seems that Wasm components are more interested in being Rust modules for other languages that support that. 
+
+How should I feel about the entire split personality of Wasm?
