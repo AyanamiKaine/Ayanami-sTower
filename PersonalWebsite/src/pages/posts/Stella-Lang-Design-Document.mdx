@@ -29,6 +29,7 @@ Most language don't have a safe way to just execute code. Instead, they provide 
 - We should be able to define components at runtime.
 - We should be able to easily model relationships. Similar to how [Flecs](https://www.flecs.dev/flecs/md_docs_2Relationships.html) does it.
 - ECS commands that mutate the world should probably be written in a Command Buffer so we can apply changes to the ECS world in sequential order.
+- It must be simple to implement. We cant just sacrifice too much simplicity because of performance. The framework needs to be able to be easily ported to other languages.
 ## The Syntax
 
 The syntax should make it really easy to query entities. Maybe we take a bite out of SQL?
