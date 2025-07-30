@@ -32,6 +32,31 @@ class Mass {
 // A "tag" component with no data.
 class Renderable {}
 
+// A component for the INEFFICIENT relationship benchmark
+class Parent {
+    constructor(targetId) {
+        this.target = targetId;
+    }
+}
+
+// A component for the EFFICIENT relationship benchmark
+class Children {
+    constructor() {
+        this.list = [];
+    }
+}
+
+// A "large" component for benchmarking memory access
+class ParticleEmitter {
+    constructor() {
+        this.particles = new Array(50).fill(0).map(() => ({
+            x: Math.random(),
+            y: Math.random(),
+            lifetime: Math.random() * 2,
+        }));
+    }
+}
+
 // --- Benchmark Suite ---
 
 const ENTITY_COUNT = 100_000;
@@ -68,17 +93,107 @@ const main = async () => {
                 entities[i].set(new Position(i, i));
             }
 
-            // Get the component storage once before the loop
-            const velocityStorage = world.componentStorages.get("Velocity");
+            let velocityStorage; // Will be cached on the first iteration
 
             // This loop forces entities to change structure repeatedly
             for (const entity of entities) {
                 entity.set(new Velocity(1, 1));
-                // To remove a component, we access its storage directly.
-                // An entity.remove(Component) method would be a nice API addition.
+
+                // On the first iteration, the `set` call above creates the
+                // storage. Now we can get and cache it.
+                if (!velocityStorage) {
+                    velocityStorage = world.componentStorages.get("Velocity");
+                }
+
                 velocityStorage.remove(entity);
             }
         });
+    });
+
+    group("Entity Deletion & Relationships", () => {
+        bench("Entity Deletion: 10k entities", () => {
+            const world = new World();
+            const entities = [];
+            for (let i = 0; i < 10000; i++) {
+                const e = world.createEntity();
+                e.set(new Position(i, i));
+                if (i % 2 === 0) e.set(new Velocity(1, 1));
+                if (i % 5 === 0) e.set(new Renderable());
+                entities.push(e);
+            }
+
+            const positionStorage = world.componentStorages.get("Position");
+            const velocityStorage = world.componentStorages.get("Velocity");
+            const renderableStorage = world.componentStorages.get("Renderable");
+
+            // This simulates a `world.destroyEntity(entity)` call by removing all its components
+            for (const entity of entities) {
+                positionStorage.remove(entity);
+                if (velocityStorage?.has(entity)) {
+                    velocityStorage.remove(entity);
+                }
+                if (renderableStorage?.has(entity)) {
+                    renderableStorage.remove(entity);
+                }
+            }
+        });
+
+        bench(
+            "Naive Relationship Query: Find all children of 100 parents",
+            () => {
+                const world = new World();
+                const parents = [];
+                for (let i = 0; i < 100; i++) {
+                    parents.push(world.createEntity());
+                }
+
+                for (let i = 0; i < 10000; i++) {
+                    const child = world.createEntity();
+                    child.set(new Position(i, i));
+                    child.set(new Parent(parents[i % 100].id));
+                }
+
+                // Benchmark: query for children of each parent by scanning all relationships
+                for (const parent of parents) {
+                    const childrenQuery = world
+                        .query()
+                        .with(Parent)
+                        .where((res) => res.parent.target === parent.id);
+                    for (const _ of childrenQuery) {
+                        // Just iterate
+                    }
+                }
+            }
+        );
+
+        bench(
+            "Optimized Relationship Query: Find all children of 100 parents",
+            () => {
+                const world = new World();
+                const parents = [];
+                for (let i = 0; i < 100; i++) {
+                    const p = world.createEntity();
+                    p.set(new Children()); // Parents now have a Children component
+                    parents.push(p);
+                }
+
+                for (let i = 0; i < 10000; i++) {
+                    const child = world.createEntity();
+                    child.set(new Position(i, i));
+                    // Add the child's ID to the parent's list
+                    const parent = parents[i % 100];
+                    parent.get(Children).list.push(child.id);
+                }
+
+                // Benchmark: query for children by direct lookup
+                for (const parent of parents) {
+                    const childrenList = parent.get(Children).list;
+                    for (const childId of childrenList) {
+                        // In a real system you'd get the entity: const entity = world.entities[childId];
+                    }
+                }
+            }
+        );
     });
 
     // --- Setup for Query & System Performance Benchmarks ---
@@ -90,8 +205,9 @@ const main = async () => {
 
         if (i % 2 === 0) e.set(new Velocity(1, 1));
         if (i % 3 === 0) e.set(new Renderable());
-        if (i % 5 === 0) e.set(new Mass(1));
+        if (i % 5 === 0) e.set(new Mass(1)); // Relatively sparse
         if (i % 7 === 0) e.set(new Rotation(0));
+        if (i % 20 === 0) e.set(new ParticleEmitter()); // Large component
     }
 
     group("Query & System Performance", () => {
@@ -99,9 +215,7 @@ const main = async () => {
             `Simple Query: Iterate ${ENTITY_COUNT} entities with 2 components`,
             () => {
                 const query = queryWorld.query().with(Position).with(Velocity);
-                // In a real scenario, you'd do work here. The loop is the benchmark.
-                for (const result of query) {
-                    // This space is intentionally left blank to measure raw iteration speed.
+                for (const _ of query) {
                 }
             }
         );
@@ -115,8 +229,28 @@ const main = async () => {
                     .with(Renderable)
                     .without(Velocity);
 
-                for (const result of query) {
-                    // This space is intentionally left blank to measure raw iteration speed.
+                for (const _ of query) {
+                }
+            }
+        );
+
+        bench(
+            "Sparse Iteration: Querying a component few entities have",
+            () => {
+                // The query system should be smart enough to iterate over the smaller set (Mass)
+                const query = queryWorld.query().with(Position).with(Mass);
+                for (const _ of query) {
+                }
+            }
+        );
+
+        bench(
+            "Big Component Iteration: Querying entities with large components",
+            () => {
+                const query = queryWorld.query().with(ParticleEmitter);
+                for (const { particleemitter } of query) {
+                    // Simulate some work on the big component
+                    particleemitter.particles[0].lifetime -= DUMMY_DELTA_TIME;
                 }
             }
         );
@@ -124,8 +258,6 @@ const main = async () => {
         bench(
             `System Update (Movement): Process ${ENTITY_COUNT} entities`,
             () => {
-                // This benchmarks a more complete, real-world use case.
-                // A "system" is just a query and a loop.
                 const movementQuery = queryWorld
                     .query()
                     .with(Position)
@@ -172,7 +304,7 @@ const main = async () => {
                     .with(Position)
                     .with(Renderable)
                     .without(Velocity);
-                for (const result of aiQuery) {
+                for (const _ of aiQuery) {
                     // Simulate AI logic, just iterate for now.
                 }
             }
