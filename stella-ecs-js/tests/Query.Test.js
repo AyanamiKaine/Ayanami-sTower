@@ -198,12 +198,10 @@ describe("Query System", () => {
         const ecsWorld = new World();
 
         const e0 = ecsWorld.createEntity();
-        e0.set(new Position(10, 10));
-        e0.set(new Velocity(1, 2));
+        e0.set(new Position(10, 10)).set(new Velocity(1, 2));
 
         const e1 = ecsWorld.createEntity();
-        e1.set(new Position(10, 10));
-        e1.set(new Velocity(10, 10));
+        e1.set(new Position(10, 10)).set(new Velocity(10, 10));
 
         // This is our "movement system". It finds all entities with both
         // a Position and a Velocity component.
@@ -216,13 +214,13 @@ describe("Query System", () => {
             position.x += velocity.dx;
             position.y += velocity.dy;
         }
-        
+
         const pos0 = e0.get(Position);
-        expect(pos0.x).toBe(11); 
+        expect(pos0.x).toBe(11);
         expect(pos0.y).toBe(12);
 
         const pos1 = e1.get(Position);
-        expect(pos1.x).toBe(20); 
-        expect(pos1.y).toBe(20); 
+        expect(pos1.x).toBe(20);
+        expect(pos1.y).toBe(20);
     });
 });

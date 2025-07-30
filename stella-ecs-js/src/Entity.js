@@ -6,6 +6,7 @@ export class Entity {
 
     set(component) {
         this.world.set(this, component);
+        return this;
     }
 
     get(componentClass) {
