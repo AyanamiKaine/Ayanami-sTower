@@ -1,5 +1,5 @@
-import { run, bench, summary, group } from "mitata";
-import { World, System, Not, QueryResult } from "../stella-ecs.js"; // Adjust the import path to your library file
+import { run, bench, group } from "mitata";
+import { World } from "../stella-ecs";
 
 // --- Components for Benchmarking ---
 // Simple components with basic data types.
@@ -32,173 +32,149 @@ class Mass {
 // A "tag" component with no data.
 class Renderable {}
 
-// --- Systems for Benchmarking ---
-// A typical system that iterates over a query and performs work.
-class MovementSystem extends System {
-    constructor() {
-        super([Position, Velocity]);
-    }
-
-    execute(entities, world, deltaTime) {
-        for (const { components } of entities) {
-            const pos = components.get(Position);
-            const vel = components.get(Velocity);
-            pos.x += vel.dx * deltaTime;
-            pos.y += vel.dy * deltaTime;
-        }
-    }
-}
-
-class RotationSystem extends System {
-    constructor() {
-        super([Rotation, Velocity]);
-    }
-    execute(entities, world, deltaTime) {
-        for (const { components } of entities) {
-            const rot = components.get(Rotation);
-            const vel = components.get(Velocity);
-            // Simulate some work
-            rot.angle +=
-                (Math.abs(vel.dx) + Math.abs(vel.dy)) * deltaTime * 0.1;
-        }
-    }
-}
-
-class AISystem extends System {
-    constructor() {
-        super([Position, Renderable, new Not(Velocity)]);
-    }
-    execute(entities, world, deltaTime) {
-        // Simulate AI logic for non-moving, renderable entities
-        for (const { entity } of entities) {
-            // Do nothing, just iterate
-        }
-    }
-}
-
 // --- Benchmark Suite ---
 
 const ENTITY_COUNT = 100_000;
+const DUMMY_DELTA_TIME = 1.0 / 60.0;
 
-// Group related benchmarks for clarity
 const main = async () => {
     group("Entity & Component Manipulation", () => {
         bench("Entity Creation: 10k entities with 2 components", () => {
             const world = new World();
             for (let i = 0; i < 10000; i++) {
-                world
-                    .createEntity()
-                    .set(new Position(i, i))
-                    .set(new Velocity(1, 1));
+                const e = world.createEntity();
+                e.set(new Position(i, i));
+                e.set(new Velocity(1, 1));
             }
         });
 
         bench("Entity Creation: 10k entities with 5 components", () => {
             const world = new World();
             for (let i = 0; i < 10000; i++) {
-                world
-                    .createEntity()
-                    .set(new Position(i, i))
-                    .set(new Velocity(1, 1))
-                    .set(new Rotation(0))
-                    .set(new Mass(1))
-                    .set(new Renderable());
+                const e = world.createEntity();
+                e.set(new Position(i, i));
+                e.set(new Velocity(1, 1));
+                e.set(new Rotation(0));
+                e.set(new Mass(1));
+                e.set(new Renderable());
             }
         });
 
-        bench("Component Addition/Removal (Archetype Switching)", () => {
+        bench("Component Addition/Removal", () => {
             const world = new World();
             const entities = [];
             for (let i = 0; i < 10000; i++) {
-                entities.push(world.createEntity().set(new Position(i, i)));
+                entities.push(world.createEntity());
+                entities[i].set(new Position(i, i));
             }
-            // This loop forces entities to switch archetypes repeatedly
+
+            // Get the component storage once before the loop
+            const velocityStorage = world.componentStorages.get("Velocity");
+
+            // This loop forces entities to change structure repeatedly
             for (const entity of entities) {
                 entity.set(new Velocity(1, 1));
-                entity.remove(Velocity);
+                // To remove a component, we access its storage directly.
+                // An entity.remove(Component) method would be a nice API addition.
+                velocityStorage.remove(entity);
             }
         });
     });
 
     // --- Setup for Query & System Performance Benchmarks ---
     const queryWorld = new World();
-    const movementSystem = new MovementSystem();
-    queryWorld.registerSystem(movementSystem);
-
     // Create a diverse set of entities to make queries more realistic
     for (let i = 0; i < ENTITY_COUNT; i++) {
-        const e = queryWorld.createEntity().set(new Position(i, i));
-        if (i % 2 === 0) {
-            e.set(new Velocity(1, 1));
-        }
-        if (i % 3 === 0) {
-            e.set(new Renderable());
-        }
-        if (i % 5 === 0) {
-            e.set(new Mass(1));
-        }
-        if (i % 7 === 0) {
-            e.set(new Rotation(0));
-        }
+        const e = queryWorld.createEntity();
+        e.set(new Position(i, i));
+
+        if (i % 2 === 0) e.set(new Velocity(1, 1));
+        if (i % 3 === 0) e.set(new Renderable());
+        if (i % 5 === 0) e.set(new Mass(1));
+        if (i % 7 === 0) e.set(new Rotation(0));
     }
 
     group("Query & System Performance", () => {
         bench(
             `Simple Query: Iterate ${ENTITY_COUNT} entities with 2 components`,
             () => {
-                const archetypes = queryWorld.query([Position, Velocity]);
-                // Wrap the raw archetypes in a QueryResult to make it iterable
-                const queryResult = new QueryResult(archetypes);
+                const query = queryWorld.query().with(Position).with(Velocity);
                 // In a real scenario, you'd do work here. The loop is the benchmark.
-                for (const { entity, components } of queryResult) {
+                for (const result of query) {
                     // This space is intentionally left blank to measure raw iteration speed.
                 }
             }
         );
 
         bench(
-            `Complex Query: Iterate ${ENTITY_COUNT} entities with Not`,
+            `Complex Query: Iterate ${ENTITY_COUNT} entities with 'without'`,
             () => {
-                const archetypes = queryWorld.query([
-                    Position,
-                    Velocity,
-                    new Not(Renderable),
-                ]);
-                // Wrap the raw archetypes in a QueryResult to make it iterable
-                const queryResult = new QueryResult(archetypes);
-                for (const { entity, components } of queryResult) {
+                const query = queryWorld
+                    .query()
+                    .with(Position)
+                    .with(Renderable)
+                    .without(Velocity);
+
+                for (const result of query) {
                     // This space is intentionally left blank to measure raw iteration speed.
                 }
             }
         );
 
-        bench(`System Update: Process ${ENTITY_COUNT} entities`, () => {
-            // The system's update method contains the query and the iteration logic.
-            // This benchmarks a more complete, real-world use case.
-            queryWorld.update(1.0); // deltaTime = 1.0
-        });
+        bench(
+            `System Update (Movement): Process ${ENTITY_COUNT} entities`,
+            () => {
+                // This benchmarks a more complete, real-world use case.
+                // A "system" is just a query and a loop.
+                const movementQuery = queryWorld
+                    .query()
+                    .with(Position)
+                    .with(Velocity);
+                for (const { position, velocity } of movementQuery) {
+                    position.x += velocity.dx * DUMMY_DELTA_TIME;
+                    position.y += velocity.dy * DUMMY_DELTA_TIME;
+                }
+            }
+        );
     });
 
     group("Multi-System Performance", () => {
-        const multiSystemWorld = new World();
-        multiSystemWorld.registerSystem(new MovementSystem());
-        multiSystemWorld.registerSystem(new RotationSystem());
-        multiSystemWorld.registerSystem(new AISystem());
-
-        const NUM_MULTI_SYS_ENTITIES = 25_000;
-        for (let i = 0; i < NUM_MULTI_SYS_ENTITIES; i++) {
-            const e = multiSystemWorld.createEntity();
-            // Create entities that match different combinations of system queries
-            if (i % 2 === 0) e.set(new Position(i, i));
-            if (i % 3 === 0) e.set(new Velocity(1, 1));
-            if (i % 4 === 0) e.set(new Rotation(0));
-            if (i % 5 === 0) e.set(new Renderable());
-        }
-
         bench(
-            `Multi-System Update: ${NUM_MULTI_SYS_ENTITIES} entities with 3 systems`,
+            `Multi-System Update: ${ENTITY_COUNT} entities with 3 systems`,
             () => {
-                multiSystemWorld.update(1.0);
+                // In a game loop, you would run all your systems sequentially.
+
+                // 1. Movement System
+                const movementQuery = queryWorld
+                    .query()
+                    .with(Position)
+                    .with(Velocity);
+                for (const { position, velocity } of movementQuery) {
+                    position.x += velocity.dx * DUMMY_DELTA_TIME;
+                    position.y += velocity.dy * DUMMY_DELTA_TIME;
+                }
+
+                // 2. Rotation System
+                const rotationQuery = queryWorld
+                    .query()
+                    .with(Rotation)
+                    .with(Velocity);
+                for (const { rotation, velocity } of rotationQuery) {
+                    rotation.angle +=
+                        (Math.abs(velocity.dx) + Math.abs(velocity.dy)) *
+                        DUMMY_DELTA_TIME *
+                        0.1;
+                }
+
+                // 3. AI System
+                const aiQuery = queryWorld
+                    .query()
+                    .with(Position)
+                    .with(Renderable)
+                    .without(Velocity);
+                for (const result of aiQuery) {
+                    // Simulate AI logic, just iterate for now.
+                }
             }
         );
     });
@@ -207,4 +183,4 @@ const main = async () => {
     await run();
 };
 
-main();
+main().catch(console.error);
