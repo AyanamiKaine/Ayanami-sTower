@@ -4,7 +4,6 @@ import { Entity } from "./Entity";
 export class World {
     constructor() {
         this.entities = [];
-        // Here is a map of component storages, each component gets his own storage.
         this.componentStorages = new Map();
     }
 
@@ -26,8 +25,8 @@ export class World {
         this.componentStorages.get(componentType).set(entity, component);
     }
 
-    get(entity, component) {
-        const componentType = component.constructor.name; 
+    get(entity, componentClass) {
+        const componentType = componentClass.name;
         const storage = this.componentStorages.get(componentType);
 
         if (!storage) {

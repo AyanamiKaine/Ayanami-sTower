@@ -8,7 +8,7 @@ export class Entity {
         this.world.set(this, component);
     }
 
-    get(component) {
-        return this.world.get(this, component);
+    get(componentClass) {
+        return this.world.get(this, componentClass);
     }
 }

@@ -15,7 +15,7 @@ describe("Entity Tests", () => {
         let e1 = world.createEntity();
 
         e1.set(new Position2D(10, 20));
-        const position = e1.get(new Position2D()); 
+        const position = e1.get(Position2D); 
         expect(position.X).toBe(10); 
     });
 });

@@ -23,7 +23,7 @@ describe("World", () => {
         let e1 = world.createEntity();
 
         world.set(e1, new Position2D(10, 20));
-        expect(world.get(e1, new Position2D()).X).toBe(10);
-        expect(world.get(e1, new Position2D()).Y).toBe(20);
+        expect(world.get(e1, Position2D).X).toBe(10);
+        expect(world.get(e1, Position2D).Y).toBe(20);
     });
 });
