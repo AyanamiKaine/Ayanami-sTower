@@ -34,7 +34,6 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "graphology": "^0.26.0",
     "mitata": "^1.0.34"
   }
 }
