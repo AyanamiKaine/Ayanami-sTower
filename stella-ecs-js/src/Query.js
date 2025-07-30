@@ -1,7 +1,10 @@
-class Query {
-    constructor(parameters) {}
+export class Query {
+    constructor(world) {
+        this.world = world;
+    }
 
-    with(component) {}
-    without(component) {}
-    optional(component) {}
+    with(componentClass) {}
+    without(componentClass) {}
+    optional(componentClass) {}
+    build() {}
 }

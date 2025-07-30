@@ -1,5 +1,6 @@
 import { ComponentStorage } from "./ComponentStorage";
 import { Entity } from "./Entity";
+import { Query } from "./Query";
 
 export class World {
     constructor() {
@@ -36,5 +37,7 @@ export class World {
         return storage.get(entity);
     }
 
-    query() {}
+    query() {
+        return new Query(this);
+    }
 }
