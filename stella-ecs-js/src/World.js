@@ -7,7 +7,6 @@ export class World {
         this.entities = [];
         this.componentStorages = [];
         this.nextComponentId = 0;
-        // Maps a component class constructor to its unique ID within this world.
         this.componentTypeMap = new Map();
     }
 

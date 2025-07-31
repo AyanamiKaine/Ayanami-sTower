@@ -9,7 +9,6 @@ export class Query {
         this._optional = [];
         this._predicates = [];
 
-        // Cache for component mappings to avoid repeated string operations
         this._componentMappings = null;
         this._combinedPredicate = null;
         this._predicatesDirty = true;
@@ -69,7 +68,6 @@ export class Query {
     }
 
     *_simpleWithQuery() {
-        // ... (This method uses _getEntityIntersection, which is already modified)
         const mappings = this._getComponentMappings();
         const candidates = this._getEntityIntersection();
 
@@ -86,7 +84,6 @@ export class Query {
 
     *_singleComponentQuery() {
         const componentClass = this._with[0];
-        // MODIFIED: Use world.getComponentId instead of a static .id
         const componentId = this.world.getComponentId(componentClass);
         const storage = this.world.componentStorages[componentId];
         const componentName = componentClass.name.toLowerCase();
@@ -95,7 +92,6 @@ export class Query {
 
         for (const entityId of storage.entityIds()) {
             const entity = this.world.entities[entityId];
-            // NOTE: We can get the component directly from the storage we already have.
             const component = storage.get(entity);
 
             const result = { entity };
@@ -131,7 +127,6 @@ export class Query {
             const storage = storageData[i].storage;
             const newCandidates = new Set();
             for (const entityId of candidates) {
-                // NOTE: Using storage.hasEntityId() would be slightly more direct here
                 const entity = this.world.entities[entityId];
                 if (storage.has(entity)) {
                     newCandidates.add(entityId);
@@ -146,7 +141,6 @@ export class Query {
     _getExcludedEntities() {
         const excluded = new Set();
         for (const componentClass of this._without) {
-            // MODIFIED: Check the map first to avoid creating an ID for an unused component.
             const componentId = this.world.componentTypeMap.get(componentClass);
             if (componentId !== undefined) {
                 const storage = this.world.componentStorages[componentId];
@@ -161,7 +155,6 @@ export class Query {
     }
 
     *_generalQuery() {
-        // ... (This method's logic is unchanged as it relies on the modified helpers)
         const mappings = this._getComponentMappings();
         const predicate = this._getCombinedPredicate();
         const candidates = this._getEntityIntersection();
@@ -183,7 +176,6 @@ export class Query {
     }
 
     *[Symbol.iterator]() {
-        // ... (This dispatcher logic is unchanged)
         if (this._with.length === 0) {
             console.warn("Query must have at least one 'with' component to be efficient. Consider adding one.");
             return;
@@ -200,7 +192,6 @@ export class Query {
     }
 
     estimateResultCount() {
-        // ... (This method's logic is unchanged as it relies on the modified helpers)
         if (this._with.length === 0) return 0;
         const candidates = this._getEntityIntersection();
         const excluded = this._without.length > 0 ? this._getExcludedEntities() : null;
@@ -215,7 +206,6 @@ export class Query {
 
     analyzePerformance() {
         const storages = this._with.map(c => {
-            // MODIFIED: Check map first to avoid side effects in an analysis tool.
             const id = this.world.componentTypeMap.get(c);
             return {
                 component: c.name,
@@ -236,7 +226,6 @@ export class Query {
     }
 
     _getQueryPath() {
-        // ... (This method is unchanged)
         if (this._with.length === 0) return "invalid";
         if (this._without.length === 0 && this._optional.length === 0 && this._predicates.length === 0) {
             return "simple";
