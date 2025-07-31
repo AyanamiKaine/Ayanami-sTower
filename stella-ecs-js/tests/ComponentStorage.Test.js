@@ -1,5 +1,4 @@
 import { test, expect, describe } from "bun:test";
-import { SparsedSet } from "../src/SparsedSet";
 import { ComponentStorage } from "../src/ComponentStorage";
 import { Entity } from "../src/Entity";
 

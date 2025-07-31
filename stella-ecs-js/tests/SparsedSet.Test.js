@@ -1,7 +1,6 @@
 import { test, expect, describe } from "bun:test";
 import { SparsedSet } from "../src/SparsedSet";
 
-SparsedSet;
 describe("Sparsed Set", () => {
     test("Adding new values", () => {
         let set = new SparsedSet();

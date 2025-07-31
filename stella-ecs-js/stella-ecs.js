@@ -1,5 +1,5 @@
-export { ComponentStorage } from "./src/ComponentStorage";
-export { Entity } from "./src/Entity";
-export { Query } from "./src/Query";
-export { SparsedSet } from "./src/SparsedSet";
-export { World } from "./src/World";
+export { ComponentStorage } from "./src/ComponentStorage.js";
+export { Entity } from "./src/Entity.js";
+export { Query } from "./src/Query.js";
+export { SparsedSet } from "./src/SparsedSet.js";
+export { World } from "./src/World.js";
