@@ -29,7 +29,16 @@ Most language don't have a safe way to just execute code. Instead, they provide 
 - We should be able to define components at runtime.
 - We should be able to easily model relationships. Similar to how [Flecs](https://www.flecs.dev/flecs/md_docs_2Relationships.html) does it.
 - ECS commands that mutate the world should probably be written in a Command Buffer so we can apply changes to the ECS world in sequential order.
-- It must be simple to implement. We cant just sacrifice too much simplicity because of performance. The framework needs to be able to be easily ported to other languages.
+- It must be simple to implement. We can't just sacrifice too much simplicity because of performance. The framework needs to be able to be easily ported to other languages.
+
+
+## Update 30.07.25
+
+I think I come closer to a solution. What if we instead of creating my own interpreter for an ECS language instead we built a really easy java-like language syntax built our ECS library on that and write a compiler that compiles the library to other languages. I first thought about using [Haxe](https://haxe.org/), but It's not well suited for creating libraries to be transpiled but instead for programs to be transpiled.
+
+Instead of a new syntax we would expose a common API.
+
+
 ## The Syntax
 
 The syntax should make it really easy to query entities. Maybe we take a bite out of SQL?
@@ -235,4 +244,4 @@ newline = "\n" | "\r\n" ;
 
 Should sandboxes run on another thread? Probably but this opens the gate for race conditions when the ECS world gets exposed. We could just implement looks for components maybe we are doing that. So no two threads at the same time can mutate ECS data.
 
-How would the runtime look like? We could use Wasm either [wasmtime](https://wasmtime.dev/) or [wasmer](https://wasmer.io/products/runtime). I personally feel that wasmtime could be a good choice. Because its nonprofit while wasmer is for-profit. It does not mean you have to pay for wasmer to use it. Both have different sets of features we have to keep in mind. For example, it seems that wasmer is [able to run clang](https://wasmer.io/posts/clang-in-browser) completely in his runtime.
+How would the runtime look like? We could use Wasm either [wasmtime](https://wasmtime.dev/) or [wasmer](https://wasmer.io/products/runtime). I personally feel that wasmtime could be a good choice. Because its nonprofit while wasmer is for-profit. It does not mean you have to pay for wasmer to use it. Both have different sets of features we have to keep in mind. For example, it seems that wasmer is [able to run clang](https://wasmer.io/posts/clang-in-browser) completely in his runtime. (On a side note: While actually trying to run clang with wasmer and trying out the donut example and simply didn't work...)

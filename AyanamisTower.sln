@@ -220,6 +220,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.Ben
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.Example", "Example\AyanamisTower.StellaEcs.Example\AyanamisTower.StellaEcs.Example.csproj", "{C6E8851E-CDC4-4B60-8840-94BAC2F35550}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StructsVsClasses", "Explorations\StructsVsClasses\StructsVsClasses.csproj", "{F2904602-710E-4A67-965A-100981A1E6DA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1154,6 +1156,18 @@ Global
 		{C6E8851E-CDC4-4B60-8840-94BAC2F35550}.Release|x64.Build.0 = Release|Any CPU
 		{C6E8851E-CDC4-4B60-8840-94BAC2F35550}.Release|x86.ActiveCfg = Release|Any CPU
 		{C6E8851E-CDC4-4B60-8840-94BAC2F35550}.Release|x86.Build.0 = Release|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Debug|x64.Build.0 = Debug|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Debug|x86.Build.0 = Debug|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Release|x64.ActiveCfg = Release|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Release|x64.Build.0 = Release|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Release|x86.ActiveCfg = Release|Any CPU
+		{F2904602-710E-4A67-965A-100981A1E6DA}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1243,5 +1257,6 @@ Global
 		{D6094793-C32B-4669-A0A8-2C2BBCB3A4BB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{16411876-1885-4844-8F22-D8880F92F97F} = {66320409-64EC-F7C5-3DEF-65E7510DAAD1}
 		{C6E8851E-CDC4-4B60-8840-94BAC2F35550} = {1D587995-D2B1-D47C-23B4-E8E972FA15E9}
+		{F2904602-710E-4A67-965A-100981A1E6DA} = {414F7F9A-9529-155F-05A8-050F3A5AAD36}
 	EndGlobalSection
 EndGlobal
