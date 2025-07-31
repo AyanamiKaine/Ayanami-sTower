@@ -1,21 +1,18 @@
 import { ComponentStorage } from "./ComponentStorage.js";
 import { Entity } from "./Entity.js";
 import { Query } from "./Query.js";
-
 export class World {
     constructor() {
         this.entities = [];
         this.componentStorages = [];
         this.nextComponentId = 0;
         this.componentTypeMap = new Map();
+
+        // NEW: Track component changes for query cache invalidation
+        this._componentChangeVersion = 0;
+        this._activeQueries = new Set();
     }
 
-    /**
-     * Gets the unique ID for a component class for this specific world instance.
-     * If the component type is new to the world, it will be registered and assigned an ID.
-     * @param {Function} componentClass The component class constructor.
-     * @returns {number} The unique ID for the component type.
-     */
     getComponentId(componentClass) {
         let id = this.componentTypeMap.get(componentClass);
         if (id === undefined) {
@@ -33,13 +30,17 @@ export class World {
     }
 
     set(entity, component) {
-        // Get the world-specific ID for this component type.
         const componentId = this.getComponentId(component.constructor);
 
         if (!this.componentStorages[componentId]) {
             this.componentStorages[componentId] = new ComponentStorage();
         }
+
         this.componentStorages[componentId].set(entity, component);
+        this._componentChangeVersion++;
+
+        // Optionally invalidate query caches
+        // this._invalidateQueryCaches();
     }
 
     get(entity, componentClass) {
@@ -53,6 +54,37 @@ export class World {
     }
 
     query() {
-        return new Query(this);
+        const q = new Query(this);
+        this._activeQueries.add(q);
+        return q;
+    }
+
+    // NEW: Batch operations for better performance
+    batchSet(operations) {
+        for (const { entity, component } of operations) {
+            const componentId = this.getComponentId(component.constructor);
+            if (!this.componentStorages[componentId]) {
+                this.componentStorages[componentId] = new ComponentStorage();
+            }
+            this.componentStorages[componentId].set(entity, component);
+        }
+        this._componentChangeVersion++;
+    }
+
+    // NEW: Get performance stats
+    getPerformanceStats() {
+        const storageStats = this.componentStorages.map((storage, id) => ({
+            componentId: id,
+            size: storage ? storage.size : 0,
+            capacity: storage ? storage.dense.length : 0
+        })).filter(stat => stat.size > 0);
+
+        return {
+            totalEntities: this.entities.length,
+            componentTypes: this.nextComponentId,
+            storages: storageStats,
+            totalComponents: storageStats.reduce((sum, stat) => sum + stat.size, 0),
+            changeVersion: this._componentChangeVersion
+        };
     }
 }
