@@ -46,6 +46,8 @@ Using sparsed sets this lookup is as easy as checking an index in an array. So c
 
 The other hard part would be creating an interface that is easy to use and not that verbose.
 
+On a side note, I was thinking about arena allocators and object life times. Is quite interesting how we can create ECS worlds with entities of similar lifetime and simply de-allocate the world and all entities and their components at ones. Or just a group of entities by destroying them. Nothing special, but something interesting I thought about.
+
 ## The Syntax
 
 The syntax should make it really easy to query entities. Maybe we take a bite out of SQL?
