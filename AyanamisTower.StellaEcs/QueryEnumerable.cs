@@ -80,7 +80,7 @@ namespace AyanamisTower.StellaEcs
             // Case 2: The relationship source list is the best driver.
             else
             {
-                _driverEntities = new ReadOnlySpan<Entity>(relationshipDriver!.ToArray());
+                _driverEntities = new ReadOnlySpan<Entity>([.. relationshipDriver!]);
 
                 // Since the relationship is the driver, ALL component storages become secondary checks.
                 _otherWithStorages = componentStorages.Count > 0 ? [.. componentStorages] : null;
@@ -90,9 +90,9 @@ namespace AyanamisTower.StellaEcs
             // This logic remains the same, as it correctly filters out relationships from the 'without' storages.
             if (withoutTypes.Count > 0)
             {
-                _withoutStorages = withoutTypes
+                _withoutStorages = [.. withoutTypes
                     .Where(t => !t.IsAssignableTo(typeof(IRelationship)))
-                    .Select(t => world.GetStorageUnsafe(t)).ToArray();
+                    .Select(t => world.GetStorageUnsafe(t))];
             }
             else
             {

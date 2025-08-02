@@ -1,5 +1,4 @@
 import { test, expect, describe } from "bun:test";
-import { SparsedSet } from "../src/SparsedSet";
 import { World } from "../src/World";
 
 class Position2D {

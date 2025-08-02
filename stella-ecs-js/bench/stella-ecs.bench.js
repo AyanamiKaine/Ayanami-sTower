@@ -1,5 +1,5 @@
 import { run, bench, group } from "mitata";
-import { World } from "../stella-ecs";
+import { World } from "../stella-ecs.js";
 
 // --- Components for Benchmarking ---
 // Simple components with basic data types.
@@ -59,7 +59,9 @@ class ParticleEmitter {
 
 // --- Benchmark Suite ---
 
-const ENTITY_COUNT = 100_000;
+// The thing is, I dont even though what a good target for a number of entities is.
+// Maybe many, maybe dont that many. I surly dont know.
+const ENTITY_COUNT = 25000;
 const DUMMY_DELTA_TIME = 1.0 / 60.0;
 
 const main = async () => {
@@ -102,7 +104,7 @@ const main = async () => {
                 // On the first iteration, the `set` call above creates the
                 // storage. Now we can get and cache it.
                 if (!velocityStorage) {
-                    velocityStorage = world.componentStorages.get("Velocity");
+                    velocityStorage = world.componentStorages[Velocity.id];
                 }
 
                 velocityStorage.remove(entity);
@@ -122,9 +124,9 @@ const main = async () => {
                 entities.push(e);
             }
 
-            const positionStorage = world.componentStorages.get("Position");
-            const velocityStorage = world.componentStorages.get("Velocity");
-            const renderableStorage = world.componentStorages.get("Renderable");
+            const positionStorage = world.componentStorages[Position.id];
+            const velocityStorage = world.componentStorages[Velocity.id];
+            const renderableStorage = world.componentStorages[Renderable.id];
 
             // This simulates a `world.destroyEntity(entity)` call by removing all its components
             for (const entity of entities) {

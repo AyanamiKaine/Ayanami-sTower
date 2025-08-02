@@ -121,7 +121,7 @@ public readonly struct Entity(int id, int generation, World? world) : IEquatable
     public bool TryGetRelationship<T>(Entity target, out T relationshipData) where T : struct, IRelationship
     {
         // The null-coalescing operator ensures we can call this on a default Entity without a null reference.
-        return _world?.TryGetRelationship(this, target, out relationshipData) ?? ((relationshipData = default), false).Item2;
+        return _world?.TryGetRelationship(this, target, out relationshipData) ?? (relationshipData = default, false).Item2;
     }
 
     /// <summary>
@@ -148,7 +148,7 @@ public readonly struct Entity(int id, int generation, World? world) : IEquatable
     /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
     /// <returns>An enumerable collection of target entities.</returns>
     public IEnumerable<Entity> GetRelationshipTargets<T>() where T : struct, IRelationship
-        => _world?.GetRelationshipTargets<T>(this) ?? Enumerable.Empty<Entity>();
+        => _world?.GetRelationshipTargets<T>(this) ?? [];
 
 
     // --- Overloads and Implementation for Equality ---
