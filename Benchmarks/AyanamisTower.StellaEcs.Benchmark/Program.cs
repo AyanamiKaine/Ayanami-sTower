@@ -80,7 +80,7 @@ public class StellaEcsBenchmarks
     private World _world = null!;
     private List<Entity> _entities = null!;
 
-    [Params(50_000, 100_000, 1_000_000, 10_000_000, 100_000_000)]
+    [Params(1_000_000)]
     public int EntityCount;
 
     [GlobalSetup]
