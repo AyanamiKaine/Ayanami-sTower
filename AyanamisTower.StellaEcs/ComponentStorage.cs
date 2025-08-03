@@ -30,6 +30,12 @@ public class ComponentStorage<T>(int capacity, int universeSize) : IComponentSto
     /// Gets a read-only span of the packed component data for efficient iteration.
     /// </summary>
     public ReadOnlySpan<T> PackedComponents => new(_components, 0, Count);
+
+    /// <summary>
+    /// Gets a mutable span of the packed component data for efficient modification.
+    /// </summary>
+    public Span<T> PackedComponentsMutable => new(_components, 0, Count);
+
     /// <summary>
     /// Gets a read-only span of the packed entity IDs for efficient iteration.
     /// </summary>

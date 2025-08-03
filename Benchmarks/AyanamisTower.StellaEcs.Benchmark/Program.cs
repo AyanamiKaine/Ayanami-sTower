@@ -80,7 +80,8 @@ public class StellaEcsBenchmarks
     private World _world = null!;
     private List<Entity> _entities = null!;
 
-    [Params(1_000_000)]
+    // Everything scales pretty linearly here, so increasing the entity by 10x will result in a computation time of 10x
+    [Params(10_000)]
     public int EntityCount;
 
     [GlobalSetup]
@@ -525,6 +526,101 @@ public class StellaEcsBenchmarks
         foreach (var entity in tempEntities)
         {
             entity.Destroy();
+        }
+    }
+
+    // --- View Performance Benchmarks ---
+
+    [Benchmark(Description = "View: Single Component Iteration")]
+    public void View_SingleComponent()
+    {
+        var view = _world.View<Position>();
+        foreach (var entity in view)
+        {
+            // Access to prevent optimization
+            _ = entity.Id;
+        }
+    }
+
+    [Benchmark(Description = "View: Two Component Iteration")]
+    public void View_TwoComponents()
+    {
+        var view = _world.View<Position, Velocity>();
+        foreach (var entity in view)
+        {
+            ref var pos = ref entity.GetMutable<Position>();
+            ref readonly var vel = ref entity.Get<Velocity>();
+            pos.X += vel.Dx;
+        }
+    }
+
+    [Benchmark(Description = "View: Three Component Iteration")]
+    public void View_ThreeComponents()
+    {
+        var view = _world.View<Position, Velocity, Physics>();
+        foreach (var entity in view)
+        {
+            ref var pos = ref entity.GetMutable<Position>();
+            ref readonly var vel = ref entity.Get<Velocity>();
+            ref readonly var physics = ref entity.Get<Physics>();
+
+            pos.X += vel.Dx * (1.0f / physics.Mass);
+            pos.Y += vel.Dy * (1.0f / physics.Mass);
+        }
+    }
+
+    [Benchmark(Description = "View: Direct Span Access")]
+    public void View_DirectSpanAccess()
+    {
+        var view = _world.View<Position>();
+        var entityIds = view.EntityIds;
+        var positions = view.Components;
+
+        // Simulate processing all positions directly
+        for (int i = 0; i < entityIds.Length; i++)
+        {
+            var pos = positions[i];
+            // Simulate some work
+            _ = pos.X + pos.Y + pos.Z;
+        }
+    }
+
+    [Benchmark(Description = "View: Mutable Span Modification")]
+    public void View_MutableSpanModification()
+    {
+        var view = _world.View<Velocity>();
+
+        // Direct modification of all velocities
+        for (int i = 0; i < view.Count; i++)
+        {
+            ref var vel = ref view.GetComponentMutable(i);
+            vel.Dx *= 0.99f; // Apply friction
+            vel.Dy *= 0.99f;
+            vel.Dz *= 0.99f;
+        }
+    }
+
+    [Benchmark(Description = "Comparison: Query vs View (Single Component)")]
+    public void Comparison_QueryVsView_SingleComponent()
+    {
+        // Using Query (for comparison)
+        var query = _world.Query().With<Position>().Build();
+        foreach (var entity in query)
+        {
+            _ = entity.Id;
+        }
+    }
+
+    [Benchmark(Description = "Comparison: Query vs View (Two Components)")]
+    public void Comparison_QueryVsView_TwoComponents()
+    {
+        // Using Query (for comparison)  
+        var query = _world.Query().With<Position>().With<Velocity>().Build();
+        foreach (var entity in query)
+        {
+            ref var pos = ref entity.GetMutable<Position>();
+            ref readonly var vel = ref entity.Get<Velocity>();
+            pos.X += vel.Dx;
         }
     }
 

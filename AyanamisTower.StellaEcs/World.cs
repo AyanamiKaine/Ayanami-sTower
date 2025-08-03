@@ -297,4 +297,51 @@ public class World
     /// </summary>
     /// <returns>A new instance of <see cref="QueryBuilder"/> associated with this world.</returns>
     public QueryBuilder Query() => new(this);
+
+    // --- High-Performance Views ---
+
+    /// <summary>
+    /// Creates a high-performance view over entities that have a specific component.
+    /// Views provide direct access to component storage without query building overhead.
+    /// Use this for performance-critical code paths where maximum speed is required.
+    /// </summary>
+    /// <typeparam name="T">The component type to view.</typeparam>
+    /// <returns>A view over entities with the specified component.</returns>
+    public View<T> View<T>() where T : struct
+    {
+        var storage = GetStorage<T>();
+        return new View<T>(this, storage);
+    }
+
+    /// <summary>
+    /// Creates a high-performance view over entities that have two specific components.
+    /// This is more efficient than using queries when you need to iterate over entities
+    /// with exactly these two components frequently.
+    /// </summary>
+    /// <typeparam name="T1">The first component type.</typeparam>
+    /// <typeparam name="T2">The second component type.</typeparam>
+    /// <returns>A view over entities with both specified components.</returns>
+    public View<T1, T2> View<T1, T2>() where T1 : struct where T2 : struct
+    {
+        var storage1 = GetStorage<T1>();
+        var storage2 = GetStorage<T2>();
+        return new View<T1, T2>(this, storage1, storage2);
+    }
+
+    /// <summary>
+    /// Creates a high-performance view over entities that have three specific components.
+    /// This is more efficient than using queries when you need to iterate over entities
+    /// with exactly these three components frequently.
+    /// </summary>
+    /// <typeparam name="T1">The first component type.</typeparam>
+    /// <typeparam name="T2">The second component type.</typeparam>
+    /// <typeparam name="T3">The third component type.</typeparam>
+    /// <returns>A view over entities with all three specified components.</returns>
+    public View<T1, T2, T3> View<T1, T2, T3>() where T1 : struct where T2 : struct where T3 : struct
+    {
+        var storage1 = GetStorage<T1>();
+        var storage2 = GetStorage<T2>();
+        var storage3 = GetStorage<T3>();
+        return new View<T1, T2, T3>(this, storage1, storage2, storage3);
+    }
 }
