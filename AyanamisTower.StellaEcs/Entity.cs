@@ -103,54 +103,6 @@ public readonly struct Entity(int id, int generation, World? world) : IEquatable
     /// <param name="componentData">The component data as a boxed object. The object's type must match the component type.</param>
     public void Set(Type componentType, object componentData) => _world?.SetComponent(this, componentType, componentData);
 
-    /// <summary>
-    /// Adds a relationship with data from this entity to a target entity.
-    /// </summary>
-    public void AddRelationship<T>(Entity target, T relationshipData) where T : struct, IRelationship
-        => _world?.AddRelationship(this, target, relationshipData);
-
-    /// <summary>
-    /// Adds a relationship from this entity to a target entity using default data.
-    /// </summary>
-    public void AddRelationship<T>(Entity target) where T : struct, IRelationship
-        => _world?.AddRelationship(this, target, default(T));
-
-    /// <summary>
-    /// Tries to get the data associated with a relationship from this entity to a target entity.
-    /// </summary>
-    public bool TryGetRelationship<T>(Entity target, out T relationshipData) where T : struct, IRelationship
-    {
-        // The null-coalescing operator ensures we can call this on a default Entity without a null reference.
-        return _world?.TryGetRelationship(this, target, out relationshipData) ?? (relationshipData = default, false).Item2;
-    }
-
-    /// <summary>
-    /// Removes a relationship of type <typeparamref name="T"/> from this entity to a target entity.
-    /// If the relationship is bidirectional, the reverse relationship (target -> this) is also removed.
-    /// </summary>
-    /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
-    /// <param name="target">The entity from which the relationship is directed.</param>
-    public void RemoveRelationship<T>(Entity target) where T : struct, IRelationship
-        => _world?.RemoveRelationship<T>(this, target);
-
-    /// <summary>
-    /// Checks if a relationship of type <typeparamref name="T"/> exists from this entity to a target entity.
-    /// </summary>
-    /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
-    /// <param name="target">The target entity of the relationship.</param>
-    /// <returns><c>true</c> if the relationship exists; otherwise, <c>false</c>.</returns>
-    public bool HasRelationship<T>(Entity target) where T : struct, IRelationship
-        => _world?.HasRelationship<T>(this, target) ?? false;
-
-    /// <summary>
-    /// Gets all entities that this entity has a relationship of type <typeparamref name="T"/> with.
-    /// </summary>
-    /// <typeparam name="T">The type of the relationship, which must implement <see cref="IRelationship"/>.</typeparam>
-    /// <returns>An enumerable collection of target entities.</returns>
-    public IEnumerable<Entity> GetRelationshipTargets<T>() where T : struct, IRelationship
-        => _world?.GetRelationshipTargets<T>(this) ?? [];
-
-
     // --- Overloads and Implementation for Equality ---
 
     /// <summary>
