@@ -217,7 +217,7 @@ public struct EntityConditionalBuilder
     /// <summary>
     /// Executes the action if the condition is true.
     /// </summary>
-    public EntityConditionalBuilder Then<T>(Action<T> action) where T : struct
+    public readonly EntityConditionalBuilder Then<T>(Action<T> action) where T : struct
     {
         if (_condition && _entity.Has<T>())
         {
@@ -229,7 +229,7 @@ public struct EntityConditionalBuilder
     /// <summary>
     /// Adds an additional condition.
     /// </summary>
-    public EntityConditionalBuilder And<T>() where T : struct
+    public readonly EntityConditionalBuilder And<T>() where T : struct
     {
         return new EntityConditionalBuilder(_entity, _condition && _entity.Has<T>());
     }
@@ -237,7 +237,7 @@ public struct EntityConditionalBuilder
     /// <summary>
     /// Executes the action if none of the conditions were met.
     /// </summary>
-    public void Else(Action action)
+    public readonly void Else(Action action)
     {
         if (!_condition)
         {
