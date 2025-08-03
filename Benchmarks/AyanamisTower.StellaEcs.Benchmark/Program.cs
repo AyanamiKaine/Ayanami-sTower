@@ -14,7 +14,9 @@ using Microsoft.EntityFrameworkCore;
 using Perfolizer.Horology;
 using Perfolizer.Metrology;
 
-// --- Components & Relationships for Benchmarking ---
+// --- Components for Benchmarking ---
+// Note: Relationship features have been removed from StellaEcs
+// This benchmark focuses on core ECS functionality: entities, components, and queries
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 public struct Position { public float X, Y, Z; }
@@ -22,8 +24,6 @@ public struct Velocity { public float Dx, Dy, Dz; }
 public struct Rotation { public float Qx, Qy, Qz, Qw; }
 public struct IsPlayer; // Tag component
 public struct IsFrozen; // Tag component
-
-public struct IsChildOf : IRelationship { }
 
 public class MillisecondConfig : ManualConfig
 {
@@ -68,7 +68,6 @@ public class StellaEcsBenchmarks
 {
     private World _world = null!;
     private List<Entity> _entities = null!;
-    private Entity _relationshipTarget;
 
     [Params(1_000, 10_000, 100_000, 1_000_000)]
     public int EntityCount;
@@ -78,13 +77,12 @@ public class StellaEcsBenchmarks
     {
         _world = new World(EntityCount * 2); // Provide extra capacity
 
-        // Register all types
+        // Register all types (now auto-registered via QueryBuilder, but explicit for performance)
         _world.RegisterComponent<Position>();
         _world.RegisterComponent<Velocity>();
         _world.RegisterComponent<Rotation>();
         _world.RegisterComponent<IsPlayer>();
         _world.RegisterComponent<IsFrozen>();
-        _world.RegisterRelationship<IsChildOf>();
 
         _entities = new List<Entity>(EntityCount);
         var random = new Random(1234); // Use fixed seed for reproducibility
@@ -112,18 +110,6 @@ public class StellaEcsBenchmarks
             if (i % 10 == 0)
             {
                 entity.Add(new IsPlayer());
-            }
-        }
-
-        // Setup for relationship benchmark
-        _relationshipTarget = _world.CreateEntity();
-        // Make 5% of entities children of the target
-        for (int i = 0; i < EntityCount / 20; i++)
-        {
-            var child = _entities[random.Next(_entities.Count)];
-            if (child.IsAlive())
-            {
-                _world.AddRelationship<IsChildOf>(child, _relationshipTarget);
             }
         }
     }
@@ -183,11 +169,11 @@ public class StellaEcsBenchmarks
         _entities[4].Remove<IsFrozen>();
     }
 
-    [Benchmark(Description = "Iteration: With Relationship (IsChildOf)")]
-    public void Iterate_WithRelationship()
+    [Benchmark(Description = "Iteration: With Where Clause (Position.X > 500)")]
+    public void Iterate_WithWhereClause()
     {
         var query = _world.Query()
-            .With<IsChildOf>(_relationshipTarget)
+            .Where<Position>(p => p.X > EntityCount / 2)
             .Build();
 
         int count = 0;
@@ -217,13 +203,65 @@ public class StellaEcsBenchmarks
         entity.Remove<IsFrozen>();
     }
 
-    [Benchmark(Description = "Relationships: Add & Remove Relationship")]
-    public void AddAndRemoveRelationship()
+    [Benchmark(Description = "Components: Add & Remove Multiple Components")]
+    public void AddAndRemoveMultipleComponents()
     {
-        var source = _entities[1];
-        var target = _entities[2];
-        _world.AddRelationship<IsChildOf>(source, target);
-        _world.RemoveRelationship<IsChildOf>(source, target);
+        var entity = _entities[1];
+        entity.Add(new IsFrozen());
+        entity.Add(new IsPlayer());
+        entity.Remove<IsFrozen>();
+        entity.Remove<IsPlayer>();
+    }
+
+    [Benchmark(Description = "Query: Complex Query Building")]
+    public void ComplexQueryBuilding()
+    {
+        // Test the performance of building complex queries
+        var query = _world.Query()
+            .With<Position>()
+            .With<Velocity>()
+            .Without<IsFrozen>()
+            .Where<Position>(p => p.X > 0)
+            .Where<Velocity>(v => v.Dx != 0)
+            .Build();
+
+        // Execute the query to ensure it's fully built
+        int count = 0;
+        foreach (var entity in query)
+        {
+            count++;
+        }
+    }
+
+    [Benchmark(Description = "Query: Auto-Registration Performance")]
+    public void QueryAutoRegistration()
+    {
+        // Create a new world to test auto-registration
+        var tempWorld = new World(100);
+
+        // This should trigger auto-registration of all component types
+        var query = tempWorld.Query()
+            .With<Position>()
+            .With<Velocity>()
+            .With<Rotation>()
+            .Without<IsPlayer>()
+            .Where<Position>(p => p.X > 0)
+            .Build();
+
+        // Create a few entities to make the query meaningful
+        for (int i = 0; i < 10; i++)
+        {
+            var entity = tempWorld.CreateEntity();
+            entity.Add(new Position { X = i });
+            entity.Add(new Velocity { Dx = 1 });
+        }
+
+        // Execute the query
+        int count = 0;
+        foreach (var entity in query)
+        {
+            count++;
+        }
     }
 }
 
