@@ -353,4 +353,118 @@ public class QueryTests
         Assert.Single(entities);
         Assert.Contains(entity, entities);
     }
+
+    [Fact]
+    public void QueryBuilder_AutoRegistration_ShouldRegisterUnregisteredComponents()
+    {
+        // Arrange
+        var world = new World();
+
+        // Verify components are not registered initially
+        Assert.False(world.IsComponentRegistered(typeof(Position)));
+        Assert.False(world.IsComponentRegistered(typeof(Velocity)));
+        Assert.False(world.IsComponentRegistered(typeof(Enemy)));
+
+        // Act - Use components in query without pre-registering
+        var query = world.Query()
+            .With<Position>()
+            .With<Velocity>()
+            .Without<Enemy>();
+
+        // Assert - Components should now be registered
+        Assert.True(world.IsComponentRegistered(typeof(Position)));
+        Assert.True(world.IsComponentRegistered(typeof(Velocity)));
+        Assert.True(world.IsComponentRegistered(typeof(Enemy)));
+
+        // And the query should build successfully
+        var entities = ToArray(query.Build());
+        Assert.Empty(entities); // No entities created yet, so result should be empty
+    }
+
+    [Fact]
+    public void QueryBuilder_AutoRegistration_WithWhereClause_ShouldRegisterComponent()
+    {
+        // Arrange
+        var world = new World();
+
+        // Verify component is not registered initially
+        Assert.False(world.IsComponentRegistered(typeof(Health)));
+
+        // Act - Use Where without explicit With (which should auto-register)
+        var query = world.Query().Where<Health>(h => h.Value > 50);
+
+        // Assert - Component should now be registered
+        Assert.True(world.IsComponentRegistered(typeof(Health)));
+
+        // And the query should build successfully
+        var entities = ToArray(query.Build());
+        Assert.Empty(entities); // No entities created yet, so result should be empty
+    }
+
+    [Fact]
+    public void QueryBuilder_AutoRegistration_WithNonGenericTypes_ShouldRegisterComponents()
+    {
+        // Arrange
+        var world = new World();
+
+        // Verify components are not registered initially
+        Assert.False(world.IsComponentRegistered(typeof(Position)));
+        Assert.False(world.IsComponentRegistered(typeof(Velocity)));
+
+        // Act - Use non-generic With/Without methods
+        var query = world.Query()
+            .With(typeof(Position))
+            .Without(typeof(Velocity));
+
+        // Assert - Components should now be registered
+        Assert.True(world.IsComponentRegistered(typeof(Position)));
+        Assert.True(world.IsComponentRegistered(typeof(Velocity)));
+
+        // And the query should build successfully
+        var entities = ToArray(query.Build());
+        Assert.Empty(entities); // No entities created yet, so result should be empty
+    }
+
+    [Fact]
+    public void QueryBuilder_AutoRegistration_IntegrationTest_ShouldWorkEndToEnd()
+    {
+        // Arrange
+        var world = new World();
+
+        // Act - Create a complete workflow without pre-registering components
+        // 1. Build query (this should auto-register components)
+        var query = world.Query()
+            .With<Position>()
+            .With<Health>()
+            .Without<Enemy>()
+            .Where<Health>(h => h.Value > 50);
+
+        // 2. Create entities and add components (components are now registered)
+        var entity1 = world.CreateEntity();
+        entity1.Add(new Position(1, 2));
+        entity1.Add(new Health(100)); // Above threshold
+
+        var entity2 = world.CreateEntity();
+        entity2.Add(new Position(3, 4));
+        entity2.Add(new Health(25)); // Below threshold
+
+        var entity3 = world.CreateEntity();
+        entity3.Add(new Position(5, 6));
+        entity3.Add(new Health(75)); // Above threshold
+        entity3.Add(new Enemy()); // Should be excluded
+
+        // 3. Execute query
+        var entities = ToArray(query.Build());
+
+        // Assert
+        Assert.Single(entities);
+        Assert.Contains(entity1, entities);
+        Assert.DoesNotContain(entity2, entities); // Below health threshold
+        Assert.DoesNotContain(entity3, entities); // Has Enemy component
+
+        // Verify all components were registered
+        Assert.True(world.IsComponentRegistered(typeof(Position)));
+        Assert.True(world.IsComponentRegistered(typeof(Health)));
+        Assert.True(world.IsComponentRegistered(typeof(Enemy)));
+    }
 }

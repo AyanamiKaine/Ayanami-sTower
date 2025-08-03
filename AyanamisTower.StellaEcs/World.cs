@@ -129,6 +129,16 @@ public class World
     }
 
     /// <summary>
+    /// Checks if a component type has been registered with the world.
+    /// </summary>
+    /// <param name="componentType">The component type to check.</param>
+    /// <returns>True if the component type is registered; otherwise, false.</returns>
+    public bool IsComponentRegistered(Type componentType)
+    {
+        return _componentStorages.ContainsKey(componentType);
+    }
+
+    /// <summary>
     /// Retrieves the underlying storage for a given component type.
     /// This is useful for systems that need to iterate over all components of a certain type.
     /// </summary>

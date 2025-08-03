@@ -31,18 +31,32 @@ namespace AyanamisTower.StellaEcs
 
         /// <summary>
         /// Specifies that the query should only include entities that have a component of the given type.
+        /// Automatically registers the component type if it hasn't been registered yet.
         /// </summary>
         public QueryBuilder With(Type componentType)
         {
+            // Auto-register the component if it's not already registered
+            if (!_world.IsComponentRegistered(componentType))
+            {
+                _world.RegisterComponent(componentType);
+            }
+
             _withTypes.Add(componentType);
             return this;
         }
 
         /// <summary>
         /// Specifies that the query should exclude any entities that have a component of the given type.
+        /// Automatically registers the component type if it hasn't been registered yet.
         /// </summary>
         public QueryBuilder Without(Type componentType)
         {
+            // Auto-register the component if it's not already registered
+            if (!_world.IsComponentRegistered(componentType))
+            {
+                _world.RegisterComponent(componentType);
+            }
+
             _withoutTypes.Add(componentType);
             return this;
         }
