@@ -27,7 +27,7 @@ class ComponentStorage<T : Any>(
 
     fun has(entity: Entity): Boolean {
         val sparseIndex = entity.id
-        if (sparseIndex >= maxEntities || sparseIndex < 0) return false
+        if (sparseIndex !in 0..<maxEntities) return false
         val denseIndex = sparse[sparseIndex]
         return denseIndex != -1 && denseIndex < size && entities[denseIndex] == entity
     }
