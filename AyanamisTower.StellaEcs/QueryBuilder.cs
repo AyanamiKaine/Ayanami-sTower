@@ -14,23 +14,9 @@ namespace AyanamisTower.StellaEcs
         private readonly List<Type> _withoutTypes = [];
         private readonly List<IFilter> _filters = [];
         // This list stores tuples of (RelationshipType, TargetEntity)
-        private readonly List<(Type type, Entity target)> _withRelationships = [];
-
         internal QueryBuilder(World world)
         {
             _world = world;
-        }
-
-        /// <summary>
-        /// Specifies that the query should only include entities that have a relationship of type <typeparamref name="T"/> pointing to a specific target entity.
-        /// </summary>
-        public QueryBuilder With<T>(Entity target) where T : struct, IRelationship
-        {
-            // Also implicitly add the relationship type as a 'With' type to ensure its storage is considered.
-            // This isn't strictly necessary with the current implementation but is good practice.
-            _withTypes.Add(typeof(T));
-            _withRelationships.Add((typeof(T), target));
-            return this;
         }
 
         /// <summary>
@@ -45,21 +31,32 @@ namespace AyanamisTower.StellaEcs
 
         /// <summary>
         /// Specifies that the query should only include entities that have a component of the given type.
+        /// Automatically registers the component type if it hasn't been registered yet.
         /// </summary>
         public QueryBuilder With(Type componentType)
         {
-            if (!componentType.IsAssignableTo(typeof(IRelationship)))
+            // Auto-register the component if it's not already registered
+            if (!_world.IsComponentRegistered(componentType))
             {
-                _withTypes.Add(componentType);
+                _world.RegisterComponent(componentType);
             }
+
+            _withTypes.Add(componentType);
             return this;
         }
 
         /// <summary>
         /// Specifies that the query should exclude any entities that have a component of the given type.
+        /// Automatically registers the component type if it hasn't been registered yet.
         /// </summary>
         public QueryBuilder Without(Type componentType)
         {
+            // Auto-register the component if it's not already registered
+            if (!_world.IsComponentRegistered(componentType))
+            {
+                _world.RegisterComponent(componentType);
+            }
+
             _withoutTypes.Add(componentType);
             return this;
         }
@@ -90,7 +87,7 @@ namespace AyanamisTower.StellaEcs
                 throw new InvalidOperationException("A query must have at least one 'With' component specified.");
             }
 
-            return new QueryEnumerable(_world, _withTypes, _withoutTypes, _filters, _withRelationships);
+            return new QueryEnumerable(_world, _withTypes, _withoutTypes, _filters);
         }
     }
 }

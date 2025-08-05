@@ -1,4 +1,9 @@
+# Haxe build configuration for JavaScript library
 -cp src
--D analyzer-optimize
--main Main
---interp
+
+ComponentStorage
+Entity
+Query
+World
+
+-cs bin/stella-ecs.cs

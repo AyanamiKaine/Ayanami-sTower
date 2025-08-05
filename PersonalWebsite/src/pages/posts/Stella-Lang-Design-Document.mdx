@@ -38,6 +38,15 @@ I think I come closer to a solution. What if we instead of creating my own inter
 
 Instead of a new syntax we would expose a common API.
 
+## Update 02.08.25
+
+Usually you should write to an interface not a concrete implementation. I was thinking about this and multiple dispatch. By default, queries are written against the interface of a component it does not matter if the entity has 4 others that are not relevant. We could write a runtime system that like a query checks if an entity has the needed components and if not the method does not run.
+
+Using sparsed sets this lookup is as easy as checking an index in an array. So conceptually it should be easy to do. The hard part would be adding this runtime check to the compiler. I.e. the question can we turn this runtime type check into a compile one. And I don't think that would be possible without sacrificing a big part of what makes the system dynamic. 
+
+The other hard part would be creating an interface that is easy to use and not that verbose.
+
+On a side note, I was thinking about arena allocators and object life times. Is quite interesting how we can create ECS worlds with entities of similar lifetime and simply de-allocate the world and all entities and their components at ones. Or just a group of entities by destroying them. Nothing special, but something interesting I thought about.
 
 ## The Syntax
 
