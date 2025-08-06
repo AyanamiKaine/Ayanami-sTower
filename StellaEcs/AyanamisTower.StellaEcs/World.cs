@@ -519,24 +519,42 @@ public class World
     {
         try
         {
-            // 1. Dynamically load the API assembly.
-            // Assumes AyanamisTower.StellaEcs.Api.dll is in the same directory.
-            var apiAssembly = Assembly.Load("AyanamisTower.StellaEcs.Api");
+            // 1. Construct the full path to the API DLL.
+            // This is more robust than relying on the default probing mechanism of Assembly.Load().
+            string apiDllName = "AyanamisTower.StellaEcs.RestAPI.dll";
+            string apiDllPath = Path.Combine(AppContext.BaseDirectory, apiDllName);
 
-            // 2. Find the RestApiServer type.
-            var apiServerType = apiAssembly.GetType("AyanamisTower.StellaEcs.Api.RestApiServer") ?? throw new InvalidOperationException("Could not find RestApiServer type in the API assembly.");
+            if (!File.Exists(apiDllPath))
+            {
+                // Throw the specific exception the catch block is looking for.
+                throw new FileNotFoundException($"The API assembly was not found at the expected path: {apiDllPath}", apiDllName);
+            }
 
-            // 3. Get a reference to the static Start method.
-            var startMethod = apiServerType.GetMethod("Start", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException("Could not find the 'Start' method on the RestApiServer.");
+            // 2. Dynamically load the API assembly from its specific path.
+            var apiAssembly = Assembly.LoadFrom(apiDllPath);
 
-            // 4. Invoke the Start method, passing this world instance and the URL.
-            startMethod.Invoke(null, [this, url]);
+            // 3. Find the RestApiServer type.
+            var apiServerType = apiAssembly.GetType("AyanamisTower.StellaEcs.Api.RestApiServer");
+            if (apiServerType == null)
+            {
+                throw new InvalidOperationException("Could not find RestApiServer type in the API assembly.");
+            }
+
+            // 4. Get a reference to the static Start method.
+            var startMethod = apiServerType.GetMethod("Start", BindingFlags.Public | BindingFlags.Static);
+            if (startMethod == null)
+            {
+                throw new InvalidOperationException("Could not find the 'Start' method on the RestApiServer.");
+            }
+
+            // 5. Invoke the Start method, passing this world instance and the URL.
+            startMethod.Invoke(null, new object[] { this, url });
 
             _apiServerInstance = apiServerType; // Store a reference for stopping it later.
         }
-        catch (System.IO.FileNotFoundException)
+        catch (FileNotFoundException ex)
         {
-            Console.WriteLine("[Error] AyanamisTower.StellaEcs.Api.dll not found. Please ensure it is in the application's output directory.");
+            Console.WriteLine($"[Error] {ex.Message}. Please ensure '{ex.FileName}' is in the application's output directory.");
         }
         catch (Exception ex)
         {

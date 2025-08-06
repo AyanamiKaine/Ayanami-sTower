@@ -24,6 +24,8 @@ static class Program
             .Set(new Position2D(0, 0))
             .Set(new Velocity2D(1, 1));
 
+        world.EnableRestApi();
+
         System.Timers.Timer timer = new(1000.0 / 60); // 60 FPS
         timer.Elapsed += (sender, e) =>
         {
