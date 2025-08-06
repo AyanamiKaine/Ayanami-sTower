@@ -46,10 +46,11 @@ public readonly struct Entity(uint id, int generation, World? world) : IEquatabl
     /// <param name="component">The component instance to set.</param>
     /// <exception cref="InvalidOperationException">Thrown if the entity is not associated with a world.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Set<T>(T component) where T : struct
+    public Entity Set<T>(T component) where T : struct
     {
         if (_world == null) throw new InvalidOperationException("Cannot set component on an entity that is not associated with a world.");
         _world.SetComponent(this, component);
+        return this;
     }
 
     /// <summary>
