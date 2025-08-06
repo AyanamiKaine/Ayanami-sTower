@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace AyanamisTower.StellaEcs;
 
@@ -43,7 +44,7 @@ public class World
     private readonly List<ISystem> _systems = [];
     private readonly Dictionary<string, IEntityFunction> _functions = [];
 
-
+    private object? _apiServerInstance;
 
     /*
     Decoupling: A plugin can request a service by its interface (IPathfindingService) without needing a direct reference to the plugin that provides it (SuperPathfindingPlugin.dll).
@@ -508,6 +509,60 @@ public class World
     // TODO: Implement a way to serialize/deserialize the world state for saving/loading.
 
     #region Public API for REST/Remote Access
+
+    /// <summary>
+    /// Enables the REST API for the world by dynamically loading the API server assembly.
+    /// The API provides remote access to inspect the world's state.
+    /// </summary>
+    /// <param name="url">The URL the API server should listen on.</param>
+    public void EnableRestApi(string url = "http://localhost:5123")
+    {
+        try
+        {
+            // 1. Dynamically load the API assembly.
+            // Assumes AyanamisTower.StellaEcs.Api.dll is in the same directory.
+            var apiAssembly = Assembly.Load("AyanamisTower.StellaEcs.Api");
+
+            // 2. Find the RestApiServer type.
+            var apiServerType = apiAssembly.GetType("AyanamisTower.StellaEcs.Api.RestApiServer") ?? throw new InvalidOperationException("Could not find RestApiServer type in the API assembly.");
+
+            // 3. Get a reference to the static Start method.
+            var startMethod = apiServerType.GetMethod("Start", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException("Could not find the 'Start' method on the RestApiServer.");
+
+            // 4. Invoke the Start method, passing this world instance and the URL.
+            startMethod.Invoke(null, [this, url]);
+
+            _apiServerInstance = apiServerType; // Store a reference for stopping it later.
+        }
+        catch (System.IO.FileNotFoundException)
+        {
+            Console.WriteLine("[Error] AyanamisTower.StellaEcs.Api.dll not found. Please ensure it is in the application's output directory.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Error] Failed to enable REST API: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Disables the REST API server if it is running.
+    /// </summary>
+    public async Task DisableRestApi()
+    {
+        if (_apiServerInstance is Type apiServerType)
+        {
+            var stopMethod = apiServerType.GetMethod("Stop", BindingFlags.Public | BindingFlags.Static);
+            if (stopMethod?.Invoke(null, null) is Task stopTask)
+            {
+                await stopTask;
+            }
+            _apiServerInstance = null;
+        }
+        else
+        {
+            Console.WriteLine("REST API is not currently enabled.");
+        }
+    }
 
     /// <summary>
     /// Gets a snapshot of the world's current status.
