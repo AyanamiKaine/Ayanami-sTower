@@ -57,16 +57,18 @@ public class HotReloadablePluginLoader : IDisposable
         // Set up the watcher to monitor the plugin directory for changes.
         _watcher = new FileSystemWatcher(_pluginDirectory)
         {
-            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName,
+            // We tell the watcher to look inside the sub-folders as well.
+            IncludeSubdirectories = true,
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName,
             Filter = "*.dll",
-            EnableRaisingEvents = false // We will enable it manually.
+            EnableRaisingEvents = false
         };
 
         // Hook up the event handlers.
-        _watcher.Created += OnPluginFileCreated;
-        _watcher.Changed += OnPluginFileChanged;
+        _watcher.Created += OnPluginFileEvent;
+        _watcher.Changed += OnPluginFileEvent;
         _watcher.Deleted += OnPluginFileDeleted;
-        _watcher.Renamed += OnPluginFileRenamed;
+        _watcher.Renamed += OnPluginFileRenamedEvent;
     }
 
     /// <summary>
@@ -88,48 +90,70 @@ public class HotReloadablePluginLoader : IDisposable
     }
 
     /// <summary>
-    /// Loads all existing *.dll files in the plugin directory.
+    /// Loads all existing plugins in the plugin directory.
     /// This should be called once at startup.
     /// </summary>
     public void LoadAllExistingPlugins()
     {
         Console.WriteLine("[PluginLoader] Loading all existing plugins...");
-        foreach (var file in Directory.GetFiles(_pluginDirectory, "*.dll"))
+        foreach (var directory in Directory.GetDirectories(_pluginDirectory))
         {
-            LoadPlugin(file);
+            var mainDllPath = FindMainPluginDll(directory);
+            if (mainDllPath != null)
+            {
+                LoadPlugin(mainDllPath);
+            }
         }
     }
 
-    /// <summary>
-    /// Atomically loads a single plugin assembly into a collectible context.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.NoInlining)] // Important to keep this method from being inlined by the JIT
+    private static string? FindMainPluginDll(string directory)
+    {
+        // A simple heuristic: find the first DLL that contains an IPlugin implementation.
+        // This could be made more robust (e.g., looking for a specific file name).
+        foreach (var file in Directory.GetFiles(directory, "*.dll"))
+        {
+            try
+            {
+                // We must load the assembly into a temporary context to inspect its types
+                // without locking it or loading it into our main application.
+                var tempContext = new AssemblyLoadContext("PluginInspector", isCollectible: true);
+                using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var assembly = tempContext.LoadFromStream(fs);
+                bool hasPluginInterface = assembly.GetTypes().Any(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface);
+                tempContext.Unload(); // Unload the inspector context immediately
+
+                if (hasPluginInterface)
+                {
+                    return file;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[PluginLoader] Could not inspect file {Path.GetFileName(file)}: {ex.Message}");
+            }
+        }
+        return null;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private void LoadPlugin(string path)
     {
-        // First, if a version of this plugin is already loaded, unload it.
-        // This handles both initial loading and reloading.
+        // Unload any existing version first
         if (_loadedPlugins.ContainsKey(path))
         {
-            Console.WriteLine($"[PluginLoader] Reloading plugin: {Path.GetFileName(path)}");
             UnloadPlugin(path);
         }
-        else
-        {
-            Console.WriteLine($"[PluginLoader] Loading new plugin: {Path.GetFileName(path)}");
-        }
 
-        var pluginName = Path.GetFileNameWithoutExtension(path);
+        Console.WriteLine($"[PluginLoader] Loading plugin from: {Path.GetFileName(path)}");
 
-        // Create a new, collectible AssemblyLoadContext for this plugin.
-        var loadContext = new AssemblyLoadContext(pluginName, isCollectible: true);
+        // CHANGE: Use our custom PluginLoadContext
+        var loadContext = new PluginLoadContext(path);
 
         try
         {
-            // Load the assembly from a stream to avoid locking the file on disk.
-            using var fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            Assembly pluginAssembly = loadContext.LoadFromStream(fileStream);
+            // The rest is the same, but now dependencies will be resolved correctly!
+            Assembly pluginAssembly = loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(path)));
 
-            // Find all types in the DLL that implement our IPlugin interface.
             foreach (var type in pluginAssembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface))
             {
                 IPlugin? pluginInstance = (IPlugin)Activator.CreateInstance(type)!;
@@ -142,8 +166,7 @@ public class HotReloadablePluginLoader : IDisposable
         }
         catch (Exception e)
         {
-            Console.WriteLine($"[ERROR] Failed to load plugin {pluginName}.dll: {e.Message}");
-            // If we failed, unload the context to clean up.
+            Console.WriteLine($"[ERROR] Failed to load plugin {Path.GetFileName(path)}: {e.Message}\n{e.StackTrace}");
             loadContext.Unload();
         }
     }
@@ -182,38 +205,70 @@ public class HotReloadablePluginLoader : IDisposable
 
     // --- FileSystemWatcher Event Handlers ---
 
-    private void OnPluginFileChanged(object sender, FileSystemEventArgs e)
+    private void OnPluginFileEvent(object sender, FileSystemEventArgs e)
     {
-        Console.WriteLine($"[FSWatcher] Detected change in: {e.Name}. Reloading...");
-        // A change event means we should reload the plugin.
-        // We add a small delay to ensure the file write is complete.
-        Thread.Sleep(100); // Wait 100ms
-        LoadPlugin(e.FullPath);
-    }
+        // When any DLL changes, we need to find the main plugin DLL for that directory and reload it.
+        // A small delay helps avoid issues with files being locked during writing.
+        Thread.Sleep(250);
+        string? directory = Path.GetDirectoryName(e.FullPath);
+        if (directory == null) return;
 
-    private void OnPluginFileCreated(object sender, FileSystemEventArgs e)
-    {
-        Console.WriteLine($"[FSWatcher] Detected new file: {e.Name}. Loading...");
-        // A new file was dropped in, load it.
-        Thread.Sleep(100); // Wait 100ms
-        LoadPlugin(e.FullPath);
+        var mainDllPath = FindMainPluginDll(directory);
+        if (mainDllPath != null)
+        {
+            if (e.ChangeType == WatcherChangeTypes.Deleted && !Directory.EnumerateFileSystemEntries(directory).Any())
+            {
+                Console.WriteLine($"[FSWatcher] Plugin directory {Path.GetFileName(directory)} is empty. Unloading.");
+                UnloadPlugin(mainDllPath);
+            }
+            else
+            {
+                Console.WriteLine($"[FSWatcher] Detected change in {Path.GetFileName(directory)}. Reloading plugin.");
+                LoadPlugin(mainDllPath);
+            }
+        }
     }
 
     private void OnPluginFileDeleted(object sender, FileSystemEventArgs e)
     {
-        Console.WriteLine($"[FSWatcher] Detected deletion of: {e.Name}. Unloading...");
-        // The DLL was deleted, so we should unload it.
-        UnloadPlugin(e.FullPath);
+        Console.WriteLine($"[FSWatcher] Detected deletion of: {e.Name}.");
+        Thread.Sleep(150);
+
+        // Find which loaded plugin this deleted file belonged to by checking its directory.
+        string? deletedInDirectory = Path.GetDirectoryName(e.FullPath);
+        if (deletedInDirectory == null) return;
+
+        // Find the plugin state where the main DLL's directory matches the directory of the deleted file.
+        // We use ToList() to create a copy, allowing us to safely modify the original collection.
+        var pluginToUnload = _loadedPlugins.Values
+            .FirstOrDefault(state => Path.GetDirectoryName(state.FilePath) == deletedInDirectory);
+
+        if (pluginToUnload != null)
+        {
+            Console.WriteLine($"[PluginLoader] A file related to plugin '{pluginToUnload.Plugin.Name}' was deleted. Unloading the plugin.");
+            // We have the state, so we know the exact path to its main DLL to pass to UnloadPlugin.
+            UnloadPlugin(pluginToUnload.FilePath);
+        }
     }
 
-    private void OnPluginFileRenamed(object sender, RenamedEventArgs e)
+    private void OnPluginFileRenamedEvent(object sender, RenamedEventArgs e)
     {
-        Console.WriteLine($"[FSWatcher] Detected rename from '{e.OldName}' to '{e.Name}'.");
-        // Treat a rename as an unload of the old name and a load of the new name.
-        UnloadPlugin(e.OldFullPath);
-        LoadPlugin(e.FullPath);
-    }
+        // This logic can get complex, a simple approach is to reload both old and new directories.
+        Thread.Sleep(250);
+        string? oldDirectory = Path.GetDirectoryName(e.OldFullPath);
+        if (oldDirectory != null)
+        {
+            var mainDll = FindMainPluginDll(oldDirectory);
+            if (mainDll != null) UnloadPlugin(mainDll);
+        }
 
+        string? newDirectory = Path.GetDirectoryName(e.FullPath);
+        if (newDirectory != null)
+        {
+            var mainDll = FindMainPluginDll(newDirectory);
+            if (mainDll != null) LoadPlugin(mainDll);
+        }
+    }
 
     /// <summary>
     /// Ensures all plugins are unloaded and the watcher is stopped when the loader is disposed.
