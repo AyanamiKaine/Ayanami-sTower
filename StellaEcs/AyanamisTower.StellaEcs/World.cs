@@ -43,6 +43,8 @@ public class World
     This is a simple implementation that allows plugins to register and consume services.
     */
 
+    // TODO: Implement a logger service that can be used by plugins to log messages.
+
     /// <summary>
     /// A Shared Service Hub (also known as a Service Locator) allows plugins to register and consume persistent, high-level services, enabling direct and powerful cross-plugin communication
     /// </summary>
