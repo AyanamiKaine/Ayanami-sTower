@@ -17,7 +17,7 @@ data class AIControlled(val state: Int)
 
 fun main() {
     // --- Benchmark Parameters ---
-    val numEntities = 100_000
+    val numEntities = 10000
     val updateCycles = 100 // Increased cycles for a more stable average
 
     // Give some buffer for maxEntities
@@ -84,9 +84,8 @@ fun main() {
         repeat(updateCycles) {
             var count = 0
             // This system finds all entities with Position and Renderable.
-            world.query(Position::class, Renderable::class).forEach { _ ->
-                // In a real system, you'd use the components to draw something.
-                // Here we just iterate to measure query and access speed.
+            world.query(Position::class, Renderable::class).forEach { entity ->
+                val pos = world.getComponent<Position>(entity)!!
                 count++
             }
         }
