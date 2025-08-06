@@ -506,4 +506,143 @@ public class World
 
     // TODO: Implement a way to clear all entities and components if needed.
     // TODO: Implement a way to serialize/deserialize the world state for saving/loading.
+
+    #region Public API for REST/Remote Access
+
+    /// <summary>
+    /// Gets a snapshot of the world's current status.
+    /// </summary>
+    public WorldStatus GetWorldStatus()
+    {
+        return new WorldStatus
+        {
+            MaxEntities = _maxEntities,
+            RecycledEntityIds = _freeIds.Count,
+            RegisteredSystems = _systems.Count,
+            ComponentTypes = _storages.Count
+        };
+    }
+
+    /// <summary>
+    /// Gets a list of all registered systems and their current state.
+    /// </summary>
+    public IEnumerable<SystemInfo> GetSystems()
+    {
+        return _systems.Select(s => new SystemInfo
+        {
+            Name = s.GetType().Name,
+            Enabled = s.Enabled
+        });
+    }
+
+    /// <summary>
+    /// Retrieves a collection of all currently active entities in the world.
+    /// </summary>
+    /// <returns>An IEnumerable of all valid entities.</returns>
+    public IEnumerable<Entity> GetAllEntities()
+    {
+        // This is a simple but potentially slow way to get all entities.
+        // It iterates all possible IDs and checks for validity.
+        // For a more performant version, you might maintain a separate list of active entities.
+        for (uint i = 0; i < _nextEntityId; i++)
+        {
+            var entity = new Entity(i, _generations[i], this);
+            if (IsEntityValid(entity))
+            {
+                yield return entity;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets information about all components attached to a specific entity.
+    /// </summary>
+    /// <param name="entity">The entity to inspect.</param>
+    /// <returns>A list of component information objects.</returns>
+    public IEnumerable<ComponentInfo> GetAllComponentsForEntity(Entity entity)
+    {
+        if (!IsEntityValid(entity))
+        {
+            return [];
+        }
+
+        var components = new List<ComponentInfo>();
+        foreach (var (type, storage) in _storages)
+        {
+            if (storage.Has(entity))
+            {
+                // This part is tricky because we can't easily get the component
+                // data without knowing its type. We can use reflection or add a
+                // non-generic Get method to IComponentStorage.
+                // For now, we'll just return the type name.
+                components.Add(new ComponentInfo { TypeName = type.Name });
+            }
+        }
+        return components;
+    }
+
+
+    /// <summary>
+    /// Gets the names of all registered component types.
+    /// </summary>
+    public IEnumerable<string> GetComponentTypes()
+    {
+        return _storages.Keys.Select(t => t.Name);
+    }
+    #endregion
 }
+
+#region Data Transfer Objects (DTOs) for Public API
+
+/// <summary>
+/// A DTO for exposing the world's status.
+/// </summary>
+public class WorldStatus
+{
+    /// <summary>
+    /// The maximum number of entities that can be created in this world.
+    /// </summary>
+    public uint MaxEntities { get; set; }
+    /// <summary>
+    /// The number of entity IDs that have been recycled and can be reused.
+    /// </summary>
+    public int RecycledEntityIds { get; set; }
+    /// <summary>
+    /// The number of systems that are currently registered in the world.
+    /// </summary>
+    public int RegisteredSystems { get; set; }
+    /// <summary>
+    /// The number of component types that are currently registered in the world.
+    /// </summary>
+    public int ComponentTypes { get; set; }
+}
+
+/// <summary>
+/// A DTO for exposing system information.
+/// </summary>
+public class SystemInfo
+{
+    /// <summary>
+    /// The name of the system.
+    /// </summary>
+    public required string Name { get; set; }
+    /// <summary>
+    /// Indicates whether the system is currently enabled.
+    /// </summary>
+    public bool Enabled { get; set; }
+}
+/// <summary>
+/// A DTO for exposing component information.
+/// </summary>
+public class ComponentInfo
+{
+    /// <summary>
+    /// The name of the component type.
+    /// </summary>
+    public required string TypeName { get; set; }
+    // We could add a 'Data' object here, but it requires serialization logic.
+    // public object Data { get; set; }
+}
+
+
+#endregion
