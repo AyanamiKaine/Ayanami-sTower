@@ -286,11 +286,31 @@ public class World
     /// </summary>
     public void Update(float deltaTime)
     {
+        // PRE-UPDATE HOOK
+        foreach (var system in _systems)
+        {
+            if (system.Enabled && system is IPreUpdateSystem preSystem)
+            {
+                preSystem.PreUpdate(this, deltaTime);
+            }
+        }
+
+        // MAIN UPDATE
         foreach (var system in _systems)
         {
             if (!system.Enabled) continue;
             system.Update(this, deltaTime);
         }
+
+        // POST-UPDATE HOOK
+        foreach (var system in _systems)
+        {
+            if (system.Enabled && system is IPostUpdateSystem postSystem)
+            {
+                postSystem.PostUpdate(this, deltaTime);
+            }
+        }
+
         ClearAllMessages();
     }
 
