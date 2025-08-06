@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AyanamisTower.StellaEcs.Components\AyanamisTower.StellaEcs.Components.csproj" />
+    <ProjectReference Include="..\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
+  </ItemGroup>
+
 </Project>
