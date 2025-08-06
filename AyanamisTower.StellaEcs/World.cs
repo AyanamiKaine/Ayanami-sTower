@@ -28,13 +28,22 @@ public class World
     /// </summary>
     private readonly Dictionary<Type, IComponentStorage> _storages = [];
     private readonly List<ISystem> _systems = [];
-    private readonly Dictionary<string, IEntityFunction> _functions = new();
+    private readonly Dictionary<string, IEntityFunction> _functions = [];
 
     /// <summary>
-    /// Creates a default world with the max allowed entity number of 100_000
+    /// Creates a default world with the max allowed entity number of 5000:
+    /// DESIGN NOTE: Why is a low number of entites good? Imagine this
+    /// You have 1 million entities in a world and want to find out which entities
+    /// have the enemy tag component. You would have to traverse 1 million entity ids 
+    /// to find out if they have it. While iterating is quite fast you will notice that 
+    /// most entities do not share that many component together. In essenece that means when 
+    /// iterating over entities and checking if they have a component the common default case
+    /// will be that they dont have said component. A solution for that could be using an archetype ecs
+    /// but that usually results in many fragemented tables. A good solution is using different ecs worlds.
+    /// And not just one.
     /// </summary>
     /// <param name="maxEntities"></param>
-    public World(uint maxEntities = 100_000)
+    public World(uint maxEntities = 5000)
     {
         _maxEntities = maxEntities;
         _generations = new int[(int)maxEntities];
@@ -246,7 +255,7 @@ public class World
     public void RegisterSystem(ISystem system)
     {
         _systems.Add(system);
-        Console.WriteLine($"[World] Registered System: {system.GetType().Name}");
+        // Console.WriteLine($"[World] Registered System: {system.GetType().Name}");
     }
 
     /// <summary>
@@ -269,10 +278,10 @@ public class World
     {
         if (_functions.ContainsKey(functionName))
         {
-            Console.WriteLine($"[Warning] Overwriting existing function: {functionName}");
+            // Console.WriteLine($"[Warning] Overwriting existing function: {functionName}");
         }
         _functions[functionName] = function;
-        //Console.WriteLine($"[World] Registered Function: {functionName}");
+        // Console.WriteLine($"[World] Registered Function: {functionName}");
     }
 
     /// <summary>
