@@ -4,6 +4,12 @@ using System.Linq;
 
 namespace AyanamisTower.StellaEcs;
 
+
+/*
+TODO: Implement sqlite for storing relationships between entities.
+While we can use the components to model relationships, we might want to have a more complex relationship between entities.
+*/
+
 /// <summary>
 /// The main class that manages all entities, components, and systems.
 /// It acts as the central hub for all ECS operations.
