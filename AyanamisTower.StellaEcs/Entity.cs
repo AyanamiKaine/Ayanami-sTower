@@ -9,7 +9,13 @@ namespace AyanamisTower.StellaEcs;
 /// The generation helps to invalidate handles to entities that have been destroyed.
 /// This is a lightweight, immutable struct.
 /// </summary>
-public readonly struct Entity : IEquatable<Entity>
+/// <remarks>
+/// Initializes a new instance of the <see cref="Entity"/> struct.
+/// </remarks>
+/// <param name="id">The entity's ID.</param>
+/// <param name="generation">The entity's generation.</param>
+/// <param name="world">The world the entity belongs to.</param>
+public readonly struct Entity(uint id, int generation, World? world) : IEquatable<Entity>
 {
     /// <summary>
     /// A null/invalid entity handle.
@@ -19,30 +25,17 @@ public readonly struct Entity : IEquatable<Entity>
     /// <summary>
     /// The raw integer ID of the entity. This corresponds to an index in the world's arrays.
     /// </summary>
-    public readonly uint Id;
+    public readonly uint Id = id;
 
     /// <summary>
     /// The generation of the entity, which is incremented each time the ID is recycled.
     /// </summary>
-    public readonly int Generation;
+    public readonly int Generation = generation;
 
     /// <summary>
     /// A reference to the world this entity belongs to. This is necessary for the helper methods.
     /// </summary>
-    private readonly World? _world;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Entity"/> struct.
-    /// </summary>
-    /// <param name="id">The entity's ID.</param>
-    /// <param name="generation">The entity's generation.</param>
-    /// <param name="world">The world the entity belongs to.</param>
-    public Entity(uint id, int generation, World? world)
-    {
-        Id = id;
-        Generation = generation;
-        _world = world;
-    }
+    private readonly World? _world = world;
 
     // --- New Helper Methods ---
 
