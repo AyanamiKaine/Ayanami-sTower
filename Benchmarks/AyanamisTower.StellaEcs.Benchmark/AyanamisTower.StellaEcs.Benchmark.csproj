@@ -16,5 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
+    <ProjectReference Include="..\..\StellaEcs\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
   </ItemGroup>
 </Project>
