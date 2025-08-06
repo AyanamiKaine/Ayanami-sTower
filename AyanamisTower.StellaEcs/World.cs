@@ -100,7 +100,7 @@ public class World
     /// <returns>True if the entity is valid, false otherwise.</returns>
     public bool IsEntityValid(Entity entity)
     {
-        return entity.Id < _maxEntities && _generations[entity.Id] == entity.Generation;
+        return entity.Id < _nextEntityId && _generations[entity.Id] == entity.Generation;
     }
 
     /// <summary>
@@ -272,7 +272,7 @@ public class World
             Console.WriteLine($"[Warning] Overwriting existing function: {functionName}");
         }
         _functions[functionName] = function;
-        Console.WriteLine($"[World] Registered Function: {functionName}");
+        //Console.WriteLine($"[World] Registered Function: {functionName}");
     }
 
     /// <summary>
