@@ -16,4 +16,11 @@ public class CorePlugin : IPlugin
         world.RegisterSystem(new MovementSystem2D());
         world.RegisterSystem(new MovementSystem3D());
     }
+
+    /// <inheritdoc/>
+    public void Uninitialize(World world)
+    {
+        world.RemoveSystem<MovementSystem2D>();
+        world.RemoveSystem<MovementSystem3D>();
+    }
 }

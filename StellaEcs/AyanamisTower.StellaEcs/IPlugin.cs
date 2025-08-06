@@ -18,4 +18,10 @@ public interface IPlugin
     /// </summary>
     /// <param name="world">The main world instance.</param>
     void Initialize(World world);
+    /// <summary>
+    /// Called by the plugin loader before unloading. The plugin must
+    /// unregister all its systems and other resources from the world.
+    /// </summary>
+    /// <param name="world">The main world instance.</param>
+    void Uninitialize(World world);
 }

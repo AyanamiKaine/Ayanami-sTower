@@ -379,7 +379,22 @@ public class World
         }
     }
 
-    // TODO: Implement a way to remove systems and functions if needed.
+    /// <summary>
+    /// Removes a system from the world.
+    /// </summary>
+    public void RemoveSystem<T>() where T : ISystem
+    {
+        _systems.RemoveAll(s => s is T);
+    }
+
+    /// <summary>
+    /// Removes a registered function from the world.
+    /// </summary>
+    public void RemoveFunction(string functionName)
+    {
+        _functions.Remove(functionName);
+    }
+
     // TODO: Implement a way to clear all entities and components if needed.
     // TODO: Implement a way to serialize/deserialize the world state for saving/loading.
     // TODO: Implement a way to disable systems without removing them, for temporary pauses or special conditions.

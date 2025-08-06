@@ -119,6 +119,21 @@ public class SystemAndQueryTests
         Assert.Equal(0, mockSystem.UpdateCount);
     }
 
+    [Fact]
+    public void RemoveSystem()
+    {
+        // Arrange
+        var mockSystem = new MockSystem();
+        _world.RegisterSystem(mockSystem);
+
+        // Act
+        _world.RemoveSystem<MockSystem>();
+        _world.Update(0.16f);
+
+        // Assert
+        Assert.Equal(0, mockSystem.UpdateCount);
+    }
+
 
     [Fact]
     public void MessageSystem_ShouldDeliverAndClearMessagesPerFrame()
