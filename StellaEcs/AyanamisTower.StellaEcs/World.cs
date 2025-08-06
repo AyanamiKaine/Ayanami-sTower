@@ -30,6 +30,24 @@ public class World
     private readonly List<ISystem> _systems = [];
     private readonly Dictionary<string, IEntityFunction> _functions = [];
 
+
+
+    /*
+    Decoupling: A plugin can request a service by its interface (IPathfindingService) without needing a direct reference to the plugin that provides it (SuperPathfindingPlugin.dll).
+
+    Extensibility: Any plugin can provide an implementation for a known service, allowing users to swap out, for example, a basic physics engine with a more advanced one just by changing plugins.
+
+    Centralized Logic: Complex logic that doesn't fit neatly into an ECS system (like scene management, complex UI state, or pathfinding) can be encapsulated in a service.
+
+    There is a chance that this will be replaced by a more complex service locator pattern in the future.
+    This is a simple implementation that allows plugins to register and consume services.
+    */
+
+    /// <summary>
+    /// A Shared Service Hub (also known as a Service Locator) allows plugins to register and consume persistent, high-level services, enabling direct and powerful cross-plugin communication
+    /// </summary>
+    private readonly Dictionary<Type, object> _services = [];
+
     /*
     Idea used by https://github.com/MoonsideGames/MoonTools.ECS
     CHECK IT OUT!
@@ -437,6 +455,38 @@ public class World
     public void RemoveFunction(string functionName)
     {
         _functions.Remove(functionName);
+    }
+
+    /// <summary>
+    /// Registers a service object that can be retrieved by other systems or plugins.
+    /// Only one service of a given type can be registered.
+    /// </summary>
+    /// <typeparam name="T">The type (often an interface) to register the service under.</typeparam>
+    /// <param name="service">The service instance.</param>
+    public void RegisterService<T>(T service) where T : class
+    {
+        var serviceType = typeof(T);
+        if (_services.ContainsKey(serviceType))
+        {
+            Console.WriteLine($"[Warning] Service of type {serviceType.Name} is already registered. Overwriting.");
+        }
+        _services[serviceType] = service;
+    }
+
+    /// <summary>
+    /// Retrieves a registered service.
+    /// </summary>
+    /// <typeparam name="T">The type of the service to retrieve.</typeparam>
+    /// <returns>The service instance.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown if no service of the given type is registered.</exception>
+    public T GetService<T>() where T : class
+    {
+        var serviceType = typeof(T);
+        if (!_services.TryGetValue(serviceType, out var service))
+        {
+            throw new KeyNotFoundException($"Service of type {serviceType.Name} has not been registered.");
+        }
+        return (T)service;
     }
 
     // TODO: Implement a way to clear all entities and components if needed.
