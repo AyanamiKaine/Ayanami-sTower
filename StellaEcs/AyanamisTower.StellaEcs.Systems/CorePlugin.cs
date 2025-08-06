@@ -11,6 +11,15 @@ public class CorePlugin : IPlugin
     public string Name => "Core Features";
 
     /// <inheritdoc/>
+    public string Version => "1.0.0";
+
+    /// <inheritdoc/>
+    public string Author => "Ayanami Kaine";
+
+    /// <inheritdoc/>
+    public string Description => "Provides core features for the ECS framework.";
+
+    /// <inheritdoc/>
     public void Initialize(World world)
     {
         world.RegisterSystem(new MovementSystem2D());
