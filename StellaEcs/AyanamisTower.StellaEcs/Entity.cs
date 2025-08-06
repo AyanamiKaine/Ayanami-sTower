@@ -61,7 +61,7 @@ public readonly struct Entity(uint id, int generation, World? world) : IEquatabl
     /// <exception cref="InvalidOperationException">Thrown if the entity is not associated with a world.</exception>
     /// <exception cref="KeyNotFoundException">Thrown if the entity does not have the component.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T Get<T>() where T : struct
+    public T GetCopy<T>() where T : struct
     {
         if (_world == null) throw new InvalidOperationException("Cannot get component from an entity that is not associated with a world.");
         // Assumes World.GetComponent<T> returns a copy.

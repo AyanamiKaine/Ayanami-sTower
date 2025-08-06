@@ -22,7 +22,7 @@ public class ComponentTests
 
         // Act
         _entity.Set(position);
-        var retrieved = _entity.Get<PositionComponent>();
+        var retrieved = _entity.GetCopy<PositionComponent>();
 
         // Assert
         Assert.True(_entity.Has<PositionComponent>());
@@ -41,7 +41,7 @@ public class ComponentTests
         mutablePosition.X = 50;
 
         // Assert
-        var finalPosition = _entity.Get<PositionComponent>();
+        var finalPosition = _entity.GetCopy<PositionComponent>();
         Assert.Equal(50, finalPosition.X);
     }
 
@@ -63,7 +63,7 @@ public class ComponentTests
     public void GetComponent_OnEntityWithoutComponent_ShouldThrowKeyNotFoundException()
     {
         // Act & Assert
-        Assert.Throws<KeyNotFoundException>(() => _entity.Get<PositionComponent>());
+        Assert.Throws<KeyNotFoundException>(() => _entity.GetCopy<PositionComponent>());
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class ComponentTests
 
         // Act & Assert
         Assert.Throws<ArgumentException>(() => entity.Set(new PositionComponent()));
-        Assert.Throws<ArgumentException>(() => entity.Get<PositionComponent>());
+        Assert.Throws<ArgumentException>(() => entity.GetCopy<PositionComponent>());
         Assert.Throws<ArgumentException>(() => entity.Has<PositionComponent>());
         Assert.Throws<ArgumentException>(() => entity.Remove<PositionComponent>());
     }

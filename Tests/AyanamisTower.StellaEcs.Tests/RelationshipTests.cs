@@ -43,15 +43,15 @@ public class RelationshipTests
 
         // 1. From the Player, find their Inventory.
         Assert.True(player.Has<HasInventory>());
-        var foundInventoryEntity = player.Get<HasInventory>().InventoryEntity;
+        var foundInventoryEntity = player.GetCopy<HasInventory>().InventoryEntity;
         Assert.Equal(inventory, foundInventoryEntity);
-        Assert.Equal(10, foundInventoryEntity.Get<InventoryData>().Capacity); // Verify we got the right entity
+        Assert.Equal(10, foundInventoryEntity.GetCopy<InventoryData>().Capacity); // Verify we got the right entity
 
         // 2. From the Inventory, find its Owner.
         Assert.True(inventory.Has<BelongsToOwner>());
-        var foundPlayerEntity = inventory.Get<BelongsToOwner>().OwnerEntity;
+        var foundPlayerEntity = inventory.GetCopy<BelongsToOwner>().OwnerEntity;
         Assert.Equal(player, foundPlayerEntity);
-        Assert.Equal("Hero", foundPlayerEntity.Get<PlayerInfo>().Name); // Verify we got the right entity
+        Assert.Equal("Hero", foundPlayerEntity.GetCopy<PlayerInfo>().Name); // Verify we got the right entity
     }
 
     /// <summary>
@@ -89,11 +89,11 @@ public class RelationshipTests
         var allMembers = _world.Query(typeof(GuildMembership));
 
         var warriorMembers = allMembers
-            .Where(m => m.Get<GuildMembership>().GuildEntity == warriorsGuild)
+            .Where(m => m.GetCopy<GuildMembership>().GuildEntity == warriorsGuild)
             .ToList();
 
         var mageMembers = allMembers
-            .Where(m => m.Get<GuildMembership>().GuildEntity == magesGuild)
+            .Where(m => m.GetCopy<GuildMembership>().GuildEntity == magesGuild)
             .ToList();
 
 
@@ -160,8 +160,8 @@ public class RelationshipTests
         var allEnrollments = _world.Query(typeof(EnrolledStudent), typeof(EnrolledInCourse));
 
         var alicesCourseEntities = allEnrollments
-            .Where(e => e.Get<EnrolledStudent>().StudentEntity == studentAlice)
-            .Select(e => e.Get<EnrolledInCourse>().CourseEntity)
+            .Where(e => e.GetCopy<EnrolledStudent>().StudentEntity == studentAlice)
+            .Select(e => e.GetCopy<EnrolledInCourse>().CourseEntity)
             .ToList();
 
         Assert.Equal(2, alicesCourseEntities.Count);
@@ -171,8 +171,8 @@ public class RelationshipTests
         // 2. Find all students in Math 101.
         // SQL: SELECT s.* FROM Students s JOIN Enrollments e ON s.id = e.student_id WHERE e.course_id = @mathId
         var mathStudentEntities = allEnrollments
-            .Where(e => e.Get<EnrolledInCourse>().CourseEntity == courseMath)
-            .Select(e => e.Get<EnrolledStudent>().StudentEntity)
+            .Where(e => e.GetCopy<EnrolledInCourse>().CourseEntity == courseMath)
+            .Select(e => e.GetCopy<EnrolledStudent>().StudentEntity)
             .ToList();
 
         Assert.Equal(2, mathStudentEntities.Count);
@@ -181,10 +181,10 @@ public class RelationshipTests
 
         // 3. Find Alice's grade in Math 101.
         var alicesMathEnrollment = allEnrollments.First(e =>
-            e.Get<EnrolledStudent>().StudentEntity == studentAlice &&
-            e.Get<EnrolledInCourse>().CourseEntity == courseMath);
+            e.GetCopy<EnrolledStudent>().StudentEntity == studentAlice &&
+            e.GetCopy<EnrolledInCourse>().CourseEntity == courseMath);
 
         Assert.True(alicesMathEnrollment.Has<Grade>());
-        Assert.Equal('A', alicesMathEnrollment.Get<Grade>().Value);
+        Assert.Equal('A', alicesMathEnrollment.GetCopy<Grade>().Value);
     }
 }

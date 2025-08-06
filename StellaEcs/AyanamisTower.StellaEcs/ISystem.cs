@@ -8,6 +8,12 @@ namespace AyanamisTower.StellaEcs;
 public interface ISystem
 {
     /// <summary>
+    /// Gets or sets a value indicating whether the system is enabled.
+    /// /// If false, the system will be skipped during updates.
+    /// </summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>
     /// This method is called once per frame to update the state of the world.
     /// </summary>
     /// <param name="world">A reference to the main world.</param>

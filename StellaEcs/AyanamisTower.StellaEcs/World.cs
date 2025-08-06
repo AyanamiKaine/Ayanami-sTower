@@ -288,6 +288,7 @@ public class World
     {
         foreach (var system in _systems)
         {
+            if (!system.Enabled) continue;
             system.Update(this, deltaTime);
         }
         ClearAllMessages();

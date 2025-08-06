@@ -60,7 +60,7 @@ public class SystemAndQueryTests
         _world.InvokeFunction(entity, "Damage");
 
         // Assert
-        var health = entity.Get<HealthComponent>();
+        var health = entity.GetCopy<HealthComponent>();
         Assert.Equal(90, health.Health);
     }
 
@@ -103,6 +103,20 @@ public class SystemAndQueryTests
         Assert.Contains(entity3, posAndVelQuery);
 
         Assert.Empty(noMatchQuery);
+    }
+
+    [Fact]
+    public void DisablesSystemsShouldNotUpdate()
+    {
+        // Arrange
+        var mockSystem = new MockSystem { Enabled = false };
+        _world.RegisterSystem(mockSystem);
+
+        // Act
+        _world.Update(0.16f);
+
+        // Assert
+        Assert.Equal(0, mockSystem.UpdateCount);
     }
 
 

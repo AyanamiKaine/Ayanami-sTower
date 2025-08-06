@@ -22,6 +22,8 @@ public struct HealthComponent
 // A mock system for testing registration and updates.
 public class MockSystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
+
     public int UpdateCount { get; private set; }
 
     public void Update(World world, float deltaTime)
@@ -59,6 +61,8 @@ public struct TestMessage
 // A mock system that publishes a TestMessage when told to.
 public class MessagePublishingSystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
+
     public bool ShouldPublish { get; set; } = false;
     public int DataToPublish { get; set; } = 0;
 
@@ -74,6 +78,8 @@ public class MessagePublishingSystem : ISystem
 // A mock system that reads TestMessages and stores them for inspection.
 public class MessageReadingSystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
+
     public readonly List<TestMessage> ReceivedMessages = new();
 
     public void Update(World world, float deltaTime)
