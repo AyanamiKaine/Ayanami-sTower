@@ -378,4 +378,9 @@ public class World
             Console.WriteLine($"[Error] Attempted to invoke unknown function: '{functionName}'");
         }
     }
+
+    // TODO: Implement a way to remove systems and functions if needed.
+    // TODO: Implement a way to clear all entities and components if needed.
+    // TODO: Implement a way to serialize/deserialize the world state for saving/loading.
+    // TODO: Implement a way to disable systems without removing them, for temporary pauses or special conditions.
 }
