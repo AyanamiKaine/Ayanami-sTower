@@ -10,6 +10,13 @@ TODO: Implement sqlite for storing relationships between entities.
 While we can use the components to model relationships, we might want to have a more complex relationship between entities.
 */
 
+// TODO: I would be nice to have much more meta data for plugins and the ecs world in general.
+// For example, we could have a plugin version, author, description, etc.
+// It would then be possible to have a plugin manager that can handle updates, dependencies, etc.
+// Also we could have a http server that represents the world state and allows remote clients to interact with it.
+// We could also have a web interface that allows users to interact with the world, view entities, components, systems, etc.
+// We could see the world as a graph of entities, components, and systems. 
+
 /// <summary>
 /// The main class that manages all entities, components, and systems.
 /// It acts as the central hub for all ECS operations.
