@@ -33,6 +33,8 @@ public struct IsParticle;
 /// </summary>
 public class MovementSystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
+
     public void Update(World world, float deltaTime)
     {
         var query = world.Query(typeof(Position), typeof(Velocity));
@@ -53,6 +55,8 @@ public class MovementSystem : ISystem
 /// </summary>
 public class LifetimeSystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
+
     public void Update(World world, float deltaTime)
     {
         // We must .ToList() here because destroying an entity modifies the collection we are iterating over.
@@ -80,6 +84,7 @@ public class LifetimeSystem : ISystem
 /// </summary>
 public class DamageSystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
     public void Update(World world, float deltaTime)
     {
         // We must .ToList() here because we are removing the Damage component.
@@ -89,7 +94,7 @@ public class DamageSystem : ISystem
             if (!entity.IsValid()) continue;
 
             ref var health = ref entity.GetMut<Health>();
-            var damage = entity.Get<Damage>().Amount;
+            var damage = entity.GetCopy<Damage>().Amount;
             health.Value -= damage;
 
             // The damage is applied, so we remove the component.
@@ -100,6 +105,8 @@ public class DamageSystem : ISystem
 
 public class EnemyAISystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
+
     public void Update(World world, float deltaTime)
     {
         // Find the player first. In a real game, this might be cached.
@@ -120,19 +127,21 @@ public class EnemyAISystem : ISystem
 
 public class ParticleSpawningSystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
+
     public void Update(World world, float deltaTime)
     {
         // This system reacts to entities that just took damage this frame.
         // For the benchmark, we'll assume the DamageSystem ran first.
         // To find them, we'd typically use a message or a "DamageEvent" component.
         // Here, we'll just spawn a few particles for demonstration.
-        var damagedEntities = world.Query(typeof(Health)).Where(e => e.Get<Health>().Value < 100).Take(5);
+        var damagedEntities = world.Query(typeof(Health)).Where(e => e.GetCopy<Health>().Value < 100).Take(5);
 
         foreach (var damagedEntity in damagedEntities)
         {
             var particle = world.CreateEntity();
             particle.Set(new IsParticle());
-            particle.Set(damagedEntity.Get<Position>()); // Spawn at the location of the damaged entity
+            particle.Set(damagedEntity.GetCopy<Position>()); // Spawn at the location of the damaged entity
             particle.Set(new Lifetime { TimeRemaining = 0.5f });
         }
     }
@@ -144,10 +153,12 @@ public class ParticleSpawningSystem : ISystem
 /// </summary>
 public class StatusEffectSystem : ISystem
 {
+    public bool Enabled { get; set; } = true;
+
     public void Update(World world, float deltaTime)
     {
         var lowHealthEntities = world.Query(typeof(Health))
-                                     .Where(e => e.Get<Health>().Value < 30 && !e.Has<IsFrozen>())
+                                     .Where(e => e.GetCopy<Health>().Value < 30 && !e.Has<IsFrozen>())
                                      .ToList();
 
         foreach (var entity in lowHealthEntities)
@@ -303,7 +314,7 @@ public class StellaEcsBenchmarks
         foreach (var entity in _entities)
         {
             // We know all entities have a Position component from the setup.
-            var pos = entity.Get<Position>();
+            var pos = entity.GetCopy<Position>();
         }
     }
 
