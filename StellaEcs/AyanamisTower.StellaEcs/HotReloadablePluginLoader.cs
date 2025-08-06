@@ -281,8 +281,7 @@ public class HotReloadablePluginLoader : IDisposable
         _watcher.Dispose();
 
         // Create a copy of the keys to avoid modification during iteration
-        var pluginPaths = _loadedPlugins.Keys.ToList();
-        foreach (var path in pluginPaths)
+        foreach (var path in _loadedPlugins.Keys.ToList())
         {
             UnloadPlugin(path);
         }
