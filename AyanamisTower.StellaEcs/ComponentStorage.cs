@@ -1,203 +1,211 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+
 namespace AyanamisTower.StellaEcs;
 
 /// <summary>
-/// Stores components of type <typeparamref name="T"/> using a sparse set for efficient access and cache-friendly iteration.
+/// Manages the storage for a single type of component using a sparse set.
+/// A sparse set allows for $O(1)$ access, insertion, and removal of components for any entity.
 /// </summary>
-public class ComponentStorage<T>(int capacity, int universeSize) : IComponentStorage where T : struct // Using 'struct' is common for performance
+/// <typeparam name="T">The type of component to store.</typeparam>
+public class ComponentStorage<T> : IComponentStorage
 {
-    // The same arrays as before for the sparse set logic
-    private readonly int[] _dense = new int[capacity];
-    private readonly int[] _sparse = new int[universeSize];
-
-    // The new parallel array to store the actual component data
-    private readonly T[] _components = new T[capacity];
+    /// <summary>
+    /// A tightly packed array that stores the actual component data. This is the "dense" part of the sparse set.
+    /// Iterating over this array is cache-friendly.
+    /// </summary>
+    private T[] _components;
 
     /// <summary>
-    /// Gets the current number of components stored in this storage.
+    /// A parallel array to `_components` that stores the Entity for each component.
+    /// This allows us to know which entity owns the component at a given dense index.
     /// </summary>
-    public int Count { get; private set; } = 0;
+    private Entity[] _entities;
+
     /// <summary>
-    /// Gets the maximum number of components that can be stored in this storage.
+    /// Indexed by the entity's ID. It stores the index into the `_components` array (the dense index).
+    /// A value of -1 indicates that the entity does not have this component. This is the "sparse" part of the set.
     /// </summary>
-    public int Capacity { get; } = capacity;
+    private readonly int[] _sparse;
+
+    /// <summary>
+    /// Gets the current number of components stored.
+    /// </summary>
+    public int Count { get; private set; }
+
+    /// <summary>
+    /// Gets the current capacity of the dense arrays. This will grow automatically.
+    /// </summary>
+    public int DenseCapacity => _components.Length;
+
     /// <summary>
     /// Gets the maximum number of entities supported by this storage.
     /// </summary>
-    public int UniverseSize { get; } = universeSize;
-
-    // Provides direct, cache-friendly access for systems
-    /// <summary>
-    /// Gets a read-only span of the packed component data for efficient iteration.
-    /// </summary>
-    public ReadOnlySpan<T> PackedComponents => new(_components, 0, Count);
+    public uint MaxEntities { get; }
 
     /// <summary>
-    /// Gets a mutable span of the packed component data for efficient modification.
+    /// Initializes a new instance of the <see cref="ComponentStorage{T}"/> class.
     /// </summary>
-    public Span<T> PackedComponentsMutable => new(_components, 0, Count);
-
-    /// <summary>
-    /// Gets a read-only span of the packed entity IDs for efficient iteration.
-    /// </summary>
-    public ReadOnlySpan<int> PackedEntities => new(_dense, 0, Count);
-
-    /// <summary>
-    /// Adds a component of type <typeparamref name="T"/> for the specified entity ID.
-    /// </summary>
-    /// <param name="entityId">The ID of the entity to add the component for.</param>
-    /// <param name="component">The component data to add.</param>
-    public void Add(int entityId, T component)
+    /// <param name="initialCapacity">The initial number of components the storage can hold before resizing.</param>
+    /// <param name="maxEntities">The maximum number of entities the world can have. This defines the size of the sparse array.</param>
+    public ComponentStorage(int initialCapacity = 256, uint maxEntities = 100_000)
     {
-        if (Count >= Capacity || entityId < 0 || entityId >= UniverseSize || Has(entityId))
+        // Use `int` for capacity and count to align with C# array lengths and common practices.
+        _components = new T[initialCapacity];
+        _entities = new Entity[initialCapacity];
+        MaxEntities = maxEntities;
+
+        // The sparse array's size is fixed by maxEntities.
+        _sparse = new int[maxEntities];
+        // It's crucial to initialize sparse with a sentinel value (-1) to indicate "no component".
+        Array.Fill(_sparse, -1);
+    }
+
+    /// <summary>
+    /// Checks if a given entity has a component in this storage.
+    /// This is an $O(1)$ operation.
+    /// </summary>
+    /// <param name="entity">The entity to check.</param>
+    /// <returns><c>true</c> if the entity has the component; otherwise, <c>false</c>.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool Has(Entity entity)
+    {
+        uint sparseIndex = entity.Id;
+        // Ensure the entity ID is within the bounds of the sparse array.
+        if (sparseIndex >= MaxEntities) return false;
+
+        int denseIndex = _sparse[sparseIndex];
+
+        // A valid entry must:
+        // 1. Not be the sentinel value (-1).
+        // 2. Point to a valid index within the current count of dense elements.
+        // 3. The entity at that dense index must match the entity we are checking (accounts for entity generations).
+        return denseIndex != -1 && denseIndex < Count && _entities[denseIndex] == entity;
+    }
+
+    /// <summary>
+    /// Sets or replaces a component for a given entity.
+    /// This is an $O(1)$ operation (amortized, due to potential resizing).
+    /// </summary>
+    /// <param name="entity">The entity to which the component will be attached.</param>
+    /// <param name="component">The component data to set.</param>
+    public void Set(Entity entity, T component)
+    {
+        if (Has(entity))
         {
+            // If the entity already has this component, just replace the data.
+            int localDenseIndex = _sparse[entity.Id];
+            _components[localDenseIndex] = component;
             return;
         }
 
-        // The logic is identical, we just add one more step
-        _dense[Count] = entityId;
-        _sparse[entityId] = Count;
-        _components[Count] = component; // <-- The new step!
+        // The entity does not have the component, so add a new one.
+        // First, check if our dense arrays are full.
+        if (Count == DenseCapacity)
+        {
+            // If so, double their size.
+            int newCapacity = Count == 0 ? 4 : Count * 2; // Start with 4 if empty.
+            Array.Resize(ref _components, newCapacity);
+            Array.Resize(ref _entities, newCapacity);
+        }
+
+        int denseIndex = Count;
+        uint sparseIndex = entity.Id;
+
+        // Place the new component and its entity at the end of the dense arrays.
+        _components[denseIndex] = component;
+        _entities[denseIndex] = entity;
+
+        // Update the sparse array to point to the new location in the dense array.
+        _sparse[sparseIndex] = denseIndex;
 
         Count++;
     }
 
     /// <summary>
-    /// Removes the component of type <typeparamref name="T"/> for the specified entity ID, if it exists.
+    /// Gets a copy of the component for a given entity. This is safe for concurrent reads.
     /// </summary>
-    /// <param name="entityId">The ID of the entity whose component should be removed.</param>
-    public void Remove(int entityId)
+    /// <param name="entity">The entity whose component to retrieve.</param>
+    /// <returns>A copy of the component data for the entity.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown if the entity does not have a component of this type.</exception>
+    public T Get(Entity entity)
     {
-        if (!Has(entityId))
+        // This implicitly dereferences the ref, creating a copy.
+        return GetMut(entity);
+    }
+
+    /// <summary>
+    /// Gets a mutable reference to the component for a given entity for direct, in-place modification.
+    /// </summary>
+    /// <param name="entity">The entity whose component to retrieve.</param>
+    /// <returns>A mutable reference to the component data for the entity.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown if the entity does not have a component of this type.</exception>
+    public ref T GetMut(Entity entity)
+    {
+        if (!Has(entity))
         {
-            return;
+            throw new KeyNotFoundException($"Entity {entity} does not have a component of type {typeof(T).Name}.");
         }
+        int denseIndex = _sparse[entity.Id];
+        return ref _components[denseIndex];
+    }
 
-        int indexOfEntity = _sparse[entityId];
-        int lastEntity = _dense[Count - 1];
-        T lastComponent = _components[Count - 1]; // <-- Get the last component
+    /// <summary>
+    /// Removes a component from an entity.
+    /// This is an $O(1)$ "swap and pop" operation.
+    /// </summary>
+    /// <param name="entity">The entity from which to remove the component.</param>
+    public void Remove(Entity entity)
+    {
+        if (!Has(entity)) return;
 
-        // Perform the swap on all parallel arrays
-        _dense[indexOfEntity] = lastEntity;
-        _components[indexOfEntity] = lastComponent; // <-- The new step!
-        _sparse[lastEntity] = indexOfEntity;
+        // Get the indices for the entity we want to remove.
+        uint sparseIndexToRemove = entity.Id;
+        int denseIndexToRemove = _sparse[sparseIndexToRemove];
+
+        // Get the info for the *last* element in the dense array.
+        int lastDenseIndex = Count - 1;
+        Entity lastEntity = _entities[lastDenseIndex];
+
+        // --- The "Swap and Pop" ---
+        // 1. Move the last element into the position of the element we are removing.
+        _components[denseIndexToRemove] = _components[lastDenseIndex];
+        _entities[denseIndexToRemove] = lastEntity;
+
+        // 2. Update the sparse array for the moved entity to point to its new dense index.
+        _sparse[lastEntity.Id] = denseIndexToRemove;
+
+        // 3. Invalidate the sparse entry for the removed entity.
+        _sparse[sparseIndexToRemove] = -1;
+
+        // 4. Clear the now-unused last element to allow the GC to collect it if it's a reference type.
+        _components[lastDenseIndex] = default!;
+        _entities[lastDenseIndex] = default; // or Entity.Null
 
         Count--;
     }
 
     /// <summary>
-    /// Determines whether a component of type <typeparamref name="T"/> exists for the specified entity ID.
+    /// Gets an enumerable collection of all entities that have a component in this storage.
     /// </summary>
-    /// <param name="entityId">The ID of the entity to check for a component.</param>
-    /// <returns>True if the component exists for the entity; otherwise, false.</returns>
-    public bool Has(int entityId)
+    /// <returns>An <see cref="IEnumerable{Entity}"/> that can be iterated over.</returns>
+    public IEnumerable<Entity> GetEntities()
     {
-        if (entityId < 0 || entityId >= UniverseSize) return false;
-        int indexInDense = _sparse[entityId];
-        return indexInDense < Count && _dense[indexInDense] == entityId;
-    }
-
-    /// <summary>
-    /// Gets a reference to the component of type <typeparamref name="T"/> for the specified entity ID.
-    /// </summary>
-    /// <param name="entityId">The ID of the entity whose component should be retrieved.</param>
-    /// <returns>A reference to the component associated with the specified entity ID.</returns>
-    public ref T GetComponent(int entityId)
-    {
-        // Note: This assumes you've already checked Has(entityId)
-        // Returning by 'ref' is a high-performance pattern that avoids copying structs.
-        return ref _components[_sparse[entityId]];
-    }
-
-    /// <summary>
-    /// Adds a new component or updates an existing one for the specified entity.
-    /// This provides a convenient "upsert" (update or insert) operation.
-    /// </summary>
-    /// <param name="entityId">The ID of the entity.</param>
-    /// <param name="component">The component data to set.</param>
-    public void Set(int entityId, T component)
-    {
-        if (Has(entityId))
+        for (int i = 0; i < Count; i++)
         {
-            // Entity already has the component, so update it in-place.
-            _components[_sparse[entityId]] = component;
-        }
-        else
-        {
-            // Entity doesn't have the component, so add it.
-            // The Add method already contains all the necessary checks (capacity, bounds, etc.).
-            Add(entityId, component);
+            yield return _entities[i];
         }
     }
 
     /// <summary>
-    /// Gets a readonly reference to the component for the specified entity ID.
-    /// This is the preferred method for safe, high-performance read-only access as it avoids copying the struct.
-    /// <para><b>Warning:</b> For maximum performance, this method does not perform a `Has()` check. The caller is responsible for ensuring the entity has the component before calling; otherwise, behavior is undefined and may lead to data corruption.</para>
+    /// Gets a read-only span of the tightly-packed components.
+    /// Useful for high-performance, cache-friendly iteration in systems.
     /// </summary>
-    /// <param name="entityId">The ID of the entity whose component should be retrieved.</param>
-    /// <returns>A readonly reference to the component.</returns>
-    public ref readonly T Get(int entityId)
+    /// <returns>A <see cref="ReadOnlySpan{T}"/> over the components.</returns>
+    public ReadOnlySpan<T> GetComponentsSpan()
     {
-        // Note: This returns a readonly reference. The caller cannot modify the component.
-        // It assumes you've already checked Has(entityId).
-        return ref _components[_sparse[entityId]];
-    }
-
-    /// <summary>
-    /// Gets a mutable reference to the component for the specified entity ID.
-    /// This method allows for direct, in-place modification of the component data, which is highly efficient.
-    /// <para><b>Warning:</b> For maximum performance, this method does not perform a `Has()` check. The caller is responsible for ensuring the entity has the component before calling; otherwise, behavior is undefined and may lead to data corruption.</para>
-    /// </summary>
-    /// <param name="entityId">The ID of the entity whose component should be retrieved for modification.</param>
-    /// <returns>A mutable reference to the component.</returns>
-    public ref T GetMutable(int entityId)
-    {
-        // Note: This returns a mutable reference, allowing in-place modification.
-        // It assumes you've already checked Has(entityId).
-        return ref _components[_sparse[entityId]];
-    }
-
-    /// <summary>
-    /// Tries to get the component for a specified entity.
-    /// This method is safer than `Get()` or `GetMutable()` as it performs all necessary checks, but it involves copying the component struct into the `out` parameter. It is ideal for situations where safety is preferred over absolute performance.
-    /// </summary>
-    /// <param name="entityId">The ID of the entity.</param>
-    /// <param name="component">When this method returns, contains the component associated with the specified entity, if the component is found; otherwise, the default value for the type of the value parameter. This parameter is passed uninitialized.</param>
-    /// <returns>true if the entity has the component; otherwise, false.</returns>
-    public bool TryGetValue(int entityId, out T component)
-    {
-        if (Has(entityId))
-        {
-            // This creates a copy of the struct.
-            component = _components[_sparse[entityId]];
-            return true;
-        }
-
-        component = default;
-        return false;
-    }
-
-
-    // --- Runtime/Non-Generic API Implementation ---
-
-    void IComponentStorage.SetAsObject(int entityId, object componentData)
-    {
-        // This will throw an InvalidCastException if the type is wrong, which is desired behavior.
-        Set(entityId, (T)componentData);
-    }
-
-    object IComponentStorage.GetAsObject(int entityId)
-    {
-        // This will box the struct into an object, creating a copy.
-        return Get(entityId);
-    }
-
-    /// <summary>
-    /// Explicitly implements the IComponentStorage.Remove method.
-    /// </summary>
-    void IComponentStorage.Remove(int entityId)
-    {
-        // This will call the public Remove(int entityId) method of this class.
-        Remove(entityId);
+        return new ReadOnlySpan<T>(_components, 0, Count);
     }
 }

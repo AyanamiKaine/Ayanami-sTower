@@ -3,42 +3,28 @@ using System;
 namespace AyanamisTower.StellaEcs;
 
 /// <summary>
-/// Defines a non-generic interface for a component storage,
-/// allowing the World to manage storages of different component types.
+/// A non-generic interface for ComponentStorage, allowing different storage types 
+/// to be managed by the World in a single collection.
 /// </summary>
-internal interface IComponentStorage
+public interface IComponentStorage
 {
     /// <summary>
-    /// Gets the current number of components stored in this storage.
+    /// Gets the number of components in this storage.
     /// </summary>
     int Count { get; }
 
     /// <summary>
-    /// Gets a read-only span of the packed entity IDs for efficient iteration.
+    /// Checks if a given entity has a component in this storage.
     /// </summary>
-    ReadOnlySpan<int> PackedEntities { get; }
+    bool Has(Entity entity);
 
     /// <summary>
-    /// Checks if the storage contains a component for the given entity ID.
+    /// Removes a component from an entity, if it exists.
     /// </summary>
-    bool Has(int entityId);
+    void Remove(Entity entity);
 
     /// <summary>
-    /// Removes a component for the given entity ID from the storage, if it exists.
+    /// Gets an enumerable collection of all entities within this storage.
     /// </summary>
-    void Remove(int entityId);
-
-    /// <summary>
-    /// Adds a new component or updates an existing one for the specified entity, from a boxed object.
-    /// </summary>
-    /// <param name="entityId">The ID of the entity.</param>
-    /// <param name="componentData">The component data as a boxed object.</param>
-    void SetAsObject(int entityId, object componentData);
-
-    /// <summary>
-    /// Gets the component for the specified entity as a boxed object.
-    /// </summary>
-    /// <param name="entityId">The ID of the entity.</param>
-    /// <returns>The component data as a boxed object.</returns>
-    object GetAsObject(int entityId);
+    IEnumerable<Entity> GetEntities();
 }
