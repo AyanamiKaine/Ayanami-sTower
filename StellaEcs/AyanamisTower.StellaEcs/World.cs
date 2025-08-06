@@ -388,6 +388,30 @@ public class World
     }
 
     /// <summary>
+    /// Disables a system of a specific type.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public void DisableSystem<T>() where T : ISystem
+    {
+        foreach (var system in _systems.OfType<T>())
+        {
+            system.Enabled = false;
+        }
+    }
+
+    /// <summary>
+    /// Enables a system of a specific type.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public void EnableSystem<T>() where T : ISystem
+    {
+        foreach (var system in _systems.OfType<T>())
+        {
+            system.Enabled = true;
+        }
+    }
+
+    /// <summary>
     /// Removes a registered function from the world.
     /// </summary>
     public void RemoveFunction(string functionName)
@@ -397,5 +421,4 @@ public class World
 
     // TODO: Implement a way to clear all entities and components if needed.
     // TODO: Implement a way to serialize/deserialize the world state for saving/loading.
-    // TODO: Implement a way to disable systems without removing them, for temporary pauses or special conditions.
 }
