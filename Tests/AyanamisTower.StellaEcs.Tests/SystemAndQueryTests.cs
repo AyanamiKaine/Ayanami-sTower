@@ -120,6 +120,21 @@ public class SystemAndQueryTests
     }
 
     [Fact]
+    public void EnableSystem_ShouldUpdate()
+    {
+        // Arrange
+        var mockSystem = new MockSystem { Enabled = false };
+        _world.RegisterSystem(mockSystem);
+
+        // Act
+        _world.EnableSystem<MockSystem>();
+        _world.Update(0.16f);
+
+        // Assert
+        Assert.Equal(1, mockSystem.UpdateCount);
+    }
+
+    [Fact]
     public void RemoveSystem()
     {
         // Arrange
