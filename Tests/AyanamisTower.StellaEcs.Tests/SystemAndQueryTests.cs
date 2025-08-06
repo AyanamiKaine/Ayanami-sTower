@@ -104,4 +104,37 @@ public class SystemAndQueryTests
 
         Assert.Empty(noMatchQuery);
     }
+
+
+    [Fact]
+    public void MessageSystem_ShouldDeliverAndClearMessagesPerFrame()
+    {
+        // Arrange
+        var publishingSystem = new MessagePublishingSystem();
+        var readingSystem = new MessageReadingSystem();
+
+        _world.RegisterSystem(publishingSystem);
+        _world.RegisterSystem(readingSystem);
+
+        // --- Act & Assert: Frame 1 (Publish a message) ---
+        // Tell the system to publish a message with data 42 on the next update.
+        publishingSystem.ShouldPublish = true;
+        publishingSystem.DataToPublish = 42;
+
+        _world.Update(0.16f);
+
+        // The reading system should have received exactly one message with the correct data.
+        Assert.Single(readingSystem.ReceivedMessages);
+        Assert.Equal(42, readingSystem.ReceivedMessages[0].Data);
+
+        // --- Act & Assert: Frame 2 (Don't publish, verify clearance) ---
+        // Tell the system NOT to publish a message on the next update.
+        publishingSystem.ShouldPublish = false;
+
+        _world.Update(0.16f);
+
+        // The reading system should now have an empty list, proving that
+        // the message from Frame 1 was successfully cleared.
+        Assert.Empty(readingSystem.ReceivedMessages);
+    }
 }

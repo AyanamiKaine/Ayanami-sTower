@@ -49,3 +49,39 @@ public class MockFunction : IEntityFunction
         }
     }
 }
+
+// A simple message struct for testing.
+public struct TestMessage
+{
+    public int Data;
+}
+
+// A mock system that publishes a TestMessage when told to.
+public class MessagePublishingSystem : ISystem
+{
+    public bool ShouldPublish { get; set; } = false;
+    public int DataToPublish { get; set; } = 0;
+
+    public void Update(World world, float deltaTime)
+    {
+        if (ShouldPublish)
+        {
+            world.PublishMessage(new TestMessage { Data = DataToPublish });
+        }
+    }
+}
+
+// A mock system that reads TestMessages and stores them for inspection.
+public class MessageReadingSystem : ISystem
+{
+    public readonly List<TestMessage> ReceivedMessages = new();
+
+    public void Update(World world, float deltaTime)
+    {
+        // Clear previous frame's results before reading the new ones.
+        ReceivedMessages.Clear();
+
+        var messages = world.ReadMessages<TestMessage>();
+        ReceivedMessages.AddRange(messages);
+    }
+}

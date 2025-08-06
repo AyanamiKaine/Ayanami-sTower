@@ -30,6 +30,15 @@ public class World
     private readonly List<ISystem> _systems = [];
     private readonly Dictionary<string, IEntityFunction> _functions = [];
 
+    /*
+    Idea used by https://github.com/MoonsideGames/MoonTools.ECS
+    CHECK IT OUT!
+    */
+
+    /// <summary>
+    /// Stores all message buses, keyed by their message type.
+    /// </summary>
+    private readonly Dictionary<Type, IMessageBus> _messageBuses = [];
     /// <summary>
     /// Creates a default world with the max allowed entity number of 5000:
     /// DESIGN NOTE: Why is a low number of entites good? Imagine this
@@ -250,6 +259,20 @@ public class World
     }
 
     /// <summary>
+    /// Gets the existing message bus for a message type, or creates a new one if it doesn't exist.
+    /// </summary>
+    private MessageBus<T> GetOrCreateMessageBus<T>() where T : struct
+    {
+        var type = typeof(T);
+        if (!_messageBuses.TryGetValue(type, out var bus))
+        {
+            bus = new MessageBus<T>();
+            _messageBuses[type] = bus;
+        }
+        return (MessageBus<T>)bus;
+    }
+
+    /// <summary>
     /// Adds a new system to the world.
     /// </summary>
     public void RegisterSystem(ISystem system)
@@ -266,6 +289,46 @@ public class World
         foreach (var system in _systems)
         {
             system.Update(this, deltaTime);
+        }
+        ClearAllMessages();
+    }
+
+    /// <summary>
+    /// Publishes a message to the world. Any system can read this message during the current frame.
+    /// All messages are cleared at the end of the frame.
+    /// </summary>
+    /// <typeparam name="T">The type of the message.</typeparam>
+    /// <param name="message">The message instance to publish.</param>
+    public void PublishMessage<T>(T message) where T : struct
+    {
+        var bus = GetOrCreateMessageBus<T>();
+        bus.Publish(message);
+    }
+
+    /// <summary>
+    /// Reads all messages of a specific type that have been published in the current frame.
+    /// </summary>
+    /// <typeparam name="T">The type of the message to read.</typeparam>
+    /// <returns>A read-only list of messages. Returns an empty list if no messages of this type were published.</returns>
+    public IReadOnlyList<T> ReadMessages<T>() where T : struct
+    {
+        var type = typeof(T);
+        if (_messageBuses.TryGetValue(type, out var bus))
+        {
+            return ((MessageBus<T>)bus).GetMessages();
+        }
+        // Return a static empty list to avoid allocation
+        return [];
+    }
+
+    /// <summary>
+    /// Iterates through all message buses and clears them.
+    /// </summary>
+    private void ClearAllMessages()
+    {
+        foreach (var bus in _messageBuses.Values)
+        {
+            bus.Clear();
         }
     }
 
