@@ -146,7 +146,6 @@ public class HotReloadablePluginLoader : IDisposable
 
         Console.WriteLine($"[PluginLoader] Loading plugin from: {Path.GetFileName(path)}");
 
-        // CHANGE: Use our custom PluginLoadContext
         var loadContext = new PluginLoadContext(path);
 
         try
