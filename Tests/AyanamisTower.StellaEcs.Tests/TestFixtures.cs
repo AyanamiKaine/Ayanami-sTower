@@ -85,3 +85,90 @@ public class MessageReadingSystem : ISystem
         ReceivedMessages.AddRange(messages);
     }
 }
+
+public struct PlayerInfo
+{
+    public string Name;
+}
+
+public struct InventoryData
+{
+    public int Capacity;
+}
+
+/// <summary>
+/// Component on the Player, pointing to their Inventory.
+/// The Entity field acts as a "foreign key".
+/// </summary>
+public struct HasInventory
+{
+    public Entity InventoryEntity;
+}
+
+/// <summary>
+/// Component on the Inventory, pointing back to its owner.
+/// This makes the relationship bidirectional.
+/// </summary>
+public struct BelongsToOwner
+{
+    public Entity OwnerEntity;
+}
+
+
+// --- Components for One-to-Many Relationship Test ---
+
+public struct GuildInfo
+{
+    public string Name;
+}
+
+/// <summary>
+/// Component placed on a Member entity, pointing to the Guild they belong to.
+/// This is the ECS equivalent of a `guild_id` foreign key on the `Members` table.
+/// </summary>
+public struct GuildMembership
+{
+    public Entity GuildEntity;
+}
+
+
+// --- Components for Many-to-Many Relationship Test ---
+
+public struct StudentInfo
+{
+    public string Name;
+}
+
+public struct CourseInfo
+{
+    public string Name;
+}
+
+// These next components are used on the "Relation Entity" (the Enrollment).
+
+/// <summary>
+/// A component on the relation entity that points to the student.
+/// (The `student_id` foreign key).
+/// </summary>
+public struct EnrolledStudent
+{
+    public Entity StudentEntity;
+}
+
+/// <summary>
+/// A component on the relation entity that points to the course.
+/// (The `course_id` foreign key).
+/// </summary>
+public struct EnrolledInCourse
+{
+    public Entity CourseEntity;
+}
+
+/// <summary>
+/// Data *about* the relationship can also live on the relation entity.
+/// This is like having a `grade` column on the `Enrollments` join table.
+/// </summary>
+public struct Grade
+{
+    public char Value;
+}
