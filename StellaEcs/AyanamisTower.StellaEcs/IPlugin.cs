@@ -1,0 +1,21 @@
+using System;
+
+namespace AyanamisTower.StellaEcs;
+
+/// <summary>
+/// The contract for an external plugin. A plugin's job is to register its
+/// systems and components with the main world.
+/// </summary>
+public interface IPlugin
+{
+    /// <summary>
+    /// Gets the name of the plugin.
+    /// </summary>
+    string Name { get; }
+
+    /// <summary>
+    /// Called by the main application to let the plugin register its systems.
+    /// </summary>
+    /// <param name="world">The main world instance.</param>
+    void Initialize(World world);
+}
