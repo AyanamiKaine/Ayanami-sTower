@@ -1,7 +1,9 @@
 ﻿using AyanamisTower.StellaEcs;
+using AyanamisTower.StellaEcs.Components;
 
-record struct Position2D(int X, int Y);
 
+
+using System.Timers;
 
 static class Program
 {
@@ -9,17 +11,33 @@ static class Program
     {
         var world = new World();
 
-        var e1 = world.CreateEntity(); e1.Add(new Position2D { X = 10, Y = 0 });
-        var e2 = world.CreateEntity(); e2.Add(new Position2D { X = 50, Y = 0 });
-        var e3 = world.CreateEntity(); e3.Add(new Position2D { X = 100, Y = 0 });
 
-        // Act: Find all entities with Position.X > 30
-        var query = world.Query()
-            .With<Position2D>()
-            .Where<Position2D>(p => p.X > 30)
-            .Build();
+        var pluginLoader = new HotReloadablePluginLoader(world, "Plugins");
 
-        var results = new List<Entity>();
-        foreach (var e in query) Console.WriteLine(e);
+        // 3. Load all plugins that already exist in the folder at startup.
+        pluginLoader.LoadAllExistingPlugins();
+
+        // 4. Start watching for any new plugins or changes.
+        pluginLoader.StartWatching();
+
+        world.CreateEntity()
+            .Set(new Position2D(0, 0))
+            .Set(new Velocity2D(1, 1));
+
+        System.Timers.Timer timer = new(1000.0 / 60); // 60 FPS
+        timer.Elapsed += (sender, e) =>
+        {
+            world.Update(1f / 60f); // Update with delta time
+        };
+
+        timer.AutoReset = true;
+        timer.Start();
+
+        while (true)
+        {
+            // Keep the application running
+            Thread.Sleep(1000);
+        }
     }
 }
+
