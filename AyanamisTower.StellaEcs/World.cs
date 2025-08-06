@@ -27,6 +27,8 @@ public class World
     /// Stores all component storages, keyed by their component type.
     /// </summary>
     private readonly Dictionary<Type, IComponentStorage> _storages = [];
+    private readonly List<ISystem> _systems = [];
+    private readonly Dictionary<string, IEntityFunction> _functions = new();
 
     /// <summary>
     /// Creates a default world with the max allowed entity number of 100_000
@@ -236,5 +238,71 @@ public class World
             _storages[type] = storage;
         }
         return (ComponentStorage<T>)storage;
+    }
+
+    /// <summary>
+    /// Adds a new system to the world.
+    /// </summary>
+    public void RegisterSystem(ISystem system)
+    {
+        _systems.Add(system);
+        Console.WriteLine($"[World] Registered System: {system.GetType().Name}");
+    }
+
+    /// <summary>
+    /// The main update loop for the world. This will execute all registered systems.
+    /// </summary>
+    public void Update(float deltaTime)
+    {
+        foreach (var system in _systems)
+        {
+            system.Update(this, deltaTime);
+        }
+    }
+
+    /// <summary>
+    /// Registers a named function with the world.
+    /// </summary>
+    /// <param name="functionName">The public name to be used for invoking the function.</param>
+    /// <param name="function">The object that implements the function's logic.</param>
+    public void RegisterFunction(string functionName, IEntityFunction function)
+    {
+        if (_functions.ContainsKey(functionName))
+        {
+            Console.WriteLine($"[Warning] Overwriting existing function: {functionName}");
+        }
+        _functions[functionName] = function;
+        Console.WriteLine($"[World] Registered Function: {functionName}");
+    }
+
+    /// <summary>
+    /// Invokes a registered function by name on a specific entity.
+    /// </summary>
+    /// <param name="entity">The target entity for the function.</param>
+    /// <param name="functionName">The name of the function to call.</param>
+    /// <param name="parameters">A variable list of parameters to pass to the function.</param>
+    public void InvokeFunction(Entity entity, string functionName, params object[] parameters)
+    {
+        if (!IsEntityValid(entity))
+        {
+            Console.WriteLine($"[Error] Cannot invoke function '{functionName}' on an invalid entity.");
+            return;
+        }
+
+        if (_functions.TryGetValue(functionName, out var function))
+        {
+            try
+            {
+                function.Execute(entity, this, parameters);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] Exception while executing function '{functionName}': {ex.Message}");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"[Error] Attempted to invoke unknown function: '{functionName}'");
+        }
     }
 }
