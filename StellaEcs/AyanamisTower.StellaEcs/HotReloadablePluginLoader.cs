@@ -89,6 +89,9 @@ public class HotReloadablePluginLoader : IDisposable
         _watcher.EnableRaisingEvents = false;
     }
 
+    // TODO: Implement plugin ordering, versioning, etc.
+    // Its possible that a plugin depends on functions created by another plugin.
+
     /// <summary>
     /// Loads all existing plugins in the plugin directory.
     /// This should be called once at startup.
