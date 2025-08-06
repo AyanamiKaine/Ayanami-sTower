@@ -4,7 +4,7 @@ namespace AyanamisTower.StellaEcs.Components;
 /// <summary>
 /// Mostly used to give enties some unique name
 /// </summary>
-public class Name
+public class Name(string value = "")
 {
-    public string Value = string.Empty;
+    public string Value = value;
 }
