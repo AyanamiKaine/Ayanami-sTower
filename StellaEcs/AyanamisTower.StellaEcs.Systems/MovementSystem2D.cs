@@ -6,6 +6,10 @@ namespace AyanamisTower.StellaEcs.Systems;
 public class MovementSystem2D : ISystem
 {
     public bool Enabled { get; set; } = true;
+    public string Name { get; set; } = "MovementSystem2D";
+    public int Priority { get; set; } = 0;
+
+    public List<string> Dependencies => [];
 
     public void Update(World world, float deltaTime)
     {
@@ -14,8 +18,7 @@ public class MovementSystem2D : ISystem
             var pos2D = entity.GetCopy<Position2D>();
             var vel2D = entity.GetCopy<Velocity2D>();
 
-            pos2D.Value.X += vel2D.Value.X * deltaTime;
-            pos2D.Value.Y += vel2D.Value.Y * deltaTime;
+            pos2D.Value += vel2D.Value * deltaTime;
 
             entity.Set(pos2D);
         }

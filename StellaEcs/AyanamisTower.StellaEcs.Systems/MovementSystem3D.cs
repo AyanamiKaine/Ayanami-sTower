@@ -6,6 +6,9 @@ namespace AyanamisTower.StellaEcs.Systems;
 public class MovementSystem3D : ISystem
 {
     public bool Enabled { get; set; } = true;
+    public string Name { get; set; } = "MovementSystem3D";
+    public int Priority { get; set; } = 0;
+    public List<string> Dependencies => [];
 
     public void Update(World world, float deltaTime)
     {
@@ -14,9 +17,7 @@ public class MovementSystem3D : ISystem
             var pos3D = entity.GetCopy<Position3D>();
             var vel3D = entity.GetCopy<Velocity3D>();
 
-            pos3D.Value.X += vel3D.Value.X * deltaTime;
-            pos3D.Value.Y += vel3D.Value.Y * deltaTime;
-            pos3D.Value.Z += vel3D.Value.Z * deltaTime;
+            pos3D.Value += vel3D.Value * deltaTime;
 
             entity.Set(pos3D);
         }
