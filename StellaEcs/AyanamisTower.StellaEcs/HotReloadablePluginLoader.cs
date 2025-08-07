@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using System.Threading;
 
 namespace AyanamisTower.StellaEcs;
 
@@ -40,6 +41,13 @@ public class HotReloadablePluginLoader : IDisposable
 
     // We store the state of each plugin, keyed by its full file path.
     private readonly Dictionary<string, PluginState> _loadedPlugins = [];
+    
+    // --- DEBOUNCE FIX ---
+    // Dictionary to hold timers for debouncing file system events.
+    private readonly Dictionary<string, Timer> _debounceTimers = [];
+    // Time in milliseconds to wait after the last file event before reloading.
+    private const int DebounceTimeMs = 500;
+
     /// <summary>
     /// Manages loading, unloading, and hot-reloading of plugins from a directory.
     /// This loader uses collectible AssemblyLoadContexts to allow for true unloading of plugin DLLs.
@@ -54,11 +62,10 @@ public class HotReloadablePluginLoader : IDisposable
             Directory.CreateDirectory(_pluginDirectory);
         }
 
-        // Set up the watcher to monitor the plugin directory for changes.
         _watcher = new FileSystemWatcher(_pluginDirectory)
         {
-            // We tell the watcher to look inside the sub-folders as well.
             IncludeSubdirectories = true,
+            // Watch for changes to the last write time and file/directory name changes.
             NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName,
             Filter = "*.dll",
             EnableRaisingEvents = false
@@ -80,7 +87,6 @@ public class HotReloadablePluginLoader : IDisposable
         _watcher.EnableRaisingEvents = true;
     }
 
-
     /// <summary>
     /// Stops monitoring the plugin directory.
     /// </summary>
@@ -88,9 +94,6 @@ public class HotReloadablePluginLoader : IDisposable
     {
         _watcher.EnableRaisingEvents = false;
     }
-
-    // TODO: Implement plugin ordering, versioning, etc.
-    // Its possible that a plugin depends on functions created by another plugin.
 
     /// <summary>
     /// Loads all existing plugins in the plugin directory.
@@ -111,19 +114,15 @@ public class HotReloadablePluginLoader : IDisposable
 
     private static string? FindMainPluginDll(string directory)
     {
-        // A simple heuristic: find the first DLL that contains an IPlugin implementation.
-        // This could be made more robust (e.g., looking for a specific file name).
         foreach (var file in Directory.GetFiles(directory, "*.dll"))
         {
             try
             {
-                // We must load the assembly into a temporary context to inspect its types
-                // without locking it or loading it into our main application.
                 var tempContext = new AssemblyLoadContext("PluginInspector", isCollectible: true);
                 using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
                 var assembly = tempContext.LoadFromStream(fs);
                 bool hasPluginInterface = assembly.GetTypes().Any(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface);
-                tempContext.Unload(); // Unload the inspector context immediately
+                tempContext.Unload();
 
                 if (hasPluginInterface)
                 {
@@ -141,29 +140,25 @@ public class HotReloadablePluginLoader : IDisposable
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void LoadPlugin(string path)
     {
-        // Unload any existing version first
         if (_loadedPlugins.ContainsKey(path))
         {
             UnloadPlugin(path);
         }
 
         Console.WriteLine($"[PluginLoader] Loading plugin from: {Path.GetFileName(path)}");
-
         var loadContext = new PluginLoadContext(path);
 
         try
         {
-            // The rest is the same, but now dependencies will be resolved correctly!
             Assembly pluginAssembly = loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(path)));
-
             foreach (var type in pluginAssembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsInterface))
             {
-                IPlugin? pluginInstance = (IPlugin)Activator.CreateInstance(type)!;
-                if (pluginInstance == null) continue;
-
-                Console.WriteLine($"--- Initializing Plugin: {pluginInstance.Name} ---");
-                pluginInstance.Initialize(_world);
-                _loadedPlugins[path] = new PluginState(pluginInstance, loadContext, path);
+                if (Activator.CreateInstance(type) is IPlugin pluginInstance)
+                {
+                    Console.WriteLine($"--- Initializing Plugin: {pluginInstance.Name} ---");
+                    pluginInstance.Initialize(_world);
+                    _loadedPlugins[path] = new PluginState(pluginInstance, loadContext, path);
+                }
             }
         }
         catch (Exception e)
@@ -173,20 +168,14 @@ public class HotReloadablePluginLoader : IDisposable
         }
     }
 
-    /// <summary>
-    /// Atomically unloads a plugin, tells it to unregister its systems,
-    /// and marks its AssemblyLoadContext for collection by the GC.
-    /// </summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void UnloadPlugin(string path)
     {
         if (!_loadedPlugins.TryGetValue(path, out var pluginState)) return;
 
         Console.WriteLine($"--- Uninitializing Plugin: {pluginState.Plugin.Name} ---");
-
         try
         {
-            // The crucial cleanup step!
             pluginState.Plugin.Uninitialize(_world);
         }
         catch (Exception e)
@@ -194,82 +183,81 @@ public class HotReloadablePluginLoader : IDisposable
             Console.WriteLine($"[ERROR] Error during Uninitialize for {pluginState.Plugin.Name}: {e.Message}");
         }
 
-        // Get a reference to the context before removing the state
         var loadContext = pluginState.Context;
-
-        // Remove the plugin from our tracking dictionary.
         _loadedPlugins.Remove(path);
-
-        // This is the magic call. It starts the unload process.
         loadContext.Unload();
         Console.WriteLine($"[PluginLoader] Unloaded {Path.GetFileName(path)}.");
     }
 
-    // --- FileSystemWatcher Event Handlers ---
+    // --- FileSystemWatcher Event Handlers with Debounce ---
 
     private void OnPluginFileEvent(object sender, FileSystemEventArgs e)
     {
-        // When any DLL changes, we need to find the main plugin DLL for that directory and reload it.
-        // A small delay helps avoid issues with files being locked during writing.
-        Thread.Sleep(250);
         string? directory = Path.GetDirectoryName(e.FullPath);
         if (directory == null) return;
 
-        var mainDllPath = FindMainPluginDll(directory);
-        if (mainDllPath != null)
+        lock (_debounceTimers)
         {
-            if (e.ChangeType == WatcherChangeTypes.Deleted && !Directory.EnumerateFileSystemEntries(directory).Any())
+            if (_debounceTimers.TryGetValue(directory, out var existingTimer))
             {
-                Console.WriteLine($"[FSWatcher] Plugin directory {Path.GetFileName(directory)} is empty. Unloading.");
-                UnloadPlugin(mainDllPath);
+                // If a timer already exists for this directory, reset it.
+                existingTimer.Change(DebounceTimeMs, Timeout.Infinite);
             }
             else
             {
-                Console.WriteLine($"[FSWatcher] Detected change in {Path.GetFileName(directory)}. Reloading plugin.");
-                LoadPlugin(mainDllPath);
+                // If no timer exists, create a new one that will fire once after the debounce period.
+                var newTimer = new Timer(HandleReload, directory, DebounceTimeMs, Timeout.Infinite);
+                _debounceTimers[directory] = newTimer;
             }
+        }
+    }
+    
+    /// <summary>
+    /// This callback is executed by the debounce timer after the file events have settled.
+    /// </summary>
+    private void HandleReload(object? state)
+    {
+        var directory = (string)state!;
+        
+        // Clean up the timer for this directory.
+        lock (_debounceTimers)
+        {
+            if (_debounceTimers.Remove(directory, out var timer))
+            {
+                timer.Dispose();
+            }
+        }
+
+        Console.WriteLine($"[FSWatcher] Debounce time elapsed. Reloading plugin in: {Path.GetFileName(directory)}");
+        var mainDllPath = FindMainPluginDll(directory);
+        if (mainDllPath != null)
+        {
+            LoadPlugin(mainDllPath);
         }
     }
 
     private void OnPluginFileDeleted(object sender, FileSystemEventArgs e)
     {
         Console.WriteLine($"[FSWatcher] Detected deletion of: {e.Name}.");
-        Thread.Sleep(150);
-
-        // Find which loaded plugin this deleted file belonged to by checking its directory.
         string? deletedInDirectory = Path.GetDirectoryName(e.FullPath);
         if (deletedInDirectory == null) return;
 
-        // Find the plugin state where the main DLL's directory matches the directory of the deleted file.
-        // We use ToList() to create a copy, allowing us to safely modify the original collection.
         var pluginToUnload = _loadedPlugins.Values
             .FirstOrDefault(state => Path.GetDirectoryName(state.FilePath) == deletedInDirectory);
 
         if (pluginToUnload != null)
         {
             Console.WriteLine($"[PluginLoader] A file related to plugin '{pluginToUnload.Plugin.Name}' was deleted. Unloading the plugin.");
-            // We have the state, so we know the exact path to its main DLL to pass to UnloadPlugin.
             UnloadPlugin(pluginToUnload.FilePath);
         }
     }
 
     private void OnPluginFileRenamedEvent(object sender, RenamedEventArgs e)
     {
-        // This logic can get complex, a simple approach is to reload both old and new directories.
-        Thread.Sleep(250);
-        string? oldDirectory = Path.GetDirectoryName(e.OldFullPath);
-        if (oldDirectory != null)
-        {
-            var mainDll = FindMainPluginDll(oldDirectory);
-            if (mainDll != null) UnloadPlugin(mainDll);
-        }
-
-        string? newDirectory = Path.GetDirectoryName(e.FullPath);
-        if (newDirectory != null)
-        {
-            var mainDll = FindMainPluginDll(newDirectory);
-            if (mainDll != null) LoadPlugin(mainDll);
-        }
+        // A rename is like a delete from the old path and a create at the new path.
+        // The existing delete/create handlers with debouncing will handle this gracefully.
+        OnPluginFileDeleted(sender, new FileSystemEventArgs(WatcherChangeTypes.Deleted, Path.GetDirectoryName(e.OldFullPath)!, e.OldName));
+        OnPluginFileEvent(sender, new FileSystemEventArgs(WatcherChangeTypes.Created, Path.GetDirectoryName(e.FullPath)!, e.Name));
     }
 
     /// <summary>
@@ -280,13 +268,22 @@ public class HotReloadablePluginLoader : IDisposable
         StopWatching();
         _watcher.Dispose();
 
-        // Create a copy of the keys to avoid modification during iteration
+        // Dispose all active debounce timers.
+        lock (_debounceTimers)
+        {
+            foreach (var timer in _debounceTimers.Values)
+            {
+                timer.Dispose();
+            }
+            _debounceTimers.Clear();
+        }
+
+        // Unload all plugins.
         foreach (var path in _loadedPlugins.Keys.ToList())
         {
             UnloadPlugin(path);
         }
 
-        // This is a good practice to encourage the GC to run and collect the unloaded contexts.
         GC.Collect();
         GC.WaitForPendingFinalizers();
     }
