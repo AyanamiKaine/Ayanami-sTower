@@ -181,4 +181,62 @@ public class SystemAndQueryTests
         // the message from Frame 1 was successfully cleared.
         Assert.Empty(readingSystem.ReceivedMessages);
     }
+
+    [Fact]
+    public void DependencySort_ShouldOrderSystemsCorrectly()
+    {
+        // Arrange: C depends on B, B depends on A.
+        var executionOrder = new List<string>();
+        var world = new World();
+
+        var systemC = new DependencyTrackingSystem("C", executionOrder, dependencies: ["B"]);
+        var systemA = new DependencyTrackingSystem("A", executionOrder);
+        var systemB = new DependencyTrackingSystem("B", executionOrder, dependencies: ["A"]);
+
+        // Register out of order
+        world.RegisterSystem(systemC);
+        world.RegisterSystem(systemA);
+        world.RegisterSystem(systemB);
+
+        // Act: Update() will trigger the automatic sort.
+        world.Update(0.1f);
+
+        // Assert: The execution order should be A, then B, then C.
+        var expectedOrder = new List<string> { "A", "B", "C" };
+        Assert.Equal(expectedOrder, executionOrder);
+    }
+
+    [Fact]
+    public void DependencySort_ShouldThrowOnCircularDependency()
+    {
+        // Arrange: A depends on B, and B depends on A.
+        var executionOrder = new List<string>();
+        var world = new World();
+
+        var systemA = new DependencyTrackingSystem("A", executionOrder, dependencies: ["B"]);
+        var systemB = new DependencyTrackingSystem("B", executionOrder, dependencies: ["A"]);
+
+        world.RegisterSystem(systemA);
+        world.RegisterSystem(systemB);
+
+        // Act & Assert: Update() should detect the cycle and throw.
+        var exception = Assert.Throws<InvalidOperationException>(() => world.Update(0.1f));
+        Assert.Contains("Circular dependency detected", exception.Message);
+    }
+
+    [Fact]
+    public void DependencySort_ShouldThrowOnUnresolvedDependency()
+    {
+        // Arrange: A depends on B, but B is never registered.
+        var executionOrder = new List<string>();
+        var world = new World();
+
+        var systemA = new DependencyTrackingSystem("A", executionOrder, dependencies: ["B"]);
+
+        world.RegisterSystem(systemA);
+
+        // Act & Assert: Update() should detect the missing dependency and throw.
+        var exception = Assert.Throws<InvalidOperationException>(() => world.Update(0.1f));
+        Assert.Contains("unresolved dependency on 'B'", exception.Message);
+    }
 }

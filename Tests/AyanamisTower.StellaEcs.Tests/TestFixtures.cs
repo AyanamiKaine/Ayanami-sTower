@@ -23,8 +23,9 @@ public struct HealthComponent
 public class MockSystem : ISystem
 {
     public bool Enabled { get; set; } = true;
-
     public int UpdateCount { get; private set; }
+    public string Name { get; set; } = "MockSystem";
+    public List<string> Dependencies => [];
 
     public void Update(World world, float deltaTime)
     {
@@ -62,6 +63,8 @@ public struct TestMessage
 public class MessagePublishingSystem : ISystem
 {
     public bool Enabled { get; set; } = true;
+    public string Name { get; set; } = "MessagePublisher";
+    public List<string> Dependencies => [];
 
     public bool ShouldPublish { get; set; } = false;
     public int DataToPublish { get; set; } = 0;
@@ -79,6 +82,9 @@ public class MessagePublishingSystem : ISystem
 public class MessageReadingSystem : ISystem
 {
     public bool Enabled { get; set; } = true;
+    public string Name { get; set; } = "MessageReader";
+    // This system now officially depends on the publisher, ensuring it runs after.
+    public List<string> Dependencies => ["MessagePublisher"];
 
     public readonly List<TestMessage> ReceivedMessages = new();
 
@@ -92,89 +98,31 @@ public class MessageReadingSystem : ISystem
     }
 }
 
-public struct PlayerInfo
+// A helper system specifically for testing dependency sorting and execution order.
+public class DependencyTrackingSystem(string name, List<string> executionOrderTracker, List<string>? dependencies = null) : ISystem
 {
-    public string Name;
+    public string Name { get; set; } = name;
+    public bool Enabled { get; set; } = true;
+    public List<string> Dependencies { get; } = dependencies ?? [];
+    private readonly List<string> _executionOrderTracker = executionOrderTracker;
+
+    public void Update(World world, float deltaTime)
+    {
+        // When this system runs, it adds its name to the shared tracker list.
+        _executionOrderTracker.Add(Name);
+    }
 }
 
-public struct InventoryData
-{
-    public int Capacity;
-}
+// --- Relationship Components (unchanged) ---
 
-/// <summary>
-/// Component on the Player, pointing to their Inventory.
-/// The Entity field acts as a "foreign key".
-/// </summary>
-public struct HasInventory
-{
-    public Entity InventoryEntity;
-}
-
-/// <summary>
-/// Component on the Inventory, pointing back to its owner.
-/// This makes the relationship bidirectional.
-/// </summary>
-public struct BelongsToOwner
-{
-    public Entity OwnerEntity;
-}
-
-
-// --- Components for One-to-Many Relationship Test ---
-
-public struct GuildInfo
-{
-    public string Name;
-}
-
-/// <summary>
-/// Component placed on a Member entity, pointing to the Guild they belong to.
-/// This is the ECS equivalent of a `guild_id` foreign key on the `Members` table.
-/// </summary>
-public struct GuildMembership
-{
-    public Entity GuildEntity;
-}
-
-
-// --- Components for Many-to-Many Relationship Test ---
-
-public struct StudentInfo
-{
-    public string Name;
-}
-
-public struct CourseInfo
-{
-    public string Name;
-}
-
-// These next components are used on the "Relation Entity" (the Enrollment).
-
-/// <summary>
-/// A component on the relation entity that points to the student.
-/// (The `student_id` foreign key).
-/// </summary>
-public struct EnrolledStudent
-{
-    public Entity StudentEntity;
-}
-
-/// <summary>
-/// A component on the relation entity that points to the course.
-/// (The `course_id` foreign key).
-/// </summary>
-public struct EnrolledInCourse
-{
-    public Entity CourseEntity;
-}
-
-/// <summary>
-/// Data *about* the relationship can also live on the relation entity.
-/// This is like having a `grade` column on the `Enrollments` join table.
-/// </summary>
-public struct Grade
-{
-    public char Value;
-}
+public struct PlayerInfo { public string Name; }
+public struct InventoryData { public int Capacity; }
+public struct HasInventory { public Entity InventoryEntity; }
+public struct BelongsToOwner { public Entity OwnerEntity; }
+public struct GuildInfo { public string Name; }
+public struct GuildMembership { public Entity GuildEntity; }
+public struct StudentInfo { public string Name; }
+public struct CourseInfo { public string Name; }
+public struct EnrolledStudent { public Entity StudentEntity; }
+public struct EnrolledInCourse { public Entity CourseEntity; }
+public struct Grade { public char Value; }

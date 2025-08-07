@@ -45,6 +45,7 @@ public class World
     private readonly Dictionary<string, IEntityFunction> _functions = [];
 
     private object? _apiServerInstance;
+    private bool _isSystemOrderDirty = true; // Start as dirty
 
     /*
     Decoupling: A plugin can request a service by its interface (IPathfindingService) without needing a direct reference to the plugin that provides it (SuperPathfindingPlugin.dll).
@@ -307,44 +308,40 @@ public class World
     }
 
     /// <summary>
-    /// Adds a new system to the world.
+    /// Adds a new system to the world. The execution order will be automatically resolved before the next update.
     /// </summary>
     public void RegisterSystem(ISystem system)
     {
+        if (_systems.Any(s => s.Name == system.Name))
+        {
+            throw new ArgumentException($"A system with the name '{system.Name}' is already registered. System names must be unique.");
+        }
         _systems.Add(system);
-        // Console.WriteLine($"[World] Registered System: {system.GetType().Name}");
+        
+        // Any change to the list means it will need to be re-sorted.
+        _isSystemOrderDirty = true;
     }
 
     /// <summary>
-    /// The main update loop for the world. This will execute all registered systems.
+    /// The main update loop for the world. It ensures systems are sorted by their dependencies before executing.
     /// </summary>
     public void Update(float deltaTime)
     {
-        // PRE-UPDATE HOOK
+        // --- Just-In-Time Sorting ---
+        // If the order is dirty (e.g., a new system was added), sort it now.
+        if (_isSystemOrderDirty)
+        {
+            SortSystemsByDependencies();
+        }
+
         foreach (var system in _systems)
         {
-            if (system.Enabled && system is IPreUpdateSystem preSystem)
+            if (system.Enabled)
             {
-                preSystem.PreUpdate(this, deltaTime);
+                system.Update(this, deltaTime);
             }
         }
-
-        // MAIN UPDATE
-        foreach (var system in _systems)
-        {
-            if (!system.Enabled) continue;
-            system.Update(this, deltaTime);
-        }
-
-        // POST-UPDATE HOOK
-        foreach (var system in _systems)
-        {
-            if (system.Enabled && system is IPostUpdateSystem postSystem)
-            {
-                postSystem.PostUpdate(this, deltaTime);
-            }
-        }
-
+        
         ClearAllMessages();
     }
 
@@ -432,13 +429,17 @@ public class World
             Console.WriteLine($"[Error] Attempted to invoke unknown function: '{functionName}'");
         }
     }
-
+    
     /// <summary>
     /// Removes a system from the world.
     /// </summary>
     public void RemoveSystem<T>() where T : ISystem
     {
-        _systems.RemoveAll(s => s is T);
+        int removedCount = _systems.RemoveAll(s => s is T);
+        if(removedCount > 0)
+        {
+            _isSystemOrderDirty = true;
+        }
     }
 
     /// <summary>
@@ -463,6 +464,63 @@ public class World
         {
             system.Enabled = true;
         }
+    }
+
+ /// <summary>
+    /// Sorts the systems based on the 'Dependencies' list in each system.
+    /// This is now called automatically by Update() when needed, but can also be called manually.
+    /// </summary>
+    public void SortSystemsByDependencies()
+    {
+        // This check is to ensure we don't do this expensive work if not needed.
+        if (!_isSystemOrderDirty && _systems.Count > 0) return;
+
+        // The topological sort logic from the previous response remains unchanged.
+        // --- (Implementation of Kahn's algorithm is here) ---
+        var systemsByName = _systems.ToDictionary(s => s.Name);
+        var inDegree = _systems.ToDictionary(s => s.Name, s => 0);
+        var adjacents = _systems.ToDictionary(s => s.Name, s => new List<ISystem>());
+
+        foreach (var system in _systems)
+        {
+            foreach (var dependencyName in system.Dependencies)
+            {
+                if (!systemsByName.ContainsKey(dependencyName))
+                {
+                    throw new InvalidOperationException($"System '{system.Name}' has an unresolved dependency on '{dependencyName}', which is not a registered system.");
+                }
+                adjacents[dependencyName].Add(system);
+                inDegree[system.Name]++;
+            }
+        }
+        
+        var queue = new Queue<ISystem>(_systems.Where(s => inDegree[s.Name] == 0));
+        var sortedList = new List<ISystem>();
+        
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            sortedList.Add(current);
+            foreach (var neighbor in adjacents[current.Name])
+            {
+                if (--inDegree[neighbor.Name] == 0)
+                {
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+        
+        if (sortedList.Count < _systems.Count)
+        {
+            var cycleNodes = _systems.Except(sortedList).Select(s => s.Name);
+            throw new InvalidOperationException($"Circular dependency detected. The following systems form a cycle or depend on one: {string.Join(", ", cycleNodes)}");
+        }
+
+        _systems.Clear();
+        _systems.AddRange(sortedList);
+        
+        // The list is now sorted!
+        _isSystemOrderDirty = false;
     }
 
     /// <summary>
