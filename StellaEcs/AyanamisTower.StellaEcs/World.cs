@@ -521,7 +521,7 @@ public class World
         {
             // 1. Construct the full path to the API DLL.
             // This is more robust than relying on the default probing mechanism of Assembly.Load().
-            string apiDllName = "AyanamisTower.StellaEcs.RestAPI.dll";
+            const string apiDllName = "AyanamisTower.StellaEcs.RestAPI.dll";
             string apiDllPath = Path.Combine(AppContext.BaseDirectory, apiDllName);
 
             if (!File.Exists(apiDllPath))
@@ -534,21 +534,13 @@ public class World
             var apiAssembly = Assembly.LoadFrom(apiDllPath);
 
             // 3. Find the RestApiServer type.
-            var apiServerType = apiAssembly.GetType("AyanamisTower.StellaEcs.Api.RestApiServer");
-            if (apiServerType == null)
-            {
-                throw new InvalidOperationException("Could not find RestApiServer type in the API assembly.");
-            }
+            var apiServerType = apiAssembly.GetType("AyanamisTower.StellaEcs.Api.RestApiServer") ?? throw new InvalidOperationException("Could not find RestApiServer type in the API assembly.");
 
             // 4. Get a reference to the static Start method.
-            var startMethod = apiServerType.GetMethod("Start", BindingFlags.Public | BindingFlags.Static);
-            if (startMethod == null)
-            {
-                throw new InvalidOperationException("Could not find the 'Start' method on the RestApiServer.");
-            }
+            var startMethod = apiServerType.GetMethod("Start", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException("Could not find the 'Start' method on the RestApiServer.");
 
             // 5. Invoke the Start method, passing this world instance and the URL.
-            startMethod.Invoke(null, new object[] { this, url });
+            startMethod.Invoke(null, [this, url]);
 
             _apiServerInstance = apiServerType; // Store a reference for stopping it later.
         }
@@ -558,7 +550,7 @@ public class World
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Error] Failed to enable REST API: {ex.Message}");
+            Console.WriteLine($"[Error] Failed to enable REST API: {ex.Message}, Check if your project has a refrence RestAPI project so its dependency are correctly loaded");
         }
     }
 
