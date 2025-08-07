@@ -138,6 +138,14 @@ namespace AyanamisTower.StellaEcs.Api
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status500InternalServerError);
 
+            // --- Plugin Endpoints ---
+
+            api.MapGet("/plugins", (World w) => Results.Ok(w.GetPlugins()))
+               .WithName("GetLoadedPlugins")
+               .WithSummary("Retrieves a list of all loaded plugins.")
+               .WithDescription("Returns information about all currently loaded plugins including their name, version, author, and description.")
+               .Produces<IEnumerable<PluginInfoDto>>(StatusCodes.Status200OK);
+
 
             return app;
         }

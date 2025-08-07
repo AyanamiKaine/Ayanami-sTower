@@ -28,8 +28,14 @@ public static class PluginLoader
                 IPlugin? pluginInstance = (IPlugin)Activator.CreateInstance(type)!;
                 Console.WriteLine($"--- Loading Plugin: {pluginInstance?.Name} ---");
 
-                // Call its Initialize method, passing in our world!
-                pluginInstance?.Initialize(world);
+                if (pluginInstance != null)
+                {
+                    // Register the plugin with the world for tracking
+                    world.RegisterPlugin(pluginInstance);
+
+                    // Call its Initialize method, passing in our world!
+                    pluginInstance.Initialize(world);
+                }
             }
         }
     }

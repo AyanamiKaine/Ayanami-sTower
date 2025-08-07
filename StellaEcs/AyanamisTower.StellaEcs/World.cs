@@ -81,6 +81,11 @@ public class World
     /// Stores all message buses, keyed by their message type.
     /// </summary>
     private readonly Dictionary<Type, IMessageBus> _messageBuses = [];
+
+    /// <summary>
+    /// Stores information about loaded plugins for REST API access.
+    /// </summary>
+    private readonly Dictionary<string, IPlugin> _loadedPlugins = [];
     /// <summary>
     /// Creates a default world with the max allowed entity number of 5000:
     /// DESIGN NOTE: Why is a low number of entites good? Imagine this
@@ -319,10 +324,17 @@ public class World
     /// </summary>
     public void RegisterSystem(ISystem system)
     {
-        if (_systems.Any(s => s.Name == system.Name))
+        if (system == null)
+        {
+            throw new ArgumentNullException(nameof(system), "System cannot be null.");
+        }
+
+        if (_systems.Any(s => s?.Name == system.Name))
         {
             throw new ArgumentException($"A system with the name '{system.Name}' is already registered. System names must be unique.");
         }
+
+        Console.WriteLine($"[World] Registering system: {system.Name}");
         _systems.Add(system);
 
         // Any change to the list means it will need to be re-sorted.
@@ -343,7 +355,7 @@ public class World
 
         foreach (var system in _systems)
         {
-            if (system.Enabled)
+            if (system?.Enabled == true)
             {
                 system.Update(this, deltaTime);
             }
@@ -445,8 +457,33 @@ public class World
         int removedCount = _systems.RemoveAll(s => s is T);
         if (removedCount > 0)
         {
+            Console.WriteLine($"[World] Removed {removedCount} systems of type {typeof(T).Name}");
             _isSystemOrderDirty = true;
         }
+        else
+        {
+            Console.WriteLine($"[World] No systems of type {typeof(T).Name} found to remove");
+        }
+    }
+
+    /// <summary>
+    /// Removes a specific system instance from the world.
+    /// </summary>
+    public bool RemoveSystem(ISystem system)
+    {
+        if (system == null) return false;
+
+        bool removed = _systems.Remove(system);
+        if (removed)
+        {
+            Console.WriteLine($"[World] Removed system instance: {system.Name}");
+            _isSystemOrderDirty = true;
+        }
+        else
+        {
+            Console.WriteLine($"[World] System instance {system.Name} was not found in the systems list");
+        }
+        return removed;
     }
 
     /// <summary>
@@ -479,6 +516,13 @@ public class World
     /// </summary>
     public void SortSystemsByDependencies()
     {
+        // First, clean up any null systems that might have gotten into the list
+        int nullCount = _systems.RemoveAll(s => s == null);
+        if (nullCount > 0)
+        {
+            Console.WriteLine($"[Warning] Removed {nullCount} null systems from the systems list.");
+        }
+
         // This check is to ensure we don't do this expensive work if not needed.
         if (!_isSystemOrderDirty && _systems.Count > 0) return;
 
@@ -569,6 +613,36 @@ public class World
         else
         {
             Console.WriteLine($"[Warning] No service of type {serviceType.Name} was registered.");
+        }
+    }
+
+    /// <summary>
+    /// Registers a plugin instance for tracking and REST API access.
+    /// This should be called when a plugin is loaded.
+    /// </summary>
+    /// <param name="plugin">The plugin instance to register.</param>
+    public void RegisterPlugin(IPlugin plugin)
+    {
+        var key = $"{plugin.Name}@{plugin.Version}";
+        _loadedPlugins[key] = plugin;
+        Console.WriteLine($"[World] Registered plugin: {plugin.Name} v{plugin.Version}");
+    }
+
+    /// <summary>
+    /// Unregisters a plugin from tracking.
+    /// This should be called when a plugin is unloaded.
+    /// </summary>
+    /// <param name="plugin">The plugin instance to unregister.</param>
+    public void UnregisterPlugin(IPlugin plugin)
+    {
+        var key = $"{plugin.Name}@{plugin.Version}";
+        if (_loadedPlugins.Remove(key))
+        {
+            Console.WriteLine($"[World] Unregistered plugin: {plugin.Name} v{plugin.Version}");
+        }
+        else
+        {
+            Console.WriteLine($"[Warning] Plugin {plugin.Name} v{plugin.Version} was not registered.");
         }
     }
 
@@ -763,6 +837,20 @@ public class World
     }
 
     /// <summary>
+    /// Gets a list of all loaded plugins with their information.
+    /// </summary>
+    public IEnumerable<PluginInfoDto> GetPlugins()
+    {
+        return _loadedPlugins.Values.Select(plugin => new PluginInfoDto
+        {
+            Name = plugin.Name,
+            Version = plugin.Version,
+            Author = plugin.Author,
+            Description = plugin.Description
+        });
+    }
+
+    /// <summary>
     /// Invokes a method on a registered service by its type name.
     /// </summary>
     /// <param name="serviceTypeName">The full name of the service's type.</param>
@@ -923,6 +1011,32 @@ public class ServiceInfoDto
     /// A list of public methods available on the service.
     /// </summary>
     public required IEnumerable<string> Methods { get; set; }
+}
+
+/// <summary>
+/// A DTO for exposing plugin information.
+/// </summary>
+public class PluginInfoDto
+{
+    /// <summary>
+    /// The name of the plugin.
+    /// </summary>
+    public required string Name { get; set; }
+
+    /// <summary>
+    /// The version of the plugin.
+    /// </summary>
+    public required string Version { get; set; }
+
+    /// <summary>
+    /// The author of the plugin.
+    /// </summary>
+    public required string Author { get; set; }
+
+    /// <summary>
+    /// A description of what the plugin does.
+    /// </summary>
+    public required string Description { get; set; }
 }
 
 #endregion

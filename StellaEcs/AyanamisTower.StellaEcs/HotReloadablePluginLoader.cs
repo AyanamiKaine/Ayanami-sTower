@@ -41,7 +41,7 @@ public class HotReloadablePluginLoader : IDisposable
 
     // We store the state of each plugin, keyed by its full file path.
     private readonly Dictionary<string, PluginState> _loadedPlugins = [];
-    
+
     // --- DEBOUNCE FIX ---
     // Dictionary to hold timers for debouncing file system events.
     private readonly Dictionary<string, Timer> _debounceTimers = [];
@@ -156,6 +156,10 @@ public class HotReloadablePluginLoader : IDisposable
                 if (Activator.CreateInstance(type) is IPlugin pluginInstance)
                 {
                     Console.WriteLine($"--- Initializing Plugin: {pluginInstance.Name} ---");
+
+                    // Register the plugin with the world for tracking
+                    _world.RegisterPlugin(pluginInstance);
+
                     pluginInstance.Initialize(_world);
                     _loadedPlugins[path] = new PluginState(pluginInstance, loadContext, path);
                 }
@@ -177,6 +181,9 @@ public class HotReloadablePluginLoader : IDisposable
         try
         {
             pluginState.Plugin.Uninitialize(_world);
+
+            // Unregister the plugin from the world tracking
+            _world.UnregisterPlugin(pluginState.Plugin);
         }
         catch (Exception e)
         {
@@ -211,14 +218,14 @@ public class HotReloadablePluginLoader : IDisposable
             }
         }
     }
-    
+
     /// <summary>
     /// This callback is executed by the debounce timer after the file events have settled.
     /// </summary>
     private void HandleReload(object? state)
     {
         var directory = (string)state!;
-        
+
         // Clean up the timer for this directory.
         lock (_debounceTimers)
         {
