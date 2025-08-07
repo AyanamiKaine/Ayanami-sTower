@@ -11,4 +11,83 @@
     <ProjectReference Include="..\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
   </ItemGroup>
 
+ <!-- 
+    This is the target that will run after the build is complete.
+    It copies the necessary plugin files to the host application's plugin directory.
+  -->
+  <Target Name="CopyPluginToHostApp" AfterTargets="Build">
+    
+    <!-- A message that will appear in your build output log. -->
+    <Message Text="--- Copying plugin files to Host Application ---" Importance="high" />
+
+    <!-- 
+      Define the destination path. 
+      You MUST customize this path to match your project structure.
+      It points to the 'Plugins' folder within your main application's build output.
+      
+      Example Structure:
+      /MySolution/
+      ├── Source/
+      │   ├── MyHostApp/
+      │   │   └── MyHostApp.csproj  (Your main game/app)
+      │   └── Plugins/
+      │       └── MyAwesomePlugin/
+      │           └── MyAwesomePlugin.csproj (This is the project you add this script to)
+      
+      In the example above, the path might look like:
+      <PluginOutputDir>$(SolutionDir)Source/MyHostApp/bin/$(Configuration)/$(TargetFramework)/Plugins/$(ProjectName)/</PluginOutputDir>
+    -->
+    <PropertyGroup>
+      <!-- *** CUSTOMIZE THIS PATH *** -->
+      <HostAppBinDir>$(SolutionDir)/Build/bin/AyanamisTower.StellaEcs.Example/$(Configuration)/$(TargetFramework)/</HostAppBinDir>
+      <PluginOutputDir>$(HostAppBinDir)Plugins/$(ProjectName)/</PluginOutputDir>
+    </PropertyGroup>
+
+    <!-- 
+      This task creates the specific subdirectory for your plugin if it doesn't exist.
+      This is important because your HotReloadablePluginLoader seems to look for plugins in their own folders.
+    -->
+    <MakeDir Directories="$(PluginOutputDir)" />
+
+     <!-- 
+      This ItemGroup now uses a wildcard to select ALL files from the build output directory.
+      This ensures that any dependencies (other DLLs, content files, etc.) are also copied.
+    -->
+    <!-- 
+      I wonder if we can include the ecs api here so it can depend on an older version but still work.
+      NO we cant, it will cause issues with the host app if we include the ecs api here.
+    -->
+    <!--
+    <ItemGroup>
+      <SourceFiles Include="$(TargetDir)**\*.*" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <SourceFiles 
+        Include="$(TargetDir)**\*.*" 
+        Exclude="$(TargetDir)**\AyanamisTower.StellaEcs.Components.dll;$(TargetDir)**\AyanamisTower.StellaEcs.dll" />
+    </ItemGroup>
+  -->
+    <ItemGroup>
+      <!-- The main plugin assembly -->
+      <SourceFiles Include="$(TargetPath)" />
+      <!-- The dependency information file -->
+      <SourceFiles Include="$(TargetDir)$(TargetName).deps.json" />
+      <!-- The debugging symbols file (optional but recommended) -->
+      <SourceFiles Include="$(TargetDir)$(TargetName).pdb" />
+      <!-- The xml documentation file -->
+      <SourceFiles Include="$(TargetDir)$(TargetName).xml" />
+    </ItemGroup>
+
+    <!--
+      This command now forcefully overwrites the destination files on every build.
+      'OverwriteReadOnlyFiles' handles cases where files might be marked as read-only.
+      We've removed 'SkipUnchangedFiles' to ensure the copy always happens.
+    -->
+    <Copy SourceFiles="@(SourceFiles)" DestinationFolder="$(PluginOutputDir)" OverwriteReadOnlyFiles="true" />
+    
+    <Message Text="--- Successfully copied plugin to $(PluginOutputDir) ---" Importance="high" />
+    
+  </Target>
+
 </Project>
