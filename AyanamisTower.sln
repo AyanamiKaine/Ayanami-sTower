@@ -226,7 +226,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.Components", "StellaEcs\AyanamisTower.StellaEcs.Components\AyanamisTower.StellaEcs.Components.csproj", "{932ADAD7-4574-46B7-9592-3A6BADB817E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.Systems", "StellaEcs\AyanamisTower.StellaEcs.Systems\AyanamisTower.StellaEcs.Systems.csproj", "{0D0C1475-A823-4D1E-A5D5-A23DF95A8056}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.CorePlugin", "StellaEcs\AyanamisTower.StellaEcs.Systems\AyanamisTower.StellaEcs.CorePlugin.csproj", "{0D0C1475-A823-4D1E-A5D5-A23DF95A8056}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.RestAPI", "StellaEcs\AyanamisTower.StellaEcs.RestAPI\AyanamisTower.StellaEcs.RestAPI.csproj", "{40F01A60-29CC-4E74-8F87-835D5491BBF0}"
 EndProject
