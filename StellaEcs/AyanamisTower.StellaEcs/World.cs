@@ -510,6 +510,14 @@ public class World
 
     #region Public API for REST/Remote Access
 
+    /*
+    It would be better if we would move the rest api functiona to extension methods.
+    We currently dont do it because we need to add a new field/property to the World class.
+    This is a temporary solution to allow remote access to the world state.
+    But this is possible in dotnet 10, Currrently this is a problem because users
+    can call the methods even though the plugin is not loaded.
+    */
+
     /// <summary>
     /// Enables the REST API for the world by dynamically loading the API server assembly.
     /// The API provides remote access to inspect the world's state.
