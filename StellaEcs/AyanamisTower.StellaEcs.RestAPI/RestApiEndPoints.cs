@@ -1,7 +1,9 @@
 using AyanamisTower.StellaEcs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -24,6 +26,8 @@ namespace AyanamisTower.StellaEcs.Api
             var api = app.MapGroup("/api")
                          .WithTags("ECS World");
 
+            // --- World, System, and Component Endpoints ---
+
             api.MapGet("/world/status", (World w) => Results.Ok(w.GetWorldStatus()))
                .WithName("GetWorldStatus")
                .WithSummary("Gets the current status of the ECS world.")
@@ -38,7 +42,9 @@ namespace AyanamisTower.StellaEcs.Api
             api.MapGet("/components", (World w) => Results.Ok(w.GetComponentTypes()))
                .WithName("GetRegisteredComponentTypes")
                .WithSummary("Retrieves a list of all registered component types.")
-               .Produces<IEnumerable<ComponentInfoDto>>(StatusCodes.Status200OK);
+               .Produces<IEnumerable<string>>(StatusCodes.Status200OK);
+
+            // --- Entity Endpoints ---
 
             api.MapGet("/entities", (World w, HttpContext context) =>
             {
@@ -72,9 +78,7 @@ namespace AyanamisTower.StellaEcs.Api
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
                 }
 
-                // NOTE: The return type of `GetAllComponentsForEntity` may need to be mapped to `List<ComponentInfoDto>`.
-                // A direct cast is used here for simplicity, but you might need custom mapping logic.
-                var components = (List<ComponentInfoDto>)w.GetAllComponentsForEntity(entity);
+                var components = w.GetAllComponentsForEntity(entity);
                 var entityDetails = new EntityDetailDto
                 {
                     Id = entity.Id,
@@ -90,6 +94,50 @@ namespace AyanamisTower.StellaEcs.Api
             .Produces<EntityDetailDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest);
+
+            // --- NEW: Service Endpoints ---
+
+            api.MapGet("/services", (World w) => Results.Ok(w.GetServices()))
+               .WithName("GetRegisteredServices")
+               .WithSummary("Retrieves a list of all registered services and their methods.")
+               .Produces<IEnumerable<ServiceInfoDto>>(StatusCodes.Status200OK);
+
+            api.MapPost("/services/{serviceTypeName}/{methodName}", (string serviceTypeName, string methodName, World w, [FromBody] Dictionary<string, object> parameters) =>
+            {
+                try
+                {
+                    var result = w.InvokeServiceMethod(serviceTypeName, methodName, parameters);
+                    // If the method returns void, the result will be null. Return an OK status with no content.
+                    // Otherwise, return the result serialized as JSON.
+                    return result != null ? Results.Ok(result) : Results.Ok();
+                }
+                catch (KeyNotFoundException ex)
+                {
+                    return Results.NotFound(new { message = ex.Message });
+                }
+                catch (MissingMethodException ex)
+                {
+                    return Results.NotFound(new { message = ex.Message });
+                }
+                catch (ArgumentException ex)
+                {
+                    return Results.BadRequest(new { message = ex.Message });
+                }
+                catch (Exception ex)
+                {
+                    // Catch any other exceptions during method invocation.
+                    return Results.Problem(ex.InnerException?.Message ?? ex.Message);
+                }
+            })
+            .WithName("InvokeServiceMethod")
+            .WithSummary("Invokes a method on a registered service.")
+            .WithDescription("Dynamically calls a public method on a service. The request body should be a JSON object mapping parameter names to their values. Use the full type name from the GET /services endpoint.")
+            .Produces<object>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status500InternalServerError);
+
 
             return app;
         }

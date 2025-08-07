@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace AyanamisTower.StellaEcs;
 
@@ -482,8 +485,8 @@ public class World
         // The topological sort logic from the previous response remains unchanged.
         // --- (Implementation of Kahn's algorithm is here) ---
         var systemsByName = _systems.ToDictionary(s => s.Name);
-        var inDegree = _systems.ToDictionary(s => s.Name, s => 0);
-        var adjacents = _systems.ToDictionary(s => s.Name, s => new List<ISystem>());
+        var inDegree = _systems.ToDictionary(s => s.Name, _ => 0);
+        var adjacents = _systems.ToDictionary(s => s.Name, _ => new List<ISystem>());
 
         foreach (var system in _systems)
         {
@@ -549,6 +552,24 @@ public class World
             Console.WriteLine($"[Warning] Service of type {serviceType.Name} is already registered. Overwriting.");
         }
         _services[serviceType] = service;
+    }
+
+    /// <summary>
+    /// Unregisters a service of a specific type.
+    /// This allows other systems or plugins to stop using the service.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public void UnregisterService<T>() where T : class
+    {
+        var serviceType = typeof(T);
+        if (_services.Remove(serviceType))
+        {
+            Console.WriteLine($"[World] Unregistered service of type {serviceType.Name}.");
+        }
+        else
+        {
+            Console.WriteLine($"[Warning] No service of type {serviceType.Name} was registered.");
+        }
     }
 
     /// <summary>
@@ -726,6 +747,72 @@ public class World
     {
         return _storages.Keys.Select(t => t.Name);
     }
+
+    /// <summary>
+    /// Gets a list of all registered services and their public methods.
+    /// </summary>
+    public IEnumerable<ServiceInfoDto> GetServices()
+    {
+        return _services.Keys.Select(t => new ServiceInfoDto
+        {
+            TypeName = t.FullName ?? t.Name,
+            Methods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                         .Where(m => !m.IsSpecialName) // Exclude property getters/setters like get_Name
+                         .Select(m => m.Name)
+        });
+    }
+
+    /// <summary>
+    /// Invokes a method on a registered service by its type name.
+    /// </summary>
+    /// <param name="serviceTypeName">The full name of the service's type.</param>
+    /// <param name="methodName">The name of the method to invoke.</param>
+    /// <param name="parameters">A dictionary of parameter names and their values, typically from a JSON body.</param>
+    /// <returns>The result of the method invocation.</returns>
+    public object? InvokeServiceMethod(string serviceTypeName, string methodName, Dictionary<string, object> parameters)
+    {
+        // 1. Find the service type using its full name for accuracy.
+        var serviceType = _services.Keys.FirstOrDefault(t => t.FullName == serviceTypeName) ?? throw new KeyNotFoundException($"Service of type '{serviceTypeName}' has not been registered.");
+
+        // 2. Get the service instance from the dictionary.
+        var serviceInstance = _services[serviceType];
+
+        // 3. Find the method on the service's type.
+        // This simple version finds the first public method with the given name.
+        // A more advanced implementation could handle method overloading by inspecting parameter types.
+        var method = serviceType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance) ?? throw new MissingMethodException(serviceTypeName, methodName);
+
+        // 4. Prepare parameters for invocation.
+        var methodParams = method.GetParameters();
+        var invokeArgs = new object?[methodParams.Length];
+        // Use a case-insensitive dictionary for friendlier API usage.
+        var caseInsensitiveParams = new Dictionary<string, object>(parameters, StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < methodParams.Length; i++)
+        {
+            var paramInfo = methodParams[i];
+            if (paramInfo.Name != null &&
+                caseInsensitiveParams.TryGetValue(paramInfo.Name, out var paramValue) &&
+                paramValue is JsonElement jsonElement)
+            {
+                // The model binder gives us JsonElements. We need to deserialize them to the actual parameter type.
+                invokeArgs[i] = jsonElement.Deserialize(paramInfo.ParameterType, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+            else if (paramInfo.HasDefaultValue)
+            {
+                // If a parameter is missing from the request, use its default value if available.
+                invokeArgs[i] = paramInfo.DefaultValue;
+            }
+            else
+            {
+                // If a required parameter is missing and has no default, throw an error.
+                throw new ArgumentException($"Missing required parameter: '{paramInfo.Name}' for method '{methodName}'.");
+            }
+        }
+
+        // 5. Invoke the method on the service instance with the prepared arguments.
+        return method.Invoke(serviceInstance, invokeArgs);
+    }
     #endregion
 }
 
@@ -822,6 +909,20 @@ public class ComponentInfoDto
     public object? Data { get; set; }
 }
 
+/// <summary>
+/// A DTO for exposing service information.
+/// </summary>
+public class ServiceInfoDto
+{
+    /// <summary>
+    /// The full type name of the service, used for invoking methods.
+    /// </summary>
+    public required string TypeName { get; set; }
 
+    /// <summary>
+    /// A list of public methods available on the service.
+    /// </summary>
+    public required IEnumerable<string> Methods { get; set; }
+}
 
 #endregion
