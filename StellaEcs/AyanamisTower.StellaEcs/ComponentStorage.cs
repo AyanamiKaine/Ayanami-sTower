@@ -208,4 +208,21 @@ public class ComponentStorage<T> : IComponentStorage
     {
         return new ReadOnlySpan<T>(_components, 0, Count);
     }
+
+    /// <summary>
+    /// Gets the data associated with an entity as an object.
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <returns></returns>
+    public object? GetDataAsObject(Entity entity)
+    {
+        // We can't just call Get(entity) because it might throw if the entity
+        // doesn't have the component in this specific storage.
+        if (Has(entity))
+        {
+            // Boxing occurs here, which is acceptable for a debug/inspection API.
+            return Get(entity);
+        }
+        return null;
+    }
 }

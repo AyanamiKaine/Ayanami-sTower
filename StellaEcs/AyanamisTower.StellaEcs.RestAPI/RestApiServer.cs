@@ -1,86 +1,86 @@
-namespace AyanamisTower.StellaEcs.Api;
+using AyanamisTower.StellaEcs;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
-/// <summary>
-/// A static class responsible for creating and managing the REST API web server.
-/// This class is dynamically loaded by the World to avoid a hard dependency on ASP.NET Core.
-/// </summary>
-public static class RestApiServer
+namespace AyanamisTower.StellaEcs.Api
 {
-    private static WebApplication? _webApp;
-
     /// <summary>
-    /// Starts the REST API server.
+    /// A static class responsible for creating and managing the REST API web server.
+    /// This class is dynamically loaded by the World to avoid a hard dependency on ASP.NET Core.
     /// </summary>
-    /// <param name="world">The ECS World instance to expose through the API.</param>
-    /// <param name="url">The URL for the server to listen on.</param>
-    public static void Start(World world, string url = "http://localhost:5123")
+    public static class RestApiServer
     {
-        if (_webApp != null)
+        private static WebApplication? _webApp;
+
+        /// <summary>
+        /// Starts the REST API server for the ECS World.
+        /// </summary>
+        /// <param name="world"></param>
+        /// <param name="url"></param>
+        public static void Start(World world, string url = "http://localhost:5123")
         {
-            Console.WriteLine("[RestApiServer] Server is already running.");
-            return;
-        }
-
-        var builder = WebApplication.CreateBuilder();
-
-        // Configure the web server to listen on the specified URL
-        builder.WebHost.UseUrls(url);
-
-        // Add the World instance to the dependency injection container as a singleton.
-        // This makes it available to all API endpoints.
-        builder.Services.AddSingleton(world);
-
-        var app = builder.Build();
-
-        // --- Define API Endpoints ---
-
-        app.MapGet("/api/world/status", (World w) => Results.Ok(w.GetWorldStatus()));
-
-        app.MapGet("/api/systems", (World w) => Results.Ok(w.GetSystems()));
-
-        app.MapGet("/api/entities", (World w) =>
-        {
-            var entities = w.GetAllEntities().Select(e => new { e.Id, e.Generation });
-            return Results.Ok(entities);
-        });
-
-        app.MapGet("/api/entities/{id}:{generation}", (uint id, int generation, World w) =>
-        {
-            var entity = new Entity(id, generation, w);
-            if (!w.IsEntityValid(entity))
+            if (_webApp != null)
             {
-                return Results.NotFound(new { message = $"Entity {id}:{generation} is not valid." });
+                Console.WriteLine("[RestApiServer] Server is already running.");
+                return;
             }
 
-            var components = w.GetAllComponentsForEntity(entity);
-            return Results.Ok(new
+            var builder = WebApplication.CreateBuilder();
+
+            builder.WebHost.UseUrls(url);
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+
+            builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
             {
-                entity = new { entity.Id, entity.Generation },
-                components
+                // This tells the serializer to include public fields in the JSON output.
+                options.SerializerOptions.IncludeFields = true;
             });
-        });
 
-        app.MapGet("/api/components", (World w) => Results.Ok(w.GetComponentTypes()));
+            builder.Services.AddSingleton(world);
+
+            var app = builder.Build();
 
 
-        _webApp = app;
 
-        // Run the web host in a background thread so it doesn't block the main application loop.
-        Task.Run(() => _webApp.RunAsync());
+            // Add a global exception handler for robustness.
+            app.UseExceptionHandler(exceptionHandlerApp =>
+                exceptionHandlerApp.Run(async context =>
+                {
+                    var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+                    var error = exceptionHandlerPathFeature?.Error;
 
-        Console.WriteLine($"[RestApiServer] StellaEcs REST API is now listening on {url}");
-    }
+                    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                    await context.Response.WriteAsJsonAsync(new { message = "An unexpected server error occurred." });
+                }));
 
-    /// <summary>
-    /// Stops the REST API server if it is running.
-    /// </summary>
-    public static async Task Stop()
-    {
-        if (_webApp != null)
+            // Use our clean, organized endpoint mapping.
+            app.MapEcsEndpoints();
+
+            _webApp = app;
+
+            Task.Run(() =>
+            {
+                _webApp.Run();
+            });
+        }
+        /// <summary>
+        /// Stops the REST API server if it is running.
+        /// </summary>
+        /// <returns></returns>
+        public static async Task Stop()
         {
-            await _webApp.StopAsync();
-            _webApp = null;
-            Console.WriteLine("[RestApiServer] Server stopped.");
+            if (_webApp != null)
+            {
+                await _webApp.StopAsync();
+                _webApp = null;
+            }
         }
     }
 }

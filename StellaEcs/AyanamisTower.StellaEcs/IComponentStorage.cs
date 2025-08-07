@@ -27,4 +27,11 @@ public interface IComponentStorage
     /// Gets an enumerable collection of all entities within this storage.
     /// </summary>
     IEnumerable<Entity> GetEntities();
+    /// <summary>
+    /// Gets the data associated with an entity as an object.
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <returns></returns>
+    object? GetDataAsObject(Entity entity);
+
 }

@@ -628,27 +628,29 @@ public class World
     }
 
     /// <summary>
-    /// Gets information about all components attached to a specific entity.
+    /// Gets information and data for all components attached to a specific entity.
     /// </summary>
     /// <param name="entity">The entity to inspect.</param>
-    /// <returns>A list of component information objects.</returns>
-    public IEnumerable<ComponentInfo> GetAllComponentsForEntity(Entity entity)
+    /// <returns>A list of component information objects, including their data.</returns>
+    public List<ComponentInfo> GetAllComponentsForEntity(Entity entity)
     {
+        var components = new List<ComponentInfo>();
         if (!IsEntityValid(entity))
         {
-            return [];
+            return components;
         }
 
-        var components = new List<ComponentInfo>();
         foreach (var (type, storage) in _storages)
         {
-            if (storage.Has(entity))
+            // Use our new method to get the data!
+            var data = storage.GetDataAsObject(entity);
+            if (data != null)
             {
-                // This part is tricky because we can't easily get the component
-                // data without knowing its type. We can use reflection or add a
-                // non-generic Get method to IComponentStorage.
-                // For now, we'll just return the type name.
-                components.Add(new ComponentInfo { TypeName = type.Name });
+                components.Add(new ComponentInfo
+                {
+                    TypeName = type.Name,
+                    Data = data
+                });
             }
         }
         return components;
@@ -666,6 +668,44 @@ public class World
 }
 
 #region Data Transfer Objects (DTOs) for Public API
+
+/// <summary>
+/// A DTO for exposing basic entity information, typically in a list.
+/// </summary>
+public class EntitySummaryDto
+{
+    /// <summary>
+    /// The unique identifier for the entity.
+    /// </summary>
+    public uint Id { get; set; }
+    /// <summary>
+    /// The generation of the entity
+    /// </summary>
+    public int Generation { get; set; }
+    /// <summary>
+    /// A direct link to the detailed view of this entity.
+    /// </summary>
+    public required string Url { get; set; }
+}
+
+/// <summary>
+/// A DTO for exposing the full details of a single entity.
+/// </summary>
+public class EntityDetailDto
+{
+    /// <summary>
+    /// The unique identifier for the entity.
+    /// </summary>
+    public uint Id { get; set; }
+    /// <summary>
+    /// The generation of the entity, used to validate its current state.
+    /// </summary>
+    public int Generation { get; set; }
+    /// <summary>
+    /// A direct link to the detailed view of this entity.
+    /// </summary>
+    public required List<ComponentInfo> Components { get; set; }
+}
 
 /// <summary>
 /// A DTO for exposing the world's status.
@@ -714,8 +754,12 @@ public class ComponentInfo
     /// </summary>
     public required string TypeName { get; set; }
     // We could add a 'Data' object here, but it requires serialization logic.
-    // public object Data { get; set; }
+    /// <summary>
+    /// The data associated with the component, if applicable.
+    /// </summary>
+    public object? Data { get; set; }
 }
+
 
 
 #endregion
