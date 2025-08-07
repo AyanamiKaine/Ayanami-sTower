@@ -25,7 +25,11 @@ While we can use the components to model relationships, we might want to have a 
 public class World
 {
     private readonly uint _maxEntities;
-    private uint _nextEntityId;
+    /// <summary>
+    /// Entity ID counter. This is incremented each time a new entity is created.
+    /// It starts at 1 because 0 is reserved for the Null entity.
+    /// </summary>
+    private uint _nextEntityId = 1;
 
     /// <summary>
     /// A queue of recycled entity IDs. When an entity is destroyed, its ID is added here.
@@ -317,7 +321,7 @@ public class World
             throw new ArgumentException($"A system with the name '{system.Name}' is already registered. System names must be unique.");
         }
         _systems.Add(system);
-        
+
         // Any change to the list means it will need to be re-sorted.
         _isSystemOrderDirty = true;
     }
@@ -341,7 +345,7 @@ public class World
                 system.Update(this, deltaTime);
             }
         }
-        
+
         ClearAllMessages();
     }
 
@@ -429,14 +433,14 @@ public class World
             Console.WriteLine($"[Error] Attempted to invoke unknown function: '{functionName}'");
         }
     }
-    
+
     /// <summary>
     /// Removes a system from the world.
     /// </summary>
     public void RemoveSystem<T>() where T : ISystem
     {
         int removedCount = _systems.RemoveAll(s => s is T);
-        if(removedCount > 0)
+        if (removedCount > 0)
         {
             _isSystemOrderDirty = true;
         }
@@ -466,7 +470,7 @@ public class World
         }
     }
 
- /// <summary>
+    /// <summary>
     /// Sorts the systems based on the 'Dependencies' list in each system.
     /// This is now called automatically by Update() when needed, but can also be called manually.
     /// </summary>
@@ -493,10 +497,10 @@ public class World
                 inDegree[system.Name]++;
             }
         }
-        
+
         var queue = new Queue<ISystem>(_systems.Where(s => inDegree[s.Name] == 0));
         var sortedList = new List<ISystem>();
-        
+
         while (queue.Count > 0)
         {
             var current = queue.Dequeue();
@@ -509,7 +513,7 @@ public class World
                 }
             }
         }
-        
+
         if (sortedList.Count < _systems.Count)
         {
             var cycleNodes = _systems.Except(sortedList).Select(s => s.Name);
@@ -518,7 +522,7 @@ public class World
 
         _systems.Clear();
         _systems.AddRange(sortedList);
-        
+
         // The list is now sorted!
         _isSystemOrderDirty = false;
     }
@@ -643,9 +647,9 @@ public class World
     /// <summary>
     /// Gets a snapshot of the world's current status.
     /// </summary>
-    public WorldStatus GetWorldStatus()
+    public WorldStatusDto GetWorldStatus()
     {
-        return new WorldStatus
+        return new WorldStatusDto
         {
             MaxEntities = _maxEntities,
             RecycledEntityIds = _freeIds.Count,
@@ -657,9 +661,9 @@ public class World
     /// <summary>
     /// Gets a list of all registered systems and their current state.
     /// </summary>
-    public IEnumerable<SystemInfo> GetSystems()
+    public IEnumerable<SystemInfoDto> GetSystems()
     {
-        return _systems.Select(s => new SystemInfo
+        return _systems.Select(s => new SystemInfoDto
         {
             Name = s.GetType().Name,
             Enabled = s.Enabled
@@ -690,9 +694,9 @@ public class World
     /// </summary>
     /// <param name="entity">The entity to inspect.</param>
     /// <returns>A list of component information objects, including their data.</returns>
-    public List<ComponentInfo> GetAllComponentsForEntity(Entity entity)
+    public List<ComponentInfoDto> GetAllComponentsForEntity(Entity entity)
     {
-        var components = new List<ComponentInfo>();
+        var components = new List<ComponentInfoDto>();
         if (!IsEntityValid(entity))
         {
             return components;
@@ -704,7 +708,7 @@ public class World
             var data = storage.GetDataAsObject(entity);
             if (data != null)
             {
-                components.Add(new ComponentInfo
+                components.Add(new ComponentInfoDto
                 {
                     TypeName = type.Name,
                     Data = data
@@ -762,13 +766,13 @@ public class EntityDetailDto
     /// <summary>
     /// A direct link to the detailed view of this entity.
     /// </summary>
-    public required List<ComponentInfo> Components { get; set; }
+    public required List<ComponentInfoDto> Components { get; set; }
 }
 
 /// <summary>
 /// A DTO for exposing the world's status.
 /// </summary>
-public class WorldStatus
+public class WorldStatusDto
 {
     /// <summary>
     /// The maximum number of entities that can be created in this world.
@@ -791,7 +795,7 @@ public class WorldStatus
 /// <summary>
 /// A DTO for exposing system information.
 /// </summary>
-public class SystemInfo
+public class SystemInfoDto
 {
     /// <summary>
     /// The name of the system.
@@ -805,7 +809,7 @@ public class SystemInfo
 /// <summary>
 /// A DTO for exposing component information.
 /// </summary>
-public class ComponentInfo
+public class ComponentInfoDto
 {
     /// <summary>
     /// The name of the component type.

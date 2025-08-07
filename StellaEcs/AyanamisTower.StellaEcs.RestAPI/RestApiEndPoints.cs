@@ -2,6 +2,7 @@ using AyanamisTower.StellaEcs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace AyanamisTower.StellaEcs.Api
@@ -19,13 +20,25 @@ namespace AyanamisTower.StellaEcs.Api
         /// <returns></returns>
         public static IEndpointRouteBuilder MapEcsEndpoints(this IEndpointRouteBuilder app)
         {
-            var api = app.MapGroup("/api");
+            // Grouping endpoints with a common prefix and tag for better organization in Swagger UI.
+            var api = app.MapGroup("/api")
+                         .WithTags("ECS World");
 
-            api.MapGet("/world/status", (World w) => Results.Ok(w.GetWorldStatus()));
+            api.MapGet("/world/status", (World w) => Results.Ok(w.GetWorldStatus()))
+               .WithName("GetWorldStatus")
+               .WithSummary("Gets the current status of the ECS world.")
+               .WithDescription("Provides high-level information about the world, such as entity and system counts.")
+               .Produces<WorldStatusDto>(StatusCodes.Status200OK);
 
-            api.MapGet("/systems", (World w) => Results.Ok(w.GetSystems()));
+            api.MapGet("/systems", (World w) => Results.Ok(w.GetSystems()))
+               .WithName("GetRegisteredSystems")
+               .WithSummary("Retrieves a list of all registered systems.")
+               .Produces<IEnumerable<SystemInfoDto>>(StatusCodes.Status200OK);
 
-            api.MapGet("/components", (World w) => Results.Ok(w.GetComponentTypes()));
+            api.MapGet("/components", (World w) => Results.Ok(w.GetComponentTypes()))
+               .WithName("GetRegisteredComponentTypes")
+               .WithSummary("Retrieves a list of all registered component types.")
+               .Produces<IEnumerable<ComponentInfoDto>>(StatusCodes.Status200OK);
 
             api.MapGet("/entities", (World w, HttpContext context) =>
             {
@@ -39,7 +52,11 @@ namespace AyanamisTower.StellaEcs.Api
                     Url = $"{baseUrl}/api/entities/{e.Id}-{e.Generation}"
                 });
                 return Results.Ok(entities);
-            });
+            })
+            .WithName("GetAllValidEntities")
+            .WithSummary("Retrieves a summary of all valid entities.")
+            .WithDescription("Returns a list of all entities with their ID, generation, and a URL to their detailed view.")
+            .Produces<IEnumerable<EntitySummaryDto>>(StatusCodes.Status200OK);
 
             api.MapGet("/entities/{entityId}", (string entityId, World w) =>
             {
@@ -55,8 +72,9 @@ namespace AyanamisTower.StellaEcs.Api
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
                 }
 
-                // This method now returns component data.
-                var components = w.GetAllComponentsForEntity(entity);
+                // NOTE: The return type of `GetAllComponentsForEntity` may need to be mapped to `List<ComponentInfoDto>`.
+                // A direct cast is used here for simplicity, but you might need custom mapping logic.
+                var components = (List<ComponentInfoDto>)w.GetAllComponentsForEntity(entity);
                 var entityDetails = new EntityDetailDto
                 {
                     Id = entity.Id,
@@ -65,7 +83,13 @@ namespace AyanamisTower.StellaEcs.Api
                 };
 
                 return Results.Ok(entityDetails);
-            });
+            })
+            .WithName("GetEntityDetails")
+            .WithSummary("Gets detailed information for a specific entity.")
+            .WithDescription("Retrieves the components attached to a single entity, identified by its composite ID '{id}-{generation}'.")
+            .Produces<EntityDetailDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest);
 
             return app;
         }

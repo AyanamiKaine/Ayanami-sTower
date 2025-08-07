@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models; // Required for OpenApiInfo
 using System;
 using System.Threading.Tasks;
 
@@ -45,9 +46,23 @@ namespace AyanamisTower.StellaEcs.Api
 
             builder.Services.AddSingleton(world);
 
+            // --- SWAGGER INTEGRATION START ---
+            // 1. Add the API Explorer service. It's essential for discovering endpoints, especially in minimal APIs.
+            builder.Services.AddEndpointsApiExplorer();
+
+            // 2. Add the Swagger generator service. This builds the Swagger/OpenAPI specification document.
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "Stella ECS REST API",
+                    Version = "v1",
+                    Description = "An API for inspecting and interacting with a Stella ECS world in real-time."
+                });
+            });
+            // --- SWAGGER INTEGRATION END ---
+
             var app = builder.Build();
-
-
 
             // Add a global exception handler for robustness.
             app.UseExceptionHandler(exceptionHandlerApp =>
@@ -59,6 +74,21 @@ namespace AyanamisTower.StellaEcs.Api
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                     await context.Response.WriteAsJsonAsync(new { message = "An unexpected server error occurred." });
                 }));
+
+            // --- SWAGGER UI CONFIGURATION START ---
+            // 3. Enable middleware to serve the generated Swagger specification as a JSON endpoint.
+            app.UseSwagger();
+
+            // 4. Enable middleware to serve the Swagger UI (HTML, JS, CSS, etc.).
+            app.UseSwaggerUI(c =>
+            {
+                // Point the UI to the generated swagger.json endpoint.
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Stella ECS API V1");
+                // Serve the Swagger UI from the application root (e.g., http://localhost:5123/).
+                c.RoutePrefix = string.Empty;
+            });
+            // --- SWAGGER UI CONFIGURATION END ---
+
 
             // Use our clean, organized endpoint mapping.
             app.MapEcsEndpoints();
