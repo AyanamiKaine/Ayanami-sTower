@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Routing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 namespace AyanamisTower.StellaEcs.Api
 {
@@ -64,6 +65,26 @@ namespace AyanamisTower.StellaEcs.Api
             .WithDescription("Returns a list of all entities with their ID, generation, and a URL to their detailed view.")
             .Produces<IEnumerable<EntitySummaryDto>>(StatusCodes.Status200OK);
 
+            api.MapPost("/entities", (World w, HttpContext context) =>
+            {
+                var entity = w.CreateEntity();
+                var request = context.Request;
+                var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
+
+                var entitySummary = new EntitySummaryDto
+                {
+                    Id = entity.Id,
+                    Generation = entity.Generation,
+                    Url = $"{baseUrl}/api/entities/{entity.Id}-{entity.Generation}"
+                };
+
+                return Results.Created($"{baseUrl}/api/entities/{entity.Id}-{entity.Generation}", entitySummary);
+            })
+            .WithName("CreateEntity")
+            .WithSummary("Creates a new entity.")
+            .WithDescription("Creates a new entity and returns its summary information.")
+            .Produces<EntitySummaryDto>(StatusCodes.Status201Created);
+
             api.MapGet("/entities/{entityId}", (string entityId, World w) =>
             {
                 var parts = entityId.Split('-');
@@ -94,6 +115,132 @@ namespace AyanamisTower.StellaEcs.Api
             .Produces<EntityDetailDto>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest);
+
+            api.MapDelete("/entities/{entityId}", (string entityId, World w) =>
+            {
+                var parts = entityId.Split('-');
+                if (parts.Length != 2 || !uint.TryParse(parts[0], out var id) || !int.TryParse(parts[1], out var gen))
+                {
+                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}-{generation}'." });
+                }
+
+                var entity = new Entity(id, gen, w);
+                if (!w.IsEntityValid(entity))
+                {
+                    return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
+                }
+
+                try
+                {
+                    w.DestroyEntity(entity);
+                    return Results.Ok(new { message = $"Entity {entityId} successfully deleted." });
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem(ex.Message);
+                }
+            })
+            .WithName("DeleteEntity")
+            .WithSummary("Deletes an entity.")
+            .WithDescription("Destroys the specified entity and removes all its components.")
+            .Produces<object>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status500InternalServerError);
+
+            api.MapPost("/entities/{entityId}/components/{componentTypeName}", (string entityId, string componentTypeName, World w, [FromBody] JsonElement componentData) =>
+            {
+                var parts = entityId.Split('-');
+                if (parts.Length != 2 || !uint.TryParse(parts[0], out var id) || !int.TryParse(parts[1], out var gen))
+                {
+                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}-{generation}'." });
+                }
+
+                var entity = new Entity(id, gen, w);
+                if (!w.IsEntityValid(entity))
+                {
+                    return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
+                }
+
+                try
+                {
+                    bool success = w.SetComponentFromJson(entity, componentTypeName, componentData);
+                    if (success)
+                    {
+                        return Results.Ok(new { message = $"Component '{componentTypeName}' successfully added to entity {entityId}." });
+                    }
+                    else
+                    {
+                        return Results.BadRequest(new { message = $"Failed to add component '{componentTypeName}' to entity {entityId}." });
+                    }
+                }
+                catch (ArgumentException ex)
+                {
+                    return Results.BadRequest(new { message = ex.Message });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.BadRequest(new { message = ex.Message });
+                }
+                catch (JsonException ex)
+                {
+                    return Results.BadRequest(new { message = $"Invalid JSON data: {ex.Message}" });
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem(ex.Message);
+                }
+            })
+            .WithName("AddComponentToEntity")
+            .WithSummary("Adds or updates a component on an entity.")
+            .WithDescription("Sets a component on the specified entity using JSON data. The component type must be a struct and available in loaded assemblies.")
+            .Produces<object>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status500InternalServerError);
+
+            api.MapDelete("/entities/{entityId}/components/{componentTypeName}", (string entityId, string componentTypeName, World w) =>
+            {
+                var parts = entityId.Split('-');
+                if (parts.Length != 2 || !uint.TryParse(parts[0], out var id) || !int.TryParse(parts[1], out var gen))
+                {
+                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}-{generation}'." });
+                }
+
+                var entity = new Entity(id, gen, w);
+                if (!w.IsEntityValid(entity))
+                {
+                    return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
+                }
+
+                try
+                {
+                    bool success = w.RemoveComponentByName(entity, componentTypeName);
+                    if (success)
+                    {
+                        return Results.Ok(new { message = $"Component '{componentTypeName}' successfully removed from entity {entityId}." });
+                    }
+                    else
+                    {
+                        return Results.BadRequest(new { message = $"Failed to remove component '{componentTypeName}' from entity {entityId}." });
+                    }
+                }
+                catch (ArgumentException ex)
+                {
+                    return Results.BadRequest(new { message = ex.Message });
+                }
+                catch (Exception ex)
+                {
+                    return Results.Problem(ex.Message);
+                }
+            })
+            .WithName("RemoveComponentFromEntity")
+            .WithSummary("Removes a component from an entity.")
+            .WithDescription("Removes the specified component type from the entity if it exists.")
+            .Produces<object>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status500InternalServerError);
 
             // --- NEW: Service Endpoints ---
 

@@ -851,6 +851,123 @@ public class World
     }
 
     /// <summary>
+    /// Sets a component on an entity using dynamic type resolution from a type name and JSON data.
+    /// This method is primarily intended for REST API usage.
+    /// </summary>
+    /// <param name="entity">The entity to attach the component to.</param>
+    /// <param name="componentTypeName">The name of the component type.</param>
+    /// <param name="componentData">The JSON data for the component.</param>
+    /// <returns>True if the component was successfully set, false otherwise.</returns>
+    public bool SetComponentFromJson(Entity entity, string componentTypeName, JsonElement componentData)
+    {
+        if (!IsEntityValid(entity))
+        {
+            throw new ArgumentException($"Entity {entity} is no longer valid");
+        }
+
+        // Find the component type by name across all loaded assemblies
+        var componentType = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(assembly => assembly.GetTypes())
+            .FirstOrDefault(type => type.Name == componentTypeName || type.FullName == componentTypeName);
+
+        if (componentType == null)
+        {
+            throw new ArgumentException($"Component type '{componentTypeName}' not found. Available component types: {string.Join(", ", AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).Where(t => t.IsValueType && t.Namespace?.Contains("Component") == true).Select(t => t.Name))}");
+        }
+
+        if (!componentType.IsValueType)
+        {
+            throw new ArgumentException($"Component type '{componentTypeName}' must be a struct (value type).");
+        }
+
+        try
+        {
+            // Deserialize the JSON data to the component type
+            var component = JsonSerializer.Deserialize(componentData, componentType, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                IncludeFields = true
+            });
+
+            if (component == null)
+            {
+                throw new JsonException($"Failed to deserialize component data for type '{componentTypeName}'. JSON: {componentData.GetRawText()}");
+            }
+
+            // Use reflection to call the generic SetComponent method
+            var method = typeof(World).GetMethod(nameof(SetComponent))?.MakeGenericMethod(componentType);
+            if (method == null)
+            {
+                throw new InvalidOperationException($"Could not create generic SetComponent method for type '{componentTypeName}'.");
+            }
+
+            method.Invoke(this, new object[] { entity, component });
+            Console.WriteLine($"[World] Successfully set component '{componentTypeName}' on entity {entity}");
+            return true;
+        }
+        catch (JsonException ex)
+        {
+            throw new ArgumentException($"JSON deserialization failed for component '{componentTypeName}': {ex.Message}. JSON: {componentData.GetRawText()}", ex);
+        }
+        catch (Exception ex) when (ex.InnerException is JsonException jsonEx)
+        {
+            throw new ArgumentException($"JSON deserialization failed for component '{componentTypeName}': {jsonEx.Message}. JSON: {componentData.GetRawText()}", jsonEx);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to set component '{componentTypeName}' on entity {entity}: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Removes a component from an entity using dynamic type resolution from a type name.
+    /// This method is primarily intended for REST API usage.
+    /// </summary>
+    /// <param name="entity">The entity to remove the component from.</param>
+    /// <param name="componentTypeName">The name of the component type.</param>
+    /// <returns>True if the component was successfully removed, false otherwise.</returns>
+    public bool RemoveComponentByName(Entity entity, string componentTypeName)
+    {
+        if (!IsEntityValid(entity))
+        {
+            throw new ArgumentException($"Entity {entity} is no longer valid");
+        }
+
+        // Find the component type by name across all loaded assemblies
+        var componentType = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(assembly => assembly.GetTypes())
+            .FirstOrDefault(type => type.Name == componentTypeName || type.FullName == componentTypeName);
+
+        if (componentType == null)
+        {
+            throw new ArgumentException($"Component type '{componentTypeName}' not found.");
+        }
+
+        if (!componentType.IsValueType)
+        {
+            throw new ArgumentException($"Component type '{componentTypeName}' must be a struct (value type).");
+        }
+
+        try
+        {
+            // Use reflection to call the generic RemoveComponent method
+            var method = typeof(World).GetMethod(nameof(RemoveComponent))?.MakeGenericMethod(componentType);
+            if (method == null)
+            {
+                throw new InvalidOperationException($"Could not create generic RemoveComponent method for type '{componentTypeName}'.");
+            }
+
+            method.Invoke(this, new object[] { entity });
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[World] Failed to remove component '{componentTypeName}' from entity {entity}: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Invokes a method on a registered service by its type name.
     /// </summary>
     /// <param name="serviceTypeName">The full name of the service's type.</param>
