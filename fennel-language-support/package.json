@@ -9,7 +9,7 @@
     },
     "main": "./extension.js",
     "activationEvents": [
-        "onLanguage:fennel"
+        
     ],
     "categories": [
       "Programming Languages"
