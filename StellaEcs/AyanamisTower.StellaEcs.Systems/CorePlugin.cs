@@ -1,7 +1,7 @@
 using System;
 using AyanamisTower.StellaEcs.Components;
 
-namespace AyanamisTower.StellaEcs.Systems;
+namespace AyanamisTower.StellaEcs.CorePlugin;
 /// <summary>
 /// Provides a service to search for entities by their name.
 /// </summary>
@@ -52,37 +52,57 @@ public class SearchService(World world)
 }
 
 /// <summary>
-/// Defines some core systems
+/// Defines some core systems and services.
 /// </summary>
 public class CorePlugin : IPlugin
 {
     /// <inheritdoc/>
     public string Name => "Core Features";
-
     /// <inheritdoc/>
     public string Version => "1.0.0";
-
     /// <inheritdoc/>
     public string Author => "Ayanami Kaine";
-
     /// <inheritdoc/>
     public string Description => "Provides core features for the ECS framework.";
 
     /// <inheritdoc/>
+    public string Prefix => "Core";
+
+    /// <inheritdoc/>
+    public IEnumerable<Type> ProvidedSystems => [typeof(MovementSystem2D), typeof(MovementSystem3D)];
+    /// <inheritdoc/>
+    public IEnumerable<Type> ProvidedServices => [typeof(SearchService)];
+    /// <inheritdoc/>
+    public IEnumerable<Type> ProvidedComponents => [typeof(Name), typeof(Position2D), typeof(Velocity2D), typeof(Position3D), typeof(Velocity3D)];
+
+    /// <inheritdoc/>
     public void Initialize(World world)
     {
-        world.RegisterService(new SearchService(world));
+        // Register services and systems, passing 'this' as the owner.
+        world.RegisterService(new SearchService(world), this);
 
-        world.RegisterSystem(new MovementSystem2D());
-        world.RegisterSystem(new MovementSystem3D());
+        world.RegisterSystem(new MovementSystem2D { Name = $"{Prefix}.{nameof(MovementSystem2D)}" }, this);
+        world.RegisterSystem(new MovementSystem3D { Name = $"{Prefix}.{nameof(MovementSystem3D)}" }, this);
+
+        // Explicitly register ownership of component types
+        foreach (var componentType in ProvidedComponents)
+        {
+            world.RegisterComponentOwner(componentType, this);
+        }
     }
 
     /// <inheritdoc/>
     public void Uninitialize(World world)
     {
         world.UnregisterService<SearchService>();
-        
-        world.RemoveSystem<MovementSystem2D>();
-        world.RemoveSystem<MovementSystem3D>();
+
+        // Use the prefixed name to remove the correct system
+        world.RemoveSystemByName($"{Prefix}.{nameof(MovementSystem2D)}");
+        world.RemoveSystemByName($"{Prefix}.{nameof(MovementSystem3D)}");
+
+        foreach (var componentType in ProvidedComponents)
+        {
+            world.UnregisterComponentOwner(componentType);
+        }
     }
 }

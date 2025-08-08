@@ -1,6 +1,6 @@
 using AyanamisTower.StellaEcs.Components;
 
-namespace AyanamisTower.StellaEcs.Systems;
+namespace AyanamisTower.StellaEcs.CorePlugin;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 public class MovementSystem3D : ISystem
