@@ -4,6 +4,7 @@ namespace AyanamisTower.StellaEcs;
 
 /// <summary>
 /// Represents a system that processes entities with a specific set of components.
+/// Dependencies are defined using [UpdateAfter] and [UpdateBefore] attributes.
 /// </summary>
 public interface ISystem
 {
@@ -17,11 +18,6 @@ public interface ISystem
     /// </summary>
     public bool Enabled { get; set; }
 
-  /// <summary>
-    /// A list of system Names that this system depends on.
-    /// The framework will ensure this system runs *after* all of its dependencies.
-    /// </summary>
-    public List<string> Dependencies { get; }
 
     /// <summary>
     /// This method is called once per frame to update the state of the world.

@@ -53,7 +53,16 @@ public class World
     private readonly Dictionary<string, IEntityFunction> _functions = [];
 
     private object? _apiServerInstance;
-    private bool _isSystemOrderDirty = true; // Start as dirty
+
+    // --- NEW: System Management ---
+    private readonly List<ISystem> _unmanagedSystems = [];
+    private bool _isSystemOrderDirty = true; // Flag to trigger sorting
+
+    // --- NEW: System Group Lists ---
+    // These lists will hold the final, sorted systems for execution.
+    private List<ISystem> _initializationSystems = [];
+    private List<ISystem> _simulationSystems = [];
+    private List<ISystem> _presentationSystems = [];
 
     /*
     Decoupling: A plugin can request a service by its interface (IPathfindingService) without needing a direct reference to the plugin that provides it (SuperPathfindingPlugin.dll).
@@ -83,10 +92,6 @@ public class World
     /// </summary>
     private readonly Dictionary<Type, IMessageBus> _messageBuses = [];
 
-    /// <summary>
-    /// Stores information about loaded plugins for REST API access.
-    /// </summary>
-    private readonly Dictionary<string, IPlugin> _loadedPlugins = [];
 
     // --- NEW: Ownership Tracking ---
     private readonly Dictionary<string, IPlugin> _pluginsByPrefix = [];
@@ -414,29 +419,85 @@ public class World
     }
 
     /// <summary>
+    /// Sorts all registered systems and organizes them into their respective execution groups.
+    /// This is called automatically by Update() when needed.
+    /// </summary>
+    public void SortAndGroupSystems()
+    {
+        if (!_isSystemOrderDirty) return;
+
+        Console.WriteLine("[World] System order is dirty. Re-sorting and grouping systems...");
+
+        // --- 1. Group systems by their [UpdateInGroup] attribute ---
+        var systemsByGroup = new Dictionary<Type, List<ISystem>>
+        {
+            [typeof(InitializationSystemGroup)] = new List<ISystem>(),
+            [typeof(SimulationSystemGroup)] = new List<ISystem>(),
+            [typeof(PresentationSystemGroup)] = new List<ISystem>()
+        };
+
+        foreach (var system in _unmanagedSystems)
+        {
+            var groupAttr = system.GetType().GetCustomAttribute<UpdateInGroupAttribute>();
+            var groupType = groupAttr?.TargetGroup ?? typeof(SimulationSystemGroup); // Default to Simulation
+
+            if (systemsByGroup.TryGetValue(groupType, out var groupList))
+            {
+                groupList.Add(system);
+            }
+            else
+            {
+                // This could happen if a user defines a custom group but doesn't handle it in the World.
+                Console.WriteLine($"[Warning] System '{system.Name}' belongs to unhandled group '{groupType.Name}'. Placing in Simulation group.");
+                systemsByGroup[typeof(SimulationSystemGroup)].Add(system);
+            }
+        }
+
+        // --- 2. Sort each group individually and assign to the final lists ---
+        try
+        {
+            _initializationSystems = SystemSorter.Sort(systemsByGroup[typeof(InitializationSystemGroup)]);
+            _simulationSystems = SystemSorter.Sort(systemsByGroup[typeof(SimulationSystemGroup)]);
+            _presentationSystems = SystemSorter.Sort(systemsByGroup[typeof(PresentationSystemGroup)]);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[FATAL] Failed to sort systems: {ex.Message}");
+            // In a real game, you might want to stop execution or enter a safe mode here.
+            throw;
+        }
+
+        // The list is now clean.
+        _isSystemOrderDirty = false;
+        Console.WriteLine("[World] System sorting complete.");
+    }
+
+    /// <summary>
     /// The main update loop for the world. It ensures systems are sorted by their dependencies before executing.
     /// </summary>
     public void Update(float deltaTime)
     {
-        // --- Just-In-Time Sorting ---
-        // If the order is dirty (e.g., a new system was added), sort it now.
+        // If the system list has changed, re-sort and re-group everything.
         if (_isSystemOrderDirty)
         {
-            SortSystemsByDependencies();
+            SortAndGroupSystems();
         }
 
-        // We create a snapshot of the systems list to avoid collection modification issues during hot reload
-        foreach (var system in _systems.ToArray())
+        // Execute systems in their guaranteed group order.
+        // A temporary copy is used to prevent issues if a system modifies the list during iteration (e.g., via hot-reloading).
+        foreach (var system in _initializationSystems.ToArray())
         {
+            if (system.Enabled) system.Update(this, deltaTime);
+        }
 
-#if DEBUG
-            Debug.Assert(system != null, "System should not be null");
-#endif
+        foreach (var system in _simulationSystems.ToArray())
+        {
+            if (system.Enabled) system.Update(this, deltaTime);
+        }
 
-            if (system?.Enabled == true)
-            {
-                system.Update(this, deltaTime);
-            }
+        foreach (var system in _presentationSystems.ToArray())
+        {
+            if (system.Enabled) system.Update(this, deltaTime);
         }
 
         ClearAllMessages();
@@ -588,69 +649,6 @@ public class World
         }
     }
 
-    /// <summary>
-    /// Sorts the systems based on the 'Dependencies' list in each system.
-    /// This is now called automatically by Update() when needed, but can also be called manually.
-    /// </summary>
-    public void SortSystemsByDependencies()
-    {
-        // First, clean up any null systems that might have gotten into the list
-        int nullCount = _systems.RemoveAll(s => s == null);
-        if (nullCount > 0)
-        {
-            Console.WriteLine($"[Warning] Removed {nullCount} null systems from the systems list.");
-        }
-
-        // This check is to ensure we don't do this expensive work if not needed.
-        if (!_isSystemOrderDirty && _systems.Count > 0) return;
-
-        // The topological sort logic from the previous response remains unchanged.
-        // --- (Implementation of Kahn's algorithm is here) ---
-        var systemsByName = _systems.ToDictionary(s => s.Name);
-        var inDegree = _systems.ToDictionary(s => s.Name, _ => 0);
-        var adjacents = _systems.ToDictionary(s => s.Name, _ => new List<ISystem>());
-
-        foreach (var system in _systems)
-        {
-            foreach (var dependencyName in system.Dependencies)
-            {
-                if (!systemsByName.ContainsKey(dependencyName))
-                {
-                    throw new InvalidOperationException($"System '{system.Name}' has an unresolved dependency on '{dependencyName}', which is not a registered system.");
-                }
-                adjacents[dependencyName].Add(system);
-                inDegree[system.Name]++;
-            }
-        }
-
-        var queue = new Queue<ISystem>(_systems.Where(s => inDegree[s.Name] == 0));
-        var sortedList = new List<ISystem>();
-
-        while (queue.Count > 0)
-        {
-            var current = queue.Dequeue();
-            sortedList.Add(current);
-            foreach (var neighbor in adjacents[current.Name])
-            {
-                if (--inDegree[neighbor.Name] == 0)
-                {
-                    queue.Enqueue(neighbor);
-                }
-            }
-        }
-
-        if (sortedList.Count < _systems.Count)
-        {
-            var cycleNodes = _systems.Except(sortedList).Select(s => s.Name);
-            throw new InvalidOperationException($"Circular dependency detected. The following systems form a cycle or depend on one: {string.Join(", ", cycleNodes)}");
-        }
-
-        _systems.Clear();
-        _systems.AddRange(sortedList);
-
-        // The list is now sorted!
-        _isSystemOrderDirty = false;
-    }
 
     /// <summary>
     /// Removes a registered function from the world.
