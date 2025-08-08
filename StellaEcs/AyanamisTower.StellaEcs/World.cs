@@ -28,6 +28,11 @@ While we can use the components to model relationships, we might want to have a 
 /// </summary>
 public class World
 {
+    /// <summary>
+    /// The current tick of the world. This is incremented on each update by one.
+    /// System can use it to determine the current frame or update cycle. Systems can determine if they want to run every tick or only every second, third and so on.
+    /// </summary>
+    public uint Tick { get; private set; }
     private readonly uint _maxEntities;
     /// <summary>
     /// Entity ID counter. This is incremented each time a new entity is created.
@@ -509,6 +514,7 @@ public class World
             if (system.Enabled) system.Update(this, deltaTime);
         }
 
+        Tick++;
         ClearAllMessages();
     }
 
