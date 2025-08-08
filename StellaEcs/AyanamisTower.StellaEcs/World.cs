@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -424,8 +425,14 @@ public class World
             SortSystemsByDependencies();
         }
 
-        foreach (var system in _systems)
+        // We create a snapshot of the systems list to avoid collection modification issues during hot reload
+        foreach (var system in _systems.ToArray())
         {
+
+#if DEBUG
+            Debug.Assert(system != null, "System should not be null");
+#endif
+
             if (system?.Enabled == true)
             {
                 system.Update(this, deltaTime);
