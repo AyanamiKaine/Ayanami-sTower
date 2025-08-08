@@ -3,13 +3,12 @@
 namespace AyanamisTower.StellaEcs.CorePlugin;
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+[UpdateInGroup(typeof(SimulationSystemGroup))]
 public class MovementSystem2D : ISystem
 {
     public bool Enabled { get; set; } = true;
     public string Name { get; set; } = "MovementSystem2D";
     public int Priority { get; set; } = 0;
-
-    public List<string> Dependencies => [];
 
     public void Update(World world, float deltaTime)
     {
