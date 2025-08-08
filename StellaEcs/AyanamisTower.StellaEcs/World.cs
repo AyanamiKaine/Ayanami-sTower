@@ -86,6 +86,13 @@ public class World
     /// Stores information about loaded plugins for REST API access.
     /// </summary>
     private readonly Dictionary<string, IPlugin> _loadedPlugins = [];
+
+    // --- NEW: Ownership Tracking ---
+    private readonly Dictionary<string, IPlugin> _pluginsByPrefix = [];
+    private readonly Dictionary<Type, IPlugin> _systemOwners = [];
+    private readonly Dictionary<Type, IPlugin> _serviceOwners = [];
+    private readonly Dictionary<Type, IPlugin> _componentOwners = [];
+
     /// <summary>
     /// Creates a default world with the max allowed entity number of 5000:
     /// DESIGN NOTE: Why is a low number of entites good? Imagine this
@@ -320,25 +327,89 @@ public class World
     }
 
     /// <summary>
+    /// Registers the owner of a specific component type.
+    /// </summary>
+    /// <param name="componentType"></param>
+    /// <param name="owner"></param>
+    public void RegisterComponentOwner(Type componentType, IPlugin owner)
+    {
+        _componentOwners[componentType] = owner;
+    }
+
+    /// <summary>
+    /// Unregisters the owner of a specific component type.
+    /// </summary>
+    /// <param name="componentType"></param>
+    public void UnregisterComponentOwner(Type componentType)
+    {
+        _componentOwners.Remove(componentType);
+    }
+
+    /// <summary>
+    /// Unregisters a service of a specific type.
+    /// </summary>
+    public void UnregisterService<T>() where T : class
+    {
+        var serviceType = typeof(T);
+        if (_services.Remove(serviceType))
+        {
+            _serviceOwners.Remove(serviceType);
+        }
+    }
+
+    /// <summary>
+    /// Removes a system by its name.
+    /// </summary>
+    public bool RemoveSystemByName(string systemName)
+    {
+        var systemToRemove = _systems.FirstOrDefault(s => s.Name == systemName);
+        if (systemToRemove != null)
+        {
+            _systems.Remove(systemToRemove);
+            _systemOwners.Remove(systemToRemove.GetType());
+            _isSystemOrderDirty = true;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Registers a plugin instance for tracking and REST API access.
+    /// This should be called when a plugin is loaded.
+    /// </summary>
+    /// <param name="plugin">The plugin instance to register.</param>
+    public void RegisterPlugin(IPlugin plugin)
+    {
+        _pluginsByPrefix[plugin.Prefix] = plugin;
+    }
+
+    /// <summary>
+    /// Unregisters a plugin from tracking.
+    /// This should be called when a plugin is unloaded.
+    /// </summary>
+    /// <param name="plugin">The plugin instance to unregister.</param>
+    public void UnregisterPlugin(IPlugin plugin)
+    {
+        _pluginsByPrefix.Remove(plugin.Prefix);
+    }
+
+    /// <summary>
     /// Adds a new system to the world. The execution order will be automatically resolved before the next update.
     /// </summary>
-    public void RegisterSystem(ISystem system)
+    public void RegisterSystem(ISystem system, IPlugin? owner = null)
     {
-        if (system == null)
+        ArgumentNullException.ThrowIfNull(system);
+        if (string.IsNullOrEmpty(system.Name) || _systems.Any(s => s.Name == system.Name))
         {
-            throw new ArgumentNullException(nameof(system), "System cannot be null.");
+            throw new ArgumentException($"A system with the name '{system.Name}' is already registered or the name is invalid. System names must be unique and not empty.");
         }
 
-        if (_systems.Any(s => s?.Name == system.Name))
-        {
-            throw new ArgumentException($"A system with the name '{system.Name}' is already registered. System names must be unique.");
-        }
-
-        Console.WriteLine($"[World] Registering system: {system.Name}");
         _systems.Add(system);
-
-        // Any change to the list means it will need to be re-sorted.
         _isSystemOrderDirty = true;
+        if (owner != null)
+        {
+            _systemOwners[system.GetType()] = owner;
+        }
     }
 
     /// <summary>
@@ -588,61 +659,14 @@ public class World
     /// </summary>
     /// <typeparam name="T">The type (often an interface) to register the service under.</typeparam>
     /// <param name="service">The service instance.</param>
-    public void RegisterService<T>(T service) where T : class
+    /// <param name="owner">The plugin that owns this service, if applicable.</param>
+    public void RegisterService<T>(T service, IPlugin? owner = null) where T : class
     {
         var serviceType = typeof(T);
-        if (_services.ContainsKey(serviceType))
-        {
-            Console.WriteLine($"[Warning] Service of type {serviceType.Name} is already registered. Overwriting.");
-        }
         _services[serviceType] = service;
-    }
-
-    /// <summary>
-    /// Unregisters a service of a specific type.
-    /// This allows other systems or plugins to stop using the service.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public void UnregisterService<T>() where T : class
-    {
-        var serviceType = typeof(T);
-        if (_services.Remove(serviceType))
+        if (owner != null)
         {
-            Console.WriteLine($"[World] Unregistered service of type {serviceType.Name}.");
-        }
-        else
-        {
-            Console.WriteLine($"[Warning] No service of type {serviceType.Name} was registered.");
-        }
-    }
-
-    /// <summary>
-    /// Registers a plugin instance for tracking and REST API access.
-    /// This should be called when a plugin is loaded.
-    /// </summary>
-    /// <param name="plugin">The plugin instance to register.</param>
-    public void RegisterPlugin(IPlugin plugin)
-    {
-        var key = $"{plugin.Name}@{plugin.Version}";
-        _loadedPlugins[key] = plugin;
-        Console.WriteLine($"[World] Registered plugin: {plugin.Name} v{plugin.Version}");
-    }
-
-    /// <summary>
-    /// Unregisters a plugin from tracking.
-    /// This should be called when a plugin is unloaded.
-    /// </summary>
-    /// <param name="plugin">The plugin instance to unregister.</param>
-    public void UnregisterPlugin(IPlugin plugin)
-    {
-        var key = $"{plugin.Name}@{plugin.Version}";
-        if (_loadedPlugins.Remove(key))
-        {
-            Console.WriteLine($"[World] Unregistered plugin: {plugin.Name} v{plugin.Version}");
-        }
-        else
-        {
-            Console.WriteLine($"[Warning] Plugin {plugin.Name} v{plugin.Version} was not registered.");
+            _serviceOwners[serviceType] = owner;
         }
     }
 
@@ -754,17 +778,43 @@ public class World
     }
 
     /// <summary>
+    /// Retrieves detailed information about a specific plugin.
+    /// </summary>
+    /// <param name="pluginPrefix"></param>
+    /// <returns></returns>
+    public PluginDetailDto? GetPluginDetails(string pluginPrefix)
+    {
+        if (!_pluginsByPrefix.TryGetValue(pluginPrefix, out var plugin))
+        {
+            return null;
+        }
+
+        return new PluginDetailDto
+        {
+            Name = plugin.Name,
+            Version = plugin.Version,
+            Author = plugin.Author,
+            Description = plugin.Description,
+            Prefix = plugin.Prefix,
+            Url = $"/api/plugins/{plugin.Prefix}",
+            Systems = [.. plugin.ProvidedSystems.Select(t => $"{plugin.Prefix}.{t.Name}")],
+            Services = [.. plugin.ProvidedServices.Select(t => t.FullName ?? t.Name)],
+            Components = [.. plugin.ProvidedComponents.Select(t => t.Name)]
+        };
+    }
+
+    /// <summary>
     /// Gets a list of all registered systems and their current state.
     /// </summary>
     public IEnumerable<SystemInfoDto> GetSystems()
     {
         return _systems.Select(s => new SystemInfoDto
         {
-            Name = s.GetType().Name,
-            Enabled = s.Enabled
+            Name = s.Name,
+            Enabled = s.Enabled,
+            PluginOwner = _systemOwners.TryGetValue(s.GetType(), out var p) ? p.Prefix : "World"
         });
     }
-
     /// <summary>
     /// Retrieves a collection of all currently active entities in the world.
     /// </summary>
@@ -817,22 +867,27 @@ public class World
     /// <summary>
     /// Gets the names of all registered component types.
     /// </summary>
-    public IEnumerable<string> GetComponentTypes()
+    public IEnumerable<ComponentInfoDto> GetComponentTypes()
     {
-        return _storages.Keys.Select(t => t.Name);
+        return _storages.Keys.Select(t => new ComponentInfoDto
+        {
+            TypeName = t.Name,
+            PluginOwner = _componentOwners.TryGetValue(t, out var p) ? p.Prefix : "World",
+            Data = null // Data is entity-specific, not relevant for a general listing
+        });
     }
-
     /// <summary>
     /// Gets a list of all registered services and their public methods.
     /// </summary>
     public IEnumerable<ServiceInfoDto> GetServices()
     {
-        return _services.Keys.Select(t => new ServiceInfoDto
+        return _services.Select(kvp => new ServiceInfoDto
         {
-            TypeName = t.FullName ?? t.Name,
-            Methods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                         .Where(m => !m.IsSpecialName) // Exclude property getters/setters like get_Name
-                         .Select(m => m.Name)
+            TypeName = kvp.Key.FullName ?? kvp.Key.Name,
+            Methods = kvp.Key.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                         .Where(m => !m.IsSpecialName)
+                         .Select(m => m.Name),
+            PluginOwner = _serviceOwners.TryGetValue(kvp.Key, out var p) ? p.Prefix : "World"
         });
     }
 
@@ -841,12 +896,14 @@ public class World
     /// </summary>
     public IEnumerable<PluginInfoDto> GetPlugins()
     {
-        return _loadedPlugins.Values.Select(plugin => new PluginInfoDto
+        return _pluginsByPrefix.Values.Select(plugin => new PluginInfoDto
         {
             Name = plugin.Name,
             Version = plugin.Version,
             Author = plugin.Author,
-            Description = plugin.Description
+            Description = plugin.Description,
+            Prefix = plugin.Prefix,
+            Url = $"/api/plugins/{plugin.Prefix}"
         });
     }
 
@@ -1097,6 +1154,11 @@ public class SystemInfoDto
     /// Indicates whether the system is currently enabled.
     /// </summary>
     public bool Enabled { get; set; }
+    /// <summary>
+    /// The owner of the plugin that provides this system.
+    /// </summary>
+    public required string PluginOwner { get; set; }
+
 }
 /// <summary>
 /// A DTO for exposing component information.
@@ -1112,6 +1174,11 @@ public class ComponentInfoDto
     /// The data associated with the component, if applicable.
     /// </summary>
     public object? Data { get; set; }
+    /// <summary>
+    /// The owner of the plugin that provides this component.
+    /// </summary>
+    public string? PluginOwner { get; set; }
+
 }
 
 /// <summary>
@@ -1128,6 +1195,29 @@ public class ServiceInfoDto
     /// A list of public methods available on the service.
     /// </summary>
     public required IEnumerable<string> Methods { get; set; }
+    /// <summary>
+    /// The owner of the plugin that provides this service.
+    /// </summary>
+    public required string PluginOwner { get; set; }
+}
+
+/// <summary>
+/// A DTO for exposing detailed plugin information.
+/// </summary>
+public class PluginDetailDto : PluginInfoDto
+{
+    /// <summary>
+    /// A list of systems provided by the plugin.
+    /// </summary>
+    public required IEnumerable<string> Systems { get; set; }
+    /// <summary>
+    /// A list of services provided by the plugin.
+    /// </summary>
+    public required IEnumerable<string> Services { get; set; }
+    /// <summary>
+    /// A list of components provided by the plugin.
+    /// </summary>
+    public required IEnumerable<string> Components { get; set; }
 }
 
 /// <summary>
@@ -1154,6 +1244,14 @@ public class PluginInfoDto
     /// A description of what the plugin does.
     /// </summary>
     public required string Description { get; set; }
+    /// <summary>
+    /// The unique prefix used for this plugin's systems and services.
+    /// </summary>
+    public required string Prefix { get; set; }
+    /// <summary>
+    /// The URL for accessing this plugin's API endpoints.
+    /// </summary>
+    public required string Url { get; set; }
 }
 
 #endregion

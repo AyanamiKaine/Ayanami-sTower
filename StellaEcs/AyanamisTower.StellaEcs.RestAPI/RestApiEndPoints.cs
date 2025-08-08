@@ -42,8 +42,8 @@ namespace AyanamisTower.StellaEcs.Api
 
             api.MapGet("/components", (World w) => Results.Ok(w.GetComponentTypes()))
                .WithName("GetRegisteredComponentTypes")
-               .WithSummary("Retrieves a list of all registered component types.")
-               .Produces<IEnumerable<string>>(StatusCodes.Status200OK);
+               .WithSummary("Retrieves a list of all registered component types and their owners.")
+               .Produces<IEnumerable<ComponentInfoDto>>(StatusCodes.Status200OK);
 
             // --- Entity Endpoints ---
 
@@ -287,13 +287,32 @@ namespace AyanamisTower.StellaEcs.Api
 
             // --- Plugin Endpoints ---
 
-            api.MapGet("/plugins", (World w) => Results.Ok(w.GetPlugins()))
-               .WithName("GetLoadedPlugins")
-               .WithSummary("Retrieves a list of all loaded plugins.")
-               .WithDescription("Returns information about all currently loaded plugins including their name, version, author, and description.")
-               .Produces<IEnumerable<PluginInfoDto>>(StatusCodes.Status200OK);
+            api.MapGet("/plugins", (World w, HttpContext context) =>
+                        {
+                            var request = context.Request;
+                            var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
+                            var plugins = w.GetPlugins().Select(p =>
+                            {
+                                p.Url = $"{baseUrl}{p.Url}"; // Create the full, absolute URL
+                                return p;
+                            });
+                            return Results.Ok(plugins);
+                        })
+                           .WithName("GetLoadedPlugins")
+                           .WithSummary("Retrieves a list of all loaded plugins.")
+                           .Produces<IEnumerable<PluginInfoDto>>(StatusCodes.Status200OK);
 
-
+            // NEW: Endpoint for getting plugin details
+            api.MapGet("/plugins/{pluginPrefix}", (string pluginPrefix, World w) =>
+            {
+                var details = w.GetPluginDetails(pluginPrefix);
+                return details != null ? Results.Ok(details) : Results.NotFound(new { message = $"Plugin with prefix '{pluginPrefix}' not found." });
+            })
+               .WithName("GetPluginDetails")
+               .WithSummary("Gets detailed information for a specific plugin.")
+               .WithDescription("Retrieves the systems, services, and components registered by a single plugin.")
+               .Produces<PluginDetailDto>(StatusCodes.Status200OK)
+               .Produces(StatusCodes.Status404NotFound);
             return app;
         }
     }

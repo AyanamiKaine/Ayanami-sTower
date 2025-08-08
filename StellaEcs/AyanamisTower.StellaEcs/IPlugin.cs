@@ -29,6 +29,27 @@ public interface IPlugin
     string Description { get; }
 
     /// <summary>
+    /// A short, unique prefix used for naming systems and services provided by this plugin.
+    /// E.g., "Core" for the Core plugin. This will be used as the plugin's unique identifier.
+    /// </summary>
+    string Prefix { get; }
+
+    /// <summary>
+    /// Gets a collection of all system types this plugin provides.
+    /// </summary>
+    IEnumerable<Type> ProvidedSystems { get; }
+
+    /// <summary>
+    /// Gets a collection of all service types this plugin provides.
+    /// </summary>
+    IEnumerable<Type> ProvidedServices { get; }
+
+    /// <summary>
+    /// Gets a collection of all component types this plugin provides or primarily operates on.
+    /// </summary>
+    IEnumerable<Type> ProvidedComponents { get; }
+
+    /// <summary>
     /// Called by the main application to let the plugin register its systems.
     /// </summary>
     /// <param name="world">The main world instance.</param>
