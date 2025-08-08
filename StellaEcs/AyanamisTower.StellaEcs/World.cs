@@ -60,8 +60,17 @@ public class World
 
     // --- NEW: System Group Lists ---
     // These lists will hold the final, sorted systems for execution.
+    /// <summary>
+    /// Initialization Phase: Systems that create entities, set up state (e.g., SpawnPlayerSystem).
+    /// </summary>
     private List<ISystem> _initializationSystems = [];
+    /// <summary>
+    /// Simulation Phase: The main game logic systems (e.g., Input, AI, Physics, Movement)
+    /// </summary>
     private List<ISystem> _simulationSystems = [];
+    /// <summary>
+    /// Systems that prepare data for rendering (e.g., Animation, Camera, UIRendering).
+    /// </summary>
     private List<ISystem> _presentationSystems = [];
 
     /*
