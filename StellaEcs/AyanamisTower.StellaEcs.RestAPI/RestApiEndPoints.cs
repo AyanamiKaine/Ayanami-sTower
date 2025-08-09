@@ -114,8 +114,7 @@ namespace AyanamisTower.StellaEcs.Api
 
             api.MapDelete("/entities/{entityId}", (string entityId, World w) =>
             {
-                var parts = entityId.Split('-');
-                if (parts.Length != 2 || !uint.TryParse(parts[0], out var id) || !int.TryParse(parts[1], out var gen))
+                if (!uint.TryParse(entityId, out var id))
                 {
                     return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }

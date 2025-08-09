@@ -16,7 +16,7 @@
     // Do NOT pre-populate editingValues from server; only store user edits.
     // This ensures auto-reload shows fresh values unless the user is actively editing.
     $: if (detail) {
-        const entityId = `${detail.id}-${detail.generation}`;
+        const entityId = `${detail.id}`;
         if (currentEntityId !== entityId) {
             // Switched entities: always clear local edits
             currentEntityId = entityId;
@@ -178,7 +178,7 @@
     <div class="card fade-in grid gap-4" on:focusin={() => (isInteracting = true)} on:focusout={() => (isInteracting = false)}>
         <div class="flex items-center gap-3">
             <h3 class="font-semibold">
-                Entity {detail.id}-{detail.generation}
+                Entity {detail.id}
             </h3>
             <button class="ml-auto btn" on:click={onClose}>Close</button>
         </div>

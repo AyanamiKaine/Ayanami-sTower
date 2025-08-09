@@ -13,7 +13,7 @@
     <div class="overflow-auto max-h-[60vh]">
         <table class="table text-sm">
             <thead>
-                <tr><th class="pr-10">ID</th><th class="pr-10">Actions</th></tr>
+                <tr><th class="pr-10">ID</th></tr>
             </thead>
             <tbody>
                 {#if loading}
@@ -35,14 +35,6 @@
                             on:click={() => onSelect(`${e.id}`)}
                         >
                             <td>{e.id}</td>
-                            <td
-                                ><button
-                                    class="btn btn-primary"
-                                    on:click|stopPropagation={() =>
-                                        onSelect(`${e.id}`)}
-                                    >Open</button
-                                ></td
-                            >
                         </tr>
                     {/each}
                 {/if}

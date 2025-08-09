@@ -16,8 +16,8 @@
     let editComponentData: any = null;
 
     // Auto-reload state
-    let autoReloadEnabled = false;
-    let autoReloadInterval = 5; // seconds
+    let autoReloadEnabled = true;
+    let autoReloadInterval = 1; // seconds
     let autoReloadTimer: any = null;
     let isRefreshing = false; // prevent overlapping refreshes
 
