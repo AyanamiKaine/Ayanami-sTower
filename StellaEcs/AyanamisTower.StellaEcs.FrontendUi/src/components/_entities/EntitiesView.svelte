@@ -294,7 +294,7 @@
                     class="input text-xs flex-1"
                     placeholder="e.g. Name, Position3D"
                     bind:value={requiredComponentsInput}
-                    on:keydown={(e) => { if ((e as KeyboardEvent).key === 'Enter') applyFilters(); }}
+                    on:keydown={(e) => { if (e.key === 'Enter') applyFilters(); }}
                 />
             </div>
             <div class="flex items-center gap-2">
@@ -303,7 +303,7 @@
                     class="input text-xs flex-1"
                     placeholder='e.g. Name = "Tom", Position3D.X >= 0'
                     bind:value={valueQuery}
-                    on:keydown={(e) => { if ((e as KeyboardEvent).key === 'Enter') applyFilters(); }}
+                    on:keydown={(e) => { if (e.key === 'Enter') applyFilters(); }}
                 />
             </div>
             {#if filterErrors.length}
@@ -320,7 +320,7 @@
                     <span class="text-xs text-zinc-400">{displayEntities.length} matched</span>
                 {/if}
             </div>
-            <div class="text-[10px] text-zinc-500">Tips: Combine with AND or comma. Ops: =, !=, >, >=, <, <=, contains, startsWith, endsWith</div>
+            <div class="text-[10px] text-zinc-500">Tips: Combine with AND or comma. Ops: =, !=, &gt;, &gt;=, &lt;, &lt;=, contains, startsWith, endsWith</div>
         </div>
 
         <!-- Auto-reload controls - separate row for better visibility -->
