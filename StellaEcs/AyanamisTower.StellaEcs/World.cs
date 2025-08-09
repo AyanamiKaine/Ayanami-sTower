@@ -196,6 +196,15 @@ public class World
     }
 
     /// <summary>
+    /// Registers a new component type.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public void RegisterComponent<T>() where T : struct
+    {
+        GetOrCreateStorage<T>();
+    }
+
+    /// <summary>
     /// Sets or replaces a component for an entity.
     /// </summary>
     /// <typeparam name="T">The type of the component.</typeparam>
@@ -423,7 +432,7 @@ public class World
         {
             throw new ArgumentException($"A system with the name '{system.Name}' is already registered or the name is invalid. System names must be unique and not empty.");
         }
-
+        _unmanagedSystems.Add(system);
         _systems.Add(system);
         _isSystemOrderDirty = true;
         if (owner != null)
@@ -945,13 +954,7 @@ public class World
         // Find the component type by name across all loaded assemblies
         var componentType = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(assembly => assembly.GetTypes())
-            .FirstOrDefault(type => type.Name == componentTypeName || type.FullName == componentTypeName);
-
-        if (componentType == null)
-        {
-            throw new ArgumentException($"Component type '{componentTypeName}' not found. Available component types: {string.Join(", ", AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).Where(t => t.IsValueType && t.Namespace?.Contains("Component") == true).Select(t => t.Name))}");
-        }
-
+            .FirstOrDefault(type => type.Name == componentTypeName || type.FullName == componentTypeName) ?? throw new ArgumentException($"Component type '{componentTypeName}' not found. Available component types: {string.Join(", ", AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).Where(t => t.IsValueType && t.Namespace?.Contains("Component") == true).Select(t => t.Name))}");
         if (!componentType.IsValueType)
         {
             throw new ArgumentException($"Component type '{componentTypeName}' must be a struct (value type).");
@@ -964,21 +967,11 @@ public class World
             {
                 PropertyNameCaseInsensitive = true,
                 IncludeFields = true
-            });
-
-            if (component == null)
-            {
-                throw new JsonException($"Failed to deserialize component data for type '{componentTypeName}'. JSON: {componentData.GetRawText()}");
-            }
+            }) ?? throw new JsonException($"Failed to deserialize component data for type '{componentTypeName}'. JSON: {componentData.GetRawText()}");
 
             // Use reflection to call the generic SetComponent method
-            var method = typeof(World).GetMethod(nameof(SetComponent))?.MakeGenericMethod(componentType);
-            if (method == null)
-            {
-                throw new InvalidOperationException($"Could not create generic SetComponent method for type '{componentTypeName}'.");
-            }
-
-            method.Invoke(this, new object[] { entity, component });
+            var method = (typeof(World).GetMethod(nameof(SetComponent))?.MakeGenericMethod(componentType)) ?? throw new InvalidOperationException($"Could not create generic SetComponent method for type '{componentTypeName}'.");
+            method.Invoke(this, [entity, component]);
             Console.WriteLine($"[World] Successfully set component '{componentTypeName}' on entity {entity}");
             return true;
         }
@@ -1013,13 +1006,7 @@ public class World
         // Find the component type by name across all loaded assemblies
         var componentType = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(assembly => assembly.GetTypes())
-            .FirstOrDefault(type => type.Name == componentTypeName || type.FullName == componentTypeName);
-
-        if (componentType == null)
-        {
-            throw new ArgumentException($"Component type '{componentTypeName}' not found.");
-        }
-
+            .FirstOrDefault(type => type.Name == componentTypeName || type.FullName == componentTypeName) ?? throw new ArgumentException($"Component type '{componentTypeName}' not found.");
         if (!componentType.IsValueType)
         {
             throw new ArgumentException($"Component type '{componentTypeName}' must be a struct (value type).");
@@ -1028,13 +1015,8 @@ public class World
         try
         {
             // Use reflection to call the generic RemoveComponent method
-            var method = typeof(World).GetMethod(nameof(RemoveComponent))?.MakeGenericMethod(componentType);
-            if (method == null)
-            {
-                throw new InvalidOperationException($"Could not create generic RemoveComponent method for type '{componentTypeName}'.");
-            }
-
-            method.Invoke(this, new object[] { entity });
+            var method = (typeof(World).GetMethod(nameof(RemoveComponent))?.MakeGenericMethod(componentType)) ?? throw new InvalidOperationException($"Could not create generic RemoveComponent method for type '{componentTypeName}'.");
+            method.Invoke(this, [entity]);
             return true;
         }
         catch (Exception ex)

@@ -80,6 +80,11 @@ public class CorePlugin : IPlugin
     {
         // Register services and systems, passing 'this' as the owner.
         world.RegisterService(new SearchService(world), this);
+        world.RegisterComponent<Position2D>();
+        world.RegisterComponent<Velocity2D>();
+        world.RegisterComponent<Name>();
+        world.RegisterComponent<Position3D>();
+        world.RegisterComponent<Velocity3D>();
 
         world.RegisterSystem(new MovementSystem2D { Name = $"{Prefix}.{nameof(MovementSystem2D)}" }, this);
         world.RegisterSystem(new MovementSystem3D { Name = $"{Prefix}.{nameof(MovementSystem3D)}" }, this);
