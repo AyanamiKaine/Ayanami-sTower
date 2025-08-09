@@ -15,7 +15,6 @@ describe('api client shape', () => {
     g.fetch = async () => ({ ok: true, json: async () => ([{ id:1, generation:0, url:'/api/entities/1-0'}]) });
     const list: EntitySummary[] = await api.entities();
     expect(list[0].id).toBe(1);
-    expect(list[0].generation).toBe(0);
   });
   it('propagates http errors', async () => {
     g.fetch = async () => ({ ok: false, status:400, statusText:'Bad Request', text: async () => 'oops'});

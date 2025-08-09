@@ -111,14 +111,13 @@ namespace AyanamisTower.StellaEcs.Api
                 var entities = w.GetAllEntities().Select(e => new EntitySummaryDto
                 {
                     Id = e.Id,
-                    Generation = e.Generation,
-                    Url = $"{baseUrl}/api/entities/{e.Id}-{e.Generation}"
+                    Url = $"{baseUrl}/api/entities/{e.Id}"
                 });
                 return Results.Ok(entities);
             })
             .WithName("GetAllValidEntities")
             .WithSummary("Retrieves a summary of all valid entities.")
-            .WithDescription("Returns a list of all entities with their ID, generation, and a URL to their detailed view.")
+            .WithDescription("Returns a list of all entities with their ID and a URL to their detailed view.")
             .Produces<IEnumerable<EntitySummaryDto>>(StatusCodes.Status200OK);
 
             api.MapPost("/entities", (World w, HttpContext context) =>
@@ -130,11 +129,10 @@ namespace AyanamisTower.StellaEcs.Api
                 var entitySummary = new EntitySummaryDto
                 {
                     Id = entity.Id,
-                    Generation = entity.Generation,
-                    Url = $"{baseUrl}/api/entities/{entity.Id}-{entity.Generation}"
+                    Url = $"{baseUrl}/api/entities/{entity.Id}"
                 };
 
-                return Results.Created($"{baseUrl}/api/entities/{entity.Id}-{entity.Generation}", entitySummary);
+                return Results.Created($"{baseUrl}/api/entities/{entity.Id}", entitySummary);
             })
             .WithName("CreateEntity")
             .WithSummary("Creates a new entity.")
@@ -143,13 +141,12 @@ namespace AyanamisTower.StellaEcs.Api
 
             api.MapGet("/entities/{entityId}", (string entityId, World w) =>
             {
-                var parts = entityId.Split('-');
-                if (parts.Length != 2 || !uint.TryParse(parts[0], out var id) || !int.TryParse(parts[1], out var gen))
+                if (!uint.TryParse(entityId, out var id))
                 {
-                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}-{generation}'." });
+                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }
 
-                var entity = new Entity(id, gen, w);
+                var entity = new Entity(id, w);
                 if (!w.IsEntityValid(entity))
                 {
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
@@ -159,7 +156,6 @@ namespace AyanamisTower.StellaEcs.Api
                 var entityDetails = new EntityDetailDto
                 {
                     Id = entity.Id,
-                    Generation = entity.Generation,
                     Components = components
                 };
 
@@ -174,13 +170,12 @@ namespace AyanamisTower.StellaEcs.Api
 
             api.MapDelete("/entities/{entityId}", (string entityId, World w) =>
             {
-                var parts = entityId.Split('-');
-                if (parts.Length != 2 || !uint.TryParse(parts[0], out var id) || !int.TryParse(parts[1], out var gen))
+                if (!uint.TryParse(entityId, out var id))
                 {
-                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}-{generation}'." });
+                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }
 
-                var entity = new Entity(id, gen, w);
+                var entity = new Entity(id, w);
                 if (!w.IsEntityValid(entity))
                 {
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
@@ -206,13 +201,12 @@ namespace AyanamisTower.StellaEcs.Api
 
             api.MapPost("/entities/{entityId}/components/{componentTypeName}", (string entityId, string componentTypeName, World w, [FromBody] JsonElement componentData) =>
             {
-                var parts = entityId.Split('-');
-                if (parts.Length != 2 || !uint.TryParse(parts[0], out var id) || !int.TryParse(parts[1], out var gen))
+                if (!uint.TryParse(entityId, out var id))
                 {
-                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}-{generation}'." });
+                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }
 
-                var entity = new Entity(id, gen, w);
+                var entity = new Entity(id, w);
                 if (!w.IsEntityValid(entity))
                 {
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
@@ -257,13 +251,12 @@ namespace AyanamisTower.StellaEcs.Api
 
             api.MapDelete("/entities/{entityId}/components/{componentTypeName}", (string entityId, string componentTypeName, World w) =>
             {
-                var parts = entityId.Split('-');
-                if (parts.Length != 2 || !uint.TryParse(parts[0], out var id) || !int.TryParse(parts[1], out var gen))
+                if (!uint.TryParse(entityId, out var id))
                 {
-                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}-{generation}'." });
+                    return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }
 
-                var entity = new Entity(id, gen, w);
+                var entity = new Entity(id, w);
                 if (!w.IsEntityValid(entity))
                 {
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
@@ -373,6 +366,7 @@ namespace AyanamisTower.StellaEcs.Api
         }
     }
 }
+
 
 using AyanamisTower.StellaEcs;
 using Microsoft.AspNetCore.Builder;
@@ -492,6 +486,7 @@ namespace AyanamisTower.StellaEcs.Api
 }
 
 
+
 #region Data Transfer Objects (DTOs) for Public API
 
 /// <summary>
@@ -522,10 +517,6 @@ public class EntityDetailDto
     /// The unique identifier for the entity.
     /// </summary>
     public uint Id { get; set; }
-    /// <summary>
-    /// The generation of the entity, used to validate its current state.
-    /// </summary>
-    public int Generation { get; set; }
     /// <summary>
     /// A direct link to the detailed view of this entity.
     /// </summary>

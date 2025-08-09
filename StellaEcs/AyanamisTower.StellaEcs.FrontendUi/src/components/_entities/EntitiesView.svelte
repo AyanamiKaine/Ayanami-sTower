@@ -1,12 +1,15 @@
 <script lang="ts">
     import { api, type EntitySummary, type EntityDetail } from "@lib/api";
+    import { parseQuery, matchesConditions, hasRequiredComponents } from "@lib/filter";
     import EntitiesTable from "../EntitiesTable.svelte";
     import EntityDetailPanel from "../EntityDetailPanel.svelte";
     import AddComponentForm from "../AddComponentForm.svelte";
     let entities: EntitySummary[] = [];
+    let displayEntities: EntitySummary[] = []; // filtered view
     let selectedIdGen: string | null = null;
     let detail: EntityDetail | null = null;
     let loading = false;
+    let filtering = false;
     let creating = false;
     let error: string | null = null;
 
@@ -14,6 +17,15 @@
     let editMode = false;
     let editComponentType = "";
     let editComponentData: any = null;
+
+    // Filter state
+    let requiredComponentsInput = ""; // comma or space separated
+    let valueQuery = ""; // e.g., Name = "Tom", Position3D.X >= 0
+    let filterErrors: string[] = [];
+    let filtersApplied = false;
+
+    // Details cache for filtering
+    const detailsCache = new Map<string, EntityDetail>();
 
     // Auto-reload state
     let autoReloadEnabled = true;
@@ -36,6 +48,8 @@
         error = null;
         try {
             entities = await api.entities();
+            // Reset display if no filters applied
+            displayEntities = filtersApplied ? displayEntities : entities;
         } catch (e: any) {
             error = e.message;
         } finally {
@@ -51,9 +65,13 @@
                 if (selectedIdGen) {
                     // Soft-refresh the selected entity without resetting UI state
                     refreshSelectedEntity();
-                } else {
+                } else if (!filtersApplied) {
                     // Reload the entities list
                     loadEntities();
+                } else {
+                    // If filters are applied, refresh the base list then re-apply filters
+                    loadEntities();
+                    applyFilters(false);
                 }
             }, autoReloadInterval * 1000);
         }
@@ -115,6 +133,75 @@
         } catch (e: any) {
             error = e.message;
         }
+    }
+
+    // Concurrency-limited details fetcher
+    const maxConcurrent = 6;
+    async function getDetail(idGen: string): Promise<EntityDetail> {
+        if (detailsCache.has(idGen)) return detailsCache.get(idGen)!;
+        const d = await api.entity(idGen);
+        detailsCache.set(idGen, d);
+        return d;
+    }
+
+    function parseRequiredComponents(input: string): string[] {
+        return input
+            .split(/[\s,]+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+    }
+
+    async function applyFilters(clearCache = false) {
+        filtering = true;
+        filterErrors = [];
+        error = null;
+        if (clearCache) detailsCache.clear();
+
+        try {
+            const required = parseRequiredComponents(requiredComponentsInput);
+            const parsed = parseQuery(valueQuery);
+            filterErrors = parsed.errors;
+
+            // If parse errors, still allow component-only filtering
+            const candidates = entities.slice();
+
+            const queue = [...candidates];
+            const results: EntitySummary[] = [];
+
+            let index = 0;
+            async function worker() {
+                while (index < queue.length) {
+                    const i = index++;
+                    const e = queue[i];
+                    try {
+                        const d = await getDetail(`${e.id}`);
+                        if (!hasRequiredComponents(d, required)) continue;
+                        if (parsed.conditions.length > 0 && !matchesConditions(d, parsed.conditions)) continue;
+                        results.push(e);
+                    } catch (err: any) {
+                        // ignore individual entity failures
+                    }
+                }
+            }
+
+            const workers = Array.from({ length: Math.min(maxConcurrent, queue.length) }, () => worker());
+            await Promise.all(workers);
+
+            displayEntities = results;
+            filtersApplied = true;
+        } catch (e: any) {
+            error = e.message;
+        } finally {
+            filtering = false;
+        }
+    }
+
+    function clearFilters() {
+        requiredComponentsInput = "";
+        valueQuery = "";
+        filterErrors = [];
+        filtersApplied = false;
+        displayEntities = entities;
     }
     async function createEntity() {
         creating = true;
@@ -199,6 +286,43 @@
                 >{/if}
         </div>
 
+        <!-- Filters -->
+        <div class="grid gap-2 p-3 bg-zinc-800/50 rounded border border-zinc-700">
+            <div class="flex items-center gap-2">
+                <label class="text-xs w-40 text-zinc-300">Has components</label>
+                <input
+                    class="input text-xs flex-1"
+                    placeholder="e.g. Name, Position3D"
+                    bind:value={requiredComponentsInput}
+                    on:keydown={(e) => { if ((e as KeyboardEvent).key === 'Enter') applyFilters(); }}
+                />
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="text-xs w-40 text-zinc-300">Where</label>
+                <input
+                    class="input text-xs flex-1"
+                    placeholder='e.g. Name = "Tom", Position3D.X >= 0'
+                    bind:value={valueQuery}
+                    on:keydown={(e) => { if ((e as KeyboardEvent).key === 'Enter') applyFilters(); }}
+                />
+            </div>
+            {#if filterErrors.length}
+                <div class="text-amber-400 text-xs">{filterErrors.join("; ")}</div>
+            {/if}
+            <div class="flex gap-2 items-center">
+                <button class="btn btn-primary text-xs" on:click={() => applyFilters(true)} disabled={filtering}>
+                    {filtering ? 'Filtering…' : 'Apply Filters'}
+                </button>
+                <button class="btn text-xs" on:click={clearFilters} disabled={filtering}>
+                    Clear
+                </button>
+                {#if filtersApplied}
+                    <span class="text-xs text-zinc-400">{displayEntities.length} matched</span>
+                {/if}
+            </div>
+            <div class="text-[10px] text-zinc-500">Tips: Combine with AND or comma. Ops: =, !=, >, >=, <, <=, contains, startsWith, endsWith</div>
+        </div>
+
         <!-- Auto-reload controls - separate row for better visibility -->
         <div
             class="flex gap-3 items-center p-3 bg-zinc-800/50 rounded border border-zinc-700"
@@ -230,7 +354,7 @@
             {/if}
         </div>
         {#if error}<p class="text-red-400 text-sm">{error}</p>{/if}
-        <EntitiesTable {entities} {loading} onSelect={select} />
+    <EntitiesTable entities={filtersApplied ? displayEntities : entities} {loading} onSelect={select} />
     </div>
     <div class="grid gap-4 content-start">
         <EntityDetailPanel
