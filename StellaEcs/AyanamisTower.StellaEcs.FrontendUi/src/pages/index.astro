@@ -1,0 +1,11 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import WorldStatusCard from "../components/WorldStatusCard.svelte";
+---
+
+<BaseLayout title="Stella ECS" description="Stella ECS Inspector UI">
+    <h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
+    <div class="grid md:grid-cols-2 gap-6">
+        <WorldStatusCard client:load />
+    </div>
+</BaseLayout>

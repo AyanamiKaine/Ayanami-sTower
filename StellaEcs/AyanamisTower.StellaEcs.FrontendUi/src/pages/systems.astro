@@ -1,0 +1,8 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SystemsList from "../components/SystemsList.svelte";
+---
+
+<BaseLayout title="Systems">
+    <SystemsList client:load />
+</BaseLayout>

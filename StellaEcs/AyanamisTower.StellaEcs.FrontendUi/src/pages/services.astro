@@ -1,0 +1,39 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ServicesList from "../components/ServicesList.svelte";
+import { api } from "../lib/api";
+---
+
+<BaseLayout title="Services">
+    <ServicesList
+        client:load
+        onInvoke={(service, method) => {
+            const raw = prompt(
+                `Invoke ${method} on ${service}. Enter JSON object for params`,
+                "{}",
+            );
+            if (raw == null) return;
+            let params: Record<string, unknown> = {};
+            try {
+                params = JSON.parse(raw || "{}");
+            } catch {
+                alert("Invalid JSON");
+                return;
+            }
+            (async () => {
+                try {
+                    const result = await api.invokeService(
+                        service,
+                        method,
+                        params,
+                    );
+                    alert(
+                        `Success: ${typeof result === "object" ? JSON.stringify(result, null, 2) : result}`,
+                    );
+                } catch (e: any) {
+                    alert(`Error: ${e.message}`);
+                }
+            })();
+        }}
+    />
+</BaseLayout>

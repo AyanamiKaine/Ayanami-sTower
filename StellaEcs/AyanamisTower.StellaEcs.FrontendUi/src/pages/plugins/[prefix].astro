@@ -1,0 +1,78 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { api, type PluginDetail } from "../../lib/api";
+export async function getStaticPaths() {
+	try {
+		const plugins = await api.plugins();
+		return plugins.map((p) => ({ params: { prefix: p.prefix } }));
+	} catch (e) {
+		// If backend isn't available at build/dev-time, return no paths to avoid crashes
+		return [];
+	}
+}
+const { prefix } = Astro.params;
+let detail: PluginDetail | null = null;
+try {
+	detail = await api.pluginDetail(prefix!);
+} catch {}
+---
+
+<BaseLayout title={`Plugin ${prefix}`}>
+	{
+		detail ? (
+			<div class="grid gap-6">
+				<div class="card grid gap-2">
+					<h1 class="text-xl font-semibold">
+						{detail.name} <span class="badge">v{detail.version}</span>
+					</h1>
+					<p class="text-sm text-zinc-400">{detail.description}</p>
+					<p class="text-xs text-zinc-500">Author: {detail.author}</p>
+					<p class="text-xs text-zinc-500">Prefix: {detail.prefix}</p>
+					<a class="text-emerald-400 text-xs" href={detail.url} target="_blank">
+						Plugin Root Endpoint
+					</a>
+				</div>
+				<div class="grid md:grid-cols-3 gap-6">
+					<div class="card">
+						<h2 class="font-semibold mb-2 text-sm">
+							Systems ({detail.systems.length})
+						</h2>
+						<ul class="text-xs grid gap-1">
+							{detail.systems.length ? (
+								detail.systems.map((s) => <li>{s}</li>)
+							) : (
+								<li class="text-zinc-500">None</li>
+							)}
+						</ul>
+					</div>
+					<div class="card">
+						<h2 class="font-semibold mb-2 text-sm">
+							Services ({detail.services.length})
+						</h2>
+						<ul class="text-xs grid gap-1">
+							{detail.services.length ? (
+								detail.services.map((s) => <li>{s}</li>)
+							) : (
+								<li class="text-zinc-500">None</li>
+							)}
+						</ul>
+					</div>
+					<div class="card">
+						<h2 class="font-semibold mb-2 text-sm">
+							Components ({detail.components.length})
+						</h2>
+						<ul class="text-xs grid gap-1">
+							{detail.components.length ? (
+								detail.components.map((s) => <li>{s}</li>)
+							) : (
+								<li class="text-zinc-500">None</li>
+							)}
+						</ul>
+					</div>
+				</div>
+			</div>
+		) : (
+			<p class="text-sm text-red-400">Failed to load plugin details.</p>
+		)
+	}
+</BaseLayout>
