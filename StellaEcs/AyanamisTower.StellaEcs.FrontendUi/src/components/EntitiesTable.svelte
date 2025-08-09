@@ -3,6 +3,17 @@
     export let entities: EntitySummary[] = [];
     export let loading = false;
     export let onSelect: (idGen: string) => void;
+
+    // Sorting state - only by ID for now
+    let sortDir: 'asc' | 'desc' = 'asc';
+    function toggleSort() {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    }
+
+    $: sorted = [...entities].sort((a, b) =>
+        sortDir === 'asc' ? a.id - b.id : b.id - a.id,
+    );
+    const sortIcon = () => (sortDir === 'asc' ? '▲' : '▼');
 </script>
 
 <div class="card fade-in">
@@ -13,7 +24,19 @@
     <div class="overflow-auto max-h-[60vh]">
         <table class="table text-sm">
             <thead>
-                <tr><th class="pr-10">ID</th></tr>
+                <tr>
+                    <th
+                        class="pr-10 select-none cursor-pointer hover:text-emerald-400"
+                        on:click={toggleSort}
+                        aria-sort={sortDir === 'asc' ? 'ascending' : 'descending'}
+                        title="Sort by ID"
+                    >
+                        <span class="inline-flex items-center gap-2">
+                            <span>ID</span>
+                            <span class="text-[10px] opacity-70">{sortIcon()}</span>
+                        </span>
+                    </th>
+                </tr>
             </thead>
             <tbody>
                 {#if loading}
@@ -29,12 +52,20 @@
                         ></tr
                     >
                 {:else}
-                    {#each entities as e}
+                    {#each sorted as e}
                         <tr
-                            class="hover:bg-zinc-800/40 cursor-pointer"
+                            class="hover:bg-zinc-800/50 cursor-pointer focus:bg-zinc-800/70 outline-none"
+                            tabindex="0"
+                            role="button"
+                            aria-label={`Open entity ${e.id}`}
                             on:click={() => onSelect(`${e.id}`)}
+                            on:keydown={(ev) => { const k = ev.key; if (k === 'Enter' || k === ' ') { ev.preventDefault(); onSelect(`${e.id}`); } }}
                         >
-                            <td>{e.id}</td>
+                            <td class="py-3 px-3">
+                                <div class="flex items-center">
+                                    <span class="inline-block w-full">{e.id}</span>
+                                </div>
+                            </td>
                         </tr>
                     {/each}
                 {/if}

@@ -289,8 +289,9 @@
         <!-- Filters -->
         <div class="grid gap-2 p-3 bg-zinc-800/50 rounded border border-zinc-700">
             <div class="flex items-center gap-2">
-                <label class="text-xs w-40 text-zinc-300">Has components</label>
+                <label class="text-xs w-40 text-zinc-300" for="componentsFilter">Has components</label>
                 <input
+                    id="componentsFilter"
                     class="input text-xs flex-1"
                     placeholder="e.g. Name, Position3D"
                     bind:value={requiredComponentsInput}
@@ -298,8 +299,9 @@
                 />
             </div>
             <div class="flex items-center gap-2">
-                <label class="text-xs w-40 text-zinc-300">Where</label>
+                <label class="text-xs w-40 text-zinc-300" for="whereFilter">Where</label>
                 <input
+                    id="whereFilter"
                     class="input text-xs flex-1"
                     placeholder='e.g. Name = "Tom", Position3D.X >= 0'
                     bind:value={valueQuery}
