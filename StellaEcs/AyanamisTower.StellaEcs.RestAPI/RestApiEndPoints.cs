@@ -60,6 +60,26 @@ namespace AyanamisTower.StellaEcs.Api
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status400BadRequest);
 
+            // Enable a system by name
+            api.MapPost("/systems/{systemName}/enable", (string systemName, World w) =>
+            {
+                if (string.IsNullOrWhiteSpace(systemName))
+                {
+                    return Results.BadRequest(new { message = "System name must be provided." });
+                }
+
+                var ok = w.EnableSystemByName(systemName);
+                return ok
+                    ? Results.Ok(new { message = $"System '{systemName}' enabled." })
+                    : Results.NotFound(new { message = $"System '{systemName}' not found." });
+            })
+            .WithName("EnableSystemByName")
+            .WithSummary("Enables a system by its name.")
+            .WithDescription("Sets the system's Enabled flag to true for the system with the given Name.")
+            .Produces<object>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .Produces(StatusCodes.Status400BadRequest);
+
             api.MapGet("/components", (World w) => Results.Ok(w.GetComponentTypes()))
                .WithName("GetRegisteredComponentTypes")
                .WithSummary("Retrieves a list of all registered component types and their owners.")
