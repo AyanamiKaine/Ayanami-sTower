@@ -37,12 +37,23 @@
         return String(value);
     }
 
-    function getDisplayValue(data: any): any {
-        // If data has a 'value' property, use that (common pattern)
-        if (data && typeof data === "object" && "value" in data) {
-            return data.value;
+    function buildDisplayData(data: any): any {
+        if (!data || typeof data !== "object") return data;
+        const hasValue = Object.prototype.hasOwnProperty.call(data, "value");
+        const val = (data as any).value;
+        // If value is an object, merge it with sibling keys so nothing gets lost (e.g., Position3D)
+        if (hasValue && val && typeof val === "object") {
+            const siblings: Record<string, any> = {};
+            for (const [k, v] of Object.entries(data)) {
+                if (k !== "value") siblings[k] = v;
+            }
+            return { ...val, ...siblings };
         }
-        // Otherwise return the data as-is
+        // If only 'value' exists and it's primitive, unwrap it
+        if (hasValue && Object.keys(data).length === 1) {
+            return val;
+        }
+        // Otherwise, keep as-is
         return data;
     }
 
@@ -78,32 +89,35 @@
             );
             if (!component) return;
 
-            const displayValue = getDisplayValue(component.data);
-
-            // Create updated display data
-            const updatedDisplayData = { ...displayValue, [key]: newValue };
-
             // Reconstruct the data in the original structure expected by backend
-            let dataToSend;
-            if (
-                component.data &&
-                typeof component.data === "object" &&
-                "value" in component.data
-            ) {
-                // If original data had a 'value' wrapper, reconstruct it
-                if (key === "value") {
-                    // For single-value updates, replace the entire value
-                    dataToSend = { ...component.data, value: newValue };
-                } else {
-                    // For multi-property updates, update the value object
+            let dataToSend: any;
+            const original = component.data as any;
+            const hasValueWrapper =
+                original &&
+                typeof original === "object" &&
+                Object.prototype.hasOwnProperty.call(original, "value");
+            const wrappedVal = hasValueWrapper ? original.value : undefined;
+
+            if (hasValueWrapper && wrappedVal && typeof wrappedVal === "object") {
+                // If the key exists in the wrapped value, update inside it; otherwise update sibling key
+                if (Object.prototype.hasOwnProperty.call(wrappedVal, key)) {
                     dataToSend = {
-                        ...component.data,
-                        value: updatedDisplayData,
+                        ...original,
+                        value: { ...wrappedVal, [key]: newValue },
                     };
+                } else {
+                    dataToSend = { ...original, [key]: newValue };
+                }
+            } else if (hasValueWrapper && (typeof wrappedVal !== "object" || wrappedVal === null)) {
+                // Primitive 'value' wrapper: only update if editing the special 'value' key, else sibling key
+                if (key === "value") {
+                    dataToSend = { ...original, value: newValue };
+                } else {
+                    dataToSend = { ...original, [key]: newValue };
                 }
             } else {
-                // Otherwise send the updated data directly
-                dataToSend = updatedDisplayData;
+                // No wrapper: update top-level
+                dataToSend = { ...(original ?? {}), [key]: newValue };
             }
 
             // Call the update function
@@ -123,8 +137,12 @@
                 (c) => c.typeName === componentType,
             );
             if (component) {
-                const displayValue = getDisplayValue(component.data);
-                editingValues[componentType][key] = displayValue[key];
+                const displayMerged = buildDisplayData(component.data);
+                if (displayMerged && typeof displayMerged === "object") {
+                    editingValues[componentType][key] = (displayMerged as any)[key];
+                } else {
+                    editingValues[componentType][key] = displayMerged;
+                }
             }
         } finally {
             updatingComponents.delete(componentType);
@@ -185,7 +203,7 @@
         <h4 class="text-sm font-semibold">Components</h4>
         <div class="grid gap-3 text-sm">
             {#each detail.components as c}
-                {@const displayValue = getDisplayValue(c.data)}
+                {@const displayValue = buildDisplayData(c.data)}
                 <div
                     class="p-3 rounded border border-zinc-700 bg-zinc-900/30 hover:border-zinc-600 transition-colors"
                 >

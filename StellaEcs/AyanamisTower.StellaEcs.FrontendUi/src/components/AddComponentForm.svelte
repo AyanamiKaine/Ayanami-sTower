@@ -101,11 +101,12 @@
     function generateDefaultFields() {
         // Generate reasonable defaults based on component name
         const typeName = selectedType.toLowerCase();
+        const is3d = typeName.includes("3d");
 
         if (typeName.includes("position")) {
-            componentData = { x: 0, y: 0 };
+            componentData = is3d ? { x: 0, y: 0, z: 0 } : { x: 0, y: 0 };
         } else if (typeName.includes("velocity")) {
-            componentData = { x: 0, y: 0 };
+            componentData = is3d ? { x: 0, y: 0, z: 0 } : { x: 0, y: 0 };
         } else if (typeName.includes("health")) {
             componentData = { current: 100, max: 100 };
         } else if (typeName.includes("name")) {
