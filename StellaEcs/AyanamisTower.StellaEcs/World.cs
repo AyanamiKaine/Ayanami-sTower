@@ -403,6 +403,30 @@ public class World
     }
 
     /// <summary>
+    /// Disables a system by its unique name. Returns false if no such system exists.
+    /// </summary>
+    /// <param name="systemName">The system's Name property value.</param>
+    public bool DisableSystemByName(string systemName)
+    {
+        var system = _systems.FirstOrDefault(s => s.Name == systemName);
+        if (system == null) return false;
+        system.Enabled = false;
+        return true;
+    }
+
+    /// <summary>
+    /// Enables a system by its unique name. Returns false if no such system exists.
+    /// </summary>
+    /// <param name="systemName">The system's Name property value.</param>
+    public bool EnableSystemByName(string systemName)
+    {
+        var system = _systems.FirstOrDefault(s => s.Name == systemName);
+        if (system == null) return false;
+        system.Enabled = true;
+        return true;
+    }
+
+    /// <summary>
     /// Registers a plugin instance for tracking and REST API access.
     /// This should be called when a plugin is loaded.
     /// </summary>
