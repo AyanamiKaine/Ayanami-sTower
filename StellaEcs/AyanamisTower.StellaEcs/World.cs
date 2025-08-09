@@ -57,6 +57,11 @@ public class World
     private readonly List<ISystem> _systems = [];
     private readonly Dictionary<string, IEntityFunction> _functions = [];
 
+    /// <summary>
+    /// Tracks the set of currently alive (valid) entity IDs.
+    /// </summary>
+    private readonly HashSet<uint> _activeEntityIds = new();
+
     private object? _apiServerInstance;
 
     // --- NEW: System Management ---
@@ -158,7 +163,8 @@ public class World
             _nextEntityId++;
         }
 
-        // Return the entity with the current generation for that ID.
+        // Mark entity as alive and return the handle.
+        _activeEntityIds.Add(id);
         return new Entity(id, this);
     }
 
@@ -177,8 +183,11 @@ public class World
             storage.Remove(entity);
         }
 
-        // Invalidate the entity handle by incrementing the generation.
-        // The next time this ID is used, it will have a new generation.
+        // Mark as not alive.
+        _activeEntityIds.Remove(entity.Id);
+
+        // Invalidate the entity handle by incrementing the generation
+        // (for future use if/when entity handles carry generation).
         _generations[entity.Id]++;
 
         // Add the ID to the free list for recycling.
@@ -192,7 +201,7 @@ public class World
     /// <returns>True if the entity is valid, false otherwise.</returns>
     public bool IsEntityValid(Entity entity)
     {
-        return entity.Id < _nextEntityId;
+        return _activeEntityIds.Contains(entity.Id);
     }
 
     /// <summary>
@@ -874,16 +883,10 @@ public class World
     /// <returns>An IEnumerable of all valid entities.</returns>
     public IEnumerable<Entity> GetAllEntities()
     {
-        // This is a simple but potentially slow way to get all entities.
-        // It iterates all possible IDs and checks for validity.
-        // For a more performant version, you might maintain a separate list of active entities.
-        for (uint i = 0; i < _nextEntityId; i++)
+        // Enumerate only currently alive entities.
+        foreach (var id in _activeEntityIds)
         {
-            var entity = new Entity(i, this);
-            if (IsEntityValid(entity))
-            {
-                yield return entity;
-            }
+            yield return new Entity(id, this);
         }
     }
 
