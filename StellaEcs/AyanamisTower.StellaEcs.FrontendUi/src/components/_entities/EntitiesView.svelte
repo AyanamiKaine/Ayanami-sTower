@@ -122,7 +122,7 @@
         try {
             const e = await api.createEntity();
             entities = [e, ...entities];
-            await select(`${e.id}-${e.generation}`);
+            await select(`${e.id}`);
         } catch (e: any) {
             error = e.message;
         } finally {
@@ -171,7 +171,7 @@
         try {
             await api.deleteEntity(selectedIdGen);
             entities = entities.filter(
-                (e) => `${e.id}-${e.generation}` !== selectedIdGen,
+                (e) => `${e.id}` !== selectedIdGen,
             );
             selectedIdGen = null;
             detail = null;

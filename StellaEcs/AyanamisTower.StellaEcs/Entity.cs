@@ -13,24 +13,18 @@ namespace AyanamisTower.StellaEcs;
 /// Initializes a new instance of the <see cref="Entity"/> struct.
 /// </remarks>
 /// <param name="id">The entity's ID.</param>
-/// <param name="generation">The entity's generation.</param>
 /// <param name="world">The world the entity belongs to.</param>
-public readonly struct Entity(uint id, int generation, World? world) : IEquatable<Entity>
+public readonly struct Entity(uint id, World? world) : IEquatable<Entity>
 {
     /// <summary>
     /// A null/invalid entity handle.
     /// </summary>
-    public static readonly Entity Null = new(0, 0, null);
+    public static readonly Entity Null = new(0, null);
 
     /// <summary>
     /// The raw integer ID of the entity. This corresponds to an index in the world's arrays.
     /// </summary>
     public readonly uint Id = id;
-
-    /// <summary>
-    /// The generation of the entity, which is incremented each time the ID is recycled.
-    /// </summary>
-    public readonly int Generation = generation;
 
     /// <summary>
     /// A reference to the world this entity belongs to. This is necessary for the helper methods.
@@ -139,12 +133,12 @@ public readonly struct Entity(uint id, int generation, World? world) : IEquatabl
     /// <summary>
     /// Determines whether the specified <see cref="Entity"/> is equal to the current <see cref="Entity"/>.
     /// </summary>
-    public bool Equals(Entity other) => Id == other.Id && Generation == other.Generation && _world == other._world;
+    public bool Equals(Entity other) => Id == other.Id && _world == other._world;
 
     /// <summary>
     /// Returns a hash code for the current <see cref="Entity"/>.
     /// </summary>
-    public override int GetHashCode() => HashCode.Combine(Id, Generation, _world);
+    public override int GetHashCode() => HashCode.Combine(Id, _world);
 
     /// <summary>
     /// Determines whether two <see cref="Entity"/> instances are equal.
@@ -159,5 +153,5 @@ public readonly struct Entity(uint id, int generation, World? world) : IEquatabl
     /// <summary>
     /// Returns a string that represents the current <see cref="Entity"/>.
     /// </summary>
-    public override string ToString() => $"Entity(Id: {Id}, Gen: {Generation})";
+    public override string ToString() => $"Entity(Id: {Id})";
 }

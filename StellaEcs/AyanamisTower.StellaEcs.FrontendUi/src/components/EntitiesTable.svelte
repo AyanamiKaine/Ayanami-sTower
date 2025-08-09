@@ -13,18 +13,18 @@
     <div class="overflow-auto max-h-[60vh]">
         <table class="table text-sm">
             <thead>
-                <tr><th class="pr-10">ID</th><th class="pr-10">Generation</th><th class="pr-10">Actions</th></tr>
+                <tr><th class="pr-10">ID</th><th class="pr-10">Actions</th></tr>
             </thead>
             <tbody>
                 {#if loading}
                     <tr
-                        ><td colspan="3" class="py-6 text-center text-zinc-500"
+                        ><td colspan="2" class="py-6 text-center text-zinc-500"
                             >Loading...</td
                         ></tr
                     >
                 {:else if entities.length === 0}
                     <tr
-                        ><td colspan="3" class="py-6 text-center text-zinc-500"
+                        ><td colspan="2" class="py-6 text-center text-zinc-500"
                             >No entities</td
                         ></tr
                     >
@@ -32,15 +32,14 @@
                     {#each entities as e}
                         <tr
                             class="hover:bg-zinc-800/40 cursor-pointer"
-                            on:click={() => onSelect(`${e.id}-${e.generation}`)}
+                            on:click={() => onSelect(`${e.id}`)}
                         >
                             <td>{e.id}</td>
-                            <td>{e.generation}</td>
                             <td
                                 ><button
                                     class="btn btn-primary"
                                     on:click|stopPropagation={() =>
-                                        onSelect(`${e.id}-${e.generation}`)}
+                                        onSelect(`${e.id}`)}
                                     >Open</button
                                 ></td
                             >

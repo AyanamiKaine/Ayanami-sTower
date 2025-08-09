@@ -39,10 +39,9 @@ public class SearchService(World world)
                 foundEntities.Add(new EntitySummaryDto
                 {
                     Id = entity.Id,
-                    Generation = entity.Generation,
                     // The URL isn't strictly necessary here but can be useful.
                     // We'll leave it empty for this service-specific response.
-                    Url = $"/api/entities/{entity.Id}-{entity.Generation}"
+                    Url = $"/api/entities/{entity.Id}"
                 });
             }
         }

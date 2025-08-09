@@ -159,7 +159,7 @@ public class World
         }
 
         // Return the entity with the current generation for that ID.
-        return new Entity(id, _generations[id], this);
+        return new Entity(id, this);
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ public class World
     /// <returns>True if the entity is valid, false otherwise.</returns>
     public bool IsEntityValid(Entity entity)
     {
-        return entity.Id < _nextEntityId && _generations[entity.Id] == entity.Generation;
+        return entity.Id < _nextEntityId;
     }
 
     /// <summary>
@@ -855,7 +855,7 @@ public class World
         // For a more performant version, you might maintain a separate list of active entities.
         for (uint i = 0; i < _nextEntityId; i++)
         {
-            var entity = new Entity(i, _generations[i], this);
+            var entity = new Entity(i, this);
             if (IsEntityValid(entity))
             {
                 yield return entity;
@@ -1110,10 +1110,6 @@ public class EntityDetailDto
     /// The unique identifier for the entity.
     /// </summary>
     public uint Id { get; set; }
-    /// <summary>
-    /// The generation of the entity, used to validate its current state.
-    /// </summary>
-    public int Generation { get; set; }
     /// <summary>
     /// A direct link to the detailed view of this entity.
     /// </summary>

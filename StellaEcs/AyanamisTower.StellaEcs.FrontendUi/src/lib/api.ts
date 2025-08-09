@@ -20,9 +20,9 @@ async function handle<T>(res: Response): Promise<T> {
 }
 
 export interface WorldStatus { maxEntities: number; recycledEntityIds: number; registeredSystems: number; componentTypes: number; }
-export interface EntitySummary { id: number; generation: number; url: string; }
+export interface EntitySummary { id: number; url: string; }
 export interface ComponentInfo { typeName: string; data?: unknown; pluginOwner?: string; }
-export interface EntityDetail { id: number; generation: number; components: ComponentInfo[]; }
+export interface EntityDetail { id: number; components: ComponentInfo[]; }
 export interface SystemInfo { name: string; enabled: boolean; pluginOwner: string; }
 export interface ServiceInfo { typeName: string; methods: string[]; pluginOwner: string; }
 export interface PluginInfo { name: string; version: string; author: string; description: string; prefix: string; url: string; }
