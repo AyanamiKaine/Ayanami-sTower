@@ -3,6 +3,7 @@
     let systems: SystemInfo[] = [];
     let loading = false;
     let error: string | null = null;
+    let working: Record<string, boolean> = {};
 
     async function loadSystems() {
         loading = true;
@@ -17,6 +18,33 @@
     }
 
     loadSystems();
+
+    async function disableSystem(name: string) {
+        if (working[name]) return;
+        working[name] = true; working = { ...working };
+        try {
+            await api.disableSystem(name);
+            // Optimistically mark as disabled in UI
+            systems = systems.map(s => s.name === name ? { ...s, enabled: false } : s);
+        } catch (e: any) {
+            error = e.message;
+        } finally {
+            working[name] = false; working = { ...working };
+        }
+    }
+
+    async function enableSystem(name: string) {
+        if (working[name]) return;
+        working[name] = true; working = { ...working };
+        try {
+            await api.enableSystem(name);
+            systems = systems.map(s => s.name === name ? { ...s, enabled: true } : s);
+        } catch (e: any) {
+            error = e.message;
+        } finally {
+            working[name] = false; working = { ...working };
+        }
+    }
 </script>
 
 <div class="card fade-in">
@@ -36,12 +64,22 @@
     {:else}
         <ul class="grid gap-2 text-sm">
             {#each systems as s}
-                <li class="flex gap-2 items-center">
-                    <span>{s.name}</span>{#if s.pluginOwner}<span class="badge"
-                            >{s.pluginOwner}</span
-                        >{/if}{#if !s.enabled}<span class="text-red-400 text-xs"
-                            >(disabled)</span
-                        >{/if}
+                <li class="flex gap-3 items-center">
+                    <span class="font-medium">{s.name}</span>
+                    {#if s.pluginOwner}<span class="badge">{s.pluginOwner}</span>{/if}
+                    {#if !s.enabled}<span class="text-red-400 text-xs">(disabled)</span>{/if}
+                    <span class="ml-auto" />
+                    <div class="flex gap-2">
+                        {#if s.enabled}
+                            <button class="btn text-xs" on:click={() => disableSystem(s.name)} disabled={!!working[s.name]} title="Disable system">
+                                {working[s.name] ? 'Disabling…' : 'Disable'}
+                            </button>
+                        {:else}
+                            <button class="btn text-xs" on:click={() => enableSystem(s.name)} disabled={!!working[s.name]} title="Enable system">
+                                {working[s.name] ? 'Enabling…' : 'Enable'}
+                            </button>
+                        {/if}
+                    </div>
                 </li>
             {/each}
         </ul>
