@@ -14,6 +14,21 @@ public class WorldTests
     }
 
     [Fact]
+    public void Tick_And_LastDeltaTime_Should_Progress()
+    {
+        Assert.Equal<uint>(0, _world.Tick);
+        Assert.Equal(0f, _world.LastDeltaTime);
+
+        _world.Update(0.1f);
+        Assert.Equal<uint>(1, _world.Tick);
+        Assert.Equal(0.1f, _world.LastDeltaTime, 3);
+
+        _world.Update(0.25f);
+        Assert.Equal<uint>(2, _world.Tick);
+        Assert.Equal(0.25f, _world.LastDeltaTime, 3);
+    }
+
+    [Fact]
     public void CreateEntity_ShouldReturnValidEntity()
     {
         // Act

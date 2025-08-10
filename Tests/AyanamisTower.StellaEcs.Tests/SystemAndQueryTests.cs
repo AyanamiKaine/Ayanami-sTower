@@ -239,4 +239,54 @@ public class SystemAndQueryTests
         var exception = Assert.Throws<InvalidOperationException>(() => world.Update(0.1f));
         Assert.Contains("unresolved dependency on 'B'", exception.Message);
     }
+
+    private class GroupedSystem(string name, List<string> runOrder, List<string>? deps = null) : ISystem
+    {
+        public string Name { get; set; } = name;
+        public bool Enabled { get; set; } = true;
+        public List<string> Dependencies { get; } = deps ?? [];
+        public void Update(World world, float deltaTime) => runOrder.Add(Name);
+    }
+
+    // Attribute-decorated proxies used by the mixed group ordering test
+    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    private class InitProxy : GroupedSystem { public InitProxy(string n, List<string> r) : base(n, r) { } }
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    private class SimProxy : GroupedSystem { public SimProxy(string n, List<string> r, List<string>? d = null) : base(n, r, d) { } }
+    [UpdateInGroup(typeof(PresentationSystemGroup))]
+    private class PresProxy : GroupedSystem { public PresProxy(string n, List<string> r) : base(n, r) { } }
+
+    [Fact]
+    public void UpdateInGroup_Mixed_Attributes_And_Dependencies_Should_Order_Correctly()
+    {
+        var run = new List<string>();
+        var world = new World();
+
+        var init = new InitProxy("InitA", run) { Enabled = true };
+        var simFirst = new SimProxy("SimA", run);
+        var simSecond = new SimProxy("SimB", run, ["SimA"]);
+        var pres = new PresProxy("PresA", run);
+
+        world.RegisterSystem(init);
+        world.RegisterSystem(simSecond); // registered before its dependency on purpose
+        world.RegisterSystem(pres);
+        world.RegisterSystem(simFirst);
+
+        world.Update(0.01f);
+
+        // Expect group order: Init -> Sim -> Pres, and SimB after SimA
+        var initIndex = run.IndexOf("InitA");
+        var simAIndex = run.IndexOf("SimA");
+        var simBIndex = run.IndexOf("SimB");
+        var presIndex = run.IndexOf("PresA");
+
+        Assert.InRange(initIndex, 0, run.Count - 1);
+        Assert.InRange(simAIndex, 0, run.Count - 1);
+        Assert.InRange(simBIndex, 0, run.Count - 1);
+        Assert.InRange(presIndex, 0, run.Count - 1);
+
+        Assert.True(initIndex < simAIndex);
+        Assert.True(simAIndex < presIndex);
+        Assert.True(simBIndex > simAIndex);
+    }
 }
