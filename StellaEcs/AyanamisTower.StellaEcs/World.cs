@@ -173,7 +173,7 @@ public class World
         // Mark entity as alive and return the handle.
         _activeEntityIds.Add(id);
         _logger.LogTrace("Created entity {EntityId}", id);
-        return new Entity(id, this);
+        return new Entity(id, _generations[id], this);
     }
 
     /// <summary>
@@ -210,7 +210,8 @@ public class World
     /// <returns>True if the entity is valid, false otherwise.</returns>
     public bool IsEntityValid(Entity entity)
     {
-        return _activeEntityIds.Contains(entity.Id);
+        // Valid if alive and generation matches the world's current generation for this id.
+        return _activeEntityIds.Contains(entity.Id) && _generations[entity.Id] == entity.Generation;
     }
 
     /// <summary>
@@ -662,7 +663,9 @@ public class World
     /// </summary>
     public void RemoveSystem<T>() where T : ISystem
     {
-        int removedCount = _systems.RemoveAll(s => s is T);
+        int removedFromSystems = _systems.RemoveAll(s => s is T);
+        int removedFromUnmanaged = _unmanagedSystems.RemoveAll(s => s is T);
+        int removedCount = removedFromSystems + removedFromUnmanaged;
         if (removedCount > 0)
         {
             _logger.LogInformation("Removed {RemovedCount} systems of type {SystemType}", removedCount, typeof(T).Name);
@@ -682,6 +685,7 @@ public class World
         if (system == null) return false;
 
         bool removed = _systems.Remove(system);
+        removed |= _unmanagedSystems.Remove(system);
         if (removed)
         {
             _logger.LogInformation("Removed system instance: {SystemName}", system.Name);
@@ -772,7 +776,7 @@ public class World
         // Enumerate only currently alive entities.
         foreach (var id in _activeEntityIds)
         {
-            yield return new Entity(id, this);
+            yield return new Entity(id, _generations[id], this);
         }
     }
     // --- Neutral read-only accessors for introspection (usable by tooling like REST API, editors, etc.) ---

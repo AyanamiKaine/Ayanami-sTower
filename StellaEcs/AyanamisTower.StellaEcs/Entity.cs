@@ -10,26 +10,44 @@ namespace AyanamisTower.StellaEcs;
 /// This is a lightweight, immutable struct.
 /// </summary>
 /// <remarks>
-/// Initializes a new instance of the <see cref="Entity"/> struct.
+/// This struct is a lightweight handle. Validity is determined by comparing the captured Generation with the World's current generation for the Id.
 /// </remarks>
-/// <param name="id">The entity's ID.</param>
-/// <param name="world">The world the entity belongs to.</param>
-public readonly struct Entity(uint id, World? world) : IEquatable<Entity>
+public readonly struct Entity : IEquatable<Entity>
 {
     /// <summary>
     /// A null/invalid entity handle.
     /// </summary>
-    public static readonly Entity Null = new(0, null);
+    public static readonly Entity Null = new(0, 0, null);
 
     /// <summary>
     /// The raw integer ID of the entity. This corresponds to an index in the world's arrays.
     /// </summary>
-    public readonly uint Id = id;
+    public readonly uint Id;
+
+    /// <summary>
+    /// The generation captured when this handle was created. Used to detect stale handles after destruction/reuse.
+    /// </summary>
+    public readonly int Generation;
 
     /// <summary>
     /// A reference to the world this entity belongs to. This is necessary for the helper methods.
     /// </summary>
-    private readonly World? _world = world;
+    private readonly World? _world;
+
+    /// <summary>
+    /// Initializes a new Entity handle with ID and World. Generation defaults to 0 (invalid), useful for tests/placeholders.
+    /// </summary>
+    public Entity(uint id, World? world) : this(id, 0, world) { }
+
+    /// <summary>
+    /// Initializes a new Entity handle capturing ID, current generation and world.
+    /// </summary>
+    internal Entity(uint id, int generation, World? world)
+    {
+        Id = id;
+        Generation = generation;
+        _world = world;
+    }
 
     // --- New Helper Methods ---
 
@@ -133,12 +151,12 @@ public readonly struct Entity(uint id, World? world) : IEquatable<Entity>
     /// <summary>
     /// Determines whether the specified <see cref="Entity"/> is equal to the current <see cref="Entity"/>.
     /// </summary>
-    public bool Equals(Entity other) => Id == other.Id && _world == other._world;
+    public bool Equals(Entity other) => Id == other.Id && Generation == other.Generation && _world == other._world;
 
     /// <summary>
     /// Returns a hash code for the current <see cref="Entity"/>.
     /// </summary>
-    public override int GetHashCode() => HashCode.Combine(Id, _world);
+    public override int GetHashCode() => HashCode.Combine(Id, Generation, _world);
 
     /// <summary>
     /// Determines whether two <see cref="Entity"/> instances are equal.
@@ -153,5 +171,5 @@ public readonly struct Entity(uint id, World? world) : IEquatable<Entity>
     /// <summary>
     /// Returns a string that represents the current <see cref="Entity"/>.
     /// </summary>
-    public override string ToString() => $"Entity(Id: {Id})";
+    public override string ToString() => $"Entity(Id: {Id}, Gen: {Generation})";
 }

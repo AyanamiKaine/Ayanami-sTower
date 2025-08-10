@@ -18,41 +18,86 @@ public static class SystemSorter
     public static List<ISystem> Sort(IEnumerable<ISystem> systemsToSort)
     {
         var systems = systemsToSort.ToList();
+
+        // Pre-check unresolved dependencies regardless of system count
+        ISystem? FindByTypeLocal(Type t) => systems.FirstOrDefault(sys => sys.GetType() == t);
+        ISystem? FindByNameLocal(string name) => systems.FirstOrDefault(sys => string.Equals(sys.Name, name, StringComparison.Ordinal));
+
+        foreach (var sys in systems)
+        {
+            var unresolved = new List<string>();
+            var t = sys.GetType();
+            foreach (var attr in t.GetCustomAttributes<UpdateAfterAttribute>(true))
+            {
+                if (FindByTypeLocal(attr.TargetSystem) is null)
+                {
+                    unresolved.Add(attr.TargetSystem.Name);
+                }
+            }
+            foreach (var attr in t.GetCustomAttributes<UpdateBeforeAttribute>(true))
+            {
+                if (FindByTypeLocal(attr.TargetSystem) is null)
+                {
+                    unresolved.Add(attr.TargetSystem.Name);
+                }
+            }
+            var depsPropLocal = t.GetProperty("Dependencies", BindingFlags.Public | BindingFlags.Instance);
+            if (depsPropLocal?.GetValue(sys) is System.Collections.IEnumerable enumerable)
+            {
+                foreach (var item in enumerable)
+                {
+                    if (item is string name && !string.IsNullOrWhiteSpace(name))
+                    {
+                        if (FindByNameLocal(name) is null)
+                        {
+                            unresolved.Add(name);
+                        }
+                    }
+                }
+            }
+
+            if (unresolved.Count > 0)
+            {
+                throw new InvalidOperationException($"System '{sys.Name}' has unresolved dependency on '{string.Join("', '", unresolved)}'");
+            }
+        }
+
         if (systems.Count <= 1)
         {
             return systems;
         }
 
-        // --- Graph Representation ---
-        // The key is the system type, the value is a list of types it depends on (must run after).
-        var dependencyGraph = new Dictionary<Type, List<Type>>();
-        // The number of incoming edges for each node (system type).
-        var inDegree = new Dictionary<Type, int>();
-        // A map from a system type to the list of systems that depend on it.
-        var dependents = new Dictionary<Type, List<Type>>();
-
-        var systemTypeMap = systems.ToDictionary(s => s.GetType(), s => s);
-        var allSystemTypes = new HashSet<Type>(systems.Select(s => s.GetType()));
+        // --- Graph Representation based on instances ---
+        // We'll key everything by the system instance to correctly handle multiple systems of the same type.
+        var dependencyGraph = new Dictionary<ISystem, List<ISystem>>(); // edges: A depends on B (B -> A), store B in list for A
+        var inDegree = new Dictionary<ISystem, int>();
+        var dependents = new Dictionary<ISystem, List<ISystem>>();
 
         // --- 1. Initialize the Graph ---
-        foreach (var systemType in allSystemTypes)
+        foreach (var s in systems)
         {
-            dependencyGraph[systemType] = new List<Type>();
-            inDegree[systemType] = 0;
-            dependents[systemType] = new List<Type>();
+            dependencyGraph[s] = new List<ISystem>();
+            inDegree[s] = 0;
+            dependents[s] = new List<ISystem>();
         }
 
-        // --- 2. Build the Graph from Attributes ---
-        foreach (var systemType in allSystemTypes)
+        // Helper: find system instance by Type or by Name
+        ISystem? FindByType(Type t) => systems.FirstOrDefault(sys => sys.GetType() == t);
+        ISystem? FindByName(string name) => systems.FirstOrDefault(sys => string.Equals(sys.Name, name, StringComparison.Ordinal));
+
+        // --- 2. Build the Graph from Attributes and optional Dependencies property ---
+        foreach (var system in systems)
         {
+            var systemType = system.GetType();
             // Handle [UpdateAfter(typeof(OtherSystem))] -> Edge from OtherSystem to this system
             var afterAttributes = systemType.GetCustomAttributes<UpdateAfterAttribute>(true);
             foreach (var attr in afterAttributes)
             {
-                if (allSystemTypes.Contains(attr.TargetSystem))
+                var targetInstance = FindByType(attr.TargetSystem);
+                if (targetInstance != null)
                 {
-                    dependencyGraph[systemType].Add(attr.TargetSystem);
-                    dependents[attr.TargetSystem].Add(systemType);
+                    dependencyGraph[system].Add(targetInstance);
+                    dependents[targetInstance].Add(system);
                 }
             }
 
@@ -60,37 +105,60 @@ public static class SystemSorter
             var beforeAttributes = systemType.GetCustomAttributes<UpdateBeforeAttribute>(true);
             foreach (var attr in beforeAttributes)
             {
-                if (allSystemTypes.Contains(attr.TargetSystem))
+                var targetInstance = FindByType(attr.TargetSystem);
+                if (targetInstance != null)
                 {
-                    dependencyGraph[attr.TargetSystem].Add(systemType);
-                    dependents[systemType].Add(attr.TargetSystem);
+                    dependencyGraph[targetInstance].Add(system);
+                    dependents[system].Add(targetInstance);
+                }
+            }
+
+            // Optional: property named "Dependencies" of type IEnumerable<string> to express name-based dependencies
+            var depsProp = systemType.GetProperty("Dependencies", BindingFlags.Public | BindingFlags.Instance);
+            if (depsProp != null && typeof(System.Collections.IEnumerable).IsAssignableFrom(depsProp.PropertyType))
+            {
+                if (depsProp.GetValue(system) is System.Collections.IEnumerable enumerable)
+                {
+                    foreach (var item in enumerable)
+                    {
+                        if (item is string depName && !string.IsNullOrWhiteSpace(depName))
+                        {
+                            var targetByName = FindByName(depName);
+                            if (targetByName != null)
+                            {
+                                // Name dependency means: this system depends on target (target must run before this)
+                                dependencyGraph[system].Add(targetByName);
+                                dependents[targetByName].Add(system);
+                            }
+                        }
+                    }
                 }
             }
         }
 
         // --- 3. Calculate In-Degrees ---
-        foreach (var (systemType, dependencies) in dependencyGraph)
+        foreach (var (sys, dependencies) in dependencyGraph)
         {
-            inDegree[systemType] = dependencies.Count;
+            inDegree[sys] = dependencies.Count;
         }
 
         // --- 4. Perform Topological Sort (Kahn's Algorithm) ---
-        var queue = new Queue<Type>(allSystemTypes.Where(t => inDegree[t] == 0));
+        var queue = new Queue<ISystem>(systems.Where(s => inDegree[s] == 0));
         var sortedList = new List<ISystem>();
 
         while (queue.Count > 0)
         {
-            var currentType = queue.Dequeue();
-            sortedList.Add(systemTypeMap[currentType]);
+            var current = queue.Dequeue();
+            sortedList.Add(current);
 
             // For each system that depends on the current one...
-            foreach (var dependentType in dependents[currentType])
+            foreach (var dependentSys in dependents[current])
             {
                 // Decrement its in-degree. If it becomes 0, it's ready to be processed.
-                inDegree[dependentType]--;
-                if (inDegree[dependentType] == 0)
+                inDegree[dependentSys]--;
+                if (inDegree[dependentSys] == 0)
                 {
-                    queue.Enqueue(dependentType);
+                    queue.Enqueue(dependentSys);
                 }
             }
         }
@@ -98,9 +166,34 @@ public static class SystemSorter
         // --- 5. Check for Cycles ---
         if (sortedList.Count < systems.Count)
         {
-            var cycleNodes = systems.Select(s => s.GetType()).Except(sortedList.Select(s => s.GetType()));
+            var cycleNodes = systems.Except(sortedList).Select(s => s.Name);
             throw new InvalidOperationException("Circular dependency detected! The following systems form a cycle or depend on one: " +
-                                                string.Join(", ", cycleNodes.Select(t => t.Name)));
+                                                string.Join(", ", cycleNodes));
+        }
+
+        // --- 6. Detect unresolved dependencies (attributes or name deps pointing to missing systems) ---
+        // If a system declares non-empty dependencies but none of them were wired (because targets weren't present), throw.
+        foreach (var system in systems)
+        {
+            int declaredDeps = 0;
+            // Count attribute-based deps
+            declaredDeps += system.GetType().GetCustomAttributes<UpdateAfterAttribute>(true).Count();
+            declaredDeps += system.GetType().GetCustomAttributes<UpdateBeforeAttribute>(true).Count();
+            // Name-based deps
+            var depsProp = system.GetType().GetProperty("Dependencies", BindingFlags.Public | BindingFlags.Instance);
+            if (depsProp?.GetValue(system) is System.Collections.IEnumerable enumerable)
+            {
+                foreach (var item in enumerable)
+                {
+                    if (item is string depName && !string.IsNullOrWhiteSpace(depName)) declaredDeps++;
+                }
+            }
+
+            // If declared but none actually recorded in dependencyGraph[system], check whether some were unresolved
+            if (declaredDeps > 0 && dependencyGraph[system].Count == 0 && dependents[system].Count == 0)
+            {
+                throw new InvalidOperationException($"System '{system.Name}' has unresolved dependency");
+            }
         }
 
         return sortedList;
