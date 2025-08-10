@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AyanamisTower.StellaEcs;
 
@@ -26,6 +28,7 @@ While we can use the components to model relationships, we might want to have a 
 /// </summary>
 public class World
 {
+    private readonly ILogger _logger;
     /// <summary>
     /// The current tick of the world. This is incremented on each update by one.
     /// System can use it to determine the current frame or update cycle. Systems can determine if they want to run every tick or only every second, third and so on.
@@ -133,12 +136,14 @@ public class World
     /// And not just one.
     /// </summary>
     /// <param name="maxEntities"></param>
-    public World(uint maxEntities = 5000)
+    /// <param name="logger">Optional logger; if not provided, a no-op logger is used.</param>
+    public World(uint maxEntities = 5000, ILogger? logger = null)
     {
         _maxEntities = maxEntities;
         _generations = new int[(int)maxEntities];
         // Initialize all generations to 1. A generation of 0 can be considered invalid.
         Array.Fill(_generations, 1);
+        _logger = logger ?? NullLogger.Instance;
     }
 
     /// <summary>
@@ -167,6 +172,7 @@ public class World
 
         // Mark entity as alive and return the handle.
         _activeEntityIds.Add(id);
+        _logger.LogTrace("Created entity {EntityId}", id);
         return new Entity(id, this);
     }
 
@@ -194,6 +200,7 @@ public class World
 
         // Add the ID to the free list for recycling.
         _freeIds.Enqueue(entity.Id);
+        _logger.LogTrace("Destroyed entity {EntityId}", entity.Id);
     }
 
     /// <summary>
@@ -484,7 +491,7 @@ public class World
     {
         if (!_isSystemOrderDirty) return;
 
-        Console.WriteLine("[World] System order is dirty. Re-sorting and grouping systems...");
+        _logger.LogDebug("System order is dirty. Re-sorting and grouping systems...");
 
         // --- 1. Group systems by their [UpdateInGroup] attribute ---
         var systemsByGroup = new Dictionary<Type, List<ISystem>>
@@ -506,7 +513,7 @@ public class World
             else
             {
                 // This could happen if a user defines a custom group but doesn't handle it in the World.
-                Console.WriteLine($"[Warning] System '{system.Name}' belongs to unhandled group '{groupType.Name}'. Placing in Simulation group.");
+                _logger.LogWarning("System '{SystemName}' belongs to unhandled group '{GroupName}'. Placing in Simulation group.", system.Name, groupType.Name);
                 systemsByGroup[typeof(SimulationSystemGroup)].Add(system);
             }
         }
@@ -520,14 +527,14 @@ public class World
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[FATAL] Failed to sort systems: {ex.Message}");
+            _logger.LogCritical(ex, "Failed to sort systems");
             // In a real game, you might want to stop execution or enter a safe mode here.
             throw;
         }
 
         // The list is now clean.
         _isSystemOrderDirty = false;
-        Console.WriteLine("[World] System sorting complete.");
+        _logger.LogInformation("System sorting complete. Init={InitCount}, Sim={SimCount}, Pres={PresCount}", _initializationSystems.Count, _simulationSystems.Count, _presentationSystems.Count);
     }
 
     /// <summary>
@@ -629,7 +636,7 @@ public class World
     {
         if (!IsEntityValid(entity))
         {
-            Console.WriteLine($"[Error] Cannot invoke function '{functionName}' on an invalid entity.");
+            _logger.LogError("Cannot invoke function '{FunctionName}' on an invalid entity.", functionName);
             return;
         }
 
@@ -641,12 +648,12 @@ public class World
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Error] Exception while executing function '{functionName}': {ex.Message}");
+                _logger.LogError(ex, "Exception while executing function '{FunctionName}'", functionName);
             }
         }
         else
         {
-            Console.WriteLine($"[Error] Attempted to invoke unknown function: '{functionName}'");
+            _logger.LogError("Attempted to invoke unknown function: '{FunctionName}'", functionName);
         }
     }
 
@@ -658,12 +665,12 @@ public class World
         int removedCount = _systems.RemoveAll(s => s is T);
         if (removedCount > 0)
         {
-            Console.WriteLine($"[World] Removed {removedCount} systems of type {typeof(T).Name}");
+            _logger.LogInformation("Removed {RemovedCount} systems of type {SystemType}", removedCount, typeof(T).Name);
             _isSystemOrderDirty = true;
         }
         else
         {
-            Console.WriteLine($"[World] No systems of type {typeof(T).Name} found to remove");
+            _logger.LogDebug("No systems of type {SystemType} found to remove", typeof(T).Name);
         }
     }
 
@@ -677,12 +684,12 @@ public class World
         bool removed = _systems.Remove(system);
         if (removed)
         {
-            Console.WriteLine($"[World] Removed system instance: {system.Name}");
+            _logger.LogInformation("Removed system instance: {SystemName}", system.Name);
             _isSystemOrderDirty = true;
         }
         else
         {
-            Console.WriteLine($"[World] System instance {system.Name} was not found in the systems list");
+            _logger.LogDebug("System instance {SystemName} was not found in the systems list", system.Name);
         }
         return removed;
     }

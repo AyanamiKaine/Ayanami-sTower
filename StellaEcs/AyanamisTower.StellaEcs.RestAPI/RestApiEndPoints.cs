@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,6 +40,33 @@ namespace AyanamisTower.StellaEcs.Api
                .WithName("GetRegisteredSystems")
                .WithSummary("Retrieves a list of all registered systems.")
                .Produces<IEnumerable<SystemInfoDto>>(StatusCodes.Status200OK);
+
+            // --- Logs Endpoints ---
+            api.MapGet("/logs", (HttpContext ctx, ILogStore logs) =>
+            {
+                var q = ctx.Request.Query;
+                var take = int.TryParse(q["take"], out var t) ? Math.Clamp(t, 1, 2000) : 200;
+                var afterId = long.TryParse(q["afterId"], out var a) ? Math.Max(0, a) : 0;
+                LogLevel? min = null;
+                if (Enum.TryParse<LogLevel>(q["minLevel"], ignoreCase: true, out var parsed)) min = parsed;
+                var category = q["category"].ToString();
+                if (string.IsNullOrWhiteSpace(category)) category = null;
+                var result = logs.GetTail(take, afterId, min, category);
+                return Results.Ok(result);
+            })
+            .WithName("TailLogs")
+            .WithSummary("Returns recent logs with optional filters.")
+            .WithDescription("Query: take (<=2000), afterId, minLevel (Trace..Critical), category (substring)")
+            .Produces<IEnumerable<LogEntry>>(StatusCodes.Status200OK);
+
+            api.MapDelete("/logs", (ILogStore logs) =>
+            {
+                logs.Clear();
+                return Results.Ok(new { message = "Logs cleared" });
+            })
+            .WithName("ClearLogs")
+            .WithSummary("Clears the in-memory log buffer.")
+            .Produces<object>(StatusCodes.Status200OK);
 
             // Disable a system by name
             api.MapPost("/systems/{systemName}/disable", (string systemName, World w) =>

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Text.Json.Serialization;
 using Microsoft.OpenApi.Models; // Required for OpenApiInfo
 using System;
 using System.Threading.Tasks;
@@ -36,15 +37,19 @@ namespace AyanamisTower.StellaEcs.Api
 
             builder.WebHost.UseUrls(url);
             builder.Logging.ClearProviders();
+            var inMemoryProvider = new InMemoryLogProvider(capacity: 4096);
+            builder.Logging.AddProvider(inMemoryProvider);
             builder.Logging.AddConsole();
 
             builder.Services.Configure<Microsoft.AspNetCore.Http.Json.JsonOptions>(options =>
             {
                 // This tells the serializer to include public fields in the JSON output.
                 options.SerializerOptions.IncludeFields = true;
+                options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
             });
 
             builder.Services.AddSingleton(world);
+            builder.Services.AddSingleton<ILogStore>(inMemoryProvider);
 
             // --- SWAGGER INTEGRATION START ---
             // 1. Add the API Explorer service. It's essential for discovering endpoints, especially in minimal APIs.

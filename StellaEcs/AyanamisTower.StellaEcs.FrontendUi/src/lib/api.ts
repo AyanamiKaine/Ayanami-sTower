@@ -27,6 +27,8 @@ export interface SystemInfo { name: string; enabled: boolean; pluginOwner: strin
 export interface ServiceInfo { typeName: string; methods: string[]; pluginOwner: string; }
 export interface PluginInfo { name: string; version: string; author: string; description: string; prefix: string; url: string; }
 export interface PluginDetail extends PluginInfo { systems: string[]; services: string[]; components: string[]; }
+export type LogLevel = 'Trace' | 'Debug' | 'Information' | 'Warning' | 'Error' | 'Critical' | 'None';
+export interface LogEntry { id: number; timestampUtc: string; level: LogLevel; category: string; eventId: number; message: string; exception?: string | null; }
 
 export const api = {
   worldStatus: () => fetch(`${API_BASE}/world/status`).then(handle<WorldStatus>),
@@ -43,5 +45,15 @@ export const api = {
   services: () => fetch(`${API_BASE}/services`).then(handle<ServiceInfo[]>),
   invokeService: (type: string, method: string, params: Record<string, unknown>) => fetch(`${API_BASE}/services/${encodeURIComponent(type)}/${method}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) }).then(handle<unknown>),
   plugins: () => fetch(`${API_BASE}/plugins`).then(handle<PluginInfo[]>),
-  pluginDetail: (prefix: string) => fetch(`${API_BASE}/plugins/${prefix}`).then(handle<PluginDetail>)
+  pluginDetail: (prefix: string) => fetch(`${API_BASE}/plugins/${prefix}`).then(handle<PluginDetail>),
+  logs: (opts?: { take?: number; afterId?: number; minLevel?: LogLevel; category?: string }) => {
+    const p = new URLSearchParams();
+    if (opts?.take) p.set('take', String(opts.take));
+    if (opts?.afterId) p.set('afterId', String(opts.afterId));
+    if (opts?.minLevel) p.set('minLevel', opts.minLevel);
+    if (opts?.category) p.set('category', opts.category);
+    const qs = p.toString();
+    return fetch(`${API_BASE}/logs${qs ? `?${qs}` : ''}`).then(handle<LogEntry[]>);
+  },
+  clearLogs: () => fetch(`${API_BASE}/logs`, { method: 'DELETE' }).then(handle<{ message: string }>)
 };
