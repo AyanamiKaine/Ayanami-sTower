@@ -19,7 +19,7 @@ async function handle<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-export interface WorldStatus { maxEntities: number; recycledEntityIds: number; registeredSystems: number; componentTypes: number; }
+export interface WorldStatus { maxEntities: number; recycledEntityIds: number; registeredSystems: number; componentTypes: number; tick: number; deltaTime: number; }
 export interface EntitySummary { id: number; url: string; }
 export interface ComponentInfo { typeName: string; data?: unknown; pluginOwner?: string; }
 export interface EntityDetail { id: number; components: ComponentInfo[]; }

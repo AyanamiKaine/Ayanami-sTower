@@ -33,6 +33,16 @@
                 >
             </div>
             <div class="flex gap-2">
+                <span class="text-zinc-400 w-40">Tick</span><span
+                    >{status.tick}</span
+                >
+            </div>
+            <div class="flex gap-2">
+                <span class="text-zinc-400 w-40">Delta Time</span><span
+                    >{status.deltaTime.toFixed(4)} s</span
+                >
+            </div>
+            <div class="flex gap-2">
                 <span class="text-zinc-400 w-40">Recycled IDs</span><span
                     >{status.recycledEntityIds}</span
                 >

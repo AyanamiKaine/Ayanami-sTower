@@ -31,6 +31,10 @@ public class World
     /// System can use it to determine the current frame or update cycle. Systems can determine if they want to run every tick or only every second, third and so on.
     /// </summary>
     public uint Tick { get; private set; }
+    /// <summary>
+    /// The delta time value provided to the most recent Update call.
+    /// </summary>
+    public float LastDeltaTime { get; private set; }
     private readonly uint _maxEntities;
     /// <summary>
     /// Entity ID counter. This is incremented each time a new entity is created.
@@ -536,6 +540,9 @@ public class World
         {
             SortAndGroupSystems();
         }
+
+        // Remember the delta time for diagnostics/telemetry.
+        LastDeltaTime = deltaTime;
 
         // Execute systems in their guaranteed group order.
         // A temporary copy is used to prevent issues if a system modifies the list during iteration (e.g., via hot-reloading).

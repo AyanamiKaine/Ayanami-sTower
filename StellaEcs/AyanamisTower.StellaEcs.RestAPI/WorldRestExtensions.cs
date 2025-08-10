@@ -44,7 +44,9 @@ namespace AyanamisTower.StellaEcs.Api
                 MaxEntities = w.MaxEntities,
                 RecycledEntityIds = w.RecycledEntityIdCount,
                 RegisteredSystems = w.RegisteredSystemCount,
-                ComponentTypes = w.RegisteredComponentTypeCount
+                ComponentTypes = w.RegisteredComponentTypeCount,
+                Tick = w.Tick,
+                DeltaTime = w.LastDeltaTime
             };
         }
 
@@ -351,6 +353,14 @@ namespace AyanamisTower.StellaEcs.Api
         /// The number of component types currently registered in the world.
         /// </summary>
         public int ComponentTypes { get; set; }
+        /// <summary>
+        /// The current world tick.
+        /// </summary>
+        public uint Tick { get; set; }
+        /// <summary>
+        /// The most recent update's delta time in seconds.
+        /// </summary>
+        public float DeltaTime { get; set; }
     }
 
     /// <summary>
