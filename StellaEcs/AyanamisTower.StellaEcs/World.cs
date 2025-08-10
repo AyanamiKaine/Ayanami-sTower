@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace AyanamisTower.StellaEcs;
@@ -62,7 +60,7 @@ public class World
     /// </summary>
     private readonly HashSet<uint> _activeEntityIds = new();
 
-    private object? _apiServerInstance;
+    // Note: REST API integration was removed from the core ECS to avoid leaking web concerns.
 
     // --- NEW: System Management ---
     private readonly List<ISystem> _unmanagedSystems = [];
@@ -751,132 +749,6 @@ public class World
     // TODO: Implement a way to clear all entities and components if needed.
     // TODO: Implement a way to serialize/deserialize the world state for saving/loading.
 
-    #region Public API for REST/Remote Access
-
-    /*
-    It would be better if we would move the rest api functiona to extension methods.
-    We currently dont do it because we need to add a new field/property to the World class.
-    This is a temporary solution to allow remote access to the world state.
-    But this is possible in dotnet 10, Currrently this is a problem because users
-    can call the methods even though the plugin is not loaded.
-    */
-
-    /// <summary>
-    /// Enables the REST API for the world by dynamically loading the API server assembly.
-    /// The API provides remote access to inspect the world's state.
-    /// </summary>
-    /// <param name="url">The URL the API server should listen on.</param>
-    public void EnableRestApi(string url = "http://localhost:5123")
-    {
-        try
-        {
-            // 1. Construct the full path to the API DLL.
-            // This is more robust than relying on the default probing mechanism of Assembly.Load().
-            const string apiDllName = "AyanamisTower.StellaEcs.RestAPI.dll";
-            string apiDllPath = Path.Combine(AppContext.BaseDirectory, apiDllName);
-
-            if (!File.Exists(apiDllPath))
-            {
-                // Throw the specific exception the catch block is looking for.
-                throw new FileNotFoundException($"The API assembly was not found at the expected path: {apiDllPath}", apiDllName);
-            }
-
-            // 2. Dynamically load the API assembly from its specific path.
-            var apiAssembly = Assembly.LoadFrom(apiDllPath);
-
-            // 3. Find the RestApiServer type.
-            var apiServerType = apiAssembly.GetType("AyanamisTower.StellaEcs.Api.RestApiServer") ?? throw new InvalidOperationException("Could not find RestApiServer type in the API assembly.");
-
-            // 4. Get a reference to the static Start method.
-            var startMethod = apiServerType.GetMethod("Start", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException("Could not find the 'Start' method on the RestApiServer.");
-
-            // 5. Invoke the Start method, passing this world instance and the URL.
-            startMethod.Invoke(null, [this, url]);
-
-            _apiServerInstance = apiServerType; // Store a reference for stopping it later.
-        }
-        catch (FileNotFoundException ex)
-        {
-            Console.WriteLine($"[Error] {ex.Message}. Please ensure '{ex.FileName}' is in the application's output directory.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Error] Failed to enable REST API: {ex.Message}, Check if your project has a refrence RestAPI project so its dependency are correctly loaded");
-        }
-    }
-
-    /// <summary>
-    /// Disables the REST API server if it is running.
-    /// </summary>
-    public async Task DisableRestApi()
-    {
-        if (_apiServerInstance is Type apiServerType)
-        {
-            var stopMethod = apiServerType.GetMethod("Stop", BindingFlags.Public | BindingFlags.Static);
-            if (stopMethod?.Invoke(null, null) is Task stopTask)
-            {
-                await stopTask;
-            }
-            _apiServerInstance = null;
-        }
-        else
-        {
-            Console.WriteLine("REST API is not currently enabled.");
-        }
-    }
-
-    /// <summary>
-    /// Gets a snapshot of the world's current status.
-    /// </summary>
-    public WorldStatusDto GetWorldStatus()
-    {
-        return new WorldStatusDto
-        {
-            MaxEntities = _maxEntities,
-            RecycledEntityIds = _freeIds.Count,
-            RegisteredSystems = _systems.Count,
-            ComponentTypes = _storages.Count
-        };
-    }
-
-    /// <summary>
-    /// Retrieves detailed information about a specific plugin.
-    /// </summary>
-    /// <param name="pluginPrefix"></param>
-    /// <returns></returns>
-    public PluginDetailDto? GetPluginDetails(string pluginPrefix)
-    {
-        if (!_pluginsByPrefix.TryGetValue(pluginPrefix, out var plugin))
-        {
-            return null;
-        }
-
-        return new PluginDetailDto
-        {
-            Name = plugin.Name,
-            Version = plugin.Version,
-            Author = plugin.Author,
-            Description = plugin.Description,
-            Prefix = plugin.Prefix,
-            Url = $"/api/plugins/{plugin.Prefix}",
-            Systems = [.. plugin.ProvidedSystems.Select(t => $"{plugin.Prefix}.{t.Name}")],
-            Services = [.. plugin.ProvidedServices.Select(t => t.FullName ?? t.Name)],
-            Components = [.. plugin.ProvidedComponents.Select(t => t.Name)]
-        };
-    }
-
-    /// <summary>
-    /// Gets a list of all registered systems and their current state.
-    /// </summary>
-    public IEnumerable<SystemInfoDto> GetSystems()
-    {
-        return _systems.Select(s => new SystemInfoDto
-        {
-            Name = s.Name,
-            Enabled = s.Enabled,
-            PluginOwner = _systemOwners.TryGetValue(s.GetType(), out var p) ? p.Prefix : "World"
-        });
-    }
     /// <summary>
     /// Retrieves a collection of all currently active entities in the world.
     /// </summary>
@@ -889,222 +761,98 @@ public class World
             yield return new Entity(id, this);
         }
     }
+    // --- Neutral read-only accessors for introspection (usable by tooling like REST API, editors, etc.) ---
 
     /// <summary>
-    /// Gets information and data for all components attached to a specific entity.
+    /// Maximum number of entities supported by this world.
     /// </summary>
-    /// <param name="entity">The entity to inspect.</param>
-    /// <returns>A list of component information objects, including their data.</returns>
-    public List<ComponentInfoDto> GetAllComponentsForEntity(Entity entity)
-    {
-        var components = new List<ComponentInfoDto>();
-        if (!IsEntityValid(entity))
-        {
-            return components;
-        }
+    public uint MaxEntities => _maxEntities;
 
+    /// <summary>
+    /// Count of recycled entity IDs currently available.
+    /// </summary>
+    public int RecycledEntityIdCount => _freeIds.Count;
+
+    /// <summary>
+    /// Total number of registered systems.
+    /// </summary>
+    public int RegisteredSystemCount => _systems.Count;
+
+    /// <summary>
+    /// Total number of registered component types.
+    /// </summary>
+    public int RegisteredComponentTypeCount => _storages.Count;
+
+    /// <summary>
+    /// Snapshot of currently registered systems.
+    /// </summary>
+    public IEnumerable<ISystem> GetRegisteredSystems() => _systems.ToArray();
+
+    /// <summary>
+    /// Returns the owner plugin for a system type, if any.
+    /// </summary>
+    public IPlugin? GetSystemOwner(Type systemType)
+    {
+        _systemOwners.TryGetValue(systemType, out var owner);
+        return owner;
+    }
+
+    /// <summary>
+    /// Snapshot enumeration of registered services.
+    /// </summary>
+    public IEnumerable<(Type type, object instance)> GetRegisteredServices() => _services.Select(kvp => (kvp.Key, kvp.Value)).ToArray();
+
+    /// <summary>
+    /// Returns the owner plugin for a service type, if any.
+    /// </summary>
+    public IPlugin? GetServiceOwner(Type serviceType)
+    {
+        _serviceOwners.TryGetValue(serviceType, out var owner);
+        return owner;
+    }
+
+    /// <summary>
+    /// Snapshot of registered component types.
+    /// </summary>
+    public IEnumerable<Type> GetRegisteredComponentTypes() => _storages.Keys.ToArray();
+
+    /// <summary>
+    /// Returns the owner plugin for a component type, if any.
+    /// </summary>
+    public IPlugin? GetComponentOwner(Type componentType)
+    {
+        _componentOwners.TryGetValue(componentType, out var owner);
+        return owner;
+    }
+
+    /// <summary>
+    /// Snapshot of registered plugins.
+    /// </summary>
+    public IEnumerable<IPlugin> GetRegisteredPlugins() => _pluginsByPrefix.Values.ToArray();
+
+    /// <summary>
+    /// Tries to get a plugin by its prefix.
+    /// </summary>
+    public bool TryGetPluginByPrefix(string prefix, out IPlugin plugin)
+    {
+        return _pluginsByPrefix.TryGetValue(prefix, out plugin!);
+    }
+
+    /// <summary>
+    /// Returns all components attached to an entity as (Type, boxedData) pairs.
+    /// </summary>
+    public IEnumerable<(Type type, object data)> GetComponentsForEntityAsObjects(Entity entity)
+    {
+        if (!IsEntityValid(entity)) yield break;
         foreach (var (type, storage) in _storages)
         {
-            // Use our new method to get the data!
             var data = storage.GetDataAsObject(entity);
             if (data != null)
             {
-                components.Add(new ComponentInfoDto
-                {
-                    TypeName = type.Name,
-                    Data = data
-                });
+                yield return (type, data);
             }
         }
-        return components;
     }
-
-
-    /// <summary>
-    /// Gets the names of all registered component types.
-    /// </summary>
-    public IEnumerable<ComponentInfoDto> GetComponentTypes()
-    {
-        return _storages.Keys.Select(t => new ComponentInfoDto
-        {
-            TypeName = t.Name,
-            PluginOwner = _componentOwners.TryGetValue(t, out var p) ? p.Prefix : "World",
-            Data = null // Data is entity-specific, not relevant for a general listing
-        });
-    }
-    /// <summary>
-    /// Gets a list of all registered services and their public methods.
-    /// </summary>
-    public IEnumerable<ServiceInfoDto> GetServices()
-    {
-        return _services.Select(kvp => new ServiceInfoDto
-        {
-            TypeName = kvp.Key.FullName ?? kvp.Key.Name,
-            Methods = kvp.Key.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                         .Where(m => !m.IsSpecialName)
-                         .Select(m => m.Name),
-            PluginOwner = _serviceOwners.TryGetValue(kvp.Key, out var p) ? p.Prefix : "World"
-        });
-    }
-
-    /// <summary>
-    /// Gets a list of all loaded plugins with their information.
-    /// </summary>
-    public IEnumerable<PluginInfoDto> GetPlugins()
-    {
-        return _pluginsByPrefix.Values.Select(plugin => new PluginInfoDto
-        {
-            Name = plugin.Name,
-            Version = plugin.Version,
-            Author = plugin.Author,
-            Description = plugin.Description,
-            Prefix = plugin.Prefix,
-            Url = $"/api/plugins/{plugin.Prefix}"
-        });
-    }
-
-    /// <summary>
-    /// Sets a component on an entity using dynamic type resolution from a type name and JSON data.
-    /// This method is primarily intended for REST API usage.
-    /// </summary>
-    /// <param name="entity">The entity to attach the component to.</param>
-    /// <param name="componentTypeName">The name of the component type.</param>
-    /// <param name="componentData">The JSON data for the component.</param>
-    /// <returns>True if the component was successfully set, false otherwise.</returns>
-    public bool SetComponentFromJson(Entity entity, string componentTypeName, JsonElement componentData)
-    {
-        if (!IsEntityValid(entity))
-        {
-            throw new ArgumentException($"Entity {entity} is no longer valid");
-        }
-
-        // Find the component type by name across all loaded assemblies
-        var componentType = AppDomain.CurrentDomain.GetAssemblies()
-            .SelectMany(assembly => assembly.GetTypes())
-            .FirstOrDefault(type => type.Name == componentTypeName || type.FullName == componentTypeName) ?? throw new ArgumentException($"Component type '{componentTypeName}' not found. Available component types: {string.Join(", ", AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes()).Where(t => t.IsValueType && t.Namespace?.Contains("Component") == true).Select(t => t.Name))}");
-        if (!componentType.IsValueType)
-        {
-            throw new ArgumentException($"Component type '{componentTypeName}' must be a struct (value type).");
-        }
-
-        try
-        {
-            // Deserialize the JSON data to the component type
-            var component = JsonSerializer.Deserialize(componentData, componentType, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                IncludeFields = true
-            }) ?? throw new JsonException($"Failed to deserialize component data for type '{componentTypeName}'. JSON: {componentData.GetRawText()}");
-
-            // Use reflection to call the generic SetComponent method
-            var method = (typeof(World).GetMethod(nameof(SetComponent))?.MakeGenericMethod(componentType)) ?? throw new InvalidOperationException($"Could not create generic SetComponent method for type '{componentTypeName}'.");
-            method.Invoke(this, [entity, component]);
-            Console.WriteLine($"[World] Successfully set component '{componentTypeName}' on entity {entity}");
-            return true;
-        }
-        catch (JsonException ex)
-        {
-            throw new ArgumentException($"JSON deserialization failed for component '{componentTypeName}': {ex.Message}. JSON: {componentData.GetRawText()}", ex);
-        }
-        catch (Exception ex) when (ex.InnerException is JsonException jsonEx)
-        {
-            throw new ArgumentException($"JSON deserialization failed for component '{componentTypeName}': {jsonEx.Message}. JSON: {componentData.GetRawText()}", jsonEx);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Failed to set component '{componentTypeName}' on entity {entity}: {ex.Message}", ex);
-        }
-    }
-
-    /// <summary>
-    /// Removes a component from an entity using dynamic type resolution from a type name.
-    /// This method is primarily intended for REST API usage.
-    /// </summary>
-    /// <param name="entity">The entity to remove the component from.</param>
-    /// <param name="componentTypeName">The name of the component type.</param>
-    /// <returns>True if the component was successfully removed, false otherwise.</returns>
-    public bool RemoveComponentByName(Entity entity, string componentTypeName)
-    {
-        if (!IsEntityValid(entity))
-        {
-            throw new ArgumentException($"Entity {entity} is no longer valid");
-        }
-
-        // Find the component type by name across all loaded assemblies
-        var componentType = AppDomain.CurrentDomain.GetAssemblies()
-            .SelectMany(assembly => assembly.GetTypes())
-            .FirstOrDefault(type => type.Name == componentTypeName || type.FullName == componentTypeName) ?? throw new ArgumentException($"Component type '{componentTypeName}' not found.");
-        if (!componentType.IsValueType)
-        {
-            throw new ArgumentException($"Component type '{componentTypeName}' must be a struct (value type).");
-        }
-
-        try
-        {
-            // Use reflection to call the generic RemoveComponent method
-            var method = (typeof(World).GetMethod(nameof(RemoveComponent))?.MakeGenericMethod(componentType)) ?? throw new InvalidOperationException($"Could not create generic RemoveComponent method for type '{componentTypeName}'.");
-            method.Invoke(this, [entity]);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[World] Failed to remove component '{componentTypeName}' from entity {entity}: {ex.Message}");
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Invokes a method on a registered service by its type name.
-    /// </summary>
-    /// <param name="serviceTypeName">The full name of the service's type.</param>
-    /// <param name="methodName">The name of the method to invoke.</param>
-    /// <param name="parameters">A dictionary of parameter names and their values, typically from a JSON body.</param>
-    /// <returns>The result of the method invocation.</returns>
-    public object? InvokeServiceMethod(string serviceTypeName, string methodName, Dictionary<string, object> parameters)
-    {
-        // 1. Find the service type using its full name for accuracy.
-        var serviceType = _services.Keys.FirstOrDefault(t => t.FullName == serviceTypeName) ?? throw new KeyNotFoundException($"Service of type '{serviceTypeName}' has not been registered.");
-
-        // 2. Get the service instance from the dictionary.
-        var serviceInstance = _services[serviceType];
-
-        // 3. Find the method on the service's type.
-        // This simple version finds the first public method with the given name.
-        // A more advanced implementation could handle method overloading by inspecting parameter types.
-        var method = serviceType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance) ?? throw new MissingMethodException(serviceTypeName, methodName);
-
-        // 4. Prepare parameters for invocation.
-        var methodParams = method.GetParameters();
-        var invokeArgs = new object?[methodParams.Length];
-        // Use a case-insensitive dictionary for friendlier API usage.
-        var caseInsensitiveParams = new Dictionary<string, object>(parameters, StringComparer.OrdinalIgnoreCase);
-
-        for (int i = 0; i < methodParams.Length; i++)
-        {
-            var paramInfo = methodParams[i];
-            if (paramInfo.Name != null &&
-                caseInsensitiveParams.TryGetValue(paramInfo.Name, out var paramValue) &&
-                paramValue is JsonElement jsonElement)
-            {
-                // The model binder gives us JsonElements. We need to deserialize them to the actual parameter type.
-                invokeArgs[i] = jsonElement.Deserialize(paramInfo.ParameterType, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            }
-            else if (paramInfo.HasDefaultValue)
-            {
-                // If a parameter is missing from the request, use its default value if available.
-                invokeArgs[i] = paramInfo.DefaultValue;
-            }
-            else
-            {
-                // If a required parameter is missing and has no default, throw an error.
-                throw new ArgumentException($"Missing required parameter: '{paramInfo.Name}' for method '{methodName}'.");
-            }
-        }
-
-        // 5. Invoke the method on the service instance with the prepared arguments.
-        return method.Invoke(serviceInstance, invokeArgs);
-    }
-    #endregion
 }
 
 #region Data Transfer Objects (DTOs) for Public API
