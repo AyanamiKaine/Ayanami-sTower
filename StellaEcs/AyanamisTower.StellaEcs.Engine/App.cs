@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using AyanamisTower.NihilEx.SDLWrapper;
 using AyanamisTower.StellaEcs.Api;
 
@@ -13,6 +14,7 @@ public class App
     private Renderer? _renderer;
     private bool _shouldQuit = false; // Flag to signal exit request
     private World? _world;
+    private readonly Stopwatch _frameTimer = new();
     /// <summary>
     /// Init
     /// </summary>
@@ -43,6 +45,9 @@ public class App
 
             _renderer = _window.CreateRenderer();
             Console.WriteLine($"Renderer created: {_renderer.Name}");
+
+            // Start frame timer for delta time calculations
+            _frameTimer.Restart();
 
             Console.WriteLine("AppInit callback finished successfully.");
             return true; // Indicate success
@@ -117,7 +122,17 @@ public class App
     /// <returns></returns>
     public bool Update()
     {
-        _world?.Update(1f / 60f);
+        // Calculate frame delta time in seconds using a high-precision timer
+        var elapsed = _frameTimer.Elapsed;
+        _frameTimer.Restart();
+        var dt = (float)elapsed.TotalSeconds;
+
+        // Clamp to avoid giant timesteps when the app stalls or resumes from pause
+        if (dt <= 0f || float.IsNaN(dt) || float.IsInfinity(dt)) dt = 0f;
+        const float maxDelta = 0.25f; // cap at 250ms to keep simulation stable
+        if (dt > maxDelta) dt = maxDelta;
+
+        _world?.Update(dt);
 
         // Application logic (e.g., game state update) would go here
 
