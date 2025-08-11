@@ -46,7 +46,8 @@ namespace AyanamisTower.StellaEcs.Api
                 RegisteredSystems = w.RegisteredSystemCount,
                 ComponentTypes = w.RegisteredComponentTypeCount,
                 Tick = w.Tick,
-                DeltaTime = w.LastDeltaTime
+                DeltaTime = w.LastDeltaTime,
+                IsPaused = w.IsPaused
             };
         }
 
@@ -374,6 +375,10 @@ namespace AyanamisTower.StellaEcs.Api
         /// The most recent update's delta time in seconds.
         /// </summary>
         public float DeltaTime { get; set; }
+        /// <summary>
+        /// Whether the world is paused.
+        /// </summary>
+        public bool IsPaused { get; set; }
     }
 
     /// <summary>

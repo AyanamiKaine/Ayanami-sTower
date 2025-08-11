@@ -29,6 +29,27 @@ public class WorldTests
     }
 
     [Fact]
+    public void Pause_Resume_Step_Works()
+    {
+        _world.Update(0.1f);
+        Assert.Equal<uint>(1, _world.Tick);
+
+        _world.Pause();
+        _world.Update(0.5f); // no-op
+        Assert.Equal<uint>(1, _world.Tick);
+        Assert.Equal(0.5f, _world.LastDeltaTime, 3); // LastDeltaTime still records input
+
+        _world.Step(0.2f); // should advance while paused
+        Assert.Equal<uint>(2, _world.Tick);
+        Assert.Equal(0.2f, _world.LastDeltaTime, 3);
+
+        _world.Resume();
+        _world.Update(0.3f);
+        Assert.Equal<uint>(3, _world.Tick);
+        Assert.Equal(0.3f, _world.LastDeltaTime, 3);
+    }
+
+    [Fact]
     public void CreateEntity_ShouldReturnValidEntity()
     {
         // Act

@@ -36,6 +36,21 @@ namespace AyanamisTower.StellaEcs.Api
                .WithDescription("Provides high-level information about the world, such as entity and system counts.")
                .Produces<WorldStatusDto>(StatusCodes.Status200OK);
 
+            // --- World Control Endpoints ---
+            api.MapPost("/world/pause", (World w) => { w.Pause(); return Results.Ok(new { message = "World paused" }); })
+                .WithName("PauseWorld").WithSummary("Pauses world updates").Produces<object>(StatusCodes.Status200OK);
+            api.MapPost("/world/resume", (World w) => { w.Resume(); return Results.Ok(new { message = "World resumed" }); })
+                .WithName("ResumeWorld").WithSummary("Resumes world updates").Produces<object>(StatusCodes.Status200OK);
+            api.MapPost("/world/step", (World w, HttpContext ctx) =>
+            {
+                var q = ctx.Request.Query;
+                var frames = int.TryParse(q["frames"], out var f) ? Math.Clamp(f, 1, 10_000) : 1;
+                var dt = float.TryParse(q["dt"], out var d) ? Math.Clamp(d, 0f, 10f) : Math.Max(0.0001f, w.LastDeltaTime);
+                for (int i = 0; i < frames; i++) w.Step(dt);
+                return Results.Ok(new { message = $"Stepped {frames} frame(s)", w.Tick, DeltaTime = w.LastDeltaTime });
+            })
+                .WithName("StepWorld").WithSummary("Steps the world while paused").Produces<object>(StatusCodes.Status200OK);
+
             api.MapGet("/systems", (World w) => Results.Ok(w.GetSystems()))
                .WithName("GetRegisteredSystems")
                .WithSummary("Retrieves a list of all registered systems.")
@@ -303,6 +318,54 @@ namespace AyanamisTower.StellaEcs.Api
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status500InternalServerError);
+
+            // --- Dynamic Component Endpoints ---
+            api.MapPost("/entities/{entityId}/dynamic/{name}", (string entityId, string name, World w, [FromBody] JsonElement? payload) =>
+            {
+                if (!uint.TryParse(entityId, out var id)) return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
+                var entity = w.GetAllEntities().FirstOrDefault(e => e.Id == id);
+                if (!entity.IsValid()) return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
+                object? data = null;
+                if (payload.HasValue)
+                {
+                    try { data = JsonSerializer.Deserialize<object>(payload.Value); }
+                    catch (Exception ex) { return Results.BadRequest(new { message = $"Invalid JSON data: {ex.Message}" }); }
+                }
+                w.SetDynamicComponent(entity, name, data);
+                return Results.Ok(new { message = $"Dynamic '{name}' set on entity {entityId}." });
+            })
+               .WithName("SetDynamicOnEntity").WithSummary("Sets a dynamic component on an entity").Produces<object>(StatusCodes.Status200OK);
+
+            api.MapGet("/entities/{entityId}/dynamic/{name}", (string entityId, string name, World w) =>
+            {
+                if (!uint.TryParse(entityId, out var id)) return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
+                var entity = w.GetAllEntities().FirstOrDefault(e => e.Id == id);
+                if (!entity.IsValid()) return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
+                if (!w.HasDynamicComponent(entity, name)) return Results.NoContent();
+                var value = w.GetDynamicComponent(entity, name);
+                return value is null ? Results.NoContent() : Results.Ok(value);
+            })
+               .WithName("GetDynamicFromEntity").WithSummary("Gets a dynamic component's data").Produces(StatusCodes.Status204NoContent).Produces<object>(StatusCodes.Status200OK);
+
+            api.MapDelete("/entities/{entityId}/dynamic/{name}", (string entityId, string name, World w) =>
+            {
+                if (!uint.TryParse(entityId, out var id)) return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
+                var entity = w.GetAllEntities().FirstOrDefault(e => e.Id == id);
+                if (!entity.IsValid()) return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
+                w.RemoveDynamicComponent(entity, name);
+                return Results.Ok(new { message = $"Dynamic '{name}' removed from entity {entityId}." });
+            })
+               .WithName("RemoveDynamicFromEntity").WithSummary("Removes a dynamic component from an entity").Produces<object>(StatusCodes.Status200OK);
+
+            api.MapGet("/query/dynamic", (World w, HttpContext ctx) =>
+            {
+                var names = ctx.Request.Query["names"].ToString();
+                if (string.IsNullOrWhiteSpace(names)) return Results.BadRequest(new { message = "Provide 'names' as comma-separated list." });
+                var parts = names.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var result = w.QueryDynamic(parts).Select(e => e.Id);
+                return Results.Ok(result);
+            })
+               .WithName("QueryDynamic").WithSummary("Queries entities by dynamic component names").Produces<IEnumerable<uint>>(StatusCodes.Status200OK);
 
             // --- NEW: Service Endpoints ---
 

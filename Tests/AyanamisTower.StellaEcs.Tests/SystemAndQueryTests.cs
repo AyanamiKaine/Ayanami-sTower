@@ -14,6 +14,25 @@ public class SystemAndQueryTests
     }
 
     [Fact]
+    public void DelegateSystem_Runs_When_Registered()
+    {
+        var world = new World();
+        int runs = 0;
+        world.RegisterSystem(new DelegateSystem("TestSys", (_, _) => runs++));
+        world.Update(0.016f);
+        Assert.Equal(1, runs);
+
+        // Pause should prevent Update from running
+        world.Pause();
+        world.Update(0.016f);
+        Assert.Equal(1, runs);
+
+        // Step should run even while paused
+        world.Step(0.016f);
+        Assert.Equal(2, runs);
+    }
+
+    [Fact]
     public void RegisterSystem_AndUpdate_ShouldExecuteSystemLogic()
     {
         // Arrange

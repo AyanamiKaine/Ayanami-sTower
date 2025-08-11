@@ -38,6 +38,11 @@ public class World
     /// The delta time value provided to the most recent Update call.
     /// </summary>
     public float LastDeltaTime { get; private set; }
+    /// <summary>
+    /// Indicates whether the world is currently paused. When paused, Update() is a no-op.
+    /// Use Step() to advance frames while paused.
+    /// </summary>
+    public bool IsPaused { get; private set; }
     private readonly uint _maxEntities;
     /// <summary>
     /// Entity ID counter. This is incremented each time a new entity is created.
@@ -686,14 +691,47 @@ public class World
     /// </summary>
     public void Update(float deltaTime)
     {
+        // Remember the delta time even if paused.
+        LastDeltaTime = deltaTime;
+
+        if (IsPaused)
+        {
+            return; // No-op when paused
+        }
+
+        RunUpdate(deltaTime);
+    }
+
+    /// <summary>
+    /// Advances the world by one step using the provided delta time regardless of the paused state.
+    /// </summary>
+    public void Step(float deltaTime)
+    {
+        // Preserve LastDeltaTime for telemetry.
+        LastDeltaTime = deltaTime;
+        RunUpdate(deltaTime);
+    }
+
+    /// <summary>
+    /// Puts the world into a paused state. Update() becomes a no-op until resumed.
+    /// </summary>
+    public void Pause() => IsPaused = true;
+
+    /// <summary>
+    /// Resumes the world if it was paused.
+    /// </summary>
+    public void Resume() => IsPaused = false;
+
+    /// <summary>
+    /// Core update logic extracted so Step() can advance even when paused.
+    /// </summary>
+    private void RunUpdate(float deltaTime)
+    {
         // If the system list has changed, re-sort and re-group everything.
         if (_isSystemOrderDirty)
         {
             SortAndGroupSystems();
         }
-
-        // Remember the delta time for diagnostics/telemetry.
-        LastDeltaTime = deltaTime;
 
         // Execute systems in their guaranteed group order.
         // A temporary copy is used to prevent issues if a system modifies the list during iteration (e.g., via hot-reloading).
