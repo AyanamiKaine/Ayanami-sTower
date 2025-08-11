@@ -127,6 +127,245 @@ public class World
     /// </summary>
     private readonly Dictionary<Type, IMessageBus> _messageBuses = [];
 
+    // --- NEW: Component Observers (typed + dynamic) ---
+    // Delegates for typed component observers
+    /// <summary>
+    /// Called before a typed component is set on an entity. Handlers can mutate the component via ref and cancel the operation.
+    /// </summary>
+    public delegate void BeforeComponentSetHandler<T>(Entity entity, ref T value, ref bool cancel) where T : struct;
+    /// <summary>
+    /// Called after a typed component is set on an entity. Provides previous and current values and whether the entity previously had the component.
+    /// </summary>
+    public delegate void AfterComponentSetHandler<T>(Entity entity, in T previous, in T current, bool hadPrevious) where T : struct;
+    /// <summary>
+    /// Called before a typed component is removed from an entity. Handlers can cancel the removal.
+    /// </summary>
+    public delegate void BeforeComponentRemoveHandler<T>(Entity entity, ref bool cancel) where T : struct;
+    /// <summary>
+    /// Called after a typed component is removed from an entity. Provides the removed value.
+    /// </summary>
+    public delegate void AfterComponentRemoveHandler<T>(Entity entity, in T removed) where T : struct;
+
+    // Delegates for dynamic component observers (by name)
+    /// <summary>
+    /// Called before a dynamic component is set. Handlers can mutate the payload via ref and cancel the operation.
+    /// </summary>
+    public delegate void BeforeDynamicSetHandler(Entity entity, string name, ref object? value, ref bool cancel);
+    /// <summary>
+    /// Called after a dynamic component is set, with previous/current values and a flag indicating prior existence.
+    /// </summary>
+    public delegate void AfterDynamicSetHandler(Entity entity, string name, object? previous, object? current, bool hadPrevious);
+    /// <summary>
+    /// Called before a dynamic component is removed. Handlers can cancel the removal.
+    /// </summary>
+    public delegate void BeforeDynamicRemoveHandler(Entity entity, string name, ref bool cancel);
+    /// <summary>
+    /// Called after a dynamic component is removed, providing the removed value and a flag confirming it existed.
+    /// </summary>
+    public delegate void AfterDynamicRemoveHandler(Entity entity, string name, object? removedValue, bool hadValue);
+
+    // Storage for typed observers (keyed by component Type)
+    private readonly Dictionary<Type, List<Delegate>> _typedSetPreHandlers = [];
+    private readonly Dictionary<Type, List<Delegate>> _typedSetPostHandlers = [];
+    private readonly Dictionary<Type, List<Delegate>> _typedRemovePreHandlers = [];
+    private readonly Dictionary<Type, List<Delegate>> _typedRemovePostHandlers = [];
+
+    // Storage for dynamic observers (keyed by component name)
+    private readonly Dictionary<string, List<BeforeDynamicSetHandler>> _dynamicSetPreHandlers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<AfterDynamicSetHandler>> _dynamicSetPostHandlers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<BeforeDynamicRemoveHandler>> _dynamicRemovePreHandlers = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<AfterDynamicRemoveHandler>> _dynamicRemovePostHandlers = new(StringComparer.Ordinal);
+
+    // Registration APIs for typed observers
+    /// <summary>
+    /// Registers a pre-set observer for typed components of type T. Multiple observers are invoked in registration order.
+    /// </summary>
+    public void OnSetPre<T>(BeforeComponentSetHandler<T> handler) where T : struct
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var key = typeof(T);
+        if (!_typedSetPreHandlers.TryGetValue(key, out var list))
+        {
+            list = [];
+            _typedSetPreHandlers[key] = list;
+        }
+        list.Add(handler);
+    }
+
+    /// <summary>
+    /// Unregisters a previously registered pre-set observer for type T.
+    /// </summary>
+    public bool OffSetPre<T>(BeforeComponentSetHandler<T> handler) where T : struct
+    {
+        var key = typeof(T);
+        return _typedSetPreHandlers.TryGetValue(key, out var list) && list.Remove(handler);
+    }
+
+    /// <summary>
+    /// Registers an after-set observer for typed components of type T. Multiple observers are invoked in registration order.
+    /// </summary>
+    public void OnSetPost<T>(AfterComponentSetHandler<T> handler) where T : struct
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var key = typeof(T);
+        if (!_typedSetPostHandlers.TryGetValue(key, out var list))
+        {
+            list = [];
+            _typedSetPostHandlers[key] = list;
+        }
+        list.Add(handler);
+    }
+
+    /// <summary>
+    /// Unregisters a previously registered post-set observer for type T.
+    /// </summary>
+    public bool OffSetPost<T>(AfterComponentSetHandler<T> handler) where T : struct
+    {
+        var key = typeof(T);
+        return _typedSetPostHandlers.TryGetValue(key, out var list) && list.Remove(handler);
+    }
+
+    /// <summary>
+    /// Registers a before-remove observer for typed components of type T. Multiple observers are invoked in registration order.
+    /// </summary>
+    public void OnRemovePre<T>(BeforeComponentRemoveHandler<T> handler) where T : struct
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var key = typeof(T);
+        if (!_typedRemovePreHandlers.TryGetValue(key, out var list))
+        {
+            list = [];
+            _typedRemovePreHandlers[key] = list;
+        }
+        list.Add(handler);
+    }
+
+    /// <summary>
+    /// Unregisters a previously registered pre-remove observer for type T.
+    /// </summary>
+    public bool OffRemovePre<T>(BeforeComponentRemoveHandler<T> handler) where T : struct
+    {
+        var key = typeof(T);
+        return _typedRemovePreHandlers.TryGetValue(key, out var list) && list.Remove(handler);
+    }
+
+    /// <summary>
+    /// Registers an after-remove observer for typed components of type T. Multiple observers are invoked in registration order.
+    /// </summary>
+    public void OnRemovePost<T>(AfterComponentRemoveHandler<T> handler) where T : struct
+    {
+        ArgumentNullException.ThrowIfNull(handler);
+        var key = typeof(T);
+        if (!_typedRemovePostHandlers.TryGetValue(key, out var list))
+        {
+            list = [];
+            _typedRemovePostHandlers[key] = list;
+        }
+        list.Add(handler);
+    }
+
+    /// <summary>
+    /// Unregisters a previously registered post-remove observer for type T.
+    /// </summary>
+    public bool OffRemovePost<T>(AfterComponentRemoveHandler<T> handler) where T : struct
+    {
+        var key = typeof(T);
+        return _typedRemovePostHandlers.TryGetValue(key, out var list) && list.Remove(handler);
+    }
+
+    // Registration APIs for dynamic observers (name-scoped)
+    /// <summary>
+    /// Registers a before-set observer for the specified dynamic component name.
+    /// </summary>
+    public void OnDynamicSetPre(string name, BeforeDynamicSetHandler handler)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentNullException.ThrowIfNull(handler);
+        if (!_dynamicSetPreHandlers.TryGetValue(name, out var list))
+        {
+            list = [];
+            _dynamicSetPreHandlers[name] = list;
+        }
+        list.Add(handler);
+    }
+
+    /// <summary>
+    /// Unregisters a previously registered pre-set observer for the specified dynamic component name.
+    /// </summary>
+    public bool OffDynamicSetPre(string name, BeforeDynamicSetHandler handler)
+    {
+        return _dynamicSetPreHandlers.TryGetValue(name, out var list) && list.Remove(handler);
+    }
+
+    /// <summary>
+    /// Registers an after-set observer for the specified dynamic component name.
+    /// </summary>
+    public void OnDynamicSetPost(string name, AfterDynamicSetHandler handler)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentNullException.ThrowIfNull(handler);
+        if (!_dynamicSetPostHandlers.TryGetValue(name, out var list))
+        {
+            list = [];
+            _dynamicSetPostHandlers[name] = list;
+        }
+        list.Add(handler);
+    }
+
+    /// <summary>
+    /// Unregisters a previously registered post-set observer for the specified dynamic component name.
+    /// </summary>
+    public bool OffDynamicSetPost(string name, AfterDynamicSetHandler handler)
+    {
+        return _dynamicSetPostHandlers.TryGetValue(name, out var list) && list.Remove(handler);
+    }
+
+    /// <summary>
+    /// Registers a before-remove observer for the specified dynamic component name.
+    /// </summary>
+    public void OnDynamicRemovePre(string name, BeforeDynamicRemoveHandler handler)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentNullException.ThrowIfNull(handler);
+        if (!_dynamicRemovePreHandlers.TryGetValue(name, out var list))
+        {
+            list = [];
+            _dynamicRemovePreHandlers[name] = list;
+        }
+        list.Add(handler);
+    }
+
+    /// <summary>
+    /// Unregisters a previously registered pre-remove observer for the specified dynamic component name.
+    /// </summary>
+    public bool OffDynamicRemovePre(string name, BeforeDynamicRemoveHandler handler)
+    {
+        return _dynamicRemovePreHandlers.TryGetValue(name, out var list) && list.Remove(handler);
+    }
+
+    /// <summary>
+    /// Registers an after-remove observer for the specified dynamic component name.
+    /// </summary>
+    public void OnDynamicRemovePost(string name, AfterDynamicRemoveHandler handler)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        ArgumentNullException.ThrowIfNull(handler);
+        if (!_dynamicRemovePostHandlers.TryGetValue(name, out var list))
+        {
+            list = [];
+            _dynamicRemovePostHandlers[name] = list;
+        }
+        list.Add(handler);
+    }
+
+    /// <summary>
+    /// Unregisters a previously registered post-remove observer for the specified dynamic component name.
+    /// </summary>
+    public bool OffDynamicRemovePost(string name, AfterDynamicRemoveHandler handler)
+    {
+        return _dynamicRemovePostHandlers.TryGetValue(name, out var list) && list.Remove(handler);
+    }
+
 
     // --- NEW: Ownership Tracking ---
     private readonly Dictionary<string, IPlugin> _pluginsByPrefix = [];
@@ -251,7 +490,42 @@ public class World
         if (!IsEntityValid(entity))
             throw new ArgumentException($"Entity {entity} is no longer valid");
         var storage = GetOrCreateStorage<T>();
+
+        // Pre handlers (typed)
+        if (_typedSetPreHandlers.TryGetValue(typeof(T), out var preList) && preList.Count > 0)
+        {
+            bool cancel = false;
+            // Create a local ref so handlers can mutate
+            var value = component;
+            foreach (var d in preList)
+            {
+                ((BeforeComponentSetHandler<T>)d).Invoke(entity, ref value, ref cancel);
+                if (cancel)
+                {
+                    return;
+                }
+            }
+            component = value;
+        }
+
+        // Capture previous if needed for post
+        bool hadPrevious = storage.Has(entity);
+        T previous = default!;
+        if (hadPrevious)
+        {
+            previous = storage.Get(entity);
+        }
+
         storage.Set(entity, component);
+
+        // Post handlers (typed)
+        if (_typedSetPostHandlers.TryGetValue(typeof(T), out var postList) && postList.Count > 0)
+        {
+            foreach (var d in postList)
+            {
+                ((AfterComponentSetHandler<T>)d).Invoke(entity, in previous, in component, hadPrevious);
+            }
+        }
     }
 
     /// <summary>
@@ -321,7 +595,37 @@ public class World
             throw new ArgumentException($"Entity {entity} is no longer valid");
         if (_storages.TryGetValue(typeof(T), out var storage))
         {
-            storage.Remove(entity);
+            var typedStorage = (ComponentStorage<T>)storage;
+
+            // Pre handlers may cancel
+            if (_typedRemovePreHandlers.TryGetValue(typeof(T), out var preList) && preList.Count > 0)
+            {
+                bool cancel = false;
+                foreach (var d in preList)
+                {
+                    ((BeforeComponentRemoveHandler<T>)d).Invoke(entity, ref cancel);
+                    if (cancel)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            // If not present, nothing to do
+            if (!typedStorage.Has(entity)) return;
+
+            // Capture removed value for post
+            var removed = typedStorage.Get(entity);
+            typedStorage.Remove(entity);
+
+            // Post handlers
+            if (_typedRemovePostHandlers.TryGetValue(typeof(T), out var postList) && postList.Count > 0)
+            {
+                foreach (var d in postList)
+                {
+                    ((AfterComponentRemoveHandler<T>)d).Invoke(entity, in removed);
+                }
+            }
         }
     }
 
@@ -405,13 +709,35 @@ public class World
         if (!IsEntityValid(entity))
             throw new ArgumentException($"Entity {entity} is no longer valid");
         ArgumentException.ThrowIfNullOrEmpty(name);
+        // Pre handlers (dynamic)
+        if (_dynamicSetPreHandlers.TryGetValue(name, out var preHandlers) && preHandlers.Count > 0)
+        {
+            bool cancel = false;
+            var v = data;
+            foreach (var h in preHandlers)
+            {
+                h.Invoke(entity, name, ref v, ref cancel);
+                if (cancel) return;
+            }
+            data = v;
+        }
 
         if (!_dynamicComponents.TryGetValue(name, out var map))
         {
             map = new Dictionary<Entity, object?>();
             _dynamicComponents[name] = map;
         }
+        bool hadPrevious = map.TryGetValue(entity, out var prev);
         map[entity] = data;
+
+        // Post handlers (dynamic)
+        if (_dynamicSetPostHandlers.TryGetValue(name, out var postHandlers) && postHandlers.Count > 0)
+        {
+            foreach (var h in postHandlers)
+            {
+                h.Invoke(entity, name, hadPrevious ? prev : null, data, hadPrevious);
+            }
+        }
     }
 
     /// <summary>
@@ -435,7 +761,28 @@ public class World
         ArgumentException.ThrowIfNullOrEmpty(name);
         if (_dynamicComponents.TryGetValue(name, out var map))
         {
+            // Pre handlers may cancel
+            if (_dynamicRemovePreHandlers.TryGetValue(name, out var preHandlers) && preHandlers.Count > 0)
+            {
+                bool cancel = false;
+                foreach (var h in preHandlers)
+                {
+                    h.Invoke(entity, name, ref cancel);
+                    if (cancel) return;
+                }
+            }
+
+            bool had = map.TryGetValue(entity, out var removedValue);
             map.Remove(entity);
+
+            // Post handlers
+            if (_dynamicRemovePostHandlers.TryGetValue(name, out var postHandlers) && postHandlers.Count > 0)
+            {
+                foreach (var h in postHandlers)
+                {
+                    h.Invoke(entity, name, had ? removedValue : null, had);
+                }
+            }
         }
     }
 
