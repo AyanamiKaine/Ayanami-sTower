@@ -1,15 +1,21 @@
 ﻿using AyanamisTower.StellaEcs;
 using AyanamisTower.StellaEcs.Api;
 using AyanamisTower.StellaEcs.Components;
-
-
-
+using AyanamisTower.StellaEcs.Engine;
 using System.Timers;
 
 static class Program
 {
     private static void Main()
     {
+
+        using var window = new Window();
+        window.Setup();
+        window.Create();
+        window.Run();
+
+
+        /*
         var world = new World();
 
 
@@ -41,6 +47,7 @@ static class Program
             // Keep the application running
             Thread.Sleep(1000);
         }
+        */
     }
 }
 
