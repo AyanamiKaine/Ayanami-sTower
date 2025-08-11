@@ -121,6 +121,44 @@ public readonly struct Entity : IEquatable<Entity>
         _world.RemoveComponent<T>(this);
     }
 
+    // --- Dynamic component helpers ---
+
+    /// <summary>
+    /// Sets or replaces a dynamic component identified by name.
+    /// </summary>
+    public Entity SetDynamic(string name, object? data)
+    {
+        if (_world == null) throw new InvalidOperationException("Cannot set dynamic component on an entity that is not associated with a world.");
+        _world.SetDynamicComponent(this, name, data);
+        return this;
+    }
+
+    /// <summary>
+    /// Returns true if a dynamic component with the given name exists on this entity.
+    /// </summary>
+    public bool HasDynamic(string name)
+    {
+        return _world != null && _world.HasDynamicComponent(this, name);
+    }
+
+    /// <summary>
+    /// Removes a dynamic component by name.
+    /// </summary>
+    public void RemoveDynamic(string name)
+    {
+        if (_world == null) throw new InvalidOperationException("Cannot remove dynamic component from an entity that is not associated with a world.");
+        _world.RemoveDynamicComponent(this, name);
+    }
+
+    /// <summary>
+    /// Gets a dynamic component value cast to T.
+    /// </summary>
+    public T GetDynamic<T>(string name)
+    {
+        if (_world == null) throw new InvalidOperationException("Cannot get dynamic component from an entity that is not associated with a world.");
+        return _world.GetDynamicComponent<T>(this, name);
+    }
+
     /// <summary>
     /// Destroys this entity, removing all its components and recycling its ID.
     /// </summary>

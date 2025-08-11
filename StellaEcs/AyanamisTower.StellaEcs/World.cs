@@ -63,6 +63,12 @@ public class World
     private readonly Dictionary<string, IEntityFunction> _functions = [];
 
     /// <summary>
+    /// Stores dynamic components keyed by a string name. Each name maps to a dictionary from Entity to arbitrary data.
+    /// Dynamic components trade performance for iteration speed and flexibility during prototyping.
+    /// </summary>
+    private readonly Dictionary<string, Dictionary<Entity, object?>> _dynamicComponents = new(StringComparer.Ordinal);
+
+    /// <summary>
     /// Tracks the set of currently alive (valid) entity IDs.
     /// </summary>
     private readonly HashSet<uint> _activeEntityIds = new();
@@ -189,6 +195,12 @@ public class World
         foreach (var storage in _storages.Values)
         {
             storage.Remove(entity);
+        }
+
+        // Remove all dynamic components for this entity.
+        foreach (var map in _dynamicComponents.Values)
+        {
+            map.Remove(entity);
         }
 
         // Mark as not alive.
@@ -344,6 +356,137 @@ public class World
 
         // Filter the entities from the smallest storage.
         return smallestStorage.GetEntities().Where(entity => otherStorages.All(s => s.Has(entity)));
+    }
+
+    /// <summary>
+    /// Finds all entities that have all of the specified dynamic component names.
+    /// </summary>
+    /// <param name="componentNames">The dynamic component names to query for.</param>
+    /// <returns>A lazily-evaluated sequence of entities that match the query.</returns>
+    public IEnumerable<Entity> QueryDynamic(params string[] componentNames)
+    {
+        if (componentNames == null || componentNames.Length == 0)
+        {
+            return [];
+        }
+
+        // Build a list of maps for the requested names; if any is missing, no matches.
+        var maps = new List<Dictionary<Entity, object?>>(componentNames.Length);
+        foreach (var name in componentNames)
+        {
+            if (!_dynamicComponents.TryGetValue(name, out var map))
+            {
+                return [];
+            }
+            maps.Add(map);
+        }
+
+        // Iterate the smallest map for efficiency.
+        var smallest = maps.MinBy(m => m.Count);
+        if (smallest == null || smallest.Count == 0) return [];
+
+        var others = maps.Where(m => !ReferenceEquals(m, smallest)).ToArray();
+        return smallest.Keys.Where(e => others.All(m => m.ContainsKey(e)));
+    }
+
+    /// <summary>
+    /// Sets or replaces a dynamic component by name for an entity.
+    /// </summary>
+    /// <param name="entity">The target entity.</param>
+    /// <param name="name">Dynamic component name.</param>
+    /// <param name="data">Arbitrary data to associate.</param>
+    public void SetDynamicComponent(Entity entity, string name, object? data)
+    {
+        if (!IsEntityValid(entity))
+            throw new ArgumentException($"Entity {entity} is no longer valid");
+        ArgumentException.ThrowIfNullOrEmpty(name);
+
+        if (!_dynamicComponents.TryGetValue(name, out var map))
+        {
+            map = new Dictionary<Entity, object?>();
+            _dynamicComponents[name] = map;
+        }
+        map[entity] = data;
+    }
+
+    /// <summary>
+    /// Returns true if the entity has a dynamic component with the given name.
+    /// </summary>
+    public bool HasDynamicComponent(Entity entity, string name)
+    {
+        if (!IsEntityValid(entity))
+            throw new ArgumentException($"Entity {entity} is no longer valid");
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        return _dynamicComponents.TryGetValue(name, out var map) && map.ContainsKey(entity);
+    }
+
+    /// <summary>
+    /// Removes a dynamic component by name from an entity. No-op if not present.
+    /// </summary>
+    public void RemoveDynamicComponent(Entity entity, string name)
+    {
+        if (!IsEntityValid(entity))
+            throw new ArgumentException($"Entity {entity} is no longer valid");
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        if (_dynamicComponents.TryGetValue(name, out var map))
+        {
+            map.Remove(entity);
+        }
+    }
+
+    /// <summary>
+    /// Gets the dynamic component value as object. Throws if not present.
+    /// </summary>
+    public object? GetDynamicComponent(Entity entity, string name)
+    {
+        if (!IsEntityValid(entity))
+            throw new ArgumentException($"Entity {entity} is no longer valid");
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        if (_dynamicComponents.TryGetValue(name, out var map) && map.TryGetValue(entity, out var value))
+        {
+            return value;
+        }
+        throw new KeyNotFoundException($"Entity {entity} does not have dynamic component '{name}'.");
+    }
+
+    /// <summary>
+    /// Gets the dynamic component value cast to T. Throws if not present or incompatible type.
+    /// </summary>
+    public T GetDynamicComponent<T>(Entity entity, string name)
+    {
+        var value = GetDynamicComponent(entity, name);
+        return (T)value!;
+    }
+
+    /// <summary>
+    /// Tries to get the dynamic component value cast to T.
+    /// </summary>
+    public bool TryGetDynamicComponent<T>(Entity entity, string name, out T value)
+    {
+        value = default!;
+        if (!IsEntityValid(entity)) return false;
+        if (string.IsNullOrEmpty(name)) return false;
+        if (_dynamicComponents.TryGetValue(name, out var map) && map.TryGetValue(entity, out var obj) && obj is T t)
+        {
+            value = t;
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Returns all dynamic components attached to an entity as (name, data) pairs.
+    /// </summary>
+    public IEnumerable<(string name, object? data)> GetDynamicComponentsForEntity(Entity entity)
+    {
+        if (!IsEntityValid(entity)) yield break;
+        foreach (var (name, map) in _dynamicComponents)
+        {
+            if (map.TryGetValue(entity, out var data))
+            {
+                yield return (name, data);
+            }
+        }
     }
 
     /// <summary>
@@ -969,6 +1112,11 @@ public class ComponentInfoDto
     /// The owner of the plugin that provides this component.
     /// </summary>
     public string? PluginOwner { get; set; }
+
+    /// <summary>
+    /// Indicates whether this component entry represents a dynamic component (identified by name rather than type).
+    /// </summary>
+    public bool IsDynamic { get; set; }
 
 }
 

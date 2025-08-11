@@ -79,7 +79,20 @@ namespace AyanamisTower.StellaEcs.Api
                 list.Add(new ComponentInfoDto
                 {
                     TypeName = type.Name,
-                    Data = data
+                    Data = data,
+                    PluginOwner = (w.GetComponentOwner(type)?.Prefix) ?? "World",
+                    IsDynamic = false
+                });
+            }
+            // Append dynamic components
+            foreach (var (name, data) in w.GetDynamicComponentsForEntity(entity))
+            {
+                list.Add(new ComponentInfoDto
+                {
+                    TypeName = name,
+                    Data = data,
+                    PluginOwner = "World",
+                    IsDynamic = true
                 });
             }
             return list;
@@ -399,6 +412,11 @@ namespace AyanamisTower.StellaEcs.Api
         /// The owner of the plugin that provides this component.
         /// </summary>
         public string? PluginOwner { get; set; }
+
+        /// <summary>
+        /// Indicates whether this component entry represents a dynamic component (identified by name rather than type).
+        /// </summary>
+        public bool IsDynamic { get; set; }
     }
 
     /// <summary>
