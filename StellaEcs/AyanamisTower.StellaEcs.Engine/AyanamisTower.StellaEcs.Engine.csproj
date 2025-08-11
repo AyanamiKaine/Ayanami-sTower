@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\NihilEx.SDL\AyanamisTower.NihilEx.SDLWrapper.csproj" />
     <ProjectReference Include="..\AyanamisTower.StellaEcs.RestAPI\AyanamisTower.StellaEcs.RestAPI.csproj" />
     <ProjectReference Include="..\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
   </ItemGroup>

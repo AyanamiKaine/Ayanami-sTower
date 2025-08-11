@@ -1,4 +1,5 @@
-﻿using AyanamisTower.StellaEcs;
+﻿using AyanamisTower.NihilEx.SDLWrapper;
+using AyanamisTower.StellaEcs;
 using AyanamisTower.StellaEcs.Api;
 using AyanamisTower.StellaEcs.Components;
 using AyanamisTower.StellaEcs.Engine;
@@ -6,14 +7,24 @@ using System.Timers;
 
 static class Program
 {
+    [STAThread]
     private static void Main()
     {
 
-        using var window = new Window();
-        window.Setup();
-        window.Create();
-        window.Run();
+        Console.WriteLine("Starting SDL3 Callback Application Example...");
 
+        var app = new App();
+
+        // Use the SdlHost.RunApplication method, passing the instance methods
+        // Note: SdlHost.RunApplication handles SDL_Init and SDL_Quit internally via the callbacks.
+        int exitCode = SdlHost.RunApplication(
+            app.Initialize,
+            app.Update,
+            app.HandleEvent,
+            app.Cleanup
+            );
+
+        Console.WriteLine($"Application finished with exit code: {exitCode}");
 
         /*
         var world = new World();
