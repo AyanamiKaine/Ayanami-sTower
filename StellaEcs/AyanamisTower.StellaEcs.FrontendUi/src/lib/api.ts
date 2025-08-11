@@ -19,7 +19,7 @@ async function handle<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-export interface WorldStatus { maxEntities: number; recycledEntityIds: number; registeredSystems: number; componentTypes: number; tick: number; deltaTime: number; }
+export interface WorldStatus { maxEntities: number; recycledEntityIds: number; registeredSystems: number; componentTypes: number; tick: number; deltaTime: number; isPaused: boolean; }
 export interface EntitySummary { id: number; url: string; }
 export interface ComponentInfo { typeName: string; data?: unknown; pluginOwner?: string; }
 export interface EntityDetail { id: number; components: ComponentInfo[]; }
@@ -32,6 +32,15 @@ export interface LogEntry { id: number; timestampUtc: string; level: LogLevel; c
 
 export const api = {
   worldStatus: () => fetch(`${API_BASE}/world/status`).then(handle<WorldStatus>),
+  pauseWorld: () => fetch(`${API_BASE}/world/pause`, { method: 'POST' }).then(handle<{ message: string }>) ,
+  resumeWorld: () => fetch(`${API_BASE}/world/resume`, { method: 'POST' }).then(handle<{ message: string }>) ,
+  stepWorld: (frames = 1, dt?: number) => {
+    const p = new URLSearchParams();
+    if (frames) p.set('frames', String(frames));
+    if (typeof dt === 'number') p.set('dt', String(dt));
+    const qs = p.toString();
+    return fetch(`${API_BASE}/world/step${qs ? `?${qs}` : ''}`, { method: 'POST' }).then(handle<{ message: string; tick: number; deltaTime: number }>)
+  },
   entities: () => fetch(`${API_BASE}/entities`).then(handle<EntitySummary[]>),
   entity: (idGen: string) => fetch(`${API_BASE}/entities/${idGen}`).then(handle<EntityDetail>),
   createEntity: () => fetch(`${API_BASE}/entities`, { method: 'POST' }).then(handle<EntitySummary>),

@@ -6,12 +6,13 @@ const g: any = globalThis;
 
 describe('api client shape', () => {
   it('parses world status camelCase', async () => {
-    g.fetch = async () => ({ ok: true, json: async () => ({ maxEntities: 1000, recycledEntityIds: 2, registeredSystems: 5, componentTypes: 9, tick: 42, deltaTime: 0.016 }) });
+    g.fetch = async () => ({ ok: true, json: async () => ({ maxEntities: 1000, recycledEntityIds: 2, registeredSystems: 5, componentTypes: 9, tick: 42, deltaTime: 0.016, isPaused: false }) });
     const ws: WorldStatus = await api.worldStatus();
     expect(ws.maxEntities).toBe(1000);
     expect(ws.registeredSystems).toBe(5);
     expect(ws.tick).toBe(42);
     expect(ws.deltaTime).toBeCloseTo(0.016);
+    expect(ws.isPaused).toBe(false);
   });
   it('parses entity summaries camelCase', async () => {
     g.fetch = async () => ({ ok: true, json: async () => ([{ id:1, generation:0, url:'/api/entities/1-0'}]) });
