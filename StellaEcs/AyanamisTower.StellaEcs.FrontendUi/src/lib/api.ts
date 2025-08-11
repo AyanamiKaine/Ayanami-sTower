@@ -23,7 +23,7 @@ export interface WorldStatus { maxEntities: number; recycledEntityIds: number; r
 export interface EntitySummary { id: number; url: string; }
 export interface ComponentInfo { typeName: string; data?: unknown; pluginOwner?: string; }
 export interface EntityDetail { id: number; components: ComponentInfo[]; }
-export interface SystemInfo { name: string; enabled: boolean; pluginOwner: string; }
+export interface SystemInfo { name: string; enabled: boolean; pluginOwner: string; group?: string; order?: number; }
 export interface ServiceInfo { typeName: string; methods: string[]; pluginOwner: string; }
 export interface PluginInfo { name: string; version: string; author: string; description: string; prefix: string; url: string; }
 export interface PluginDetail extends PluginInfo { systems: string[]; services: string[]; components: string[]; }

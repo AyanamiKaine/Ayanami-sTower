@@ -58,11 +58,14 @@ namespace AyanamisTower.StellaEcs.Api
         /// <returns>System info items.</returns>
         public static IEnumerable<SystemInfoDto> GetSystems(this World w)
         {
-            return w.GetRegisteredSystems().Select(s => new SystemInfoDto
+            // Return with group and order; use current sorted lists
+            return w.GetSystemsWithOrder().Select(tuple => new SystemInfoDto
             {
-                Name = s.Name,
-                Enabled = s.Enabled,
-                PluginOwner = (w.GetSystemOwner(s.GetType())?.Prefix) ?? "World"
+                Name = tuple.system.Name,
+                Enabled = tuple.system.Enabled,
+                PluginOwner = (w.GetSystemOwner(tuple.system.GetType())?.Prefix) ?? "World",
+                Group = tuple.group.Name,
+                Order = tuple.orderIndex
             });
         }
 
@@ -398,6 +401,14 @@ namespace AyanamisTower.StellaEcs.Api
         /// The owner of the plugin that provides this system.
         /// </summary>
         public required string PluginOwner { get; set; }
+        /// <summary>
+        /// The group this system runs in: InitializationSystemGroup, SimulationSystemGroup, or PresentationSystemGroup.
+        /// </summary>
+        public string? Group { get; set; }
+        /// <summary>
+        /// The zero-based order index within its group according to the current sort.
+        /// </summary>
+        public int Order { get; set; }
     }
 
     /// <summary>

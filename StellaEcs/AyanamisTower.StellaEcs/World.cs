@@ -988,6 +988,31 @@ public class World
     public IEnumerable<ISystem> GetRegisteredSystems() => _systems.ToArray();
 
     /// <summary>
+    /// Returns systems in their current execution order, grouped as Initialization, Simulation, Presentation.
+    /// Order is within each group starting at 0.
+    /// </summary>
+    public IEnumerable<(ISystem system, Type group, int orderIndex)> GetSystemsWithOrder()
+    {
+        if (_isSystemOrderDirty)
+        {
+            SortAndGroupSystems();
+        }
+        // Emit ordered tuples for each group
+        for (int i = 0; i < _initializationSystems.Count; i++)
+        {
+            yield return (_initializationSystems[i], typeof(InitializationSystemGroup), i);
+        }
+        for (int i = 0; i < _simulationSystems.Count; i++)
+        {
+            yield return (_simulationSystems[i], typeof(SimulationSystemGroup), i);
+        }
+        for (int i = 0; i < _presentationSystems.Count; i++)
+        {
+            yield return (_presentationSystems[i], typeof(PresentationSystemGroup), i);
+        }
+    }
+
+    /// <summary>
     /// Returns the owner plugin for a system type, if any.
     /// </summary>
     public IPlugin? GetSystemOwner(Type systemType)

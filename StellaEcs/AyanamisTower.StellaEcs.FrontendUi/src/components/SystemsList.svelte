@@ -10,6 +10,8 @@
         error = null;
         try {
             systems = await api.systems();
+            // ensure sorted by Group then Order for consistent display
+            systems.sort((a: any, b: any) => (a.group ?? '').localeCompare(b.group ?? '') || (a.order ?? 0) - (b.order ?? 0));
         } catch (e: any) {
             error = e.message;
         } finally {
@@ -66,6 +68,12 @@
             {#each systems as s}
                 <li class="flex gap-3 items-center">
                     <span class="font-medium">{s.name}</span>
+                    {#if s.group}
+                        <span class="badge" title="Group">{s.group.replace('SystemGroup','')}</span>
+                        <span class="text-xs text-zinc-400" title="Order">
+                            #{s.order}
+                        </span>
+                    {/if}
                     {#if s.pluginOwner}<span class="badge">{s.pluginOwner}</span>{/if}
                     {#if !s.enabled}<span class="text-red-400 text-xs">(disabled)</span>{/if}
                     <span class="ml-auto" />
