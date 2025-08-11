@@ -42,7 +42,7 @@ namespace AyanamisTower.StellaEcs.Api
                .Produces<IEnumerable<SystemInfoDto>>(StatusCodes.Status200OK);
 
             // --- Logs Endpoints ---
-            api.MapGet("/logs", (HttpContext ctx, ILogStore logs) =>
+            api.MapGet("/logs", (HttpContext ctx, [FromServices] ILogStore logs) =>
             {
                 var q = ctx.Request.Query;
                 var take = int.TryParse(q["take"], out var t) ? Math.Clamp(t, 1, 2000) : 200;
@@ -59,7 +59,7 @@ namespace AyanamisTower.StellaEcs.Api
             .WithDescription("Query: take (<=2000), afterId, minLevel (Trace..Critical), category (substring)")
             .Produces<IEnumerable<LogEntry>>(StatusCodes.Status200OK);
 
-            api.MapDelete("/logs", (ILogStore logs) =>
+            api.MapDelete("/logs", ([FromServices] ILogStore logs) =>
             {
                 logs.Clear();
                 return Results.Ok(new { message = "Logs cleared" });
@@ -158,8 +158,9 @@ namespace AyanamisTower.StellaEcs.Api
                     return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }
 
-                var entity = new Entity(id, w);
-                if (!w.IsEntityValid(entity))
+                // Resolve entity from the world's active set to capture the correct generation
+                var entity = w.GetAllEntities().FirstOrDefault(e => e.Id == id);
+                if (!entity.IsValid())
                 {
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
                 }
@@ -187,8 +188,8 @@ namespace AyanamisTower.StellaEcs.Api
                     return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }
 
-                var entity = new Entity(id, w);
-                if (!w.IsEntityValid(entity))
+                var entity = w.GetAllEntities().FirstOrDefault(e => e.Id == id);
+                if (!entity.IsValid())
                 {
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
                 }
@@ -218,8 +219,8 @@ namespace AyanamisTower.StellaEcs.Api
                     return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }
 
-                var entity = new Entity(id, w);
-                if (!w.IsEntityValid(entity))
+                var entity = w.GetAllEntities().FirstOrDefault(e => e.Id == id);
+                if (!entity.IsValid())
                 {
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
                 }
@@ -268,8 +269,8 @@ namespace AyanamisTower.StellaEcs.Api
                     return Results.BadRequest(new { message = "Invalid entity ID format. Expected '{id}'." });
                 }
 
-                var entity = new Entity(id, w);
-                if (!w.IsEntityValid(entity))
+                var entity = w.GetAllEntities().FirstOrDefault(e => e.Id == id);
+                if (!entity.IsValid())
                 {
                     return Results.NotFound(new { message = $"Entity {entityId} is not valid." });
                 }
