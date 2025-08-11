@@ -10,23 +10,7 @@ static class Program
     [STAThread]
     private static void Main()
     {
-
-        Console.WriteLine("Starting SDL3 Callback Application Example...");
-
-        var app = new App();
-
-        // Use the SdlHost.RunApplication method, passing the instance methods
-        // Note: SdlHost.RunApplication handles SDL_Init and SDL_Quit internally via the callbacks.
-        int exitCode = SdlHost.RunApplication(
-            app.Initialize,
-            app.Update,
-            app.HandleEvent,
-            app.Cleanup
-            );
-
-        Console.WriteLine($"Application finished with exit code: {exitCode}");
-
-        /*
+        
         var world = new World();
 
 
@@ -58,7 +42,6 @@ static class Program
             // Keep the application running
             Thread.Sleep(1000);
         }
-        */
     }
 }
 
