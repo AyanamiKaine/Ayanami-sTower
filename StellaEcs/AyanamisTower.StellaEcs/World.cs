@@ -558,14 +558,27 @@ public class World
     /// </summary>
     public bool RemoveSystemByName(string systemName)
     {
+        // Remove from the primary systems list
         var systemToRemove = _systems.FirstOrDefault(s => s.Name == systemName);
+        var removed = false;
         if (systemToRemove != null)
         {
             _systems.Remove(systemToRemove);
             _systemOwners.Remove(systemToRemove.GetType());
+            removed = true;
+        }
+
+        // Also remove any matching instances from the unmanaged list to avoid duplicates after re-registration
+        // This covers the hot-reload scenario where sorting uses _unmanagedSystems as the source of truth.
+        var unmanagedRemovedCount = _unmanagedSystems.RemoveAll(s => s.Name == systemName);
+        removed |= unmanagedRemovedCount > 0;
+
+        if (removed)
+        {
             _isSystemOrderDirty = true;
             return true;
         }
+
         return false;
     }
 
