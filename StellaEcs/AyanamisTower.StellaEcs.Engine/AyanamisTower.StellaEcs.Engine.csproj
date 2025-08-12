@@ -8,12 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\MoonWorks\MoonWorks.csproj" />
     <ProjectReference Include="..\AyanamisTower.StellaEcs.RestAPI\AyanamisTower.StellaEcs.RestAPI.csproj" />
     <ProjectReference Include="..\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="ppy.SDL3-CS" />
-  </ItemGroup>
 
 </Project>

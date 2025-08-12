@@ -1,6 +1,8 @@
 <Project>
   <!-- Override repo-wide settings for third-party projects -->
   <PropertyGroup Condition="'$(MSBuildProjectName)' == 'MoonWorks'">
+      <!-- Suppress missing XML comment warnings globally -->
+    <NoWarn>$(NoWarn);CS1591;CS8625;CS1573;CS8618;CS0649;CS1572;RCS1242;CS8603;CS8600;CS8602;RCS1263;CS8604;CS8765;CS8601</NoWarn>
     <!-- Do not fail the build on warnings for third-party code -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <!-- Turn off analyzers if they are too noisy for external code -->
