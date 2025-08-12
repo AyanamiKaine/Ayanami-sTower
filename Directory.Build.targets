@@ -1,0 +1,15 @@
+<Project>
+  <!-- Override repo-wide settings for third-party projects -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'MoonWorks'">
+    <!-- Do not fail the build on warnings for third-party code -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- Turn off analyzers if they are too noisy for external code -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <!-- Avoid XML doc warnings/errors from missing comments -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- In case any analyzers promote warnings to errors via analysis level -->
+    <AnalysisLevel>none</AnalysisLevel>
+    <!-- Ensure analyzer warnings aren't escalated to errors -->
+    <CodeAnalysisTreatWarningsAsErrors>false</CodeAnalysisTreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
