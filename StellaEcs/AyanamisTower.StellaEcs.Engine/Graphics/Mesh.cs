@@ -50,6 +50,19 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     }
 
     /// <summary>
+    /// Vertex struct for lit textured 3D meshes (pos, normal, uv)
+    /// </summary>
+    public struct Vertex3DTexturedLit(Vector3 pos, Vector3 nrm, Vector2 uv)
+    {
+        /// <summary>Position of the vertex in 3D space.</summary>
+        public Vector3 Pos = pos;
+        /// <summary>Surface normal in 3D space.</summary>
+        public Vector3 Nrm = nrm;
+        /// <summary>Texture coordinates (UV).</summary>
+        public Vector2 UV = uv;
+    }
+
+    /// <summary>
     /// Creates a colored cube mesh centered at origin with given size.
     /// </summary>
     public static Mesh CreateBox3D(GraphicsDevice device, float size)
@@ -168,6 +181,102 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         itransfer.Dispose();
 
         return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
+    }
+
+    /// <summary>
+    /// Generates a UV sphere with equirectangular mapping suitable for planet textures.
+    /// </summary>
+    /// <param name="device">Graphics device.</param>
+    /// <param name="radius">Sphere radius.</param>
+    /// <param name="slices">Number of longitudinal segments (around the equator).</param>
+    /// <param name="stacks">Number of latitudinal segments (from pole to pole).</param>
+    /// <returns>A mesh with <see cref="Vertex3DTexturedLit"/> vertices and indexed triangles.</returns>
+    public static Mesh CreateSphere3DTexturedLit(GraphicsDevice device, float radius, int slices = 64, int stacks = 32)
+    {
+        slices = Math.Max(3, slices);
+        stacks = Math.Max(2, stacks);
+
+        // We duplicate the seam at u=0/1 by adding an extra column of vertices.
+        int vertsPerRow = slices + 1;
+        int vertCount = vertsPerRow * (stacks + 1);
+        var verts = new Vertex3DTexturedLit[vertCount];
+
+        int vi = 0;
+        for (int y = 0; y <= stacks; y++)
+        {
+            float v = (float)y / stacks;                 // 0..1 from north(0) to south(1)
+            float theta = v * MathF.PI;                  // 0..PI
+            float sinTheta = MathF.Sin(theta);
+            float cosTheta = MathF.Cos(theta);
+
+            for (int x = 0; x <= slices; x++)
+            {
+                float u = (float)x / slices;            // 0..1 wraps around
+                float phi = u * MathF.Tau;               // 0..2PI
+                float sinPhi = MathF.Sin(phi);
+                float cosPhi = MathF.Cos(phi);
+
+                var nx = sinTheta * cosPhi;
+                var ny = cosTheta;
+                var nz = sinTheta * sinPhi;
+
+                var n = new Vector3(nx, ny, nz);
+                var p = n * radius;
+                verts[vi++] = new Vertex3DTexturedLit(p, Vector3.Normalize(n), new Vector2(u, 1f - v));
+            }
+        }
+
+        // Indices (two triangles per quad on the grid)
+        int quadsX = slices;
+        int quadsY = stacks;
+        var indices = new List<uint>(quadsX * quadsY * 6);
+        for (int y = 0; y < stacks; y++)
+        {
+            for (int x = 0; x < slices; x++)
+            {
+                int i0 = (y * vertsPerRow) + x;
+                int i1 = i0 + 1;
+                int i2 = i0 + vertsPerRow;
+                int i3 = i2 + 1;
+
+                indices.Add((uint)i0);
+                indices.Add((uint)i2);
+                indices.Add((uint)i1);
+
+                indices.Add((uint)i1);
+                indices.Add((uint)i2);
+                indices.Add((uint)i3);
+            }
+        }
+
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DTexturedLit>(device, "SphereTexturedLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
+        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "SphereTexturedLitIB", BufferUsageFlags.Index, (uint)indices.Count);
+
+        var vtransfer = TransferBuffer.Create<Vertex3DTexturedLit>(device, "SphereTexturedLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
+        var vspan = vtransfer.Map<Vertex3DTexturedLit>(cycle: false);
+        verts.AsSpan().CopyTo(vspan);
+        vtransfer.Unmap();
+
+        var itransfer = TransferBuffer.Create<uint>(device, "SphereTexturedLitIBUpload", TransferBufferUsage.Upload, (uint)indices.Count);
+        var ispan = itransfer.Map<uint>(cycle: false);
+        // Copy list to span without CollectionsMarshal to avoid extra dependency
+        for (int i = 0; i < indices.Count; i++)
+        {
+            ispan[i] = indices[i];
+        }
+        itransfer.Unmap();
+
+        var cmdbuf = device.AcquireCommandBuffer();
+        var copy = cmdbuf.BeginCopyPass();
+        copy.UploadToBuffer(vtransfer, vb, false);
+        copy.UploadToBuffer(itransfer, ib, false);
+        cmdbuf.EndCopyPass(copy);
+        device.Submit(cmdbuf);
+
+        vtransfer.Dispose();
+        itransfer.Dispose();
+
+        return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Count);
     }
 
     /// <summary>

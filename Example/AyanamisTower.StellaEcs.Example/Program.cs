@@ -13,6 +13,7 @@ using MoonWorks.Graphics.Font;
 using MoonWorks.Input;
 using System.Numerics;
 using Vector3 = System.Numerics.Vector3;
+using StbImageSharp;
 
 namespace AyanamisTower.StellaEcs.Example;
 
@@ -54,6 +55,7 @@ internal static class Program
         // Camera controls
         private float mouseSensitivity = 0.0015f; // Reduced for relative mouse mode
         private float moveSpeed = 15f;
+        private Texture? venusTexture;
 
         public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
@@ -132,6 +134,19 @@ internal static class Program
                 .Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z))
                 .Set(new Mesh3D { Mesh = ecsLightSphereMesh })
                 .Set(new RenderLit3D());
+
+            // Load Venus texture from Assets/Venus.png and create a textured sphere
+            venusTexture = LoadTextureFromAssets("Assets/Venus.jpg");
+            if (venusTexture != null)
+            {
+                defaultRenderer.AddTexturedSphereLit(
+                    model: () => Matrix4x4.CreateTranslation(new Vector3(0, 1.2f, 0)),
+                    texture: venusTexture,
+                    radius: 1.0f,
+                    slices: 96,
+                    stacks: 48
+                );
+            }
 
 
             // Keep the 2D rect in pixel space
@@ -344,7 +359,32 @@ internal static class Program
             try { rectMesh.Dispose(); } catch { }
             try { ecsCubeMesh?.Dispose(); } catch { }
             try { ecsLightSphereMesh?.Dispose(); } catch { }
+            try { venusTexture?.Dispose(); } catch { }
             base.Destroy();
+        }
+
+        private Texture? LoadTextureFromAssets(string relativePath)
+        {
+            // Read bytes via RootTitleStorage
+            if (!RootTitleStorage.Exists(relativePath))
+            {
+                Logger.LogWarn($"Texture not found: {relativePath}");
+                return null;
+            }
+            if (!RootTitleStorage.GetFileSize(relativePath, out var size)) return null;
+            var bytes = new byte[size];
+            RootTitleStorage.ReadFile(relativePath, bytes);
+
+            // Decode with StbImageSharp into RGBA8
+            using var ms = new MemoryStream(bytes);
+            var image = ImageResult.FromStream(ms, ColorComponents.RedGreenBlueAlpha);
+            if (image == null)
+            {
+                Logger.LogWarn($"Failed to decode image: {relativePath}");
+                return null;
+            }
+            // Create MoonWorks texture and upload
+            return defaultRenderer!.CreateTextureFromRgba8Pixels((uint)image.Width, (uint)image.Height, image.Data, srgb: true);
         }
     }
 }

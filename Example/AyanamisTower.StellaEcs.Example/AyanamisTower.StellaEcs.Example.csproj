@@ -24,4 +24,8 @@
     <ProjectReference Include="..\..\StellaEcs\AyanamisTower.StellaEcs.RestAPI\AyanamisTower.StellaEcs.RestAPI.csproj" />
     <ProjectReference Include="..\..\StellaEcs\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StbImageSharp" />
+  </ItemGroup>
 </Project>

@@ -7,6 +7,7 @@ using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Graphics.Font;
 using MoonWorks.Storage;
+using System.IO;
 
 namespace AyanamisTower.StellaEcs.Engine.DefaultRenderer;
 
@@ -22,6 +23,7 @@ public sealed class DefaultRenderer : IDisposable
     private readonly MeshInstancesRenderStep _quad2DStep;
     private readonly TextOverlayRenderStep _textStep;
     private readonly LitMeshInstancesRenderStep _mesh3DLitStep;
+    private readonly Dictionary<Texture, TexturedLitMeshInstancesRenderStep> _texturedSteps = new();
 
     private readonly TextBatch _textBatch;
     private readonly GraphicsPipeline _textPipeline;
@@ -203,11 +205,44 @@ public sealed class DefaultRenderer : IDisposable
         );
         _mesh3DLitStep = new LitMeshInstancesRenderStep(lit3D);
 
+        // Textured-lit pipeline: Vertex3DTexturedLit (pos/nrm/uv) + texture at t0/s0
+        var (txVS, txPS) = CompileHlsl(rootTitleStorage, "Assets/LitMeshTextured.hlsl", namePrefix: "LitTex");
+        var texturedVertexInput = new VertexInputState
+        {
+            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DTexturedLit>(0)],
+            VertexAttributes =
+            [
+                new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 },
+                new VertexAttribute { Location = 1, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() },
+                new VertexAttribute { Location = 2, BufferSlot = 0, Format = VertexElementFormat.Float2, Offset = (uint)(System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() * 2) }
+            ]
+        };
+        _texturedLitPipeline = GraphicsPipeline.Create(
+                _device,
+                new GraphicsPipelineCreateInfo
+                {
+                    VertexShader = txVS,
+                    FragmentShader = txPS,
+                    VertexInputState = texturedVertexInput,
+                    PrimitiveType = PrimitiveType.TriangleList,
+                    RasterizerState = RasterizerState.CCW_CullBack,
+                    MultisampleState = MultisampleState.None,
+                    DepthStencilState = new DepthStencilState { EnableDepthTest = true, EnableDepthWrite = true, EnableStencilTest = false, CompareOp = CompareOp.Less },
+                    TargetInfo = new GraphicsPipelineTargetInfo
+                    {
+                        ColorTargetDescriptions = [new ColorTargetDescription { Format = window.SwapchainFormat, BlendState = ColorTargetBlendState.NoBlend }],
+                        HasDepthStencilTarget = true,
+                        DepthStencilFormat = _device.SupportedDepthFormat
+                    },
+                    Name = "TexturedLit3D"
+                }
+            );
+
         _pipeline
-            .Add(_mesh3DStep)
-            .Add(_mesh3DLitStep)
-            .Add(_quad2DStep)
-            .Add(_textStep);
+                .Add(_mesh3DStep)
+                .Add(_mesh3DLitStep)
+                .Add(_quad2DStep)
+                .Add(_textStep);
 
         _pipeline.Initialize(_device);
     }
@@ -216,6 +251,8 @@ public sealed class DefaultRenderer : IDisposable
     /// The underlying render pipeline that executes the steps.
     /// </summary>
     public RenderPipeline Pipeline => _pipeline;
+
+    private readonly GraphicsPipeline _texturedLitPipeline;
 
     /// <summary>
     /// Adds a rotating cube or any 3D mesh instance.
@@ -405,6 +442,56 @@ public sealed class DefaultRenderer : IDisposable
     }
 
     /// <summary>
+    /// Creates a Texture from raw RGBA8 pixel data and uploads it.
+    /// </summary>
+    public Texture CreateTextureFromRgba8Pixels(uint width, uint height, ReadOnlySpan<byte> pixels, bool srgb = true)
+    {
+        var tex = Texture.Create2D(_device, width, height, srgb ? TextureFormat.R8G8B8A8UnormSRGB : TextureFormat.R8G8B8A8Unorm, TextureUsageFlags.Sampler);
+        if (tex == null) throw new InvalidOperationException("Failed to create texture.");
+        var tbuf = TransferBuffer.Create<byte>(_device, "TexUpload", TransferBufferUsage.Upload, (uint)pixels.Length);
+        var span = tbuf.Map<byte>(cycle: false);
+        pixels.CopyTo(span);
+        tbuf.Unmap();
+        var cmdbuf = _device.AcquireCommandBuffer();
+        var copy = cmdbuf.BeginCopyPass();
+        // Use explicit region to ensure depth=1 for 2D textures
+        copy.UploadToTexture(
+            new TextureTransferInfo { TransferBuffer = tbuf.Handle, Offset = 0 },
+            new TextureRegion { Texture = tex.Handle, MipLevel = 0, Layer = 0, X = 0, Y = 0, Z = 0, W = width, H = height, D = 1 },
+            false
+        );
+        cmdbuf.EndCopyPass(copy);
+        _device.Submit(cmdbuf);
+        tbuf.Dispose();
+        return tex;
+    }
+
+    /// <summary>
+    /// Adds a lit textured 3D mesh instance (requires Vertex3DTexturedLit layout) with the given texture.
+    /// Multiple textures create independent steps internally.
+    /// </summary>
+    public void AddTextured3DLit(Func<Mesh> mesh, Func<Matrix4x4> model, Texture texture)
+    {
+        if (!_texturedSteps.TryGetValue(texture, out var step))
+        {
+            step = new TexturedLitMeshInstancesRenderStep(_texturedLitPipeline, texture, _device.LinearSampler);
+            _texturedSteps.Add(texture, step);
+            _pipeline.Add(step);
+        }
+        step.AddInstance(mesh, model);
+    }
+
+    /// <summary>
+    /// Convenience: creates and adds a textured UV-sphere instance.
+    /// </summary>
+    public void AddTexturedSphereLit(Func<Matrix4x4> model, Texture texture, float radius = 1f, int slices = 64, int stacks = 32)
+    {
+        var mesh = Mesh.CreateSphere3DTexturedLit(_device, radius, slices, stacks);
+        _ownedMeshes.Add(mesh);
+        AddTextured3DLit(() => mesh, model, texture);
+    }
+
+    /// <summary>
     /// Clears all lit 3D instances queued so far. Useful for ECS-driven per-frame submissions.
     /// </summary>
     public void ClearLitInstances() => _mesh3DLitStep.ClearInstances();
@@ -412,5 +499,12 @@ public sealed class DefaultRenderer : IDisposable
     /// <summary>
     /// Sets the point light (sun-like) parameters used by the lit 3D pipeline.
     /// </summary>
-    public void SetPointLight(Vector3 position, Vector3 color, float ambient = 0.2f) => _mesh3DLitStep.SetLight(position, color, ambient);
+    public void SetPointLight(Vector3 position, Vector3 color, float ambient = 0.2f)
+    {
+        _mesh3DLitStep.SetLight(position, color, ambient);
+        foreach (var step in _texturedSteps.Values)
+        {
+            step.SetLight(position, color, ambient);
+        }
+    }
 }
