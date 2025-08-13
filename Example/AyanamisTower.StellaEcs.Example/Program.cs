@@ -45,8 +45,8 @@ internal static class Program
         private Vector3 cubePos = new(0, 0, 0);
         private Vector3 lightPos = new(2f, 3f, 2f); // Store light position for debug display
         // Camera controls
-        private float mouseSensitivity = 0.0005f; // Reduced for relative mouse mode
-        private float moveSpeed = 5f;
+        private float mouseSensitivity = 0.0015f; // Reduced for relative mouse mode
+        private float moveSpeed = 15f;
 
         public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
@@ -171,7 +171,8 @@ internal static class Program
                 var mouseDelta = GetMouseDelta();
                 if (mouseDelta != Vector2.Zero)
                 {
-                    Camera.Rotate(-mouseDelta.X * mouseSensitivity, -mouseDelta.Y * mouseSensitivity);
+                    // Positive yaw when moving mouse right; keep pitch inverted for natural feel
+                    Camera.Rotate(mouseDelta.X * mouseSensitivity, -mouseDelta.Y * mouseSensitivity);
                 }
             }
 
@@ -252,11 +253,12 @@ internal static class Program
             }
 
             // Place cube on plane Z=0 at mouse position when right-clicking
+            /*
             if (Inputs.Mouse.RightButton.IsPressed && MouseToPlaneZ(out var wp, planeZ: 0f))
             {
                 cubePos = wp;
             }
-
+            */
             // Update FPS in window title about twice a second
             fpsFrames++;
             fpsTimer += (float)delta.TotalSeconds;
@@ -268,7 +270,7 @@ internal static class Program
                 fpsFrames = 0;
                 fpsTimer = 0f;
             }
-            world.Update(1f / 60f); // Update with delta time
+            world.Update((float)fps); // Update with delta time
         }
 
         private static Vector3 Saturate(Vector3 v)
