@@ -113,4 +113,9 @@ public sealed class LitMeshInstancesRenderStep(GraphicsPipeline pipeline) : IRen
 
     /// <inheritdoc/>
     public void Dispose() => _instances.Clear();
+
+    /// <summary>
+    /// Clears all queued instances. Useful for per-frame submission patterns.
+    /// </summary>
+    public void ClearInstances() => _instances.Clear();
 }

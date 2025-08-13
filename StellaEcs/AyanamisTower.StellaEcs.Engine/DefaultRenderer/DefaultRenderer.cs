@@ -375,6 +375,11 @@ public sealed class DefaultRenderer : IDisposable
     }
 
     /// <summary>
+    /// Clears all lit 3D instances queued so far. Useful for ECS-driven per-frame submissions.
+    /// </summary>
+    public void ClearLitInstances() => _mesh3DLitStep.ClearInstances();
+
+    /// <summary>
     /// Sets the point light (sun-like) parameters used by the lit 3D pipeline.
     /// </summary>
     public void SetPointLight(Vector3 position, Vector3 color, float ambient = 0.2f) => _mesh3DLitStep.SetLight(position, color, ambient);

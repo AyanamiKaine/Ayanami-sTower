@@ -5,6 +5,8 @@ using AyanamisTower.StellaEcs.Engine;
 using AyanamisTower.StellaEcs.Engine.Graphics;
 using AyanamisTower.StellaEcs.Engine.DefaultRenderer;
 using AyanamisTower.StellaEcs.Engine.Rendering;
+using AyanamisTower.StellaEcs.Engine.Ecs;
+using AyanamisTower.StellaEcs.Engine.Components;
 using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Graphics.Font;
@@ -31,6 +33,11 @@ internal static class Program
         private Vector3 rectColor = new(1f, 0f, 0f); // Start as red
         private float time;
         private float rectSize = 150f; // pixels
+                                       // ECS-rendered lit meshes
+        private Mesh? ecsCubeMesh;
+        private Mesh? ecsLightSphereMesh;
+        private Entity cubeEntity;
+        private Entity lightSphereEntity;
         // Add: FPS counter & window title
         private readonly string baseTitle = "Hello MoonWorks - Shaders";
         private float fpsTimer;
@@ -89,18 +96,17 @@ internal static class Program
             defaultRenderer = UseDefaultRenderer();
             // Set a simple sun-like point light
             defaultRenderer.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
-            // Use a lit 3D cube (white albedo) so lighting is visible
-            defaultRenderer.AddCubeLit(
-                () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0) * Matrix4x4.CreateTranslation(cubePos),
-                new Vector3(1f, 1f, 1f), // albedo
-                0.7f
-            );
-            // Add a small bright sphere at the light position to visualize where the light is
-            defaultRenderer.AddSphereLit(
-                () => Matrix4x4.CreateTranslation(lightPos), // Follow the current light position
-                new Vector3(1f, 1f, 0.2f), // bright yellow/white
-                0.1f // small radius
-            );
+            // Bridge ECS -> Renderer: register sync system
+            world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));
+            // Create ECS entities for a lit cube and a lit debug light sphere
+            ecsCubeMesh = Mesh.CreateBox3DLit(GraphicsDevice, 0.7f, new Vector3(1f, 1f, 1f));
+            cubeEntity = world.CreateEntity()
+                .Set(new Position3D(cubePos.X, cubePos.Y, cubePos.Z))
+                .Set(new RenderMesh3DLit { Mesh = ecsCubeMesh });
+            ecsLightSphereMesh = Mesh.CreateSphere3DLit(GraphicsDevice, 0.1f, new Vector3(1f, 1f, 0.2f));
+            lightSphereEntity = world.CreateEntity()
+                .Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z))
+                .Set(new RenderMesh3DLit { Mesh = ecsLightSphereMesh });
             // Keep the 2D rect in pixel space
             defaultRenderer.AddQuad2D(
                 () => rectMesh,
@@ -207,6 +213,16 @@ internal static class Program
 
             // Update light position in renderer
             defaultRenderer?.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
+            // Keep ECS light sphere in sync with the current light position
+            if (lightSphereEntity.IsValid())
+            {
+                lightSphereEntity.Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z));
+            }
+            // Spin the ECS cube via a Rotation3D component
+            if (cubeEntity.IsValid())
+            {
+                cubeEntity.Set(Rotation3D.FromEulerRadians(pitch: time * 0.7f, yaw: time, roll: 0));
+            }
 
             // Rectangle hover + click detection (pixel space)
             {
@@ -270,7 +286,7 @@ internal static class Program
                 fpsFrames = 0;
                 fpsTimer = 0f;
             }
-            world.Update((float)fps); // Update with delta time
+            world.Update((float)delta.TotalSeconds); // Update with delta time
         }
 
         private static Vector3 Saturate(Vector3 v)
@@ -288,6 +304,8 @@ internal static class Program
         protected override void Destroy()
         {
             try { rectMesh.Dispose(); } catch { }
+            try { ecsCubeMesh?.Dispose(); } catch { }
+            try { ecsLightSphereMesh?.Dispose(); } catch { }
             base.Destroy();
         }
     }

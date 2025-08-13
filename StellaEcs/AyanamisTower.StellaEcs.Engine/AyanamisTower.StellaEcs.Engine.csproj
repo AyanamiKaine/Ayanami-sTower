@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\MoonWorks\MoonWorks.csproj" />
+    <ProjectReference Include="..\AyanamisTower.StellaEcs.Components\AyanamisTower.StellaEcs.Components.csproj" />
     <ProjectReference Include="..\AyanamisTower.StellaEcs.RestAPI\AyanamisTower.StellaEcs.RestAPI.csproj" />
     <ProjectReference Include="..\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
   </ItemGroup>
