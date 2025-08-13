@@ -12,7 +12,7 @@ namespace AyanamisTower.StellaEcs.Engine.Graphics;
 /// <param name="primitiveType"></param>
 /// <param name="indexBuffer"></param>
 /// <param name="indexCount"></param>
-public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, PrimitiveType primitiveType, MoonWorks.Graphics.Buffer? indexBuffer = null, int indexCount = 0)
+public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, PrimitiveType primitiveType, MoonWorks.Graphics.Buffer? indexBuffer = null, int indexCount = 0) : IDisposable
 {
     /// <summary>
     /// Vertex struct for 3D mesh generation
@@ -89,6 +89,10 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         copy.UploadToBuffer(itransfer, ib, false);
         cmdbuf.EndCopyPass(copy);
         device.Submit(cmdbuf);
+
+        // Dispose upload resources
+        vtransfer.Dispose();
+        itransfer.Dispose();
 
         return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
     }
@@ -249,6 +253,10 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         cmdbuf.EndCopyPass(copy);
         device.Submit(cmdbuf);
 
+        // Dispose upload resources
+        vtransfer.Dispose();
+        itransfer.Dispose();
+
         return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
     }
 
@@ -293,6 +301,10 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         cmdbuf.EndCopyPass(copy);
         device.Submit(cmdbuf);
 
+        // Dispose upload resources
+        vtransfer.Dispose();
+        itransfer.Dispose();
+
         return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
     }
 
@@ -306,5 +318,14 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     {
         // For brevity, just a quad for now; full 3D box can be added later
         return CreateQuad(device, size, size);
+    }
+
+    /// <summary>
+    /// Dispose GPU buffers owned by this mesh.
+    /// </summary>
+    public void Dispose()
+    {
+        try { VertexBuffer.Dispose(); } catch { }
+        try { IndexBuffer?.Dispose(); } catch { }
     }
 }

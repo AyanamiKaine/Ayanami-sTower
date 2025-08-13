@@ -26,6 +26,8 @@ public sealed class DefaultRenderer : IDisposable
     private readonly GraphicsPipeline _textPipeline;
     private Func<TextBatch, bool>? _overlayBuilder;
 
+    private readonly List<Mesh> _ownedMeshes = new();
+
     /// <summary>
     /// Creates a new instance of the DefaultRenderer.
     /// </summary>
@@ -203,19 +205,31 @@ public sealed class DefaultRenderer : IDisposable
     /// Adds a simple box mesh (cube) with size using a model provider.
     /// </summary>
     public void AddCube(Func<Matrix4x4> model, float size = 0.7f)
-        => AddMesh3D(() => Mesh.CreateBox3D(_device, size), model);
+    {
+        var mesh = Mesh.CreateBox3D(_device, size);
+        _ownedMeshes.Add(mesh);
+        AddMesh3D(() => mesh, model);
+    }
 
     /// <summary>
     /// Adds a simple box mesh (cube) with flat color using a model provider.
     /// </summary>
     public void AddCube(Func<Matrix4x4> model, Vector3 color, float size = 0.7f)
-        => AddMesh3D(() => Mesh.CreateBox3D(_device, size, color), model);
+    {
+        var mesh = Mesh.CreateBox3D(_device, size, color);
+        _ownedMeshes.Add(mesh);
+        AddMesh3D(() => mesh, model);
+    }
 
     /// <summary>
     /// Adds a simple quad with size and color using a model provider in 2D space.
     /// </summary>
     public void AddQuad(Func<Matrix4x4> model, float w = 1f, float h = 1f, Vector3? color = null)
-        => AddQuad2D(() => Mesh.CreateQuad(_device, w, h, color ?? new Vector3(1, 1, 1)), model);
+    {
+        var mesh = Mesh.CreateQuad(_device, w, h, color ?? new Vector3(1, 1, 1));
+        _ownedMeshes.Add(mesh);
+        AddQuad2D(() => mesh, model);
+    }
 
     /// <summary>
     /// Creates a graphics pipeline from custom shaders and a vertex layout. Keeps format/state sensible by default.
@@ -285,6 +299,11 @@ public sealed class DefaultRenderer : IDisposable
     {
         _pipeline.Dispose();
         _textBatch.Dispose();
+        foreach (var m in _ownedMeshes)
+        {
+            try { m.Dispose(); } catch { }
+        }
+        _ownedMeshes.Clear();
         // Pipelines are owned by GraphicsDevice and freed on device destroy; safe to skip explicit dispose.
     }
 }

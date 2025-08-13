@@ -27,7 +27,6 @@ internal static class Program
         private World world = new();
         // Renderer and meshes
         private DefaultRenderer? defaultRenderer;
-        private Mesh cubeMesh;
         private Mesh rectMesh;
         private Vector3 rectColor = new(1f, 0f, 0f); // Start as red
         private float time;
@@ -63,9 +62,6 @@ internal static class Program
                 .Set(new Velocity2D(1, 1));
 
             world.EnableRestApi();
-
-            // Create cube mesh
-            cubeMesh = Mesh.CreateBox3D(GraphicsDevice, 0.7f);
 
             // Camera is provided by App base class (this.Camera)
 
@@ -180,6 +176,7 @@ internal static class Program
                     if (!ApproximatelyEqual(displayedRectColor, targetColor))
                     {
                         displayedRectColor = targetColor;
+                        rectMesh.Dispose();
                         rectMesh = Mesh.CreateQuad(GraphicsDevice, rectSize, rectSize, displayedRectColor);
                     }
                 }
@@ -195,13 +192,14 @@ internal static class Program
                     if (!ApproximatelyEqual(displayedRectColor, targetColor))
                     {
                         displayedRectColor = targetColor;
+                        rectMesh.Dispose();
                         rectMesh = Mesh.CreateQuad(GraphicsDevice, rectSize, rectSize, displayedRectColor);
                     }
                 }
             }
 
-            // Place cube on ground at mouse position when right-clicking
-            if (Inputs.Mouse.RightButton.IsPressed && MouseToGround(out var wp, groundY: 0f))
+            // Place cube on plane Z=0 at mouse position when right-clicking
+            if (Inputs.Mouse.RightButton.IsPressed && MouseToPlaneZ(out var wp, planeZ: 0f))
             {
                 cubePos = wp;
             }
@@ -231,6 +229,11 @@ internal static class Program
             return MathF.Abs(a.X - b.X) < eps && MathF.Abs(a.Y - b.Y) < eps && MathF.Abs(a.Z - b.Z) < eps;
         }
 
-        // Draw/Destroy are handled by App
+        // Ensure rect mesh is disposed when the app shuts down
+        protected override void Destroy()
+        {
+            try { rectMesh.Dispose(); } catch { }
+            base.Destroy();
+        }
     }
 }

@@ -200,6 +200,18 @@ public class App : Game
     }
 
     /// <summary>
+    /// Convenience: convert current mouse position to a world-space point on the Z-plane (Z = planeZ).
+    /// Useful with the default camera at Z>0 looking toward the origin.
+    /// </summary>
+    protected bool MouseToPlaneZ(out Vector3 worldPoint, float planeZ = 0f)
+    {
+        var ray = ScreenPointToRay(Inputs.Mouse.X, Inputs.Mouse.Y);
+        var planePt = new Vector3(0, 0, planeZ);
+        var planeN = Vector3.UnitZ;
+        return RaycastPlane(ray, planePt, planeN, out worldPoint);
+    }
+
+    /// <summary>
     /// Converts a screen pixel coordinate to orthographic pixel space used by DefaultRenderer's 2D step.
     /// </summary>
     protected Vector2 ScreenToOrthoPixel(int x, int y) => new Vector2(x, y);
