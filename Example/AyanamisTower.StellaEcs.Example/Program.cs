@@ -116,7 +116,8 @@ internal static class Program
             defaultRenderer.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
 
             // Configure shadow mapping for solar system scale (planets orbit out to ~21 units)
-            defaultRenderer.SetShadows(farPlane: 50f, depthBias: 0.005f);
+            // Use near=1.0 to avoid precision issues with the Sun (radius 1.5) at origin
+            defaultRenderer.SetShadows(nearPlane: 1.0f, farPlane: 50f, depthBias: 0.02f);
 
             // Bridge ECS -> Renderer: register sync system
             world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));
@@ -125,7 +126,7 @@ internal static class Program
             // Build a small solar system using textures in Assets/
             // Sun
             sunTexture = TryLoadTextureAny("Assets/Sun");
-            if (sunTexture != null && false)
+            if (sunTexture != null)
             {
                 sunMesh = Mesh.CreateSphere3DTexturedLit(GraphicsDevice, radius: 1.5f, slices: 128, stacks: 64);
                 sunEntity = world.CreateEntity()
@@ -133,6 +134,7 @@ internal static class Program
                     .Set(new Mesh3D { Mesh = sunMesh })
                     .Set(new Texture2DRef { Texture = sunTexture })
                     .Set(new RenderTexturedLit3D())
+                    .Set(new NoShadowCasting()) // Sun shouldn't cast shadows since it's the light source
                     .Set(Rotation3D.Identity)
                     .Set(new AngularVelocity3D(new Vector3(0f, 0.15f, 0f)));
                 planetTextures.Add(sunTexture);

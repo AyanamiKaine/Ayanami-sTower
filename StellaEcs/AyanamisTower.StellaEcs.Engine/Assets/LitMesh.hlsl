@@ -58,8 +58,12 @@ float SampleShadow(float3 lightToPoint, float currentDepth, float bias)
     // Normalize direction and sample stored depth
     float3 dir = normalize(lightToPoint);
     float stored = ShadowCube.Sample(ShadowSamp, dir).r;
-    // 1 if lit, 0 if in shadow (apply bias)
-    return currentDepth - bias <= stored ? 1.0 : 0.3; // 0.3 ambient in shadow
+    
+    // Debug: if stored depth is very close to 1.0 (clear value), there's no shadow caster in that direction
+    if (stored > 0.99) return 1.0; // No shadow caster, fully lit
+    
+    // Compare depths with bias
+    return currentDepth <= stored + bias ? 1.0 : 0.3; // 0.3 ambient in shadow
 }
 
 float4 PSMain(VSOutput input) : SV_Target

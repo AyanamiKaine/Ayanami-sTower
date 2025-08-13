@@ -44,8 +44,12 @@ public sealed class RenderSyncSystem3DTexturedLit : ISystem
         // Clear any previous frame textured-lit instances
         _renderer.ClearTexturedLitInstances();
 
+        int entityCount = 0;
+        int shadowCasterCount = 0;
+
         foreach (var entity in world.Query(typeof(Position3D), typeof(Mesh3D), typeof(Texture2DRef), typeof(RenderTexturedLit3D)))
         {
+            entityCount++;
             var pos = world.GetComponent<Position3D>(entity).Value;
             var mesh = world.GetComponent<Mesh3D>(entity).Mesh;
             var texture = world.GetComponent<Texture2DRef>(entity).Texture;
@@ -62,7 +66,16 @@ public sealed class RenderSyncSystem3DTexturedLit : ISystem
                 model = Matrix4x4.CreateScale(scl) * model;
             }
 
-            _renderer.AddTextured3DLit(() => mesh, () => model, texture);
+            bool castsShadows = !world.HasComponent<NoShadowCasting>(entity);
+            if (castsShadows) shadowCasterCount++;
+
+            _renderer.AddTextured3DLit(() => mesh, () => model, texture, castsShadows);
+        }
+
+        // Debug output every 60 frames (~1 second at 60fps)
+        if (System.Environment.TickCount % 1000 < 16) // approximately once per second
+        {
+            Console.WriteLine($"TexturedLit: {entityCount} entities, {shadowCasterCount} shadow casters");
         }
     }
 }

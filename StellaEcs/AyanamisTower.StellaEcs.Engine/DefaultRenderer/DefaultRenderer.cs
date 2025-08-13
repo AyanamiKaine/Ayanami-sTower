@@ -185,6 +185,48 @@ public sealed class DefaultRenderer : IDisposable
                 new VertexAttribute { Location = 2, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)(System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() * 2 + System.Runtime.InteropServices.Marshal.SizeOf<Vector2>()) } // col
             ]
         };
+
+        // Shadow depth cubemap pre-pass (must be created before lit pipelines to ensure proper descriptor layout)
+        var (shadowVS, shadowPS) = CompileHlsl(rootTitleStorage, "Assets/ShadowDepthCube.hlsl", namePrefix: "Shadow");
+        var shadowInput = new VertexInputState
+        {
+            // Use the same stride as our meshes (Vertex3DMaterial); only POSITION at location 0 is consumed.
+            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DMaterial>(0)],
+            VertexAttributes = [new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 }]
+        };
+        var shadowPipeline = GraphicsPipeline.Create(
+            _device,
+            new GraphicsPipelineCreateInfo
+            {
+                VertexShader = shadowVS,
+                FragmentShader = shadowPS,
+                VertexInputState = shadowInput,
+                PrimitiveType = PrimitiveType.TriangleList,
+                RasterizerState = RasterizerState.CCW_CullBack,
+                MultisampleState = MultisampleState.None,
+                DepthStencilState = DepthStencilState.Disable,
+                TargetInfo = new GraphicsPipelineTargetInfo
+                {
+                    ColorTargetDescriptions = [new ColorTargetDescription { Format = TextureFormat.R8Unorm, BlendState = ColorTargetBlendState.NoBlend }]
+                },
+                Name = "ShadowCube"
+            }
+        );
+        _shadowStep = new ShadowCubeRenderStep(_device, shadowPipeline, size: 512);
+        _shadowStep.Initialize(_device);
+
+        // Create a clamp sampler for the shadow cubemap
+        _shadowSampler = Sampler.Create(_device, "ShadowSampler", new SamplerCreateInfo
+        {
+            MinFilter = Filter.Linear,
+            MagFilter = Filter.Linear,
+            MipmapMode = SamplerMipmapMode.Linear,
+            AddressModeU = SamplerAddressMode.ClampToEdge,
+            AddressModeV = SamplerAddressMode.ClampToEdge,
+            AddressModeW = SamplerAddressMode.ClampToEdge,
+            MaxLod = 1000
+        });
+
         var lit3D = GraphicsPipeline.Create(
             _device,
             new GraphicsPipelineCreateInfo
@@ -206,6 +248,12 @@ public sealed class DefaultRenderer : IDisposable
             }
         );
         _mesh3DLitStep = new LitMeshInstancesRenderStep(lit3D);
+
+        // Set shadow map for untextured lit step
+        if (_shadowStep != null && _shadowSampler != null)
+        {
+            _mesh3DLitStep.SetShadowMap(_shadowStep.CubeTexture, _shadowSampler);
+        }
 
         // Textured-lit pipeline: Vertex3DTexturedLit (pos/nrm/uv) + texture at t0/s0
         var (txVS, txPS) = CompileHlsl(rootTitleStorage, "Assets/LitMeshTextured.hlsl", namePrefix: "LitTex");
@@ -240,59 +288,18 @@ public sealed class DefaultRenderer : IDisposable
                 }
             );
 
-        // Shadow depth cubemap pre-pass (rendered to color cube)
-        var (shadowVS, shadowPS) = CompileHlsl(rootTitleStorage, "Assets/ShadowDepthCube.hlsl", namePrefix: "Shadow");
-        var shadowInput = new VertexInputState
+        if (_shadowStep != null)
         {
-            // Use the same stride as our meshes (Vertex3DMaterial); only POSITION at location 0 is consumed.
-            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DMaterial>(0)],
-            VertexAttributes = [new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 }]
-        };
-        var shadowPipeline = GraphicsPipeline.Create(
-            _device,
-            new GraphicsPipelineCreateInfo
-            {
-                VertexShader = shadowVS,
-                FragmentShader = shadowPS,
-                VertexInputState = shadowInput,
-                PrimitiveType = PrimitiveType.TriangleList,
-                RasterizerState = RasterizerState.CCW_CullBack,
-                MultisampleState = MultisampleState.None,
-                DepthStencilState = DepthStencilState.Disable,
-                TargetInfo = new GraphicsPipelineTargetInfo
-                {
-                    ColorTargetDescriptions = [new ColorTargetDescription { Format = TextureFormat.R8Unorm, BlendState = ColorTargetBlendState.NoBlend }]
-                },
-                Name = "ShadowCube"
-            }
-        );
-        _shadowStep = new ShadowCubeRenderStep(_device, shadowPipeline, size: 512);
+            _pipeline.Add(_shadowStep);
+        }
 
         _pipeline
-                .Add(_shadowStep)
                 .Add(_mesh3DStep)
                 .Add(_mesh3DLitStep)
                 .Add(_quad2DStep)
                 .Add(_textStep);
 
         _pipeline.Initialize(_device);
-
-        // Create a clamp sampler for the shadow cubemap
-        _shadowSampler = Sampler.Create(_device, "ShadowSampler", new SamplerCreateInfo
-        {
-            MinFilter = Filter.Linear,
-            MagFilter = Filter.Linear,
-            MipmapMode = SamplerMipmapMode.Linear,
-            AddressModeU = SamplerAddressMode.ClampToEdge,
-            AddressModeV = SamplerAddressMode.ClampToEdge,
-            AddressModeW = SamplerAddressMode.ClampToEdge,
-            MaxLod = 1000
-        });
-
-        if (_shadowStep != null && _shadowSampler != null)
-        {
-            _mesh3DLitStep.SetShadowMap(_shadowStep.CubeTexture, _shadowSampler);
-        }
     }
 
     /// <summary>
@@ -439,8 +446,19 @@ public sealed class DefaultRenderer : IDisposable
     /// </summary>
     public void AddMesh3DLit(Func<Mesh> mesh, Func<Matrix4x4> model)
     {
+        AddMesh3DLit(mesh, model, castsShadows: true);
+    }
+
+    /// <summary>
+    /// Adds a lit 3D mesh instance with optional shadow casting control.
+    /// </summary>
+    public void AddMesh3DLit(Func<Mesh> mesh, Func<Matrix4x4> model, bool castsShadows)
+    {
         _mesh3DLitStep.AddInstance(mesh, model);
-        _shadowStep?.AddCaster(mesh, model);
+        if (castsShadows)
+        {
+            _shadowStep?.AddCaster(mesh, model);
+        }
     }
 
     /// <summary>
@@ -524,6 +542,14 @@ public sealed class DefaultRenderer : IDisposable
     /// </summary>
     public void AddTextured3DLit(Func<Mesh> mesh, Func<Matrix4x4> model, Texture texture)
     {
+        AddTextured3DLit(mesh, model, texture, castsShadows: true);
+    }
+
+    /// <summary>
+    /// Adds a lit textured 3D mesh instance with optional shadow casting control.
+    /// </summary>
+    public void AddTextured3DLit(Func<Mesh> mesh, Func<Matrix4x4> model, Texture texture, bool castsShadows)
+    {
         if (!_texturedSteps.TryGetValue(texture, out var step))
         {
             step = new TexturedLitMeshInstancesRenderStep(_texturedLitPipeline, texture, _device.LinearSampler);
@@ -535,7 +561,10 @@ public sealed class DefaultRenderer : IDisposable
             }
         }
         step.AddInstance(mesh, model);
-        _shadowStep?.AddCaster(mesh, model);
+        if (castsShadows)
+        {
+            _shadowStep?.AddCaster(mesh, model);
+        }
     }
 
     /// <summary>
@@ -587,11 +616,19 @@ public sealed class DefaultRenderer : IDisposable
     /// </summary>
     public void SetShadows(float farPlane, float depthBias)
     {
+        SetShadows(0.1f, farPlane, depthBias); // Use more reasonable near plane for larger scenes
+    }
+
+    /// <summary>
+    /// Sets global shadow parameters (near plane, far plane, bias) and updates all steps.
+    /// </summary>
+    public void SetShadows(float nearPlane, float farPlane, float depthBias)
+    {
         _mesh3DLitStep.SetShadowParams(farPlane, depthBias);
         foreach (var step in _texturedSteps.Values)
         {
             step.SetShadowParams(farPlane, depthBias);
         }
-        _shadowStep?.SetSettings(0.05f, farPlane, depthBias);
+        _shadowStep?.SetSettings(nearPlane, farPlane, depthBias);
     }
 }

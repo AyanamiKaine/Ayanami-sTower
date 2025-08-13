@@ -58,7 +58,7 @@ public sealed class RenderSyncSystem3DLit : ISystem
                 var scl = world.GetComponent<Size3D>(entity).Value;
                 model = Matrix4x4.CreateScale(scl) * model;
             }
-            _renderer.AddMesh3DLit(() => mesh, () => model);
+            _renderer.AddMesh3DLit(() => mesh, () => model, castsShadows: !world.HasComponent<NoShadowCasting>(entity));
         }
 
         // Obsolete compatibility path removed. Use Mesh3D + RenderLit3D.
