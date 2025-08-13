@@ -81,8 +81,12 @@ public class ComponentStorage<T> : IComponentStorage
         // A valid entry must:
         // 1. Not be the sentinel value (-1).
         // 2. Point to a valid index within the current count of dense elements.
-        // 3. The entity at that dense index must match the entity we are checking (accounts for entity generations).
-        return denseIndex != -1 && denseIndex < Count && _entities[denseIndex] == entity;
+        // 3. The stored entity must match on Id and Generation. We intentionally
+        //    do not require the World reference to be the same object to avoid
+        //    false negatives when the entity handle is reconstructed (e.g., via REST).
+        if (denseIndex == -1 || denseIndex >= Count) return false;
+        var stored = _entities[denseIndex];
+        return stored.Id == entity.Id && stored.Generation == entity.Generation;
     }
 
     /// <summary>
