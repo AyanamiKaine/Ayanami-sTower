@@ -144,26 +144,18 @@ public class App : Game
     protected Ray3 ScreenPointToRay(int x, int y)
     {
         var ctx = ComputeViewContext();
-        var vp = ctx.View * ctx.Projection;
-        if (!Matrix4x4.Invert(vp, out var invVP))
-        {
-            return new Ray3(Camera.Position, Vector3.Normalize(Camera.Target - Camera.Position));
-        }
-
         float ndcX = (2f * (x / (float)Math.Max(1, ctx.Width))) - 1f;
         float ndcY = 1f - (2f * (y / (float)Math.Max(1, ctx.Height)));
 
-        var nearClip = new Vector4(ndcX, ndcY, 0f, 1f);
-        var farClip = new Vector4(ndcX, ndcY, 1f, 1f);
+        var forward = Vector3.Normalize(Camera.Target - Camera.Position);
+        var right = Vector3.Normalize(Vector3.Cross(forward, Camera.Up));
+        var up = Vector3.Normalize(Vector3.Cross(right, forward));
 
-        var nearWorld4 = Vector4.Transform(nearClip, invVP);
-        var farWorld4 = Vector4.Transform(farClip, invVP);
-
-        var nearWorld = new Vector3(nearWorld4.X, nearWorld4.Y, nearWorld4.Z) / MathF.Max(nearWorld4.W, 1e-6f);
-        var farWorld = new Vector3(farWorld4.X, farWorld4.Y, farWorld4.Z) / MathF.Max(farWorld4.W, 1e-6f);
-
-        var dir = Vector3.Normalize(farWorld - nearWorld);
-        return new Ray3(nearWorld, dir);
+        float tanFov = MathF.Tan(Camera.Fov / 2f);
+        var dir = Vector3.Normalize(
+            forward + (ndcX * tanFov * Camera.Aspect) * right + (ndcY * tanFov) * up
+        );
+        return new Ray3(Camera.Position, dir);
     }
 
     /// <summary>
