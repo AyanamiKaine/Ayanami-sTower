@@ -498,6 +498,299 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     }
 
     /// <summary>
+    /// Creates a lit plane on the XZ plane centered at origin (Y=0), facing +Y.
+    /// </summary>
+    public static Mesh CreatePlane3DLit(GraphicsDevice device, float width, float depth, Vector3 color)
+    {
+        float hw = width / 2f;
+        float hd = depth / 2f;
+        var up = new Vector3(0, 1, 0);
+
+        // CCW when viewed from +Y (above)
+        var verts = new Vertex3DLit[]
+        {
+            new(new Vector3(-hw, 0, -hd), up, color.X, color.Y, color.Z), // 0
+            new(new Vector3(-hw, 0,  hd), up, color.X, color.Y, color.Z), // 1
+            new(new Vector3( hw, 0,  hd), up, color.X, color.Y, color.Z), // 2
+            new(new Vector3( hw, 0, -hd), up, color.X, color.Y, color.Z), // 3
+        };
+        var indices = new uint[] { 0, 1, 2, 0, 2, 3 };
+
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "PlaneLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
+        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "PlaneLitIB", BufferUsageFlags.Index, (uint)indices.Length);
+
+        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "PlaneLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
+        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        verts.AsSpan().CopyTo(vspan);
+        vtransfer.Unmap();
+
+        var itransfer = TransferBuffer.Create<uint>(device, "PlaneLitIBUpload", TransferBufferUsage.Upload, (uint)indices.Length);
+        var ispan = itransfer.Map<uint>(cycle: false);
+        indices.AsSpan().CopyTo(ispan);
+        itransfer.Unmap();
+
+        var cmdbuf = device.AcquireCommandBuffer();
+        var copy = cmdbuf.BeginCopyPass();
+        copy.UploadToBuffer(vtransfer, vb, false);
+        copy.UploadToBuffer(itransfer, ib, false);
+        cmdbuf.EndCopyPass(copy);
+        device.Submit(cmdbuf);
+
+        vtransfer.Dispose();
+        itransfer.Dispose();
+
+        return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
+    }
+
+    /// <summary>
+    /// Creates a lit cylinder aligned on Y axis, centered at origin.
+    /// </summary>
+    public static Mesh CreateCylinder3DLit(GraphicsDevice device, float radius, float height, Vector3 color, int radialSegments = 24, int heightSegments = 1, bool capped = true)
+    {
+        radialSegments = Math.Max(3, radialSegments);
+        heightSegments = Math.Max(1, heightSegments);
+        float halfH = height / 2f;
+
+        var verts = new List<Vertex3DLit>();
+        var indices = new List<uint>();
+
+        // Body rings (two rings: bottom/top per segment). Smooth shading with radial normals.
+        for (int i = 0; i < radialSegments; i++)
+        {
+            float a = (float)(i * (Math.PI * 2.0) / radialSegments);
+            float x = MathF.Cos(a);
+            float z = MathF.Sin(a);
+            var normal = new Vector3(x, 0, z);
+            // bottom and top
+            verts.Add(new Vertex3DLit(new Vector3(radius * x, -halfH, radius * z), normal, color.X, color.Y, color.Z)); // i*2
+            verts.Add(new Vertex3DLit(new Vector3(radius * x,  halfH, radius * z), normal, color.X, color.Y, color.Z)); // i*2+1
+        }
+
+        // Side quads
+        for (int i = 0; i < radialSegments; i++)
+        {
+            int ni = (i + 1) % radialSegments;
+            uint b_i = (uint)(i * 2);
+            uint t_i = b_i + 1;
+            uint b_n = (uint)(ni * 2);
+            uint t_n = b_n + 1;
+            // CCW from outside
+            indices.Add(b_i); indices.Add(b_n); indices.Add(t_n);
+            indices.Add(b_i); indices.Add(t_n); indices.Add(t_i);
+        }
+
+        // Caps
+        if (capped)
+        {
+            // Top cap
+            uint topCenterIndex = (uint)verts.Count;
+            verts.Add(new Vertex3DLit(new Vector3(0, halfH, 0), new Vector3(0, 1, 0), color.X, color.Y, color.Z));
+            var topStart = (uint)verts.Count;
+            for (int i = 0; i < radialSegments; i++)
+            {
+                float a = (float)(i * (Math.PI * 2.0) / radialSegments);
+                float x = MathF.Cos(a);
+                float z = MathF.Sin(a);
+                verts.Add(new Vertex3DLit(new Vector3(radius * x, halfH, radius * z), new Vector3(0, 1, 0), color.X, color.Y, color.Z));
+            }
+            for (int i = 0; i < radialSegments; i++)
+            {
+                uint i0 = (uint)i;
+                uint i1 = (uint)((i + 1) % radialSegments);
+                indices.Add(topCenterIndex); indices.Add(topStart + i0); indices.Add(topStart + i1);
+            }
+
+            // Bottom cap
+            uint bottomCenterIndex = (uint)verts.Count;
+            verts.Add(new Vertex3DLit(new Vector3(0, -halfH, 0), new Vector3(0, -1, 0), color.X, color.Y, color.Z));
+            var bottomStart = (uint)verts.Count;
+            for (int i = 0; i < radialSegments; i++)
+            {
+                float a = (float)(i * (Math.PI * 2.0) / radialSegments);
+                float x = MathF.Cos(a);
+                float z = MathF.Sin(a);
+                verts.Add(new Vertex3DLit(new Vector3(radius * x, -halfH, radius * z), new Vector3(0, -1, 0), color.X, color.Y, color.Z));
+            }
+            for (int i = 0; i < radialSegments; i++)
+            {
+                uint i0 = (uint)i;
+                uint i1 = (uint)((i + 1) % radialSegments);
+                // CCW when viewed from below
+                indices.Add(bottomCenterIndex); indices.Add(bottomStart + i1); indices.Add(bottomStart + i0);
+            }
+        }
+
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "CylinderLitVB", BufferUsageFlags.Vertex, (uint)verts.Count);
+        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "CylinderLitIB", BufferUsageFlags.Index, (uint)indices.Count);
+
+        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "CylinderLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Count);
+        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        verts.ToArray().AsSpan().CopyTo(vspan);
+        vtransfer.Unmap();
+
+        var itransfer = TransferBuffer.Create<uint>(device, "CylinderLitIBUpload", TransferBufferUsage.Upload, (uint)indices.Count);
+        var ispan = itransfer.Map<uint>(cycle: false);
+        indices.ToArray().AsSpan().CopyTo(ispan);
+        itransfer.Unmap();
+
+        var cmdbuf = device.AcquireCommandBuffer();
+        var copy = cmdbuf.BeginCopyPass();
+        copy.UploadToBuffer(vtransfer, vb, false);
+        copy.UploadToBuffer(itransfer, ib, false);
+        cmdbuf.EndCopyPass(copy);
+        device.Submit(cmdbuf);
+
+        vtransfer.Dispose();
+        itransfer.Dispose();
+
+        return new Mesh(vb, verts.Count, PrimitiveType.TriangleList, ib, indices.Count);
+    }
+
+    /// <summary>
+    /// Creates a lit capsule aligned on Y axis, centered at origin.
+    /// Height is the total tip-to-tip length; radius is the hemisphere radius.
+    /// </summary>
+    public static Mesh CreateCapsule3DLit(GraphicsDevice device, float radius, float height, Vector3 color, int radialSegments = 24, int hemisphereStacks = 8)
+    {
+        radialSegments = Math.Max(3, radialSegments);
+        hemisphereStacks = Math.Max(1, hemisphereStacks);
+
+        float cylHalf = MathF.Max(0f, (height - 2f * radius) / 2f);
+
+        var verts = new List<Vertex3DLit>();
+        var indices = new List<uint>();
+
+        // Build bottom hemisphere rings (equator to pole)
+        var bottomRings = new List<uint[]>();
+        for (int j = 0; j <= hemisphereStacks; j++)
+        {
+            float phi = (float)j / hemisphereStacks * (MathF.PI / 2f); // 0..pi/2
+            float y = -cylHalf - radius * MathF.Sin(phi);
+            float ringR = radius * MathF.Cos(phi);
+            var ring = new uint[radialSegments];
+            for (int i = 0; i < radialSegments; i++)
+            {
+                float a = (float)(i * (Math.PI * 2.0) / radialSegments);
+                float nx = MathF.Cos(a) * MathF.Cos(phi);
+                float nz = MathF.Sin(a) * MathF.Cos(phi);
+                float ny = -MathF.Sin(phi);
+                var normal = new Vector3(nx, ny, nz);
+                var pos = new Vector3(ringR * MathF.Cos(a), y, ringR * MathF.Sin(a));
+                ring[i] = (uint)verts.Count;
+                verts.Add(new Vertex3DLit(pos, normal, color.X, color.Y, color.Z));
+            }
+            bottomRings.Add(ring);
+        }
+
+        // Connect bottom hemisphere rings
+        for (int j = 0; j < bottomRings.Count - 1; j++)
+        {
+            var aRing = bottomRings[j];
+            var bRing = bottomRings[j + 1];
+            for (int i = 0; i < radialSegments; i++)
+            {
+                int ni = (i + 1) % radialSegments;
+                // A is higher (closer to equator), B is lower (closer to pole)
+                indices.Add(aRing[i]); indices.Add(bRing[ni]); indices.Add(bRing[i]);
+                indices.Add(aRing[i]); indices.Add(aRing[ni]); indices.Add(bRing[ni]);
+            }
+        }
+
+        // Bottom pole (connect last ring to a single pole vertex)
+        uint bottomPole = (uint)verts.Count;
+        verts.Add(new Vertex3DLit(new Vector3(0, -cylHalf - radius, 0), new Vector3(0, -1, 0), color.X, color.Y, color.Z));
+        var lastBottomRing = bottomRings[^1];
+        for (int i = 0; i < radialSegments; i++)
+        {
+            int ni = (i + 1) % radialSegments;
+            indices.Add(bottomPole); indices.Add(lastBottomRing[ni]); indices.Add(lastBottomRing[i]);
+        }
+
+        // Build top hemisphere rings (equator to pole)
+        var topRings = new List<uint[]>();
+        for (int j = 0; j <= hemisphereStacks; j++)
+        {
+            float phi = (float)j / hemisphereStacks * (MathF.PI / 2f); // 0..pi/2
+            float y = cylHalf + radius * MathF.Sin(phi);
+            float ringR = radius * MathF.Cos(phi);
+            var ring = new uint[radialSegments];
+            for (int i = 0; i < radialSegments; i++)
+            {
+                float a = (float)(i * (Math.PI * 2.0) / radialSegments);
+                float nx = MathF.Cos(a) * MathF.Cos(phi);
+                float nz = MathF.Sin(a) * MathF.Cos(phi);
+                float ny = MathF.Sin(phi);
+                var normal = new Vector3(nx, ny, nz);
+                var pos = new Vector3(ringR * MathF.Cos(a), y, ringR * MathF.Sin(a));
+                ring[i] = (uint)verts.Count;
+                verts.Add(new Vertex3DLit(pos, normal, color.X, color.Y, color.Z));
+            }
+            topRings.Add(ring);
+        }
+
+        // Connect top hemisphere rings
+        for (int j = 0; j < topRings.Count - 1; j++)
+        {
+            var aRing = topRings[j]; // lower (closer to equator)
+            var bRing = topRings[j + 1]; // higher (closer to pole)
+            for (int i = 0; i < radialSegments; i++)
+            {
+                int ni = (i + 1) % radialSegments;
+                indices.Add(aRing[i]); indices.Add(aRing[ni]); indices.Add(bRing[ni]);
+                indices.Add(aRing[i]); indices.Add(bRing[ni]); indices.Add(bRing[i]);
+            }
+        }
+
+        // Top pole
+        uint topPole = (uint)verts.Count;
+        verts.Add(new Vertex3DLit(new Vector3(0, cylHalf + radius, 0), new Vector3(0, 1, 0), color.X, color.Y, color.Z));
+        var lastTopRing = topRings[^1];
+        for (int i = 0; i < radialSegments; i++)
+        {
+            int ni = (i + 1) % radialSegments;
+            indices.Add(topPole); indices.Add(lastTopRing[i]); indices.Add(lastTopRing[ni]);
+        }
+
+        // Connect cylinder between bottom equator ring and top equator ring (if any cylinder length)
+        if (cylHalf > 0f)
+        {
+            var bottomEquator = bottomRings[0];
+            var topEquator = topRings[0];
+            for (int i = 0; i < radialSegments; i++)
+            {
+                int ni = (i + 1) % radialSegments;
+                indices.Add(bottomEquator[i]); indices.Add(bottomEquator[ni]); indices.Add(topEquator[ni]);
+                indices.Add(bottomEquator[i]); indices.Add(topEquator[ni]); indices.Add(topEquator[i]);
+            }
+        }
+
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "CapsuleLitVB", BufferUsageFlags.Vertex, (uint)verts.Count);
+        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "CapsuleLitIB", BufferUsageFlags.Index, (uint)indices.Count);
+
+        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "CapsuleLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Count);
+        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        verts.ToArray().AsSpan().CopyTo(vspan);
+        vtransfer.Unmap();
+
+        var itransfer = TransferBuffer.Create<uint>(device, "CapsuleLitIBUpload", TransferBufferUsage.Upload, (uint)indices.Count);
+        var ispan = itransfer.Map<uint>(cycle: false);
+        indices.ToArray().AsSpan().CopyTo(ispan);
+        itransfer.Unmap();
+
+        var cmdbuf = device.AcquireCommandBuffer();
+        var copy2 = cmdbuf.BeginCopyPass();
+        copy2.UploadToBuffer(vtransfer, vb, false);
+        copy2.UploadToBuffer(itransfer, ib, false);
+        cmdbuf.EndCopyPass(copy2);
+        device.Submit(cmdbuf);
+
+        vtransfer.Dispose();
+        itransfer.Dispose();
+
+        return new Mesh(vb, verts.Count, PrimitiveType.TriangleList, ib, indices.Count);
+    }
+
+    /// <summary>
     /// Dispose GPU buffers owned by this mesh.
     /// </summary>
     public void Dispose()

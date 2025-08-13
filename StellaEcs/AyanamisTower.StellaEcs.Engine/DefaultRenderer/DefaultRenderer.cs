@@ -375,6 +375,36 @@ public sealed class DefaultRenderer : IDisposable
     }
 
     /// <summary>
+    /// Adds a lit plane (XZ) with flat albedo color.
+    /// </summary>
+    public void AddPlaneLit(Func<Matrix4x4> model, Vector3 color, float width = 5f, float depth = 5f)
+    {
+        var mesh = Mesh.CreatePlane3DLit(_device, width, depth, color);
+        _ownedMeshes.Add(mesh);
+        AddMesh3DLit(() => mesh, model);
+    }
+
+    /// <summary>
+    /// Adds a lit cylinder with flat albedo color.
+    /// </summary>
+    public void AddCylinderLit(Func<Matrix4x4> model, Vector3 color, float radius = 0.5f, float height = 1.5f, int radialSegments = 24, bool capped = true)
+    {
+        var mesh = Mesh.CreateCylinder3DLit(_device, radius, height, color, radialSegments, 1, capped);
+        _ownedMeshes.Add(mesh);
+        AddMesh3DLit(() => mesh, model);
+    }
+
+    /// <summary>
+    /// Adds a lit capsule with flat albedo color.
+    /// </summary>
+    public void AddCapsuleLit(Func<Matrix4x4> model, Vector3 color, float radius = 0.5f, float height = 2.0f, int radialSegments = 24, int hemisphereStacks = 8)
+    {
+        var mesh = Mesh.CreateCapsule3DLit(_device, radius, height, color, radialSegments, hemisphereStacks);
+        _ownedMeshes.Add(mesh);
+        AddMesh3DLit(() => mesh, model);
+    }
+
+    /// <summary>
     /// Clears all lit 3D instances queued so far. Useful for ECS-driven per-frame submissions.
     /// </summary>
     public void ClearLitInstances() => _mesh3DLitStep.ClearInstances();
