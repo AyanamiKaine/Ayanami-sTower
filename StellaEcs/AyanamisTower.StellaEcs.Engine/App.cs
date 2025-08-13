@@ -127,6 +127,83 @@ public class App : Game
         return new ViewContext(view, proj, orthoPx, (int)width, (int)height);
     }
 
+    /// <summary>
+    /// Represents a 3D ray with an origin and direction.
+    /// </summary>
+    protected readonly struct Ray3(Vector3 origin, Vector3 direction)
+    {
+        /// <summary>Ray origin in world space.</summary>
+        public Vector3 Origin { get; } = origin;
+        /// <summary>Normalized direction vector in world space.</summary>
+        public Vector3 Direction { get; } = Vector3.Normalize(direction);
+    }
+
+    /// <summary>
+    /// Converts a screen pixel coordinate into a world-space ray using the current camera and viewport.
+    /// </summary>
+    protected Ray3 ScreenPointToRay(int x, int y)
+    {
+        var ctx = ComputeViewContext();
+        var vp = ctx.View * ctx.Projection;
+        if (!Matrix4x4.Invert(vp, out var invVP))
+        {
+            return new Ray3(Camera.Position, Vector3.Normalize(Camera.Target - Camera.Position));
+        }
+
+        float ndcX = (2f * (x / (float)Math.Max(1, ctx.Width))) - 1f;
+        float ndcY = 1f - (2f * (y / (float)Math.Max(1, ctx.Height)));
+
+        var nearClip = new Vector4(ndcX, ndcY, 0f, 1f);
+        var farClip = new Vector4(ndcX, ndcY, 1f, 1f);
+
+        var nearWorld4 = Vector4.Transform(nearClip, invVP);
+        var farWorld4 = Vector4.Transform(farClip, invVP);
+
+        var nearWorld = new Vector3(nearWorld4.X, nearWorld4.Y, nearWorld4.Z) / MathF.Max(nearWorld4.W, 1e-6f);
+        var farWorld = new Vector3(farWorld4.X, farWorld4.Y, farWorld4.Z) / MathF.Max(farWorld4.W, 1e-6f);
+
+        var dir = Vector3.Normalize(farWorld - nearWorld);
+        return new Ray3(nearWorld, dir);
+    }
+
+    /// <summary>
+    /// Intersects a ray with a plane defined by a point and a normal.
+    /// </summary>
+    protected static bool RaycastPlane(Ray3 ray, Vector3 planePoint, Vector3 planeNormal, out Vector3 hitPoint)
+    {
+        const float Eps = 1e-6f;
+        var denom = Vector3.Dot(planeNormal, ray.Direction);
+        if (MathF.Abs(denom) < Eps)
+        {
+            hitPoint = default;
+            return false; // Parallel
+        }
+        float t = Vector3.Dot(planePoint - ray.Origin, planeNormal) / denom;
+        if (t < 0)
+        {
+            hitPoint = default;
+            return false; // Behind origin
+        }
+        hitPoint = ray.Origin + (t * ray.Direction);
+        return true;
+    }
+
+    /// <summary>
+    /// Convenience: convert current mouse position to a world-space point on the horizontal ground plane (Y = groundY).
+    /// </summary>
+    protected bool MouseToGround(out Vector3 worldPoint, float groundY = 0f)
+    {
+        var ray = ScreenPointToRay(Inputs.Mouse.X, Inputs.Mouse.Y);
+        var planePt = new Vector3(0, groundY, 0);
+        var planeN = Vector3.UnitY;
+        return RaycastPlane(ray, planePt, planeN, out worldPoint);
+    }
+
+    /// <summary>
+    /// Converts a screen pixel coordinate to orthographic pixel space used by DefaultRenderer's 2D step.
+    /// </summary>
+    protected Vector2 ScreenToOrthoPixel(int x, int y) => new Vector2(x, y);
+
     /// <inheritdoc />
     protected override void Update(TimeSpan delta)
     {

@@ -43,6 +43,7 @@ internal static class Program
         // Add: text overlay
         private Font? uiFont; // MSDF font loaded from Shaders/
         private bool showOverlay = true;
+        private Vector3 cubePos = new(0, 0, 0);
 
         public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
@@ -86,7 +87,7 @@ internal static class Program
             defaultRenderer = UseDefaultRenderer();
             // Use a flat-colored 3D cube (cyan)
             defaultRenderer.AddCube(
-                () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0),
+                () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0) * Matrix4x4.CreateTranslation(cubePos),
                 new Vector3(0f, 1f, 1f), // flat color
                 0.7f
             );
@@ -197,6 +198,12 @@ internal static class Program
                         rectMesh = Mesh.CreateQuad(GraphicsDevice, rectSize, rectSize, displayedRectColor);
                     }
                 }
+            }
+
+            // Place cube on ground at mouse position when right-clicking
+            if (Inputs.Mouse.RightButton.IsPressed && MouseToGround(out var wp, groundY: 0f))
+            {
+                cubePos = wp;
             }
 
             // Update FPS in window title about twice a second
