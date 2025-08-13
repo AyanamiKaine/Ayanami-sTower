@@ -396,7 +396,7 @@ public sealed class DefaultRenderer : IDisposable
     /// </summary>
     public void AddCubeLit(Func<Matrix4x4> model, Vector3 color, float size = 0.7f)
     {
-        var mesh = Mesh.CreateBox3DLit(_device, size, color);
+        var mesh = Mesh.CreateBox3D(_device, size, color);
         _ownedMeshes.Add(mesh);
         AddMesh3DLit(() => mesh, model);
     }

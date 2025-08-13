@@ -105,7 +105,7 @@ internal static class Program
             world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));
             world.RegisterSystem(new RenderSyncSystem3DTexturedLit(defaultRenderer));
             // Create ECS entities for a lit cube and a lit debug light sphere
-            ecsCubeMesh = Mesh.CreateBox3DLit(GraphicsDevice, 0.7f, new Vector3(1f, 1f, 1f));
+            ecsCubeMesh = Mesh.CreateBox3D(GraphicsDevice, 0.7f, new Vector3(1f, 1f, 1f));
             cubeEntity = world.CreateEntity()
                 .Set(new Position3D(cubePos.X, cubePos.Y, cubePos.Z))
                 .Set(new Mesh3D { Mesh = ecsCubeMesh })

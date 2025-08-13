@@ -141,9 +141,10 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     }
 
     /// <summary>
-    /// Creates a flat-colored cube mesh centered at origin with given size and color.
+    /// Creates a flat-colored, unlit cube mesh centered at origin with given size and color.
+    /// This version uses the simple Vertex3D layout for the unlit pipeline.
     /// </summary>
-    public static Mesh CreateBox3D(GraphicsDevice device, float size, Vector3 color)
+    public static Mesh CreateBox3DColored(GraphicsDevice device, float size, Vector3 color)
     {
         float h = size / 2f;
         var c = color;
@@ -311,9 +312,10 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         => CreateSphere3DLit(device, radius, color, subdivisions);
 
     /// <summary>
-    /// Creates a cube mesh with per-face normals for lighting and flat albedo color.
+    /// Generic lit cube using the superset vertex (pos,nrm,uv,col) with flat albedo color.
+    /// Provided for ergonomic parity with CreateSphere3D.
     /// </summary>
-    public static Mesh CreateBox3DLit(GraphicsDevice device, float size, Vector3 color)
+    public static Mesh CreateBox3D(GraphicsDevice device, float size, Vector3 color)
     {
         float h = size / 2f;
         // 24 vertices: 4 per face with face normals, ordered CCW when viewed from outside
@@ -397,6 +399,13 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
 
         return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
     }
+
+    /// <summary>
+    /// Creates a cube mesh with per-face normals for lighting and flat albedo color.
+    /// </summary>
+    [Obsolete("Use CreateBox3D(device, size, color) instead.")]
+    public static Mesh CreateBox3DLit(GraphicsDevice device, float size, Vector3 color)
+        => CreateBox3D(device, size, color);
     /// <summary>
     /// Vertex buffer for the mesh.
     /// </summary>
