@@ -81,10 +81,12 @@ internal static class Program
 
             // Attach high-level renderer and register objects
             defaultRenderer = UseDefaultRenderer();
-            // Use a flat-colored 3D cube (cyan)
-            defaultRenderer.AddCube(
+            // Set a simple sun-like point light
+            defaultRenderer.SetPointLight(new Vector3(2f, 3f, 2f), new Vector3(1f, 1f, 0.95f), 0.15f);
+            // Use a lit 3D cube (white albedo) so lighting is visible
+            defaultRenderer.AddCubeLit(
                 () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0) * Matrix4x4.CreateTranslation(cubePos),
-                new Vector3(0f, 1f, 1f), // flat color
+                new Vector3(1f, 1f, 1f), // albedo
                 0.7f
             );
             // Keep the 2D rect in pixel space

@@ -37,6 +37,19 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     }
 
     /// <summary>
+    /// Vertex struct for lit 3D meshes (pos, normal, color/albedo)
+    /// </summary>
+    public struct Vertex3DLit(Vector3 pos, Vector3 nrm, float r, float g, float b)
+    {
+        /// <summary>Position of the vertex in 3D space.</summary>
+        public Vector3 Pos = pos;
+        /// <summary>Surface normal in 3D space.</summary>
+        public Vector3 Nrm = nrm;
+        /// <summary>Albedo color components.</summary>
+        public float R = r, G = g, B = b;
+    }
+
+    /// <summary>
     /// Creates a colored cube mesh centered at origin with given size.
     /// </summary>
     public static Mesh CreateBox3D(GraphicsDevice device, float size)
@@ -150,7 +163,90 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         copy.UploadToBuffer(itransfer, ib, false);
         cmdbuf.EndCopyPass(copy);
         device.Submit(cmdbuf);
-        
+
+        vtransfer.Dispose();
+        itransfer.Dispose();
+
+        return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
+    }
+
+    /// <summary>
+    /// Creates a cube mesh with per-face normals for lighting and flat albedo color.
+    /// </summary>
+    public static Mesh CreateBox3DLit(GraphicsDevice device, float size, Vector3 color)
+    {
+        float h = size / 2f;
+        // 24 vertices: 4 per face with face normals
+        // Define faces: each with normal and 4 corners CCW
+        var verts = new Vertex3DLit[]
+        {
+            // -Z (back)
+            new(new Vector3(-h,-h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z),
+            new(new Vector3( h,-h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z),
+            new(new Vector3( h, h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z),
+            new(new Vector3(-h, h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z),
+            // +Z (front)
+            new(new Vector3(-h,-h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z),
+            new(new Vector3( h,-h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z),
+            new(new Vector3( h, h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z),
+            new(new Vector3(-h, h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z),
+            // -Y (bottom)
+            new(new Vector3(-h,-h,-h), new Vector3(0,-1,0), color.X, color.Y, color.Z),
+            new(new Vector3( h,-h,-h), new Vector3(0,-1,0), color.X, color.Y, color.Z),
+            new(new Vector3( h,-h, h), new Vector3(0,-1,0), color.X, color.Y, color.Z),
+            new(new Vector3(-h,-h, h), new Vector3(0,-1,0), color.X, color.Y, color.Z),
+            // +Y (top)
+            new(new Vector3(-h, h,-h), new Vector3(0, 1,0), color.X, color.Y, color.Z),
+            new(new Vector3( h, h,-h), new Vector3(0, 1,0), color.X, color.Y, color.Z),
+            new(new Vector3( h, h, h), new Vector3(0, 1,0), color.X, color.Y, color.Z),
+            new(new Vector3(-h, h, h), new Vector3(0, 1,0), color.X, color.Y, color.Z),
+            // -X (left)
+            new(new Vector3(-h,-h,-h), new Vector3(-1,0,0), color.X, color.Y, color.Z),
+            new(new Vector3(-h, h,-h), new Vector3(-1,0,0), color.X, color.Y, color.Z),
+            new(new Vector3(-h, h, h), new Vector3(-1,0,0), color.X, color.Y, color.Z),
+            new(new Vector3(-h,-h, h), new Vector3(-1,0,0), color.X, color.Y, color.Z),
+            // +X (right)
+            new(new Vector3( h,-h,-h), new Vector3( 1,0,0), color.X, color.Y, color.Z),
+            new(new Vector3( h, h,-h), new Vector3( 1,0,0), color.X, color.Y, color.Z),
+            new(new Vector3( h, h, h), new Vector3( 1,0,0), color.X, color.Y, color.Z),
+            new(new Vector3( h,-h, h), new Vector3( 1,0,0), color.X, color.Y, color.Z),
+        };
+        var indices = new uint[]
+        {
+            // -Z (back): looking from front, CCW is 0,1,2 then 0,2,3  
+            0,1,2, 0,2,3,       
+            // +Z (front): looking from back, CCW is 4,6,5 then 4,7,6
+            4,6,5, 4,7,6,       
+            // -Y (bottom): looking from top, CCW is 8,9,10 then 8,10,11
+            8,9,10, 8,10,11,    
+            // +Y (top): looking from bottom, CCW is 12,14,13 then 12,15,14
+            12,14,13, 12,15,14, 
+            // -X (left): looking from right, CCW is 16,18,17 then 16,19,18
+            16,18,17, 16,19,18, 
+            // +X (right): looking from left, CCW is 20,21,22 then 20,22,23
+            20,21,22, 20,22,23
+        };
+
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "BoxLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
+        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "BoxLitIB", BufferUsageFlags.Index, (uint)indices.Length);
+
+        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "BoxLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
+        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        verts.AsSpan().CopyTo(vspan);
+        vtransfer.Unmap();
+
+        var itransfer = TransferBuffer.Create<uint>(device, "BoxLitIBUpload", TransferBufferUsage.Upload, (uint)indices.Length);
+        var ispan = itransfer.Map<uint>(cycle: false);
+        indices.AsSpan().CopyTo(ispan);
+        itransfer.Unmap();
+
+        var cmdbuf = device.AcquireCommandBuffer();
+        var copy = cmdbuf.BeginCopyPass();
+        copy.UploadToBuffer(vtransfer, vb, false);
+        copy.UploadToBuffer(itransfer, ib, false);
+        cmdbuf.EndCopyPass(copy);
+        device.Submit(cmdbuf);
+
         vtransfer.Dispose();
         itransfer.Dispose();
 

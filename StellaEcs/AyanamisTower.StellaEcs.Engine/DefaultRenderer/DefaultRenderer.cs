@@ -21,6 +21,7 @@ public sealed class DefaultRenderer : IDisposable
     private readonly MeshInstancesRenderStep _mesh3DStep;
     private readonly MeshInstancesRenderStep _quad2DStep;
     private readonly TextOverlayRenderStep _textStep;
+    private readonly LitMeshInstancesRenderStep _mesh3DLitStep;
 
     private readonly TextBatch _textBatch;
     private readonly GraphicsPipeline _textPipeline;
@@ -162,10 +163,36 @@ public sealed class DefaultRenderer : IDisposable
             }
         );
 
+        // Compile lit shader for normal-based lighting
+        var (litVS, litPS) = CompileHlsl(rootTitleStorage, "Assets/LitMesh.hlsl", namePrefix: "Lit");
+        var litVertexInput = new VertexInputState
+        {
+            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DLit>(0)],
+            VertexAttributes =
+            [
+                new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 },
+                new VertexAttribute { Location = 1, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() },
+                new VertexAttribute { Location = 2, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)(System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() * 2) }
+            ]
+        };
+        var lit3D = CreatePipeline(
+            window,
+            litVertexInput,
+            litVS,
+            litPS,
+            depth: new DepthStencilState { EnableDepthTest = true, EnableDepthWrite = true, EnableStencilTest = false, CompareOp = CompareOp.Less },
+            blend: ColorTargetBlendState.NoBlend,
+            primitiveType: PrimitiveType.TriangleList,
+            rasterizer: RasterizerState.CCW_CullBack,
+            name: "Lit3D"
+        );
+        _mesh3DLitStep = new LitMeshInstancesRenderStep(lit3D);
+
         _pipeline
             .Add(_mesh3DStep)
             .Add(_quad2DStep)
-            .Add(_textStep);
+            .Add(_textStep)
+            .Add(_mesh3DLitStep);
 
         _pipeline.Initialize(_device);
     }
@@ -306,4 +333,24 @@ public sealed class DefaultRenderer : IDisposable
         _ownedMeshes.Clear();
         // Pipelines are owned by GraphicsDevice and freed on device destroy; safe to skip explicit dispose.
     }
+
+    /// <summary>
+    /// Adds a lit 3D mesh instance (requires Vertex3DLit layout) using the point light.
+    /// </summary>
+    public void AddMesh3DLit(Func<Mesh> mesh, Func<Matrix4x4> model) => _mesh3DLitStep.AddInstance(mesh, model);
+
+    /// <summary>
+    /// Adds a lit cube with flat albedo color.
+    /// </summary>
+    public void AddCubeLit(Func<Matrix4x4> model, Vector3 color, float size = 0.7f)
+    {
+        var mesh = Mesh.CreateBox3DLit(_device, size, color);
+        _ownedMeshes.Add(mesh);
+        AddMesh3DLit(() => mesh, model);
+    }
+
+    /// <summary>
+    /// Sets the point light (sun-like) parameters used by the lit 3D pipeline.
+    /// </summary>
+    public void SetPointLight(Vector3 position, Vector3 color, float ambient = 0.2f) => _mesh3DLitStep.SetLight(position, color, ambient);
 }
