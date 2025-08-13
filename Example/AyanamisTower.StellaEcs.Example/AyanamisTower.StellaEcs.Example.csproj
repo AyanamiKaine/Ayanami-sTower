@@ -14,6 +14,11 @@
     </Folder>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Assets\">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Folder>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\StellaEcs\AyanamisTower.StellaEcs.Components\AyanamisTower.StellaEcs.Components.csproj" />
