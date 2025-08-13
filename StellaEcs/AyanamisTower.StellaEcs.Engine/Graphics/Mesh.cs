@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using MoonWorks.Graphics;
 
-namespace AyanamisTower.StellaEcs.Example;
+namespace AyanamisTower.StellaEcs.Engine.Graphics;
 
 /// <summary>
 /// Simple mesh abstraction for static shapes

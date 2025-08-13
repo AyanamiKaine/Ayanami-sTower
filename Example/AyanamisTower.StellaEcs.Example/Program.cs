@@ -2,13 +2,13 @@
 using AyanamisTower.StellaEcs.Api;
 using AyanamisTower.StellaEcs.Components;
 using AyanamisTower.StellaEcs.Engine;
+using AyanamisTower.StellaEcs.Engine.Graphics;
+using AyanamisTower.StellaEcs.Engine.Rendering;
 using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Graphics.Font;
 using MoonWorks.Input;
-using MoonWorks.Math.Fixed;
 using System.Numerics;
-using System.Timers;
 using Vector3 = System.Numerics.Vector3;
 
 namespace AyanamisTower.StellaEcs.Example;
@@ -21,7 +21,7 @@ internal static class Program
         var game = new HelloGame();
         game.Run();
     }
-    private sealed class HelloGame : Game
+    private sealed class HelloGame : App
     {
         private World world = new();
         // Pipeline and buffers
@@ -31,7 +31,6 @@ internal static class Program
         private Mesh rectMesh;
         private Vector3 rectColor = new(1f, 0f, 0f); // Start as red
         private float time;
-        private Camera camera;
         // Add: FPS counter & window title
         private readonly string baseTitle = "Hello MoonWorks - Shaders";
         private float fpsTimer;
@@ -49,20 +48,20 @@ internal static class Program
         private RenderPipeline renderPipeline;
 
         public HelloGame() : base(
-            appInfo: new AppInfo("MyOrg", "HelloMoonWorks"),
-            windowCreateInfo: new WindowCreateInfo(
-                windowTitle: "Hello MoonWorks - Shaders",
-                windowWidth: 800,
-                windowHeight: 480,
-                screenMode: ScreenMode.Windowed,
-                systemResizable: true,
-                startMaximized: false,
-                highDPI: false
-            ),
-            framePacingSettings: FramePacingSettings.CreateCapped(timestepFPS: 240, framerateCapFPS: 240),
-            availableShaderFormats: ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC | ShaderFormat.MSL,
-            debugMode: true
-        )
+                appInfo: new AppInfo("MyOrg", "HelloMoonWorks"),
+                windowCreateInfo: new WindowCreateInfo(
+                    windowTitle: "Hello MoonWorks - Shaders",
+                    windowWidth: 800,
+                    windowHeight: 480,
+                    screenMode: ScreenMode.Windowed,
+                    systemResizable: true,
+                    startMaximized: false,
+                    highDPI: false
+                ),
+                framePacingSettings: FramePacingSettings.CreateCapped(timestepFPS: 240, framerateCapFPS: 240),
+                availableShaderFormats: ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC | ShaderFormat.MSL,
+                debugMode: true
+            )
         {
             var pluginLoader = new HotReloadablePluginLoader(world, "Plugins");
 
@@ -226,8 +225,7 @@ internal static class Program
             // Create cube mesh
             cubeMesh = Mesh.CreateBox3D(GraphicsDevice, 0.7f);
 
-            // Create camera
-            camera = new Camera();
+            // Camera is provided by App base class (this.Camera)
 
             // Create 2D rectangle mesh (centered at origin, size 1x1)
             rectMesh = Mesh.CreateQuad(GraphicsDevice, 1f, 1f, rectColor);
@@ -291,7 +289,8 @@ internal static class Program
                     }
                 ));
 
-            renderPipeline.Initialize(GraphicsDevice);
+            // Hand over rendering responsibilities to the base App
+            UsePipeline(renderPipeline);
         }
 
         private readonly struct Vertex(System.Numerics.Vector2 pos, float r, float g, float b)
@@ -302,7 +301,7 @@ internal static class Program
             public readonly float B = b;
         }
 
-        protected override void Update(TimeSpan delta)
+        protected override void OnUpdate(TimeSpan delta)
         {
             if (Inputs.Keyboard.IsPressed(KeyCode.Escape))
             {
@@ -326,10 +325,10 @@ internal static class Program
             // Mouse wheel zoom: adjust camera FOV
             if (Inputs.Mouse.Wheel != 0)
             {
-                var newFov = camera.Fov - (Inputs.Mouse.Wheel * 0.05f);
+                var newFov = Camera.Fov - (Inputs.Mouse.Wheel * 0.05f);
                 if (newFov < 0.3f) newFov = 0.3f;
                 else if (newFov > 1.6f) newFov = 1.6f;
-                camera.Fov = newFov;
+                Camera.Fov = newFov;
             }
 
             time += (float)delta.TotalSeconds;
@@ -341,7 +340,7 @@ internal static class Program
             if (Inputs.Keyboard.IsDown(KeyCode.S)) move += new Vector3(0, 0, moveSpeed);
             if (Inputs.Keyboard.IsDown(KeyCode.A)) move += new Vector3(-moveSpeed, 0, 0);
             if (Inputs.Keyboard.IsDown(KeyCode.D)) move += new Vector3(moveSpeed, 0, 0);
-            camera.Move(move);
+            Camera.Move(move);
 
             // Rectangle hover + click detection (orthographic space)
             {
@@ -403,8 +402,6 @@ internal static class Program
                 fpsTimer = 0f;
             }
             world.Update(1f / 60f); // Update with delta time
-
-            renderPipeline.Update(delta);
         }
 
         private static Vector3 Saturate(Vector3 v)
@@ -418,47 +415,6 @@ internal static class Program
             return MathF.Abs(a.X - b.X) < eps && MathF.Abs(a.Y - b.Y) < eps && MathF.Abs(a.Z - b.Z) < eps;
         }
 
-        protected override void Draw(double alpha)
-        {
-            // Calculate view/projection matrices for this frame
-            var cmdbuf = GraphicsDevice.AcquireCommandBuffer();
-
-            // Update camera aspect and matrices
-            var width = MainWindow.Width;
-            var height = MainWindow.Height;
-            camera.Aspect = (float)width / height;
-            var proj = camera.GetProjectionMatrix();
-            var view = camera.GetViewMatrix();
-            Matrix4x4 orthoPx = Matrix4x4.CreateOrthographicOffCenter(0, width, height, 0, -1, 1);
-
-            var ctx = new ViewContext(view, proj, orthoPx, (int)width, (int)height);
-
-            // Run any pre-pass work (uploads/copies, etc.)
-            renderPipeline.Prepare(cmdbuf, ctx);
-
-            var swapchain = cmdbuf.AcquireSwapchainTexture(MainWindow);
-            if (swapchain == null)
-            {
-                GraphicsDevice.Cancel(cmdbuf);
-                return;
-            }
-
-            var colorTarget = new ColorTargetInfo(swapchain, new Color(10, 20, 40));
-            var renderPass = cmdbuf.BeginRenderPass([colorTarget]);
-            renderPass.SetViewport(new Viewport(swapchain.Width, swapchain.Height));
-
-            // Record all steps
-            renderPipeline.Record(cmdbuf, renderPass, ctx);
-
-            cmdbuf.EndRenderPass(renderPass);
-            GraphicsDevice.Submit(cmdbuf);
-        }
-
-        protected override void Destroy()
-        {
-            // Let GraphicsDevice dispose managed GPU resources on shutdown.
-            // No explicit cleanup needed here for the demo.
-            renderPipeline?.Dispose();
-        }
+        // Draw/Destroy are handled by App
     }
 }

@@ -3,7 +3,7 @@ using System.Numerics;
 using MoonWorks;
 using MoonWorks.Graphics;
 
-namespace AyanamisTower.StellaEcs.Example;
+namespace AyanamisTower.StellaEcs.Engine.Rendering;
 
 /// <summary>
 /// A reusable render step that can record commands into a pass.

@@ -4,7 +4,7 @@ using System.Numerics;
 using MoonWorks;
 using MoonWorks.Graphics;
 
-namespace AyanamisTower.StellaEcs.Example;
+namespace AyanamisTower.StellaEcs.Engine.Rendering;
 
 /// <summary>
 /// Very small render pipeline orchestrator. Steps are executed in order.

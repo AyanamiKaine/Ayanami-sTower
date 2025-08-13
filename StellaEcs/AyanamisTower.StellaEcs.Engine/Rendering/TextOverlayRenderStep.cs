@@ -4,7 +4,7 @@ using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Graphics.Font;
 
-namespace AyanamisTower.StellaEcs.Example;
+namespace AyanamisTower.StellaEcs.Engine.Rendering;
 
 /// <summary>
 /// Renders the on-screen text overlay via TextBatch.

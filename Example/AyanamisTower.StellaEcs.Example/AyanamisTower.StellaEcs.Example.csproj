@@ -9,15 +9,13 @@
 
 
   <ItemGroup>
-    <Folder Include="plugins\">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Folder>
-  </ItemGroup>
+    <Content Include="Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 
-  <ItemGroup>
-    <Folder Include="Assets\">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Folder>
+    </Content>
+    <Content Include="plugins\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

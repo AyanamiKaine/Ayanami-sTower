@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace AyanamisTower.StellaEcs.Example;
+namespace AyanamisTower.StellaEcs.Engine;
 
 /// <summary>
 /// Represents a camera in 3D space.
