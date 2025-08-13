@@ -24,7 +24,8 @@ public sealed class LitMeshInstancesRenderStep(GraphicsPipeline pipeline) : IRen
         public Vector3 LightPos;
         public float Ambient;
         public Vector3 LightColor;
-        public float Pad;
+        public float FarPlane;
+        public float DepthBias;
     }
 
     /// <summary>
@@ -45,16 +46,22 @@ public sealed class LitMeshInstancesRenderStep(GraphicsPipeline pipeline) : IRen
         /// </summary>
         public Vector3 Color;
         /// <summary>
-        /// Padding to ensure proper alignment.
+        /// Far plane used to normalize shadow map depth.
         /// </summary>
-        public float _pad;
+        public float FarPlane;
+        /// <summary>
+        /// Shadow receiver depth bias to reduce acne.
+        /// </summary>
+        public float DepthBias;
     }
 
     private LightParams _light = new()
     {
         Position = new Vector3(2, 3, 2),
         Ambient = 0.2f,
-        Color = new Vector3(1, 1, 1)
+        Color = new Vector3(1, 1, 1),
+        FarPlane = 25f,
+        DepthBias = 0.01f
     };
     /// <summary>
     /// Sets the point light (sun-like) parameters used by the lit 3D pipeline.
@@ -67,6 +74,26 @@ public sealed class LitMeshInstancesRenderStep(GraphicsPipeline pipeline) : IRen
         _light.Position = position;
         _light.Color = color;
         _light.Ambient = ambient;
+    }
+
+    /// <summary>
+    /// Sets shadow parameters for the point light shadow mapping.
+    /// </summary>
+    public void SetShadowParams(float farPlane, float depthBias)
+    {
+        _light.FarPlane = farPlane;
+        _light.DepthBias = depthBias;
+    }
+
+    private Texture? _shadowCube;
+    private Sampler? _shadowSampler;
+    /// <summary>
+    /// Sets the shadow cubemap texture and its sampler.
+    /// </summary>
+    public void SetShadowMap(Texture shadowCube, Sampler sampler)
+    {
+        _shadowCube = shadowCube;
+        _shadowSampler = sampler;
     }
 
     /// <inheritdoc/>
@@ -92,6 +119,13 @@ public sealed class LitMeshInstancesRenderStep(GraphicsPipeline pipeline) : IRen
     {
         if (_instances.Count == 0) return;
         pass.BindGraphicsPipeline(_pipeline);
+        if (_shadowCube != null && _shadowSampler != null)
+        {
+            // Bind shadow cube/sampler at t0/s0 in fragment space (space2 in shader)
+            Span<TextureSamplerBinding> sb = stackalloc TextureSamplerBinding[1];
+            sb[0] = new TextureSamplerBinding(_shadowCube, _shadowSampler);
+            pass.BindFragmentSamplers(sb);
+        }
         foreach (var (meshP, modelP) in _instances)
         {
             var m = modelP();
@@ -104,7 +138,8 @@ public sealed class LitMeshInstancesRenderStep(GraphicsPipeline pipeline) : IRen
                 LightPos = _light.Position,
                 Ambient = _light.Ambient,
                 LightColor = _light.Color,
-                Pad = 0f
+                FarPlane = _light.FarPlane,
+                DepthBias = _light.DepthBias
             };
             cmdbuf.PushVertexUniformData(vsParams, slot: 0);
             meshP().Draw(pass);

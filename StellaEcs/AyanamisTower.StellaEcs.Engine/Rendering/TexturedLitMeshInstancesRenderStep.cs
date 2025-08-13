@@ -26,7 +26,8 @@ public sealed class TexturedLitMeshInstancesRenderStep(GraphicsPipeline pipeline
         public Vector3 LightPos;
         public float Ambient;
         public Vector3 LightColor;
-        public float Pad;
+        public float FarPlane;
+        public float DepthBias;
     }
 
     /// <summary>
@@ -49,14 +50,20 @@ public sealed class TexturedLitMeshInstancesRenderStep(GraphicsPipeline pipeline
         /// <summary>
         /// Padding to align struct size.
         /// </summary>
-        public float _pad;
+        public float FarPlane;
+        /// <summary>
+        /// Shadow receiver depth bias to reduce acne.
+        /// </summary>
+        public float DepthBias;
     }
 
     private Light _light = new()
     {
         Position = new Vector3(2, 3, 2),
         Ambient = 0.2f,
-        Color = new Vector3(1, 1, 1)
+        Color = new Vector3(1, 1, 1),
+        FarPlane = 25f,
+        DepthBias = 0.01f
     };
 
     /// <inheritdoc/>
@@ -65,6 +72,26 @@ public sealed class TexturedLitMeshInstancesRenderStep(GraphicsPipeline pipeline
         _light.Position = position;
         _light.Color = color;
         _light.Ambient = ambient;
+    }
+
+    /// <summary>
+    /// Sets shadow parameters for point light shadow mapping.
+    /// </summary>
+    public void SetShadowParams(float farPlane, float depthBias)
+    {
+        _light.FarPlane = farPlane;
+        _light.DepthBias = depthBias;
+    }
+
+    private Texture? _shadowCube;
+    private Sampler? _shadowSampler;
+    /// <summary>
+    /// Sets the shadow cubemap and its sampler used in the textured-lit shader.
+    /// </summary>
+    public void SetShadowMap(Texture cube, Sampler sampler)
+    {
+        _shadowCube = cube;
+        _shadowSampler = sampler;
     }
 
     /// <inheritdoc/>
@@ -86,6 +113,12 @@ public sealed class TexturedLitMeshInstancesRenderStep(GraphicsPipeline pipeline
         if (_instances.Count == 0) return;
         pass.BindGraphicsPipeline(_pipeline);
         pass.BindFragmentSamplers(new TextureSamplerBinding(_texture, _sampler));
+        if (_shadowCube != null && _shadowSampler != null)
+        {
+            Span<TextureSamplerBinding> sb = stackalloc TextureSamplerBinding[1];
+            sb[0] = new TextureSamplerBinding(_shadowCube, _shadowSampler);
+            pass.BindFragmentSamplers(1, sb);
+        }
         foreach (var (meshP, modelP) in _instances)
         {
             var m = modelP();
@@ -97,7 +130,8 @@ public sealed class TexturedLitMeshInstancesRenderStep(GraphicsPipeline pipeline
                 LightPos = _light.Position,
                 Ambient = _light.Ambient,
                 LightColor = _light.Color,
-                Pad = 0f
+                FarPlane = _light.FarPlane,
+                DepthBias = _light.DepthBias
             };
             cmdbuf.PushVertexUniformData(vsParams, slot: 0);
             meshP().Draw(pass);

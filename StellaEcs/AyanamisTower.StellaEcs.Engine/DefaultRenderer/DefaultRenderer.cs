@@ -24,6 +24,8 @@ public sealed class DefaultRenderer : IDisposable
     private readonly TextOverlayRenderStep _textStep;
     private readonly LitMeshInstancesRenderStep _mesh3DLitStep;
     private readonly Dictionary<Texture, TexturedLitMeshInstancesRenderStep> _texturedSteps = new();
+    private ShadowCubeRenderStep? _shadowStep;
+    private Sampler? _shadowSampler;
 
     private readonly TextBatch _textBatch;
     private readonly GraphicsPipeline _textPipeline;
@@ -238,13 +240,58 @@ public sealed class DefaultRenderer : IDisposable
                 }
             );
 
+        // Shadow depth cubemap pre-pass (rendered to color cube)
+        var (shadowVS, shadowPS) = CompileHlsl(rootTitleStorage, "Assets/ShadowDepthCube.hlsl", namePrefix: "Shadow");
+        var shadowInput = new VertexInputState
+        {
+            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3D>(0)],
+            VertexAttributes = [new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 }]
+        };
+        var shadowPipeline = GraphicsPipeline.Create(
+            _device,
+            new GraphicsPipelineCreateInfo
+            {
+                VertexShader = shadowVS,
+                FragmentShader = shadowPS,
+                VertexInputState = shadowInput,
+                PrimitiveType = PrimitiveType.TriangleList,
+                RasterizerState = RasterizerState.CCW_CullBack,
+                MultisampleState = MultisampleState.None,
+                DepthStencilState = DepthStencilState.Disable,
+                TargetInfo = new GraphicsPipelineTargetInfo
+                {
+                    ColorTargetDescriptions = [new ColorTargetDescription { Format = TextureFormat.R8Unorm, BlendState = ColorTargetBlendState.NoBlend }]
+                },
+                Name = "ShadowCube"
+            }
+        );
+        _shadowStep = new ShadowCubeRenderStep(_device, shadowPipeline, size: 512);
+
         _pipeline
+                .Add(_shadowStep)
                 .Add(_mesh3DStep)
                 .Add(_mesh3DLitStep)
                 .Add(_quad2DStep)
                 .Add(_textStep);
 
         _pipeline.Initialize(_device);
+
+        // Create a clamp sampler for the shadow cubemap
+        _shadowSampler = Sampler.Create(_device, "ShadowSampler", new SamplerCreateInfo
+        {
+            MinFilter = Filter.Linear,
+            MagFilter = Filter.Linear,
+            MipmapMode = SamplerMipmapMode.Linear,
+            AddressModeU = SamplerAddressMode.ClampToEdge,
+            AddressModeV = SamplerAddressMode.ClampToEdge,
+            AddressModeW = SamplerAddressMode.ClampToEdge,
+            MaxLod = 1000
+        });
+
+        if (_shadowStep != null && _shadowSampler != null)
+        {
+            _mesh3DLitStep.SetShadowMap(_shadowStep.CubeTexture, _shadowSampler);
+        }
     }
 
     /// <summary>
@@ -477,6 +524,10 @@ public sealed class DefaultRenderer : IDisposable
             step = new TexturedLitMeshInstancesRenderStep(_texturedLitPipeline, texture, _device.LinearSampler);
             _texturedSteps.Add(texture, step);
             _pipeline.Add(step);
+            if (_shadowStep != null && _shadowSampler != null)
+            {
+                step.SetShadowMap(_shadowStep.CubeTexture, _shadowSampler);
+            }
         }
         step.AddInstance(mesh, model);
     }
@@ -517,5 +568,19 @@ public sealed class DefaultRenderer : IDisposable
         {
             step.SetLight(position, color, ambient);
         }
+        _shadowStep?.SetLightPosition(position);
+    }
+
+    /// <summary>
+    /// Sets global shadow parameters (far plane, bias) and updates all steps.
+    /// </summary>
+    public void SetShadows(float farPlane, float depthBias)
+    {
+        _mesh3DLitStep.SetShadowParams(farPlane, depthBias);
+        foreach (var step in _texturedSteps.Values)
+        {
+            step.SetShadowParams(farPlane, depthBias);
+        }
+        _shadowStep?.SetSettings(0.05f, farPlane, depthBias);
     }
 }

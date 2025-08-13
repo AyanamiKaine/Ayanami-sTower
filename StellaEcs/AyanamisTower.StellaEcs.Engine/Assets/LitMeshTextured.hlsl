@@ -14,6 +14,8 @@ struct VSOutput {
     float3 lightPos : TEXCOORD3;
     float3 lightColor : TEXCOORD4;
     float ambient : TEXCOORD5;
+    float farPlane : TEXCOORD6;
+    float depthBias : TEXCOORD7;
 };
 
 // Vertex uniforms (b0, space1) to match PushVertexUniformData
@@ -24,7 +26,8 @@ cbuffer VSParams : register(b0, space1)
     float3 lightPos;
     float  ambient;
     float3 lightColor;
-    float  pad0;
+    float  farPlane;
+    float  depthBias;
 };
 
 VSOutput VSMain(VSInput input)
@@ -39,13 +42,26 @@ VSOutput VSMain(VSInput input)
     o.lightPos = lightPos;
     o.lightColor = lightColor;
     o.ambient = ambient;
+    o.farPlane = farPlane;
+    o.depthBias = depthBias;
     return o;
 }
 
 // In MoonWorks, fragment samplers are bound via BindFragmentSamplers which maps to set/space2.
 // Declare our texture/sampler in space2 so the pipeline layout matches.
-Texture2D    DiffuseTex : register(t0, space2);
+Texture2D    DiffuseTex  : register(t0, space2);
 SamplerState DiffuseSamp : register(s0, space2);
+
+// Shadow map: color cube encodes linear depth in R
+TextureCube  ShadowCube  : register(t1, space2);
+SamplerState ShadowSamp  : register(s1, space2);
+
+float SampleShadow(float3 lightToPoint, float currentDepth, float bias)
+{
+    float3 dir = normalize(lightToPoint);
+    float stored = ShadowCube.Sample(ShadowSamp, dir).r;
+    return currentDepth - bias <= stored ? 1.0 : 0.3;
+}
 
 float4 PSMain(VSOutput input) : SV_Target
 {
@@ -53,7 +69,10 @@ float4 PSMain(VSOutput input) : SV_Target
     float3 L = normalize(input.lightPos - input.worldPos);
     float NdotL = saturate(dot(N, L));
 
-    float3 lit = input.ambient + (NdotL * input.lightColor);
+    float dist = distance(input.lightPos, input.worldPos) / max(1e-5, input.farPlane);
+    float shadow = SampleShadow(input.worldPos - input.lightPos, dist, input.depthBias);
+
+    float3 lit = input.ambient + (NdotL * input.lightColor * shadow);
     float3 albedo = DiffuseTex.Sample(DiffuseSamp, input.uv).rgb;
     return float4(albedo * lit, 1.0);
 }

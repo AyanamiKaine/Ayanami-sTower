@@ -14,6 +14,8 @@ struct VSOutput {
     float3 lightPos : TEXCOORD2;
     float3 lightColor : TEXCOORD3;
     float ambient : TEXCOORD4;
+    float farPlane : TEXCOORD5;
+    float depthBias : TEXCOORD6;
 };
 
 // Vertex uniforms: single slot (b0, space1) containing MVP, Model, and light data
@@ -24,7 +26,8 @@ cbuffer VSParams : register(b0, space1)
     float3 lightPos;
     float  ambient;
     float3 lightColor;
-    float  pad0;
+    float  farPlane;
+    float  depthBias;
 };
 
 VSOutput VSMain(VSInput input)
@@ -40,7 +43,23 @@ VSOutput VSMain(VSInput input)
     o.lightPos = lightPos;
     o.lightColor = lightColor;
     o.ambient = ambient;
+    o.farPlane = farPlane;
+    o.depthBias = depthBias;
     return o;
+}
+
+// Shadow map: color cube encodes linear depth in R (space2)
+// Note: bind at t0/s0 to avoid gaps since this pipeline has no diffuse texture.
+TextureCube ShadowCube : register(t0, space2);
+SamplerState ShadowSamp : register(s0, space2);
+
+float SampleShadow(float3 lightToPoint, float currentDepth, float bias)
+{
+    // Normalize direction and sample stored depth
+    float3 dir = normalize(lightToPoint);
+    float stored = ShadowCube.Sample(ShadowSamp, dir).r;
+    // 1 if lit, 0 if in shadow (apply bias)
+    return currentDepth - bias <= stored ? 1.0 : 0.3; // 0.3 ambient in shadow
 }
 
 float4 PSMain(VSOutput input) : SV_Target
@@ -49,7 +68,11 @@ float4 PSMain(VSOutput input) : SV_Target
     float3 L = normalize(input.lightPos - input.worldPos);
     float NdotL = saturate(dot(N, L));
 
-    float3 lit = input.ambient + (NdotL * input.lightColor);
+    // Shadow factor
+    float dist = distance(input.lightPos, input.worldPos) / max(1e-5, input.farPlane);
+    float shadow = SampleShadow(input.worldPos - input.lightPos, dist, input.depthBias);
+
+    float3 lit = input.ambient + (NdotL * input.lightColor * shadow);
     float3 outCol = input.col * lit;
     return float4(outCol, 1.0);
 }
