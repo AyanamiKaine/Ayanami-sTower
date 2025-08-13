@@ -82,8 +82,10 @@ public class ComponentStorage<T> : IComponentStorage
         // 1. Not be the sentinel value (-1).
         // 2. Point to a valid index within the current count of dense elements.
         // 3. The stored entity must match on Id and Generation. We intentionally
-        //    do not require the World reference to be the same object to avoid
-        //    false negatives when the entity handle is reconstructed (e.g., via REST).
+        //    do not require the World reference to be identical because entity
+        //    handles can be reconstructed (e.g., created from World state or via
+        //    REST/UI) while still referring to the same logical entity. Requiring
+        //    World equality caused false negatives after remove/re-add of tag components.
         if (denseIndex == -1 || denseIndex >= Count) return false;
         var stored = _entities[denseIndex];
         return stored.Id == entity.Id && stored.Generation == entity.Generation;
