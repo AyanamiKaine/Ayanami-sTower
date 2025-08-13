@@ -150,6 +150,9 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         copy.UploadToBuffer(itransfer, ib, false);
         cmdbuf.EndCopyPass(copy);
         device.Submit(cmdbuf);
+        
+        vtransfer.Dispose();
+        itransfer.Dispose();
 
         return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
     }
