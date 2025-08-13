@@ -92,6 +92,63 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
 
         return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
     }
+
+    /// <summary>
+    /// Creates a flat-colored cube mesh centered at origin with given size and color.
+    /// </summary>
+    public static Mesh CreateBox3D(GraphicsDevice device, float size, Vector3 color)
+    {
+        float h = size / 2f;
+        var c = color;
+        // 8 corners, all with the same color
+        var verts = new Vertex3D[]
+        {
+                new(new Vector3(-h, -h, -h), c.X, c.Y, c.Z), // 0
+                new(new Vector3( h, -h, -h), c.X, c.Y, c.Z), // 1
+                new(new Vector3( h,  h, -h), c.X, c.Y, c.Z), // 2
+                new(new Vector3(-h,  h, -h), c.X, c.Y, c.Z), // 3
+                new(new Vector3(-h, -h,  h), c.X, c.Y, c.Z), // 4
+                new(new Vector3( h, -h,  h), c.X, c.Y, c.Z), // 5
+                new(new Vector3( h,  h,  h), c.X, c.Y, c.Z), // 6
+                new(new Vector3(-h,  h,  h), c.X, c.Y, c.Z), // 7
+        };
+        var indices = new uint[] {
+                // -Z (back)
+                0,2,1, 0,3,2,
+                // +Z (front)
+                4,5,6, 4,6,7,
+                // -Y (bottom)
+                0,1,5, 0,5,4,
+                // +Y (top)
+                3,6,2, 3,7,6,
+                // -X (left)
+                0,7,3, 0,4,7,
+                // +X (right)
+                1,2,6, 1,6,5
+            };
+
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3D>(device, "BoxVB", BufferUsageFlags.Vertex, (uint)verts.Length);
+        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "BoxIB", BufferUsageFlags.Index, (uint)indices.Length);
+
+        var vtransfer = TransferBuffer.Create<Vertex3D>(device, "BoxVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
+        var vspan = vtransfer.Map<Vertex3D>(cycle: false);
+        verts.AsSpan().CopyTo(vspan);
+        vtransfer.Unmap();
+
+        var itransfer = TransferBuffer.Create<uint>(device, "BoxIBUpload", TransferBufferUsage.Upload, (uint)indices.Length);
+        var ispan = itransfer.Map<uint>(cycle: false);
+        indices.AsSpan().CopyTo(ispan);
+        itransfer.Unmap();
+
+        var cmdbuf = device.AcquireCommandBuffer();
+        var copy = cmdbuf.BeginCopyPass();
+        copy.UploadToBuffer(vtransfer, vb, false);
+        copy.UploadToBuffer(itransfer, ib, false);
+        cmdbuf.EndCopyPass(copy);
+        device.Submit(cmdbuf);
+
+        return new Mesh(vb, verts.Length, PrimitiveType.TriangleList, ib, indices.Length);
+    }
     /// <summary>
     /// Vertex buffer for the mesh.
     /// </summary>

@@ -84,10 +84,13 @@ internal static class Program
 
             // Attach high-level renderer and register objects
             defaultRenderer = UseDefaultRenderer();
-            defaultRenderer.AddMesh3D(
-                () => cubeMesh,
-                () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0)
+            // Use a flat-colored 3D cube (cyan)
+            defaultRenderer.AddCube(
+                () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0),
+                new Vector3(0f, 1f, 1f), // flat color
+                0.7f
             );
+            // Keep the 2D rect in pixel space
             defaultRenderer.AddQuad2D(
                 () => rectMesh,
                 () => Matrix4x4.CreateTranslation(new Vector3(MainWindow.Width / 2f, MainWindow.Height / 2f, 0))

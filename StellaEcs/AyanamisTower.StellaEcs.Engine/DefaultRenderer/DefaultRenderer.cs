@@ -206,6 +206,12 @@ public sealed class DefaultRenderer : IDisposable
         => AddMesh3D(() => Mesh.CreateBox3D(_device, size), model);
 
     /// <summary>
+    /// Adds a simple box mesh (cube) with flat color using a model provider.
+    /// </summary>
+    public void AddCube(Func<Matrix4x4> model, Vector3 color, float size = 0.7f)
+        => AddMesh3D(() => Mesh.CreateBox3D(_device, size, color), model);
+
+    /// <summary>
     /// Adds a simple quad with size and color using a model provider in 2D space.
     /// </summary>
     public void AddQuad(Func<Matrix4x4> model, float w = 1f, float h = 1f, Vector3? color = null)
