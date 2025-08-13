@@ -116,8 +116,8 @@ internal static class Program
             defaultRenderer.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
 
             // Configure shadow mapping for solar system scale (planets orbit out to ~21 units)
-            // Use near=1.0 to avoid precision issues with the Sun (radius 1.5) at origin
-            defaultRenderer.SetShadows(nearPlane: 1.0f, farPlane: 50f, depthBias: 0.02f);
+            // Use near=0.5 (half Sun radius) and higher bias to prevent shadow acne
+            defaultRenderer.SetShadows(nearPlane: 0.5f, farPlane: 50f, depthBias: 0.1f);
 
             // Bridge ECS -> Renderer: register sync system
             world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));

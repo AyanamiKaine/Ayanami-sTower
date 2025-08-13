@@ -207,12 +207,12 @@ public sealed class DefaultRenderer : IDisposable
                 DepthStencilState = DepthStencilState.Disable,
                 TargetInfo = new GraphicsPipelineTargetInfo
                 {
-                    ColorTargetDescriptions = [new ColorTargetDescription { Format = TextureFormat.R8Unorm, BlendState = ColorTargetBlendState.NoBlend }]
+                    ColorTargetDescriptions = [new ColorTargetDescription { Format = TextureFormat.R16Unorm, BlendState = ColorTargetBlendState.NoBlend }]
                 },
                 Name = "ShadowCube"
             }
         );
-        _shadowStep = new ShadowCubeRenderStep(_device, shadowPipeline, size: 512);
+        _shadowStep = new ShadowCubeRenderStep(_device, shadowPipeline, size: 1024); // Higher resolution
         _shadowStep.Initialize(_device);
 
         // Create a clamp sampler for the shadow cubemap

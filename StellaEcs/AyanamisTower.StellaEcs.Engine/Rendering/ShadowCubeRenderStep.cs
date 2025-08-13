@@ -81,7 +81,7 @@ public sealed class ShadowCubeRenderStep : IRenderStep, IDisposable
             device,
             name: "ShadowCube",
             size: _size,
-            format: TextureFormat.R8Unorm,
+            format: TextureFormat.R16Unorm, // Higher precision to reduce acne
             usageFlags: TextureUsageFlags.ColorTarget | TextureUsageFlags.Sampler
         );
     }
