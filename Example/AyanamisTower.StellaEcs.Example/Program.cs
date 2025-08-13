@@ -35,14 +35,12 @@ internal static class Program
         private float time;
         private float rectSize = 150f; // pixels
                                        // ECS-rendered lit meshes
-        private Mesh? ecsCubeMesh;
-        // Solar system
+                                       // Solar system
         private Mesh? sunMesh;
         private Texture? sunTexture;
         private Entity sunEntity;
         private readonly List<Planet> planets = new();
         private readonly List<Texture> planetTextures = new();
-        private Entity cubeEntity;
         // Add: FPS counter & window title
         private readonly string baseTitle = "Hello MoonWorks - Shaders";
         private float fpsTimer;
@@ -116,42 +114,20 @@ internal static class Program
             defaultRenderer = UseDefaultRenderer();
             // Set a simple sun-like point light
             defaultRenderer.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
+
+            // Configure shadow mapping for solar system scale (planets orbit out to ~21 units)
+            defaultRenderer.SetShadows(farPlane: 50f, depthBias: 0.02f);
+
             // Bridge ECS -> Renderer: register sync system
             world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));
             world.RegisterSystem(new RenderSyncSystem3DTexturedLit(defaultRenderer));
-            // Create ECS entities for a lit cube and a small solar system demo
-            ecsCubeMesh = Mesh.CreateBox3D(GraphicsDevice, 0.7f, new Vector3(1f, 1f, 1f));
-            cubeEntity = world.CreateEntity()
-                .Set(new Position3D(cubePos.X, cubePos.Y, cubePos.Z))
-                .Set(new Mesh3D { Mesh = ecsCubeMesh })
-                .Set(new RenderLit3D())
-                .Set(Rotation3D.Identity)
-                .Set(new Size3D(1.5f, 1.5f, 1.5f))
-                .Set(new AngularVelocity3D(new Vector3(0.7f, 1.0f, 0f)));
-
-
-            cubeEntity = world.CreateEntity()
-                .Set(new Position3D(3, 6, 3))
-                .Set(new Mesh3D { Mesh = ecsCubeMesh })
-                .Set(new RenderLit3D())
-                .Set(Rotation3D.Identity)
-                .Set(new Size3D(0.5f, 2.0f, 0.5f))
-                .Set(new AngularVelocity3D(new Vector3(0.3f, 0.6f, 0f)));
-
-
-            cubeEntity = world.CreateEntity()
-                .Set(new Position3D(15, 6, 3))
-                .Set(new Mesh3D { Mesh = Mesh.CreateSphere3D(GraphicsDevice, 0.5f, new Vector3(1f, 1f, 1f), 10) })
-                .Set(new RenderLit3D())
-                .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(new Vector3(0.3f, 0.6f, 0f)));
 
             // Build a small solar system using textures in Assets/
             // Sun
             sunTexture = TryLoadTextureAny("Assets/Sun");
             if (sunTexture != null)
             {
-                sunMesh = Mesh.CreateSphere3D(GraphicsDevice, radius: 1.5f, slices: 128, stacks: 64);
+                sunMesh = Mesh.CreateSphere3DTexturedLit(GraphicsDevice, radius: 1.5f, slices: 128, stacks: 64);
                 sunEntity = world.CreateEntity()
                     .Set(new Position3D(0, 0, 0))
                     .Set(new Mesh3D { Mesh = sunMesh })
@@ -389,7 +365,6 @@ internal static class Program
         protected override void Destroy()
         {
             try { rectMesh.Dispose(); } catch { }
-            try { ecsCubeMesh?.Dispose(); } catch { }
             try { sunMesh?.Dispose(); } catch { }
             try { sunTexture?.Dispose(); } catch { }
             foreach (var t in planetTextures) { try { t.Dispose(); } catch { } }
@@ -439,7 +414,7 @@ internal static class Program
                 Logger.LogWarn($"Planet texture not found for {name} (Assets/{baseName}.[jpg|png]) — skipping.");
                 return;
             }
-            var mesh = Mesh.CreateSphere3D(GraphicsDevice, radius: radius, slices: 96, stacks: 48);
+            var mesh = Mesh.CreateSphere3DTexturedLit(GraphicsDevice, radius: radius, slices: 96, stacks: 48);
             var entity = world.CreateEntity()
                 .Set(new Position3D(0, 0, 0))
                 .Set(new Mesh3D { Mesh = mesh })
