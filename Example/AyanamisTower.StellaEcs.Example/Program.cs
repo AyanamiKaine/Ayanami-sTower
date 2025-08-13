@@ -119,15 +119,19 @@ internal static class Program
                 .Set(new AngularVelocity3D(new Vector3(0.3f, 0.6f, 0f)));
 
 
+            cubeEntity = world.CreateEntity()
+                .Set(new Position3D(15, 6, 3))
+                .Set(new Mesh3D { Mesh = Mesh.CreateSphere3DLit(GraphicsDevice, 0.5f, new Vector3(1f, 1f, 1f), 10) })
+                .Set(new RenderLit3D())
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(new Vector3(0.3f, 0.6f, 0f)));
+
 
             ecsLightSphereMesh = Mesh.CreateSphere3DLit(GraphicsDevice, 0.1f, new Vector3(1f, 1f, 0.2f));
             lightSphereEntity = world.CreateEntity()
                 .Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z))
                 .Set(new Mesh3D { Mesh = ecsLightSphereMesh })
                 .Set(new RenderLit3D());
-
-
-
 
 
             // Keep the 2D rect in pixel space
