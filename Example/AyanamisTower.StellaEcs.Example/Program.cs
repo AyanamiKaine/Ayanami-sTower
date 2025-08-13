@@ -53,7 +53,7 @@ internal static class Program
         private Font? uiFont; // MSDF font loaded from Shaders/
         private bool showOverlay = true;
         private Vector3 cubePos = new(0, 0, 0);
-        private Vector3 lightPos = new(2f, 3f, 2f); // Store light position for debug display
+        private Vector3 lightPos = new(0f, 0f, 0f); // Store light position for debug display
         // Camera controls
         private float mouseSensitivity = 0.0015f; // Reduced for relative mouse mode
         private float moveSpeed = 15f;
