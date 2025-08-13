@@ -429,57 +429,99 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     /// </summary>
     public static Mesh CreateSphere3DLit(GraphicsDevice device, float radius, Vector3 color, int subdivisions = 1)
     {
-        // Start with an icosahedron and subdivide for smoother sphere
-        var t = (1.0f + MathF.Sqrt(5.0f)) / 2.0f; // Golden ratio
+        subdivisions = Math.Max(0, Math.Min(6, subdivisions)); // clamp to keep sizes sane
 
-        // Base icosahedron vertices (normalized)
-        var baseVerts = new Vector3[]
+        // Base icosahedron ------------------------------------------
+        var t = (1.0f + MathF.Sqrt(5.0f)) / 2.0f;
+
+        var unitVerts = new List<Vector3>
         {
-            Vector3.Normalize(new Vector3(-1, t, 0)),
-            Vector3.Normalize(new Vector3( 1, t, 0)),
-            Vector3.Normalize(new Vector3(-1,-t, 0)),
-            Vector3.Normalize(new Vector3( 1,-t, 0)),
-            Vector3.Normalize(new Vector3( 0,-1, t)),
-            Vector3.Normalize(new Vector3( 0, 1, t)),
-            Vector3.Normalize(new Vector3( 0,-1,-t)),
-            Vector3.Normalize(new Vector3( 0, 1,-t)),
-            Vector3.Normalize(new Vector3( t, 0,-1)),
-            Vector3.Normalize(new Vector3( t, 0, 1)),
-            Vector3.Normalize(new Vector3(-t, 0,-1)),
-            Vector3.Normalize(new Vector3(-t, 0, 1))
+            Vector3.Normalize(new Vector3(-1,  t,  0)),
+            Vector3.Normalize(new Vector3( 1,  t,  0)),
+            Vector3.Normalize(new Vector3(-1, -t,  0)),
+            Vector3.Normalize(new Vector3( 1, -t,  0)),
+            Vector3.Normalize(new Vector3( 0, -1,  t)),
+            Vector3.Normalize(new Vector3( 0,  1,  t)),
+            Vector3.Normalize(new Vector3( 0, -1, -t)),
+            Vector3.Normalize(new Vector3( 0,  1, -t)),
+            Vector3.Normalize(new Vector3( t,  0, -1)),
+            Vector3.Normalize(new Vector3( t,  0,  1)),
+            Vector3.Normalize(new Vector3(-t,  0, -1)),
+            Vector3.Normalize(new Vector3(-t,  0,  1)),
         };
 
-        // Scale to radius and create lit vertices
-        var verts = new List<Vertex3DLit>();
-        for (int i = 0; i < baseVerts.Length; i++)
+        // 20 faces for an icosahedron
+        var faces = new List<(int a, int b, int c)>
         {
-            var pos = baseVerts[i] * radius;
-            var normal = baseVerts[i]; // For sphere, position IS the normal
-            verts.Add(new Vertex3DLit(pos, normal, color.X, color.Y, color.Z));
+            (0,11,5), (0,5,1), (0,1,7), (0,7,10), (0,10,11),
+            (1,5,9), (5,11,4), (11,10,2), (10,7,6), (7,1,8),
+            (3,9,4), (3,4,2), (3,2,6), (3,6,8), (3,8,9),
+            (4,9,5), (2,4,11), (6,2,10), (8,6,7), (9,8,1)
+        };
+
+        // Subdivide --------------------------------------------------
+        var midpointCache = new Dictionary<(int, int), int>(capacity: faces.Count * 3);
+
+        int GetMidpoint(int i0, int i1)
+        {
+            var key = i0 < i1 ? (i0, i1) : (i1, i0);
+            if (midpointCache.TryGetValue(key, out var cached)) return cached;
+
+            var mid = Vector3.Normalize(unitVerts[i0] + unitVerts[i1]);
+            int idx = unitVerts.Count;
+            unitVerts.Add(mid);
+            midpointCache[key] = idx;
+            return idx;
         }
 
-        // Icosahedron faces (triangles)
-        var indices = new List<uint>
+        for (int s = 0; s < subdivisions; s++)
         {
-            // Top cap
-            0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11,
-            // Middle band
-            1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8,
-            // Bottom band  
-            3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9,
-            // Bottom cap
-            4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1
-        };
+            var newFaces = new List<(int a, int b, int c)>(faces.Count * 4);
+            midpointCache.Clear();
 
-        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "SphereVB", BufferUsageFlags.Vertex, (uint)verts.Count);
-        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "SphereIB", BufferUsageFlags.Index, (uint)indices.Count);
+            foreach (var (a, b, c) in faces)
+            {
+                int ab = GetMidpoint(a, b);
+                int bc = GetMidpoint(b, c);
+                int ca = GetMidpoint(c, a);
 
-        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "SphereVBUpload", TransferBufferUsage.Upload, (uint)verts.Count);
+                // 4 new faces
+                newFaces.Add((a, ab, ca));
+                newFaces.Add((b, bc, ab));
+                newFaces.Add((c, ca, bc));
+                newFaces.Add((ab, bc, ca));
+            }
+
+            faces = newFaces;
+        }
+
+        // Build lit vertices/index buffer ----------------------------
+        var litVerts = new List<Vertex3DLit>(unitVerts.Count);
+        for (int i = 0; i < unitVerts.Count; i++)
+        {
+            var n = unitVerts[i];
+            var p = n * radius;
+            litVerts.Add(new Vertex3DLit(p, n, color.X, color.Y, color.Z));
+        }
+
+        var indices = new List<uint>(faces.Count * 3);
+        foreach (var (a, b, c) in faces)
+        {
+            indices.Add((uint)a);
+            indices.Add((uint)b);
+            indices.Add((uint)c);
+        }
+
+        // Upload to GPU ----------------------------------------------
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "SphereLitVB", BufferUsageFlags.Vertex, (uint)litVerts.Count);
+        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "SphereLitIB", BufferUsageFlags.Index, (uint)indices.Count);
+
+        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "SphereLitVBUpload", TransferBufferUsage.Upload, (uint)litVerts.Count);
         var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
-        verts.ToArray().AsSpan().CopyTo(vspan);
+        litVerts.ToArray().AsSpan().CopyTo(vspan);
         vtransfer.Unmap();
 
-        var itransfer = TransferBuffer.Create<uint>(device, "SphereIBUpload", TransferBufferUsage.Upload, (uint)indices.Count);
+        var itransfer = TransferBuffer.Create<uint>(device, "SphereLitIBUpload", TransferBufferUsage.Upload, (uint)indices.Count);
         var ispan = itransfer.Map<uint>(cycle: false);
         indices.ToArray().AsSpan().CopyTo(ispan);
         itransfer.Unmap();
@@ -494,7 +536,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         vtransfer.Dispose();
         itransfer.Dispose();
 
-        return new Mesh(vb, verts.Count, PrimitiveType.TriangleList, ib, indices.Count);
+        return new Mesh(vb, litVerts.Count, PrimitiveType.TriangleList, ib, indices.Count);
     }
 
     /// <summary>
