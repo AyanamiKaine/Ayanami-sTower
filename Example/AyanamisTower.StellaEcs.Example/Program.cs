@@ -106,6 +106,7 @@ internal static class Program
                 .Set(new Mesh3D { Mesh = ecsCubeMesh })
                 .Set(new RenderLit3D())
                 .Set(Rotation3D.Identity)
+                .Set(new Size3D(1.5f, 1.5f, 1.5f))
                 .Set(new AngularVelocity3D(new Vector3(0.7f, 1.0f, 0f)));
 
 
@@ -114,6 +115,7 @@ internal static class Program
                 .Set(new Mesh3D { Mesh = ecsCubeMesh })
                 .Set(new RenderLit3D())
                 .Set(Rotation3D.Identity)
+                .Set(new Size3D(0.5f, 2.0f, 0.5f))
                 .Set(new AngularVelocity3D(new Vector3(0.3f, 0.6f, 0f)));
 
 

@@ -46,11 +46,17 @@ public sealed class RenderSyncSystem3DLit : ISystem
         {
             var pos = world.GetComponent<Position3D>(entity).Value;
             var mesh = world.GetComponent<Mesh3D>(entity).Mesh;
+            // Compose model as S * R * T (scale, rotation, translation)
             Matrix4x4 model = Matrix4x4.CreateTranslation(pos);
             if (world.HasComponent<Rotation3D>(entity))
             {
                 var rot = world.GetComponent<Rotation3D>(entity).Value;
                 model = Matrix4x4.CreateFromQuaternion(rot) * model;
+            }
+            if (world.HasComponent<Size3D>(entity))
+            {
+                var scl = world.GetComponent<Size3D>(entity).Value;
+                model = Matrix4x4.CreateScale(scl) * model;
             }
             _renderer.AddMesh3DLit(() => mesh, () => model);
         }

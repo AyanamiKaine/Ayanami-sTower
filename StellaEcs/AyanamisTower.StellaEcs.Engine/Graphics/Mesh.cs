@@ -563,7 +563,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
             var normal = new Vector3(x, 0, z);
             // bottom and top
             verts.Add(new Vertex3DLit(new Vector3(radius * x, -halfH, radius * z), normal, color.X, color.Y, color.Z)); // i*2
-            verts.Add(new Vertex3DLit(new Vector3(radius * x,  halfH, radius * z), normal, color.X, color.Y, color.Z)); // i*2+1
+            verts.Add(new Vertex3DLit(new Vector3(radius * x, halfH, radius * z), normal, color.X, color.Y, color.Z)); // i*2+1
         }
 
         // Side quads
