@@ -9,10 +9,10 @@ namespace AyanamisTower.StellaEcs.Engine.Ecs;
 
 /// <summary>
 /// Bridges the ECS world to the engine’s lit 3D renderer by discovering entities
-/// with Position3D + RenderMesh3DLit and submitting instances each frame.
+/// with Position3D + Mesh3D + RenderLit3D and submitting instances each frame.
 /// </summary>
 /// <summary>
-/// ECS System that discovers Position3D + RenderMesh3DLit and submits lit instances to the renderer.
+/// ECS System that discovers Position3D + Mesh3D + RenderLit3D and submits lit instances to the renderer.
 /// </summary>
 public sealed class RenderSyncSystem3DLit : ISystem
 {
@@ -40,22 +40,21 @@ public sealed class RenderSyncSystem3DLit : ISystem
 
         // Clear previous frame’s lit instances, then rebuild from ECS state.
         _renderer.ClearLitInstances();
-        foreach (var entity in world.Query(typeof(Position3D), typeof(RenderMesh3DLit)))
+
+        // New path: Mesh3D + RenderLit3D
+        foreach (var entity in world.Query(typeof(Position3D), typeof(Mesh3D), typeof(RenderLit3D)))
         {
             var pos = world.GetComponent<Position3D>(entity).Value;
-            var mesh = world.GetComponent<RenderMesh3DLit>(entity).Mesh;
-            // If the entity also has a Rotation3D, apply it
+            var mesh = world.GetComponent<Mesh3D>(entity).Mesh;
             Matrix4x4 model = Matrix4x4.CreateTranslation(pos);
             if (world.HasComponent<Rotation3D>(entity))
             {
                 var rot = world.GetComponent<Rotation3D>(entity).Value;
                 model = Matrix4x4.CreateFromQuaternion(rot) * model;
             }
-
-            _renderer.AddMesh3DLit(
-                mesh: () => mesh,
-                model: () => model
-            );
+            _renderer.AddMesh3DLit(() => mesh, () => model);
         }
+
+        // Obsolete compatibility path removed. Use Mesh3D + RenderLit3D.
     }
 }

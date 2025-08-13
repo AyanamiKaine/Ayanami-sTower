@@ -3,8 +3,9 @@ using AyanamisTower.StellaEcs.Engine.Graphics;
 namespace AyanamisTower.StellaEcs.Engine.Components;
 
 /// <summary>
-/// ECS component that references a lit 3D mesh to be rendered by the engine.
+/// Deprecated: use Mesh3D + RenderLit3D tag instead.
 /// </summary>
+[System.Obsolete("Use Mesh3D + RenderLit3D instead.")]
 public struct RenderMesh3DLit
 {
     /// <summary>

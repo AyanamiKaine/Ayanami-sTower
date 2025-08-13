@@ -103,18 +103,22 @@ internal static class Program
             ecsCubeMesh = Mesh.CreateBox3DLit(GraphicsDevice, 0.7f, new Vector3(1f, 1f, 1f));
             cubeEntity = world.CreateEntity()
                 .Set(new Position3D(cubePos.X, cubePos.Y, cubePos.Z))
-                .Set(new RenderMesh3DLit { Mesh = ecsCubeMesh });
+                .Set(new Mesh3D { Mesh = ecsCubeMesh })
+                .Set(new RenderLit3D());
 
 
             cubeEntity = world.CreateEntity()
                 .Set(new Position3D(3, 6, 3))
-                .Set(new RenderMesh3DLit { Mesh = ecsCubeMesh });
+                .Set(new Mesh3D { Mesh = ecsCubeMesh })
+                .Set(new RenderLit3D());
+
 
 
             ecsLightSphereMesh = Mesh.CreateSphere3DLit(GraphicsDevice, 0.1f, new Vector3(1f, 1f, 0.2f));
             lightSphereEntity = world.CreateEntity()
                 .Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z))
-                .Set(new RenderMesh3DLit { Mesh = ecsLightSphereMesh });
+                .Set(new Mesh3D { Mesh = ecsLightSphereMesh })
+                .Set(new RenderLit3D());
 
 
 
