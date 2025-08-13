@@ -234,17 +234,18 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         {
             for (int x = 0; x < slices; x++)
             {
-                int i0 = (y * vertsPerRow) + x;
-                int i1 = i0 + 1;
-                int i2 = i0 + vertsPerRow;
-                int i3 = i2 + 1;
+                int i0 = (y * vertsPerRow) + x;       // top-left
+                int i1 = i0 + 1;                       // top-right
+                int i2 = i0 + vertsPerRow;             // bottom-left
+                int i3 = i2 + 1;                       // bottom-right
 
+                // CCW winding when viewed from outside the sphere
                 indices.Add((uint)i0);
-                indices.Add((uint)i2);
                 indices.Add((uint)i1);
+                indices.Add((uint)i2);
 
-                indices.Add((uint)i1);
                 indices.Add((uint)i2);
+                indices.Add((uint)i1);
                 indices.Add((uint)i3);
             }
         }
