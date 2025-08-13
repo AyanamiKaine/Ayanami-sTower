@@ -244,7 +244,8 @@ public sealed class DefaultRenderer : IDisposable
         var (shadowVS, shadowPS) = CompileHlsl(rootTitleStorage, "Assets/ShadowDepthCube.hlsl", namePrefix: "Shadow");
         var shadowInput = new VertexInputState
         {
-            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3D>(0)],
+            // Use the same stride as our meshes (Vertex3DMaterial); only POSITION at location 0 is consumed.
+            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DMaterial>(0)],
             VertexAttributes = [new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 }]
         };
         var shadowPipeline = GraphicsPipeline.Create(
@@ -436,7 +437,11 @@ public sealed class DefaultRenderer : IDisposable
     /// <summary>
     /// Adds a lit 3D mesh instance (requires Vertex3DLit layout) using the point light.
     /// </summary>
-    public void AddMesh3DLit(Func<Mesh> mesh, Func<Matrix4x4> model) => _mesh3DLitStep.AddInstance(mesh, model);
+    public void AddMesh3DLit(Func<Mesh> mesh, Func<Matrix4x4> model)
+    {
+        _mesh3DLitStep.AddInstance(mesh, model);
+        _shadowStep?.AddCaster(mesh, model);
+    }
 
     /// <summary>
     /// Adds a lit cube with flat albedo color.
@@ -530,6 +535,7 @@ public sealed class DefaultRenderer : IDisposable
             }
         }
         step.AddInstance(mesh, model);
+        _shadowStep?.AddCaster(mesh, model);
     }
 
     /// <summary>
@@ -545,7 +551,11 @@ public sealed class DefaultRenderer : IDisposable
     /// <summary>
     /// Clears all lit 3D instances queued so far. Useful for ECS-driven per-frame submissions.
     /// </summary>
-    public void ClearLitInstances() => _mesh3DLitStep.ClearInstances();
+    public void ClearLitInstances()
+    {
+        _mesh3DLitStep.ClearInstances();
+        _shadowStep?.ClearCasters();
+    }
 
     /// <summary>
     /// Clears all textured-lit instances queued so far.
@@ -556,6 +566,7 @@ public sealed class DefaultRenderer : IDisposable
         {
             step.ClearInstances();
         }
+        _shadowStep?.ClearCasters();
     }
 
     /// <summary>
