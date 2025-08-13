@@ -77,6 +77,7 @@ internal static class Program
             // Set up camera position and orientation
             Camera.Position = new Vector3(0, 2, 5);
             Camera.LookAt(Vector3.Zero);
+            Camera.Far = 200f; // Increase default far clip so distant objects don't vanish
 
             // Create 2D rectangle mesh (pixel space)
             rectMesh = Mesh.CreateQuad(GraphicsDevice, rectSize, rectSize, rectColor);
@@ -145,6 +146,8 @@ internal static class Program
                 y += 20f;
                 batch.Add(uiFont!, "IJKL+UO: Move Light", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
                 y += 20f;
+                batch.Add(uiFont!, "PgUp/PgDn: Far Clip +/-", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
                 batch.Add(uiFont!, "Click square to toggle color", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
                 y += 20f;
                 batch.Add(uiFont!, $"FPS: {(int)fps}", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
@@ -152,6 +155,8 @@ internal static class Program
                 batch.Add(uiFont!, $"Mouse: {(MouseCaptured ? "CAPTURED" : "Free")}", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), MouseCaptured ? accent : white);
                 y += 20f;
                 batch.Add(uiFont!, $"Light: ({lightPos.X:F1}, {lightPos.Y:F1}, {lightPos.Z:F1})", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), accent);
+                y += 20f;
+                batch.Add(uiFont!, $"Near/Far: {Camera.Near:F2} / {Camera.Far:F0}", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), accent);
                 return true;
             });
         }
@@ -201,6 +206,17 @@ internal static class Program
                 if (newFov < 0.3f) newFov = 0.3f;
                 else if (newFov > 1.6f) newFov = 1.6f;
                 Camera.Fov = newFov;
+            }
+
+            // Adjust far clipping distance on the fly
+            if (Inputs.Keyboard.IsPressed(KeyCode.PageUp))
+            {
+                Camera.Far = MathF.Min(Camera.Far * 1.5f, 10000f);
+            }
+            if (Inputs.Keyboard.IsPressed(KeyCode.PageDown))
+            {
+                var minFar = MathF.Max(Camera.Near + 0.1f, 1f);
+                Camera.Far = MathF.Max(Camera.Far / 1.5f, minFar);
             }
 
             time += (float)delta.TotalSeconds;
