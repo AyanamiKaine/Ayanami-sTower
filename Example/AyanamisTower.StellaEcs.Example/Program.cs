@@ -44,6 +44,9 @@ internal static class Program
         private bool showOverlay = true;
         private Vector3 cubePos = new(0, 0, 0);
         private Vector3 lightPos = new(2f, 3f, 2f); // Store light position for debug display
+        // Camera controls
+        private float mouseSensitivity = 0.0005f; // Reduced for relative mouse mode
+        private float moveSpeed = 5f;
 
         public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
@@ -64,7 +67,9 @@ internal static class Program
 
             world.EnableRestApi();
 
-            // Camera is provided by App base class (this.Camera)
+            // Set up camera position and orientation
+            Camera.Position = new Vector3(0, 2, 5);
+            Camera.LookAt(Vector3.Zero);
 
             // Create 2D rectangle mesh (pixel space)
             rectMesh = Mesh.CreateQuad(GraphicsDevice, rectSize, rectSize, rectColor);
@@ -116,13 +121,17 @@ internal static class Program
                 y += 20f;
                 batch.Add(uiFont!, "F11: Toggle Fullscreen", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
                 y += 20f;
-                batch.Add(uiFont!, "Mouse Wheel: Zoom Camera", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                batch.Add(uiFont!, "Right Click: Capture Mouse for Camera", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
                 y += 20f;
-                batch.Add(uiFont!, "WASD: Move Camera, IJKL+UO: Move Light", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                batch.Add(uiFont!, "WASD+QE: Move Camera (FPS-style)", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
+                batch.Add(uiFont!, "IJKL+UO: Move Light", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
                 y += 20f;
                 batch.Add(uiFont!, "Click square to toggle color", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
                 y += 20f;
                 batch.Add(uiFont!, $"FPS: {(int)fps}", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
+                batch.Add(uiFont!, $"Mouse: {(MouseCaptured ? "CAPTURED" : "Free")}", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), MouseCaptured ? accent : white);
                 y += 20f;
                 batch.Add(uiFont!, $"Light: ({lightPos.X:F1}, {lightPos.Y:F1}, {lightPos.Z:F1})", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), accent);
                 return true;
@@ -139,7 +148,7 @@ internal static class Program
 
         protected override void OnUpdate(TimeSpan delta)
         {
-            // Esc and F11 are handled by App by default
+            // Esc now releases mouse capture or quits (handled by App base class)
 
             // Toggle overlay with F1
             if (Inputs.Keyboard.IsPressed(KeyCode.F1))
@@ -147,8 +156,27 @@ internal static class Program
                 showOverlay = !showOverlay;
             }
 
-            // Mouse wheel zoom: adjust camera FOV
-            if (Inputs.Mouse.Wheel != 0)
+            // Right click to capture/release mouse for camera control
+            if (Inputs.Mouse.RightButton.IsPressed)
+            {
+                if (MouseCaptured)
+                    ReleaseMouse();
+                else
+                    CaptureMouse();
+            }
+
+            // Mouse look when captured
+            if (MouseCaptured)
+            {
+                var mouseDelta = GetMouseDelta();
+                if (mouseDelta != Vector2.Zero)
+                {
+                    Camera.Rotate(-mouseDelta.X * mouseSensitivity, -mouseDelta.Y * mouseSensitivity);
+                }
+            }
+
+            // Mouse wheel zoom: adjust camera FOV (only when not captured)
+            if (!MouseCaptured && Inputs.Mouse.Wheel != 0)
             {
                 var newFov = Camera.Fov - (Inputs.Mouse.Wheel * 0.05f);
                 if (newFov < 0.3f) newFov = 0.3f;
@@ -158,14 +186,14 @@ internal static class Program
 
             time += (float)delta.TotalSeconds;
 
-            // Simple WASD camera movement
-            float moveSpeed = 2.5f * (float)delta.TotalSeconds;
-            var move = Vector3.Zero;
-            if (Inputs.Keyboard.IsDown(KeyCode.W)) move += new Vector3(0, 0, -moveSpeed);
-            if (Inputs.Keyboard.IsDown(KeyCode.S)) move += new Vector3(0, 0, moveSpeed);
-            if (Inputs.Keyboard.IsDown(KeyCode.A)) move += new Vector3(-moveSpeed, 0, 0);
-            if (Inputs.Keyboard.IsDown(KeyCode.D)) move += new Vector3(moveSpeed, 0, 0);
-            Camera.Move(move);
+            // FPS-style camera movement (WASD + QE for up/down)
+            float deltaSpeed = moveSpeed * (float)delta.TotalSeconds;
+            if (Inputs.Keyboard.IsDown(KeyCode.W)) Camera.MoveRelative(deltaSpeed, 0, 0);    // Forward
+            if (Inputs.Keyboard.IsDown(KeyCode.S)) Camera.MoveRelative(-deltaSpeed, 0, 0);   // Backward
+            if (Inputs.Keyboard.IsDown(KeyCode.A)) Camera.MoveRelative(0, -deltaSpeed, 0);   // Left
+            if (Inputs.Keyboard.IsDown(KeyCode.D)) Camera.MoveRelative(0, deltaSpeed, 0);    // Right
+            if (Inputs.Keyboard.IsDown(KeyCode.Q)) Camera.MoveRelative(0, 0, -deltaSpeed);   // Down
+            if (Inputs.Keyboard.IsDown(KeyCode.E)) Camera.MoveRelative(0, 0, deltaSpeed);    // Up
 
             // IJKL controls for moving the light
             var lightSpeed = 2f * (float)delta.TotalSeconds;

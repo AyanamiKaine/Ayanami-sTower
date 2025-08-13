@@ -38,6 +38,19 @@ public class App : Game
     protected DefaultRenderer.DefaultRenderer? DefaultRendererInstance { get; private set; }
 
     /// <summary>
+    /// When true, the mouse cursor is captured and hidden for FPS-style camera controls.
+    /// </summary>
+    protected bool MouseCaptured { get; private set; } = false;
+
+    /// <summary>
+    /// Center position of the window for mouse wrapping.
+    /// </summary>
+    private Vector2 _windowCenter;
+
+    // Suppress the first mouse delta after enabling relative mode to avoid an initial jump.
+    private bool _suppressNextMouseDelta = false;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="App"/> class.
     /// </summary>
     /// <param name="appInfo">App info metadata.</param>
@@ -228,7 +241,14 @@ public class App : Game
     {
         if (Inputs.Keyboard.IsPressed(KeyCode.Escape))
         {
-            Quit();
+            if (MouseCaptured)
+            {
+                ReleaseMouse();
+            }
+            else
+            {
+                Quit();
+            }
         }
 
         if (Inputs.Keyboard.IsPressed(KeyCode.F11))
@@ -239,7 +259,50 @@ public class App : Game
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Captures the mouse cursor for FPS-style camera controls.
+    /// </summary>
+    protected void CaptureMouse()
+    {
+        if (!MouseCaptured)
+        {
+            MouseCaptured = true;
+            MainWindow.SetRelativeMouseMode(true);
+            _windowCenter = new Vector2(MainWindow.Width / 2f, MainWindow.Height / 2f);
+            _suppressNextMouseDelta = true;
+        }
+    }
+
+    /// <summary>
+    /// Releases the mouse cursor from capture.
+    /// </summary>
+    protected void ReleaseMouse()
+    {
+        if (MouseCaptured)
+        {
+            MouseCaptured = false;
+            MainWindow.SetRelativeMouseMode(false);
+        }
+    }
+
+    /// <summary>
+    /// Gets the mouse movement delta when the mouse is captured.
+    /// In relative mouse mode, mouse X/Y represent the delta directly.
+    /// </summary>
+    protected Vector2 GetMouseDelta()
+    {
+        if (!MouseCaptured) return Vector2.Zero;
+
+        // On the first frame after enabling capture, suppress the initial delta.
+        if (_suppressNextMouseDelta)
+        {
+            _suppressNextMouseDelta = false;
+            return Vector2.Zero;
+        }
+
+        // In relative mouse mode, SDL provides relative motion via DeltaX/DeltaY.
+        return new Vector2(Inputs.Mouse.DeltaX, Inputs.Mouse.DeltaY);
+    }    /// <inheritdoc />
     protected override void Draw(double alpha)
     {
         if (_pipeline == null)
