@@ -70,7 +70,8 @@ float4 PSMain(VSOutput input) : SV_Target
     float NdotL = saturate(dot(N, L));
 
     float dist = distance(input.lightPos, input.worldPos) / max(1e-5, input.farPlane);
-    float shadow = SampleShadow(input.worldPos - input.lightPos, dist, input.depthBias);
+    float3 lightToPoint = input.worldPos - input.lightPos;
+    float shadow = SampleShadow(lightToPoint, dist, input.depthBias);
 
     float3 lit = input.ambient + (NdotL * input.lightColor * shadow);
     float3 albedo = DiffuseTex.Sample(DiffuseSamp, input.uv).rgb;

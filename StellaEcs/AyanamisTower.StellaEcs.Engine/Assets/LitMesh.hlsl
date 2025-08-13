@@ -68,9 +68,10 @@ float4 PSMain(VSOutput input) : SV_Target
     float3 L = normalize(input.lightPos - input.worldPos);
     float NdotL = saturate(dot(N, L));
 
-    // Shadow factor
+    // Shadow factor - try both directions to debug
     float dist = distance(input.lightPos, input.worldPos) / max(1e-5, input.farPlane);
-    float shadow = SampleShadow(input.worldPos - input.lightPos, dist, input.depthBias);
+    float3 lightToPoint = input.worldPos - input.lightPos;
+    float shadow = SampleShadow(lightToPoint, dist, input.depthBias);
 
     float3 lit = input.ambient + (NdotL * input.lightColor * shadow);
     float3 outCol = input.col * lit;

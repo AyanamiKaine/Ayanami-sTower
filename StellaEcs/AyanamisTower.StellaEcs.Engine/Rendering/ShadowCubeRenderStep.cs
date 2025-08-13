@@ -166,23 +166,36 @@ public sealed class ShadowCubeRenderStep : IRenderStep, IDisposable
 
     private static Matrix4x4 FaceViewProj(CubeMapFace face, Vector3 pos, float near, float far)
     {
-        var upY = Vector3.UnitY;
         Vector3 target;
         Vector3 up;
+
+        // Standard D3D cubemap orientations (right-handed coordinate system)
         switch (face)
         {
-            case CubeMapFace.PositiveX:
-                target = pos + Vector3.UnitX; up = upY; break;
-            case CubeMapFace.NegativeX:
-                target = pos - Vector3.UnitX; up = upY; break;
-            case CubeMapFace.PositiveY:
-                target = pos + Vector3.UnitY; up = -Vector3.UnitZ; break;
-            case CubeMapFace.NegativeY:
-                target = pos - Vector3.UnitY; up = Vector3.UnitZ; break;
-            case CubeMapFace.PositiveZ:
-                target = pos + Vector3.UnitZ; up = upY; break;
-            default:
-                target = pos - Vector3.UnitZ; up = upY; break;
+            case CubeMapFace.PositiveX: // +X (right)
+                target = pos + Vector3.UnitX;
+                up = -Vector3.UnitY;
+                break;
+            case CubeMapFace.NegativeX: // -X (left)
+                target = pos - Vector3.UnitX;
+                up = -Vector3.UnitY;
+                break;
+            case CubeMapFace.PositiveY: // +Y (up)
+                target = pos + Vector3.UnitY;
+                up = Vector3.UnitZ;
+                break;
+            case CubeMapFace.NegativeY: // -Y (down)
+                target = pos - Vector3.UnitY;
+                up = -Vector3.UnitZ;
+                break;
+            case CubeMapFace.PositiveZ: // +Z (forward)
+                target = pos + Vector3.UnitZ;
+                up = -Vector3.UnitY;
+                break;
+            default: // NegativeZ (back)
+                target = pos - Vector3.UnitZ;
+                up = -Vector3.UnitY;
+                break;
         }
         var view = Matrix4x4.CreateLookAt(pos, target, up);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2f, 1f, near, far);
