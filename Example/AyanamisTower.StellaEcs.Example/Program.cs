@@ -36,11 +36,13 @@ internal static class Program
         private float rectSize = 150f; // pixels
                                        // ECS-rendered lit meshes
         private Mesh? ecsCubeMesh;
-        private Mesh? ecsLightSphereMesh;
-        private Mesh? ecsTexturedSphereMesh;
+        // Solar system
+        private Mesh? sunMesh;
+        private Texture? sunTexture;
+        private Entity sunEntity;
+        private readonly List<Planet> planets = new();
+        private readonly List<Texture> planetTextures = new();
         private Entity cubeEntity;
-        private Entity lightSphereEntity;
-        private Entity texturedSphereEntity;
         // Add: FPS counter & window title
         private readonly string baseTitle = "Hello MoonWorks - Shaders";
         private float fpsTimer;
@@ -57,7 +59,20 @@ internal static class Program
         // Camera controls
         private float mouseSensitivity = 0.0015f; // Reduced for relative mouse mode
         private float moveSpeed = 15f;
-        private Texture? venusTexture;
+
+        private sealed class Planet
+        {
+            public string Name = string.Empty;
+            public float Radius;            // world units
+            public float OrbitRadius;       // world units
+            public float AngularSpeed;      // radians per second (orbit)
+            public float SelfSpin;          // radians per second (rotation)
+            public float Phase;             // initial orbit angle
+            public string? Parent;          // parent planet name (for moons)
+            public Mesh? Mesh;
+            public Texture? Texture;
+            public Entity Entity;
+        }
 
         public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
@@ -104,7 +119,7 @@ internal static class Program
             // Bridge ECS -> Renderer: register sync system
             world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));
             world.RegisterSystem(new RenderSyncSystem3DTexturedLit(defaultRenderer));
-            // Create ECS entities for a lit cube and a lit debug light sphere
+            // Create ECS entities for a lit cube and a small solar system demo
             ecsCubeMesh = Mesh.CreateBox3D(GraphicsDevice, 0.7f, new Vector3(1f, 1f, 1f));
             cubeEntity = world.CreateEntity()
                 .Set(new Position3D(cubePos.X, cubePos.Y, cubePos.Z))
@@ -131,26 +146,32 @@ internal static class Program
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(new Vector3(0.3f, 0.6f, 0f)));
 
-
-            ecsLightSphereMesh = Mesh.CreateSphere3D(GraphicsDevice, 0.1f, new Vector3(1f, 1f, 0.2f));
-            lightSphereEntity = world.CreateEntity()
-                .Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z))
-                .Set(new Mesh3D { Mesh = ecsLightSphereMesh })
-                .Set(new RenderLit3D());
-
-            // Load Venus texture from Assets/Venus.jpg and create a textured sphere entity via ECS
-            venusTexture = LoadTextureFromAssets("Assets/Venus.jpg");
-            if (venusTexture != null)
+            // Build a small solar system using textures in Assets/
+            // Sun
+            sunTexture = TryLoadTextureAny("Assets/Sun");
+            if (sunTexture != null)
             {
-                ecsTexturedSphereMesh = Mesh.CreateSphere3D(GraphicsDevice, radius: 1.0f, slices: 96, stacks: 48);
-                texturedSphereEntity = world.CreateEntity()
-                    .Set(new Position3D(0, 1.2f, 0))
-                    .Set(new Mesh3D { Mesh = ecsTexturedSphereMesh })
-                    .Set(new Texture2DRef { Texture = venusTexture })
+                sunMesh = Mesh.CreateSphere3D(GraphicsDevice, radius: 1.5f, slices: 128, stacks: 64);
+                sunEntity = world.CreateEntity()
+                    .Set(new Position3D(0, 0, 0))
+                    .Set(new Mesh3D { Mesh = sunMesh })
+                    .Set(new Texture2DRef { Texture = sunTexture })
                     .Set(new RenderTexturedLit3D())
                     .Set(Rotation3D.Identity)
-                    .Set(new AngularVelocity3D(new Vector3(0f, 0.4f, 0f)));
+                    .Set(new AngularVelocity3D(new Vector3(0f, 0.15f, 0f)));
+                planetTextures.Add(sunTexture);
+                lightPos = Vector3.Zero; // put the light at the sun
             }
+            // Planets (sizes/distances are artistic, not to scale)
+            AddPlanet("Mercury", baseName: "Mercury", radius: 0.18f, orbitRadius: 3.0f, orbitSpeed: 0.09f, selfSpin: 0.4f, phase: 0.0f);
+            AddPlanet("Venus", baseName: "Venus", radius: 0.25f, orbitRadius: 5.0f, orbitSpeed: 0.05f, selfSpin: 0.2f, phase: 0.5f);
+            AddPlanet("Earth", baseName: "Earth", radius: 0.27f, orbitRadius: 7.0f, orbitSpeed: 0.04f, selfSpin: 1.2f, phase: 0.2f);
+            AddPlanet("Moon", baseName: "Moon", radius: 0.07f, orbitRadius: 0.6f, orbitSpeed: 1.0f, selfSpin: 0.6f, phase: 1.2f, parent: "Earth");
+            AddPlanet("Mars", baseName: "Mars", radius: 0.22f, orbitRadius: 9.0f, orbitSpeed: 0.032f, selfSpin: 0.8f, phase: 2.0f);
+            AddPlanet("Jupiter", baseName: "Jupiter", radius: 0.9f, orbitRadius: 12.0f, orbitSpeed: 0.018f, selfSpin: 2.0f, phase: 1.0f);
+            AddPlanet("Saturn", baseName: "Saturn", radius: 0.8f, orbitRadius: 15.0f, orbitSpeed: 0.014f, selfSpin: 1.8f, phase: 2.5f);
+            AddPlanet("Uranus", baseName: "Uranus", radius: 0.5f, orbitRadius: 18.0f, orbitSpeed: 0.010f, selfSpin: 1.2f, phase: 0.3f);
+            AddPlanet("Neptune", baseName: "Neptune", radius: 0.48f, orbitRadius: 21.0f, orbitSpeed: 0.008f, selfSpin: 1.0f, phase: 1.7f);
 
 
             // Keep the 2D rect in pixel space
@@ -274,10 +295,17 @@ internal static class Program
 
             // Update light position in renderer
             defaultRenderer?.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
-            // Keep ECS light sphere in sync with the current light position
-            if (lightSphereEntity.IsValid())
+            // Animate planet orbits; sun is at origin
+            if (planets.Count > 0)
             {
-                lightSphereEntity.Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z));
+                foreach (var p in planets)
+                {
+                    var pos = GetOrbitPosition(p, time);
+                    if (p.Entity.IsValid())
+                    {
+                        p.Entity.Set(new Position3D(pos.X, pos.Y, pos.Z));
+                    }
+                }
             }
             // Rotation is now handled by RotationSystem3D (CorePlugin)
 
@@ -362,9 +390,9 @@ internal static class Program
         {
             try { rectMesh.Dispose(); } catch { }
             try { ecsCubeMesh?.Dispose(); } catch { }
-            try { ecsLightSphereMesh?.Dispose(); } catch { }
-            try { ecsTexturedSphereMesh?.Dispose(); } catch { }
-            try { venusTexture?.Dispose(); } catch { }
+            try { sunMesh?.Dispose(); } catch { }
+            try { sunTexture?.Dispose(); } catch { }
+            foreach (var t in planetTextures) { try { t.Dispose(); } catch { } }
             base.Destroy();
         }
 
@@ -390,6 +418,65 @@ internal static class Program
             }
             // Create MoonWorks texture and upload
             return defaultRenderer!.CreateTextureFromRgba8Pixels((uint)image.Width, (uint)image.Height, image.Data, srgb: true);
+        }
+
+        private Texture? TryLoadTextureAny(string basePathWithoutExt)
+        {
+            var candidates = new[] { ".jpg", ".png", ".jpeg", ".JPG", ".PNG" };
+            foreach (var ext in candidates)
+            {
+                var tex = LoadTextureFromAssets(basePathWithoutExt + ext);
+                if (tex != null) return tex;
+            }
+            return null;
+        }
+
+        private void AddPlanet(string name, string baseName, float radius, float orbitRadius, float orbitSpeed, float selfSpin, float phase, string? parent = null)
+        {
+            var tex = TryLoadTextureAny($"Assets/{baseName}");
+            if (tex == null)
+            {
+                Logger.LogWarn($"Planet texture not found for {name} (Assets/{baseName}.[jpg|png]) — skipping.");
+                return;
+            }
+            var mesh = Mesh.CreateSphere3D(GraphicsDevice, radius: radius, slices: 96, stacks: 48);
+            var entity = world.CreateEntity()
+                .Set(new Position3D(0, 0, 0))
+                .Set(new Mesh3D { Mesh = mesh })
+                .Set(new Texture2DRef { Texture = tex })
+                .Set(new RenderTexturedLit3D())
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(new Vector3(0f, selfSpin, 0f)));
+
+            planets.Add(new Planet
+            {
+                Name = name,
+                Radius = radius,
+                OrbitRadius = orbitRadius,
+                AngularSpeed = orbitSpeed,
+                SelfSpin = selfSpin,
+                Phase = phase,
+                Parent = parent,
+                Mesh = mesh,
+                Texture = tex,
+                Entity = entity
+            });
+            planetTextures.Add(tex);
+        }
+
+        private Vector3 GetOrbitPosition(Planet p, float t)
+        {
+            var angle = p.Phase + t * p.AngularSpeed;
+            var pos = new Vector3(MathF.Cos(angle) * p.OrbitRadius, 0f, MathF.Sin(angle) * p.OrbitRadius);
+            if (!string.IsNullOrEmpty(p.Parent))
+            {
+                var parent = planets.Find(x => x.Name == p.Parent);
+                if (parent != null)
+                {
+                    return GetOrbitPosition(parent, t) + pos;
+                }
+            }
+            return pos;
         }
     }
 }
