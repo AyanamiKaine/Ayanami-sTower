@@ -15,7 +15,9 @@ public sealed class MeshInstancesRenderStep(GraphicsPipeline pipeline, MultiplyM
     private readonly GraphicsPipeline _pipeline = pipeline;
     private readonly MultiplyMode _mode = mode;
 
-    private readonly List<(Func<Mesh> mesh, Func<Matrix4x4> model)> _instances = [];
+    private readonly List<Instance> _instances = [];
+
+    private sealed record Instance(Func<Mesh> Mesh, Func<Matrix4x4> Model, GraphicsPipeline? PipelineOverride);
 
     /// <summary>
     /// Initializes GPU resources (none for this simple step).
@@ -39,7 +41,15 @@ public sealed class MeshInstancesRenderStep(GraphicsPipeline pipeline, MultiplyM
     /// </summary>
     public void AddInstance(Func<Mesh> meshProvider, Func<Matrix4x4> modelProvider)
     {
-        _instances.Add((meshProvider, modelProvider));
+        _instances.Add(new Instance(meshProvider, modelProvider, null));
+    }
+
+    /// <summary>
+    /// Adds a mesh instance with a dynamic model matrix provider and a custom pipeline override.
+    /// </summary>
+    public void AddInstance(Func<Mesh> meshProvider, Func<Matrix4x4> modelProvider, GraphicsPipeline customPipeline)
+    {
+        _instances.Add(new Instance(meshProvider, modelProvider, customPipeline));
     }
 
     /// <summary>
@@ -51,15 +61,22 @@ public sealed class MeshInstancesRenderStep(GraphicsPipeline pipeline, MultiplyM
     public void Record(CommandBuffer cmdbuf, RenderPass pass, in ViewContext view)
     {
         if (_instances.Count == 0) { return; }
-        pass.BindGraphicsPipeline(_pipeline);
-        foreach (var (mesh, model) in _instances)
+        GraphicsPipeline? bound = null;
+        foreach (var inst in _instances)
         {
-            var m = model();
+            var toUse = inst.PipelineOverride ?? _pipeline;
+            if (!ReferenceEquals(bound, toUse))
+            {
+                pass.BindGraphicsPipeline(toUse);
+                bound = toUse;
+            }
+
+            var m = inst.Model();
             Matrix4x4 mvp = _mode == MultiplyMode.WorldViewProj
                 ? m * view.View * view.Projection
                 : m * view.OrthoPixels;
             cmdbuf.PushVertexUniformData(mvp);
-            mesh().Draw(pass);
+            inst.Mesh().Draw(pass);
         }
     }
 

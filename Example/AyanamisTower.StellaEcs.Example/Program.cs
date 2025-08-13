@@ -3,6 +3,7 @@ using AyanamisTower.StellaEcs.Api;
 using AyanamisTower.StellaEcs.Components;
 using AyanamisTower.StellaEcs.Engine;
 using AyanamisTower.StellaEcs.Engine.Graphics;
+using AyanamisTower.StellaEcs.Engine.DefaultRenderer;
 using AyanamisTower.StellaEcs.Engine.Rendering;
 using MoonWorks;
 using MoonWorks.Graphics;
@@ -24,13 +25,13 @@ internal static class Program
     private sealed class HelloGame : App
     {
         private World world = new();
-        // Pipeline and buffers
-        private GraphicsPipeline cubePipeline;
-        private GraphicsPipeline rectPipeline;
+        // Renderer and meshes
+        private DefaultRenderer? defaultRenderer;
         private Mesh cubeMesh;
         private Mesh rectMesh;
         private Vector3 rectColor = new(1f, 0f, 0f); // Start as red
         private float time;
+        private float rectSize = 150f; // pixels
         // Add: FPS counter & window title
         private readonly string baseTitle = "Hello MoonWorks - Shaders";
         private float fpsTimer;
@@ -40,12 +41,8 @@ internal static class Program
         private bool rectHovered;
         private Vector3 displayedRectColor;
         // Add: text overlay
-        private GraphicsPipeline textPipeline;
-        private TextBatch textBatch;
         private Font? uiFont; // MSDF font loaded from Shaders/
         private bool showOverlay = true;
-        // New: simple render pipeline orchestrator
-        private RenderPipeline renderPipeline;
 
         public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
@@ -66,162 +63,16 @@ internal static class Program
 
             world.EnableRestApi();
 
-            ShaderCross.Initialize();
-
-            // Load/compile cube shaders
-            var vs = ShaderCross.Create(
-                GraphicsDevice,
-                RootTitleStorage,
-                filepath: "Assets/Cube.hlsl",
-                entrypoint: "VSMain",
-                shaderFormat: ShaderCross.ShaderFormat.HLSL,
-                shaderStage: ShaderStage.Vertex,
-                enableDebug: false,
-                name: "CubeVS"
-            );
-            var ps = ShaderCross.Create(
-                GraphicsDevice,
-                RootTitleStorage,
-                filepath: "Assets/Cube.hlsl",
-                entrypoint: "PSMain",
-                shaderFormat: ShaderCross.ShaderFormat.HLSL,
-                shaderStage: ShaderStage.Fragment,
-                enableDebug: false,
-                name: "CubePS"
-            );
-
-
-            // Cube pipeline: float3 position, float3 color
-            var cubeVertexInput = new VertexInputState
-            {
-                VertexBufferDescriptions =
-                [
-                    VertexBufferDescription.Create<Mesh.Vertex3D>(slot: 0)
-                ],
-                VertexAttributes =
-                [
-                    new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 },
-                    new VertexAttribute { Location = 1, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() }
-                ]
-            };
-
-            cubePipeline = GraphicsPipeline.Create(
-                GraphicsDevice,
-                new GraphicsPipelineCreateInfo
-                {
-                    VertexShader = vs,
-                    FragmentShader = ps,
-                    VertexInputState = cubeVertexInput,
-                    PrimitiveType = PrimitiveType.TriangleList,
-                    RasterizerState = RasterizerState.CCW_CullBack,
-                    MultisampleState = MultisampleState.None,
-                    DepthStencilState = new DepthStencilState
-                    {
-                        EnableDepthTest = true,
-                        EnableDepthWrite = true,
-                        EnableStencilTest = false,
-                        CompareOp = CompareOp.Less
-                    },
-                    TargetInfo = new GraphicsPipelineTargetInfo
-                    {
-                        ColorTargetDescriptions =
-                        [
-                            new ColorTargetDescription
-                            {
-                                Format = MainWindow.SwapchainFormat,
-                                BlendState = ColorTargetBlendState.NoBlend
-                            }
-                        ]
-                    },
-                    Name = "CubePipeline"
-                }
-            );
-
-            // Rectangle pipeline: float2 position, float3 color
-            var rectVertexInput = new VertexInputState
-            {
-                VertexBufferDescriptions =
-                [
-                    VertexBufferDescription.Create<Mesh.Vertex>(slot: 0)
-                ],
-                VertexAttributes =
-                [
-                    new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float2, Offset = 0 },
-                    new VertexAttribute { Location = 1, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)System.Runtime.InteropServices.Marshal.SizeOf<System.Numerics.Vector2>() }
-                ]
-            };
-
-            rectPipeline = GraphicsPipeline.Create(
-                GraphicsDevice,
-                new GraphicsPipelineCreateInfo
-                {
-                    VertexShader = vs,
-                    FragmentShader = ps,
-                    VertexInputState = rectVertexInput,
-                    PrimitiveType = PrimitiveType.TriangleList,
-                    RasterizerState = RasterizerState.CCW_CullBack,
-                    MultisampleState = MultisampleState.None,
-                    DepthStencilState = new DepthStencilState
-                    {
-                        EnableDepthTest = false,
-                        EnableDepthWrite = false,
-                        EnableStencilTest = false,
-                        CompareOp = CompareOp.Always
-                    },
-                    TargetInfo = new GraphicsPipelineTargetInfo
-                    {
-                        ColorTargetDescriptions =
-                        [
-                            new ColorTargetDescription
-                            {
-                                Format = MainWindow.SwapchainFormat,
-                                BlendState = ColorTargetBlendState.NoBlend
-                            }
-                        ]
-                    },
-                    Name = "RectPipeline"
-                }
-            );
-
-            // Text pipeline (MSDF): uses built-in text shaders
-            textPipeline = GraphicsPipeline.Create(
-                GraphicsDevice,
-                new GraphicsPipelineCreateInfo
-                {
-                    VertexShader = GraphicsDevice.TextVertexShader,
-                    FragmentShader = GraphicsDevice.TextFragmentShader,
-                    VertexInputState = GraphicsDevice.TextVertexInputState,
-                    PrimitiveType = PrimitiveType.TriangleList,
-                    RasterizerState = RasterizerState.CCW_CullNone,
-                    MultisampleState = MultisampleState.None,
-                    DepthStencilState = DepthStencilState.Disable,
-                    TargetInfo = new GraphicsPipelineTargetInfo
-                    {
-                        ColorTargetDescriptions =
-                        [
-                            new ColorTargetDescription
-                            {
-                                Format = MainWindow.SwapchainFormat,
-                                // MSDF shaders output straight alpha
-                                BlendState = ColorTargetBlendState.NonPremultipliedAlphaBlend
-                            }
-                        ]
-                    },
-                    Name = "TextPipeline"
-                }
-            );
-
             // Create cube mesh
             cubeMesh = Mesh.CreateBox3D(GraphicsDevice, 0.7f);
 
             // Camera is provided by App base class (this.Camera)
 
-            // Create 2D rectangle mesh (centered at origin, size 1x1)
-            rectMesh = Mesh.CreateQuad(GraphicsDevice, 1f, 1f, rectColor);
+            // Create 2D rectangle mesh (pixel space)
+            rectMesh = Mesh.CreateQuad(GraphicsDevice, rectSize, rectSize, rectColor);
             displayedRectColor = rectColor;
 
-            // Initialize text batch and try to load an MSDF font from Assets/
-            textBatch = new TextBatch(GraphicsDevice);
+            // Try to load an MSDF font from Assets/
             // Provide the path to your MSDF font (.ttf/.otf with matching .json and .png atlas next to it)
             // Example expected files: Assets/Roboto-Regular.ttf, Assets/Roboto-Regular.json, Assets/Roboto-Regular.png
             uiFont = Font.Load(GraphicsDevice, RootTitleStorage, "Assets/Roboto-Regular.ttf");
@@ -231,55 +82,38 @@ internal static class Program
                 showOverlay = false;
             }
 
-            // Build render pipeline steps
-            renderPipeline = new RenderPipeline()
-                .Add(new CubeRenderStep(
-                    cubePipeline,
-                    () => cubeMesh,
-                    () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0)
-                ))
-                .Add(new RectRenderStep(
-                    rectPipeline,
-                    () => rectMesh,
-                    () =>
-                    {
-                        var orthoProj = Matrix4x4.CreateOrthographicOffCenter(-2, 2, -1.5f, 1.5f, -1, 1);
-                        var rectModel = Matrix4x4.CreateTranslation(new Vector3(0.5f, 0.5f, 0));
-                        return rectModel * orthoProj;
-                    }
-                ))
-                .Add(new TextOverlayRenderStep(
-                    textPipeline,
-                    textBatch,
-                    () =>
-                    {
-                        // Builder returns whether to show and how to populate the batch for this frame
-                        return (showOverlay && uiFont != null, batch =>
-                        {
-                            const int size = 18;
-                            const float x = 12f;
-                            float y = 22f;
-                            var white = new Color(230, 235, 245);
-                            var accent = new Color(170, 200, 255);
+            // Attach high-level renderer and register objects
+            defaultRenderer = UseDefaultRenderer();
+            defaultRenderer.AddMesh3D(
+                () => cubeMesh,
+                () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0)
+            );
+            defaultRenderer.AddQuad2D(
+                () => rectMesh,
+                () => Matrix4x4.CreateTranslation(new Vector3(MainWindow.Width / 2f, MainWindow.Height / 2f, 0))
+            );
+            defaultRenderer.SetOverlayBuilder(batch =>
+            {
+                if (!showOverlay || uiFont == null) return false;
+                const int size = 18;
+                const float x = 12f;
+                float y = 22f;
+                var white = new Color(230, 235, 245);
+                var accent = new Color(170, 200, 255);
 
-                            batch.Add(uiFont!, "MoonWorks Example", size + 2, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), accent);
-                            y += 26f;
-                            batch.Add(uiFont!, "Esc: Quit", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
-                            y += 20f;
-                            batch.Add(uiFont!, "F11: Toggle Fullscreen", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
-                            y += 20f;
-                            batch.Add(uiFont!, "Mouse Wheel: Zoom Camera", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
-                            y += 20f;
-                            batch.Add(uiFont!, "Click square to toggle color", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
-                            y += 20f;
-                            batch.Add(uiFont!, $"FPS: {(int)fps}", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
-                        }
-                        );
-                    }
-                ));
-
-            // Hand over rendering responsibilities to the base App
-            UsePipeline(renderPipeline);
+                batch.Add(uiFont!, "MoonWorks Example", size + 2, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), accent);
+                y += 26f;
+                batch.Add(uiFont!, "Esc: Quit", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
+                batch.Add(uiFont!, "F11: Toggle Fullscreen", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
+                batch.Add(uiFont!, "Mouse Wheel: Zoom Camera", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
+                batch.Add(uiFont!, "Click square to toggle color", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
+                batch.Add(uiFont!, $"FPS: {(int)fps}", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                return true;
+            });
         }
 
         private readonly struct Vertex(System.Numerics.Vector2 pos, float r, float g, float b)
@@ -320,25 +154,19 @@ internal static class Program
             if (Inputs.Keyboard.IsDown(KeyCode.D)) move += new Vector3(moveSpeed, 0, 0);
             Camera.Move(move);
 
-            // Rectangle hover + click detection (orthographic space)
+            // Rectangle hover + click detection (pixel space)
             {
                 int mouseX = Inputs.Mouse.X;
                 int mouseY = Inputs.Mouse.Y;
-                float winW = MainWindow.Width;
-                float winH = MainWindow.Height;
+                float cx = MainWindow.Width / 2f;
+                float cy = MainWindow.Height / 2f;
+                float half = rectSize / 2f;
+                float left = cx - half;
+                float right = cx + half;
+                float top = cy - half;
+                float bottom = cy + half;
 
-                float ndcX = (2f * (mouseX / winW)) - 1f;
-                float ndcY = 1f - (2f * (mouseY / winH));
-
-                float worldX = ndcX * 2f;   // ortho x: [-2, 2]
-                float worldY = ndcY * 1.5f; // ortho y: [-1.5, 1.5]
-
-                const float rectLeft = 0.0f;
-                const float rectRight = 1.0f;
-                const float rectTop = 1.0f;
-                const float rectBottom = 0.0f;
-
-                bool inside = worldX >= rectLeft && worldX <= rectRight && worldY >= rectBottom && worldY <= rectTop;
+                bool inside = mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom;
 
                 // Hover highlight: only rebuild mesh when visible color changes
                 if (inside != rectHovered)
@@ -348,7 +176,7 @@ internal static class Program
                     if (!ApproximatelyEqual(displayedRectColor, targetColor))
                     {
                         displayedRectColor = targetColor;
-                        rectMesh = Mesh.CreateQuad(GraphicsDevice, 1f, 1f, displayedRectColor);
+                        rectMesh = Mesh.CreateQuad(GraphicsDevice, rectSize, rectSize, displayedRectColor);
                     }
                 }
 
@@ -363,7 +191,7 @@ internal static class Program
                     if (!ApproximatelyEqual(displayedRectColor, targetColor))
                     {
                         displayedRectColor = targetColor;
-                        rectMesh = Mesh.CreateQuad(GraphicsDevice, 1f, 1f, displayedRectColor);
+                        rectMesh = Mesh.CreateQuad(GraphicsDevice, rectSize, rectSize, displayedRectColor);
                     }
                 }
             }
