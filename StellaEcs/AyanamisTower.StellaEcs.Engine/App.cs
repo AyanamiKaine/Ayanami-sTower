@@ -4,6 +4,7 @@ using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Input;
 using AyanamisTower.StellaEcs.Engine.Rendering;
+using AyanamisTower.StellaEcs.Engine.DefaultRenderer;
 
 namespace AyanamisTower.StellaEcs.Engine;
 
@@ -30,6 +31,11 @@ public class App : Game
     /// Esc to quit and F11 to toggle fullscreen.
     /// </summary>
     protected bool HandleCommonShortcuts { get; set; } = true;
+
+    /// <summary>
+    /// Instance of the high-level default renderer if attached via UseDefaultRenderer().
+    /// </summary>
+    protected DefaultRenderer.DefaultRenderer? DefaultRendererInstance { get; private set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="App"/> class.
@@ -87,6 +93,16 @@ public class App : Game
     {
         _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
         _pipeline.Initialize(GraphicsDevice);
+    }
+
+    /// <summary>
+    /// Creates and attaches the DefaultRenderer, returning it for object creation.
+    /// </summary>
+    protected DefaultRenderer.DefaultRenderer UseDefaultRenderer()
+    {
+        DefaultRendererInstance = new DefaultRenderer.DefaultRenderer(GraphicsDevice, MainWindow, RootTitleStorage);
+        UsePipeline(DefaultRendererInstance.Pipeline);
+        return DefaultRendererInstance;
     }
 
     /// <summary>
