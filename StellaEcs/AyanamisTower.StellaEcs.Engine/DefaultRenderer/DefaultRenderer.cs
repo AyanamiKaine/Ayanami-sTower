@@ -175,12 +175,12 @@ public sealed class DefaultRenderer : IDisposable
         var (litVS, litPS) = CompileHlsl(rootTitleStorage, "Assets/LitMesh.hlsl", namePrefix: "Lit");
         var litVertexInput = new VertexInputState
         {
-            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DLit>(0)],
+            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DMaterial>(0)],
             VertexAttributes =
             [
-                new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 },
-                new VertexAttribute { Location = 1, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() },
-                new VertexAttribute { Location = 2, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)(System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() * 2) }
+                new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 }, // pos
+                new VertexAttribute { Location = 1, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() }, // nrm
+                new VertexAttribute { Location = 2, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)(System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() * 2 + System.Runtime.InteropServices.Marshal.SizeOf<Vector2>()) } // col
             ]
         };
         var lit3D = GraphicsPipeline.Create(
@@ -209,12 +209,12 @@ public sealed class DefaultRenderer : IDisposable
         var (txVS, txPS) = CompileHlsl(rootTitleStorage, "Assets/LitMeshTextured.hlsl", namePrefix: "LitTex");
         var texturedVertexInput = new VertexInputState
         {
-            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DTexturedLit>(0)],
+            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DMaterial>(0)],
             VertexAttributes =
             [
-                new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 },
-                new VertexAttribute { Location = 1, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() },
-                new VertexAttribute { Location = 2, BufferSlot = 0, Format = VertexElementFormat.Float2, Offset = (uint)(System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() * 2) }
+                new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 }, // pos
+                new VertexAttribute { Location = 1, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() }, // nrm
+                new VertexAttribute { Location = 2, BufferSlot = 0, Format = VertexElementFormat.Float2, Offset = (uint)(System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() * 2) } // uv
             ]
         };
         _texturedLitPipeline = GraphicsPipeline.Create(
@@ -406,7 +406,7 @@ public sealed class DefaultRenderer : IDisposable
     /// </summary>
     public void AddSphereLit(Func<Matrix4x4> model, Vector3 color, float radius = 0.1f)
     {
-        var mesh = Mesh.CreateSphere3DLit(_device, radius, color);
+        var mesh = Mesh.CreateSphere3D(_device, radius, color);
         _ownedMeshes.Add(mesh);
         AddMesh3DLit(() => mesh, model);
     }

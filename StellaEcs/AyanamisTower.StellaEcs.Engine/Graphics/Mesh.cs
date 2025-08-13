@@ -63,6 +63,23 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     }
 
     /// <summary>
+    /// Superset vertex for 3D materials: position, normal, UV, and color (albedo).
+    /// Pipelines can ignore unused attributes.
+    /// Order in memory: Pos, Nrm, UV, Col.
+    /// </summary>
+    public struct Vertex3DMaterial(Vector3 pos, Vector3 nrm, Vector2 uv, Vector3 col)
+    {
+        /// <summary>Position of the vertex in 3D space.</summary>
+        public Vector3 Pos = pos;
+        /// <summary>Surface normal in 3D space.</summary>
+        public Vector3 Nrm = nrm;
+        /// <summary>Texture coordinates (UV).</summary>
+        public Vector2 UV = uv;
+        /// <summary>Albedo color (RGB).</summary>
+        public Vector3 Col = col;
+    }
+
+    /// <summary>
     /// Creates a colored cube mesh centered at origin with given size.
     /// </summary>
     public static Mesh CreateBox3D(GraphicsDevice device, float size)
@@ -199,7 +216,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         // We duplicate the seam at u=0/1 by adding an extra column of vertices.
         int vertsPerRow = slices + 1;
         int vertCount = vertsPerRow * (stacks + 1);
-        var verts = new Vertex3DTexturedLit[vertCount];
+        var verts = new Vertex3DMaterial[vertCount];
 
         int vi = 0;
         for (int y = 0; y <= stacks; y++)
@@ -222,7 +239,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
 
                 var n = new Vector3(nx, ny, nz);
                 var p = n * radius;
-                verts[vi++] = new Vertex3DTexturedLit(p, Vector3.Normalize(n), new Vector2(u, 1f - v));
+                verts[vi++] = new Vertex3DMaterial(p, Vector3.Normalize(n), new Vector2(u, 1f - v), new Vector3(1f, 1f, 1f));
             }
         }
 
@@ -250,11 +267,11 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
             }
         }
 
-        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DTexturedLit>(device, "SphereTexturedLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DMaterial>(device, "SphereTexturedLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
         var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "SphereTexturedLitIB", BufferUsageFlags.Index, (uint)indices.Count);
 
-        var vtransfer = TransferBuffer.Create<Vertex3DTexturedLit>(device, "SphereTexturedLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
-        var vspan = vtransfer.Map<Vertex3DTexturedLit>(cycle: false);
+        var vtransfer = TransferBuffer.Create<Vertex3DMaterial>(device, "SphereTexturedLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
+        var vspan = vtransfer.Map<Vertex3DMaterial>(cycle: false);
         verts.AsSpan().CopyTo(vspan);
         vtransfer.Unmap();
 
@@ -281,49 +298,62 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     }
 
     /// <summary>
+    /// Generic UV-sphere using the superset vertex (pos,nrm,uv,col). Suitable for both lit and textured pipelines.
+    /// </summary>
+    public static Mesh CreateSphere3D(GraphicsDevice device, float radius, int slices = 64, int stacks = 32)
+        => CreateSphere3DTexturedLit(device, radius, slices, stacks);
+
+    /// <summary>
+    /// Generic lit icosphere using the superset vertex (pos,nrm,uv,col) with flat albedo color.
+    /// Provided for ergonomic parity with CreateSphere3DLit.
+    /// </summary>
+    public static Mesh CreateSphere3D(GraphicsDevice device, float radius, Vector3 color, int subdivisions = 1)
+        => CreateSphere3DLit(device, radius, color, subdivisions);
+
+    /// <summary>
     /// Creates a cube mesh with per-face normals for lighting and flat albedo color.
     /// </summary>
     public static Mesh CreateBox3DLit(GraphicsDevice device, float size, Vector3 color)
     {
         float h = size / 2f;
         // 24 vertices: 4 per face with face normals, ordered CCW when viewed from outside
-        var verts = new Vertex3DLit[]
+        var verts = new Vertex3DMaterial[]
         {
             // -Z (back face) - vertices in CCW order when viewed from outside (positive Z)
-            new(new Vector3(-h,-h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z), // 0: bottom-left
-            new(new Vector3(-h, h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z), // 1: top-left  
-            new(new Vector3( h, h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z), // 2: top-right
-            new(new Vector3( h,-h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z), // 3: bottom-right
+            new(new Vector3(-h,-h,-h), new Vector3(0,0,-1), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 0: bottom-left
+            new(new Vector3(-h, h,-h), new Vector3(0,0,-1), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 1: top-left  
+            new(new Vector3( h, h,-h), new Vector3(0,0,-1), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 2: top-right
+            new(new Vector3( h,-h,-h), new Vector3(0,0,-1), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 3: bottom-right
             
             // +Z (front face) - vertices in CCW order when viewed from outside (negative Z)
-            new(new Vector3(-h,-h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z), // 4: bottom-left
-            new(new Vector3( h,-h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z), // 5: bottom-right
-            new(new Vector3( h, h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z), // 6: top-right
-            new(new Vector3(-h, h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z), // 7: top-left
+            new(new Vector3(-h,-h, h), new Vector3(0,0, 1), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 4: bottom-left
+            new(new Vector3( h,-h, h), new Vector3(0,0, 1), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 5: bottom-right
+            new(new Vector3( h, h, h), new Vector3(0,0, 1), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 6: top-right
+            new(new Vector3(-h, h, h), new Vector3(0,0, 1), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 7: top-left
             
             // -Y (bottom face) - vertices in CCW order when viewed from above (positive Y)
-            new(new Vector3(-h,-h,-h), new Vector3(0,-1,0), color.X, color.Y, color.Z), // 8: back-left
-            new(new Vector3( h,-h,-h), new Vector3(0,-1,0), color.X, color.Y, color.Z), // 9: back-right
-            new(new Vector3( h,-h, h), new Vector3(0,-1,0), color.X, color.Y, color.Z), // 10: front-right
-            new(new Vector3(-h,-h, h), new Vector3(0,-1,0), color.X, color.Y, color.Z), // 11: front-left
+            new(new Vector3(-h,-h,-h), new Vector3(0,-1,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 8: back-left
+            new(new Vector3( h,-h,-h), new Vector3(0,-1,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 9: back-right
+            new(new Vector3( h,-h, h), new Vector3(0,-1,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 10: front-right
+            new(new Vector3(-h,-h, h), new Vector3(0,-1,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 11: front-left
             
             // +Y (top face) - vertices in CCW order when viewed from below (negative Y)
-            new(new Vector3(-h, h,-h), new Vector3(0, 1,0), color.X, color.Y, color.Z), // 12: back-left
-            new(new Vector3(-h, h, h), new Vector3(0, 1,0), color.X, color.Y, color.Z), // 13: front-left
-            new(new Vector3( h, h, h), new Vector3(0, 1,0), color.X, color.Y, color.Z), // 14: front-right
-            new(new Vector3( h, h,-h), new Vector3(0, 1,0), color.X, color.Y, color.Z), // 15: back-right
+            new(new Vector3(-h, h,-h), new Vector3(0, 1,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 12: back-left
+            new(new Vector3(-h, h, h), new Vector3(0, 1,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 13: front-left
+            new(new Vector3( h, h, h), new Vector3(0, 1,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 14: front-right
+            new(new Vector3( h, h,-h), new Vector3(0, 1,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 15: back-right
             
             // -X (left face) - vertices in CCW order when viewed from right (positive X)
-            new(new Vector3(-h,-h,-h), new Vector3(-1,0,0), color.X, color.Y, color.Z), // 16: back-bottom
-            new(new Vector3(-h,-h, h), new Vector3(-1,0,0), color.X, color.Y, color.Z), // 17: front-bottom
-            new(new Vector3(-h, h, h), new Vector3(-1,0,0), color.X, color.Y, color.Z), // 18: front-top
-            new(new Vector3(-h, h,-h), new Vector3(-1,0,0), color.X, color.Y, color.Z), // 19: back-top
+            new(new Vector3(-h,-h,-h), new Vector3(-1,0,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 16: back-bottom
+            new(new Vector3(-h,-h, h), new Vector3(-1,0,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 17: front-bottom
+            new(new Vector3(-h, h, h), new Vector3(-1,0,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 18: front-top
+            new(new Vector3(-h, h,-h), new Vector3(-1,0,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 19: back-top
             
             // +X (right face) - vertices in CCW order when viewed from left (negative X)
-            new(new Vector3( h,-h,-h), new Vector3( 1,0,0), color.X, color.Y, color.Z), // 20: back-bottom
-            new(new Vector3( h, h,-h), new Vector3( 1,0,0), color.X, color.Y, color.Z), // 21: back-top
-            new(new Vector3( h, h, h), new Vector3( 1,0,0), color.X, color.Y, color.Z), // 22: front-top
-            new(new Vector3( h,-h, h), new Vector3( 1,0,0), color.X, color.Y, color.Z), // 23: front-bottom
+            new(new Vector3( h,-h,-h), new Vector3( 1,0,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 20: back-bottom
+            new(new Vector3( h, h,-h), new Vector3( 1,0,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 21: back-top
+            new(new Vector3( h, h, h), new Vector3( 1,0,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 22: front-top
+            new(new Vector3( h,-h, h), new Vector3( 1,0,0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 23: front-bottom
         };
         var indices = new uint[]
         {
@@ -342,11 +372,11 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
             20,21,22, 20,22,23
         };
 
-        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "BoxLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DMaterial>(device, "BoxLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
         var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "BoxLitIB", BufferUsageFlags.Index, (uint)indices.Length);
 
-        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "BoxLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
-        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        var vtransfer = TransferBuffer.Create<Vertex3DMaterial>(device, "BoxLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
+        var vspan = vtransfer.Map<Vertex3DMaterial>(cycle: false);
         verts.AsSpan().CopyTo(vspan);
         vtransfer.Unmap();
 
@@ -606,12 +636,12 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         }
 
         // Build lit vertices/index buffer ----------------------------
-        var litVerts = new List<Vertex3DLit>(unitVerts.Count);
+        var litVerts = new List<Vertex3DMaterial>(unitVerts.Count);
         for (int i = 0; i < unitVerts.Count; i++)
         {
             var n = unitVerts[i];
             var p = n * radius;
-            litVerts.Add(new Vertex3DLit(p, n, color.X, color.Y, color.Z));
+            litVerts.Add(new Vertex3DMaterial(p, n, Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
         }
 
         var indices = new List<uint>(faces.Count * 3);
@@ -623,11 +653,11 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         }
 
         // Upload to GPU ----------------------------------------------
-        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "SphereLitVB", BufferUsageFlags.Vertex, (uint)litVerts.Count);
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DMaterial>(device, "SphereLitVB", BufferUsageFlags.Vertex, (uint)litVerts.Count);
         var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "SphereLitIB", BufferUsageFlags.Index, (uint)indices.Count);
 
-        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "SphereLitVBUpload", TransferBufferUsage.Upload, (uint)litVerts.Count);
-        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        var vtransfer = TransferBuffer.Create<Vertex3DMaterial>(device, "SphereLitVBUpload", TransferBufferUsage.Upload, (uint)litVerts.Count);
+        var vspan = vtransfer.Map<Vertex3DMaterial>(cycle: false);
         litVerts.ToArray().AsSpan().CopyTo(vspan);
         vtransfer.Unmap();
 
@@ -659,20 +689,20 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         var up = new Vector3(0, 1, 0);
 
         // CCW when viewed from +Y (above)
-        var verts = new Vertex3DLit[]
+        var verts = new Vertex3DMaterial[]
         {
-            new(new Vector3(-hw, 0, -hd), up, color.X, color.Y, color.Z), // 0
-            new(new Vector3(-hw, 0,  hd), up, color.X, color.Y, color.Z), // 1
-            new(new Vector3( hw, 0,  hd), up, color.X, color.Y, color.Z), // 2
-            new(new Vector3( hw, 0, -hd), up, color.X, color.Y, color.Z), // 3
+            new(new Vector3(-hw, 0, -hd), up, Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 0
+            new(new Vector3(-hw, 0,  hd), up, Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 1
+            new(new Vector3( hw, 0,  hd), up, Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 2
+            new(new Vector3( hw, 0, -hd), up, Vector2.Zero, new Vector3(color.X, color.Y, color.Z)), // 3
         };
         var indices = new uint[] { 0, 1, 2, 0, 2, 3 };
 
-        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "PlaneLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DMaterial>(device, "PlaneLitVB", BufferUsageFlags.Vertex, (uint)verts.Length);
         var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "PlaneLitIB", BufferUsageFlags.Index, (uint)indices.Length);
 
-        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "PlaneLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
-        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        var vtransfer = TransferBuffer.Create<Vertex3DMaterial>(device, "PlaneLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Length);
+        var vspan = vtransfer.Map<Vertex3DMaterial>(cycle: false);
         verts.AsSpan().CopyTo(vspan);
         vtransfer.Unmap();
 
@@ -703,7 +733,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         heightSegments = Math.Max(1, heightSegments);
         float halfH = height / 2f;
 
-        var verts = new List<Vertex3DLit>();
+        var verts = new List<Vertex3DMaterial>();
         var indices = new List<uint>();
 
         // Body rings (two rings: bottom/top per segment). Smooth shading with radial normals.
@@ -714,8 +744,8 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
             float z = MathF.Sin(a);
             var normal = new Vector3(x, 0, z);
             // bottom and top
-            verts.Add(new Vertex3DLit(new Vector3(radius * x, -halfH, radius * z), normal, color.X, color.Y, color.Z)); // i*2
-            verts.Add(new Vertex3DLit(new Vector3(radius * x, halfH, radius * z), normal, color.X, color.Y, color.Z)); // i*2+1
+            verts.Add(new Vertex3DMaterial(new Vector3(radius * x, -halfH, radius * z), normal, Vector2.Zero, new Vector3(color.X, color.Y, color.Z))); // i*2
+            verts.Add(new Vertex3DMaterial(new Vector3(radius * x, halfH, radius * z), normal, Vector2.Zero, new Vector3(color.X, color.Y, color.Z))); // i*2+1
         }
 
         // Side quads
@@ -736,14 +766,14 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
         {
             // Top cap
             uint topCenterIndex = (uint)verts.Count;
-            verts.Add(new Vertex3DLit(new Vector3(0, halfH, 0), new Vector3(0, 1, 0), color.X, color.Y, color.Z));
+            verts.Add(new Vertex3DMaterial(new Vector3(0, halfH, 0), new Vector3(0, 1, 0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
             var topStart = (uint)verts.Count;
             for (int i = 0; i < radialSegments; i++)
             {
                 float a = (float)(i * (Math.PI * 2.0) / radialSegments);
                 float x = MathF.Cos(a);
                 float z = MathF.Sin(a);
-                verts.Add(new Vertex3DLit(new Vector3(radius * x, halfH, radius * z), new Vector3(0, 1, 0), color.X, color.Y, color.Z));
+                verts.Add(new Vertex3DMaterial(new Vector3(radius * x, halfH, radius * z), new Vector3(0, 1, 0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
             }
             for (int i = 0; i < radialSegments; i++)
             {
@@ -754,14 +784,14 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
 
             // Bottom cap
             uint bottomCenterIndex = (uint)verts.Count;
-            verts.Add(new Vertex3DLit(new Vector3(0, -halfH, 0), new Vector3(0, -1, 0), color.X, color.Y, color.Z));
+            verts.Add(new Vertex3DMaterial(new Vector3(0, -halfH, 0), new Vector3(0, -1, 0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
             var bottomStart = (uint)verts.Count;
             for (int i = 0; i < radialSegments; i++)
             {
                 float a = (float)(i * (Math.PI * 2.0) / radialSegments);
                 float x = MathF.Cos(a);
                 float z = MathF.Sin(a);
-                verts.Add(new Vertex3DLit(new Vector3(radius * x, -halfH, radius * z), new Vector3(0, -1, 0), color.X, color.Y, color.Z));
+                verts.Add(new Vertex3DMaterial(new Vector3(radius * x, -halfH, radius * z), new Vector3(0, -1, 0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
             }
             for (int i = 0; i < radialSegments; i++)
             {
@@ -772,11 +802,11 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
             }
         }
 
-        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "CylinderLitVB", BufferUsageFlags.Vertex, (uint)verts.Count);
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DMaterial>(device, "CylinderLitVB", BufferUsageFlags.Vertex, (uint)verts.Count);
         var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "CylinderLitIB", BufferUsageFlags.Index, (uint)indices.Count);
 
-        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "CylinderLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Count);
-        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        var vtransfer = TransferBuffer.Create<Vertex3DMaterial>(device, "CylinderLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Count);
+        var vspan = vtransfer.Map<Vertex3DMaterial>(cycle: false);
         verts.ToArray().AsSpan().CopyTo(vspan);
         vtransfer.Unmap();
 
@@ -809,7 +839,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
 
         float cylHalf = MathF.Max(0f, (height - 2f * radius) / 2f);
 
-        var verts = new List<Vertex3DLit>();
+        var verts = new List<Vertex3DMaterial>();
         var indices = new List<uint>();
 
         // Build bottom hemisphere rings (equator to pole)
@@ -829,7 +859,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
                 var normal = new Vector3(nx, ny, nz);
                 var pos = new Vector3(ringR * MathF.Cos(a), y, ringR * MathF.Sin(a));
                 ring[i] = (uint)verts.Count;
-                verts.Add(new Vertex3DLit(pos, normal, color.X, color.Y, color.Z));
+                verts.Add(new Vertex3DMaterial(pos, normal, Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
             }
             bottomRings.Add(ring);
         }
@@ -850,7 +880,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
 
         // Bottom pole (connect last ring to a single pole vertex)
         uint bottomPole = (uint)verts.Count;
-        verts.Add(new Vertex3DLit(new Vector3(0, -cylHalf - radius, 0), new Vector3(0, -1, 0), color.X, color.Y, color.Z));
+        verts.Add(new Vertex3DMaterial(new Vector3(0, -cylHalf - radius, 0), new Vector3(0, -1, 0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
         var lastBottomRing = bottomRings[^1];
         for (int i = 0; i < radialSegments; i++)
         {
@@ -875,7 +905,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
                 var normal = new Vector3(nx, ny, nz);
                 var pos = new Vector3(ringR * MathF.Cos(a), y, ringR * MathF.Sin(a));
                 ring[i] = (uint)verts.Count;
-                verts.Add(new Vertex3DLit(pos, normal, color.X, color.Y, color.Z));
+                verts.Add(new Vertex3DMaterial(pos, normal, Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
             }
             topRings.Add(ring);
         }
@@ -895,7 +925,7 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
 
         // Top pole
         uint topPole = (uint)verts.Count;
-        verts.Add(new Vertex3DLit(new Vector3(0, cylHalf + radius, 0), new Vector3(0, 1, 0), color.X, color.Y, color.Z));
+        verts.Add(new Vertex3DMaterial(new Vector3(0, cylHalf + radius, 0), new Vector3(0, 1, 0), Vector2.Zero, new Vector3(color.X, color.Y, color.Z)));
         var lastTopRing = topRings[^1];
         for (int i = 0; i < radialSegments; i++)
         {
@@ -916,11 +946,11 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
             }
         }
 
-        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "CapsuleLitVB", BufferUsageFlags.Vertex, (uint)verts.Count);
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DMaterial>(device, "CapsuleLitVB", BufferUsageFlags.Vertex, (uint)verts.Count);
         var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "CapsuleLitIB", BufferUsageFlags.Index, (uint)indices.Count);
 
-        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "CapsuleLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Count);
-        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        var vtransfer = TransferBuffer.Create<Vertex3DMaterial>(device, "CapsuleLitVBUpload", TransferBufferUsage.Upload, (uint)verts.Count);
+        var vspan = vtransfer.Map<Vertex3DMaterial>(cycle: false);
         verts.ToArray().AsSpan().CopyTo(vspan);
         vtransfer.Unmap();
 
