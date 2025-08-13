@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
-
 namespace AyanamisTower.StellaEcs.Api
 {
     // Extension methods that adapt the neutral World API to REST needs.
@@ -80,10 +79,13 @@ namespace AyanamisTower.StellaEcs.Api
             var list = new List<ComponentInfoDto>();
             foreach (var (type, data) in w.GetComponentsForEntityAsObjects(entity))
             {
+                // Try to serialize component data to a JSON element. If it contains unsupported types
+                // (e.g., IntPtr from GPU handles), fall back to null so the frontend can still list/remove it.
+                object? safeData = TrySerializeToElement(data, type);
                 list.Add(new ComponentInfoDto
                 {
                     TypeName = type.Name,
-                    Data = data,
+                    Data = safeData,
                     PluginOwner = (w.GetComponentOwner(type)?.Prefix) ?? "World",
                     IsDynamic = false
                 });
@@ -91,15 +93,94 @@ namespace AyanamisTower.StellaEcs.Api
             // Append dynamic components
             foreach (var (name, data) in w.GetDynamicComponentsForEntity(entity))
             {
+                object? safeData = data is null ? null : TrySerializeToElement(data, data.GetType());
                 list.Add(new ComponentInfoDto
                 {
                     TypeName = name,
-                    Data = data,
+                    Data = safeData,
                     PluginOwner = "World",
                     IsDynamic = true
                 });
             }
             return list;
+        }
+
+        private static object? TrySerializeToElement(object? value, Type valueType)
+        {
+            if (value is null) return null;
+            try
+            {
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    IncludeFields = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                };
+                return JsonSerializer.SerializeToElement(value, valueType, options);
+            }
+            catch (NotSupportedException)
+            {
+                // Contains members like IntPtr; skip payload
+                return null;
+            }
+            catch
+            {
+                // Any other unexpected serialization issue: be safe and omit data
+                return null;
+            }
+        }
+
+        private static JsonElement NormalizeComponentJson(Type componentType, JsonElement input)
+        {
+            if (input.ValueKind != JsonValueKind.Object)
+                return input;
+
+            // If it already has a 'value' property (any case), keep as-is
+            if (HasPropertyCaseInsensitive(input, "value"))
+                return input;
+
+            // If the component has a field/property named 'Value' of type Vector3 and the payload
+            // looks like { x: number, y: number, z: number }, wrap it into { value: { x,y,z } }
+            var valueMember = componentType.GetMember("Value", BindingFlags.Public | BindingFlags.Instance).FirstOrDefault();
+            Type? valueType = valueMember switch
+            {
+                PropertyInfo pi => pi.PropertyType,
+                FieldInfo fi => fi.FieldType,
+                _ => null
+            };
+            if (valueType == typeof(System.Numerics.Vector3) && TryGetXYZ(input, out var x, out var y, out var z))
+            {
+                var wrapped = new { value = new { x, y, z } };
+                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+                return JsonSerializer.SerializeToElement(wrapped, options);
+            }
+
+            // No changes
+            return input;
+        }
+
+        private static bool HasPropertyCaseInsensitive(JsonElement obj, string name)
+        {
+            foreach (var prop in obj.EnumerateObject())
+            {
+                if (string.Equals(prop.Name, name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool TryGetXYZ(JsonElement obj, out float x, out float y, out float z)
+        {
+            x = y = z = 0f;
+            bool hasX = false, hasY = false, hasZ = false;
+            foreach (var prop in obj.EnumerateObject())
+            {
+                if (prop.Value.ValueKind != JsonValueKind.Number) continue;
+                if (prop.NameEquals("x") || prop.NameEquals("X")) { hasX = prop.Value.TryGetSingle(out x); }
+                else if (prop.NameEquals("y") || prop.NameEquals("Y")) { hasY = prop.Value.TryGetSingle(out y); }
+                else if (prop.NameEquals("z") || prop.NameEquals("Z")) { hasZ = prop.Value.TryGetSingle(out z); }
+            }
+            return hasX && hasY && hasZ;
         }
 
         /// <summary>
@@ -206,7 +287,8 @@ namespace AyanamisTower.StellaEcs.Api
 
             try
             {
-                var component = JsonSerializer.Deserialize(componentData, componentType, new JsonSerializerOptions
+                var normalized = NormalizeComponentJson(componentType, componentData);
+                var component = JsonSerializer.Deserialize(normalized, componentType, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
                     IncludeFields = true
