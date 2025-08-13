@@ -276,7 +276,16 @@ public class App : Game
     /// <inheritdoc />
     protected override void Destroy()
     {
-        try { _pipeline?.Dispose(); } catch { /* ignore on shutdown */ }
+        // Prefer disposing the DefaultRenderer which owns meshes and the pipeline
+        if (DefaultRendererInstance != null)
+        {
+            try { DefaultRendererInstance.Dispose(); } catch { }
+            DefaultRendererInstance = null;
+            _pipeline = null;
+            return;
+        }
+
+        try { _pipeline?.Dispose(); } catch { }
         _pipeline = null;
     }
 }
