@@ -176,54 +176,59 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     public static Mesh CreateBox3DLit(GraphicsDevice device, float size, Vector3 color)
     {
         float h = size / 2f;
-        // 24 vertices: 4 per face with face normals
-        // Define faces: each with normal and 4 corners CCW
+        // 24 vertices: 4 per face with face normals, ordered CCW when viewed from outside
         var verts = new Vertex3DLit[]
         {
-            // -Z (back)
-            new(new Vector3(-h,-h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z),
-            new(new Vector3( h,-h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z),
-            new(new Vector3( h, h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z),
-            new(new Vector3(-h, h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z),
-            // +Z (front)
-            new(new Vector3(-h,-h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z),
-            new(new Vector3( h,-h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z),
-            new(new Vector3( h, h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z),
-            new(new Vector3(-h, h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z),
-            // -Y (bottom)
-            new(new Vector3(-h,-h,-h), new Vector3(0,-1,0), color.X, color.Y, color.Z),
-            new(new Vector3( h,-h,-h), new Vector3(0,-1,0), color.X, color.Y, color.Z),
-            new(new Vector3( h,-h, h), new Vector3(0,-1,0), color.X, color.Y, color.Z),
-            new(new Vector3(-h,-h, h), new Vector3(0,-1,0), color.X, color.Y, color.Z),
-            // +Y (top)
-            new(new Vector3(-h, h,-h), new Vector3(0, 1,0), color.X, color.Y, color.Z),
-            new(new Vector3( h, h,-h), new Vector3(0, 1,0), color.X, color.Y, color.Z),
-            new(new Vector3( h, h, h), new Vector3(0, 1,0), color.X, color.Y, color.Z),
-            new(new Vector3(-h, h, h), new Vector3(0, 1,0), color.X, color.Y, color.Z),
-            // -X (left)
-            new(new Vector3(-h,-h,-h), new Vector3(-1,0,0), color.X, color.Y, color.Z),
-            new(new Vector3(-h, h,-h), new Vector3(-1,0,0), color.X, color.Y, color.Z),
-            new(new Vector3(-h, h, h), new Vector3(-1,0,0), color.X, color.Y, color.Z),
-            new(new Vector3(-h,-h, h), new Vector3(-1,0,0), color.X, color.Y, color.Z),
-            // +X (right)
-            new(new Vector3( h,-h,-h), new Vector3( 1,0,0), color.X, color.Y, color.Z),
-            new(new Vector3( h, h,-h), new Vector3( 1,0,0), color.X, color.Y, color.Z),
-            new(new Vector3( h, h, h), new Vector3( 1,0,0), color.X, color.Y, color.Z),
-            new(new Vector3( h,-h, h), new Vector3( 1,0,0), color.X, color.Y, color.Z),
+            // -Z (back face) - vertices in CCW order when viewed from outside (positive Z)
+            new(new Vector3(-h,-h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z), // 0: bottom-left
+            new(new Vector3(-h, h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z), // 1: top-left  
+            new(new Vector3( h, h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z), // 2: top-right
+            new(new Vector3( h,-h,-h), new Vector3(0,0,-1), color.X, color.Y, color.Z), // 3: bottom-right
+            
+            // +Z (front face) - vertices in CCW order when viewed from outside (negative Z)
+            new(new Vector3(-h,-h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z), // 4: bottom-left
+            new(new Vector3( h,-h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z), // 5: bottom-right
+            new(new Vector3( h, h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z), // 6: top-right
+            new(new Vector3(-h, h, h), new Vector3(0,0, 1), color.X, color.Y, color.Z), // 7: top-left
+            
+            // -Y (bottom face) - vertices in CCW order when viewed from above (positive Y)
+            new(new Vector3(-h,-h,-h), new Vector3(0,-1,0), color.X, color.Y, color.Z), // 8: back-left
+            new(new Vector3( h,-h,-h), new Vector3(0,-1,0), color.X, color.Y, color.Z), // 9: back-right
+            new(new Vector3( h,-h, h), new Vector3(0,-1,0), color.X, color.Y, color.Z), // 10: front-right
+            new(new Vector3(-h,-h, h), new Vector3(0,-1,0), color.X, color.Y, color.Z), // 11: front-left
+            
+            // +Y (top face) - vertices in CCW order when viewed from below (negative Y)
+            new(new Vector3(-h, h,-h), new Vector3(0, 1,0), color.X, color.Y, color.Z), // 12: back-left
+            new(new Vector3(-h, h, h), new Vector3(0, 1,0), color.X, color.Y, color.Z), // 13: front-left
+            new(new Vector3( h, h, h), new Vector3(0, 1,0), color.X, color.Y, color.Z), // 14: front-right
+            new(new Vector3( h, h,-h), new Vector3(0, 1,0), color.X, color.Y, color.Z), // 15: back-right
+            
+            // -X (left face) - vertices in CCW order when viewed from right (positive X)
+            new(new Vector3(-h,-h,-h), new Vector3(-1,0,0), color.X, color.Y, color.Z), // 16: back-bottom
+            new(new Vector3(-h,-h, h), new Vector3(-1,0,0), color.X, color.Y, color.Z), // 17: front-bottom
+            new(new Vector3(-h, h, h), new Vector3(-1,0,0), color.X, color.Y, color.Z), // 18: front-top
+            new(new Vector3(-h, h,-h), new Vector3(-1,0,0), color.X, color.Y, color.Z), // 19: back-top
+            
+            // +X (right face) - vertices in CCW order when viewed from left (negative X)
+            new(new Vector3( h,-h,-h), new Vector3( 1,0,0), color.X, color.Y, color.Z), // 20: back-bottom
+            new(new Vector3( h, h,-h), new Vector3( 1,0,0), color.X, color.Y, color.Z), // 21: back-top
+            new(new Vector3( h, h, h), new Vector3( 1,0,0), color.X, color.Y, color.Z), // 22: front-top
+            new(new Vector3( h,-h, h), new Vector3( 1,0,0), color.X, color.Y, color.Z), // 23: front-bottom
         };
         var indices = new uint[]
         {
-            // -Z (back): looking from front, CCW is 0,1,2 then 0,2,3  
-            0,1,2, 0,2,3,       
-            // +Z (front): looking from back, CCW is 4,6,5 then 4,7,6
-            4,6,5, 4,7,6,       
-            // -Y (bottom): looking from top, CCW is 8,9,10 then 8,10,11
-            8,9,10, 8,10,11,    
-            // +Y (top): looking from bottom, CCW is 12,14,13 then 12,15,14
-            12,14,13, 12,15,14, 
-            // -X (left): looking from right, CCW is 16,18,17 then 16,19,18
-            16,18,17, 16,19,18, 
-            // +X (right): looking from left, CCW is 20,21,22 then 20,22,23
+            // Each face: two triangles with consistent CCW winding
+            // -Z (back face)
+            0,1,2, 0,2,3,
+            // +Z (front face) 
+            4,5,6, 4,6,7,
+            // -Y (bottom face)
+            8,9,10, 8,10,11,
+            // +Y (top face)
+            12,13,14, 12,14,15,
+            // -X (left face)
+            16,17,18, 16,18,19,
+            // +X (right face)
             20,21,22, 20,22,23
         };
 
