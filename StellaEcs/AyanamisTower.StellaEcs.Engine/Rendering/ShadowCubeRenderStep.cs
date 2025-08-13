@@ -81,7 +81,7 @@ public sealed class ShadowCubeRenderStep : IRenderStep, IDisposable
             device,
             name: "ShadowCube",
             size: _size,
-            format: TextureFormat.R16Unorm, // Higher precision to reduce acne
+            format: TextureFormat.R32Float, // Single-channel float for precise linear depth
             usageFlags: TextureUsageFlags.ColorTarget | TextureUsageFlags.Sampler
         );
     }
@@ -116,7 +116,7 @@ public sealed class ShadowCubeRenderStep : IRenderStep, IDisposable
                 Texture = _cube.Handle,
                 MipLevel = 0,
                 LayerOrDepthPlane = (uint)face,
-                ClearColor = new Color(1f, 1f, 1f, 1f),
+                ClearColor = new FColor { R = 1f, G = 1f, B = 1f, A = 1f },
                 LoadOp = LoadOp.Clear,
                 StoreOp = StoreOp.Store
             };
@@ -169,7 +169,7 @@ public sealed class ShadowCubeRenderStep : IRenderStep, IDisposable
         Vector3 target;
         Vector3 up;
 
-        // Standard D3D cubemap orientations (right-handed coordinate system)
+        // D3D/OpenGL-style cubemap orientations (commonly used in point light shadow examples)
         switch (face)
         {
             case CubeMapFace.PositiveX: // +X (right)
@@ -199,6 +199,7 @@ public sealed class ShadowCubeRenderStep : IRenderStep, IDisposable
         }
         var view = Matrix4x4.CreateLookAt(pos, target, up);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2f, 1f, near, far);
+        // HLSL uses mul(viewProj, world). With our convention, pass View * Proj.
         return view * proj;
     }
 }

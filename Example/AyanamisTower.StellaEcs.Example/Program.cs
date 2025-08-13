@@ -117,7 +117,7 @@ internal static class Program
 
             // Configure shadow mapping for solar system scale (planets orbit out to ~21 units)
             // Use near=0.5 (half Sun radius) and higher bias to prevent shadow acne
-            defaultRenderer.SetShadows(nearPlane: 0.5f, farPlane: 50f, depthBias: 0.1f);
+            defaultRenderer.SetShadows(nearPlane: 0.5f, farPlane: 50f, depthBias: 0.008f);
 
             // Bridge ECS -> Renderer: register sync system
             world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));
@@ -141,15 +141,15 @@ internal static class Program
                 lightPos = Vector3.Zero; // put the light at the sun
             }
             // Planets (sizes/distances are artistic, not to scale)
-            AddPlanet("Mercury", baseName: "Mercury", radius: 0.18f, orbitRadius: 3.0f, orbitSpeed: 0.09f, selfSpin: 0.4f, phase: 0.0f);
-            AddPlanet("Venus", baseName: "Venus", radius: 0.25f, orbitRadius: 5.0f, orbitSpeed: 0.05f, selfSpin: 0.2f, phase: 0.5f);
-            AddPlanet("Earth", baseName: "Earth", radius: 0.27f, orbitRadius: 7.0f, orbitSpeed: 0.04f, selfSpin: 1.2f, phase: 0.2f);
-            AddPlanet("Moon", baseName: "Moon", radius: 0.07f, orbitRadius: 0.6f, orbitSpeed: 1.0f, selfSpin: 0.6f, phase: 1.2f, parent: "Earth");
-            AddPlanet("Mars", baseName: "Mars", radius: 0.22f, orbitRadius: 9.0f, orbitSpeed: 0.032f, selfSpin: 0.8f, phase: 2.0f);
-            AddPlanet("Jupiter", baseName: "Jupiter", radius: 0.9f, orbitRadius: 12.0f, orbitSpeed: 0.018f, selfSpin: 2.0f, phase: 1.0f);
-            AddPlanet("Saturn", baseName: "Saturn", radius: 0.8f, orbitRadius: 15.0f, orbitSpeed: 0.014f, selfSpin: 1.8f, phase: 2.5f);
-            AddPlanet("Uranus", baseName: "Uranus", radius: 0.5f, orbitRadius: 18.0f, orbitSpeed: 0.010f, selfSpin: 1.2f, phase: 0.3f);
-            AddPlanet("Neptune", baseName: "Neptune", radius: 0.48f, orbitRadius: 21.0f, orbitSpeed: 0.008f, selfSpin: 1.0f, phase: 1.7f);
+            AddPlanet("Mercury", baseName: "Mercury", radius: 0.18f, orbitRadius: 3.0f, orbitSpeed: 0.09f, selfSpin: 0.04f, phase: 0.0f);
+            AddPlanet("Venus", baseName: "Venus", radius: 0.25f, orbitRadius: 5.0f, orbitSpeed: 0.05f, selfSpin: 0.04f, phase: 0.5f);
+            AddPlanet("Earth", baseName: "Earth", radius: 0.27f, orbitRadius: 7.0f, orbitSpeed: 0.04f, selfSpin: 0.02f, phase: 0.2f);
+            AddPlanet("Moon", baseName: "Moon", radius: 0.07f, orbitRadius: 0.6f, orbitSpeed: 0.5f, selfSpin: 0.06f, phase: 1.2f, parent: "Earth");
+            AddPlanet("Mars", baseName: "Mars", radius: 0.22f, orbitRadius: 9.0f, orbitSpeed: 0.032f, selfSpin: 0.08f, phase: 2.0f);
+            AddPlanet("Jupiter", baseName: "Jupiter", radius: 0.9f, orbitRadius: 12.0f, orbitSpeed: 0.018f, selfSpin: 0.03f, phase: 1.0f);
+            AddPlanet("Saturn", baseName: "Saturn", radius: 0.8f, orbitRadius: 15.0f, orbitSpeed: 0.014f, selfSpin: 0.08f, phase: 2.5f);
+            AddPlanet("Uranus", baseName: "Uranus", radius: 0.5f, orbitRadius: 18.0f, orbitSpeed: 0.010f, selfSpin: 0.02f, phase: 0.3f);
+            AddPlanet("Neptune", baseName: "Neptune", radius: 0.48f, orbitRadius: 21.0f, orbitSpeed: 0.008f, selfSpin: 0.02f, phase: 1.7f);
 
 
             // Keep the 2D rect in pixel space

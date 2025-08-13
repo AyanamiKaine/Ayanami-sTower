@@ -34,10 +34,10 @@ VSOutput VSMain(VSInput input)
     return o;
 }
 
-float4 PSMain(VSOutput input) : SV_Target
+float PSMain(VSOutput input) : SV_Target
 {
     // Linear depth normalized to [0,1]
     float dist = distance(input.lightPos, input.worldPos);
     float depth = saturate(dist / max(1e-5, input.farPlane));
-    return float4(depth, depth, depth, 1.0);
+    return depth;
 }

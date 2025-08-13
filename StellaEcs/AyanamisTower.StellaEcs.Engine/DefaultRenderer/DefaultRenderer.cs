@@ -202,12 +202,13 @@ public sealed class DefaultRenderer : IDisposable
                 FragmentShader = shadowPS,
                 VertexInputState = shadowInput,
                 PrimitiveType = PrimitiveType.TriangleList,
-                RasterizerState = RasterizerState.CCW_CullBack,
+                RasterizerState = RasterizerState.CCW_CullNone,
                 MultisampleState = MultisampleState.None,
                 DepthStencilState = DepthStencilState.Disable,
                 TargetInfo = new GraphicsPipelineTargetInfo
                 {
-                    ColorTargetDescriptions = [new ColorTargetDescription { Format = TextureFormat.R16Unorm, BlendState = ColorTargetBlendState.NoBlend }]
+                    // Must match ShadowCubeRenderStep's cubemap format
+                    ColorTargetDescriptions = [new ColorTargetDescription { Format = TextureFormat.R32Float, BlendState = ColorTargetBlendState.NoBlend }]
                 },
                 Name = "ShadowCube"
             }
@@ -218,13 +219,14 @@ public sealed class DefaultRenderer : IDisposable
         // Create a clamp sampler for the shadow cubemap
         _shadowSampler = Sampler.Create(_device, "ShadowSampler", new SamplerCreateInfo
         {
-            MinFilter = Filter.Linear,
-            MagFilter = Filter.Linear,
-            MipmapMode = SamplerMipmapMode.Linear,
+            MinFilter = Filter.Nearest,
+            MagFilter = Filter.Nearest,
+            MipmapMode = SamplerMipmapMode.Nearest,
             AddressModeU = SamplerAddressMode.ClampToEdge,
             AddressModeV = SamplerAddressMode.ClampToEdge,
             AddressModeW = SamplerAddressMode.ClampToEdge,
-            MaxLod = 1000
+            MinLod = 0,
+            MaxLod = 0
         });
 
         var lit3D = GraphicsPipeline.Create(
