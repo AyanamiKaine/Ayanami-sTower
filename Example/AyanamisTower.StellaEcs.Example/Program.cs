@@ -103,10 +103,22 @@ internal static class Program
             cubeEntity = world.CreateEntity()
                 .Set(new Position3D(cubePos.X, cubePos.Y, cubePos.Z))
                 .Set(new RenderMesh3DLit { Mesh = ecsCubeMesh });
+
+
+            cubeEntity = world.CreateEntity()
+                .Set(new Position3D(3, 6, 3))
+                .Set(new RenderMesh3DLit { Mesh = ecsCubeMesh });
+
+
             ecsLightSphereMesh = Mesh.CreateSphere3DLit(GraphicsDevice, 0.1f, new Vector3(1f, 1f, 0.2f));
             lightSphereEntity = world.CreateEntity()
                 .Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z))
                 .Set(new RenderMesh3DLit { Mesh = ecsLightSphereMesh });
+
+
+
+
+
             // Keep the 2D rect in pixel space
             defaultRenderer.AddQuad2D(
                 () => rectMesh,
