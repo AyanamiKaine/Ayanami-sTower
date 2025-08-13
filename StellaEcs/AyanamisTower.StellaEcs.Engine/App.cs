@@ -20,6 +20,7 @@ public class App : Game
     protected readonly Camera Camera = new();
 
     private RenderPipeline? _pipeline;
+    private Texture? _depthTexture;
 
     /// <summary>
     /// Background clear color used for the default render pass.
@@ -91,7 +92,7 @@ public class App : Game
             false,
             false
         ),
-        FramePacingSettings.CreateCapped(240, 240),
+        FramePacingSettings.CreateCapped(360, 360),
         ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC | ShaderFormat.MSL,
         debugMode
     )
@@ -326,8 +327,26 @@ public class App : Game
             return;
         }
 
+        // Ensure a depth texture exists and matches the swapchain dimensions
+        if (_depthTexture == null ||
+            _depthTexture.Width != swapchain.Width ||
+            _depthTexture.Height != swapchain.Height ||
+            _depthTexture.Format != GraphicsDevice.SupportedDepthFormat)
+        {
+            try { _depthTexture?.Dispose(); } catch { }
+            _depthTexture = Texture.Create2D(
+                GraphicsDevice,
+                name: "Main Depth",
+                width: swapchain.Width,
+                height: swapchain.Height,
+                format: GraphicsDevice.SupportedDepthFormat,
+                usageFlags: TextureUsageFlags.DepthStencilTarget
+            );
+        }
+
         var colorTarget = new ColorTargetInfo(swapchain, ClearColor);
-        var renderPass = cmdbuf.BeginRenderPass([colorTarget]);
+        var depthTarget = new DepthStencilTargetInfo(_depthTexture, clearDepth: 1.0f);
+        var renderPass = cmdbuf.BeginRenderPass(in depthTarget, [colorTarget]);
         renderPass.SetViewport(new Viewport(swapchain.Width, swapchain.Height));
 
         _pipeline.Record(cmdbuf, renderPass, ctx);
@@ -345,11 +364,15 @@ public class App : Game
             try { DefaultRendererInstance.Dispose(); } catch { }
             DefaultRendererInstance = null;
             _pipeline = null;
+            try { _depthTexture?.Dispose(); } catch { }
+            _depthTexture = null;
             return;
         }
 
         try { _pipeline?.Dispose(); } catch { }
         _pipeline = null;
+        try { _depthTexture?.Dispose(); } catch { }
+        _depthTexture = null;
     }
 }
 

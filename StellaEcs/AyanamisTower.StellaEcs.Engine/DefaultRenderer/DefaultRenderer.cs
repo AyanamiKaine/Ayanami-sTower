@@ -74,29 +74,31 @@ public sealed class DefaultRenderer : IDisposable
         };
 
         var pipeline3D = GraphicsPipeline.Create(
-                _device,
-                new GraphicsPipelineCreateInfo
-                {
-                    VertexShader = vs,
-                    FragmentShader = ps,
-                    VertexInputState = vertex3DInput,
-                    PrimitiveType = PrimitiveType.TriangleList,
-                    RasterizerState = RasterizerState.CCW_CullBack,
-                    MultisampleState = MultisampleState.None,
-                    DepthStencilState = new DepthStencilState
+                    _device,
+                    new GraphicsPipelineCreateInfo
                     {
-                        EnableDepthTest = true,
-                        EnableDepthWrite = true,
-                        EnableStencilTest = false,
-                        CompareOp = CompareOp.Less
-                    },
-                    TargetInfo = new GraphicsPipelineTargetInfo
-                    {
-                        ColorTargetDescriptions = [new ColorTargetDescription { Format = window.SwapchainFormat, BlendState = ColorTargetBlendState.NoBlend }]
-                    },
-                    Name = "Default3DPipeline"
-                }
-            );
+                        VertexShader = vs,
+                        FragmentShader = ps,
+                        VertexInputState = vertex3DInput,
+                        PrimitiveType = PrimitiveType.TriangleList,
+                        RasterizerState = RasterizerState.CCW_CullBack,
+                        MultisampleState = MultisampleState.None,
+                        DepthStencilState = new DepthStencilState
+                        {
+                            EnableDepthTest = true,
+                            EnableDepthWrite = true,
+                            EnableStencilTest = false,
+                            CompareOp = CompareOp.Less
+                        },
+                        TargetInfo = new GraphicsPipelineTargetInfo
+                        {
+                            ColorTargetDescriptions = [new ColorTargetDescription { Format = window.SwapchainFormat, BlendState = ColorTargetBlendState.NoBlend }],
+                            HasDepthStencilTarget = true,
+                            DepthStencilFormat = _device.SupportedDepthFormat
+                        },
+                        Name = "Default3DPipeline"
+                    }
+                );
 
         _mesh3DStep = new MeshInstancesRenderStep(pipeline3D, MultiplyMode.WorldViewProj);
 
@@ -175,24 +177,33 @@ public sealed class DefaultRenderer : IDisposable
                 new VertexAttribute { Location = 2, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = (uint)(System.Runtime.InteropServices.Marshal.SizeOf<Vector3>() * 2) }
             ]
         };
-        var lit3D = CreatePipeline(
-            window,
-            litVertexInput,
-            litVS,
-            litPS,
-            depth: new DepthStencilState { EnableDepthTest = true, EnableDepthWrite = true, EnableStencilTest = false, CompareOp = CompareOp.Less },
-            blend: ColorTargetBlendState.NoBlend,
-            primitiveType: PrimitiveType.TriangleList,
-            rasterizer: RasterizerState.CCW_CullBack,
-            name: "Lit3D"
+        var lit3D = GraphicsPipeline.Create(
+            _device,
+            new GraphicsPipelineCreateInfo
+            {
+                VertexShader = litVS,
+                FragmentShader = litPS,
+                VertexInputState = litVertexInput,
+                PrimitiveType = PrimitiveType.TriangleList,
+                RasterizerState = RasterizerState.CCW_CullBack,
+                MultisampleState = MultisampleState.None,
+                DepthStencilState = new DepthStencilState { EnableDepthTest = true, EnableDepthWrite = true, EnableStencilTest = false, CompareOp = CompareOp.Less },
+                TargetInfo = new GraphicsPipelineTargetInfo
+                {
+                    ColorTargetDescriptions = [new ColorTargetDescription { Format = window.SwapchainFormat, BlendState = ColorTargetBlendState.NoBlend }],
+                    HasDepthStencilTarget = true,
+                    DepthStencilFormat = _device.SupportedDepthFormat
+                },
+                Name = "Lit3D"
+            }
         );
         _mesh3DLitStep = new LitMeshInstancesRenderStep(lit3D);
 
         _pipeline
             .Add(_mesh3DStep)
+            .Add(_mesh3DLitStep)
             .Add(_quad2DStep)
-            .Add(_textStep)
-            .Add(_mesh3DLitStep);
+            .Add(_textStep);
 
         _pipeline.Initialize(_device);
     }
