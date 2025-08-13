@@ -126,7 +126,9 @@ public sealed class DefaultRenderer : IDisposable
                     DepthStencilState = new DepthStencilState { EnableDepthTest = false, EnableDepthWrite = false, EnableStencilTest = false, CompareOp = CompareOp.Always },
                     TargetInfo = new GraphicsPipelineTargetInfo
                     {
-                        ColorTargetDescriptions = [new ColorTargetDescription { Format = window.SwapchainFormat, BlendState = ColorTargetBlendState.NoBlend }]
+                        ColorTargetDescriptions = [new ColorTargetDescription { Format = window.SwapchainFormat, BlendState = ColorTargetBlendState.NoBlend }],
+                        HasDepthStencilTarget = true,
+                        DepthStencilFormat = _device.SupportedDepthFormat
                     },
                     Name = "Default2DPipeline"
                 }
@@ -148,7 +150,9 @@ public sealed class DefaultRenderer : IDisposable
                 DepthStencilState = DepthStencilState.Disable,
                 TargetInfo = new GraphicsPipelineTargetInfo
                 {
-                    ColorTargetDescriptions = [new ColorTargetDescription { Format = window.SwapchainFormat, BlendState = ColorTargetBlendState.NonPremultipliedAlphaBlend }]
+                    ColorTargetDescriptions = [new ColorTargetDescription { Format = window.SwapchainFormat, BlendState = ColorTargetBlendState.NonPremultipliedAlphaBlend }],
+                    HasDepthStencilTarget = true,
+                    DepthStencilFormat = _device.SupportedDepthFormat
                 },
                 Name = "DefaultTextPipeline"
             }
