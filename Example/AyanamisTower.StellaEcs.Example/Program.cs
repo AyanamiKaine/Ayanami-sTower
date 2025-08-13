@@ -43,6 +43,7 @@ internal static class Program
         private Font? uiFont; // MSDF font loaded from Shaders/
         private bool showOverlay = true;
         private Vector3 cubePos = new(0, 0, 0);
+        private Vector3 lightPos = new(2f, 3f, 2f); // Store light position for debug display
 
         public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
@@ -82,12 +83,18 @@ internal static class Program
             // Attach high-level renderer and register objects
             defaultRenderer = UseDefaultRenderer();
             // Set a simple sun-like point light
-            defaultRenderer.SetPointLight(new Vector3(2f, 3f, 2f), new Vector3(1f, 1f, 0.95f), 0.15f);
+            defaultRenderer.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
             // Use a lit 3D cube (white albedo) so lighting is visible
             defaultRenderer.AddCubeLit(
                 () => Matrix4x4.CreateFromYawPitchRoll(time, time * 0.7f, 0) * Matrix4x4.CreateTranslation(cubePos),
                 new Vector3(1f, 1f, 1f), // albedo
                 0.7f
+            );
+            // Add a small bright sphere at the light position to visualize where the light is
+            defaultRenderer.AddSphereLit(
+                () => Matrix4x4.CreateTranslation(lightPos), // Follow the current light position
+                new Vector3(1f, 1f, 0.2f), // bright yellow/white
+                0.1f // small radius
             );
             // Keep the 2D rect in pixel space
             defaultRenderer.AddQuad2D(
@@ -111,9 +118,13 @@ internal static class Program
                 y += 20f;
                 batch.Add(uiFont!, "Mouse Wheel: Zoom Camera", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
                 y += 20f;
+                batch.Add(uiFont!, "WASD: Move Camera, IJKL+UO: Move Light", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
                 batch.Add(uiFont!, "Click square to toggle color", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
                 y += 20f;
                 batch.Add(uiFont!, $"FPS: {(int)fps}", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), white);
+                y += 20f;
+                batch.Add(uiFont!, $"Light: ({lightPos.X:F1}, {lightPos.Y:F1}, {lightPos.Z:F1})", size, Matrix4x4.CreateTranslation(new Vector3(x, y, 0)), accent);
                 return true;
             });
         }
@@ -155,6 +166,18 @@ internal static class Program
             if (Inputs.Keyboard.IsDown(KeyCode.A)) move += new Vector3(-moveSpeed, 0, 0);
             if (Inputs.Keyboard.IsDown(KeyCode.D)) move += new Vector3(moveSpeed, 0, 0);
             Camera.Move(move);
+
+            // IJKL controls for moving the light
+            var lightSpeed = 2f * (float)delta.TotalSeconds;
+            if (Inputs.Keyboard.IsDown(KeyCode.I)) lightPos.Z -= lightSpeed;
+            if (Inputs.Keyboard.IsDown(KeyCode.K)) lightPos.Z += lightSpeed;
+            if (Inputs.Keyboard.IsDown(KeyCode.J)) lightPos.X -= lightSpeed;
+            if (Inputs.Keyboard.IsDown(KeyCode.L)) lightPos.X += lightSpeed;
+            if (Inputs.Keyboard.IsDown(KeyCode.U)) lightPos.Y += lightSpeed;
+            if (Inputs.Keyboard.IsDown(KeyCode.O)) lightPos.Y -= lightSpeed;
+
+            // Update light position in renderer
+            defaultRenderer?.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
 
             // Rectangle hover + click detection (pixel space)
             {

@@ -425,6 +425,79 @@ public class Mesh(MoonWorks.Graphics.Buffer vertexBuffer, int vertexCount, Primi
     }
 
     /// <summary>
+    /// Creates a simple icosphere (approximated sphere) for debug visualization.
+    /// </summary>
+    public static Mesh CreateSphere3DLit(GraphicsDevice device, float radius, Vector3 color, int subdivisions = 1)
+    {
+        // Start with an icosahedron and subdivide for smoother sphere
+        var t = (1.0f + MathF.Sqrt(5.0f)) / 2.0f; // Golden ratio
+
+        // Base icosahedron vertices (normalized)
+        var baseVerts = new Vector3[]
+        {
+            Vector3.Normalize(new Vector3(-1, t, 0)),
+            Vector3.Normalize(new Vector3( 1, t, 0)),
+            Vector3.Normalize(new Vector3(-1,-t, 0)),
+            Vector3.Normalize(new Vector3( 1,-t, 0)),
+            Vector3.Normalize(new Vector3( 0,-1, t)),
+            Vector3.Normalize(new Vector3( 0, 1, t)),
+            Vector3.Normalize(new Vector3( 0,-1,-t)),
+            Vector3.Normalize(new Vector3( 0, 1,-t)),
+            Vector3.Normalize(new Vector3( t, 0,-1)),
+            Vector3.Normalize(new Vector3( t, 0, 1)),
+            Vector3.Normalize(new Vector3(-t, 0,-1)),
+            Vector3.Normalize(new Vector3(-t, 0, 1))
+        };
+
+        // Scale to radius and create lit vertices
+        var verts = new List<Vertex3DLit>();
+        for (int i = 0; i < baseVerts.Length; i++)
+        {
+            var pos = baseVerts[i] * radius;
+            var normal = baseVerts[i]; // For sphere, position IS the normal
+            verts.Add(new Vertex3DLit(pos, normal, color.X, color.Y, color.Z));
+        }
+
+        // Icosahedron faces (triangles)
+        var indices = new List<uint>
+        {
+            // Top cap
+            0,11,5, 0,5,1, 0,1,7, 0,7,10, 0,10,11,
+            // Middle band
+            1,5,9, 5,11,4, 11,10,2, 10,7,6, 7,1,8,
+            // Bottom band  
+            3,9,4, 3,4,2, 3,2,6, 3,6,8, 3,8,9,
+            // Bottom cap
+            4,9,5, 2,4,11, 6,2,10, 8,6,7, 9,8,1
+        };
+
+        var vb = MoonWorks.Graphics.Buffer.Create<Vertex3DLit>(device, "SphereVB", BufferUsageFlags.Vertex, (uint)verts.Count);
+        var ib = MoonWorks.Graphics.Buffer.Create<uint>(device, "SphereIB", BufferUsageFlags.Index, (uint)indices.Count);
+
+        var vtransfer = TransferBuffer.Create<Vertex3DLit>(device, "SphereVBUpload", TransferBufferUsage.Upload, (uint)verts.Count);
+        var vspan = vtransfer.Map<Vertex3DLit>(cycle: false);
+        verts.ToArray().AsSpan().CopyTo(vspan);
+        vtransfer.Unmap();
+
+        var itransfer = TransferBuffer.Create<uint>(device, "SphereIBUpload", TransferBufferUsage.Upload, (uint)indices.Count);
+        var ispan = itransfer.Map<uint>(cycle: false);
+        indices.ToArray().AsSpan().CopyTo(ispan);
+        itransfer.Unmap();
+
+        var cmdbuf = device.AcquireCommandBuffer();
+        var copy = cmdbuf.BeginCopyPass();
+        copy.UploadToBuffer(vtransfer, vb, false);
+        copy.UploadToBuffer(itransfer, ib, false);
+        cmdbuf.EndCopyPass(copy);
+        device.Submit(cmdbuf);
+
+        vtransfer.Dispose();
+        itransfer.Dispose();
+
+        return new Mesh(vb, verts.Count, PrimitiveType.TriangleList, ib, indices.Count);
+    }
+
+    /// <summary>
     /// Dispose GPU buffers owned by this mesh.
     /// </summary>
     public void Dispose()

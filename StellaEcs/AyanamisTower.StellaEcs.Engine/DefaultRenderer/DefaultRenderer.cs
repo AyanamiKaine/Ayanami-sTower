@@ -350,6 +350,16 @@ public sealed class DefaultRenderer : IDisposable
     }
 
     /// <summary>
+    /// Adds a lit sphere with flat albedo color for debug visualization.
+    /// </summary>
+    public void AddSphereLit(Func<Matrix4x4> model, Vector3 color, float radius = 0.1f)
+    {
+        var mesh = Mesh.CreateSphere3DLit(_device, radius, color);
+        _ownedMeshes.Add(mesh);
+        AddMesh3DLit(() => mesh, model);
+    }
+
+    /// <summary>
     /// Sets the point light (sun-like) parameters used by the lit 3D pipeline.
     /// </summary>
     public void SetPointLight(Vector3 position, Vector3 color, float ambient = 0.2f) => _mesh3DLitStep.SetLight(position, color, ambient);
