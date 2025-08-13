@@ -109,9 +109,6 @@ public sealed class ShadowCubeRenderStep : IRenderStep, IDisposable
     /// <inheritdoc/>
     public void Prepare(CommandBuffer cmdbuf, in ViewContext view)
     {
-        if (_instances.Count == 0)
-            return;
-
         for (int face = 0; face < 6; face++)
         {
             var faceTarget = new ColorTargetInfo
@@ -129,19 +126,22 @@ public sealed class ShadowCubeRenderStep : IRenderStep, IDisposable
             subpass.SetViewport(new Viewport(_size, _size));
 
             var vp = FaceViewProj((CubeMapFace)face, _lightPos, _settings.NearPlane, _settings.FarPlane);
-            foreach (var (meshP, modelP) in _instances)
+            if (_instances.Count > 0)
             {
-                var vs = new VSParams
+                foreach (var (meshP, modelP) in _instances)
                 {
-                    Model = modelP(),
-                    ViewProj = vp,
-                    LightPos = _lightPos,
-                    FarPlane = _settings.FarPlane,
-                    DepthBias = _settings.DepthBias,
-                    Pad = Vector3.Zero
-                };
-                cmdbuf.PushVertexUniformData(vs, slot: 0);
-                meshP().Draw(subpass);
+                    var vs = new VSParams
+                    {
+                        Model = modelP(),
+                        ViewProj = vp,
+                        LightPos = _lightPos,
+                        FarPlane = _settings.FarPlane,
+                        DepthBias = _settings.DepthBias,
+                        Pad = Vector3.Zero
+                    };
+                    cmdbuf.PushVertexUniformData(vs, slot: 0);
+                    meshP().Draw(subpass);
+                }
             }
 
             cmdbuf.EndRenderPass(subpass);
