@@ -68,11 +68,11 @@ public class CorePlugin : IPlugin
     public string Prefix => "Core";
 
     /// <inheritdoc/>
-    public IEnumerable<Type> ProvidedSystems => [typeof(MovementSystem2D), typeof(MovementSystem3D)];
+    public IEnumerable<Type> ProvidedSystems => [typeof(MovementSystem2D), typeof(MovementSystem3D), typeof(RotationSystem3D)];
     /// <inheritdoc/>
     public IEnumerable<Type> ProvidedServices => [typeof(SearchService)];
     /// <inheritdoc/>
-    public IEnumerable<Type> ProvidedComponents => [typeof(Name), typeof(Position2D), typeof(Velocity2D), typeof(Position3D), typeof(Velocity3D), typeof(ColorRGBA), typeof(Rotation3D)];
+    public IEnumerable<Type> ProvidedComponents => [typeof(Name), typeof(Position2D), typeof(Velocity2D), typeof(Position3D), typeof(Velocity3D), typeof(ColorRGBA), typeof(Rotation3D), typeof(AngularVelocity3D)];
 
     /// <inheritdoc/>
     public void Initialize(World world)
@@ -86,9 +86,11 @@ public class CorePlugin : IPlugin
         world.RegisterComponent<Velocity3D>();
         world.RegisterComponent<ColorRGBA>();
         world.RegisterComponent<Rotation3D>();
+        world.RegisterComponent<AngularVelocity3D>();
 
         world.RegisterSystem(new MovementSystem2D { Name = $"{Prefix}.{nameof(MovementSystem2D)}" }, this);
         world.RegisterSystem(new MovementSystem3D { Name = $"{Prefix}.{nameof(MovementSystem3D)}" }, this);
+        world.RegisterSystem(new RotationSystem3D { Name = $"{Prefix}.{nameof(RotationSystem3D)}" }, this);
 
         // Explicitly register ownership of component types
         foreach (var componentType in ProvidedComponents)
@@ -105,6 +107,7 @@ public class CorePlugin : IPlugin
         // Use the prefixed name to remove the correct system
         world.RemoveSystemByName($"{Prefix}.{nameof(MovementSystem2D)}");
         world.RemoveSystemByName($"{Prefix}.{nameof(MovementSystem3D)}");
+        world.RemoveSystemByName($"{Prefix}.{nameof(RotationSystem3D)}");
 
         foreach (var componentType in ProvidedComponents)
         {

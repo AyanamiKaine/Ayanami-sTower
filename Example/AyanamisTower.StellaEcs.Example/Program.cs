@@ -104,13 +104,17 @@ internal static class Program
             cubeEntity = world.CreateEntity()
                 .Set(new Position3D(cubePos.X, cubePos.Y, cubePos.Z))
                 .Set(new Mesh3D { Mesh = ecsCubeMesh })
-                .Set(new RenderLit3D());
+                .Set(new RenderLit3D())
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(new Vector3(0.7f, 1.0f, 0f)));
 
 
             cubeEntity = world.CreateEntity()
                 .Set(new Position3D(3, 6, 3))
                 .Set(new Mesh3D { Mesh = ecsCubeMesh })
-                .Set(new RenderLit3D());
+                .Set(new RenderLit3D())
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(new Vector3(0.3f, 0.6f, 0f)));
 
 
 
@@ -250,11 +254,7 @@ internal static class Program
             {
                 lightSphereEntity.Set(new Position3D(lightPos.X, lightPos.Y, lightPos.Z));
             }
-            // Spin the ECS cube via a Rotation3D component
-            if (cubeEntity.IsValid())
-            {
-                cubeEntity.Set(Rotation3D.FromEulerRadians(pitch: time * 0.7f, yaw: time, roll: 0));
-            }
+            // Rotation is now handled by RotationSystem3D (CorePlugin)
 
             // Rectangle hover + click detection (pixel space)
             {
