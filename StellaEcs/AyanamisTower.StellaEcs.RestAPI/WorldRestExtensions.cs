@@ -105,9 +105,17 @@ namespace AyanamisTower.StellaEcs.Api
             return list;
         }
 
+        // Cache of type serializability checks to avoid repeated reflection and exceptions.
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, bool> s_canSerializeCache = new();
+
         private static object? TrySerializeToElement(object? value, Type valueType)
         {
             if (value is null) return null;
+            // Fast-path: if the type graph likely contains unsupported members (e.g., IntPtr), skip serialization entirely.
+            if (!IsProbablySerializable(valueType))
+            {
+                return null;
+            }
             try
             {
                 var options = new JsonSerializerOptions
@@ -128,6 +136,70 @@ namespace AyanamisTower.StellaEcs.Api
                 // Any other unexpected serialization issue: be safe and omit data
                 return null;
             }
+        }
+
+        private static bool IsProbablySerializable(Type t)
+        {
+            if (s_canSerializeCache.TryGetValue(t, out var cached)) return cached;
+            var result = ComputeSerializable(t, 0, new HashSet<Type>());
+            s_canSerializeCache[t] = result;
+            return result;
+        }
+
+        private static bool ComputeSerializable(Type t, int depth, HashSet<Type> visiting)
+        {
+            // Depth cap to avoid pathological graphs; assume okay beyond this
+            if (depth > 3) return true;
+
+            if (t.IsPointer || t == typeof(IntPtr) || t == typeof(UIntPtr)) return false;
+            if (t.IsPrimitive || t.IsEnum || t == typeof(string) || t == typeof(decimal)) return true;
+            if (t == typeof(DateTime) || t == typeof(DateTimeOffset) || t == typeof(Guid)) return true;
+            if (t == typeof(System.Numerics.Vector2) || t == typeof(System.Numerics.Vector3) || t == typeof(System.Numerics.Vector4) || t == typeof(System.Numerics.Quaternion)) return true;
+
+            // Arrays/collections: check element types
+            if (t.IsArray)
+            {
+                var elem = t.GetElementType();
+                return elem is not null && ComputeSerializable(elem, depth + 1, visiting);
+            }
+            if (t.IsGenericType)
+            {
+                var args = t.GetGenericArguments();
+                foreach (var a in args)
+                {
+                    if (!ComputeSerializable(a, depth + 1, visiting)) return false;
+                }
+            }
+
+            // Avoid cycles
+            if (!visiting.Add(t)) return true;
+
+            // If the type is from a known native/graphics namespace, assume not serializable (heuristic)
+            var ns = t.Namespace ?? string.Empty;
+            if (ns.StartsWith("MoonWorks", StringComparison.Ordinal) || ns.StartsWith("SDL", StringComparison.Ordinal))
+            {
+                visiting.Remove(t);
+                return false;
+            }
+
+            // Inspect instance fields (public + non-public) and public properties
+            const BindingFlags FB = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+            foreach (var f in t.GetFields(FB))
+            {
+                var ft = f.FieldType;
+                if (ft.IsPointer || ft == typeof(IntPtr) || ft == typeof(UIntPtr)) { visiting.Remove(t); return false; }
+                if (!ComputeSerializable(ft, depth + 1, visiting)) { visiting.Remove(t); return false; }
+            }
+            foreach (var p in t.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (!p.CanRead) continue;
+                var pt = p.PropertyType;
+                if (pt.IsPointer || pt == typeof(IntPtr) || pt == typeof(UIntPtr)) { visiting.Remove(t); return false; }
+                if (!ComputeSerializable(pt, depth + 1, visiting)) { visiting.Remove(t); return false; }
+            }
+
+            visiting.Remove(t);
+            return true;
         }
 
         private static JsonElement NormalizeComponentJson(Type componentType, JsonElement input)
