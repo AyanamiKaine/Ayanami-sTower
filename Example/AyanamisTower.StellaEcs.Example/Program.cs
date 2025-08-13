@@ -47,22 +47,11 @@ internal static class Program
         // New: simple render pipeline orchestrator
         private RenderPipeline renderPipeline;
 
-        public HelloGame() : base(
-                appInfo: new AppInfo("MyOrg", "HelloMoonWorks"),
-                windowCreateInfo: new WindowCreateInfo(
-                    windowTitle: "Hello MoonWorks - Shaders",
-                    windowWidth: 800,
-                    windowHeight: 480,
-                    screenMode: ScreenMode.Windowed,
-                    systemResizable: true,
-                    startMaximized: false,
-                    highDPI: false
-                ),
-                framePacingSettings: FramePacingSettings.CreateCapped(timestepFPS: 240, framerateCapFPS: 240),
-                availableShaderFormats: ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC | ShaderFormat.MSL,
-                debugMode: true
-            )
+        public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
+            // Customize defaults
+            ClearColor = new Color(10, 20, 40);
+
             var pluginLoader = new HotReloadablePluginLoader(world, "Plugins");
 
             // 3. Load all plugins that already exist in the folder at startup.
@@ -303,18 +292,7 @@ internal static class Program
 
         protected override void OnUpdate(TimeSpan delta)
         {
-            if (Inputs.Keyboard.IsPressed(KeyCode.Escape))
-            {
-                Quit();
-            }
-
-            // Toggle fullscreen with F11
-            if (Inputs.Keyboard.IsPressed(KeyCode.F11))
-            {
-                MainWindow.SetScreenMode(
-                    MainWindow.ScreenMode == ScreenMode.Windowed ? ScreenMode.Fullscreen : ScreenMode.Windowed
-                );
-            }
+            // Esc and F11 are handled by App by default
 
             // Toggle overlay with F1
             if (Inputs.Keyboard.IsPressed(KeyCode.F1))

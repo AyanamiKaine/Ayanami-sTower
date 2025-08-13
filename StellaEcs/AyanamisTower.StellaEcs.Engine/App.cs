@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using MoonWorks;
 using MoonWorks.Graphics;
+using MoonWorks.Input;
 using AyanamisTower.StellaEcs.Engine.Rendering;
 
 namespace AyanamisTower.StellaEcs.Engine;
@@ -20,6 +21,17 @@ public class App : Game
     private RenderPipeline? _pipeline;
 
     /// <summary>
+    /// Background clear color used for the default render pass.
+    /// </summary>
+    public Color ClearColor { get; set; } = new Color(10, 20, 40);
+
+    /// <summary>
+    /// When true (default), the base class handles a couple of helpful shortcuts:
+    /// Esc to quit and F11 to toggle fullscreen.
+    /// </summary>
+    protected bool HandleCommonShortcuts { get; set; } = true;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="App"/> class.
     /// </summary>
     /// <param name="appInfo">App info metadata.</param>
@@ -36,6 +48,35 @@ public class App : Game
     ) : base(appInfo, windowCreateInfo, framePacingSettings, availableShaderFormats, debugMode)
     {
     }
+
+    /// <summary>
+    /// Convenience constructor with sensible defaults.
+    /// </summary>
+    /// <param name="windowTitle">The window title to display.</param>
+    /// <param name="width">Initial window width.</param>
+    /// <param name="height">Initial window height.</param>
+    /// <param name="debugMode">Enable MoonWorks debug mode.</param>
+    public App(
+        string windowTitle = "StellaEcs App",
+        int width = 1280,
+        int height = 720,
+        bool debugMode = true
+    ) : base(
+        new AppInfo("AyanamisTower", windowTitle),
+        new WindowCreateInfo(
+            windowTitle,
+            (uint)width,
+            (uint)height,
+            ScreenMode.Windowed,
+            true,
+            false,
+            false
+        ),
+        FramePacingSettings.CreateCapped(240, 240),
+        ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC | ShaderFormat.MSL,
+        debugMode
+    )
+    { }
 
     /// <summary>
     /// Supply a render pipeline to the app. This will Initialize the pipeline immediately.
@@ -73,8 +114,32 @@ public class App : Game
     /// <inheritdoc />
     protected override void Update(TimeSpan delta)
     {
+        // Optional built-in shortcuts
+        if (HandleCommonShortcuts)
+        {
+            HandleShortcuts();
+        }
+
         OnUpdate(delta);
         _pipeline?.Update(delta);
+    }
+
+    /// <summary>
+    /// Handles common keyboard shortcuts when <see cref="HandleCommonShortcuts"/> is true.
+    /// </summary>
+    protected virtual void HandleShortcuts()
+    {
+        if (Inputs.Keyboard.IsPressed(KeyCode.Escape))
+        {
+            Quit();
+        }
+
+        if (Inputs.Keyboard.IsPressed(KeyCode.F11))
+        {
+            MainWindow.SetScreenMode(
+                MainWindow.ScreenMode == ScreenMode.Windowed ? ScreenMode.Fullscreen : ScreenMode.Windowed
+            );
+        }
     }
 
     /// <inheritdoc />
@@ -101,7 +166,7 @@ public class App : Game
             return;
         }
 
-        var colorTarget = new ColorTargetInfo(swapchain, new Color(10, 20, 40));
+        var colorTarget = new ColorTargetInfo(swapchain, ClearColor);
         var renderPass = cmdbuf.BeginRenderPass([colorTarget]);
         renderPass.SetViewport(new Viewport(swapchain.Width, swapchain.Height));
 
