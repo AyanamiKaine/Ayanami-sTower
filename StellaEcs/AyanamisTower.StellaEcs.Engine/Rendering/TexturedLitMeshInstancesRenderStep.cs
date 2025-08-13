@@ -104,6 +104,11 @@ public sealed class TexturedLitMeshInstancesRenderStep(GraphicsPipeline pipeline
         }
     }
 
+    /// <summary>
+    /// Clears all queued instances for this step.
+    /// </summary>
+    public void ClearInstances() => _instances.Clear();
+
     /// <inheritdoc/>
     public void Dispose() => _instances.Clear();
 }

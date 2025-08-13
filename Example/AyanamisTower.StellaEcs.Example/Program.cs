@@ -37,8 +37,10 @@ internal static class Program
                                        // ECS-rendered lit meshes
         private Mesh? ecsCubeMesh;
         private Mesh? ecsLightSphereMesh;
+        private Mesh? ecsTexturedSphereMesh;
         private Entity cubeEntity;
         private Entity lightSphereEntity;
+        private Entity texturedSphereEntity;
         // Add: FPS counter & window title
         private readonly string baseTitle = "Hello MoonWorks - Shaders";
         private float fpsTimer;
@@ -101,6 +103,7 @@ internal static class Program
             defaultRenderer.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
             // Bridge ECS -> Renderer: register sync system
             world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));
+            world.RegisterSystem(new RenderSyncSystem3DTexturedLit(defaultRenderer));
             // Create ECS entities for a lit cube and a lit debug light sphere
             ecsCubeMesh = Mesh.CreateBox3DLit(GraphicsDevice, 0.7f, new Vector3(1f, 1f, 1f));
             cubeEntity = world.CreateEntity()
@@ -135,17 +138,18 @@ internal static class Program
                 .Set(new Mesh3D { Mesh = ecsLightSphereMesh })
                 .Set(new RenderLit3D());
 
-            // Load Venus texture from Assets/Venus.png and create a textured sphere
+            // Load Venus texture from Assets/Venus.jpg and create a textured sphere entity via ECS
             venusTexture = LoadTextureFromAssets("Assets/Venus.jpg");
             if (venusTexture != null)
             {
-                defaultRenderer.AddTexturedSphereLit(
-                    model: () => Matrix4x4.CreateTranslation(new Vector3(0, 1.2f, 0)),
-                    texture: venusTexture,
-                    radius: 1.0f,
-                    slices: 96,
-                    stacks: 48
-                );
+                ecsTexturedSphereMesh = Mesh.CreateSphere3DTexturedLit(GraphicsDevice, radius: 1.0f, slices: 96, stacks: 48);
+                texturedSphereEntity = world.CreateEntity()
+                    .Set(new Position3D(0, 1.2f, 0))
+                    .Set(new Mesh3D { Mesh = ecsTexturedSphereMesh })
+                    .Set(new Texture2DRef { Texture = venusTexture })
+                    .Set(new RenderTexturedLit3D())
+                    .Set(Rotation3D.Identity)
+                    .Set(new AngularVelocity3D(new Vector3(0f, 0.4f, 0f)));
             }
 
 
@@ -359,6 +363,7 @@ internal static class Program
             try { rectMesh.Dispose(); } catch { }
             try { ecsCubeMesh?.Dispose(); } catch { }
             try { ecsLightSphereMesh?.Dispose(); } catch { }
+            try { ecsTexturedSphereMesh?.Dispose(); } catch { }
             try { venusTexture?.Dispose(); } catch { }
             base.Destroy();
         }

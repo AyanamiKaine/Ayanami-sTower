@@ -497,6 +497,17 @@ public sealed class DefaultRenderer : IDisposable
     public void ClearLitInstances() => _mesh3DLitStep.ClearInstances();
 
     /// <summary>
+    /// Clears all textured-lit instances queued so far.
+    /// </summary>
+    public void ClearTexturedLitInstances()
+    {
+        foreach (var step in _texturedSteps.Values)
+        {
+            step.ClearInstances();
+        }
+    }
+
+    /// <summary>
     /// Sets the point light (sun-like) parameters used by the lit 3D pipeline.
     /// </summary>
     public void SetPointLight(Vector3 position, Vector3 color, float ambient = 0.2f)
