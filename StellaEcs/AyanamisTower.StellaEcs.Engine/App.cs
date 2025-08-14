@@ -92,7 +92,7 @@ public class App : Game
             false,
             false
         ),
-        FramePacingSettings.CreateCapped(360, 360),
+        FramePacingSettings.CreateCapped(60, 360),
         ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC | ShaderFormat.MSL,
         debugMode
     )

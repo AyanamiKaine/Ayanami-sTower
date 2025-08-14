@@ -14,6 +14,8 @@ using MoonWorks.Input;
 using System.Numerics;
 using Vector3 = System.Numerics.Vector3;
 using StbImageSharp;
+using System.Drawing;
+using Color = MoonWorks.Graphics.Color;
 
 namespace AyanamisTower.StellaEcs.Example;
 
@@ -75,7 +77,7 @@ internal static class Program
         public HelloGame() : base("Hello MoonWorks - Shaders", 800, 480, debugMode: true)
         {
             // Customize defaults
-            ClearColor = new Color(10, 20, 40);
+            ClearColor = new MoonWorks.Graphics.Color(10, 20, 40);
 
             var pluginLoader = new HotReloadablePluginLoader(world, "Plugins");
 
@@ -113,7 +115,7 @@ internal static class Program
             // Attach high-level renderer and register objects
             defaultRenderer = UseDefaultRenderer();
             // Set a simple sun-like point light
-            defaultRenderer.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.15f);
+            defaultRenderer.SetPointLight(lightPos, new Vector3(1f, 1f, 0.95f), 0.65f);
 
             // Configure shadow mapping for solar system scale (planets orbit out to ~21 units)
             // Use near=0.5 (half Sun radius) and higher bias to prevent shadow acne
@@ -122,6 +124,25 @@ internal static class Program
             // Bridge ECS -> Renderer: register sync system
             world.RegisterSystem(new RenderSyncSystem3DLit(defaultRenderer));
             world.RegisterSystem(new RenderSyncSystem3DTexturedLit(defaultRenderer));
+
+            /*
+            Testing shadow casting onto the plane below, currently this does not work and no real shadows are cast.
+            */
+
+            world.CreateEntity()
+                .Set(new Position3D(0, -3, 0))
+                .Set(new Mesh3D { Mesh = Mesh.CreatePlane3DLit(GraphicsDevice, 1f, 1f, new(1,1,1)) })
+                .Set(new RenderLit3D())
+                .Set(Rotation3D.Identity)
+                .Set(new Size3D(100f, 1f, 100f)) // 1x1x1 cube
+                .Set(new AngularVelocity3D(Vector3.Zero)); // Static cube
+
+            world.CreateEntity()
+                    .Set(new Position3D(0, -2.5f, 0))
+                    .Set(new Mesh3D { Mesh = Mesh.CreateSphere3DLit(GraphicsDevice, 0.1f, new(1,1,1), 4) })
+                    .Set(new RenderLit3D())
+                    .Set(Rotation3D.Identity)
+                    .Set(new AngularVelocity3D(new Vector3(0f, 0.25f, 0f)));
 
             // Build a small solar system using textures in Assets/
             // Sun

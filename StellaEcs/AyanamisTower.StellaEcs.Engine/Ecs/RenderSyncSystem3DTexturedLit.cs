@@ -71,11 +71,5 @@ public sealed class RenderSyncSystem3DTexturedLit : ISystem
 
             _renderer.AddTextured3DLit(() => mesh, () => model, texture, castsShadows);
         }
-
-        // Debug output every 60 frames (~1 second at 60fps)
-        if (System.Environment.TickCount % 1000 < 16) // approximately once per second
-        {
-            Console.WriteLine($"TexturedLit: {entityCount} entities, {shadowCasterCount} shadow casters");
-        }
     }
 }
