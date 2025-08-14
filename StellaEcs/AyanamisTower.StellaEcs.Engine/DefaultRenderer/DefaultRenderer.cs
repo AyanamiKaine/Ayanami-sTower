@@ -495,7 +495,8 @@ public sealed class DefaultRenderer : IDisposable
         {
             step = new TexturedLitMeshInstancesRenderStep(_texturedLitPipeline, texture, _device.LinearSampler);
             _texturedSteps.Add(texture, step);
-            _pipeline.Add(step);
+            // Ensure textured steps render before text overlay so text stays on top
+            _pipeline.InsertBefore(_textStep, step);
         }
         step.AddInstance(mesh, model);
     }

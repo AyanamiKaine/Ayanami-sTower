@@ -28,6 +28,27 @@ public sealed class RenderPipeline : IDisposable
         return this;
     }
     /// <summary>
+    /// Inserts a render step before another existing step. If <paramref name="before"/> is not found,
+    /// falls back to appending the step. If the pipeline has already been initialized, the step is initialized immediately.
+    /// </summary>
+    /// <param name="before">The step to insert before.</param>
+    /// <param name="step">The new step to insert.</param>
+    /// <returns>The pipeline, for chaining.</returns>
+    public RenderPipeline InsertBefore(IRenderStep before, IRenderStep step)
+    {
+        var idx = _steps.IndexOf(before);
+        if (idx < 0)
+        {
+            return Add(step);
+        }
+        _steps.Insert(idx, step);
+        if (_device != null!)
+        {
+            step.Initialize(_device);
+        }
+        return this;
+    }
+    /// <summary>
     /// Initializes the render pipeline.
     /// </summary>
     /// <param name="device"></param>
