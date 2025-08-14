@@ -75,7 +75,7 @@ public sealed class MeshInstancesRenderStep(GraphicsPipeline pipeline, MultiplyM
             Matrix4x4 mvp = _mode == MultiplyMode.WorldViewProj
                 ? m * view.View * view.Projection
                 : m * view.OrthoPixels;
-            cmdbuf.PushVertexUniformData(mvp);
+            cmdbuf.PushVertexUniformData(mvp, slot: 0);
             inst.Mesh().Draw(pass);
         }
     }

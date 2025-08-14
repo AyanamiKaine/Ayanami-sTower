@@ -21,6 +21,10 @@ public sealed class RenderPipeline : IDisposable
     public RenderPipeline Add(IRenderStep step)
     {
         _steps.Add(step);
+        if (_device != null!)
+        {
+            step.Initialize(_device);
+        }
         return this;
     }
     /// <summary>
