@@ -48,36 +48,14 @@ VSOutput VSMain(VSInput input)
     return o;
 }
 
-// Shadow map: color cube encodes linear depth in R (space2)
-// Note: bind at t0/s0 to avoid gaps since this pipeline has no diffuse texture.
-TextureCube ShadowCube : register(t0, space2);
-SamplerState ShadowSamp : register(s0, space2);
-
-float SampleShadow(float3 lightToPoint, float currentDepth, float bias)
-{
-    // Normalize direction and sample stored depth
-    float3 dir = normalize(lightToPoint);
-    float stored = ShadowCube.Sample(ShadowSamp, dir).r;
-    
-    // Debug: if stored depth is very close to 1.0 (clear value), there's no shadow caster in that direction
-    if (stored > 0.99) return 1.0; // No shadow caster, fully lit
-    
-    // Compare depths with bias
-    return currentDepth <= stored + bias ? 1.0 : 0.3; // 0.3 ambient in shadow
-}
-
 float4 PSMain(VSOutput input) : SV_Target
 {
     float3 N = normalize(input.worldNrm);
     float3 L = normalize(input.lightPos - input.worldPos);
     float NdotL = saturate(dot(N, L));
 
-    // Shadow factor - try both directions to debug
-    float dist = distance(input.lightPos, input.worldPos) / max(1e-5, input.farPlane);
-    float3 lightToPoint = input.worldPos - input.lightPos;
-    float shadow = SampleShadow(lightToPoint, dist, input.depthBias);
-
-    float3 lit = input.ambient + (NdotL * input.lightColor * shadow);
+    // Simple Lambert + ambient, no shadows
+    float3 lit = input.ambient + (NdotL * input.lightColor);
     float3 outCol = input.col * lit;
     return float4(outCol, 1.0);
 }

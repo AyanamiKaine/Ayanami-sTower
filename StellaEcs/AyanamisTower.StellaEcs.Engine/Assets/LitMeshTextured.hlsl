@@ -47,26 +47,9 @@ VSOutput VSMain(VSInput input)
     return o;
 }
 
-// In MoonWorks, fragment samplers are bound via BindFragmentSamplers which maps to set/space2.
-// Declare our texture/sampler in space2 so the pipeline layout matches.
+// Fragment texture/sampler (space2) for diffuse albedo only
 Texture2D    DiffuseTex  : register(t0, space2);
 SamplerState DiffuseSamp : register(s0, space2);
-
-// Shadow map: color cube encodes linear depth in R
-TextureCube  ShadowCube  : register(t1, space2);
-SamplerState ShadowSamp  : register(s1, space2);
-
-float SampleShadow(float3 lightToPoint, float currentDepth, float bias)
-{
-    float3 dir = normalize(lightToPoint);
-    float stored = ShadowCube.Sample(ShadowSamp, dir).r;
-    
-    // Debug: if stored depth is very close to 1.0 (clear value), there's no shadow caster in that direction
-    if (stored > 0.99) return 1.0; // No shadow caster, fully lit
-    
-    // Compare depths with bias
-    return currentDepth <= stored + bias ? 1.0 : 0.3;
-}
 
 float4 PSMain(VSOutput input) : SV_Target
 {
@@ -74,26 +57,8 @@ float4 PSMain(VSOutput input) : SV_Target
     float3 L = normalize(input.lightPos - input.worldPos);
     float NdotL = saturate(dot(N, L));
 
-    float dist = distance(input.lightPos, input.worldPos) / max(1e-5, input.farPlane);
-    float3 lightToPoint = input.worldPos - input.lightPos;
-    
-    // Debug visualization modes (uncomment one at a time to debug):
-    
-    // 1. Visualize raw distance from light (red = close, blue = far)
-    // return float4(dist, 0, 1.0 - dist, 1.0);
-    
-    // 2. Visualize stored shadow depth
-    // float3 dir = normalize(lightToPoint);
-    // float stored = ShadowCube.Sample(ShadowSamp, dir).r;
-    // return float4(stored, stored, stored, 1.0);
-    
-    // 3. Visualize shadow comparison result
-    // float shadow = SampleShadow(lightToPoint, dist, input.depthBias);
-    // return float4(shadow, shadow, shadow, 1.0);
-    
-    // Normal rendering with shadows
-    float shadow = SampleShadow(lightToPoint, dist, input.depthBias);
-    float3 lit = input.ambient + (NdotL * input.lightColor * shadow);
+    // Ambient + Lambert, no shadowing
+    float3 lit = input.ambient + (NdotL * input.lightColor);
     float3 albedo = DiffuseTex.Sample(DiffuseSamp, input.uv).rgb;
     return float4(albedo * lit, 1.0);
 }

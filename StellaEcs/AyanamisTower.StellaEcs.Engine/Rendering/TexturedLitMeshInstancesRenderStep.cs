@@ -113,12 +113,7 @@ public sealed class TexturedLitMeshInstancesRenderStep(GraphicsPipeline pipeline
         if (_instances.Count == 0) return;
         pass.BindGraphicsPipeline(_pipeline);
         pass.BindFragmentSamplers(new TextureSamplerBinding(_texture, _sampler));
-        if (_shadowCube != null && _shadowSampler != null)
-        {
-            Span<TextureSamplerBinding> sb = stackalloc TextureSamplerBinding[1];
-            sb[0] = new TextureSamplerBinding(_shadowCube, _shadowSampler);
-            pass.BindFragmentSamplers(1, sb);
-        }
+
         foreach (var (meshP, modelP) in _instances)
         {
             var m = modelP();

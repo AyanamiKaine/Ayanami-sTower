@@ -24,9 +24,6 @@ public sealed class DefaultRenderer : IDisposable
     private readonly TextOverlayRenderStep _textStep;
     private readonly LitMeshInstancesRenderStep _mesh3DLitStep;
     private readonly Dictionary<Texture, TexturedLitMeshInstancesRenderStep> _texturedSteps = new();
-    private ShadowCubeRenderStep? _shadowStep;
-    private Sampler? _shadowSampler;
-
     private readonly TextBatch _textBatch;
     private readonly GraphicsPipeline _textPipeline;
     private Func<TextBatch, bool>? _overlayBuilder;
@@ -186,49 +183,6 @@ public sealed class DefaultRenderer : IDisposable
             ]
         };
 
-        // Shadow depth cubemap pre-pass (must be created before lit pipelines to ensure proper descriptor layout)
-        var (shadowVS, shadowPS) = CompileHlsl(rootTitleStorage, "Assets/ShadowDepthCube.hlsl", namePrefix: "Shadow");
-        var shadowInput = new VertexInputState
-        {
-            // Use the same stride as our meshes (Vertex3DMaterial); only POSITION at location 0 is consumed.
-            VertexBufferDescriptions = [VertexBufferDescription.Create<Mesh.Vertex3DMaterial>(0)],
-            VertexAttributes = [new VertexAttribute { Location = 0, BufferSlot = 0, Format = VertexElementFormat.Float3, Offset = 0 }]
-        };
-        var shadowPipeline = GraphicsPipeline.Create(
-            _device,
-            new GraphicsPipelineCreateInfo
-            {
-                VertexShader = shadowVS,
-                FragmentShader = shadowPS,
-                VertexInputState = shadowInput,
-                PrimitiveType = PrimitiveType.TriangleList,
-                RasterizerState = RasterizerState.CCW_CullNone,
-                MultisampleState = MultisampleState.None,
-                DepthStencilState = DepthStencilState.Disable,
-                TargetInfo = new GraphicsPipelineTargetInfo
-                {
-                    // Must match ShadowCubeRenderStep's cubemap format
-                    ColorTargetDescriptions = [new ColorTargetDescription { Format = TextureFormat.R32Float, BlendState = ColorTargetBlendState.NoBlend }]
-                },
-                Name = "ShadowCube"
-            }
-        );
-        _shadowStep = new ShadowCubeRenderStep(_device, shadowPipeline, size: 1024); // Higher resolution
-        _shadowStep.Initialize(_device);
-
-        // Create a clamp sampler for the shadow cubemap
-        _shadowSampler = Sampler.Create(_device, "ShadowSampler", new SamplerCreateInfo
-        {
-            MinFilter = Filter.Nearest,
-            MagFilter = Filter.Nearest,
-            MipmapMode = SamplerMipmapMode.Nearest,
-            AddressModeU = SamplerAddressMode.ClampToEdge,
-            AddressModeV = SamplerAddressMode.ClampToEdge,
-            AddressModeW = SamplerAddressMode.ClampToEdge,
-            MinLod = 0,
-            MaxLod = 0
-        });
-
         var lit3D = GraphicsPipeline.Create(
             _device,
             new GraphicsPipelineCreateInfo
@@ -250,12 +204,6 @@ public sealed class DefaultRenderer : IDisposable
             }
         );
         _mesh3DLitStep = new LitMeshInstancesRenderStep(lit3D);
-
-        // Set shadow map for untextured lit step
-        if (_shadowStep != null && _shadowSampler != null)
-        {
-            _mesh3DLitStep.SetShadowMap(_shadowStep.CubeTexture, _shadowSampler);
-        }
 
         // Textured-lit pipeline: Vertex3DTexturedLit (pos/nrm/uv) + texture at t0/s0
         var (txVS, txPS) = CompileHlsl(rootTitleStorage, "Assets/LitMeshTextured.hlsl", namePrefix: "LitTex");
@@ -289,11 +237,6 @@ public sealed class DefaultRenderer : IDisposable
                     Name = "TexturedLit3D"
                 }
             );
-
-        if (_shadowStep != null)
-        {
-            _pipeline.Add(_shadowStep);
-        }
 
         _pipeline
                 .Add(_mesh3DStep)
@@ -457,10 +400,6 @@ public sealed class DefaultRenderer : IDisposable
     public void AddMesh3DLit(Func<Mesh> mesh, Func<Matrix4x4> model, bool castsShadows)
     {
         _mesh3DLitStep.AddInstance(mesh, model);
-        if (castsShadows)
-        {
-            _shadowStep?.AddCaster(mesh, model);
-        }
     }
 
     /// <summary>
@@ -557,16 +496,8 @@ public sealed class DefaultRenderer : IDisposable
             step = new TexturedLitMeshInstancesRenderStep(_texturedLitPipeline, texture, _device.LinearSampler);
             _texturedSteps.Add(texture, step);
             _pipeline.Add(step);
-            if (_shadowStep != null && _shadowSampler != null)
-            {
-                step.SetShadowMap(_shadowStep.CubeTexture, _shadowSampler);
-            }
         }
         step.AddInstance(mesh, model);
-        if (castsShadows)
-        {
-            _shadowStep?.AddCaster(mesh, model);
-        }
     }
 
     /// <summary>
@@ -585,7 +516,6 @@ public sealed class DefaultRenderer : IDisposable
     public void ClearLitInstances()
     {
         _mesh3DLitStep.ClearInstances();
-        _shadowStep?.ClearCasters();
     }
 
     /// <summary>
@@ -597,7 +527,6 @@ public sealed class DefaultRenderer : IDisposable
         {
             step.ClearInstances();
         }
-        _shadowStep?.ClearCasters();
     }
 
     /// <summary>
@@ -610,7 +539,6 @@ public sealed class DefaultRenderer : IDisposable
         {
             step.SetLight(position, color, ambient);
         }
-        _shadowStep?.SetLightPosition(position);
     }
 
     /// <summary>
@@ -631,6 +559,5 @@ public sealed class DefaultRenderer : IDisposable
         {
             step.SetShadowParams(farPlane, depthBias);
         }
-        _shadowStep?.SetSettings(nearPlane, farPlane, depthBias);
     }
 }
