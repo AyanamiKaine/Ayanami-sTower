@@ -131,7 +131,7 @@ internal static class Program
 
             world.CreateEntity()
                 .Set(new Position3D(0, -3, 0))
-                .Set(new Mesh3D { Mesh = Mesh.CreatePlane3DLit(GraphicsDevice, 1f, 1f, new(1,1,1)) })
+                // .Set(new Mesh3D { Mesh = Mesh.CreatePlane3DLit(GraphicsDevice, 1f, 1f, new(1,1,1)) })
                 .Set(new RenderLit3D())
                 .Set(Rotation3D.Identity)
                 .Set(new Size3D(100f, 1f, 100f)) // 1x1x1 cube
@@ -139,7 +139,7 @@ internal static class Program
 
             world.CreateEntity()
                     .Set(new Position3D(0, -2.5f, 0))
-                    .Set(new Mesh3D { Mesh = Mesh.CreateSphere3DLit(GraphicsDevice, 0.1f, new(1,1,1), 4) })
+                    //.Set(new Mesh3D { Mesh = Mesh.CreateSphere3DLit(GraphicsDevice, 0.1f, new(1,1,1), 4) })
                     .Set(new RenderLit3D())
                     .Set(Rotation3D.Identity)
                     .Set(new AngularVelocity3D(new Vector3(0f, 0.25f, 0f)));
