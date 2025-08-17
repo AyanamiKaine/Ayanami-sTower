@@ -1046,7 +1046,7 @@ public class ArtPage : IUIComponent, IDisposable
     {
         try
         {
-            string baseArtPath = Path.Combine(Directory.GetCurrentDirectory(), ART_FOLDER_NAME);
+            string baseArtPath = Path.Combine(AppContext.BaseDirectory, ART_FOLDER_NAME);
             Directory.CreateDirectory(baseArtPath);
             Directory.CreateDirectory(Path.Combine(baseArtPath, REFERENCES_SUBFOLDER));
             Directory.CreateDirectory(Path.Combine(baseArtPath, STUDIES_SUBFOLDER));
@@ -1061,7 +1061,7 @@ public class ArtPage : IUIComponent, IDisposable
     {
         try
         {
-            string baseArtPath = Path.Combine(Directory.GetCurrentDirectory(), ART_FOLDER_NAME);
+            string baseArtPath = Path.Combine(AppContext.BaseDirectory, ART_FOLDER_NAME);
             string destinationFolder = Path.Combine(baseArtPath, subfolder);
             string uniqueFileName = $"{Guid.NewGuid()}_{Path.GetFileName(sourcePath)}";
             string destinationPath = Path.Combine(destinationFolder, uniqueFileName);
@@ -1638,7 +1638,7 @@ public class ArtPage : IUIComponent, IDisposable
     /// Gets the full path to the main art directory.
     /// </summary>
     private static string GetArtFolderPath() =>
-        Path.Combine(Directory.GetCurrentDirectory(), ART_FOLDER_NAME);
+        Path.Combine(AppContext.BaseDirectory, ART_FOLDER_NAME);
 
     /// <summary>
     /// Gets the full path to the metadata file.

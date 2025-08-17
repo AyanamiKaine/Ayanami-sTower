@@ -532,7 +532,7 @@ public partial class App : Application
     /// <returns></returns>
     public static ObservableCollection<SpacedRepetitionItem> LoadSpaceRepetitionItemsFromDisk()
     {
-        string filePath = Path.Combine("./save", "space_repetition_items.json");
+        string filePath = Path.Combine(AppContext.BaseDirectory, "save", "space_repetition_items.json");
 
         if (File.Exists(filePath))
         {

@@ -1100,8 +1100,8 @@ public class SpacedRepetitionPage : IUIComponent, IDisposable
             // Data has changed, save it
             Logger.Info("Data changed - saving space repetition data.");
 
-            const string directoryPath = "./save";
-            Directory.CreateDirectory(directoryPath);
+            const string directoryPath = "save";
+            Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, directoryPath));
             string filePath = Path.Combine(directoryPath, "space_repetition_items.json");
 
             File.WriteAllText(filePath, jsonString);
