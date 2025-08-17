@@ -146,7 +146,7 @@ public class LiteraturePage : IUIComponent, IDisposable
         try
         {
             string literaturePath = Path.Combine(
-                Directory.GetCurrentDirectory(),
+                AppContext.BaseDirectory,
                 LITERATURE_FOLDER_NAME
             );
             Directory.CreateDirectory(literaturePath);
@@ -1324,7 +1324,7 @@ public class LiteraturePage : IUIComponent, IDisposable
         try
         {
             string literaturePath = Path.Combine(
-                Directory.GetCurrentDirectory(),
+                AppContext.BaseDirectory,
                 LITERATURE_FOLDER_NAME
             );
             string destinationFileName = Path.GetFileName(sourcePath);
@@ -1641,7 +1641,7 @@ public class LiteraturePage : IUIComponent, IDisposable
     private ObservableCollection<LiteratureSourceItem> LoadLiteratureItemsFromDisk()
     {
         string filePath = Path.Combine(
-            Directory.GetCurrentDirectory(),
+            AppContext.BaseDirectory,
             LITERATURE_FOLDER_NAME,
             LITERATURE_SAVE_FILE
         );
@@ -1700,7 +1700,7 @@ public class LiteraturePage : IUIComponent, IDisposable
             return;
 
         string directoryPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
+            AppContext.BaseDirectory,
             LITERATURE_FOLDER_NAME
         );
         string filePath = Path.Combine(directoryPath, LITERATURE_SAVE_FILE);
