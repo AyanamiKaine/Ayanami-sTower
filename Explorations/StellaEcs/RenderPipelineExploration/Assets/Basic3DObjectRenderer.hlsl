@@ -17,21 +17,45 @@ cbuffer VSParams : register(b0, space1)
     float4x4 mvp;
 };
 
-// Light parameters (model space)
-cbuffer LightParams : register(b0, space3)
+struct PointLight
 {
-    // Directional light: direction points where the light shines (from light toward scene)
-    float4 Dir_Dir_Intensity;   // xyz = direction, w = intensity
-    float4 Dir_Color;           // rgb = color,   a = unused
+    // Grouped to fill a 16-byte register
+    float3 position;
+    float  constant;
 
-    // Point light
-    float4 Pt_Pos_Range;        // xyz = position, w = range
-    float4 Pt_Color_Intensity;  // rgb = color,     w = intensity
-    float2 Pt_Attenuation;      // x = linear, y = quadratic
-    float2 _pad;
-    float  Ambient;             // scalar ambient term
-    float3 _pad2;
+    // Grouped to fill a 16-byte register
+    float3 ambient;
+    float  continuous; // also called linear but its the same name as a hlsl method, so we cant use it
+
+    // Grouped to fill a 16-byte register
+    float3 diffuse;
+    float  quadratic;
+    
+    // Grouped to fill a 16-byte register
+    float3 specular;
+    float  pad; // Explicit padding to make the total size a multiple of 16
 };
+
+struct DirLight
+{
+    float3 direction;
+    float3 ambient;
+    float3 diffuse;
+    float3 specular;
+};
+
+cbuffer DirLightProperties : register(b0, space3)
+{
+    DirLight dirLight;
+}
+
+#define NR_POINT_LIGHTS 4
+
+// The array of structs is placed inside a constant buffer (cbuffer).
+cbuffer PointLightsData : register(b1, space3)
+{
+    PointLight pointLights[NR_POINT_LIGHTS];
+}
 
 VSOutput VSMain(VSInput input)
 {
@@ -45,23 +69,6 @@ VSOutput VSMain(VSInput input)
 
 float4 PSMain(VSOutput input) : SV_Target
 {
-    float3 N = normalize(input.nrm);
-
-    // Directional light
-    float3 Ld = normalize(-Dir_Dir_Intensity.xyz); // to-light vector
-    float diffDir = saturate(dot(N, Ld));
-    float3 dirLit = Dir_Color.rgb * (Dir_Dir_Intensity.w * diffDir);
-
-    // Point light
-    float3 toPt = Pt_Pos_Range.xyz - input.mpos;
-    float dist  = length(toPt);
-    float3 Lp   = (dist > 1e-5) ? toPt / dist : 0;
-    float diffPt = saturate(dot(N, Lp));
-    float att = 1.0 / (1.0 + Pt_Attenuation.x * dist + Pt_Attenuation.y * dist * dist);
-    att *= saturate(1.0 - dist / max(Pt_Pos_Range.w, 1e-5)); // soft range cutoff
-    float3 ptLit = Pt_Color_Intensity.rgb * (Pt_Color_Intensity.w * diffPt * att);
-
-    float3 lighting = dirLit + ptLit;
-    float3 finalRgb = input.col * (Ambient + lighting);
+    float3 finalRgb = input.col;
     return float4(finalRgb, 1.0);
 }

@@ -89,6 +89,8 @@ internal static class Program
                 "Basic3DObjectRendererPS"
             );
 
+
+
             var vertexInput = VertexInputState.CreateSingleBinding<Vertex>(0);
 
             // Pipeline (no depth for minimal sample -> use depth if needed)
@@ -183,6 +185,8 @@ internal static class Program
             var mvp = model * _view * _proj;
             cmdbuf.PushVertexUniformData(mvp, slot: 0);
 
+            /*
+
             var dirDir = Vector3.Normalize(new Vector3(-0.4f, -1.0f, -0.3f));
             var dirIntensity = 1.0f;
             var dirColor = new Vector3(1, 1, 1);
@@ -208,6 +212,8 @@ internal static class Program
 
             // cbuffer LightParams : register(b0, space3), slot 0 but space(set) 3
             cmdbuf.PushFragmentUniformData(lightUbo, slot: 0);
+
+            */
 
 
             pass.DrawIndexedPrimitives(_indexCount, 1, 0, 0, 0);
