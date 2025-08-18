@@ -15,18 +15,6 @@ internal static class Program
         var game = new CubeGame();
         game.Run();
     }
-    [StructLayout(LayoutKind.Sequential)]
-    private struct LightUniforms
-    {
-        public Vector4 Dir_Dir_Intensity;   // xyz = dir, w = intensity
-        public Vector4 Dir_Color;           // rgb = color
-        public Vector4 Pt_Pos_Range;        // xyz = pos, w = range
-        public Vector4 Pt_Color_Intensity;  // rgb = color, w = intensity
-        public Vector2 Pt_Attenuation;      // x = linear, y = quadratic
-        private Vector2 _pad;
-        public float Ambient;
-        private Vector3 _pad2;
-    }
 
     private sealed class CubeGame : Game
     {
@@ -45,7 +33,7 @@ internal static class Program
         // rotation
         private float _angle;
 
-        private SampleCount _msaaSamples = SampleCount.Eight;
+        private SampleCount _msaaSamples = SampleCount.Four;
         private Texture? _msaaColor; // The offscreen texture for MSAA rendering
         private Texture? _msaaDepth; // The offscreen depth buffer (MSAA)
         private uint _lastWindowWidth;
