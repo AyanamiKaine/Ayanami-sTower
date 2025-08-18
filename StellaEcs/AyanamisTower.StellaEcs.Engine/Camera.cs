@@ -8,7 +8,7 @@ namespace AyanamisTower.StellaEcs.Engine;
 /// </summary>
 public class Camera
 {
-    private Vector3 _position = new Vector3(0, 0, 5);
+    private Vector3 _position = new(0, 0, 5);
     private float _yaw = 0f; // Rotation around Y-axis (left/right)
     private float _pitch = 0f; // Rotation around X-axis (up/down)
     private Vector3 _forward = -Vector3.UnitZ;
