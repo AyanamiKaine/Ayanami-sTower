@@ -133,6 +133,15 @@ public class Camera
     }
 
     /// <summary>
+    /// Gets the inverse of the view matrix (camera world transform).
+    /// </summary>
+    public Matrix4x4 GetCameraWorldMatrix()
+    {
+        Matrix4x4.Invert(GetViewMatrix(), out var inv);
+        return inv;
+    }
+
+    /// <summary>
     /// Updates the camera's forward, right, and up vectors based on yaw and pitch.
     /// </summary>
     private void UpdateVectors()

@@ -20,6 +20,7 @@ internal static class Program
     {
         // Camera
         private Camera _camera = null!;
+        private CameraController _cameraController = null!;
 
         // GPU resources
         private GraphicsPipeline? _pipeline;
@@ -57,6 +58,7 @@ internal static class Program
                 Far = 100f,
                 Fov = MathF.PI / 3f
             };
+            _cameraController = new CameraController(_camera);
 
             _msaaColor = Texture.Create2D(
                 GraphicsDevice,
@@ -185,8 +187,10 @@ internal static class Program
         {
             _angle += (float)delta.TotalSeconds * 0.7f;
             // Keep camera aspect up-to-date on resize
-            var aspect = (float)MainWindow.Width / MainWindow.Height;
-            _camera.Aspect = aspect;
+            _camera.Aspect = (float)((float)MainWindow.Width / MainWindow.Height);
+
+            // Update camera via controller abstraction
+            _cameraController.Update(Inputs, MainWindow, delta);
 
             if (MainWindow.Width != _lastWindowWidth || MainWindow.Height != _lastWindowHeight)
             {
