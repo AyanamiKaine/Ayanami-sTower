@@ -271,4 +271,141 @@ public class Mesh
 
         return new Mesh { Vertices = vertices, Indices = indices };
     }
+
+    /// <summary>
+    /// Creates a cylinder/frustum mesh with optional differing top and bottom radii, including caps.
+    /// </summary>
+    /// <param name="topRadius">Radius at the top cap (y = +height/2). Can be 0 for a cone tip.</param>
+    /// <param name="bottomRadius">Radius at the bottom cap (y = -height/2). Can be 0 for a cone tip.</param>
+    /// <param name="height">Full height of the cylinder.</param>
+    /// <param name="radialSegments">Number of segments around the circumference. Minimum 3.</param>
+    /// <param name="rings">Number of vertical divisions along the side. Minimum 1.</param>
+    public static Mesh CreateCylinder3D(float topRadius = 0.5f, float bottomRadius = 0.5f, float height = 1.0f, int radialSegments = 64, int rings = 1)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(topRadius);
+        ArgumentOutOfRangeException.ThrowIfNegative(bottomRadius);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        ArgumentOutOfRangeException.ThrowIfLessThan(radialSegments, 3);
+        ArgumentOutOfRangeException.ThrowIfLessThan(rings, 1);
+        if (topRadius == 0 && bottomRadius == 0) throw new ArgumentOutOfRangeException(nameof(topRadius), "At least one radius must be > 0.");
+
+        int cols = radialSegments + 1; // duplicate seam
+        int rows = rings + 1;          // include top and bottom rows
+
+        int sideVertCount = cols * rows;
+        int capRimCount = radialSegments + 1; // duplicate seam
+        int topVertCount = capRimCount + 1;   // rim + center
+        int botVertCount = capRimCount + 1;   // rim + center
+        int totalVerts = sideVertCount + topVertCount + botVertCount;
+
+        var vertices = new Vertex[totalVerts];
+
+        // Indices: sides + caps
+        int sideIndexCount = radialSegments * rings * 6;
+        int capIndexCount = radialSegments * 3 * 2; // top + bottom
+        var indices = new uint[sideIndexCount + capIndexCount];
+
+        // Precompute slope for side normals
+        float rPrime = bottomRadius - topRadius; // dr/dt over t in [0,1]
+        float h = height; // for clarity
+
+        // Build side vertices
+        int vi = 0;
+        for (int r = 0; r <= rings; r++)
+        {
+            float t = (float)r / rings; // 0 = top, 1 = bottom
+            float y = (0.5f - t) * h;
+            float radius = topRadius + rPrime * t;
+            for (int s = 0; s <= radialSegments; s++)
+            {
+                float u = (float)s / radialSegments;
+                float phi = u * MathF.Tau;
+                float cos = MathF.Cos(phi);
+                float sin = MathF.Sin(phi);
+
+                var pos = new Vector3(radius * cos, y, radius * sin);
+                // Side normal for frustum: normalize((h*cos, r', h*sin))
+                var n = Vector3.Normalize(new Vector3(h * cos, rPrime, h * sin));
+                var color = 0.5f * (n + Vector3.One);
+                vertices[vi++] = new Vertex(pos, n, color);
+            }
+        }
+
+        // Build caps vertices
+        int topStart = vi;
+        float yTop = +0.5f * h;
+        for (int s = 0; s <= radialSegments; s++)
+        {
+            float u = (float)s / radialSegments;
+            float phi = u * MathF.Tau;
+            float cos = MathF.Cos(phi);
+            float sin = MathF.Sin(phi);
+            var pos = new Vector3(topRadius * cos, yTop, topRadius * sin);
+            var n = Vector3.UnitY;
+            var color = 0.5f * (n + Vector3.One);
+            vertices[vi++] = new Vertex(pos, n, color);
+        }
+        int topCenterIndex = vi;
+        vertices[vi++] = new Vertex(new Vector3(0, yTop, 0), Vector3.UnitY, new Vector3(1, 1, 1));
+
+        int botStart = vi;
+        float yBot = -0.5f * h;
+        for (int s = 0; s <= radialSegments; s++)
+        {
+            float u = (float)s / radialSegments;
+            float phi = u * MathF.Tau;
+            float cos = MathF.Cos(phi);
+            float sin = MathF.Sin(phi);
+            var pos = new Vector3(bottomRadius * cos, yBot, bottomRadius * sin);
+            var n = -Vector3.UnitY;
+            var color = 0.5f * (n + Vector3.One);
+            vertices[vi++] = new Vertex(pos, n, color);
+        }
+        int botCenterIndex = vi;
+        vertices[vi++] = new Vertex(new Vector3(0, yBot, 0), -Vector3.UnitY, new Vector3(1, 1, 1));
+
+        // Indices - sides
+        int ii = 0;
+        for (int r = 0; r < rings; r++)
+        {
+            for (int s = 0; s < radialSegments; s++)
+            {
+                int a0 = r * cols + s;
+                int a1 = a0 + 1;
+                int b0 = (r + 1) * cols + s;
+                int b1 = b0 + 1;
+
+                // CCW: (a0, a1, b0), (a1, b1, b0)
+                indices[ii++] = (uint)a0;
+                indices[ii++] = (uint)a1;
+                indices[ii++] = (uint)b0;
+
+                indices[ii++] = (uint)a1;
+                indices[ii++] = (uint)b1;
+                indices[ii++] = (uint)b0;
+            }
+        }
+
+        // Indices - top cap (CCW when viewed from above)
+        for (int s = 0; s < radialSegments; s++)
+        {
+            int a = topStart + s;
+            int b = topStart + s + 1;
+            indices[ii++] = (uint)topCenterIndex;
+            indices[ii++] = (uint)b; // Swapped
+            indices[ii++] = (uint)a; // Swapped
+        }
+
+        // Indices - bottom cap
+        for (int s = 0; s < radialSegments; s++)
+        {
+            int a = botStart + s;
+            int b = botStart + s + 1;
+            indices[ii++] = (uint)botCenterIndex;
+            indices[ii++] = (uint)a; // Swapped
+            indices[ii++] = (uint)b; // Swapped
+        }
+
+        return new Mesh { Vertices = vertices, Indices = indices };
+    }
 }
