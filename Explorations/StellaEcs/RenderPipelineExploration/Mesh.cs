@@ -187,4 +187,88 @@ public class Mesh
 
         return new Mesh { Vertices = vertices, Indices = indices };
     }
+
+    /// <summary>
+    /// Creates a torus mesh centered at the origin.
+    /// innerRadius/outerRadius define the inner/outer surface distances from the origin in the XZ plane.
+    /// </summary>
+    /// <param name="innerRadius">Distance from origin to inner tube surface (R - r). Must be greater than 0 and less than <paramref name="outerRadius"/>.</param>
+    /// <param name="outerRadius">Distance from origin to outer tube surface (R + r). Must be greater than <paramref name="innerRadius"/>.</param>
+    /// <param name="rings">Segments around the main ring (major circle).</param>
+    /// <param name="ringSegments">Segments around the tube cross-section (minor circle).</param>
+    public static Mesh CreateTorus3D(float innerRadius = 0.5f, float outerRadius = 1.0f, int rings = 64, int ringSegments = 32)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(innerRadius);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(outerRadius);
+        if (outerRadius <= innerRadius) throw new ArgumentOutOfRangeException(nameof(outerRadius), "outerRadius must be greater than innerRadius.");
+        ArgumentOutOfRangeException.ThrowIfLessThan(rings, 3);
+        ArgumentOutOfRangeException.ThrowIfLessThan(ringSegments, 3);
+
+        // Derive major/minor radii: R = (outer+inner)/2, r = (outer-inner)/2
+        float R = 0.5f * (outerRadius + innerRadius);
+        float r = 0.5f * (outerRadius - innerRadius);
+
+        int cols = rings + 1;         // duplicate seam around major ring
+        int rows = ringSegments + 1;  // duplicate seam around minor circle
+
+        var vertices = new Vertex[cols * rows];
+        var indices = new uint[rings * ringSegments * 6];
+
+        int vi = 0;
+        for (int i = 0; i <= rings; i++)
+        {
+            float u = (float)i / rings;           // [0,1]
+            float phi = u * MathF.Tau;            // around Y axis (major angle)
+            float cosU = MathF.Cos(phi);
+            float sinU = MathF.Sin(phi);
+
+            // Direction from Y axis in XZ plane
+            var dir = new Vector3(cosU, 0, sinU);
+            var up = Vector3.UnitY;
+
+            for (int j = 0; j <= ringSegments; j++)
+            {
+                float v = (float)j / ringSegments; // [0,1]
+                float theta = v * MathF.Tau;        // around tube
+                float cosV = MathF.Cos(theta);
+                float sinV = MathF.Sin(theta);
+
+                // Centerline point on major circle
+                var center = dir * R; // (R cosU, 0, R sinU)
+
+                // Local frame: dir (radial in XZ), up (Y). Tube offset
+                var offset = ((cosV * dir) + (sinV * up)) * r;
+                var pos = center + offset;
+
+                // Normal is offset normalized (independent of r)
+                var normal = Vector3.Normalize((cosV * dir) + (sinV * up));
+                var color = 0.5f * (normal + Vector3.One);
+
+                vertices[vi++] = new Vertex(pos, normal, color);
+            }
+        }
+
+        int ii = 0;
+        for (int i = 0; i < rings; i++)
+        {
+            for (int j = 0; j < ringSegments; j++)
+            {
+                int a0 = (i * rows) + j;
+                int a1 = a0 + 1;
+                int b0 = ((i + 1) * rows) + j;
+                int b1 = b0 + 1;
+
+                // CCW winding (a0 -> a1 -> b0), (a1 -> b1 -> b0)
+                indices[ii++] = (uint)a0;
+                indices[ii++] = (uint)a1;
+                indices[ii++] = (uint)b0;
+
+                indices[ii++] = (uint)a1;
+                indices[ii++] = (uint)b1;
+                indices[ii++] = (uint)b0;
+            }
+        }
+
+        return new Mesh { Vertices = vertices, Indices = indices };
+    }
 }

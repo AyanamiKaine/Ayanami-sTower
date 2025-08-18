@@ -47,6 +47,7 @@ internal static class Program
 
         private SampleCount _msaaSamples = SampleCount.Eight;
         private Texture? _msaaColor; // The offscreen texture for MSAA rendering
+        private Texture? _msaaDepth; // The offscreen depth buffer (MSAA)
         private uint _lastWindowWidth;
         private uint _lastWindowHeight;
 
@@ -73,6 +74,15 @@ internal static class Program
                 MainWindow.Height,
                 MainWindow.SwapchainFormat,
                 TextureUsageFlags.ColorTarget,
+                levelCount: 1,
+                sampleCount: _msaaSamples
+            );
+            _msaaDepth = Texture.Create2D(
+                GraphicsDevice,
+                MainWindow.Width,
+                MainWindow.Height,
+                GraphicsDevice.SupportedDepthStencilFormat,
+                TextureUsageFlags.DepthStencilTarget,
                 levelCount: 1,
                 sampleCount: _msaaSamples
             );
@@ -120,7 +130,15 @@ internal static class Program
                 PrimitiveType = PrimitiveType.TriangleList,
                 RasterizerState = RasterizerState.CCW_CullBack,
                 MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
-                DepthStencilState = DepthStencilState.Disable,
+                DepthStencilState = new DepthStencilState
+                {
+                    EnableDepthTest = true,
+                    EnableDepthWrite = true,
+                    CompareOp = CompareOp.LessOrEqual,
+                    CompareMask = 0xFF,
+                    WriteMask = 0xFF,
+                    EnableStencilTest = false
+                },
                 TargetInfo = new GraphicsPipelineTargetInfo
                 {
                     ColorTargetDescriptions =
@@ -132,7 +150,8 @@ internal static class Program
                             BlendState = ColorTargetBlendState.NoBlend
                         }
                     ],
-                    HasDepthStencilTarget = false
+                    HasDepthStencilTarget = true,
+                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
                 },
                 Name = "Basic3DObjectRenderer"
             });
@@ -143,7 +162,7 @@ internal static class Program
         private void CreateCubeBuffers()
         {
             // Simple unit box centered at origin with per-vertex colors
-            var box3DMesh = Mesh.CreateBox3D();
+            var box3DMesh = Mesh.CreateTorus3D();
 
             _indexCount = (uint)box3DMesh.Indices.Length;
 
@@ -183,12 +202,22 @@ internal static class Program
             if (MainWindow.Width != _lastWindowWidth || MainWindow.Height != _lastWindowHeight)
             {
                 _msaaColor?.Dispose();
+                _msaaDepth?.Dispose();
                 _msaaColor = Texture.Create2D(
                     GraphicsDevice,
                     MainWindow.Width,
                     MainWindow.Height,
                     MainWindow.SwapchainFormat,
                     TextureUsageFlags.ColorTarget,
+                    levelCount: 1,
+                    sampleCount: _msaaSamples
+                );
+                _msaaDepth = Texture.Create2D(
+                    GraphicsDevice,
+                    MainWindow.Width,
+                    MainWindow.Height,
+                    GraphicsDevice.SupportedDepthStencilFormat,
+                    TextureUsageFlags.DepthStencilTarget,
                     levelCount: 1,
                     sampleCount: _msaaSamples
                 );
@@ -213,7 +242,8 @@ internal static class Program
                 colorTarget.ResolveTexture = backbuffer.Handle; // Resolve MSAA to backbuffer
                 colorTarget.StoreOp = StoreOp.Resolve; // Perform resolve into swapchain
             }
-            var pass = cmdbuf.BeginRenderPass(colorTarget);
+            var depthTarget = new DepthStencilTargetInfo(_msaaDepth!, clearDepth: 1f);
+            var pass = cmdbuf.BeginRenderPass(depthTarget, colorTarget);
 
             pass.BindGraphicsPipeline(_pipeline!);
             pass.BindVertexBuffers(_vb!);
@@ -264,6 +294,7 @@ internal static class Program
         protected override void Destroy()
         {
             _msaaColor?.Dispose();
+            _msaaDepth?.Dispose();
             _vb?.Dispose();
             _ib?.Dispose();
             _pipeline?.Dispose();
