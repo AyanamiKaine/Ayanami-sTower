@@ -214,8 +214,9 @@ internal static class Program
                 Pt_Attenuation = new Vector2(attLin, attQuad),
                 Ambient = ambient
             };
+            
+            // cbuffer LightParams : register(b0, space3) // space3 == slot 0 for fragmentUniforms
             cmdbuf.PushFragmentUniformData(lightUbo, slot: 0);
-
 
             pass.DrawIndexedPrimitives(_indexCount, 1, 0, 0, 0);
 
