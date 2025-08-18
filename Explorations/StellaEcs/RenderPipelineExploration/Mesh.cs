@@ -6,7 +6,7 @@ namespace RenderPipelineExploration;
 /// <summary>
 /// Represents a 3D mesh.
 /// </summary>
-public class Mesh
+public struct Mesh
 {
     /// <summary>
     /// Vertex data for the mesh
@@ -17,16 +17,6 @@ public class Mesh
     /// Index data for the mesh
     /// </summary>
     public required uint[] Indices { get; set; }
-
-    /// <summary>
-    /// Creates a 3D box mesh.
-    /// </summary>
-    /// <returns></returns>
-    public static Mesh CreateBox3D()
-    {
-        // Keep legacy size of 2 units per axis (matching previous +/-1 extents)
-        return CreateBox3D(2f, 2f, 2f);
-    }
 
     /// <summary>
     /// Creates a 3D box mesh with explicit size on each axis.
@@ -407,5 +397,162 @@ public class Mesh
         }
 
         return new Mesh { Vertices = vertices, Indices = indices };
+    }
+
+    // -----------------------------
+    // Mesh helpers (non-destructive)
+    // -----------------------------
+
+    /// <summary>
+    /// Applies a transform to the mesh positions and transforms normals using the inverse-transpose of the matrix.
+    /// Returns a new Mesh; the original is not modified.
+    /// </summary>
+    public Mesh Transform(Matrix4x4 transform)
+    {
+        var verts = new Vertex[Vertices.Length];
+        // Compute inverse-transpose for normal transform; if non-invertible, fallback to transform.
+        Matrix4x4 normalMat;
+        if (Matrix4x4.Invert(transform, out var inv))
+        {
+            normalMat = Matrix4x4.Transpose(inv);
+        }
+        else
+        {
+            normalMat = transform;
+        }
+
+        for (int i = 0; i < Vertices.Length; i++)
+        {
+            var v = Vertices[i];
+            var pos = Vector3.Transform(v.Position, transform);
+            var nrm = Vector3.TransformNormal(v.Normal, normalMat);
+            if (nrm != Vector3.Zero) nrm = Vector3.Normalize(nrm);
+            verts[i] = new Vertex(pos, nrm, v.Color);
+        }
+        return new Mesh { Vertices = verts, Indices = (uint[])Indices.Clone() };
+    }
+
+    /// <summary>
+    /// Returns a new mesh scaled uniformly.
+    /// </summary>
+    public Mesh Scale(float uniform)
+    {
+        return Transform(Matrix4x4.CreateScale(uniform));
+    }
+
+    /// <summary>
+    /// Returns a new mesh scaled non-uniformly per-axis.
+    /// </summary>
+    public Mesh Scale(Vector3 scale)
+    {
+        return Transform(Matrix4x4.CreateScale(scale));
+    }
+
+    /// <summary>
+    /// Returns a new mesh translated by the given offset.
+    /// </summary>
+    public Mesh Translate(Vector3 offset)
+    {
+        return Transform(Matrix4x4.CreateTranslation(offset));
+    }
+
+    /// <summary>
+    /// Returns a new mesh rotated by the given quaternion.
+    /// </summary>
+    public Mesh Rotate(Quaternion rotation)
+    {
+        return Transform(Matrix4x4.CreateFromQuaternion(rotation));
+    }
+
+    /// <summary>
+    /// Returns a new mesh with triangle winding inverted. Optionally flips normals.
+    /// </summary>
+    public Mesh InvertWinding(bool flipNormals = true)
+    {
+        var inds = (uint[])Indices.Clone();
+        for (int i = 0; i + 2 < inds.Length; i += 3)
+        {
+            (inds[i + 1], inds[i + 2]) = (inds[i + 2], inds[i + 1]);
+        }
+
+        var verts = new Vertex[Vertices.Length];
+        if (flipNormals)
+        {
+            for (int i = 0; i < Vertices.Length; i++)
+            {
+                var v = Vertices[i];
+                verts[i] = new Vertex(v.Position, -v.Normal, v.Color);
+            }
+        }
+        else
+        {
+            Array.Copy(Vertices, verts, verts.Length);
+        }
+
+        return new Mesh { Vertices = verts, Indices = inds };
+    }
+
+    /// <summary>
+    /// Computes axis-aligned bounds of the mesh.
+    /// </summary>
+    public (Vector3 Min, Vector3 Max) ComputeBounds()
+    {
+        if (Vertices.Length == 0) return (Vector3.Zero, Vector3.Zero);
+        var min = Vertices[0].Position;
+        var max = Vertices[0].Position;
+        for (int i = 1; i < Vertices.Length; i++)
+        {
+            var p = Vertices[i].Position;
+            min = Vector3.Min(min, p);
+            max = Vector3.Max(max, p);
+        }
+        return (min, max);
+    }
+
+    /// <summary>
+    /// Recenters the mesh so its AABB center is at the origin.
+    /// </summary>
+    public Mesh RecenterToOrigin()
+    {
+        var (min, max) = ComputeBounds();
+        var center = 0.5f * (min + max);
+        return Translate(-center);
+    }
+
+    /// <summary>
+    /// Combines multiple meshes into one. Indices are adjusted appropriately.
+    /// </summary>
+    public static Mesh Combine(params Mesh[] meshes)
+    {
+        if (meshes == null || meshes.Length == 0)
+        {
+            return new Mesh { Vertices = Array.Empty<Vertex>(), Indices = Array.Empty<uint>() };
+        }
+
+        int totalVerts = 0;
+        int totalInds = 0;
+        foreach (var m in meshes)
+        {
+            totalVerts += m.Vertices.Length;
+            totalInds += m.Indices.Length;
+        }
+
+        var verts = new Vertex[totalVerts];
+        var inds = new uint[totalInds];
+
+        int vOff = 0;
+        int iOff = 0;
+        foreach (var m in meshes)
+        {
+            Array.Copy(m.Vertices, 0, verts, vOff, m.Vertices.Length);
+            for (int i = 0; i < m.Indices.Length; i++)
+            {
+                inds[iOff + i] = (uint)(m.Indices[i] + vOff);
+            }
+            vOff += m.Vertices.Length;
+            iOff += m.Indices.Length;
+        }
+
+        return new Mesh { Vertices = verts, Indices = inds };
     }
 }
