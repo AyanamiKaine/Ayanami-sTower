@@ -45,6 +45,11 @@ internal static class Program
         // rotation
         private float _angle;
 
+        private SampleCount _msaaSamples = SampleCount.Eight;
+        private Texture? _msaaColor; // The offscreen texture for MSAA rendering
+        private uint _lastWindowWidth;
+        private uint _lastWindowHeight;
+
         public CubeGame() : base(
             new AppInfo("Ayanami", "Cube Demo"),
             new WindowCreateInfo("MoonWorks Cube", 1280, 720, ScreenMode.Windowed, true, false, false),
@@ -61,6 +66,19 @@ internal static class Program
             _view = Matrix4x4.CreateLookAt(_camPos, _camTarget, Vector3.UnitY);
             var aspect = (float)MainWindow.Width / MainWindow.Height;
             _proj = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 3f, aspect, 0.1f, 100f);
+
+            _msaaColor = Texture.Create2D(
+                GraphicsDevice,
+                (uint)MainWindow.Width,
+                (uint)MainWindow.Height,
+                MainWindow.SwapchainFormat,
+                TextureUsageFlags.ColorTarget,
+                levelCount: 1,
+                sampleCount: _msaaSamples
+            );
+            // Store initial size for resize detection
+            _lastWindowWidth = MainWindow.Width;
+            _lastWindowHeight = MainWindow.Height;
 
             // Compile shaders from HLSL source via ShaderCross
             ShaderCross.Initialize();
@@ -101,7 +119,7 @@ internal static class Program
                 VertexInputState = vertexInput,
                 PrimitiveType = PrimitiveType.TriangleList,
                 RasterizerState = RasterizerState.CCW_CullBack,
-                MultisampleState = MultisampleState.None,
+                MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
                 DepthStencilState = DepthStencilState.Disable,
                 TargetInfo = new GraphicsPipelineTargetInfo
                 {
@@ -116,7 +134,7 @@ internal static class Program
                     ],
                     HasDepthStencilTarget = false
                 },
-                Name = "CubePipeline"
+                Name = "Basic3DObjectRenderer"
             });
 
             CreateCubeBuffers();
@@ -161,6 +179,22 @@ internal static class Program
             var aspect = (float)MainWindow.Width / MainWindow.Height;
             _proj = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 3f, aspect, 0.1f, 100f);
             _view = Matrix4x4.CreateLookAt(_camPos, _camTarget, Vector3.UnitY);
+
+            if (MainWindow.Width != _lastWindowWidth || MainWindow.Height != _lastWindowHeight)
+            {
+                _msaaColor?.Dispose();
+                _msaaColor = Texture.Create2D(
+                    GraphicsDevice,
+                    (uint)MainWindow.Width,
+                    (uint)MainWindow.Height,
+                    MainWindow.SwapchainFormat,
+                    TextureUsageFlags.ColorTarget,
+                    levelCount: 1,
+                    sampleCount: _msaaSamples
+                );
+                _lastWindowWidth = MainWindow.Width;
+                _lastWindowHeight = MainWindow.Height;
+            }
         }
 
         protected override void Draw(double alpha)
@@ -173,7 +207,12 @@ internal static class Program
                 return;
             }
 
-            var colorTarget = new ColorTargetInfo(backbuffer, new Color(32, 32, 40, 255));
+            var colorTarget = new ColorTargetInfo(_msaaColor ?? backbuffer, new Color(32, 32, 40, 255));
+            if (_msaaColor != null)
+            {
+                colorTarget.ResolveTexture = backbuffer.Handle; // Resolve MSAA to backbuffer
+                colorTarget.StoreOp = StoreOp.Resolve; // Perform resolve into swapchain
+            }
             var pass = cmdbuf.BeginRenderPass(colorTarget);
 
             pass.BindGraphicsPipeline(_pipeline!);
@@ -224,6 +263,7 @@ internal static class Program
 
         protected override void Destroy()
         {
+            _msaaColor?.Dispose();
             _vb?.Dispose();
             _ib?.Dispose();
             _pipeline?.Dispose();
