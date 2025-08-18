@@ -18,11 +18,8 @@ internal static class Program
 
     private sealed class CubeGame : Game
     {
-        // Camera state
-        private Vector3 _camPos = new(0, 2, 6);
-        private Vector3 _camTarget = Vector3.Zero;
-        private Matrix4x4 _view;
-        private Matrix4x4 _proj;
+        // Camera
+        private Camera _camera = null!;
 
         // GPU resources
         private GraphicsPipeline? _pipeline;
@@ -42,7 +39,7 @@ internal static class Program
         public CubeGame() : base(
             new AppInfo("Ayanami", "Cube Demo"),
             new WindowCreateInfo("MoonWorks Cube", 1280, 720, ScreenMode.Windowed, true, false, false),
-            FramePacingSettings.CreateCapped(60, 60),
+            FramePacingSettings.CreateCapped(165, 165),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
@@ -51,10 +48,15 @@ internal static class Program
 
         private void InitializeScene()
         {
-            // Camera matrices
-            _view = Matrix4x4.CreateLookAt(_camPos, _camTarget, Vector3.UnitY);
+            // Camera setup
             var aspect = (float)MainWindow.Width / MainWindow.Height;
-            _proj = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 3f, aspect, 0.1f, 100f);
+            _camera = new Camera(new Vector3(0, 2, 6), Vector3.Zero, Vector3.UnitY)
+            {
+                Aspect = aspect,
+                Near = 0.1f,
+                Far = 100f,
+                Fov = MathF.PI / 3f
+            };
 
             _msaaColor = Texture.Create2D(
                 GraphicsDevice,
@@ -182,10 +184,9 @@ internal static class Program
         protected override void Update(TimeSpan delta)
         {
             _angle += (float)delta.TotalSeconds * 0.7f;
-            // Keep view proj up-to-date on resize
+            // Keep camera aspect up-to-date on resize
             var aspect = (float)MainWindow.Width / MainWindow.Height;
-            _proj = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 3f, aspect, 0.1f, 100f);
-            _view = Matrix4x4.CreateLookAt(_camPos, _camTarget, Vector3.UnitY);
+            _camera.Aspect = aspect;
 
             if (MainWindow.Width != _lastWindowWidth || MainWindow.Height != _lastWindowHeight)
             {
@@ -239,7 +240,7 @@ internal static class Program
 
             // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
             var model = Matrix4x4.CreateFromYawPitchRoll(_angle, _angle * 0.5f, 0) * Matrix4x4.CreateScale(0.8f);
-            var mvp = model * _view * _proj;
+            var mvp = model * _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
             cmdbuf.PushVertexUniformData(mvp, slot: 0);
 
             /*
