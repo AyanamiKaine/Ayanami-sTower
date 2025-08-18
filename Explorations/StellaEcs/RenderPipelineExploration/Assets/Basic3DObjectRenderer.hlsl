@@ -1,21 +1,19 @@
-// Use TEXCOORD semantics for non-system values per SDL GPU HLSL guidance
 struct VSInput {
-    float3 pos : TEXCOORD0;
-    float3 nrm : TEXCOORD1;
-    float3 col : TEXCOORD2;
+    float3 pos : POSITION;
+    float3 nrm : NORMAL;
+    float3 col : COLOR0;
 };
 
 struct VSOutput {
     float4 pos : SV_Position;
-    float3 nrm : TEXCOORD0;
-    float3 col : TEXCOORD1;
-    float3 mpos : TEXCOORD2; // world-space position for point light
+    float3 nrm : NORMAL;
+    float3 col : COLOR0;
+    float3 mpos : TEXCOORD0; // model-space position for point light
 };
 
-// Vertex uniforms: model and MVP for world-space lighting
+// Vertex uniform buffer for MVP matrix (unchanged)
 cbuffer VSParams : register(b0, space1)
 {
-    float4x4 model;
     float4x4 mvp;
 };
 
@@ -38,16 +36,10 @@ cbuffer LightParams : register(b0, space3)
 VSOutput VSMain(VSInput input)
 {
     VSOutput o;
-    // Clip position
     o.pos  = mul(mvp, float4(input.pos, 1.0));
-
-    // World-space position and normal (model has only rotation/uniform scale here)
-    float4 worldPos4 = mul(model, float4(input.pos, 1.0));
-    o.mpos = worldPos4.xyz; // world space position used for point light
-    float3 worldNrm = mul((float3x3)model, input.nrm);
-    o.nrm  = normalize(worldNrm);
-
+    o.nrm  = normalize(input.nrm);
     o.col  = input.col;
+    o.mpos = input.pos; // model space
     return o;
 }
 
@@ -60,7 +52,7 @@ float4 PSMain(VSOutput input) : SV_Target
     float diffDir = saturate(dot(N, Ld));
     float3 dirLit = Dir_Color.rgb * (Dir_Dir_Intensity.w * diffDir);
 
-    // Point light (world space)
+    // Point light
     float3 toPt = Pt_Pos_Range.xyz - input.mpos;
     float dist  = length(toPt);
     float3 Lp   = (dist > 1e-5) ? toPt / dist : 0;

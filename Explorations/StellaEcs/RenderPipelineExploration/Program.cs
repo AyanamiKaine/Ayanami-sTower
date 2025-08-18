@@ -15,7 +15,6 @@ internal static class Program
         var game = new CubeGame();
         game.Run();
     }
-
     [StructLayout(LayoutKind.Sequential)]
     private struct LightUniforms
     {
@@ -24,16 +23,9 @@ internal static class Program
         public Vector4 Pt_Pos_Range;        // xyz = pos, w = range
         public Vector4 Pt_Color_Intensity;  // rgb = color, w = intensity
         public Vector2 Pt_Attenuation;      // x = linear, y = quadratic
-        private Vector2 _pad;               // padding to 16-byte alignment
+        private Vector2 _pad;
         public float Ambient;
-        private Vector3 _pad2;              // padding to 16-byte alignment
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct VSUniforms
-    {
-        public Matrix4x4 Model;
-        public Matrix4x4 MVP;
+        private Vector3 _pad2;
     }
 
     private sealed class CubeGame : Game
@@ -186,11 +178,10 @@ internal static class Program
             pass.BindVertexBuffers(_vb!);
             pass.BindIndexBuffer(_ib!, IndexElementSize.ThirtyTwo);
 
-            // Build model and MVP and push to vertex uniforms at slot 0 (VSParams: model, mvp)
+            // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
             var model = Matrix4x4.CreateFromYawPitchRoll(_angle, _angle * 0.5f, 0) * Matrix4x4.CreateScale(0.8f);
             var mvp = model * _view * _proj;
-            var vsUniforms = new VSUniforms { Model = model, MVP = mvp };
-            cmdbuf.PushVertexUniformData(vsUniforms, slot: 0);
+            cmdbuf.PushVertexUniformData(mvp, slot: 0);
 
             var dirDir = Vector3.Normalize(new Vector3(-0.4f, -1.0f, -0.3f));
             var dirIntensity = 1.0f;
@@ -214,9 +205,10 @@ internal static class Program
                 Pt_Attenuation = new Vector2(attLin, attQuad),
                 Ambient = ambient
             };
-            
-            // cbuffer LightParams : register(b0, space3) // space3 == slot 0 for fragmentUniforms
+
+            // cbuffer LightParams : register(b0, space3), slot 0 but space(set) 3
             cmdbuf.PushFragmentUniformData(lightUbo, slot: 0);
+
 
             pass.DrawIndexedPrimitives(_indexCount, 1, 0, 0, 0);
 
