@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+
+    </Content>
+    <Content Include="plugins\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\StellaEcs\AyanamisTower.StellaEcs.Components\AyanamisTower.StellaEcs.Components.csproj" />
+    <ProjectReference Include="..\..\..\StellaEcs\AyanamisTower.StellaEcs.Engine\AyanamisTower.StellaEcs.Engine.csproj" />
+    <ProjectReference Include="..\..\..\StellaEcs\AyanamisTower.StellaEcs.RestAPI\AyanamisTower.StellaEcs.RestAPI.csproj" />
+    <ProjectReference Include="..\..\..\StellaEcs\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StbImageSharp" />
+  </ItemGroup>
+
+</Project>
