@@ -162,7 +162,7 @@ internal static class Program
         private void CreateCubeBuffers()
         {
             // Simple unit box centered at origin with per-vertex colors
-            var box3DMesh = Mesh.CreateTorus3D();
+            var box3DMesh = Mesh.CreateBox3D().Scale(2.5f);
 
             _indexCount = (uint)box3DMesh.Indices.Length;
 
