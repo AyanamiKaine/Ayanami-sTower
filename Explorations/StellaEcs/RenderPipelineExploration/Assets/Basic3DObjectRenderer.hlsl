@@ -49,7 +49,7 @@ cbuffer DirLightProperties : register(b0, space3)
     DirLight dirLight;
 }
 
-#define NR_POINT_LIGHTS 4
+#define NR_POINT_LIGHTS 120
 
 // The array of structs is placed inside a constant buffer (cbuffer).
 cbuffer PointLightsData : register(b1, space3)

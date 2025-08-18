@@ -11,22 +11,6 @@ namespace RenderPipelineExploration;
 public abstract class Light
 {
     /// <summary>
-    /// Here light uniforms represent the data that is passed to the gpu for shaders.
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    private struct LightUniforms
-    {
-        public Vector4 Dir_Dir_Intensity;   // xyz = dir, w = intensity
-        public Vector4 Dir_Color;           // rgb = color
-        public Vector4 Pt_Pos_Range;        // xyz = pos, w = range
-        public Vector4 Pt_Color_Intensity;  // rgb = color, w = intensity
-        public Vector2 Pt_Attenuation;      // x = linear, y = quadratic
-        private Vector2 _pad;
-        public float Ambient;
-        private Vector3 _pad2;
-    }
-
-    /// <summary>
     /// Whether the light is enabled.
     /// </summary>
     public bool Enabled { get; set; } = true;

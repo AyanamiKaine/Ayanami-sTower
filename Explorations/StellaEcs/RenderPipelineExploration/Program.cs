@@ -69,8 +69,8 @@ internal static class Program
 
             _msaaColor = Texture.Create2D(
                 GraphicsDevice,
-                (uint)MainWindow.Width,
-                (uint)MainWindow.Height,
+                MainWindow.Width,
+                MainWindow.Height,
                 MainWindow.SwapchainFormat,
                 TextureUsageFlags.ColorTarget,
                 levelCount: 1,
@@ -185,8 +185,8 @@ internal static class Program
                 _msaaColor?.Dispose();
                 _msaaColor = Texture.Create2D(
                     GraphicsDevice,
-                    (uint)MainWindow.Width,
-                    (uint)MainWindow.Height,
+                    MainWindow.Width,
+                    MainWindow.Height,
                     MainWindow.SwapchainFormat,
                     TextureUsageFlags.ColorTarget,
                     levelCount: 1,
