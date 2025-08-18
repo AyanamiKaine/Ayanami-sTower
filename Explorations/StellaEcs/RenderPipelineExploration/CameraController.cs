@@ -6,42 +6,35 @@ using MoonWorks.Input;
 namespace RenderPipelineExploration;
 
 /// <summary>
-/// FPS-style camera controller with smoothing and mouse-look.
-/// Keeps logic out of the Game loop and drives a Camera instance.
+/// FPS-style camera controller with mouse-look and immediate movement (no smoothing).
 /// </summary>
 public sealed class CameraController
 {
     private readonly Camera _camera;
-
-    // State
-    // Smoothed velocity in world space (units/sec)
-    private Vector3 _worldVelocity = Vector3.Zero;
     private bool _relativeMouseEnabled = false;
 
     // Tunables
     /// <summary>
-    /// Maximum movement speed of the camera (units/sec).
+    /// Maximum camera movement speed in units per second.
     /// </summary>
-    public float MaxSpeed { get; set; } = 6.0f;          // walk speed (units/sec)
+    public float MaxSpeed { get; set; } = 6.0f;          // units/sec
     /// <summary>
-    /// Acceleration towards the desired velocity (units/sec^2).
+    /// Multiplier applied to <see cref="MaxSpeed"/> while LeftShift is held.
     /// </summary>
-    public float Acceleration { get; set; } = 12.0f;     // accel towards desired vel
+    public float SprintMultiplier { get; set; } = 1.8f;  // hold LeftShift
     /// <summary>
-    /// Multiplier applied while sprinting (LeftShift held).
+    /// Mouse-look sensitivity in radians per mouse pixel.
     /// </summary>
-    public float SprintMultiplier { get; set; } = 1.8f;  // while LeftShift held
+    public float MouseSensitivity { get; set; } = 0.0015f; // radians per mouse pixel
     /// <summary>
-    /// Mouse sensitivity for look controls (radians per mouse pixel).
-    /// </summary>
-    public float MouseSensitivity { get; set; } = 0.0025f; // radians per mouse pixel
-    /// <summary>
-    /// Rotation speed for arrow key look controls (radians/sec).
+    /// Arrow-key look rotation speed in radians per second.
     /// </summary>
     public float ArrowRotSpeed { get; set; } = 1.5f;     // radians/sec for arrow key look
+
     /// <summary>
-    /// Camera controller for managing camera movement and rotation.
+    /// Creates a new camera controller that drives the given camera.
     /// </summary>
+    /// <param name="camera">The camera instance to control.</param>
     public CameraController(Camera camera)
     {
         _camera = camera;
@@ -68,12 +61,13 @@ public sealed class CameraController
         // Mouse look when enabled
         if (_relativeMouseEnabled)
         {
-            var dx = mouse.DeltaX;
-            var dy = mouse.DeltaY;
-            if (dx != 0 || dy != 0)
+            var mouseDelta = new Vector2(inputs.Mouse.DeltaX, inputs.Mouse.DeltaY);
+            if (mouseDelta != Vector2.Zero)
             {
-                _camera.Rotate(dx * MouseSensitivity, -dy * MouseSensitivity);
+                // Positive yaw when moving mouse right; keep pitch inverted for natural feel
+                _camera.Rotate(mouseDelta.X * MouseSensitivity, -mouseDelta.Y * MouseSensitivity);
             }
+
         }
 
         // Arrow key look (optional fallback)
@@ -88,7 +82,7 @@ public sealed class CameraController
             _camera.Rotate(yaw * ArrowRotSpeed * dt, pitch * ArrowRotSpeed * dt);
         }
 
-        // Movement (WASD + Space/Ctrl) with smoothing
+        // Movement (WASD + Space/Ctrl) immediate (no smoothing)
         float forward = 0f;
         if (kb.IsDown(KeyCode.W)) forward += 1f;
         if (kb.IsDown(KeyCode.S)) forward -= 1f;
@@ -102,23 +96,19 @@ public sealed class CameraController
         if (kb.IsDown(KeyCode.LeftControl)) up -= 1f;
 
         // Normalize to avoid faster diagonals
-        var inputMag = MathF.Sqrt((forward * forward) + (right * right) + (up * up));
+        float inputMag = MathF.Sqrt(forward * forward + right * right + up * up);
         if (inputMag > 1f)
         {
             forward /= inputMag; right /= inputMag; up /= inputMag;
         }
 
-        float maxSpeed = MaxSpeed * (kb.IsHeld(KeyCode.LeftShift) ? SprintMultiplier : 1.0f);
-        // Compute desired velocity in world space based on current camera basis
-        var desiredWorldVel = ((_camera.Forward * forward) + (_camera.Right * right) + (Vector3.UnitY * up)) * maxSpeed;
+        float speed = MaxSpeed * (kb.IsHeld(KeyCode.LeftShift) ? SprintMultiplier : 1.0f);
 
-        // Exponential smoothing towards desired velocity (in world space)
-        float smoothing = 1f - MathF.Exp(-Acceleration * dt);
-        _worldVelocity = Vector3.Lerp(_worldVelocity, desiredWorldVel, smoothing);
-
-        if (_worldVelocity != Vector3.Zero)
+        // World-space velocity based on current camera basis
+        Vector3 worldVel = (_camera.Forward * forward + _camera.Right * right + Vector3.UnitY * up) * speed;
+        if (worldVel != Vector3.Zero)
         {
-            _camera.Move(_worldVelocity * dt);
+            _camera.Move(worldVel * dt);
         }
     }
 }
