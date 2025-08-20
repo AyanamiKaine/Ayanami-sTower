@@ -34,21 +34,26 @@ internal static class Program
         private SampleCount _msaaSamples = SampleCount.Four;
         private Texture? _msaaColor; // The offscreen texture for MSAA rendering
         private Texture? _msaaDepth; // The offscreen depth buffer (MSAA)
-        private uint _lastWindowWidth;
-        private uint _lastWindowHeight;
-
         public CubeGame() : base(
             new AppInfo("Ayanami", "Cube Demo"),
             new WindowCreateInfo("MoonWorks Cube", 1280, 720, ScreenMode.Windowed, true, false, false),
-            FramePacingSettings.CreateCapped(165, 165),
+            FramePacingSettings.CreateUncapped(120),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
             InitializeScene();
         }
 
+        public void EnableVSync()
+        {
+            GraphicsDevice.SetSwapchainParameters(MainWindow, MainWindow.SwapchainComposition, PresentMode.VSync);
+        }
+
         private void InitializeScene()
         {
+
+            EnableVSync();
+
             // Camera setup
             var aspect = (float)MainWindow.Width / MainWindow.Height;
             _camera = new Camera(new Vector3(0, 2, 6), Vector3.Zero, Vector3.UnitY)
@@ -60,27 +65,9 @@ internal static class Program
             };
             _cameraController = new CameraController(_camera);
 
-            _msaaColor = Texture.Create2D(
-                GraphicsDevice,
-                MainWindow.Width,
-                MainWindow.Height,
-                MainWindow.SwapchainFormat,
-                TextureUsageFlags.ColorTarget,
-                levelCount: 1,
-                sampleCount: _msaaSamples
-            );
-            _msaaDepth = Texture.Create2D(
-                GraphicsDevice,
-                MainWindow.Width,
-                MainWindow.Height,
-                GraphicsDevice.SupportedDepthStencilFormat,
-                TextureUsageFlags.DepthStencilTarget,
-                levelCount: 1,
-                sampleCount: _msaaSamples
-            );
-            // Store initial size for resize detection
-            _lastWindowWidth = MainWindow.Width;
-            _lastWindowHeight = MainWindow.Height;
+            // MSAA targets are (re)created in Draw to match the actual swapchain size.
+            _msaaColor = null;
+            _msaaDepth = null;
 
             // Compile shaders from HLSL source via ShaderCross
             ShaderCross.Initialize();
@@ -192,31 +179,7 @@ internal static class Program
             // Update camera via controller abstraction
             _cameraController.Update(Inputs, MainWindow, delta);
 
-            if (MainWindow.Width != _lastWindowWidth || MainWindow.Height != _lastWindowHeight)
-            {
-                _msaaColor?.Dispose();
-                _msaaDepth?.Dispose();
-                _msaaColor = Texture.Create2D(
-                    GraphicsDevice,
-                    MainWindow.Width,
-                    MainWindow.Height,
-                    MainWindow.SwapchainFormat,
-                    TextureUsageFlags.ColorTarget,
-                    levelCount: 1,
-                    sampleCount: _msaaSamples
-                );
-                _msaaDepth = Texture.Create2D(
-                    GraphicsDevice,
-                    MainWindow.Width,
-                    MainWindow.Height,
-                    GraphicsDevice.SupportedDepthStencilFormat,
-                    TextureUsageFlags.DepthStencilTarget,
-                    levelCount: 1,
-                    sampleCount: _msaaSamples
-                );
-                _lastWindowWidth = MainWindow.Width;
-                _lastWindowHeight = MainWindow.Height;
-            }
+            // Resize handling is performed in Draw using the actual swapchain texture size.
         }
 
         protected override void Draw(double alpha)
@@ -228,6 +191,9 @@ internal static class Program
                 GraphicsDevice.Submit(cmdbuf);
                 return;
             }
+
+            // Ensure MSAA targets match the current swapchain size (handles window resizes, DPI changes, etc.)
+            EnsureMsaaTargets(backbuffer);
 
             var colorTarget = new ColorTargetInfo(_msaaColor ?? backbuffer, new Color(32, 32, 40, 255));
             if (_msaaColor != null)
@@ -282,6 +248,49 @@ internal static class Program
 
             cmdbuf.EndRenderPass(pass);
             GraphicsDevice.Submit(cmdbuf);
+        }
+
+        private void EnsureMsaaTargets(Texture backbuffer)
+        {
+            // Only recreate when using MSAA
+            if (_msaaSamples == SampleCount.One)
+            {
+                // If MSAA is disabled, dispose any MSAA resources
+                if (_msaaColor != null) { _msaaColor.Dispose(); _msaaColor = null; }
+                if (_msaaDepth != null) { _msaaDepth.Dispose(); _msaaDepth = null; }
+                return;
+            }
+
+            bool needsColor = _msaaColor == null || _msaaColor.Width != backbuffer.Width || _msaaColor.Height != backbuffer.Height;
+            bool needsDepth = _msaaDepth == null || _msaaDepth.Width != backbuffer.Width || _msaaDepth.Height != backbuffer.Height;
+
+            if (needsColor)
+            {
+                _msaaColor?.Dispose();
+                _msaaColor = Texture.Create2D(
+                    GraphicsDevice,
+                    backbuffer.Width,
+                    backbuffer.Height,
+                    MainWindow.SwapchainFormat,
+                    TextureUsageFlags.ColorTarget,
+                    levelCount: 1,
+                    sampleCount: _msaaSamples
+                );
+            }
+
+            if (needsDepth)
+            {
+                _msaaDepth?.Dispose();
+                _msaaDepth = Texture.Create2D(
+                    GraphicsDevice,
+                    backbuffer.Width,
+                    backbuffer.Height,
+                    GraphicsDevice.SupportedDepthStencilFormat,
+                    TextureUsageFlags.DepthStencilTarget,
+                    levelCount: 1,
+                    sampleCount: _msaaSamples
+                );
+            }
         }
 
         protected override void Destroy()
