@@ -31,6 +31,9 @@ internal static class Program
         private GraphicsPipeline? _pipeline;
         // rotation
         private float _angle;
+        // textures
+        private Texture? _whiteTexture;
+        private Texture? _checkerTexture;
 
         private SampleCount _msaaSamples = SampleCount.Four;
         private Texture? _msaaColor; // The offscreen texture for MSAA rendering
@@ -124,6 +127,10 @@ internal static class Program
                 false,
                 "Basic3DObjectRendererPS"
             );
+            // Create simple textures
+            _whiteTexture = CreateSolidTexture(255, 255, 255, 255);
+            _checkerTexture = CreateCheckerboard(256, 256, 8,
+                (230, 230, 230, 255), (40, 40, 40, 255));
 
 
 
@@ -169,21 +176,73 @@ internal static class Program
                 entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
             });
 
-            World.CreateEntity().Set(Mesh.CreateBox3D()).Set(new Size3D(1f))
-;
+            World.CreateEntity().Set(Mesh.CreateBox3D()).Set(new Size3D(1f)).Set(new Texture2DRef { Texture = _checkerTexture! });
+
+            ;
             World.CreateEntity()
                 .Set(Mesh.CreateBox3D())
                 .Set(new Position3D(3, 0, 0))
                 .Set(Rotation3D.Identity)
                 .Set(new Velocity3D(0.1f, 0, 0))
                 .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
-                .Set(new Size3D(1f));
+                .Set(new Size3D(1f))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
-            World.CreateEntity().Set(Mesh.CreateSphere3D())
+            World.CreateEntity()
+                .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(0, -5, 0))
                 .Set(new Size3D(1f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0.7f, 1.0f, 0f));
+            // Textured plane demo
+            World.CreateEntity()
+                .Set(Mesh.CreatePlane3D())
+                .Set(new Position3D(-3, 0, 0))
+                .Set(new Size3D(2f))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
+        }
+
+        private Texture CreateSolidTexture(byte r, byte g, byte b, byte a)
+        {
+            using var uploader = new ResourceUploader(GraphicsDevice, 4);
+            var tex = uploader.CreateTexture2D<byte>(
+                "Solid",
+                new byte[] { r, g, b, a },
+                TextureFormat.R8G8B8A8Unorm,
+                TextureUsageFlags.Sampler,
+                1, 1);
+            uploader.UploadAndWait();
+            return tex;
+        }
+
+        private Texture CreateCheckerboard(uint width, uint height, int cells, (byte r, byte g, byte b, byte a) c0, (byte r, byte g, byte b, byte a) c1)
+        {
+            int w = (int)width, h = (int)height;
+            var data = new byte[w * h * 4];
+            int cellW = Math.Max(1, w / cells);
+            int cellH = Math.Max(1, h / cells);
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    bool useC0 = ((x / cellW) + (y / cellH)) % 2 == 0;
+                    var col = useC0 ? c0 : c1;
+                    int i = (y * w + x) * 4;
+                    data[i + 0] = col.r;
+                    data[i + 1] = col.g;
+                    data[i + 2] = col.b;
+                    data[i + 3] = col.a;
+                }
+            }
+            using var uploader = new ResourceUploader(GraphicsDevice, (uint)data.Length);
+            var tex = uploader.CreateTexture2D<byte>(
+                "Checker",
+                data,
+                TextureFormat.R8G8B8A8Unorm,
+                TextureUsageFlags.Sampler,
+                width, height);
+            uploader.UploadAndWait();
+            return tex;
         }
 
 
@@ -232,24 +291,33 @@ internal static class Program
                 var gpuMesh = entity.GetMut<GpuMesh>();
                 gpuMesh.Bind(pass);
 
+                // Bind entity texture if present, otherwise bind dummy
+                var texture = _whiteTexture!;
+                if (entity.Has<Texture2DRef>())
+                {
+                    var texRef = entity.GetMut<Texture2DRef>();
+                    if (texRef.Texture != null) { texture = texRef.Texture; }
+                }
+                pass.BindFragmentSamplers(new TextureSamplerBinding(texture, GraphicsDevice.LinearSampler));
+
                 // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
                 // Translation from ECS Position3D (if present)
                 Vector3 translation = Vector3.Zero;
                 if (entity.Has<Position3D>())
                 {
-                    translation = entity.GetCopy<Position3D>().Value;
+                    translation = entity.GetMut<Position3D>().Value;
                 }
 
                 Quaternion rotation = Quaternion.Identity;
                 if (entity.Has<Rotation3D>())
                 {
-                    rotation = entity.GetCopy<Rotation3D>().Value;
+                    rotation = entity.GetMut<Rotation3D>().Value;
                 }
 
                 Vector3 size = Vector3.One;
                 if (entity.Has<Size3D>())
                 {
-                    size = entity.GetCopy<Size3D>().Value;
+                    size = entity.GetMut<Size3D>().Value;
                 }
 
                 // Apply transforms in the correct order so translation is not affected by scale:
@@ -357,6 +425,8 @@ internal static class Program
             _msaaColor?.Dispose();
             _msaaDepth?.Dispose();
             _pipeline?.Dispose();
+            _whiteTexture?.Dispose();
+            _checkerTexture?.Dispose();
         }
     }
 }

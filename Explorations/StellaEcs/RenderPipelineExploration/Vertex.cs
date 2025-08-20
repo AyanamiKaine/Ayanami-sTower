@@ -24,6 +24,10 @@ public struct Vertex : IVertexType
     /// The color of the vertex.
     /// </summary>
     public Vector3 Color;
+    /// <summary>
+    /// Texture coordinates.
+    /// </summary>
+    public Vector2 UV;
 
     /// <summary>
     /// Creates a new vertex.
@@ -31,17 +35,18 @@ public struct Vertex : IVertexType
     /// <param name="position"></param>
     /// <param name="normal"></param>
     /// <param name="color"></param>
-    public Vertex(Vector3 position, Vector3 normal, Vector3 color)
-    { Position = position; Normal = normal; Color = color; }
+    /// <param name="uv"></param>
+    public Vertex(Vector3 position, Vector3 normal, Vector3 color, Vector2 uv = default)
+    { Position = position; Normal = normal; Color = color; UV = uv; }
 
     /// <summary>
     /// The formats of the vertex elements.
     /// </summary>
     public static VertexElementFormat[] Formats =>
-        [VertexElementFormat.Float3, VertexElementFormat.Float3, VertexElementFormat.Float3];
+        [VertexElementFormat.Float3, VertexElementFormat.Float3, VertexElementFormat.Float3, VertexElementFormat.Float2];
 
     /// <summary>
     /// The offsets of the vertex elements.
     /// </summary>
-    public static uint[] Offsets => [0u, 12u, 24u];
+    public static uint[] Offsets => [0u, 12u, 24u, 36u];
 }

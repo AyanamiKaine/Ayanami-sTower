@@ -34,32 +34,60 @@ public struct Mesh
         float hy = sizeY * 0.5f;
         float hz = sizeZ * 0.5f;
 
+        // Define 24 vertices (4 per face) so each face can have its own UVs and normals
         var vertices = new Vertex[]
         {
-            new(new(-hx,-hy, hz), Vector3.Normalize(new(-hx,-hy, hz)), new(1,0,0)),
-            new(new( hx,-hy, hz), Vector3.Normalize(new( hx,-hy, hz)), new(0,1,0)),
-            new(new( hx, hy, hz), Vector3.Normalize(new( hx, hy, hz)), new(0,0,1)),
-            new(new(-hx, hy, hz), Vector3.Normalize(new(-hx, hy, hz)), new(1,1,0)),
-            new(new(-hx,-hy,-hz), Vector3.Normalize(new(-hx,-hy,-hz)), new(1,0,1)),
-            new(new( hx,-hy,-hz), Vector3.Normalize(new( hx,-hy,-hz)), new(0,1,1)),
-            new(new( hx, hy,-hz), Vector3.Normalize(new( hx, hy,-hz)), new(1,1,1)),
-            new(new(-hx, hy,-hz), Vector3.Normalize(new(-hx, hy,-hz)), new(0.2f,0.2f,0.2f)),
+            // Front (+Z)
+            new(new(-hx,-hy, +hz), new(0,0,1), new(1,0,0), new(0,1)),
+            new(new(+hx,-hy, +hz), new(0,0,1), new(0,1,0), new(1,1)),
+            new(new(+hx, +hy, +hz), new(0,0,1), new(0,0,1), new(1,0)),
+            new(new(-hx, +hy, +hz), new(0,0,1), new(1,1,0), new(0,0)),
+
+            // Back (-Z)
+            new(new(+hx,-hy, -hz), new(0,0,-1), new(1,0,1), new(0,1)),
+            new(new(-hx,-hy, -hz), new(0,0,-1), new(0,1,1), new(1,1)),
+            new(new(-hx, +hy, -hz), new(0,0,-1), new(1,1,1), new(1,0)),
+            new(new(+hx, +hy, -hz), new(0,0,-1), new(0.2f,0.2f,0.2f), new(0,0)),
+
+            // Right (+X)
+            new(new(+hx,-hy, +hz), new(1,0,0), new(1,0,0), new(0,1)),
+            new(new(+hx,-hy, -hz), new(1,0,0), new(0,1,0), new(1,1)),
+            new(new(+hx, +hy, -hz), new(1,0,0), new(0,0,1), new(1,0)),
+            new(new(+hx, +hy, +hz), new(1,0,0), new(1,1,0), new(0,0)),
+
+            // Left (-X)
+            new(new(-hx,-hy, -hz), new(-1,0,0), new(1,0,1), new(0,1)),
+            new(new(-hx,-hy, +hz), new(-1,0,0), new(0,1,1), new(1,1)),
+            new(new(-hx, +hy, +hz), new(-1,0,0), new(1,1,1), new(1,0)),
+            new(new(-hx, +hy, -hz), new(-1,0,0), new(0.2f,0.2f,0.2f), new(0,0)),
+
+            // Top (+Y)
+            new(new(-hx, +hy, +hz), new(0,1,0), new(1,0,0), new(0,1)),
+            new(new(+hx, +hy, +hz), new(0,1,0), new(0,1,0), new(1,1)),
+            new(new(+hx, +hy, -hz), new(0,1,0), new(0,0,1), new(1,0)),
+            new(new(-hx, +hy, -hz), new(0,1,0), new(1,1,0), new(0,0)),
+
+            // Bottom (-Y)
+            new(new(-hx, -hy, -hz), new(0,-1,0), new(1,0,1), new(0,1)),
+            new(new(+hx, -hy, -hz), new(0,-1,0), new(0,1,1), new(1,1)),
+            new(new(+hx, -hy, +hz), new(0,-1,0), new(1,1,1), new(1,0)),
+            new(new(-hx, -hy, +hz), new(0,-1,0), new(0.2f,0.2f,0.2f), new(0,0)),
         };
 
         var indices = new uint[]
         {
             // Front
             0,1,2, 0,2,3,
-            // Right
-            1,5,6, 1,6,2,
             // Back
-            5,4,7, 5,7,6,
+            4,5,6, 4,6,7,
+            // Right
+            8,9,10, 8,10,11,
             // Left
-            4,0,3, 4,3,7,
-            // Bottom
-            4,5,1, 4,1,0,
+            12,13,14, 12,14,15,
             // Top
-            3,2,6, 3,6,7
+            16,17,18, 16,18,19,
+            // Bottom
+            20,21,22, 20,22,23
         };
 
         return new Mesh { Vertices = vertices, Indices = indices };
@@ -122,8 +150,9 @@ public struct Mesh
 
                 // Color from normal (visual aid)
                 var color = 0.5f * (n + Vector3.One);
-
-                vertices[vi++] = new Vertex(new Vector3(x, y, z), n, color);
+                // Simple spherical UVs
+                var uv = new Vector2(u, 1f - v);
+                vertices[vi++] = new Vertex(new Vector3(x, y, z), n, color, uv);
             }
         }
 
@@ -167,10 +196,10 @@ public struct Mesh
         var n = new Vector3(0, 0, 1);
         var vertices = new Vertex[]
         {
-            new(new(-hx,-hy, 0), n, new(1,0,0)),
-            new(new( hx,-hy, 0), n, new(0,1,0)),
-            new(new( hx, hy, 0), n, new(0,0,1)),
-            new(new(-hx, hy, 0), n, new(1,1,0)),
+            new(new(-hx,-hy, 0), n, new(1,0,0), new(0,1)),
+            new(new( hx,-hy, 0), n, new(0,1,0), new(1,1)),
+            new(new( hx, hy, 0), n, new(0,0,1), new(1,0)),
+            new(new(-hx, hy, 0), n, new(1,1,0), new(0,0)),
         };
 
         var indices = new uint[] { 0, 1, 2, 0, 2, 3 };
@@ -427,7 +456,7 @@ public struct Mesh
             var pos = Vector3.Transform(v.Position, transform);
             var nrm = Vector3.TransformNormal(v.Normal, normalMat);
             if (nrm != Vector3.Zero) nrm = Vector3.Normalize(nrm);
-            verts[i] = new Vertex(pos, nrm, v.Color);
+            verts[i] = new Vertex(pos, nrm, v.Color, v.UV);
         }
         return new Mesh { Vertices = verts, Indices = (uint[])Indices.Clone() };
     }
@@ -481,7 +510,7 @@ public struct Mesh
             for (int i = 0; i < Vertices.Length; i++)
             {
                 var v = Vertices[i];
-                verts[i] = new Vertex(v.Position, -v.Normal, v.Color);
+                verts[i] = new Vertex(v.Position, -v.Normal, v.Color, v.UV);
             }
         }
         else
