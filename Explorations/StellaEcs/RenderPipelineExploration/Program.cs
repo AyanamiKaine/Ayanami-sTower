@@ -219,9 +219,9 @@ internal static class Program
         private Texture CreateSolidTexture(byte r, byte g, byte b, byte a)
         {
             using var uploader = new ResourceUploader(GraphicsDevice, 4);
-            var tex = uploader.CreateTexture2D<byte>(
+            var tex = uploader.CreateTexture2D(
                 "Solid",
-                new byte[] { r, g, b, a },
+                [r, g, b, a],
                 TextureFormat.R8G8B8A8Unorm,
                 TextureUsageFlags.Sampler,
                 1, 1);
@@ -240,12 +240,12 @@ internal static class Program
                 for (int x = 0; x < w; x++)
                 {
                     bool useC0 = ((x / cellW) + (y / cellH)) % 2 == 0;
-                    var col = useC0 ? c0 : c1;
-                    int i = (y * w + x) * 4;
-                    data[i + 0] = col.r;
-                    data[i + 1] = col.g;
-                    data[i + 2] = col.b;
-                    data[i + 3] = col.a;
+                    var (r, g, b, a) = useC0 ? c0 : c1;
+                    int i = ((y * w) + x) * 4;
+                    data[i + 0] = r;
+                    data[i + 1] = g;
+                    data[i + 2] = b;
+                    data[i + 3] = a;
                 }
             }
             using var uploader = new ResourceUploader(GraphicsDevice, (uint)data.Length);
