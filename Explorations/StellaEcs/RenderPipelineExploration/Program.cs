@@ -75,7 +75,7 @@ internal static class Program
         /// <summary>
         /// Represents the current game world.
         /// </summary>
-        public readonly World World = new();
+        public readonly World World = new(100000);
         // Camera
         private Camera _camera = null!;
         private CameraController _cameraController = null!;
@@ -503,7 +503,7 @@ internal static class Program
 
 
 
-
+            SpawnPlanetStressTest(10000);
 
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
@@ -735,6 +735,78 @@ internal static class Program
                 width, height);
             uploader.UploadAndWait();
             return tex;
+        }
+
+        /// <summary>
+        /// Spawns a large number of planet-like entities for stress testing.
+        /// Entities are distributed on random circular orbits on the XZ plane with slight Y jitter.
+        /// Optionally attaches static sphere colliders so they can be ray-picked.
+        /// </summary>
+        /// <param name="count">How many entities to spawn.</param>
+        /// <param name="minOrbitRadius">Minimum orbit radius from origin.</param>
+        /// <param name="maxOrbitRadius">Maximum orbit radius from origin.</param>
+        /// <param name="minScale">Minimum uniform scale (planet radius equivalent).</param>
+        /// <param name="maxScale">Maximum uniform scale.</param>
+        /// <param name="seed">Random seed.</param>
+        /// <param name="addStaticCollider">If true, creates Bepu static sphere colliders for each spawned entity.</param>
+        private void SpawnPlanetStressTest(
+            int count,
+            float minOrbitRadius = 10f,
+            float maxOrbitRadius = 300f,
+            float minScale = 0.1f,
+            float maxScale = 1.5f,
+            int seed = 1337,
+            bool addStaticCollider = false)
+        {
+            if (count <= 0) { return; }
+            if (minOrbitRadius < 0f) minOrbitRadius = 0f;
+            if (maxOrbitRadius < minOrbitRadius) maxOrbitRadius = minOrbitRadius + 1f;
+            if (minScale <= 0f) minScale = 0.05f;
+            if (maxScale < minScale) maxScale = minScale;
+
+            var rng = new Random(seed);
+
+            // Ensure we have at least a fallback texture
+            var tex = _checkerTexture ?? _whiteTexture ?? CreateSolidTexture(255, 255, 255, 255);
+
+            // Pre-create a GPU mesh for spheres to avoid duplicating per-entity CPU meshes
+            var sharedSphere = Mesh.CreateSphere3D();
+
+            for (int i = 0; i < count; i++)
+            {
+                // Random orbit radius and angle
+                float r = minOrbitRadius + (float)rng.NextDouble() * (maxOrbitRadius - minOrbitRadius);
+                float angle = (float)(rng.NextDouble() * Math.PI * 2.0);
+                float yJitter = ((float)rng.NextDouble() - 0.5f) * 2f; // [-1,1]
+
+                var pos = new Vector3(MathF.Cos(angle) * r, yJitter, MathF.Sin(angle) * r);
+                float s = minScale + (float)rng.NextDouble() * (maxScale - minScale);
+
+                // Small random angular velocity
+                var angVel = new Vector3(
+                    ((float)rng.NextDouble() - 0.5f) * 0.02f,
+                    ((float)rng.NextDouble() - 0.5f) * 0.02f,
+                    ((float)rng.NextDouble() - 0.5f) * 0.02f
+                );
+
+                var e = World.CreateEntity()
+                    .Set(new CelestialBody())
+                    .Set(sharedSphere) // use the same CPU-side mesh data
+                    .Set(new Position3D(pos.X, pos.Y, pos.Z))
+                    .Set(new Size3D(s))
+                    .Set(Rotation3D.Identity)
+                    .Set(new AngularVelocity3D(angVel))
+                    .Set(new Texture2DRef { Texture = tex });
+
+                // Optional: physics collider so raycast picks them.
+                if (addStaticCollider)
+                {
+                    var sphereShape = new Sphere(s * 0.5f);
+                    var shapeIndex = _simulation.Shapes.Add(sphereShape);
+                    var staticDesc = new StaticDescription(pos, shapeIndex);
+                    _simulation.Statics.Add(staticDesc);
+                }
+            }
         }
 
         /// <summary>
