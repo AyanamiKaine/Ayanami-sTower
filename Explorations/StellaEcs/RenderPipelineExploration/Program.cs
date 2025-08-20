@@ -42,7 +42,18 @@ internal static class Program
             debugMode: true)
         {
             InitializeScene();
-        }   
+        }
+
+        public void EnableMSAA(SampleCount sampleCount)
+        {
+
+
+        }
+
+        public void DisableMSAA()
+        {
+
+        }
 
         public void EnableVSync()
         {
@@ -50,6 +61,11 @@ internal static class Program
 
             // Can improve the frame latency
             // GraphicsDevice.SetAllowedFramesInFlight(1);
+        }
+
+        public void DisableVSync()
+        {
+            GraphicsDevice.SetSwapchainParameters(MainWindow, MainWindow.SwapchainComposition, PresentMode.Immediate);
         }
 
         private void InitializeScene()
