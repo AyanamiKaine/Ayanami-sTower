@@ -70,8 +70,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
             // 5) Build ray from near point into the scene.
             // Nudge origin slightly forward to avoid immediate t=0 hits when starting inside/on geometry.
-            var rayOrigin = nearWorld;
-            var dir = farWorld - nearWorld;
+            // Prefer originating at the camera to avoid precision issues at the near plane
+            var rayOrigin = _camera.Position;
+            var dir = farWorld - rayOrigin;
             if (dir.LengthSquared() <= 0f)
             {
                 hitResult = default;
@@ -83,7 +84,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
             // 6) Raycast.
             var hitHandler = new ClosestHitHandler();
-            _simulation.RayCast(rayOrigin, rayDirection, 1000f, ref hitHandler);
+            // Use a long ray to account for large scenes
+            _simulation.RayCast(rayOrigin, rayDirection, 100000f, ref hitHandler);
 
             // 7) Fill result if hit.
             if (hitHandler.HasHit)

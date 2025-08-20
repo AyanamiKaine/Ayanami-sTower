@@ -23,6 +23,33 @@ namespace AyanamisTower.StellaEcs.StellaInvicta;
 /// </summary>
 public struct CelestialBody { };
 
+/// <summary>
+/// Tag component to mark an entity as a kinematic body in the physics world.
+/// </summary>
+public struct Kinematic { };
+
+/// <summary>
+/// Stores a Bepu body handle for entities that have a physics body.
+/// </summary>
+public struct PhysicsBody
+{
+    /// <summary>
+    /// Handle to the kinematic/dynamic body in the Bepu simulation.
+    /// </summary>
+    public BodyHandle Handle;
+}
+
+/// <summary>
+/// Stores a Bepu static handle for entities that use static colliders.
+/// </summary>
+public struct PhysicsStatic
+{
+    /// <summary>
+    /// Handle to the static object in the Bepu simulation.
+    /// </summary>
+    public StaticHandle Handle;
+}
+
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
 {
@@ -101,6 +128,10 @@ internal static class Program
         // Lines
         private GraphicsPipeline? _linePipeline;
         private LineBatch3D? _lineBatch;
+        // Debug: visualize physics colliders with wireframes
+        private bool _debugDrawColliders = true;
+        // If true, also draw ECS-declared collider poses (helps spot divergence). Off by default.
+        private bool _debugDrawEcsColliderPoses = false;
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
@@ -109,6 +140,35 @@ internal static class Program
             debugMode: true)
         {
             InitializeScene();
+        }
+
+        // Safely get a BodyReference; returns false if the handle is invalid (e.g., removed or not yet added)
+        private bool TryGetBodyRef(BodyHandle handle, out BodyReference bodyRef)
+        {
+            try
+            {
+                bodyRef = _simulation.Bodies.GetBodyReference(handle);
+                return true;
+            }
+            catch
+            {
+                bodyRef = default;
+                return false;
+            }
+        }
+
+        private bool TryGetStaticRef(StaticHandle handle, out StaticReference staticRef)
+        {
+            try
+            {
+                staticRef = _simulation.Statics[handle];
+                return true;
+            }
+            catch
+            {
+                staticRef = default;
+                return false;
+            }
         }
 
         public void EnableMSAA(SampleCount sampleCount)
@@ -398,6 +458,51 @@ internal static class Program
                 entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
             });
 
+            World.OnSetPost<CollisionShape>((Entity entity, in CollisionShape _, in CollisionShape collisionShape, bool _) =>
+            {
+                TypedIndex? shapeIndex = null; // Default to invalid index
+                // Add concrete shape type; Shapes.Add<T>() requires an unmanaged struct, not the IShape interface.
+                switch (collisionShape.Shape)
+                {
+                    case Sphere sphere:
+                        shapeIndex = _simulation.Shapes.Add(sphere);
+                        break;
+                    case Box box:
+                        shapeIndex = _simulation.Shapes.Add(box);
+                        break;
+                    case Capsule capsule:
+                        shapeIndex = _simulation.Shapes.Add(capsule);
+                        break;
+                    case Cylinder cylinder:
+                        shapeIndex = _simulation.Shapes.Add(cylinder);
+                        break;
+                    default:
+                        Console.WriteLine($"[Physics] Unsupported collision shape type: {collisionShape.Shape?.GetType().Name ?? "null"}");
+                        return;
+                }
+
+                // Pull initial transform
+                var pos = entity.Has<Position3D>() ? entity.GetMut<Position3D>().Value : Vector3.Zero;
+                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : Quaternion.Identity;
+
+                if (entity.Has<Kinematic>())
+                {
+                    // Create a kinematic body
+                    var pose = new RigidPose(pos, rot);
+                    var collidable = new CollidableDescription((TypedIndex)shapeIndex!, 0.1f);
+                    var activity = new BodyActivityDescription(0.01f);
+                    var bodyDesc = BodyDescription.CreateKinematic(pose, collidable, activity);
+                    var bodyHandle = _simulation.Bodies.Add(bodyDesc);
+                    entity.Set(new PhysicsBody { Handle = bodyHandle });
+                }
+                else
+                {
+                    // Create a static collider
+                    var staticDescription = new StaticDescription(pos, (TypedIndex)shapeIndex!);
+                    var staticHandle = _simulation.Statics.Add(staticDescription);
+                    entity.Set(new PhysicsStatic { Handle = staticHandle });
+                }
+            });
 
             // The Sun: Center of the solar system.
             var sun = World.CreateEntity()
@@ -406,33 +511,30 @@ internal static class Program
                 .Set(new Position3D(0, 0, 0))
                 .Set(new Size3D(7.0f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0f, 0.15f, 0f))
+                .Set(new AngularVelocity3D(0f, 0f, 0f))
+                .Set(new CollisionShape(new Sphere(7.0f * 0.5f)))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
-
-            var sphereShape = new Sphere(7.0f * 0.5f);
-            var shapeIndex = _simulation.Shapes.Add(sphereShape);
-
-            // Create a static body description. Statics don't move.
-            var staticDescription = new StaticDescription(sun.GetMut<Position3D>().Value, shapeIndex);
-            var staticHandle = _simulation.Statics.Add(staticDescription);
-
 
             World.CreateEntity()
                 .Set(new CelestialBody())
+                .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(7.7f, 0, 5))
                 .Set(new Size3D(0.1f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0.002f, 0.062f, 0.012f))
+                .Set(new CollisionShape(new Sphere(0.5f)))
+                .Set(new AngularVelocity3D(0f, 0.05f, 0f))
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             // Mercury: The closest planet to the Sun.
             var mercury = World.CreateEntity()
                 .Set(new CelestialBody())
+                .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(7.7f * 4, 0, 5))
                 .Set(new Size3D(0.38f))
+                .Set(new CollisionShape(new Sphere(0.38f)))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.002f, 0f))
                 .Set(new Parent(sun))
@@ -501,9 +603,6 @@ internal static class Program
                 .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, -20000, 0)))
                 .Set(Color.Green);
 
-
-
-            SpawnPlanetStressTest(10000);
 
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
@@ -926,6 +1025,78 @@ internal static class Program
             // Update camera via controller abstraction
             _cameraController.Update(Inputs, MainWindow, delta);
 
+            // Ensure any entities with CollisionShape have corresponding physics objects even if OnSetPost timing missed
+            foreach (var e in World.Query(typeof(CollisionShape)))
+            {
+                bool isKinematic = e.Has<Kinematic>();
+                bool hasBody = e.Has<PhysicsBody>();
+                bool hasStatic = e.Has<PhysicsStatic>();
+                if (isKinematic && !hasBody)
+                {
+                    var cs = e.GetMut<CollisionShape>();
+                    // Build shape index from ECS shape
+                    TypedIndex? sidx = null;
+                    switch (cs.Shape)
+                    {
+                        case Sphere s: sidx = _simulation.Shapes.Add(s); break;
+                        case Box b: sidx = _simulation.Shapes.Add(b); break;
+                        case Capsule c: sidx = _simulation.Shapes.Add(c); break;
+                        case Cylinder cy: sidx = _simulation.Shapes.Add(cy); break;
+                        default: break;
+                    }
+                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3.Zero;
+                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                    if (sidx.HasValue)
+                    {
+                        var pose = new RigidPose(pos, rot);
+                        var collidable = new CollidableDescription(sidx.Value, 0.1f);
+                        var activity = new BodyActivityDescription(0.01f);
+                        var bodyDesc = BodyDescription.CreateKinematic(pose, collidable, activity);
+                        var handle = _simulation.Bodies.Add(bodyDesc);
+                        e.Set(new PhysicsBody { Handle = handle });
+                    }
+                }
+                else if (!isKinematic && !hasStatic)
+                {
+                    var cs = e.GetMut<CollisionShape>();
+                    TypedIndex? sidx = null;
+                    switch (cs.Shape)
+                    {
+                        case Sphere s: sidx = _simulation.Shapes.Add(s); break;
+                        case Box b: sidx = _simulation.Shapes.Add(b); break;
+                        case Capsule c: sidx = _simulation.Shapes.Add(c); break;
+                        case Cylinder cy: sidx = _simulation.Shapes.Add(cy); break;
+                        default: break;
+                    }
+                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3.Zero;
+                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                    if (sidx.HasValue)
+                    {
+                        var sdesc = new StaticDescription(pos, sidx.Value) { }; // orientation not in this overload; use position-only static
+                        var sh = _simulation.Statics.Add(sdesc);
+                        e.Set(new PhysicsStatic { Handle = sh });
+                    }
+                }
+            }
+
+            // Ensure kinematic bodies follow ECS transforms BEFORE stepping the simulation
+            foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(Position3D)))
+            {
+                var body = entity.GetMut<PhysicsBody>();
+                var pos = entity.GetMut<Position3D>().Value;
+                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                if (TryGetBodyRef(body.Handle, out var bodyRef))
+                {
+                    bodyRef.Pose = new RigidPose(pos, rot);
+                    // Ensure the body is awake and its broadphase bounds reflect the new pose for accurate raycasts
+                    bodyRef.Awake = true;
+                    _simulation.Bodies.UpdateBounds(body.Handle);
+                }
+                else
+                {
+                    // Optional: log once per entity if needed; avoided here to prevent spam.
+                }
+            }
 
             _simulation.Timestep((float)delta.TotalSeconds, _threadDispatcher);
 
@@ -938,18 +1109,32 @@ internal static class Program
                     // The CollidableReference can be either a BodyHandle or a StaticHandle.
                     if (result.Collidable.Mobility == CollidableMobility.Static)
                     {
-                        var staticBody = _simulation.Statics[result.Collidable.StaticHandle];
-                        // You could use a dictionary to map the handle back to your ECS entity here.
-                        Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}. Position: {staticBody.Pose.Position}");
-
-                        _camera.Position = staticBody.Pose.Position + new Vector3(0, 10, 6); // Move camera to hit position
-                        _camera.LookAt(staticBody.Pose.Position); // Look at the hit position
-
+                        if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
+                        {
+                            // You could use a dictionary to map the handle back to your ECS entity here.
+                            Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}. Position: {staticBody.Pose.Position}");
+                            _camera.Position = staticBody.Pose.Position + new Vector3(0, 10, 6); // Move camera to hit position
+                            _camera.LookAt(staticBody.Pose.Position); // Look at the hit position
+                        }
+                        else
+                        {
+                            Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}, but static handle is invalid now.");
+                        }
                     }
-                    else // It's a dynamic body
+                    else // It's a dynamic/kinematic body
                     {
-                        var body = _simulation.Bodies[result.Collidable.BodyHandle];
-                        Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}. Position: {body.Pose.Position}");
+                        var bh = result.Collidable.BodyHandle;
+                        if (TryGetBodyRef(bh, out var bref))
+                        {
+                            var p = bref.Pose.Position;
+                            Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}. Position: {p}");
+                            _camera.Position = p + new Vector3(0, 10, 6);
+                            _camera.LookAt(p);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}, but body handle is invalid now (moved/removed).");
+                        }
                     }
                 }
                 else
@@ -958,8 +1143,36 @@ internal static class Program
                 }
             }
 
+            // Debug: print current positions of all dynamic/kinematic bodies
+            if (Inputs.Mouse.RightButton.IsPressed)
+            {
+                LogAllDynamicPositions();
+            }
+
 
             World.Update((float)delta.TotalSeconds);
+
+        }
+
+        // Logs positions of all dynamic/kinematic bodies (entities with PhysicsBody) using simulation poses.
+        private void LogAllDynamicPositions()
+        {
+            int count = 0;
+            foreach (var entity in World.Query(typeof(PhysicsBody)))
+            {
+                var body = entity.GetMut<PhysicsBody>();
+                if (TryGetBodyRef(body.Handle, out var bodyRef))
+                {
+                    var p = bodyRef.Pose.Position;
+                    var o = bodyRef.Pose.Orientation;
+                    Console.WriteLine($"Dynamic Body {body.Handle.Value}: Pos=<{p.X:F3}, {p.Y:F3}, {p.Z:F3}> Ori=<{o.X:F3}, {o.Y:F3}, {o.Z:F3}, {o.W:F3}>");
+                    count++;
+                }
+            }
+            if (count == 0)
+            {
+                Console.WriteLine("No dynamic bodies found.");
+            }
         }
 
         protected override void Draw(double alpha)
@@ -987,6 +1200,12 @@ internal static class Program
                     var line = entity.GetMut<Line3D>();
                     var color = entity.GetMut<Color>();
                     _lineBatch.AddLine(line.Start, line.End, color);
+                }
+
+                // Add physics collider wireframes before uploading
+                if (_debugDrawColliders)
+                {
+                    DebugDrawColliders();
                 }
 
                 // Upload line vertex data
@@ -1038,6 +1257,26 @@ internal static class Program
                 Vector3 translation = entity.Has<Position3D>() ? entity.GetMut<Position3D>().Value : Vector3.Zero;
                 Quaternion rotation = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : Quaternion.Identity;
                 Vector3 size = entity.Has<Size3D>() ? entity.GetMut<Size3D>().Value : Vector3.One;
+
+                // If this entity has a physics representation, prefer the simulation pose for accuracy
+                if (entity.Has<PhysicsBody>())
+                {
+                    var body = entity.GetMut<PhysicsBody>();
+                    if (TryGetBodyRef(body.Handle, out var bodyRef))
+                    {
+                        translation = bodyRef.Pose.Position;
+                        rotation = bodyRef.Pose.Orientation;
+                    }
+                }
+                else if (entity.Has<PhysicsStatic>())
+                {
+                    var st = entity.GetMut<PhysicsStatic>();
+                    if (TryGetStaticRef(st.Handle, out var sref))
+                    {
+                        translation = sref.Pose.Position;
+                        rotation = sref.Pose.Orientation;
+                    }
+                }
 
                 // Sphere culling: use a conservative radius based on max scale axis.
                 float radius = MathF.Max(size.X, MathF.Max(size.Y, size.Z));
@@ -1187,6 +1426,193 @@ internal static class Program
                 }
             }
             return true;
+        }
+
+        // ==========================
+        // Physics debug draw helpers
+        // ==========================
+        private void AddWireSphere(Vector3 center, float radius, Color color, int segments = 24)
+        {
+            if (_lineBatch == null || radius <= 0f) return;
+            // Three great circles around X, Y, Z axes
+            void Circle(Vector3 axis)
+            {
+                Vector3 prev = default;
+                bool hasPrev = false;
+                for (int i = 0; i <= segments; i++)
+                {
+                    float t = (float)i / segments;
+                    float ang = t * MathF.Tau;
+                    // Build an orthonormal basis for the plane perpendicular to axis
+                    Vector3 n = Vector3.Normalize(axis);
+                    Vector3 u = Vector3.Normalize(Vector3.Cross(n, Math.Abs(n.Y) < 0.99f ? Vector3.UnitY : Vector3.UnitX));
+                    Vector3 v = Vector3.Cross(n, u);
+                    Vector3 p = center + (u * MathF.Cos(ang) + v * MathF.Sin(ang)) * radius;
+                    if (hasPrev)
+                    {
+                        _lineBatch.AddLine(prev, p, color);
+                    }
+                    prev = p; hasPrev = true;
+                }
+            }
+            Circle(Vector3.UnitX);
+            Circle(Vector3.UnitY);
+            Circle(Vector3.UnitZ);
+        }
+
+        private void AddWireBox(Vector3 center, Quaternion orientation, Vector3 halfExtents, Color color)
+        {
+            if (_lineBatch == null) return;
+            // 8 corners in local space
+            Vector3[] c = new Vector3[8];
+            int idx = 0;
+            for (int x = -1; x <= 1; x += 2)
+                for (int y = -1; y <= 1; y += 2)
+                    for (int z = -1; z <= 1; z += 2)
+                        c[idx++] = new Vector3(x * halfExtents.X, y * halfExtents.Y, z * halfExtents.Z);
+
+            // Transform to world
+            Matrix4x4 rot = Matrix4x4.CreateFromQuaternion(orientation);
+            for (int i = 0; i < 8; i++)
+            {
+                c[i] = Vector3.Transform(c[i], rot) + center;
+            }
+            // box edges pairs
+            int[,] e = new int[,]
+            {
+                {0,1},{0,2},{0,4},
+                {3,1},{3,2},{3,7},
+                {5,1},{5,4},{5,7},
+                {6,2},{6,4},{6,7}
+            };
+            for (int i = 0; i < e.GetLength(0); i++)
+            {
+                _lineBatch!.AddLine(c[e[i, 0]], c[e[i, 1]], color);
+            }
+        }
+
+        private void AddWireCapsule(Vector3 center, Quaternion orientation, float halfLength, float radius, Color color, int segments = 16)
+        {
+            if (_lineBatch == null) return;
+            // Capsule aligned with local Y axis, then rotate by orientation
+            Matrix4x4 rot = Matrix4x4.CreateFromQuaternion(orientation);
+            Vector3 up = Vector3.TransformNormal(Vector3.UnitY, rot);
+            Vector3 right = Vector3.TransformNormal(Vector3.UnitX, rot);
+            Vector3 forward = Vector3.TransformNormal(Vector3.UnitZ, rot);
+            Vector3 a = center + up * halfLength;
+            Vector3 b = center - up * halfLength;
+            // cylinder rings
+            for (int i = 0; i < segments; i++)
+            {
+                float t0 = (float)i / segments * MathF.Tau;
+                float t1 = (float)(i + 1) / segments * MathF.Tau;
+                Vector3 r0 = right * MathF.Cos(t0) + forward * MathF.Sin(t0);
+                Vector3 r1 = right * MathF.Cos(t1) + forward * MathF.Sin(t1);
+                _lineBatch.AddLine(a + r0 * radius, a + r1 * radius, color);
+                _lineBatch.AddLine(b + r0 * radius, b + r1 * radius, color);
+                _lineBatch.AddLine(a + r0 * radius, b + r0 * radius, color);
+            }
+            // hemispheres
+            void Hemisphere(Vector3 centerHem, int sign)
+            {
+                for (int iy = 0; iy <= segments; iy++)
+                {
+                    float v = (float)iy / segments * MathF.PI * 0.5f;
+                    float y = MathF.Sin(v) * sign;
+                    float r = MathF.Cos(v);
+                    Vector3 ringUp = up * y;
+                    Vector3 prev = default; bool hasPrev = false;
+                    for (int ix = 0; ix <= segments; ix++)
+                    {
+                        float u = (float)ix / segments * MathF.Tau;
+                        Vector3 dir = right * (MathF.Cos(u) * r) + forward * (MathF.Sin(u) * r) + ringUp;
+                        Vector3 p = centerHem + dir * radius;
+                        if (hasPrev) _lineBatch.AddLine(prev, p, color);
+                        prev = p; hasPrev = true;
+                    }
+                }
+            }
+            Hemisphere(a, +1);
+            Hemisphere(b, -1);
+        }
+
+        private void AddWireCylinder(Vector3 center, Quaternion orientation, float halfLength, float radius, Color color, int segments = 16)
+        {
+            if (_lineBatch == null) return;
+            Matrix4x4 rot = Matrix4x4.CreateFromQuaternion(orientation);
+            Vector3 up = Vector3.TransformNormal(Vector3.UnitY, rot);
+            Vector3 right = Vector3.TransformNormal(Vector3.UnitX, rot);
+            Vector3 forward = Vector3.TransformNormal(Vector3.UnitZ, rot);
+            Vector3 a = center + up * halfLength;
+            Vector3 b = center - up * halfLength;
+            for (int i = 0; i < segments; i++)
+            {
+                float t0 = (float)i / segments * MathF.Tau;
+                float t1 = (float)(i + 1) / segments * MathF.Tau;
+                Vector3 r0 = right * MathF.Cos(t0) + forward * MathF.Sin(t0);
+                Vector3 r1 = right * MathF.Cos(t1) + forward * MathF.Sin(t1);
+                _lineBatch.AddLine(a + r0 * radius, a + r1 * radius, color);
+                _lineBatch.AddLine(b + r0 * radius, b + r1 * radius, color);
+                _lineBatch.AddLine(a + r0 * radius, b + r0 * radius, color);
+            }
+        }
+
+        private void DebugDrawColliders()
+        {
+            if (_lineBatch == null) return;
+
+            // 1) Optionally draw ECS-declared shapes at ECS transform (green) to compare against physics
+            if (_debugDrawEcsColliderPoses)
+            {
+                foreach (var e in World.Query(typeof(CollisionShape)))
+                {
+                    var cs = e.GetMut<CollisionShape>();
+                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3.Zero;
+                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                    DrawShapeFromEcs(cs.Shape, pos, rot, new Color(64, 255, 64, 160));
+                }
+            }
+
+            // 2) If a physics body exists, also draw at physics pose (red) — where physics thinks it is
+            foreach (var e in World.Query(typeof(PhysicsBody), typeof(CollisionShape)))
+            {
+                var body = e.GetMut<PhysicsBody>();
+                var cs = e.GetMut<CollisionShape>();
+                if (TryGetBodyRef(body.Handle, out var bodyRef))
+                {
+                    DrawShapeFromEcs(cs.Shape, bodyRef.Pose.Position, bodyRef.Pose.Orientation, new Color(255, 64, 64, 200));
+                }
+            }
+
+            // 3) For statics, draw at static pose (cyan)
+            foreach (var e in World.Query(typeof(PhysicsStatic), typeof(CollisionShape)))
+            {
+                var st = e.GetMut<PhysicsStatic>();
+                var cs = e.GetMut<CollisionShape>();
+                var sref = _simulation.Statics[st.Handle];
+                DrawShapeFromEcs(cs.Shape, sref.Pose.Position, sref.Pose.Orientation, new Color(64, 200, 255, 200));
+            }
+        }
+
+        private void DrawShapeFromEcs(object? shape, Vector3 position, Quaternion orientation, Color color)
+        {
+            switch (shape)
+            {
+                case Sphere s:
+                    AddWireSphere(position, s.Radius, color);
+                    break;
+                case Box b:
+                    AddWireBox(position, orientation, new Vector3(b.HalfWidth, b.HalfHeight, b.HalfLength), color);
+                    break;
+                case Capsule c:
+                    AddWireCapsule(position, orientation, c.HalfLength, c.Radius, color);
+                    break;
+                case Cylinder cy:
+                    AddWireCylinder(position, orientation, cy.HalfLength, cy.Radius, color);
+                    break;
+                default:
+                    break;
+            }
         }
 
 

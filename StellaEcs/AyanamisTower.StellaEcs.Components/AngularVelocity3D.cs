@@ -11,7 +11,7 @@ public struct AngularVelocity3D
     /// <summary>
     /// The angular velocity vector.
     /// </summary>
-    public Vector3 Value;
+    public Vector3 Value = Vector3.Zero;
     /// <summary>
     /// Creates a new instance of the <see cref="AngularVelocity3D"/> struct.
     /// </summary>
