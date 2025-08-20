@@ -1089,6 +1089,7 @@ internal static class Program
                 {
                     bodyRef.Pose = new RigidPose(pos, rot);
                     // Ensure the body is awake and its broadphase bounds reflect the new pose for accurate raycasts
+                    // Awake must be set to true otherwise it simply wont work
                     bodyRef.Awake = true;
                     _simulation.Bodies.UpdateBounds(body.Handle);
                 }
