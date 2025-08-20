@@ -9,6 +9,12 @@ using MoonWorks.Graphics;
 using MoonWorks.Input;
 using MoonWorks.Storage;
 using StellaInvicta;
+using BepuPhysics;
+using BepuUtilities.Memory;
+using BepuUtilities;
+using BepuPhysics.CollisionDetection;
+using BepuPhysics.Collidables;
+using BepuPhysics.Constraints;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -16,6 +22,39 @@ namespace AyanamisTower.StellaEcs.StellaInvicta;
 /// Represents a celestial body in the game world.
 /// </summary>
 public struct CelestialBody { };
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
+{
+    public void Initialize(Simulation simulation) { }
+    public bool AllowContactGeneration(int workerIndex, CollidableReference a, CollidableReference b, ref float speculativeMargin) => true;
+    public bool AllowContactGeneration(int workerIndex, CollidablePair pair, int childIndexA, int childIndexB) => true;
+    public bool ConfigureContactManifold<TManifold>(int workerIndex, CollidablePair pair, ref TManifold manifold, out PairMaterialProperties material) where TManifold : unmanaged, IContactManifold<TManifold>
+    {
+        material = new PairMaterialProperties { FrictionCoefficient = 1f, MaximumRecoveryVelocity = 2f, SpringSettings = new SpringSettings(30, 1) };
+        return true;
+    }
+    public bool ConfigureContactManifold(int workerIndex, CollidablePair pair, int childIndexA, int childIndexB, ref ConvexContactManifold manifold) => true;
+    public void Dispose() { }
+}
+
+public struct PoseIntegratorCallbacks : IPoseIntegratorCallbacks
+{
+    public Vector3 Gravity;
+    public PoseIntegratorCallbacks(Vector3 gravity) : this() { Gravity = gravity; }
+    public AngularIntegrationMode AngularIntegrationMode => AngularIntegrationMode.Nonconserving;
+    public bool AllowSubstepsForUnconstrainedBodies => false;
+    public bool IntegrateVelocityForKinematics => false;
+    public void Initialize(Simulation simulation) { }
+    public void PrepareForIntegration(float dt) { }
+    public void IntegrateVelocity(Vector<int> bodyIndices, Vector3Wide position, QuaternionWide orientation, BodyInertiaWide localInertia, Vector<int> integrationMask, int workerIndex, Vector<float> dt, ref BodyVelocityWide velocity)
+    {
+        // Broadcast scalar gravity to a wide vector and scale by the per-lane timestep.
+        Vector3Wide.Broadcast(Gravity, out var gravityWide);
+        Vector3Wide.Scale(gravityWide, dt, out var gravityDt);
+        velocity.Linear += gravityDt;
+    }
+}
 
 internal static class Program
 {
@@ -27,6 +66,12 @@ internal static class Program
 
     private sealed class StellaInvicta : Game
     {
+        // BepuPhysics v2 Simulation
+        private Simulation _simulation = null!;
+        private BufferPool _bufferPool = null!;
+        private ThreadDispatcher _threadDispatcher = null!;
+        private MousePicker _mousePicker = null!;
+
         /// <summary>
         /// Represents the current game world.
         /// </summary>
@@ -77,6 +122,18 @@ internal static class Program
 
         }
 
+        private void InitializePhysics()
+        {
+            // BepuPhysics requires a BufferPool for memory management and a ThreadDispatcher for multi-threading.
+            _bufferPool = new BufferPool();
+            // Using '0' for thread count will default to Environment.ProcessorCount.
+            _threadDispatcher = new ThreadDispatcher(Environment.ProcessorCount);
+
+            // Create the simulation. The constructor takes callbacks for handling collisions.
+            // For this example, we can use the default narrow-phase callbacks.
+            _simulation = Simulation.Create(_bufferPool, new NarrowPhaseCallbacks(), new PoseIntegratorCallbacks(new Vector3(0, 0, 0)), new SolveDescription(8, 1));
+        }
+
         public void EnableVSync()
         {
             GraphicsDevice.SetSwapchainParameters(MainWindow, MainWindow.SwapchainComposition, PresentMode.VSync);
@@ -103,7 +160,7 @@ internal static class Program
             World.EnableRestApi();
 
             EnableVSync();
-
+            InitializePhysics();
             // Camera setup
             var aspect = (float)MainWindow.Width / MainWindow.Height;
             _camera = new Camera(new Vector3(0, 2, 6), Vector3.Zero, Vector3.UnitY)
@@ -114,6 +171,8 @@ internal static class Program
                 Fov = MathF.PI / 3f
             };
             _cameraController = new CameraController(_camera);
+
+            _mousePicker = new MousePicker(_camera, _simulation);
 
             // MSAA targets are (re)created in Draw to match the actual swapchain size.
             _msaaColor = null;
@@ -350,6 +409,13 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
 
+            var sphereShape = new Sphere(7.0f * 0.5f);
+            var shapeIndex = _simulation.Shapes.Add(sphereShape);
+
+            // Create a static body description. Statics don't move.
+            var staticDescription = new StaticDescription(sun.GetMut<Position3D>().Value, shapeIndex);
+            var staticHandle = _simulation.Statics.Add(staticDescription);
+
 
             World.CreateEntity()
                 .Set(new CelestialBody())
@@ -434,6 +500,8 @@ internal static class Program
             World.CreateEntity()
                 .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, -20000, 0)))
                 .Set(Color.Green);
+
+
 
 
 
@@ -785,6 +853,36 @@ internal static class Program
             _camera.Aspect = (float)((float)MainWindow.Width / MainWindow.Height);
             // Update camera via controller abstraction
             _cameraController.Update(Inputs, MainWindow, delta);
+
+
+            _simulation.Timestep((float)delta.TotalSeconds, _threadDispatcher);
+
+            // Check for mouse click to perform picking
+            if (Inputs.Mouse.LeftButton.IsPressed)
+            {
+                if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var result))
+                {
+                    // For now, we just print the result.
+                    // The CollidableReference can be either a BodyHandle or a StaticHandle.
+                    if (result.Collidable.Mobility == CollidableMobility.Static)
+                    {
+                        var staticBody = _simulation.Statics[result.Collidable.StaticHandle];
+                        // You could use a dictionary to map the handle back to your ECS entity here.
+                        Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}. Position: {staticBody.Pose.Position}");
+                    }
+                    else // It's a dynamic body
+                    {
+                        var body = _simulation.Bodies[result.Collidable.BodyHandle];
+                        Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}. Position: {body.Pose.Position}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("PICK: Missed. No object was hit.");
+                }
+            }
+
+
             World.Update((float)delta.TotalSeconds);
         }
 
