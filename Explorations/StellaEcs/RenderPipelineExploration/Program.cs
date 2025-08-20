@@ -52,6 +52,9 @@ internal static class Program
         private GpuMesh? _skyboxMesh;
         private float _skyboxScale = 50f;
         private bool _skyboxEnabled;
+        // Lines
+        private GraphicsPipeline? _linePipeline;
+        private LineBatch3D? _lineBatch;
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
@@ -271,6 +274,63 @@ internal static class Program
                 },
                 Name = "SkyboxCubeRenderer"
             });
+
+            // Line pipeline setup (position+color, line list)
+            var vsLine = ShaderCross.Create(
+                GraphicsDevice,
+                RootTitleStorage,
+                "Assets/LineColor.hlsl",
+                "VSMain",
+                ShaderCross.ShaderFormat.HLSL,
+                ShaderStage.Vertex,
+                false,
+                "LineVS"
+            );
+            var fsLine = ShaderCross.Create(
+                GraphicsDevice,
+                RootTitleStorage,
+                "Assets/LineColor.hlsl",
+                "PSMain",
+                ShaderCross.ShaderFormat.HLSL,
+                ShaderStage.Fragment,
+                false,
+                "LinePS"
+            );
+            var lineVertexInput = VertexInputState.CreateSingleBinding<LineBatch3D.LineVertex>(0);
+            _linePipeline = GraphicsPipeline.Create(GraphicsDevice, new GraphicsPipelineCreateInfo
+            {
+                VertexShader = vsLine,
+                FragmentShader = fsLine,
+                VertexInputState = lineVertexInput,
+                PrimitiveType = PrimitiveType.LineList,
+                RasterizerState = RasterizerState.CCW_CullNone,
+                MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
+                DepthStencilState = new DepthStencilState
+                {
+                    EnableDepthTest = true,
+                    EnableDepthWrite = false, // lines typically don't write depth
+                    CompareOp = CompareOp.LessOrEqual,
+                    CompareMask = 0xFF,
+                    WriteMask = 0x00,
+                    EnableStencilTest = false
+                },
+                TargetInfo = new GraphicsPipelineTargetInfo
+                {
+                    ColorTargetDescriptions =
+                    [
+                        new ColorTargetDescription
+                        {
+                            Format = MainWindow.SwapchainFormat,
+                            BlendState = ColorTargetBlendState.NoBlend
+                        }
+                    ],
+                    HasDepthStencilTarget = true,
+                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
+                },
+                Name = "LineColorRenderer"
+            });
+
+            _lineBatch = new LineBatch3D(GraphicsDevice, 4096);
 
             World.OnSetPost((Entity entity, in Mesh _, in Mesh mesh, bool _) =>
             {
@@ -665,6 +725,20 @@ internal static class Program
                 GraphicsDevice.Submit(cmdbuf);
                 return;
             }
+            // Prepare line batch for this frame and upload any lines
+            _lineBatch?.Begin();
+            // Example lines: axes at origin
+            if (_lineBatch != null)
+            {
+                var red = new Color(255, 64, 64, 255);
+                var grn = new Color(64, 255, 64, 255);
+                var blu = new Color(64, 128, 255, 255);
+                _lineBatch.AddLine(new Vector3(0, 0, 0), new Vector3(2, 0, 0), red);
+                _lineBatch.AddLine(new Vector3(0, 0, 0), new Vector3(0, 2, 0), grn);
+                _lineBatch.AddLine(new Vector3(0, 0, 0), new Vector3(0, 0, 2), blu);
+                // Upload line vertex data
+                _lineBatch.UploadBufferData(cmdbuf);
+            }
             /////////////////////
             // MSAA PIPELINE STEP BEGIN 
             /////////////////////
@@ -746,6 +820,14 @@ internal static class Program
 
                 cmdbuf.PushVertexUniformData(mvp, slot: 0);
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
+            }
+
+            // Draw lines last so they overlay geometry
+            if (_lineBatch != null)
+            {
+                pass.BindGraphicsPipeline(_linePipeline!);
+                var vp = _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
+                _lineBatch.Render(pass, vp);
             }
 
 
@@ -846,6 +928,8 @@ internal static class Program
             _pipeline?.Dispose();
             _skyboxPipeline?.Dispose();
             _skyboxCubePipeline?.Dispose();
+            _linePipeline?.Dispose();
+            _lineBatch?.Dispose();
             _whiteTexture?.Dispose();
             _checkerTexture?.Dispose();
             _skyboxTexture?.Dispose();
