@@ -274,7 +274,7 @@ internal static class Program
 
 
             // The Sun: Center of the solar system.
-            World.CreateEntity()
+            var sun = World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(0, 0, 0)) // Positioned at the origin
                 .Set(new Size3D(7.0f))
@@ -283,29 +283,32 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
 
             // Mercury: The closest planet to the Sun.
-            World.CreateEntity()
+            var mercury = World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(7.7f * 4, 0, 0)) // Position is ~0.38 AU from the Sun
                 .Set(new Size3D(0.38f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
+                .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
 
             // Venus: The second planet from the Sun.
-            World.CreateEntity()
+            var venus = World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(14.5f * 4, 0, 0)) // Position is ~0.72 AU from the Sun
                 .Set(new Size3D(0.95f))
                 .Set(Rotation3D.Identity)
+                .Set(new Parent(sun))
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
 
             // Earth: Our baseline for distance (1 Astronomical Unit).
-            World.CreateEntity()
+            var earth = World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(20.0f * 4, 0, 0)) // We define this distance as 1 AU
                 .Set(new Size3D(1.0f))
                 .Set(Rotation3D.Identity)
+                .Set(new Parent(sun))
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
 
@@ -316,6 +319,7 @@ internal static class Program
                 .Set(new Size3D(0.27f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
+                .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
 
             // Example usage:
