@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Numerics;
+using System.IO;
 using System.Runtime.InteropServices;
 using AyanamisTower.StellaEcs.Api;
 using AyanamisTower.StellaEcs.Components;
 using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Input;
+using MoonWorks.Storage;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -176,44 +178,47 @@ internal static class Program
                 entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
             });
 
-            World.CreateEntity().Set(Mesh.CreateBox3D()).Set(new Size3D(1f)).Set(new Texture2DRef { Texture = _checkerTexture! });
-
-            ;
-            World.CreateEntity()
-                .Set(Mesh.CreateBox3D())
-                .Set(new Position3D(3, 0, 0))
-                .Set(Rotation3D.Identity)
-                .Set(new Velocity3D(0.1f, 0, 0))
-                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
-                .Set(new Size3D(1f))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(0, -5, 0))
+                .Set(new Position3D(0, 0, 0))
                 .Set(new Size3D(1f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
-
-            // Textured plane demo
-            World.CreateEntity()
-                .Set(Mesh.CreatePlane3D())
-                .Set(new Position3D(-3, 0, 0))
-                .Set(new Size3D(2f))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
 
             World.CreateEntity()
-                .Set(Mesh.CreateCylinder3D())
-                .Set(new Position3D(-3, -5, -5))
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(5, 0, 0))
                 .Set(new Size3D(1f))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
 
             World.CreateEntity()
-                .Set(Mesh.CreateTorus3D())
-                .Set(new Position3D(-3, -5, 0))
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(10, 0, 0))
                 .Set(new Size3D(1f))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
+
+            World.CreateEntity()
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(20, 0, 0))
+                .Set(new Size3D(1f))
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
+
+            World.CreateEntity()
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(22, 0, 0))
+                .Set(new Size3D(0.4f))
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
+
         }
 
         private Texture CreateSolidTexture(byte r, byte g, byte b, byte a)
@@ -257,6 +262,114 @@ internal static class Program
                 width, height);
             uploader.UploadAndWait();
             return tex;
+        }
+
+        /// <summary>
+        /// Loads an image file (PNG, JPG, BMP, etc.) or a DDS file and uploads it as a GPU texture.
+        /// For standard image formats, data is decoded to RGBA8 and uploaded as a 2D texture.
+        /// For DDS, existing mip levels and cube faces are preserved.
+        /// Returns null if the file could not be read or decoded.
+        /// </summary>
+        private Texture? LoadTextureFromFile(string path)
+        {
+            // TitleStorage requires POSIX-style separators and relative paths.
+            // Normalize separators and, if given an absolute path, try to make it relative to the app base.
+            var normalized = path.Replace('\\', '/');
+            if (Path.IsPathRooted(normalized))
+            {
+                var baseDir = AppContext.BaseDirectory.Replace('\\', '/');
+                if (normalized.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    normalized = normalized.Substring(baseDir.Length);
+                }
+                else
+                {
+                    Console.WriteLine($"[LoadTextureFromFile] Absolute path outside TitleStorage root not supported: {normalized}");
+                    return null;
+                }
+            }
+
+            // Choose loader by file extension
+            var ext = Path.GetExtension(normalized).ToLowerInvariant();
+
+            using var uploader = new ResourceUploader(GraphicsDevice);
+            Texture? texture;
+            var name = Path.GetFileNameWithoutExtension(normalized);
+            if (ext == ".dds")
+            {
+                // Quick existence check
+                if (!RootTitleStorage.GetFileSize(normalized, out _))
+                {
+                    Console.WriteLine($"[LoadTextureFromFile] File not found in TitleStorage: {normalized}");
+                    return null;
+                }
+                texture = uploader.CreateTextureFromDDS(name, RootTitleStorage, normalized);
+            }
+            else
+            {
+                // Quick existence check
+                if (!RootTitleStorage.GetFileSize(normalized, out _))
+                {
+                    Console.WriteLine($"[LoadTextureFromFile] File not found in TitleStorage: {normalized}");
+                    return null;
+                }
+                texture = uploader.CreateTexture2DFromCompressed(
+                    name,
+                    RootTitleStorage,
+                    normalized,
+                    TextureFormat.R8G8B8A8Unorm,
+                    TextureUsageFlags.Sampler
+                );
+                if (texture == null)
+                {
+                    // Fallback: try StbImageSharp to decode common formats (JPEG/PNG/etc.)
+                    try
+                    {
+                        if (!RootTitleStorage.GetFileSize(normalized, out var fileSize) || fileSize == 0)
+                        {
+                            Console.WriteLine($"[LoadTextureFromFile] Fallback: file not found or empty: {normalized}");
+                            return null;
+                        }
+
+                        var bytes = new byte[fileSize];
+                        if (!RootTitleStorage.ReadFile(normalized, bytes))
+                        {
+                            Console.WriteLine($"[LoadTextureFromFile] Fallback: failed to read file: {normalized}");
+                            return null;
+                        }
+
+                        // Decode to RGBA using StbImageSharp
+                        var img = StbImageSharp.ImageResult.FromMemory(bytes, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
+                        if (img == null || img.Data == null || img.Width <= 0 || img.Height <= 0)
+                        {
+                            Console.WriteLine($"[LoadTextureFromFile] Fallback: decode failed for: {normalized}");
+                            return null;
+                        }
+
+                        texture = uploader.CreateTexture2D<byte>(
+                            name,
+                            img.Data,
+                            TextureFormat.R8G8B8A8Unorm,
+                            TextureUsageFlags.Sampler,
+                            (uint)img.Width,
+                            (uint)img.Height
+                        );
+                        if (texture == null)
+                        {
+                            Console.WriteLine($"[LoadTextureFromFile] Fallback: texture creation failed for: {normalized}");
+                            return null;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[LoadTextureFromFile] Fallback exception for {normalized}: {ex.Message}");
+                        return null;
+                    }
+                }
+            }
+
+            uploader.UploadAndWait();
+            return texture;
         }
 
 

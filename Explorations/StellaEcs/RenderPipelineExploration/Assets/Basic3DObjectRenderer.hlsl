@@ -76,7 +76,7 @@ SamplerState DiffuseSamp : register(s0, space2);
 
 float4 PSMain(VSOutput input) : SV_Target
 {
+    // Sample the texture and output directly without vertex color tinting.
     float3 texRgb = DiffuseTex.Sample(DiffuseSamp, input.uv).rgb;
-    // Multiply with vertex color as a tint; output opaque alpha
-    return float4(texRgb * input.col, 1.0);
+    return float4(texRgb, 1.0);
 }
