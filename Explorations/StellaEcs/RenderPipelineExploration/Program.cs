@@ -40,6 +40,13 @@ internal static class Program
         private SampleCount _msaaSamples = SampleCount.Four;
         private Texture? _msaaColor; // The offscreen texture for MSAA rendering
         private Texture? _msaaDepth; // The offscreen depth buffer (MSAA)
+                                     // Skybox resources
+        private GraphicsPipeline? _skyboxPipeline;
+        private GraphicsPipeline? _skyboxCubePipeline;
+        private Texture? _skyboxTexture;
+        private GpuMesh? _skyboxMesh;
+        private float _skyboxScale = 50f;
+        private bool _skyboxEnabled;
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
@@ -129,6 +136,26 @@ internal static class Program
                 false,
                 "Basic3DObjectRendererPS"
             );
+            var vsSkyCube = ShaderCross.Create(
+                GraphicsDevice,
+                RootTitleStorage,
+                "Assets/SkyboxCube.hlsl",
+                "VSMain",
+                ShaderCross.ShaderFormat.HLSL,
+                ShaderStage.Vertex,
+                false,
+                "SkyboxCubeVS"
+            );
+            var fsSkyCube = ShaderCross.Create(
+                GraphicsDevice,
+                RootTitleStorage,
+                "Assets/SkyboxCube.hlsl",
+                "PSMain",
+                ShaderCross.ShaderFormat.HLSL,
+                ShaderStage.Fragment,
+                false,
+                "SkyboxCubePS"
+            );
             // Create simple textures
             _whiteTexture = CreateSolidTexture(255, 255, 255, 255);
             _checkerTexture = CreateCheckerboard(256, 256, 8,
@@ -173,6 +200,73 @@ internal static class Program
                 Name = "Basic3DObjectRenderer"
             });
 
+            // Dedicated skybox pipeline: no depth write/test, no culling (render inside of sphere)
+            _skyboxPipeline = GraphicsPipeline.Create(GraphicsDevice, new GraphicsPipelineCreateInfo
+            {
+                VertexShader = vs,
+                FragmentShader = fs,
+                VertexInputState = vertexInput,
+                PrimitiveType = PrimitiveType.TriangleList,
+                RasterizerState = RasterizerState.CCW_CullNone,
+                MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
+                DepthStencilState = new DepthStencilState
+                {
+                    EnableDepthTest = false,
+                    EnableDepthWrite = false,
+                    CompareOp = CompareOp.Always,
+                    CompareMask = 0xFF,
+                    WriteMask = 0x00,
+                    EnableStencilTest = false
+                },
+                TargetInfo = new GraphicsPipelineTargetInfo
+                {
+                    ColorTargetDescriptions =
+                    [
+                        new ColorTargetDescription
+                        {
+                            Format = MainWindow.SwapchainFormat,
+                            BlendState = ColorTargetBlendState.NoBlend
+                        }
+                    ],
+                    HasDepthStencilTarget = true,
+                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
+                },
+                Name = "SkyboxRenderer"
+            });
+
+            _skyboxCubePipeline = GraphicsPipeline.Create(GraphicsDevice, new GraphicsPipelineCreateInfo
+            {
+                VertexShader = vsSkyCube,
+                FragmentShader = fsSkyCube,
+                VertexInputState = vertexInput,
+                PrimitiveType = PrimitiveType.TriangleList,
+                RasterizerState = RasterizerState.CCW_CullNone,
+                MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
+                DepthStencilState = new DepthStencilState
+                {
+                    EnableDepthTest = false,
+                    EnableDepthWrite = false,
+                    CompareOp = CompareOp.Always,
+                    CompareMask = 0xFF,
+                    WriteMask = 0x00,
+                    EnableStencilTest = false
+                },
+                TargetInfo = new GraphicsPipelineTargetInfo
+                {
+                    ColorTargetDescriptions =
+                    [
+                        new ColorTargetDescription
+                        {
+                            Format = MainWindow.SwapchainFormat,
+                            BlendState = ColorTargetBlendState.NoBlend
+                        }
+                    ],
+                    HasDepthStencilTarget = true,
+                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
+                },
+                Name = "SkyboxCubeRenderer"
+            });
+
             World.OnSetPost((Entity entity, in Mesh _, in Mesh mesh, bool _) =>
             {
                 entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
@@ -184,7 +278,7 @@ internal static class Program
                 .Set(new Position3D(0, 0, 0))
                 .Set(new Size3D(1f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.25f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
 
             World.CreateEntity()
@@ -192,7 +286,7 @@ internal static class Program
                 .Set(new Position3D(5, 0, 0))
                 .Set(new Size3D(1f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.25f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
 
             World.CreateEntity()
@@ -200,7 +294,7 @@ internal static class Program
                 .Set(new Position3D(10, 0, 0))
                 .Set(new Size3D(1f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.25f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
 
             World.CreateEntity()
@@ -208,7 +302,7 @@ internal static class Program
                 .Set(new Position3D(20, 0, 0))
                 .Set(new Size3D(1f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.25f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
 
             World.CreateEntity()
@@ -216,9 +310,170 @@ internal static class Program
                 .Set(new Position3D(22, 0, 0))
                 .Set(new Size3D(0.4f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.25f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
 
+            // Example usage:
+            // SetSkybox("Assets/skybox.jpg", 50f);
+            // Or, for cubemap:
+            SetSkyboxCube([
+                "Assets/Sky/px.png","Assets/Sky/nx.png",
+                "Assets/Sky/py.png","Assets/Sky/ny.png",
+                "Assets/Sky/pz.png","Assets/Sky/nz.png"
+            ]);
+        }
+
+        /// <summary>
+        /// Creates a large textured sphere centered on the camera and draws it as a skybox.
+        /// Pass a 2D panoramic/equirectangular image (JPG/PNG) or DDS. Call once to set/replace.
+        /// </summary>
+        private void SetSkybox(string path, float scale = 50f)
+        {
+            var tex = LoadTextureFromFile(path);
+            if (tex == null)
+            {
+                Console.WriteLine($"[SetSkybox] Failed to load skybox texture: {path}");
+                _skyboxEnabled = false;
+                return;
+            }
+
+            _skyboxTexture?.Dispose();
+            _skyboxTexture = tex;
+            _skyboxScale = scale;
+
+            if (_skyboxMesh == null)
+            {
+                var mesh = Mesh.CreateSphere3D();
+                _skyboxMesh = GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "SkyboxSphere");
+            }
+
+            _skyboxEnabled = true;
+        }
+
+        // Normalize to TitleStorage-friendly relative POSIX path
+        private static string NormalizeTitlePath(string path)
+        {
+            var normalized = path.Replace('\\', '/');
+            if (Path.IsPathRooted(normalized))
+            {
+                var baseDir = AppContext.BaseDirectory.Replace('\\', '/');
+                if (normalized.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    normalized = normalized.Substring(baseDir.Length);
+                }
+                else
+                {
+                    // Leave as-is; TitleStorage calls will fail and log
+                }
+            }
+            return normalized.TrimStart('/');
+        }
+
+        /// <summary>
+        /// Creates a cubemap texture from six images. Expected order: +X, -X, +Y, -Y, +Z, -Z.
+        /// All images must be square and same size. Returns null on failure.
+        /// </summary>
+        private Texture? CreateCubemapFromSixFiles(string posX, string negX, string posY, string negY, string posZ, string negZ)
+        {
+            string[] input =
+            [
+                NormalizeTitlePath(posX),
+                NormalizeTitlePath(negX),
+                NormalizeTitlePath(posY),
+                NormalizeTitlePath(negY),
+                NormalizeTitlePath(posZ),
+                NormalizeTitlePath(negZ)
+            ];
+
+            // Validate existence and gather dimensions
+            uint size = 0;
+            for (int i = 0; i < 6; i++)
+            {
+                if (!RootTitleStorage.GetFileSize(input[i], out _))
+                {
+                    Console.WriteLine($"[CreateCubemap] Missing file: {input[i]}");
+                    return null;
+                }
+                if (!MoonWorks.Graphics.ImageUtils.ImageInfoFromFile(RootTitleStorage, input[i], out var w, out var h, out _))
+                {
+                    Console.WriteLine($"[CreateCubemap] Unsupported or corrupt image: {input[i]}");
+                    return null;
+                }
+                if (w != h)
+                {
+                    Console.WriteLine($"[CreateCubemap] Image is not square: {input[i]} ({w}x{h})");
+                    return null;
+                }
+                if (i == 0) { size = w; }
+                else if (w != size || h != size)
+                {
+                    Console.WriteLine($"[CreateCubemap] Image size mismatch: {input[i]} ({w}x{h}) expected {size}x{size}");
+                    return null;
+                }
+            }
+
+            using var uploader = new ResourceUploader(GraphicsDevice);
+            var cube = Texture.CreateCube(GraphicsDevice, "Cubemap", size, TextureFormat.R8G8B8A8Unorm, TextureUsageFlags.Sampler, levelCount: 1);
+            if (cube == null)
+            {
+                Console.WriteLine("[CreateCubemap] Failed to create cube texture");
+                return null;
+            }
+
+            for (int face = 0; face < 6; face++)
+            {
+                var region = new TextureRegion
+                {
+                    Texture = cube.Handle,
+                    Layer = (uint)face,
+                    MipLevel = 0,
+                    X = 0,
+                    Y = 0,
+                    Z = 0,
+                    W = size,
+                    H = size,
+                    D = 1
+                };
+                uploader.SetTextureDataFromCompressed(RootTitleStorage, input[face], region);
+            }
+
+            uploader.UploadAndWait();
+            return cube;
+        }
+
+        /// <summary>
+        /// Sets a cubemap skybox using 6 face file paths in the order:
+        /// +X, -X, +Y, -Y, +Z, -Z. Builds a cube mesh if needed and binds a cubemap pipeline.
+        /// </summary>
+        private void SetSkyboxCube(string[] facePaths, float scale = 50f)
+        {
+            if (facePaths == null || facePaths.Length != 6)
+            {
+                Console.WriteLine("[SetSkyboxCube] Provide exactly 6 file paths: +X,-X,+Y,-Y,+Z,-Z");
+                _skyboxEnabled = false;
+                return;
+            }
+
+            var cubeTex = CreateCubemapFromSixFiles(facePaths[0], facePaths[1], facePaths[2], facePaths[3], facePaths[4], facePaths[5]);
+            if (cubeTex == null)
+            {
+                Console.WriteLine("[SetSkyboxCube] Failed to create cubemap");
+                _skyboxEnabled = false;
+                return;
+            }
+
+            _skyboxTexture?.Dispose();
+            _skyboxTexture = cubeTex;
+            _skyboxScale = scale;
+
+            // Use a cube mesh so positions map to cube directions cleanly
+            if (_skyboxMesh == null)
+            {
+                var cube = Mesh.CreateBox3D(1, 1, 1);
+                _skyboxMesh = GpuMesh.Upload(GraphicsDevice, cube.Vertices.AsSpan(), cube.Indices.AsSpan(), "SkyboxCubeMesh");
+            }
+
+            _skyboxEnabled = true;
         }
 
         private Texture CreateSolidTexture(byte r, byte g, byte b, byte a)
@@ -410,6 +665,25 @@ internal static class Program
             /////////////////////
             var pass = cmdbuf.BeginRenderPass(depthTarget, colorTarget);
 
+            // Draw skybox first (no depth write/test) so world renders on top
+            if (_skyboxEnabled && _skyboxTexture != null && _skyboxMesh.HasValue)
+            {
+                // Choose pipeline based on texture type
+                var isCube = _skyboxTexture.Type == TextureType.Cube;
+                pass.BindGraphicsPipeline(isCube ? _skyboxCubePipeline! : _skyboxPipeline!);
+                var skyMesh = _skyboxMesh.Value;
+                skyMesh.Bind(pass);
+                // Use wrap sampling for skyboxes
+                var skySampler = Sampler.Create(GraphicsDevice, SamplerCreateInfo.LinearWrap);
+                pass.BindFragmentSamplers(0, new TextureSamplerBinding[] { new(_skyboxTexture, skySampler) });
+
+                var modelSky = Matrix4x4.CreateScale(_skyboxScale) * Matrix4x4.CreateTranslation(_camera.Position);
+                var mvpSky = modelSky * _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
+                cmdbuf.PushVertexUniformData(mvpSky, slot: 0);
+                pass.DrawIndexedPrimitives(skyMesh.IndexCount, 1, 0, 0, 0);
+                skySampler.Dispose();
+            }
+
             pass.BindGraphicsPipeline(_pipeline!);
 
 
@@ -552,8 +826,11 @@ internal static class Program
             _msaaColor?.Dispose();
             _msaaDepth?.Dispose();
             _pipeline?.Dispose();
+            _skyboxPipeline?.Dispose();
+            _skyboxCubePipeline?.Dispose();
             _whiteTexture?.Dispose();
             _checkerTexture?.Dispose();
+            _skyboxTexture?.Dispose();
         }
     }
 }
