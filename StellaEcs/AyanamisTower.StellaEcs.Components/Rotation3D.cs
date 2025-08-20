@@ -11,6 +11,21 @@ namespace AyanamisTower.StellaEcs.Components;
 public struct Rotation3D : IEquatable<Rotation3D>
 {
     /// <summary>
+    /// Initializes a new instance of the <see cref="Rotation3D"/> struct.
+    /// </summary>
+    /// <param name="rotation"></param>
+    public Rotation3D(Quaternion rotation)
+    {
+        Value = rotation;
+    }
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Rotation3D"/> struct.
+    /// </summary>
+    public Rotation3D()
+    {
+        Value = Quaternion.Identity;
+    }
+    /// <summary>
     /// The quaternion representing the rotation.
     /// </summary>
     public Quaternion Value;

@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using AyanamisTower.StellaEcs.Api;
+using AyanamisTower.StellaEcs.Components;
 using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Input;
@@ -168,10 +169,21 @@ internal static class Program
                 entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
             });
 
-            World.CreateEntity().Set(Mesh.CreateBox3D().Scale(2.5f));
-            World.CreateEntity().Set(Mesh.CreateBox3D().Scale(2.5f).Translate(new(3f, 0f, 0f)));
+            World.CreateEntity().Set(Mesh.CreateBox3D()).Set(new Size3D(1f))
+;
+            World.CreateEntity()
+                .Set(Mesh.CreateBox3D())
+                .Set(new Position3D(3, 0, 0))
+                .Set(Rotation3D.Identity)
+                .Set(new Velocity3D(0.1f, 0, 0))
+                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new Size3D(1f));
 
-            World.CreateEntity().Set(Mesh.CreateSphere3D().Scale(2.5f).Translate(new(3f, 6f, 2f)));
+            World.CreateEntity().Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(0, -5, 0))
+                .Set(new Size3D(1f))
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f));
         }
 
 
@@ -221,7 +233,28 @@ internal static class Program
                 gpuMesh.Bind(pass);
 
                 // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
-                var model = Matrix4x4.CreateFromYawPitchRoll(_angle, _angle * 0.5f, 0) * Matrix4x4.CreateScale(0.8f);
+                // Translation from ECS Position3D (if present)
+                Vector3 translation = Vector3.Zero;
+                if (entity.Has<Position3D>())
+                {
+                    translation = entity.GetCopy<Position3D>().Value;
+                }
+
+                Quaternion rotation = Quaternion.Identity;
+                if (entity.Has<Rotation3D>())
+                {
+                    rotation = entity.GetCopy<Rotation3D>().Value;
+                }
+
+                Vector3 size = Vector3.One;
+                if (entity.Has<Size3D>())
+                {
+                    size = entity.GetCopy<Size3D>().Value;
+                }
+
+                // Apply transforms in the correct order so translation is not affected by scale:
+                // Scale -> Rotate -> Translate
+                var model = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(translation);
                 var mvp = model * _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
 
                 cmdbuf.PushVertexUniformData(mvp, slot: 0);
