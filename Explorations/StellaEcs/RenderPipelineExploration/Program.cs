@@ -250,15 +250,22 @@ internal static class Program
             GraphicsDevice.Submit(cmdbuf);
         }
 
+
+        /// <summary>
+        /// Ensures that the MSAA targets are created and match the size of the backbuffer.
+        /// We must do this when resizing the window or changing the DPI. Otherwise there will
+        /// be a mismatch and most likely artifacts or a crash.
+        /// </summary>
         private void EnsureMsaaTargets(Texture backbuffer)
         {
             // Only recreate when using MSAA
             if (_msaaSamples == SampleCount.One)
             {
                 // If MSAA is disabled, dispose any MSAA resources
-                if (_msaaColor != null) { _msaaColor.Dispose(); _msaaColor = null; }
-                if (_msaaDepth != null) { _msaaDepth.Dispose(); _msaaDepth = null; }
-                return;
+                _msaaColor?.Dispose();
+                _msaaColor = null;
+                _msaaDepth?.Dispose();
+                _msaaDepth = null; return;
             }
 
             bool needsColor = _msaaColor == null || _msaaColor.Width != backbuffer.Width || _msaaColor.Height != backbuffer.Height;
