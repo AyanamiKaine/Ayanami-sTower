@@ -8,6 +8,7 @@ using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Input;
 using MoonWorks.Storage;
+using StellaInvicta;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -391,6 +392,31 @@ internal static class Program
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
 
+
+            World.CreateEntity()
+                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(2000, 0, 0)))
+                .Set(new Color(255, 64, 64, 255));
+
+            World.CreateEntity()
+                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(-2000, 0, 0)))
+                .Set(new Color(255, 64, 64, 255));
+
+            World.CreateEntity()
+                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, 0, 2000)))
+                .Set(Color.Blue);
+
+            World.CreateEntity()
+                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, 0, -2000)))
+                .Set(Color.Blue);
+
+            World.CreateEntity()
+                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, 20000, 0)))
+                .Set(Color.Green);
+
+            World.CreateEntity()
+                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, -20000, 0)))
+                .Set(Color.Green);
+
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
             // Or, for cubemap:
@@ -730,12 +756,14 @@ internal static class Program
             // Example lines: axes at origin
             if (_lineBatch != null)
             {
-                var red = new Color(255, 64, 64, 255);
-                var grn = new Color(64, 255, 64, 255);
-                var blu = new Color(64, 128, 255, 255);
-                _lineBatch.AddLine(new Vector3(0, 0, 0), new Vector3(2, 0, 0), red);
-                _lineBatch.AddLine(new Vector3(0, 0, 0), new Vector3(0, 2, 0), grn);
-                _lineBatch.AddLine(new Vector3(0, 0, 0), new Vector3(0, 0, 2), blu);
+
+                foreach (var entity in World.Query(typeof(Line3D), typeof(Color)))
+                {
+                    var line = entity.GetMut<Line3D>();
+                    var color = entity.GetMut<Color>();
+                    _lineBatch.AddLine(line.Start, line.End, color);
+                }
+
                 // Upload line vertex data
                 _lineBatch.UploadBufferData(cmdbuf);
             }
