@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace RenderPipelineExploration;
+namespace AyanamisTower.StellaEcs.StellaInvicta;
 
 
 /// <summary>

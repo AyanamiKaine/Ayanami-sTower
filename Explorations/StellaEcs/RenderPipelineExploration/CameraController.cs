@@ -3,7 +3,7 @@ using System.Numerics;
 using MoonWorks;
 using MoonWorks.Input;
 
-namespace RenderPipelineExploration;
+namespace AyanamisTower.StellaEcs.StellaInvicta;
 
 /// <summary>
 /// FPS-style camera controller with mouse-look and immediate movement (no smoothing).

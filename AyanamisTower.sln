@@ -239,7 +239,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.Exa
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StellaEcs", "StellaEcs", "{68D1A234-C82D-CE76-AFBA-4D848B48D636}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RenderPipelineExploration", "Explorations\StellaEcs\RenderPipelineExploration\RenderPipelineExploration.csproj", "{0EE55101-F20B-49D1-A868-9A3A0F5F680F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StellaInvicta", "Explorations\StellaEcs\RenderPipelineExploration\StellaInvicta.csproj", "{0EE55101-F20B-49D1-A868-9A3A0F5F680F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,7 +1,8 @@
 using System;
 using System.Numerics;
 
-namespace RenderPipelineExploration;
+namespace AyanamisTower.StellaEcs.StellaInvicta;
+
 
 /// <summary>
 /// Represents a 3D rotation in space.

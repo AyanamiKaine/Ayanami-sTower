@@ -4,19 +4,18 @@ using System.Runtime.InteropServices;
 using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Input;
-using RenderPipelineExploration;
 
-namespace AyanamisTower.StellaEcs.Example;
+namespace AyanamisTower.StellaEcs.StellaInvicta;
 
 internal static class Program
 {
     public static void Main()
     {
-        var game = new CubeGame();
+        var game = new StellaInvicta();
         game.Run();
     }
 
-    private sealed class CubeGame : Game
+    private sealed class StellaInvicta : Game
     {
         // Camera
         private Camera _camera = null!;
@@ -34,9 +33,9 @@ internal static class Program
         private SampleCount _msaaSamples = SampleCount.Four;
         private Texture? _msaaColor; // The offscreen texture for MSAA rendering
         private Texture? _msaaDepth; // The offscreen depth buffer (MSAA)
-        public CubeGame() : base(
-            new AppInfo("Ayanami", "Cube Demo"),
-            new WindowCreateInfo("MoonWorks Cube", 1280, 720, ScreenMode.Windowed, true, false, false),
+        public StellaInvicta() : base(
+            new AppInfo("Ayanami", "Stella Invicta Demo"),
+            new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
             FramePacingSettings.CreateUncapped(165),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
