@@ -37,16 +37,19 @@ internal static class Program
         public CubeGame() : base(
             new AppInfo("Ayanami", "Cube Demo"),
             new WindowCreateInfo("MoonWorks Cube", 1280, 720, ScreenMode.Windowed, true, false, false),
-            FramePacingSettings.CreateUncapped(120),
+            FramePacingSettings.CreateUncapped(165),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
             InitializeScene();
-        }
+        }   
 
         public void EnableVSync()
         {
             GraphicsDevice.SetSwapchainParameters(MainWindow, MainWindow.SwapchainComposition, PresentMode.VSync);
+
+            // Can improve the frame latency
+            // GraphicsDevice.SetAllowedFramesInFlight(1);
         }
 
         private void InitializeScene()
