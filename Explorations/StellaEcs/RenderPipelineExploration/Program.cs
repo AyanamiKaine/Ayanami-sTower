@@ -354,10 +354,10 @@ internal static class Program
             World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(7.7f * 4, 0, 5))
+                .Set(new Position3D(7.7f, 0, 5))
                 .Set(new Size3D(0.1f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0f, 0.002f, 0f))
+                .Set(new AngularVelocity3D(0.002f, 0.062f, 0.012f))
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
