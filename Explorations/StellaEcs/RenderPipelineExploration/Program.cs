@@ -522,7 +522,7 @@ internal static class Program
                 .Set(new Position3D(7.7f, 0, 5))
                 .Set(new Size3D(0.1f))
                 .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.5f)))
+                .Set(new CollisionShape(new Sphere(0.1f)))
                 .Set(new AngularVelocity3D(0f, 0.05f, 0f))
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
@@ -543,9 +543,11 @@ internal static class Program
             // Venus: The second planet from the Sun.
             var venus = World.CreateEntity()
                 .Set(new CelestialBody())
+                .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(14.5f * 4, 0, 0))
                 .Set(new Size3D(0.95f))
+                .Set(new CollisionShape(new Sphere(0.95f)))
                 .Set(Rotation3D.Identity)
                 .Set(new Parent(sun))
                 .Set(new AngularVelocity3D(0f, 0.01f, 0f))
@@ -553,21 +555,25 @@ internal static class Program
 
             var earth = World.CreateEntity()
                 .Set(new CelestialBody())
+                .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(20.0f * 4, 0, 8))
                 .Set(new Size3D(1.0f))
                 .Set(Rotation3D.Identity)
                 .Set(new Parent(sun))
+                .Set(new CollisionShape(new Sphere(1f)))
                 .Set(new AngularVelocity3D(0f, 0.012f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
 
             // The Moon: Positioned relative to Earth.
             World.CreateEntity()
                 .Set(new CelestialBody())
+                .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(21.5f * 4, 0, 6))
                 .Set(new Size3D(0.27f))
                 .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(1f)))
                 .Set(new AngularVelocity3D(0f, 0.05f, 0f))
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
