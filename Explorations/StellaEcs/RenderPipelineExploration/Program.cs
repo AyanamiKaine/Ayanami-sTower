@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using AyanamisTower.StellaEcs.Api;
 using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Input;
@@ -17,16 +18,16 @@ internal static class Program
 
     private sealed class StellaInvicta : Game
     {
+        /// <summary>
+        /// Represents the current game world.
+        /// </summary>
+        public readonly World World = new();
         // Camera
         private Camera _camera = null!;
         private CameraController _cameraController = null!;
 
         // GPU resources
         private GraphicsPipeline? _pipeline;
-        private MoonWorks.Graphics.Buffer? _vb;
-        private MoonWorks.Graphics.Buffer? _ib;
-        private uint _indexCount;
-
         // rotation
         private float _angle;
 
@@ -36,7 +37,7 @@ internal static class Program
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
-            FramePacingSettings.CreateUncapped(165),
+            FramePacingSettings.CreateCapped(165, 165),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
@@ -69,6 +70,15 @@ internal static class Program
 
         private void InitializeScene()
         {
+            var pluginLoader = new HotReloadablePluginLoader(World, "Plugins");
+
+            // 3. Load all plugins that already exist in the folder at startup.
+            pluginLoader.LoadAllExistingPlugins();
+
+            // 4. Start watching for any new plugins or changes.
+            pluginLoader.StartWatching();
+
+            World.EnableRestApi();
 
             EnableVSync();
 
@@ -153,51 +163,26 @@ internal static class Program
                 Name = "Basic3DObjectRenderer"
             });
 
-            CreateCubeBuffers();
+            World.OnSetPost((Entity entity, in Mesh _, in Mesh mesh, bool _) =>
+            {
+                entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
+            });
+
+            World.CreateEntity().Set(Mesh.CreateBox3D().Scale(2.5f));
+            World.CreateEntity().Set(Mesh.CreateBox3D().Scale(2.5f).Translate(new(3f, 0f, 0f)));
+
+            World.CreateEntity().Set(Mesh.CreateSphere3D().Scale(2.5f).Translate(new(3f, 6f, 2f)));
         }
 
-        private void CreateCubeBuffers()
-        {
-            // Simple unit box centered at origin with per-vertex colors
-            var box3DMesh = Mesh.CreateBox3D().Scale(2.5f);
-
-            _indexCount = (uint)box3DMesh.Indices.Length;
-
-            _vb = MoonWorks.Graphics.Buffer.Create<Vertex>(GraphicsDevice, "CubeVB", BufferUsageFlags.Vertex, (uint)box3DMesh.Vertices.Length);
-            _ib = MoonWorks.Graphics.Buffer.Create<uint>(GraphicsDevice, "CubeIB", BufferUsageFlags.Index, (uint)box3DMesh.Indices.Length);
-
-            var vUpload = TransferBuffer.Create<Vertex>(GraphicsDevice, "CubeVBUpload", TransferBufferUsage.Upload, (uint)box3DMesh.Vertices.Length);
-            var iUpload = TransferBuffer.Create<uint>(GraphicsDevice, "CubeIBUpload", TransferBufferUsage.Upload, (uint)box3DMesh.Indices.Length);
-
-            var vspan = vUpload.Map<Vertex>(cycle: false);
-            box3DMesh.Vertices.AsSpan().CopyTo(vspan);
-            vUpload.Unmap();
-
-            var ispan = iUpload.Map<uint>(cycle: false);
-            box3DMesh.Indices.AsSpan().CopyTo(ispan);
-            iUpload.Unmap();
-
-            var cmdbuf = GraphicsDevice.AcquireCommandBuffer();
-            var copy = cmdbuf.BeginCopyPass();
-            copy.UploadToBuffer(vUpload, _vb, false);
-            copy.UploadToBuffer(iUpload, _ib, false);
-            cmdbuf.EndCopyPass(copy);
-            GraphicsDevice.Submit(cmdbuf);
-
-            vUpload.Dispose();
-            iUpload.Dispose();
-        }
 
         protected override void Update(TimeSpan delta)
         {
             _angle += (float)delta.TotalSeconds * 0.7f;
             // Keep camera aspect up-to-date on resize
             _camera.Aspect = (float)((float)MainWindow.Width / MainWindow.Height);
-
             // Update camera via controller abstraction
             _cameraController.Update(Inputs, MainWindow, delta);
-
-            // Resize handling is performed in Draw using the actual swapchain texture size.
+            World.Update((float)delta.TotalSeconds);
         }
 
         protected override void Draw(double alpha)
@@ -209,7 +194,9 @@ internal static class Program
                 GraphicsDevice.Submit(cmdbuf);
                 return;
             }
-
+            /////////////////////
+            // MSAA PIPELINE STEP BEGIN 
+            /////////////////////
             // Ensure MSAA targets match the current swapchain size (handles window resizes, DPI changes, etc.)
             EnsureMsaaTargets(backbuffer);
 
@@ -220,16 +207,27 @@ internal static class Program
                 colorTarget.StoreOp = StoreOp.Resolve; // Perform resolve into swapchain
             }
             var depthTarget = new DepthStencilTargetInfo(_msaaDepth!, clearDepth: 1f);
+            /////////////////////
+            // RENDER PASS BEGIN
+            /////////////////////
             var pass = cmdbuf.BeginRenderPass(depthTarget, colorTarget);
 
             pass.BindGraphicsPipeline(_pipeline!);
-            pass.BindVertexBuffers(_vb!);
-            pass.BindIndexBuffer(_ib!, IndexElementSize.ThirtyTwo);
 
-            // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
-            var model = Matrix4x4.CreateFromYawPitchRoll(_angle, _angle * 0.5f, 0) * Matrix4x4.CreateScale(0.8f);
-            var mvp = model * _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
-            cmdbuf.PushVertexUniformData(mvp, slot: 0);
+
+            foreach (var entity in World.Query(typeof(GpuMesh)))
+            {
+                var gpuMesh = entity.GetMut<GpuMesh>();
+                gpuMesh.Bind(pass);
+
+                // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
+                var model = Matrix4x4.CreateFromYawPitchRoll(_angle, _angle * 0.5f, 0) * Matrix4x4.CreateScale(0.8f);
+                var mvp = model * _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
+
+                cmdbuf.PushVertexUniformData(mvp, slot: 0);
+                pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
+            }
+
 
             /*
 
@@ -262,9 +260,12 @@ internal static class Program
             */
 
 
-            pass.DrawIndexedPrimitives(_indexCount, 1, 0, 0, 0);
-
             cmdbuf.EndRenderPass(pass);
+
+            /////////////////////
+            // RENDER PASS END
+            /////////////////////
+
             GraphicsDevice.Submit(cmdbuf);
         }
 
@@ -322,8 +323,6 @@ internal static class Program
         {
             _msaaColor?.Dispose();
             _msaaDepth?.Dispose();
-            _vb?.Dispose();
-            _ib?.Dispose();
             _pipeline?.Dispose();
         }
     }
