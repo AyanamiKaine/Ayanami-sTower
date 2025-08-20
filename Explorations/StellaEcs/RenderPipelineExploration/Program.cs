@@ -193,7 +193,9 @@ internal static class Program
                 .Set(new Position3D(0, -5, 0))
                 .Set(new Size3D(1f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f));
+                .Set(new AngularVelocity3D(0.7f, 1.0f, 0f))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
+
             // Textured plane demo
             World.CreateEntity()
                 .Set(Mesh.CreatePlane3D())

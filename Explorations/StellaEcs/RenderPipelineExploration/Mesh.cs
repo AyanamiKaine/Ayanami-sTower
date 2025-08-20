@@ -166,14 +166,14 @@ public struct Mesh
                 int b0 = ((r + 1) * cols) + s;
                 int b1 = b0 + 1;
 
-                // Two triangles per quad, CCW winding
+                // Two triangles per quad, CCW winding (consistent with plane/box/torus)
                 indices[ii++] = (uint)a0;
-                indices[ii++] = (uint)b0;
                 indices[ii++] = (uint)a1;
+                indices[ii++] = (uint)b0;
 
                 indices[ii++] = (uint)a1;
-                indices[ii++] = (uint)b0;
                 indices[ii++] = (uint)b1;
+                indices[ii++] = (uint)b0;
             }
         }
 
