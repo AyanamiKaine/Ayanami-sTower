@@ -610,6 +610,11 @@ internal static class Program
                 .Set(Color.Green);
 
 
+            SpawnAsteroidField(new(20, 20, 20), 100, 20, 0.02f, 0.5f);
+            SpawnAsteroidField(new(-20, -20, -20), 100, 20, 0.02f, 0.5f);
+
+            SpawnAsteroidField(new(-30, -40, -60), 100, 20, 0.02f, 0.5f);
+
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
             // Or, for cubemap:
@@ -904,6 +909,58 @@ internal static class Program
                     .Set(new Texture2DRef { Texture = tex });
 
                 // Optional: physics collider so raycast picks them.
+                if (addStaticCollider)
+                {
+                    var sphereShape = new Sphere(s * 0.5f);
+                    var shapeIndex = _simulation.Shapes.Add(sphereShape);
+                    var staticDesc = new StaticDescription(pos, shapeIndex);
+                    _simulation.Statics.Add(staticDesc);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Spawns an asteroid field centered at `center` using simple sphere meshes and optional static colliders.
+        /// </summary>
+        /// <param name="center">World-space center of the asteroid field.</param>
+        /// <param name="count">Number of asteroids to spawn.</param>
+        /// <param name="fieldRadius">Radius of the spherical region to distribute asteroids in.</param>
+        /// <param name="minSize">Minimum asteroid uniform scale.</param>
+        /// <param name="maxSize">Maximum asteroid uniform scale.</param>
+        /// <param name="seed">Random seed for reproducible fields.</param>
+        /// <param name="addStaticCollider">If true, adds a static sphere collider for each asteroid.</param>
+        private void SpawnAsteroidField(Vector3 center, int count = 200, float fieldRadius = 100f, float minSize = 0.2f, float maxSize = 2.0f, int seed = 424242, bool addStaticCollider = true)
+        {
+            if (count <= 0) return;
+            var rng = new Random(seed);
+
+            var tex = _checkerTexture ?? _whiteTexture ?? CreateSolidTexture(255, 255, 255, 255);
+
+            // Shared CPU mesh for all asteroids
+            var sharedSphere = Mesh.CreateSphere3D();
+
+            for (int i = 0; i < count; i++)
+            {
+                // Uniform direction on sphere
+                float theta = (float)(rng.NextDouble() * Math.PI * 2.0);
+                float z = (float)(rng.NextDouble() * 2.0 - 1.0);
+                float rxy = MathF.Sqrt(Math.Max(0f, 1f - z * z));
+                var dir = new Vector3(rxy * MathF.Cos(theta), z, rxy * MathF.Sin(theta));
+
+                // Random distance inside sphere
+                float dist = (float)rng.NextDouble() * fieldRadius;
+                var pos = center + dir * dist;
+
+                float s = minSize + (float)rng.NextDouble() * (maxSize - minSize);
+
+                var e = World.CreateEntity()
+                    .Set(new CelestialBody())
+                    .Set(sharedSphere)
+                    .Set(new Position3D(pos.X, pos.Y, pos.Z))
+                    .Set(new Size3D(s))
+                    .Set(Rotation3D.Identity)
+                    .Set(new Texture2DRef { Texture = tex });
+
                 if (addStaticCollider)
                 {
                     var sphereShape = new Sphere(s * 0.5f);
