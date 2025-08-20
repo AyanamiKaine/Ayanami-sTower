@@ -262,8 +262,8 @@ public struct Mesh
                 // Normal is offset normalized (independent of r)
                 var normal = Vector3.Normalize((cosV * dir) + (sinV * up));
                 var color = 0.5f * (normal + Vector3.One);
-
-                vertices[vi++] = new Vertex(pos, normal, color);
+                var uv = new Vector2(u, 1f - v);
+                vertices[vi++] = new Vertex(pos, normal, color, uv);
             }
         }
 
@@ -346,7 +346,8 @@ public struct Mesh
                 // Side normal for frustum: normalize((h*cos, r', h*sin))
                 var n = Vector3.Normalize(new Vector3(h * cos, rPrime, h * sin));
                 var color = 0.5f * (n + Vector3.One);
-                vertices[vi++] = new Vertex(pos, n, color);
+                var uv = new Vector2(u, 1f - t);
+                vertices[vi++] = new Vertex(pos, n, color, uv);
             }
         }
 
@@ -362,10 +363,13 @@ public struct Mesh
             var pos = new Vector3(topRadius * cos, yTop, topRadius * sin);
             var n = Vector3.UnitY;
             var color = 0.5f * (n + Vector3.One);
-            vertices[vi++] = new Vertex(pos, n, color);
+            var uv = topRadius > 0
+                ? new Vector2(0.5f + 0.5f * cos, 0.5f + 0.5f * sin)
+                : new Vector2(0.5f, 0.5f);
+            vertices[vi++] = new Vertex(pos, n, color, uv);
         }
         int topCenterIndex = vi;
-        vertices[vi++] = new Vertex(new Vector3(0, yTop, 0), Vector3.UnitY, new Vector3(1, 1, 1));
+        vertices[vi++] = new Vertex(new Vector3(0, yTop, 0), Vector3.UnitY, new Vector3(1, 1, 1), new Vector2(0.5f, 0.5f));
 
         int botStart = vi;
         float yBot = -0.5f * h;
@@ -378,10 +382,13 @@ public struct Mesh
             var pos = new Vector3(bottomRadius * cos, yBot, bottomRadius * sin);
             var n = -Vector3.UnitY;
             var color = 0.5f * (n + Vector3.One);
-            vertices[vi++] = new Vertex(pos, n, color);
+            var uv = bottomRadius > 0
+                ? new Vector2(0.5f + 0.5f * cos, 0.5f + 0.5f * sin)
+                : new Vector2(0.5f, 0.5f);
+            vertices[vi++] = new Vertex(pos, n, color, uv);
         }
         int botCenterIndex = vi;
-        vertices[vi++] = new Vertex(new Vector3(0, yBot, 0), -Vector3.UnitY, new Vector3(1, 1, 1));
+        vertices[vi++] = new Vertex(new Vector3(0, yBot, 0), -Vector3.UnitY, new Vector3(1, 1, 1), new Vector2(0.5f, 0.5f));
 
         // Indices - sides
         int ii = 0;

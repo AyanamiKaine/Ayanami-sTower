@@ -202,6 +202,18 @@ internal static class Program
                 .Set(new Position3D(-3, 0, 0))
                 .Set(new Size3D(2f))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
+
+            World.CreateEntity()
+                .Set(Mesh.CreateCylinder3D())
+                .Set(new Position3D(-3, -5, -5))
+                .Set(new Size3D(1f))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
+
+            World.CreateEntity()
+                .Set(Mesh.CreateTorus3D())
+                .Set(new Position3D(-3, -5, 0))
+                .Set(new Size3D(1f))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
         }
 
         private Texture CreateSolidTexture(byte r, byte g, byte b, byte a)
