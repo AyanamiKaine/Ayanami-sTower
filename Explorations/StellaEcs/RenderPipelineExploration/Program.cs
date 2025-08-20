@@ -322,7 +322,8 @@ internal static class Program
                         new ColorTargetDescription
                         {
                             Format = MainWindow.SwapchainFormat,
-                            BlendState = ColorTargetBlendState.NoBlend
+                            // Use standard non-premultiplied alpha blending for line transparency
+                            BlendState = ColorTargetBlendState.NonPremultipliedAlphaBlend
                         }
                     ],
                     HasDepthStencilTarget = true,
@@ -348,6 +349,17 @@ internal static class Program
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
+
+
+            World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(7.7f * 4, 0, 5))
+                .Set(new Size3D(0.1f))
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(0f, 0.002f, 0f))
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             // Mercury: The closest planet to the Sun.
             var mercury = World.CreateEntity()
@@ -392,6 +404,12 @@ internal static class Program
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
 
+            SpawnGridXZ(
+                halfLines: 100,   // creates lines from -100..100 in both axes
+                step: 1f,         // 1 unit spacing
+                y: 0f,
+                color: new Color(255, 255, 255, 32) // more transparent grid to avoid white plane in distance
+            );
 
             World.CreateEntity()
                 .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(2000, 0, 0)))
@@ -417,6 +435,8 @@ internal static class Program
                 .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, -20000, 0)))
                 .Set(Color.Green);
 
+
+
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
             // Or, for cubemap:
@@ -425,6 +445,32 @@ internal static class Program
                 "Assets/Sky/py.png","Assets/Sky/ny.png",
                 "Assets/Sky/pz.png","Assets/Sky/nz.png"
             ]);
+        }
+
+        // Creates an XZ-plane grid centered at origin by spawning Line3D + Color entities.
+        // halfLines: number of lines to each side of origin (total = halfLines*2 + 1 per axis)
+        // step: spacing between neighboring lines
+        // y: elevation of the grid
+        // color: line color
+        private void SpawnGridXZ(int halfLines, float step, float y, Color color)
+        {
+            if (halfLines <= 0 || step <= 0f) { return; }
+
+            float extent = halfLines * step;
+            for (int i = -halfLines; i <= halfLines; i++)
+            {
+                float x = i * step;
+                // Lines parallel to Z (varying X)
+                World.CreateEntity()
+                    .Set(new Line3D(new Vector3(x, y, -extent), new Vector3(x, y, extent)))
+                    .Set(color);
+
+                float z = i * step;
+                // Lines parallel to X (varying Z)
+                World.CreateEntity()
+                    .Set(new Line3D(new Vector3(-extent, y, z), new Vector3(extent, y, z)))
+                    .Set(color);
+            }
         }
 
         /// <summary>
