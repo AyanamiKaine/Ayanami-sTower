@@ -971,6 +971,11 @@ internal static class Program
                 GraphicsDevice.Submit(cmdbuf);
                 return;
             }
+            // Compute view-projection and extract frustum once per frame.
+            var view = _camera.GetViewMatrix();
+            var proj = _camera.GetProjectionMatrix();
+            var viewProj = view * proj;
+            var frustum = ExtractFrustumPlanes(viewProj);
             // Prepare line batch for this frame and upload any lines
             _lineBatch?.Begin();
             // Example lines: axes at origin
@@ -1026,10 +1031,22 @@ internal static class Program
 
             pass.BindGraphicsPipeline(_pipeline!);
 
-
             foreach (var entity in World.Query(typeof(GpuMesh)))
             {
                 var gpuMesh = entity.GetMut<GpuMesh>();
+                // Gather transform components first (needed for culling, avoids binding for culled)
+                Vector3 translation = entity.Has<Position3D>() ? entity.GetMut<Position3D>().Value : Vector3.Zero;
+                Quaternion rotation = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                Vector3 size = entity.Has<Size3D>() ? entity.GetMut<Size3D>().Value : Vector3.One;
+
+                // Sphere culling: use a conservative radius based on max scale axis.
+                float radius = MathF.Max(size.X, MathF.Max(size.Y, size.Z));
+                if (!IsSphereVisible(translation, radius, frustum))
+                {
+                    continue; // culled
+                }
+
+                // Bind mesh only for visible entities
                 gpuMesh.Bind(pass);
 
                 // Bind entity texture if present, otherwise bind dummy
@@ -1042,29 +1059,8 @@ internal static class Program
                 pass.BindFragmentSamplers(new TextureSamplerBinding(texture, GraphicsDevice.LinearSampler));
 
                 // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
-                // Translation from ECS Position3D (if present)
-                Vector3 translation = Vector3.Zero;
-                if (entity.Has<Position3D>())
-                {
-                    translation = entity.GetMut<Position3D>().Value;
-                }
-
-                Quaternion rotation = Quaternion.Identity;
-                if (entity.Has<Rotation3D>())
-                {
-                    rotation = entity.GetMut<Rotation3D>().Value;
-                }
-
-                Vector3 size = Vector3.One;
-                if (entity.Has<Size3D>())
-                {
-                    size = entity.GetMut<Size3D>().Value;
-                }
-
-                // Apply transforms in the correct order so translation is not affected by scale:
-                // Scale -> Rotate -> Translate
                 var model = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(translation);
-                var mvp = model * _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
+                var mvp = model * viewProj;
 
                 cmdbuf.PushVertexUniformData(mvp, slot: 0);
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
@@ -1117,6 +1113,80 @@ internal static class Program
             /////////////////////
 
             GraphicsDevice.Submit(cmdbuf);
+        }
+
+        // Simple plane struct for frustum culling
+        private struct PlaneF
+        {
+            public Vector3 Normal;
+            public float D;
+        }
+
+        // Extracts six frustum planes from a view-projection matrix (row-major, v * M convention)
+        private static PlaneF[] ExtractFrustumPlanes(Matrix4x4 m)
+        {
+            var planes = new PlaneF[6];
+
+            // Left: row4 + row1
+            planes[0] = NormalizePlane(new PlaneF
+            {
+                Normal = new Vector3(m.M14 + m.M11, m.M24 + m.M21, m.M34 + m.M31),
+                D = m.M44 + m.M41
+            });
+            // Right: row4 - row1
+            planes[1] = NormalizePlane(new PlaneF
+            {
+                Normal = new Vector3(m.M14 - m.M11, m.M24 - m.M21, m.M34 - m.M31),
+                D = m.M44 - m.M41
+            });
+            // Bottom: row4 + row2
+            planes[2] = NormalizePlane(new PlaneF
+            {
+                Normal = new Vector3(m.M14 + m.M12, m.M24 + m.M22, m.M34 + m.M32),
+                D = m.M44 + m.M42
+            });
+            // Top: row4 - row2
+            planes[3] = NormalizePlane(new PlaneF
+            {
+                Normal = new Vector3(m.M14 - m.M12, m.M24 - m.M22, m.M34 - m.M32),
+                D = m.M44 - m.M42
+            });
+            // Near: row4 + row3 (for DX/Vulkan depth 0..1)
+            planes[4] = NormalizePlane(new PlaneF
+            {
+                Normal = new Vector3(m.M14 + m.M13, m.M24 + m.M23, m.M34 + m.M33),
+                D = m.M44 + m.M43
+            });
+            // Far: row4 - row3
+            planes[5] = NormalizePlane(new PlaneF
+            {
+                Normal = new Vector3(m.M14 - m.M13, m.M24 - m.M23, m.M34 - m.M33),
+                D = m.M44 - m.M43
+            });
+
+            return planes;
+        }
+
+        private static PlaneF NormalizePlane(PlaneF p)
+        {
+            float invLen = 1f / p.Normal.Length();
+            p.Normal *= invLen;
+            p.D *= invLen;
+            return p;
+        }
+
+        private static bool IsSphereVisible(Vector3 center, float radius, PlaneF[] frustum)
+        {
+            // Outside if outside any plane
+            for (int i = 0; i < 6; i++)
+            {
+                float dist = Vector3.Dot(frustum[i].Normal, center) + frustum[i].D;
+                if (dist < -radius)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
 
