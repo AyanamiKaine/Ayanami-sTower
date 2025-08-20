@@ -869,6 +869,10 @@ internal static class Program
                         var staticBody = _simulation.Statics[result.Collidable.StaticHandle];
                         // You could use a dictionary to map the handle back to your ECS entity here.
                         Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}. Position: {staticBody.Pose.Position}");
+
+                        _camera.Position = staticBody.Pose.Position + new Vector3(0, 10, 6); // Move camera to hit position
+                        _camera.LookAt(staticBody.Pose.Position); // Look at the hit position
+
                     }
                     else // It's a dynamic body
                     {
