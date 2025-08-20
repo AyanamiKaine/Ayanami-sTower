@@ -277,7 +277,7 @@ internal static class Program
             World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(0, 0, 0)) // Positioned at the origin
-                .Set(new Size3D(15.0f))
+                .Set(new Size3D(7.0f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
@@ -285,7 +285,7 @@ internal static class Program
             // Mercury: The closest planet to the Sun.
             World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(7.7f, 0, 0)) // Position is ~0.38 AU from the Sun
+                .Set(new Position3D(7.7f * 4, 0, 0)) // Position is ~0.38 AU from the Sun
                 .Set(new Size3D(0.38f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
@@ -294,7 +294,7 @@ internal static class Program
             // Venus: The second planet from the Sun.
             World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(14.5f, 0, 0)) // Position is ~0.72 AU from the Sun
+                .Set(new Position3D(14.5f * 4, 0, 0)) // Position is ~0.72 AU from the Sun
                 .Set(new Size3D(0.95f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
@@ -303,7 +303,7 @@ internal static class Program
             // Earth: Our baseline for distance (1 Astronomical Unit).
             World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(20.0f, 0, 0)) // We define this distance as 1 AU
+                .Set(new Position3D(20.0f * 4, 0, 0)) // We define this distance as 1 AU
                 .Set(new Size3D(1.0f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
@@ -312,7 +312,7 @@ internal static class Program
             // The Moon: Positioned relative to Earth.
             World.CreateEntity()
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(21.5f, 0, 0)) // Exaggerated distance from Earth for visibility
+                .Set(new Position3D(21.5f * 4, 0, 0)) // Exaggerated distance from Earth for visibility
                 .Set(new Size3D(0.27f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
