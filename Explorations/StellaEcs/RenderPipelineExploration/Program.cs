@@ -512,7 +512,7 @@ internal static class Program
                 .Set(new Size3D(7.0f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0f, 0f))
-                .Set(new CollisionShape(new Sphere(7.0f * 0.5f)))
+                .Set(new CollisionShape(new Sphere(7.0f * 0.6f)))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
 
             World.CreateEntity()
@@ -522,7 +522,7 @@ internal static class Program
                 .Set(new Position3D(7.7f, 0, 5))
                 .Set(new Size3D(0.1f))
                 .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.1f)))
+                .Set(new CollisionShape(new Sphere(0.1f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.05f, 0f))
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
@@ -534,7 +534,7 @@ internal static class Program
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(7.7f * 4, 0, 5))
                 .Set(new Size3D(0.38f))
-                .Set(new CollisionShape(new Sphere(0.38f)))
+                .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.002f, 0f))
                 .Set(new Parent(sun))
@@ -547,7 +547,7 @@ internal static class Program
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(14.5f * 4, 0, 0))
                 .Set(new Size3D(0.95f))
-                .Set(new CollisionShape(new Sphere(0.95f)))
+                .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
                 .Set(Rotation3D.Identity)
                 .Set(new Parent(sun))
                 .Set(new AngularVelocity3D(0f, 0.01f, 0f))
@@ -561,7 +561,7 @@ internal static class Program
                 .Set(new Size3D(1.0f))
                 .Set(Rotation3D.Identity)
                 .Set(new Parent(sun))
-                .Set(new CollisionShape(new Sphere(1f)))
+                .Set(new CollisionShape(new Sphere(1f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.012f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
 
@@ -573,7 +573,7 @@ internal static class Program
                 .Set(new Position3D(21.5f * 4, 0, 6))
                 .Set(new Size3D(0.27f))
                 .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(1f)))
+                .Set(new CollisionShape(new Sphere(0.27f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.05f, 0f))
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
@@ -1150,36 +1150,7 @@ internal static class Program
                 }
             }
 
-            // Debug: print current positions of all dynamic/kinematic bodies
-            if (Inputs.Mouse.RightButton.IsPressed)
-            {
-                LogAllDynamicPositions();
-            }
-
-
             World.Update((float)delta.TotalSeconds);
-
-        }
-
-        // Logs positions of all dynamic/kinematic bodies (entities with PhysicsBody) using simulation poses.
-        private void LogAllDynamicPositions()
-        {
-            int count = 0;
-            foreach (var entity in World.Query(typeof(PhysicsBody)))
-            {
-                var body = entity.GetMut<PhysicsBody>();
-                if (TryGetBodyRef(body.Handle, out var bodyRef))
-                {
-                    var p = bodyRef.Pose.Position;
-                    var o = bodyRef.Pose.Orientation;
-                    Console.WriteLine($"Dynamic Body {body.Handle.Value}: Pos=<{p.X:F3}, {p.Y:F3}, {p.Z:F3}> Ori=<{o.X:F3}, {o.Y:F3}, {o.Z:F3}, {o.W:F3}>");
-                    count++;
-                }
-            }
-            if (count == 0)
-            {
-                Console.WriteLine("No dynamic bodies found.");
-            }
         }
 
         protected override void Draw(double alpha)
