@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="BepuPhysics" />
     <PackageReference Include="StbImageSharp" />
   </ItemGroup>
 
