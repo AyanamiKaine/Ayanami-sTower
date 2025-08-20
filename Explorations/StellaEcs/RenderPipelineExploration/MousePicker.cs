@@ -83,7 +83,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
             // 6) Raycast.
             var hitHandler = new ClosestHitHandler();
-            _simulation.RayCast(rayOrigin, rayDirection, float.MaxValue, ref hitHandler);
+            _simulation.RayCast(rayOrigin, rayDirection, 1000f, ref hitHandler);
 
             // 7) Fill result if hit.
             if (hitHandler.HasHit)
@@ -143,13 +143,14 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     maximumT = t;
                 }
             }
-
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool AllowTest(CollidableReference collidable, int childIndex)
             {
                 return true;
             }
 
 #pragma warning disable RCS1242 // Do not pass non-read-only struct by read-only reference
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void OnRayHit(in RayData _, ref float maximumT, float t, Vector3 normal, CollidableReference collidable, int childIndex)
             {
                 // This is called for every object the ray intersects.
