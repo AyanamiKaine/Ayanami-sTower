@@ -11,6 +11,11 @@ using MoonWorks.Storage;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
+/// <summary>
+/// Represents a celestial body in the game world.
+/// </summary>
+public struct CelestialBody { };
+
 internal static class Program
 {
     public static void Main()
@@ -275,8 +280,9 @@ internal static class Program
 
             // The Sun: Center of the solar system.
             var sun = World.CreateEntity()
+                .Set(new CelestialBody())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(0, 0, 0)) // Positioned at the origin
+                .Set(new Position3D(0, 0, 0))
                 .Set(new Size3D(7.0f))
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.15f, 0f))
@@ -284,41 +290,44 @@ internal static class Program
 
             // Mercury: The closest planet to the Sun.
             var mercury = World.CreateEntity()
+                .Set(new CelestialBody())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(7.7f * 4, 0, 0)) // Position is ~0.38 AU from the Sun
+                .Set(new Position3D(7.7f * 4, 0, 5))
                 .Set(new Size3D(0.38f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0f, 0.15f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.002f, 0f))
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
 
             // Venus: The second planet from the Sun.
             var venus = World.CreateEntity()
+                .Set(new CelestialBody())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(14.5f * 4, 0, 0)) // Position is ~0.72 AU from the Sun
+                .Set(new Position3D(14.5f * 4, 0, 0))
                 .Set(new Size3D(0.95f))
                 .Set(Rotation3D.Identity)
                 .Set(new Parent(sun))
-                .Set(new AngularVelocity3D(0f, 0.15f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
 
-            // Earth: Our baseline for distance (1 Astronomical Unit).
             var earth = World.CreateEntity()
+                .Set(new CelestialBody())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(20.0f * 4, 0, 0)) // We define this distance as 1 AU
+                .Set(new Position3D(20.0f * 4, 0, 8))
                 .Set(new Size3D(1.0f))
                 .Set(Rotation3D.Identity)
                 .Set(new Parent(sun))
-                .Set(new AngularVelocity3D(0f, 0.15f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.012f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
 
             // The Moon: Positioned relative to Earth.
             World.CreateEntity()
+                .Set(new CelestialBody())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(21.5f * 4, 0, 0)) // Exaggerated distance from Earth for visibility
+                .Set(new Position3D(21.5f * 4, 0, 6))
                 .Set(new Size3D(0.27f))
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0f, 0.15f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.05f, 0f))
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
 

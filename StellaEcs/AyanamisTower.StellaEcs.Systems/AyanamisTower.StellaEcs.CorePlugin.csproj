@@ -38,9 +38,13 @@
       <PluginOutputDir>$(SolutionDir)Source/MyHostApp/bin/$(Configuration)/$(TargetFramework)/Plugins/$(ProjectName)/</PluginOutputDir>
     -->
     <PropertyGroup>
-      <!-- *** CUSTOMIZE THIS PATH *** -->
-      <HostAppBinDir>$(SolutionDir)/Build/bin/AyanamisTower.StellaEcs.Example/$(Configuration)/$(TargetFramework)/</HostAppBinDir>
-      <PluginOutputDir>$(HostAppBinDir)Plugins/$(ProjectName)/</PluginOutputDir>
+      <!-- Resolve repo root without relying on $(SolutionDir), which may be undefined in dotnet build -->
+      <_RepoRootFromProject>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)\..\..\'))</_RepoRootFromProject>
+      <RepoRoot Condition="'$(RepoRoot)' == ''">$(_RepoRootFromProject)</RepoRoot>
+
+      <!-- Final destinations (use backslashes for Windows; MSBuild normalizes) -->
+      <HostAppBinDir>$(RepoRoot)Build\bin\StellaInvicta\$(Configuration)\$(TargetFramework)\</HostAppBinDir>
+      <PluginOutputDir>$(HostAppBinDir)Plugins\$(ProjectName)\</PluginOutputDir>
     </PropertyGroup>
 
     <!-- 
@@ -69,14 +73,12 @@
     </ItemGroup>
   -->
     <ItemGroup>
-      <!-- The main plugin assembly -->
+      <!-- The main plugin assembly (always exists on successful build) -->
       <SourceFiles Include="$(TargetPath)" />
-      <!-- The dependency information file -->
-      <SourceFiles Include="$(TargetDir)$(TargetName).deps.json" />
-      <!-- The debugging symbols file (optional but recommended) -->
-      <SourceFiles Include="$(TargetDir)$(TargetName).pdb" />
-      <!-- The xml documentation file -->
-      <SourceFiles Include="$(TargetDir)$(TargetName).xml" />
+      <!-- Optional files: only include if present to prevent copy errors -->
+      <SourceFiles Include="$(TargetDir)$(TargetName).deps.json" Condition="Exists('$(TargetDir)$(TargetName).deps.json')" />
+      <SourceFiles Include="$(TargetDir)$(TargetName).pdb" Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+      <SourceFiles Include="$(TargetDir)$(TargetName).xml" Condition="Exists('$(TargetDir)$(TargetName).xml')" />
     </ItemGroup>
 
     <!--

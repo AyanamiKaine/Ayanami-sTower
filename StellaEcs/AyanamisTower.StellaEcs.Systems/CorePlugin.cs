@@ -72,7 +72,7 @@ public class CorePlugin : IPlugin
     /// <inheritdoc/>
     public IEnumerable<Type> ProvidedServices => [typeof(SearchService)];
     /// <inheritdoc/>
-    public IEnumerable<Type> ProvidedComponents => [typeof(Name), typeof(Position2D), typeof(Velocity2D), typeof(Position3D), typeof(Velocity3D), typeof(ColorRGBA), typeof(Rotation3D), typeof(AngularVelocity3D), typeof(Size3D)];
+    public IEnumerable<Type> ProvidedComponents => [typeof(Name), typeof(Position2D), typeof(Velocity2D), typeof(Position3D), typeof(LocalPosition3D), typeof(Velocity3D), typeof(ColorRGBA), typeof(Rotation3D), typeof(AngularVelocity3D), typeof(Size3D), typeof(LocalPosition3D)];
 
     /// <inheritdoc/>
     public void Initialize(World world)
@@ -83,17 +83,22 @@ public class CorePlugin : IPlugin
         world.RegisterComponent<Velocity2D>();
         world.RegisterComponent<Name>();
         world.RegisterComponent<Position3D>();
+        world.RegisterComponent<LocalPosition3D>();
         world.RegisterComponent<Velocity3D>();
         world.RegisterComponent<ColorRGBA>();
         world.RegisterComponent<Rotation3D>();
         world.RegisterComponent<AngularVelocity3D>();
         world.RegisterComponent<Size3D>();
+        world.RegisterComponent<LocalPosition3D>();
+
 
         world.RegisterSystem(new MovementSystem2D { Name = $"{Prefix}.{nameof(MovementSystem2D)}" }, this);
         world.RegisterSystem(new MovementSystem3D { Name = $"{Prefix}.{nameof(MovementSystem3D)}" }, this);
         world.RegisterSystem(new RotationSystem3D { Name = $"{Prefix}.{nameof(RotationSystem3D)}" }, this);
+        world.RegisterSystem(new OrbitSystem3D { Name = $"{Prefix}.{nameof(OrbitSystem3D)}" }, this);
+        world.RegisterSystem(new ParentChildPositionSyncSystem { Name = $"{Prefix}.{nameof(ParentChildPositionSyncSystem)}" }, this);
 
-        // Explicitly register ownership of component types
+
         foreach (var componentType in ProvidedComponents)
         {
             world.RegisterComponentOwner(componentType, this);
@@ -109,6 +114,8 @@ public class CorePlugin : IPlugin
         world.RemoveSystemByName($"{Prefix}.{nameof(MovementSystem2D)}");
         world.RemoveSystemByName($"{Prefix}.{nameof(MovementSystem3D)}");
         world.RemoveSystemByName($"{Prefix}.{nameof(RotationSystem3D)}");
+        world.RemoveSystemByName($"{Prefix}.{nameof(OrbitSystem3D)}");
+        world.RemoveSystemByName($"{Prefix}.{nameof(ParentChildPositionSyncSystem)}");
 
         foreach (var componentType in ProvidedComponents)
         {
