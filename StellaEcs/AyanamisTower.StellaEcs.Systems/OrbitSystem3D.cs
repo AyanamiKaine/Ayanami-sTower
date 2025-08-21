@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using AyanamisTower.StellaEcs.Components;
 
 namespace AyanamisTower.StellaEcs.CorePlugin;
@@ -20,10 +21,18 @@ public sealed class OrbitSystem3D : ISystem
     public void Update(World world, float deltaTime)
     {
         if (!Enabled) { return; }
-
         // Snapshot to avoid mutation issues while iterating
-        foreach (var entity in world.Query(typeof(Position3D), typeof(Parent), typeof(AngularVelocity3D)).ToList())
+        var entities = world.Query(typeof(Position3D), typeof(Parent), typeof(AngularVelocity3D)).ToList();
+        if (entities.Count == 0) return;
+
+        int n = entities.Count;
+        var newLocals = new LocalPosition3D[n];
+        var needSet = new bool[n];
+
+        // Compute rotations in parallel. Writes are stored and applied sequentially below.
+        Parallel.For(0, n, i =>
         {
+            var entity = entities[i];
             var parentRef = entity.GetCopy<Parent>();
             var childWorldPos = entity.GetCopy<Position3D>();
             var angVel = entity.GetCopy<AngularVelocity3D>();
@@ -32,7 +41,8 @@ public sealed class OrbitSystem3D : ISystem
             var parent = parentRef.Entity;
             if (!parent.Has<Position3D>())
             {
-                continue;
+                needSet[i] = false;
+                return;
             }
 
             var parentWorldPos = parent.GetCopy<Position3D>();
@@ -47,7 +57,6 @@ public sealed class OrbitSystem3D : ISystem
             {
                 // Initialize local from current world offset if missing
                 r = childWorldPos.Value - parentWorldPos.Value;
-                entity.Set(new LocalPosition3D(r.X, r.Y, r.Z));
             }
             float radiusSq = r.LengthSquared();
             if (radiusSq <= 1e-9f)
@@ -60,15 +69,32 @@ public sealed class OrbitSystem3D : ISystem
             float omega = angVel.Value.Y; // radians per second
             if (MathF.Abs(omega) <= 1e-6f)
             {
-                continue; // no orbit this frame
+                needSet[i] = false;
+                return; // no orbit this frame
             }
 
             float angle = omega * deltaTime;
             var q = Quaternion.CreateFromAxisAngle(Vector3.UnitY, angle);
             Vector3 rRot = Vector3.Transform(r, q);
 
-            // Write back rotated local offset; the ParentChildPositionSyncSystem will update world position.
-            entity.Set(new LocalPosition3D(rRot.X, rRot.Y, rRot.Z));
+            newLocals[i] = new LocalPosition3D(rRot.X, rRot.Y, rRot.Z);
+            needSet[i] = true;
+        });
+
+        // Apply writes sequentially to avoid concurrent mutation of the world.
+        for (int i = 0; i < n; ++i)
+        {
+            if (!needSet[i]) continue;
+            var entity = entities[i];
+            // If the entity lacks a LocalPosition3D set it; otherwise overwrite.
+            if (!entity.Has<LocalPosition3D>())
+            {
+                entity.Set(newLocals[i]);
+            }
+            else
+            {
+                entity.Set(newLocals[i]);
+            }
         }
     }
 }
