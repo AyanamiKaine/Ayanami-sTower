@@ -134,8 +134,8 @@ internal static class Program
         private bool _debugDrawEcsColliderPoses = false;
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
-            new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
-            FramePacingSettings.CreateCapped(165, 165),
+            new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, true),
+            FramePacingSettings.CreateCapped(60, 60),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
@@ -979,62 +979,80 @@ internal static class Program
         /// </summary>
         private Texture? LoadTextureFromFile(string path)
         {
-            // TitleStorage requires POSIX-style separators and relative paths.
-            // Normalize separators and, if given an absolute path, try to make it relative to the app base.
-            var normalized = path.Replace('\\', '/');
-            if (Path.IsPathRooted(normalized))
+            // Normalize to TitleStorage-friendly relative POSIX path
+            var normalized = NormalizeTitlePath(path);
+
+            // Quick existence + file size check
+            if (!RootTitleStorage.GetFileSize(normalized, out var fileSize))
             {
-                var baseDir = AppContext.BaseDirectory.Replace('\\', '/');
-                if (normalized.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
-                {
-                    normalized = normalized.Substring(baseDir.Length);
-                }
-                else
-                {
-                    Console.WriteLine($"[LoadTextureFromFile] Absolute path outside TitleStorage root not supported: {normalized}");
-                    return null;
-                }
+                Console.WriteLine($"[LoadTextureFromFile] File not found in TitleStorage: {normalized}");
+                return null;
             }
 
             // Choose loader by file extension
             var ext = Path.GetExtension(normalized).ToLowerInvariant();
 
             using var uploader = new ResourceUploader(GraphicsDevice);
-            Texture? texture;
+            Texture? texture = null;
             var name = Path.GetFileNameWithoutExtension(normalized);
-            if (ext == ".dds")
+
+            // Try to obtain basic image info (width/height). If this fails, prefer the explicit StbImageSharp fallback
+            bool haveImageInfo = false;
+            int imgW = 0, imgH = 0;
+            if (MoonWorks.Graphics.ImageUtils.ImageInfoFromFile(RootTitleStorage, normalized, out var w, out var h, out _))
             {
-                // Quick existence check
-                if (!RootTitleStorage.GetFileSize(normalized, out _))
+                imgW = (int)w;
+                imgH = (int)h;
+                haveImageInfo = true;
+                if (imgW < 1 || imgH < 1)
                 {
-                    Console.WriteLine($"[LoadTextureFromFile] File not found in TitleStorage: {normalized}");
+                    Console.WriteLine($"[LoadTextureFromFile] Image has invalid dimensions ({imgW}x{imgH}): {normalized}");
                     return null;
                 }
+            }
+
+            if (ext == ".dds")
+            {
                 texture = uploader.CreateTextureFromDDS(name, RootTitleStorage, normalized);
+                if (texture == null)
+                {
+                    Console.WriteLine($"[LoadTextureFromFile] CreateTextureFromDDS failed for: {normalized}");
+                    return null;
+                }
             }
             else
             {
-                // Quick existence check
-                if (!RootTitleStorage.GetFileSize(normalized, out _))
+                // Only attempt the compressed-path uploader if we successfully read image dimensions.
+                // Some backends may create an invalid/zero-sized texture if fed an unknown container.
+                if (haveImageInfo)
                 {
-                    Console.WriteLine($"[LoadTextureFromFile] File not found in TitleStorage: {normalized}");
-                    return null;
+                    texture = uploader.CreateTexture2DFromCompressed(
+                        name,
+                        RootTitleStorage,
+                        normalized,
+                        TextureFormat.R8G8B8A8Unorm,
+                        TextureUsageFlags.Sampler
+                    );
+
+                    if (texture == null)
+                    {
+                        Console.WriteLine($"[LoadTextureFromFile] CreateTexture2DFromCompressed returned null for: {normalized}, falling back to software decode");
+                    }
+                    else
+                    {
+                        // We trust ImageInfoFromFile here; assume texture dimensions match. If you still see assertions,
+                        // we'll fall back below when texture is null.
+                    }
                 }
-                texture = uploader.CreateTexture2DFromCompressed(
-                    name,
-                    RootTitleStorage,
-                    normalized,
-                    TextureFormat.R8G8B8A8Unorm,
-                    TextureUsageFlags.Sampler
-                );
+
                 if (texture == null)
                 {
                     // Fallback: try StbImageSharp to decode common formats (JPEG/PNG/etc.)
                     try
                     {
-                        if (!RootTitleStorage.GetFileSize(normalized, out var fileSize) || fileSize == 0)
+                        if (fileSize == 0)
                         {
-                            Console.WriteLine($"[LoadTextureFromFile] Fallback: file not found or empty: {normalized}");
+                            Console.WriteLine($"[LoadTextureFromFile] Fallback: file is empty: {normalized}");
                             return null;
                         }
 
@@ -1049,7 +1067,7 @@ internal static class Program
                         var img = StbImageSharp.ImageResult.FromMemory(bytes, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
                         if (img == null || img.Data == null || img.Width <= 0 || img.Height <= 0)
                         {
-                            Console.WriteLine($"[LoadTextureFromFile] Fallback: decode failed for: {normalized}");
+                            Console.WriteLine($"[LoadTextureFromFile] Fallback: decode failed or invalid dimensions for: {normalized}");
                             return null;
                         }
 
@@ -1061,6 +1079,7 @@ internal static class Program
                             (uint)img.Width,
                             (uint)img.Height
                         );
+
                         if (texture == null)
                         {
                             Console.WriteLine($"[LoadTextureFromFile] Fallback: texture creation failed for: {normalized}");
@@ -1073,6 +1092,13 @@ internal static class Program
                         return null;
                     }
                 }
+            }
+
+            // Final defensive validation
+            if (texture == null)
+            {
+                Console.WriteLine($"[LoadTextureFromFile] Failed to create texture for: {normalized}");
+                return null;
             }
 
             uploader.UploadAndWait();
