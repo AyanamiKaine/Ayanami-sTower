@@ -98,7 +98,7 @@ internal static class Program
         private BufferPool _bufferPool = null!;
         private ThreadDispatcher _threadDispatcher = null!;
         private MousePicker _mousePicker = null!;
-
+        private Entity? SunEntity;
         /// <summary>
         /// Represents the current game world.
         /// </summary>
@@ -504,79 +504,165 @@ internal static class Program
                 }
             });
 
+            // --- SCENE SETUP CONSTANTS ---
+            // We use Astronomical Units (AU) for realistic scaling. 1 AU = Distance from Earth to Sun.
+            // This scale factor determines how many units in our 3D world correspond to 1 AU.
+            // You can increase/decrease this value to make the solar system larger or smaller.
+            const float AU_SCALE_FACTOR = 40.0f;
+
+            // --- CELESTIAL BODY CREATION ---
+
             // The Sun: Center of the solar system.
+            // Note: The Sun's size is drastically scaled down for visibility.
+            // In reality, it's ~109 times the diameter of Earth.
             var sun = World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(0, 0, 0))
-                .Set(new Size3D(7.0f))
+                .Set(new Size3D(10.0f)) // Artistically scaled size
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0f, 0f, 0f))
-                .Set(new CollisionShape(new Sphere(7.0f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
+                .Set(new CollisionShape(new Sphere(10.0f * 0.6f)))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
 
-            World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(7.7f, 0, 5))
-                .Set(new Size3D(0.1f))
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.1f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.05f, 0f))
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+            SunEntity = sun;
 
-            // Mercury: The closest planet to the Sun.
+            // Mercury: 0.39 AU from the Sun.
             var mercury = World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(7.7f * 4, 0, 5))
-                .Set(new Size3D(0.38f))
-                .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
+                .Set(new Position3D(0.39f * AU_SCALE_FACTOR, 0, 0)) // distance = 0.39 AU
+                .Set(new Size3D(0.38f)) // size = 0.38x Earth
                 .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0f, 0.002f, 0f))
+                .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.048f, 0f)) // speed relative to Earth (fastest)
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
 
-            // Venus: The second planet from the Sun.
+            // Venus: 0.72 AU from the Sun.
             var venus = World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(14.5f * 4, 0, 0))
-                .Set(new Size3D(0.95f))
-                .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
+                .Set(new Position3D(0.72f * AU_SCALE_FACTOR, 0, 0)) // distance = 0.72 AU
+                .Set(new Size3D(0.95f)) // size = 0.95x Earth
                 .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.016f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new AngularVelocity3D(0f, 0.01f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
 
+            // Earth: 1.0 AU from the Sun (our baseline).
             var earth = World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(20.0f * 4, 0, 8))
-                .Set(new Size3D(1.0f))
+                .Set(new Position3D(1.0f * AU_SCALE_FACTOR, 0, 0)) // distance = 1.0 AU
+                .Set(new Size3D(1.0f)) // size = 1.0x (baseline)
                 .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed = baseline
                 .Set(new Parent(sun))
-                .Set(new CollisionShape(new Sphere(1f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.012f, 0f))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
 
             // The Moon: Positioned relative to Earth.
+            // Compute Earth's world position and place the moon at an offset from Earth.
+            // Also explicitly set LocalPosition3D so the OrbitSystem rotates around the Earth.
+            var earthPos = earth.GetCopy<Position3D>().Value;
+            var moonLocalOffset = new Vector3(2.0f, 0f, 0f); // distance from Earth in world units
+            var moonWorldPos = earthPos + moonLocalOffset;
+
             World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(21.5f * 4, 0, 6))
-                .Set(new Size3D(0.27f))
+                .Set(new Position3D(moonWorldPos.X, moonWorldPos.Y, moonWorldPos.Z))
+                .Set(new LocalPosition3D(moonLocalOffset.X, moonLocalOffset.Y, moonLocalOffset.Z))
+                .Set(new Size3D(0.27f)) // size = 0.27x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.27f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.05f, 0f))
+                .Set(new AngularVelocity3D(0f, 0.12f, 0f)) // Orbits Earth faster
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
+
+            // Mars: 1.52 AU from the Sun.
+            var mars = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(1.52f * AU_SCALE_FACTOR, 0, 0)) // distance = 1.52 AU
+                .Set(new Size3D(0.53f)) // size = 0.53x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.53f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.0053f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mars.jpg") ?? _checkerTexture! });
+
+            // Jupiter: 5.20 AU from the Sun.
+            var jupiter = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(5.20f * AU_SCALE_FACTOR, 0, 0)) // distance = 5.20 AU
+                .Set(new Size3D(4.5f)) // size = 11.2x Earth (scaled down artistically)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(4.5f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00084f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Jupiter.jpg") ?? _checkerTexture! });
+
+            // Saturn: 9.58 AU from the Sun.
+            var saturn = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(9.58f * AU_SCALE_FACTOR, 0, 0)) // distance = 9.58 AU
+                .Set(new Size3D(4.0f)) // size = 9.45x Earth (scaled down artistically)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(4.0f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00034f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Saturn.jpg") ?? _checkerTexture! });
+
+            // Uranus: 19.22 AU from the Sun.
+            var uranus = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(19.22f * AU_SCALE_FACTOR, 0, 0)) // distance = 19.22 AU
+                .Set(new Size3D(2.5f)) // size = 4.0x Earth (scaled down artistically)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(2.5f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00012f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Uranus.jpg") ?? _checkerTexture! });
+
+            // Neptune: 30.05 AU from the Sun. (Added for completeness)
+            var neptune = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(30.05f * AU_SCALE_FACTOR, 0, 0)) // distance = 30.05 AU
+                .Set(new Size3D(2.4f)) // size = 3.88x Earth (scaled down artistically)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(2.4f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00006f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Neptune.jpg") ?? _checkerTexture! });
+
+            // Pluto: 39.48 AU from the Sun (average).
+            var pluto = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(39.48f * AU_SCALE_FACTOR, 0, 0)) // distance = 39.48 AU
+                .Set(new Size3D(0.18f)) // size = 0.18x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.18f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00004f, 0f)) // speed relative to Earth (slowest)
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Pluto.jpg") ?? _checkerTexture! });
 
             SpawnGridXZ(
                 halfLines: 100,   // creates lines from -100..100 in both axes
@@ -612,8 +698,10 @@ internal static class Program
 
             SpawnAsteroidField(new(20, 0, 20), 20, 5, 0.002f, 0.05f);
             SpawnAsteroidField(new(-20, 0, -20), 20, 5, 0.002f, 0.05f);
-
             SpawnAsteroidField(new(-30, 0, -60), 20, 5, 0.002f, 0.05f);
+            SpawnAsteroidField(new(-30, 0, 60), 20, 5, 0.002f, 0.05f);
+            SpawnAsteroidField(new(-80, 0, -60), 20, 5, 0.002f, 0.05f);
+            SpawnAsteroidField(new(-30, 0, -20), 20, 5, 0.002f, 0.05f);
 
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
@@ -885,12 +973,12 @@ internal static class Program
             for (int i = 0; i < count; i++)
             {
                 // Random orbit radius and angle
-                float r = minOrbitRadius + (float)rng.NextDouble() * (maxOrbitRadius - minOrbitRadius);
+                float r = minOrbitRadius + ((float)rng.NextDouble() * (maxOrbitRadius - minOrbitRadius));
                 float angle = (float)(rng.NextDouble() * Math.PI * 2.0);
                 float yJitter = ((float)rng.NextDouble() - 0.5f) * 2f; // [-1,1]
 
                 var pos = new Vector3(MathF.Cos(angle) * r, yJitter, MathF.Sin(angle) * r);
-                float s = minScale + (float)rng.NextDouble() * (maxScale - minScale);
+                float s = minScale + ((float)rng.NextDouble() * (maxScale - minScale));
 
                 // Small random angular velocity
                 var angVel = new Vector3(
@@ -930,7 +1018,7 @@ internal static class Program
         /// <param name="seed">Random seed for reproducible fields.</param>
         /// <param name="addStaticCollider">If true, adds a static sphere collider for each asteroid.</param>
         /// <param name="planeThickness">Thickness of the asteroid field plane.</param>
-        private void SpawnAsteroidField(Vector3 center, int count = 200, float fieldRadius = 100f, float minSize = 0.2f, float maxSize = 2.0f, float planeThickness = 0.5f, int seed = 424242, bool addStaticCollider = true)
+        private void SpawnAsteroidField(Vector3 center, int count = 200, float fieldRadius = 100f, float minSize = 0.2f, float maxSize = 2.0f, float planeThickness = 0.5f, int seed = 424242, bool addStaticCollider = false)
         {
             if (count <= 0) return;
             var rng = new Random(seed);
@@ -946,21 +1034,25 @@ internal static class Program
                 float angle = (float)(rng.NextDouble() * Math.PI * 2.0);
                 // use sqrt(U) to produce uniform distribution over disk area
                 float r = (float)Math.Sqrt(rng.NextDouble()) * fieldRadius;
-                var x = center.X + MathF.Cos(angle) * r;
-                var z = center.Z + MathF.Sin(angle) * r;
+                var x = center.X + (MathF.Cos(angle) * r);
+                var z = center.Z + (MathF.Sin(angle) * r);
                 // Small Y jitter around center.Y so asteroids lie close to the orbital plane
-                float y = center.Y + ((float)rng.NextDouble() - 0.5f) * planeThickness;
+                float y = center.Y + (((float)rng.NextDouble() - 0.5f) * planeThickness);
 
                 var pos = new Vector3(x, y, z);
 
-                float s = minSize + (float)rng.NextDouble() * (maxSize - minSize);
+                float s = minSize + ((float)rng.NextDouble() * (maxSize - minSize));
 
                 var e = World.CreateEntity()
                     .Set(new CelestialBody())
                     .Set(sharedSphere)
+                    .Set(new Kinematic())
+                    .Set(new Parent((Entity)SunEntity!))
                     .Set(new Position3D(pos.X, pos.Y, pos.Z))
                     .Set(new Size3D(s))
+                    .Set(new CollisionShape(new Sphere(s)))
                     .Set(Rotation3D.Identity)
+                    .Set(new AngularVelocity3D(0, 0.005f, 0))
                     .Set(new Texture2DRef { Texture = tex });
 
                 if (addStaticCollider)
@@ -1510,7 +1602,7 @@ internal static class Program
                     Vector3 n = Vector3.Normalize(axis);
                     Vector3 u = Vector3.Normalize(Vector3.Cross(n, Math.Abs(n.Y) < 0.99f ? Vector3.UnitY : Vector3.UnitX));
                     Vector3 v = Vector3.Cross(n, u);
-                    Vector3 p = center + (u * MathF.Cos(ang) + v * MathF.Sin(ang)) * radius;
+                    Vector3 p = center + (((u * MathF.Cos(ang)) + (v * MathF.Sin(ang))) * radius);
                     if (hasPrev)
                     {
                         _lineBatch.AddLine(prev, p, color);
@@ -1562,18 +1654,18 @@ internal static class Program
             Vector3 up = Vector3.TransformNormal(Vector3.UnitY, rot);
             Vector3 right = Vector3.TransformNormal(Vector3.UnitX, rot);
             Vector3 forward = Vector3.TransformNormal(Vector3.UnitZ, rot);
-            Vector3 a = center + up * halfLength;
-            Vector3 b = center - up * halfLength;
+            Vector3 a = center + (up * halfLength);
+            Vector3 b = center - (up * halfLength);
             // cylinder rings
             for (int i = 0; i < segments; i++)
             {
                 float t0 = (float)i / segments * MathF.Tau;
                 float t1 = (float)(i + 1) / segments * MathF.Tau;
-                Vector3 r0 = right * MathF.Cos(t0) + forward * MathF.Sin(t0);
-                Vector3 r1 = right * MathF.Cos(t1) + forward * MathF.Sin(t1);
-                _lineBatch.AddLine(a + r0 * radius, a + r1 * radius, color);
-                _lineBatch.AddLine(b + r0 * radius, b + r1 * radius, color);
-                _lineBatch.AddLine(a + r0 * radius, b + r0 * radius, color);
+                Vector3 r0 = (right * MathF.Cos(t0)) + (forward * MathF.Sin(t0));
+                Vector3 r1 = (right * MathF.Cos(t1)) + (forward * MathF.Sin(t1));
+                _lineBatch.AddLine(a + (r0 * radius), a + (r1 * radius), color);
+                _lineBatch.AddLine(b + (r0 * radius), b + (r1 * radius), color);
+                _lineBatch.AddLine(a + (r0 * radius), b + (r0 * radius), color);
             }
             // hemispheres
             void Hemisphere(Vector3 centerHem, int sign)
@@ -1588,8 +1680,8 @@ internal static class Program
                     for (int ix = 0; ix <= segments; ix++)
                     {
                         float u = (float)ix / segments * MathF.Tau;
-                        Vector3 dir = right * (MathF.Cos(u) * r) + forward * (MathF.Sin(u) * r) + ringUp;
-                        Vector3 p = centerHem + dir * radius;
+                        Vector3 dir = (right * (MathF.Cos(u) * r)) + (forward * (MathF.Sin(u) * r)) + ringUp;
+                        Vector3 p = centerHem + (dir * radius);
                         if (hasPrev) _lineBatch.AddLine(prev, p, color);
                         prev = p; hasPrev = true;
                     }
@@ -1606,17 +1698,17 @@ internal static class Program
             Vector3 up = Vector3.TransformNormal(Vector3.UnitY, rot);
             Vector3 right = Vector3.TransformNormal(Vector3.UnitX, rot);
             Vector3 forward = Vector3.TransformNormal(Vector3.UnitZ, rot);
-            Vector3 a = center + up * halfLength;
-            Vector3 b = center - up * halfLength;
+            Vector3 a = center + (up * halfLength);
+            Vector3 b = center - (up * halfLength);
             for (int i = 0; i < segments; i++)
             {
                 float t0 = (float)i / segments * MathF.Tau;
                 float t1 = (float)(i + 1) / segments * MathF.Tau;
-                Vector3 r0 = right * MathF.Cos(t0) + forward * MathF.Sin(t0);
-                Vector3 r1 = right * MathF.Cos(t1) + forward * MathF.Sin(t1);
-                _lineBatch.AddLine(a + r0 * radius, a + r1 * radius, color);
-                _lineBatch.AddLine(b + r0 * radius, b + r1 * radius, color);
-                _lineBatch.AddLine(a + r0 * radius, b + r0 * radius, color);
+                Vector3 r0 = (right * MathF.Cos(t0)) + (forward * MathF.Sin(t0));
+                Vector3 r1 = (right * MathF.Cos(t1)) + (forward * MathF.Sin(t1));
+                _lineBatch.AddLine(a + (r0 * radius), a + (r1 * radius), color);
+                _lineBatch.AddLine(b + (r0 * radius), b + (r1 * radius), color);
+                _lineBatch.AddLine(a + (r0 * radius), b + (r0 * radius), color);
             }
         }
 
