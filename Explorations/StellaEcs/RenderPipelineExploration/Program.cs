@@ -102,7 +102,7 @@ internal static class Program
         /// <summary>
         /// Represents the current game world.
         /// </summary>
-        public readonly World World = new(100000);
+        public readonly World World = new(10000000);
         // Camera
         private Camera _camera = null!;
         private CameraController _cameraController = null!;
@@ -451,7 +451,7 @@ internal static class Program
                 Name = "LineColorRenderer"
             });
 
-            _lineBatch = new LineBatch3D(GraphicsDevice, 4096);
+            _lineBatch = new LineBatch3D(GraphicsDevice, 409600);
 
             World.OnSetPost((Entity entity, in Mesh _, in Mesh mesh, bool _) =>
             {
@@ -517,8 +517,9 @@ internal static class Program
             // In reality, it's ~109 times the diameter of Earth.
             var sun = World.CreateEntity()
                 .Set(new CelestialBody())
+                .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(0, 0, 0))
+                .Set(new Position3D(100, 0, 0))
                 .Set(new Size3D(10.0f)) // Artistically scaled size
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect

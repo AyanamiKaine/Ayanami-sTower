@@ -83,7 +83,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
             // 6) Raycast.
             var hitHandler = new ClosestHitHandler();
-            _simulation.RayCast(rayOrigin, rayDirection, 1000f, ref hitHandler);
+            _simulation.RayCast(rayOrigin, rayDirection, 50000f, ref hitHandler);
 
             // 7) Fill result if hit.
             if (hitHandler.HasHit)
