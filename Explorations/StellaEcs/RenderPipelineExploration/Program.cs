@@ -50,6 +50,263 @@ public struct PhysicsStatic
     public StaticHandle Handle;
 }
 
+/// <summary>
+/// Stores the absolute world position using double precision to avoid floating point issues.
+/// This is the "true" position in the universe, while Position3D stores the relative position
+/// from the current floating origin.
+/// </summary>
+public struct AbsolutePosition
+{
+    /// <summary>
+    /// The absolute position in double precision coordinates.
+    /// </summary>
+    public Vector3d Value;
+
+    /// <summary>
+    /// Creates a new AbsolutePosition with the specified position.
+    /// </summary>
+    public AbsolutePosition(Vector3d position)
+    {
+        Value = position;
+    }
+
+    /// <summary>
+    /// Creates a new AbsolutePosition with the specified coordinates.
+    /// </summary>
+    public AbsolutePosition(double x, double y, double z)
+    {
+        Value = new Vector3d(x, y, z);
+    }
+}
+
+/// <summary>
+/// A Vector3 using double precision for large coordinate values.
+/// </summary>
+public struct Vector3d
+{
+    /// <summary>X coordinate</summary>
+    public double X;
+    /// <summary>Y coordinate</summary>
+    public double Y;
+    /// <summary>Z coordinate</summary>
+    public double Z;
+
+    /// <summary>
+    /// Creates a new Vector3d with the specified coordinates.
+    /// </summary>
+    public Vector3d(double x, double y, double z)
+    {
+        X = x; Y = y; Z = z;
+    }
+
+    /// <summary>Adds two Vector3d instances.</summary>
+    public static Vector3d operator +(Vector3d a, Vector3d b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+    /// <summary>Subtracts two Vector3d instances.</summary>
+    public static Vector3d operator -(Vector3d a, Vector3d b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+    /// <summary>Multiplies a Vector3d by a scalar.</summary>
+    public static Vector3d operator *(Vector3d a, double scalar) => new(a.X * scalar, a.Y * scalar, a.Z * scalar);
+    /// <summary>Divides a Vector3d by a scalar.</summary>
+    public static Vector3d operator /(Vector3d a, double scalar) => new(a.X / scalar, a.Y / scalar, a.Z / scalar);
+
+    /// <summary>Implicitly converts Vector3d to Vector3 (with precision loss).</summary>
+    public static implicit operator Vector3(Vector3d v) => new((float)v.X, (float)v.Y, (float)v.Z);
+    /// <summary>Implicitly converts Vector3 to Vector3d.</summary>
+    public static implicit operator Vector3d(Vector3 v) => new(v.X, v.Y, v.Z);
+
+    /// <summary>Gets the length of the vector.</summary>
+    public double Length() => Math.Sqrt(X * X + Y * Y + Z * Z);
+    /// <summary>Returns a normalized version of this vector.</summary>
+    public Vector3d Normalized() => this / Length();
+
+    /// <summary>Zero vector constant.</summary>
+    public static readonly Vector3d Zero = new(0, 0, 0);
+
+    /// <summary>String representation of the vector.</summary>
+    public override string ToString() => $"({X:F2}, {Y:F2}, {Z:F2})";
+}
+
+/// <summary>
+/// Manages the floating origin system to prevent floating point precision issues.
+/// Periodically rebases all world coordinates by subtracting a large offset.
+/// </summary>
+public class FloatingOriginManager
+{
+    private Vector3d _currentOrigin = Vector3d.Zero;
+    private readonly double _rebaseThreshold;
+    private readonly World _world;
+    private readonly Simulation _simulation;
+
+    /// <summary>The current floating origin offset in world coordinates.</summary>
+    public Vector3d CurrentOrigin => _currentOrigin;
+    /// <summary>True if a rebase operation is currently in progress.</summary>
+    public bool IsRebasing { get; private set; }
+
+    /// <summary>
+    /// Creates a new FloatingOriginManager.
+    /// </summary>
+    /// <param name="world">The ECS world instance.</param>
+    /// <param name="simulation">The BepuPhysics simulation instance.</param>
+    /// <param name="rebaseThreshold">Distance threshold that triggers a rebase.</param>
+    public FloatingOriginManager(World world, Simulation simulation, double rebaseThreshold = 10000.0)
+    {
+        _world = world;
+        _simulation = simulation;
+        _rebaseThreshold = rebaseThreshold;
+    }
+
+    /// <summary>
+    /// Forces a rebase by a specific offset in world coordinates.
+    /// Callers should also subtract the same offset from the camera position to keep
+    /// the camera near the origin.
+    /// </summary>
+    public void ForceRebase(Vector3 offset)
+    {
+        var d = new Vector3d(offset.X, offset.Y, offset.Z);
+        PerformRebase(d);
+    }
+
+    /// <summary>
+    /// Checks if a rebase is needed based on the camera position and performs it if necessary.
+    /// Returns true if a rebase occurred and outputs the rebase offset that was applied.
+    /// The caller should subtract this offset from the camera position (and any other view-space
+    /// references) to keep them near the origin as well.
+    /// </summary>
+    public bool Update(Vector3 cameraPosition, out Vector3 rebaseOffset)
+    {
+        var cameraDistance = new Vector3d(cameraPosition.X, cameraPosition.Y, cameraPosition.Z).Length();
+
+        if (cameraDistance > _rebaseThreshold)
+        {
+            rebaseOffset = cameraPosition; // shift world by -camera, move origin by +camera
+            var rebaseOffsetD = new Vector3d(rebaseOffset.X, rebaseOffset.Y, rebaseOffset.Z);
+            PerformRebase(rebaseOffsetD);
+            return true;
+        }
+
+        rebaseOffset = default;
+        return false;
+    }
+
+    /// <summary>
+    /// Performs a floating origin rebase by shifting all entities and physics objects.
+    /// </summary>
+    private void PerformRebase(Vector3d offset)
+    {
+        IsRebasing = true;
+
+        // Update the current origin
+        _currentOrigin += offset;
+
+        // Rebase all entities with AbsolutePosition
+        foreach (var entity in _world.Query(typeof(AbsolutePosition)))
+        {
+            var absolutePos = entity.GetMut<AbsolutePosition>();
+
+            // Update relative position
+            var newRelativePos = absolutePos.Value - _currentOrigin;
+
+            if (entity.Has<Position3D>())
+            {
+                var relativeVector = (Vector3)newRelativePos;
+                entity.Set(new Position3D(relativeVector.X, relativeVector.Y, relativeVector.Z));
+            }
+        }
+
+        // Rebase physics objects
+        RebasePhysicsObjects(offset);
+
+        IsRebasing = false;
+    }
+
+    /// <summary>
+    /// Rebases all physics objects in the simulation.
+    /// </summary>
+    private void RebasePhysicsObjects(Vector3d offset)
+    {
+        var offsetVector = (Vector3)offset;
+
+        // Rebase kinematic/dynamic bodies
+        foreach (var entity in _world.Query(typeof(PhysicsBody)))
+        {
+            var physicsBody = entity.GetMut<PhysicsBody>();
+
+            if (TryGetBodyReference(physicsBody.Handle, out var bodyRef))
+            {
+                var currentPose = bodyRef.Pose;
+                var newPosition = currentPose.Position - offsetVector;
+                bodyRef.Pose = new RigidPose(newPosition, currentPose.Orientation);
+                bodyRef.Awake = true; // Ensure the body is awake after position change
+                _simulation.Bodies.UpdateBounds(physicsBody.Handle);
+            }
+        }
+
+        // Rebase static objects
+        foreach (var entity in _world.Query(typeof(PhysicsStatic)))
+        {
+            var physicsStatic = entity.GetMut<PhysicsStatic>();
+
+            if (TryGetStaticReference(physicsStatic.Handle, out var staticRef))
+            {
+                var currentPose = staticRef.Pose;
+                var newPosition = currentPose.Position - offsetVector;
+
+                // For static objects, we need to remove and re-add them with the new position
+                // since static objects in BepuPhysics don't allow direct position modification
+                var shapeIndex = staticRef.Shape;
+                _simulation.Statics.Remove(physicsStatic.Handle);
+
+                var newDesc = new StaticDescription(newPosition, shapeIndex);
+                var newHandle = _simulation.Statics.Add(newDesc);
+                entity.Set(new PhysicsStatic { Handle = newHandle });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Converts an absolute position to a relative position from the current origin.
+    /// </summary>
+    public Vector3 ToRelativePosition(Vector3d absolutePosition)
+    {
+        return (Vector3)(absolutePosition - _currentOrigin);
+    }
+
+    /// <summary>
+    /// Converts a relative position to an absolute position.
+    /// </summary>
+    public Vector3d ToAbsolutePosition(Vector3 relativePosition)
+    {
+        return _currentOrigin + new Vector3d(relativePosition.X, relativePosition.Y, relativePosition.Z);
+    }
+
+    private bool TryGetBodyReference(BodyHandle handle, out BodyReference bodyRef)
+    {
+        try
+        {
+            bodyRef = _simulation.Bodies.GetBodyReference(handle);
+            return true;
+        }
+        catch
+        {
+            bodyRef = default;
+            return false;
+        }
+    }
+
+    private bool TryGetStaticReference(StaticHandle handle, out StaticReference staticRef)
+    {
+        try
+        {
+            staticRef = _simulation.Statics[handle];
+            return true;
+        }
+        catch
+        {
+            staticRef = default;
+            return false;
+        }
+    }
+}
+
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
 {
@@ -132,6 +389,9 @@ internal static class Program
         private bool _debugDrawColliders = true;
         // If true, also draw ECS-declared collider poses (helps spot divergence). Off by default.
         private bool _debugDrawEcsColliderPoses = false;
+
+        // Floating origin system
+        private FloatingOriginManager? _floatingOriginManager;
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, true),
@@ -221,6 +481,10 @@ internal static class Program
 
             EnableVSync();
             InitializePhysics();
+
+            // Initialize floating origin system
+            _floatingOriginManager = new FloatingOriginManager(World, _simulation, 1000.0); // Rebase when camera is 1000 units from origin
+
             // Camera setup
             var aspect = (float)MainWindow.Width / MainWindow.Height;
             _camera = new Camera(new Vector3(0, 2, 6), Vector3.Zero, Vector3.UnitY)
@@ -519,7 +783,8 @@ internal static class Program
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(100, 0, 0))
+                .Set(new Position3D(0, 0, 0))
+                .Set(new AbsolutePosition(0, 0, 0)) // Store absolute position for floating origin
                 .Set(new Size3D(10.0f)) // Artistically scaled size
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
@@ -534,6 +799,7 @@ internal static class Program
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(0.39f * AU_SCALE_FACTOR, 0, 0)) // distance = 0.39 AU
+                .Set(new AbsolutePosition(0.39f * AU_SCALE_FACTOR, 0, 0)) // Store absolute position
                 .Set(new Size3D(0.38f)) // size = 0.38x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
@@ -1209,6 +1475,27 @@ internal static class Program
             // Update camera via controller abstraction
             _cameraController.Update(Inputs, MainWindow, delta);
 
+            // Update floating origin system (check if rebase is needed)
+            if (_floatingOriginManager != null)
+            {
+                if (_floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
+                {
+                    // Keep the camera near origin too so it doesn't immediately trigger another rebase
+                    _camera.Position -= rebaseOffset;
+                }
+            }
+
+            // Ensure entities with Position3D also have AbsolutePosition (for newly created entities)
+            foreach (var entity in World.Query(typeof(Position3D)))
+            {
+                if (!entity.Has<AbsolutePosition>())
+                {
+                    var pos = entity.GetMut<Position3D>().Value;
+                    var absolutePos = _floatingOriginManager?.ToAbsolutePosition(pos) ?? new Vector3d(pos.X, pos.Y, pos.Z);
+                    entity.Set(new AbsolutePosition(absolutePos));
+                }
+            }
+
             // Ensure any entities with CollisionShape have corresponding physics objects even if OnSetPost timing missed
             foreach (var e in World.Query(typeof(CollisionShape)))
             {
@@ -1286,6 +1573,8 @@ internal static class Program
             _simulation.Timestep((float)delta.TotalSeconds, _threadDispatcher);
 
             // Check for mouse click to perform picking
+            // Note: Mouse picking works correctly with floating origin since it operates on 
+            // the physics simulation's coordinate space which is kept relative to the current origin
             if (Inputs.Mouse.LeftButton.IsPressed)
             {
                 if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var result))
@@ -1296,10 +1585,20 @@ internal static class Program
                     {
                         if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
                         {
-                            // You could use a dictionary to map the handle back to your ECS entity here.
-                            Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}. Position: {staticBody.Pose.Position}");
-                            _camera.Position = staticBody.Pose.Position + new Vector3(0, 10, 6); // Move camera to hit position
-                            _camera.LookAt(staticBody.Pose.Position); // Look at the hit position
+                            // Rebase the world at the target so it sits at the grid origin, then place camera at desired offset
+                            if (_floatingOriginManager != null)
+                            {
+                                var offset = staticBody.Pose.Position; // shift world by -offset
+                                _floatingOriginManager.ForceRebase(offset);
+                                _camera.Position = new Vector3(0, 10, 6); // camera relative to new origin
+                                _camera.LookAt(Vector3.Zero);
+                            }
+                            else
+                            {
+                                // Fallback: no floating origin manager, just move camera in-place
+                                _camera.Position = staticBody.Pose.Position + new Vector3(0, 10, 6);
+                                _camera.LookAt(staticBody.Pose.Position);
+                            }
                         }
                         else
                         {
@@ -1312,9 +1611,18 @@ internal static class Program
                         if (TryGetBodyRef(bh, out var bref))
                         {
                             var p = bref.Pose.Position;
-                            Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}. Position: {p}");
-                            _camera.Position = p + new Vector3(0, 10, 6);
-                            _camera.LookAt(p);
+                            if (_floatingOriginManager != null)
+                            {
+                                _floatingOriginManager.ForceRebase(p);
+                                _camera.Position = new Vector3(0, 10, 6);
+                                _camera.LookAt(Vector3.Zero);
+                            }
+                            else
+                            {
+                                Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}. Position: {p}");
+                                _camera.Position = p + new Vector3(0, 10, 6);
+                                _camera.LookAt(p);
+                            }
                         }
                         else
                         {
@@ -1329,6 +1637,43 @@ internal static class Program
             }
 
             World.Update((float)delta.TotalSeconds);
+
+            // Debug: Print floating origin info (uncomment for debugging)
+            // if (_floatingOriginManager != null)
+            // {
+            //     var origin = _floatingOriginManager.CurrentOrigin;
+            //     var camDist = new Vector3d(_camera.Position.X, _camera.Position.Y, _camera.Position.Z).Length();
+            //     Console.WriteLine($"[FloatingOrigin] Current Origin: {origin}, Camera Distance from Origin: {camDist:F1}");
+            // }
+
+            // Debug: Press F5 to manually trigger a floating origin rebase for testing
+            if (Inputs.Keyboard.IsPressed(KeyCode.F5))
+            {
+                TestFloatingOriginRebase();
+            }
+        }
+
+        /// <summary>
+        /// Test method to manually trigger a floating origin rebase for debugging.
+        /// </summary>
+        private void TestFloatingOriginRebase()
+        {
+            if (_floatingOriginManager != null)
+            {
+                Console.WriteLine("[Test] Manually triggering floating origin rebase...");
+
+                // Simulate moving the camera far from origin to trigger rebase
+                var farPosition = new Vector3(5000, 0, 5000);
+                _camera.Position = farPosition;
+
+                // Force an update to trigger the rebase
+                if (_floatingOriginManager.Update(farPosition, out var rebaseOffset))
+                {
+                    _camera.Position -= rebaseOffset;
+                }
+
+                Console.WriteLine($"[Test] Camera moved to {farPosition}, rebase should have occurred.");
+            }
         }
 
         protected override void Draw(double alpha)
@@ -1833,6 +2178,9 @@ internal static class Program
             _whiteTexture?.Dispose();
             _checkerTexture?.Dispose();
             _skyboxTexture?.Dispose();
+
+            // Cleanup floating origin manager if needed
+            // _floatingOriginManager doesn't implement IDisposable, so no cleanup needed
         }
     }
 }

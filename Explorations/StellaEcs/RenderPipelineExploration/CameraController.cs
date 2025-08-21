@@ -21,7 +21,7 @@ public sealed class CameraController
     /// <summary>
     /// Multiplier applied to <see cref="MaxSpeed"/> while LeftShift is held.
     /// </summary>
-    public float SprintMultiplier { get; set; } = 1.8f;  // hold LeftShift
+    public float SprintMultiplier { get; set; } = 100.8f;  // hold LeftShift
     /// <summary>
     /// Mouse-look sensitivity in radians per mouse pixel.
     /// </summary>

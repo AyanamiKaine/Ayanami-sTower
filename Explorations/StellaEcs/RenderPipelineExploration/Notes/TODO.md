@@ -1,6 +1,6 @@
 ## TODO
 
--   [] Fix Floating point issue for large scale universe.
+-   [X] Fix Floating point issue for large scale universe.
 
 ### Possible options
 
