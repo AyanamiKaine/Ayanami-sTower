@@ -386,7 +386,7 @@ internal static class Program
         private GraphicsPipeline? _linePipeline;
         private LineBatch3D? _lineBatch;
         // Debug: visualize physics colliders with wireframes
-        private bool _debugDrawColliders = true;
+        private bool _debugDrawColliders = false;
         // If true, also draw ECS-declared collider poses (helps spot divergence). Off by default.
         private bool _debugDrawEcsColliderPoses = false;
 
@@ -970,6 +970,18 @@ internal static class Program
             SpawnAsteroidField(new(-80, 0, -60), 20, 5, 0.002f, 0.05f);
             SpawnAsteroidField(new(-30, 0, -20), 20, 5, 0.002f, 0.05f);
 
+            // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
+            // Uses the same AU scale factor defined above so radii match planet positions
+            SpawnAsteroidBelt(new Vector3(0, 0, 0),
+                count: 8000,
+                innerRadius: 2.2f * AU_SCALE_FACTOR,
+                outerRadius: 3.2f * AU_SCALE_FACTOR,
+                minSize: 0.02f,
+                maxSize: 0.05f,
+                inclinationDegrees: 1.5f,
+                seed: 8675309,
+                addStaticCollider: false);
+
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
             // Or, for cubemap:
@@ -1320,6 +1332,77 @@ internal static class Program
                     .Set(new CollisionShape(new Sphere(s)))
                     .Set(Rotation3D.Identity)
                     .Set(new AngularVelocity3D(0, 0.005f, 0))
+                    .Set(new Texture2DRef { Texture = tex });
+
+                if (addStaticCollider)
+                {
+                    var sphereShape = new Sphere(s * 0.5f);
+                    var shapeIndex = _simulation.Shapes.Add(sphereShape);
+                    var staticDesc = new StaticDescription(pos, shapeIndex);
+                    _simulation.Statics.Add(staticDesc);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Spawns an annular asteroid belt around a given center. Distributes asteroids between innerRadius and outerRadius
+        /// on the XZ plane with small random inclinations to give a torus-like appearance.
+        /// </summary>
+        /// <param name="center">Center of the belt (usually the star position)</param>
+        /// <param name="count">Total asteroids to spawn</param>
+        /// <param name="innerRadius">Inner radius of belt</param>
+        /// <param name="outerRadius">Outer radius of belt</param>
+        /// <param name="minSize">Minimum asteroid size</param>
+        /// <param name="maxSize">Maximum asteroid size</param>
+        /// <param name="inclinationDegrees">Max inclination in degrees applied as small tilt from XZ plane</param>
+        /// <param name="seed">Random seed</param>
+        /// <param name="addStaticCollider">If true, adds static colliders for picking</param>
+        private void SpawnAsteroidBelt(Vector3 center, int count = 1000, float innerRadius = 200f, float outerRadius = 400f, float minSize = 0.2f, float maxSize = 1.5f, float inclinationDegrees = 2.0f, int seed = 424242, bool addStaticCollider = false)
+        {
+            if (count <= 0) return;
+            if (innerRadius < 0f) innerRadius = 0f;
+            if (outerRadius < innerRadius) outerRadius = innerRadius + 1f;
+
+            var rng = new Random(seed);
+            var tex = _checkerTexture ?? _whiteTexture ?? CreateSolidTexture(255, 255, 255, 255);
+            var sharedSphere = Mesh.CreateSphere3D();
+
+            // convert inclination to radians
+            float inclRad = MathF.Abs(inclinationDegrees) * (MathF.PI / 180f);
+
+            for (int i = 0; i < count; i++)
+            {
+                // pick a radius with probability proportional to area (so uniform density across annulus)
+                float u = (float)rng.NextDouble();
+                float r = MathF.Sqrt(u * (outerRadius * outerRadius - innerRadius * innerRadius) + innerRadius * innerRadius);
+                float angle = (float)(rng.NextDouble() * Math.PI * 2.0);
+
+                // small inclination: tilt by a small angle around random node line
+                float tilt = ((float)rng.NextDouble() * 2f - 1f) * inclRad; // [-inclRad, inclRad]
+                // choose random longitude of ascending node
+                float node = (float)(rng.NextDouble() * Math.PI * 2.0);
+
+                // base position in XZ
+                float x = center.X + MathF.Cos(angle) * r;
+                float z = center.Z + MathF.Sin(angle) * r;
+                // apply inclination by rotating point about node axis roughly (approx)
+                // We'll compute small Y displacement using sin(tilt) * r * sin(some offset)
+                float y = center.Y + MathF.Sin(tilt) * r * MathF.Sin(angle - node);
+
+                var pos = new Vector3(x, y, z);
+
+                float s = minSize + ((float)rng.NextDouble() * (maxSize - minSize));
+
+                var e = World.CreateEntity()
+                    .Set(new CelestialBody())
+                    .Set(sharedSphere)
+                    .Set(new Kinematic())
+                    .Set(new Parent((Entity)SunEntity!))
+                    .Set(new Position3D(pos.X, pos.Y, pos.Z))
+                    .Set(new Size3D(s))
+                    .Set(new CollisionShape(new Sphere(s)))
+                    .Set(Rotation3D.Identity)
+                    .Set(new AngularVelocity3D(0, 0.0025f, 0))
                     .Set(new Texture2DRef { Texture = tex });
 
                 if (addStaticCollider)
