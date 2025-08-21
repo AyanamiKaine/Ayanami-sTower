@@ -355,6 +355,12 @@ internal static class Program
         private BufferPool _bufferPool = null!;
         private ThreadDispatcher _threadDispatcher = null!;
         private MousePicker _mousePicker = null!;
+        // Simulation speed control (press + / - to change)
+        private readonly float[] _timeScaleOptions = new float[] { 0.125f, 0.25f, 0.5f, 1f, 2f, 4f, 8f, 16f };
+        private int _timeScaleIndex = 3; // default = 1x
+        private float _timeScale => _timeScaleOptions[_timeScaleIndex];
+        private bool _prevIncreasePressed = false;
+        private bool _prevDecreasePressed = false;
         private Entity? SunEntity;
         /// <summary>
         /// Represents the current game world.
@@ -1558,6 +1564,20 @@ internal static class Program
             // Update camera via controller abstraction
             _cameraController.Update(Inputs, MainWindow, delta);
 
+            // Handle simulation speed +/- keys (edge-triggered)
+            bool incPressed = Inputs.Keyboard.IsPressed(KeyCode.KeypadPlus) || Inputs.Keyboard.IsPressed(KeyCode.Equals);
+            bool decPressed = Inputs.Keyboard.IsPressed(KeyCode.KeypadMinus) || Inputs.Keyboard.IsPressed(KeyCode.Minus);
+            if (incPressed && !_prevIncreasePressed)
+            {
+                if (_timeScaleIndex < _timeScaleOptions.Length - 1) { _timeScaleIndex++; Console.WriteLine($"[TimeScale] Increased to {_timeScale}x"); }
+            }
+            if (decPressed && !_prevDecreasePressed)
+            {
+                if (_timeScaleIndex > 0) { _timeScaleIndex--; Console.WriteLine($"[TimeScale] Decreased to {_timeScale}x"); }
+            }
+            _prevIncreasePressed = incPressed;
+            _prevDecreasePressed = decPressed;
+
             // Update floating origin system (check if rebase is needed)
             if (_floatingOriginManager != null)
             {
@@ -1653,7 +1673,9 @@ internal static class Program
                 }
             }
 
-            _simulation.Timestep((float)delta.TotalSeconds, _threadDispatcher);
+            // Apply timescale to simulation and world updates
+            var scaledSeconds = (float)delta.TotalSeconds * _timeScale;
+            _simulation.Timestep(scaledSeconds, _threadDispatcher);
 
             // Check for mouse click to perform picking
             // Note: Mouse picking works correctly with floating origin since it operates on 
@@ -1719,7 +1741,7 @@ internal static class Program
                 }
             }
 
-            World.Update((float)delta.TotalSeconds);
+            World.Update(scaledSeconds);
 
             // Debug: Print floating origin info (uncomment for debugging)
             // if (_floatingOriginManager != null)
