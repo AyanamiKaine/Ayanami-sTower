@@ -973,7 +973,7 @@ internal static class Program
             // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
             // Uses the same AU scale factor defined above so radii match planet positions
             SpawnAsteroidBelt(new Vector3(0, 0, 0),
-                count: 8000,
+                count: 4000,
                 innerRadius: 2.2f * AU_SCALE_FACTOR,
                 outerRadius: 3.2f * AU_SCALE_FACTOR,
                 minSize: 0.02f,
