@@ -610,10 +610,10 @@ internal static class Program
                 .Set(Color.Green);
 
 
-            SpawnAsteroidField(new(20, 20, 20), 100, 20, 0.02f, 0.5f);
-            SpawnAsteroidField(new(-20, -20, -20), 100, 20, 0.02f, 0.5f);
+            SpawnAsteroidField(new(20, 0, 20), 20, 5, 0.002f, 0.05f);
+            SpawnAsteroidField(new(-20, 0, -20), 20, 5, 0.002f, 0.05f);
 
-            SpawnAsteroidField(new(-30, -40, -60), 100, 20, 0.02f, 0.5f);
+            SpawnAsteroidField(new(-30, 0, -60), 20, 5, 0.002f, 0.05f);
 
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
@@ -929,7 +929,8 @@ internal static class Program
         /// <param name="maxSize">Maximum asteroid uniform scale.</param>
         /// <param name="seed">Random seed for reproducible fields.</param>
         /// <param name="addStaticCollider">If true, adds a static sphere collider for each asteroid.</param>
-        private void SpawnAsteroidField(Vector3 center, int count = 200, float fieldRadius = 100f, float minSize = 0.2f, float maxSize = 2.0f, int seed = 424242, bool addStaticCollider = true)
+        /// <param name="planeThickness">Thickness of the asteroid field plane.</param>
+        private void SpawnAsteroidField(Vector3 center, int count = 200, float fieldRadius = 100f, float minSize = 0.2f, float maxSize = 2.0f, float planeThickness = 0.5f, int seed = 424242, bool addStaticCollider = true)
         {
             if (count <= 0) return;
             var rng = new Random(seed);
@@ -941,15 +942,16 @@ internal static class Program
 
             for (int i = 0; i < count; i++)
             {
-                // Uniform direction on sphere
-                float theta = (float)(rng.NextDouble() * Math.PI * 2.0);
-                float z = (float)(rng.NextDouble() * 2.0 - 1.0);
-                float rxy = MathF.Sqrt(Math.Max(0f, 1f - z * z));
-                var dir = new Vector3(rxy * MathF.Cos(theta), z, rxy * MathF.Sin(theta));
+                // Disk/cylindrical distribution on XZ plane (uniform within disk).
+                float angle = (float)(rng.NextDouble() * Math.PI * 2.0);
+                // use sqrt(U) to produce uniform distribution over disk area
+                float r = (float)Math.Sqrt(rng.NextDouble()) * fieldRadius;
+                var x = center.X + MathF.Cos(angle) * r;
+                var z = center.Z + MathF.Sin(angle) * r;
+                // Small Y jitter around center.Y so asteroids lie close to the orbital plane
+                float y = center.Y + ((float)rng.NextDouble() - 0.5f) * planeThickness;
 
-                // Random distance inside sphere
-                float dist = (float)rng.NextDouble() * fieldRadius;
-                var pos = center + dir * dist;
+                var pos = new Vector3(x, y, z);
 
                 float s = minSize + (float)rng.NextDouble() * (maxSize - minSize);
 
