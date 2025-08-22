@@ -35,6 +35,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         // Spherical angles (radians)
         private float _yaw;
         private float _pitch;
+        // When true, the next Update will snap current focus/distance to target values (no smoothing)
 
         // Tunables
         /// <summary>
@@ -70,6 +71,18 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// Maximum distance the camera can be from the focus point.
         /// </summary>
         public float MaxDistance { get; set; } = 10000f;
+        /// <summary>
+        /// Enable/disable RTS-style edge panning (move mouse to screen edges to pan camera).
+        /// </summary>
+        public bool EdgePanEnabled { get; set; } = true;
+        /// <summary>
+        /// Thickness in pixels of the screen edge hot zones for edge panning.
+        /// </summary>
+        public int EdgePanThreshold { get; set; } = 12;
+        /// <summary>
+        /// Edge pan speed in world units per second (scaled by distance). Defaults to PanSpeed.
+        /// </summary>
+        public float EdgePanSpeed { get; set; } = 8.0f;
 
         /// <summary>
         /// Creates a new strategy-style camera controller driving the given <see cref="Camera"/>.
@@ -224,7 +237,55 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 var camForwardXZ = Vector3.Normalize(new Vector3(camForward.X, 0f, camForward.Z));
                 var panVec = camForwardXZ * forward + _camera.Right * rightDir + Vector3.UnitY * up;
                 float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
-                _targetFocus += panVec * (PanSpeed * distanceScale) * 0.016f * speedMult;
+                _targetFocus += panVec * (PanSpeed * distanceScale) * delta * speedMult;
+            }
+
+            // --- Edge Panning (RTS-style) ---
+            // When the mouse nears the edges of the window, pan the camera in the camera plane.
+            // Disabled while holding middle or right mouse buttons to avoid conflicting with drag controls.
+            if (EdgePanEnabled && !mouse.RightButton.IsDown && !mouse.MiddleButton.IsDown)
+            {
+                int width = (int)window.Width;
+                int height = (int)window.Height;
+                int x = mouse.X;
+                int y = mouse.Y;
+                // Only if the pointer is inside the window bounds
+                if (x >= 0 && x < width && y >= 0 && y < height)
+                {
+                    float threshold = MathF.Max(1, EdgePanThreshold);
+                    float leftStrength = x <= threshold ? (threshold - x) / threshold : 0f;
+                    float rightStrength = x >= width - threshold ? (x - (width - threshold)) / threshold : 0f;
+                    float topStrength = y <= threshold ? (threshold - y) / threshold : 0f;
+                    float bottomStrength = y >= height - threshold ? (y - (height - threshold)) / threshold : 0f;
+
+                    if (leftStrength > 0f || rightStrength > 0f || topStrength > 0f || bottomStrength > 0f)
+                    {
+                        // Pan in camera plane. Forward is camera forward projected onto XZ.
+                        var camForward = _camera.Forward;
+                        var camForwardXZ = new Vector3(camForward.X, 0f, camForward.Z);
+                        if (camForwardXZ.LengthSquared() > 1e-6f)
+                        {
+                            camForwardXZ = Vector3.Normalize(camForwardXZ);
+                        }
+
+                        var right = _camera.Right;
+                        float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
+                        float speed = EdgePanSpeed > 0f ? EdgePanSpeed : PanSpeed;
+
+                        // Left/right pan
+                        var pan = Vector3.Zero;
+                        pan += -right * leftStrength;
+                        pan += right * rightStrength;
+                        // Top/bottom: top moves forward, bottom moves backward
+                        pan += camForwardXZ * topStrength;
+                        pan += -camForwardXZ * bottomStrength;
+
+                        if (pan != Vector3.Zero)
+                        {
+                            _targetFocus += pan * (speed * distanceScale) * delta * speedMult;
+                        }
+                    }
+                }
             }
 
             // --- Zoom ---
