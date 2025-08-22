@@ -403,7 +403,7 @@ internal static class Program
         private float _cullingRadiusScale = 1.0f;
         // Size-based visibility: objects with projected screen size above this threshold will be forced visible
         private bool _enableSizeVisibility = true;
-        private float _minScreenPixelSize = 3.0f; // default minimum pixel radius to consider "visible"
+        private float _minScreenPixelSize = 6.0f; // default minimum pixel radius to consider "visible"
 
         // Floating origin system
         private FloatingOriginManager? _floatingOriginManager;
