@@ -1789,7 +1789,7 @@ internal static class Program
             // focus providers (which read physics poses) get the latest, post-step
             // positions. This avoids the camera lagging behind fast-moving objects
             // when the simulation is sped up.
-            _cameraController.Update(Inputs, MainWindow, delta);
+            _cameraController.Update(Inputs, MainWindow, scaledSeconds);
 
             // Update floating origin system (check if rebase is needed)
             if (_floatingOriginManager != null)

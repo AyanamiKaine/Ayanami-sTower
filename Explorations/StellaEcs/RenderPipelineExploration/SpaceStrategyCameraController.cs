@@ -148,9 +148,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// - Z/X: zoom in/out
         /// - LeftShift: hold to increase pan/zoom speed
         /// </summary>
-        public void Update(Inputs inputs, Window window, TimeSpan delta)
+        public void Update(Inputs inputs, Window window, float delta)
         {
-            float dt = (float)delta.TotalSeconds;
             var kb = inputs.Keyboard;
             var mouse = inputs.Mouse;
 
@@ -192,7 +191,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     var right = _camera.Right;
                     var camUp = _camera.Up;
                     float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
-                    var pan = (-right * md.X + camUp * md.Y) * (PanSpeed * distanceScale) * dt * speedMult;
+                    var pan = (-right * md.X + camUp * md.Y) * (PanSpeed * distanceScale) * 0.016f * speedMult;
                     _targetFocus += pan;
 
                     // vertical middle-drag also adjusts zoom a bit for convenience
@@ -225,7 +224,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 var camForwardXZ = Vector3.Normalize(new Vector3(camForward.X, 0f, camForward.Z));
                 var panVec = camForwardXZ * forward + _camera.Right * rightDir + Vector3.UnitY * up;
                 float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
-                _targetFocus += panVec * (PanSpeed * distanceScale) * dt * speedMult;
+                _targetFocus += panVec * (PanSpeed * distanceScale) * 0.016f * speedMult;
             }
 
             // --- Zoom ---
@@ -241,8 +240,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             float proximityScale = 0.1f + 0.9f * proximityCurve;
 
             // Keyboard zoom (Z/X) — scale step by proximityScale
-            if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed * dt * speedMult * proximityScale;
-            if (kb.IsDown(KeyCode.X)) _targetDistance += ZoomSpeed * dt * speedMult * proximityScale;
+            if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed * 0.016f * speedMult * proximityScale;
+            if (kb.IsDown(KeyCode.X)) _targetDistance += ZoomSpeed * 0.016f * speedMult * proximityScale;
 
             // --- Scroll-wheel zoom ---
             // MoonWorks provides `mouse.Wheel` as an integer delta for this frame.
@@ -260,7 +259,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             _targetDistance = Math.Clamp(_targetDistance, effectiveMinDistance, MaxDistance);
 
             // --- Smooth interpolation ---
-            float t = 1f - MathF.Exp(-Smoothing * dt); // exponential smoothing factor
+            // HERE WE MUST USE DELTA TIME OTHERWISE IT OUT OF SYNC! WITH THE REAL POSITION
+            float t = 1f - MathF.Exp(-Smoothing * delta); // exponential smoothing factor
             _currentFocus = Vector3.Lerp(_currentFocus, _targetFocus, t);
             _currentDistance = _currentDistance + (_targetDistance - _currentDistance) * t;
 
