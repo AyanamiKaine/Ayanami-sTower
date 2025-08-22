@@ -801,7 +801,7 @@ internal static class Program
                 entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
             });
 
-            World.OnSetPost<CollisionShape>((Entity entity, in CollisionShape _, in CollisionShape collisionShape, bool _) =>
+            World.OnSetPost((Entity entity, in CollisionShape _, in CollisionShape collisionShape, bool _) =>
             {
                 TypedIndex? shapeIndex = null; // Default to invalid index
                 // Add concrete shape type; Shapes.Add<T>() requires an unmanaged struct, not the IShape interface.
@@ -1724,7 +1724,6 @@ internal static class Program
                         case Box b: sidx = _simulation.Shapes.Add(b); break;
                         case Capsule c: sidx = _simulation.Shapes.Add(c); break;
                         case Cylinder cy: sidx = _simulation.Shapes.Add(cy); break;
-                        default: break;
                     }
                     var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3.Zero;
                     var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : Quaternion.Identity;
@@ -1748,7 +1747,6 @@ internal static class Program
                         case Box b: sidx = _simulation.Shapes.Add(b); break;
                         case Capsule c: sidx = _simulation.Shapes.Add(c); break;
                         case Cylinder cy: sidx = _simulation.Shapes.Add(cy); break;
-                        default: break;
                     }
                     var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3.Zero;
                     var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : Quaternion.Identity;
@@ -2399,9 +2397,13 @@ internal static class Program
             Vector3[] c = new Vector3[8];
             int idx = 0;
             for (int x = -1; x <= 1; x += 2)
+            {
                 for (int y = -1; y <= 1; y += 2)
+                {
                     for (int z = -1; z <= 1; z += 2)
                         c[idx++] = new Vector3(x * halfExtents.X, y * halfExtents.Y, z * halfExtents.Z);
+                }
+            }
 
             // Transform to world
             Matrix4x4 rot = Matrix4x4.CreateFromQuaternion(orientation);
@@ -2541,8 +2543,6 @@ internal static class Program
                     break;
                 case Cylinder cy:
                     AddWireCylinder(position, orientation, cy.HalfLength, cy.Radius, color);
-                    break;
-                default:
                     break;
             }
         }
