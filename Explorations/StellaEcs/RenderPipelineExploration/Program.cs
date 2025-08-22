@@ -1674,8 +1674,10 @@ internal static class Program
             _angle += (float)delta.TotalSeconds * 0.7f;
             // Keep camera aspect up-to-date on resize
             _camera.Aspect = (float)((float)MainWindow.Width / MainWindow.Height);
-            // Update camera via controller abstraction
-            _cameraController.Update(Inputs, MainWindow, delta);
+            // Camera update moved to AFTER the physics timestep so any live-follow providers
+            // sample the physics bodies' post-step poses. This prevents a one-frame lag
+            // when the simulation time scale is increased which caused the camera to
+            // trail the physics objects and accumulate an offset.
 
             // Handle simulation speed +/- keys (edge-triggered)
             bool incPressed = Inputs.Keyboard.IsPressed(KeyCode.KeypadPlus) || Inputs.Keyboard.IsPressed(KeyCode.Equals);
@@ -1691,17 +1693,8 @@ internal static class Program
             _prevIncreasePressed = incPressed;
             _prevDecreasePressed = decPressed;
 
-            // Update floating origin system (check if rebase is needed)
-            if (_floatingOriginManager != null)
-            {
-                if (_floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
-                {
-                    // Keep the camera near origin too so it doesn't immediately trigger another rebase
-                    _camera.Position -= rebaseOffset;
-                    // Also adjust camera controller internals so focus/distance remain valid after the world shift
-                    _cameraController.ApplyOriginShift(rebaseOffset);
-                }
-            }
+            // NOTE: floating-origin update is performed after the camera update below
+            // so it uses the camera's post-update position.
 
             // Ensure entities with Position3D also have AbsolutePosition (for newly created entities)
             foreach (var entity in World.Query(typeof(Position3D)))
@@ -1791,6 +1784,24 @@ internal static class Program
             // Apply timescale to simulation and world updates
             var scaledSeconds = (float)delta.TotalSeconds * _timeScale;
             _simulation.Timestep(scaledSeconds, _threadDispatcher);
+
+            // Update camera via controller abstraction AFTER physics step so any live
+            // focus providers (which read physics poses) get the latest, post-step
+            // positions. This avoids the camera lagging behind fast-moving objects
+            // when the simulation is sped up.
+            _cameraController.Update(Inputs, MainWindow, delta);
+
+            // Update floating origin system (check if rebase is needed)
+            if (_floatingOriginManager != null)
+            {
+                if (_floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
+                {
+                    // Keep the camera near origin too so it doesn't immediately trigger another rebase
+                    _camera.Position -= rebaseOffset;
+                    // Also adjust camera controller internals so focus/distance remain valid after the world shift
+                    _cameraController.ApplyOriginShift(rebaseOffset);
+                }
+            }
 
             // Check for mouse click to perform picking
             // Note: Mouse picking works correctly with floating origin since it operates on 
