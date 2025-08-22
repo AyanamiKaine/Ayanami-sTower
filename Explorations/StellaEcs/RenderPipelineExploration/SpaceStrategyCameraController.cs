@@ -29,6 +29,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         // Distance from camera to focus
         private float _targetDistance;
         private float _currentDistance;
+        // Optional per-focus minimum distance override to prevent camera clipping into focused objects.
+        private float? _focusMinDistanceOverride;
 
         // Spherical angles (radians)
         private float _yaw;
@@ -87,13 +89,17 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// Immediately set the focus point and optionally the distance (if distance &gt; 0).
         /// Use this to focus the camera on a selected object.
         /// </summary>
-        public void SetFocus(Vector3 focus, float? distance = null)
+        public void SetFocus(Vector3 focus, float? distance = null, float? minDistanceOverride = null)
         {
             _focusProvider = null;
             _targetFocus = focus;
+            // Store optional per-focus min distance override (used to prevent clipping into focused objects)
+            _focusMinDistanceOverride = minDistanceOverride;
             if (distance.HasValue && distance.Value > 0f)
             {
-                _targetDistance = Math.Clamp(distance.Value, MinDistance, MaxDistance);
+                // When an override exists, ensure initial target distance respects it
+                float effectiveMin = _focusMinDistanceOverride ?? MinDistance;
+                _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
             }
         }
 
@@ -101,9 +107,11 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// Set a live provider that supplies the focus point each frame. Useful to follow a moving entity.
         /// Passing null as provider will clear the live follow and use the static focus instead.
         /// </summary>
-        public void SetFocusProvider(Func<Vector3>? provider, float? distance = null)
+        public void SetFocusProvider(Func<Vector3>? provider, float? distance = null, float? minDistanceOverride = null)
         {
             _focusProvider = provider;
+            // Store optional per-focus min distance override for live-follow
+            _focusMinDistanceOverride = minDistanceOverride;
             if (provider != null)
             {
                 try
@@ -115,7 +123,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
             if (distance.HasValue && distance.Value > 0f)
             {
-                _targetDistance = Math.Clamp(distance.Value, MinDistance, MaxDistance);
+                float effectiveMin = _focusMinDistanceOverride ?? MinDistance;
+                _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
             }
         }
 
@@ -206,6 +215,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             if (_focusProvider != null && (forward != 0f || rightDir != 0f || up != 0f))
             {
                 _focusProvider = null;
+                _focusMinDistanceOverride = null;
             }
 
             if (forward != 0f || rightDir != 0f || up != 0f)
@@ -245,8 +255,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 _targetDistance += clamped;
             }
 
-            // Clamp target distance
-            _targetDistance = Math.Clamp(_targetDistance, MinDistance, MaxDistance);
+            // Clamp target distance, respecting any per-focus minimum override to avoid clipping into focused objects
+            float effectiveMinDistance = _focusMinDistanceOverride ?? MinDistance;
+            _targetDistance = Math.Clamp(_targetDistance, effectiveMinDistance, MaxDistance);
 
             // --- Smooth interpolation ---
             float t = 1f - MathF.Exp(-Smoothing * dt); // exponential smoothing factor
