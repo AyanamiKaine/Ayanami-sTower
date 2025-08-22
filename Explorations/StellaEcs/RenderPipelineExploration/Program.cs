@@ -449,10 +449,17 @@ internal static class Program
 
         // Floating origin system
         private FloatingOriginManager? _floatingOriginManager;
+        // FPS counter for window title
+        private readonly string _baseTitle = "Stella Invicta";
+        private float _fpsTimer = 0f;
+        private int _fpsFrames = 0;
+        private double _fps = 0.0;
+        // Track last draw time to measure actual render FPS (not update rate)
+        private DateTime _lastDrawTime = DateTime.UtcNow;
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, true),
-            FramePacingSettings.CreateCapped(60, 60),
+            FramePacingSettings.CreateCapped(60, 360),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
@@ -558,7 +565,7 @@ internal static class Program
 
             World.EnableRestApi();
 
-            EnableVSync();
+            //EnableVSync();
             InitializePhysics();
 
             // Initialize floating origin system
@@ -1983,6 +1990,8 @@ internal static class Program
 
             World.Update(scaledSeconds);
 
+            // (FPS is measured from Draw to capture actual render rate)
+
             // Debug: Print floating origin info (uncomment for debugging)
             // if (_floatingOriginManager != null)
             // {
@@ -2029,6 +2038,25 @@ internal static class Program
             {
                 GraphicsDevice.Submit(cmdbuf);
                 return;
+            }
+            // Measure draw FPS (time between Draw calls) and update window title periodically
+            var now = DateTime.UtcNow;
+            var dt = (now - _lastDrawTime).TotalSeconds;
+            _lastDrawTime = now;
+            // protect against zero/very small dt
+            if (dt > 0)
+            {
+                _fps = 1.0 / dt;
+            }
+            _fpsFrames++;
+            _fpsTimer += (float)dt;
+            if (_fpsTimer >= 0.5f)
+            {
+                var avgFps = _fpsFrames / Math.Max(_fpsTimer, 1e-6f);
+                var ms = 1000.0 / Math.Max(avgFps, 0.0001);
+                MainWindow.SetTitle($"{_baseTitle} | FPS {avgFps:0} ({ms:0.0} ms) | F11 Fullscreen | Esc Quit");
+                _fpsFrames = 0;
+                _fpsTimer = 0f;
             }
             // Compute view-projection and extract frustum once per frame.
             var view = _camera.GetViewMatrix();

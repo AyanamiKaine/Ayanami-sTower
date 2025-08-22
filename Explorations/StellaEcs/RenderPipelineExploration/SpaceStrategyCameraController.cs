@@ -20,6 +20,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
     {
         private readonly Camera _camera;
 
+        // Track whether we've put the window into SDL relative-mouse mode
+        private bool _isRelativeMouseMode = false;
+
         // Focus (the point the camera orbits around)
         private Vector3 _targetFocus;
         private Vector3 _currentFocus;
@@ -35,6 +38,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         // Spherical angles (radians)
         private float _yaw;
         private float _pitch;
+        // Targets for smooth rotation and tuning
+        private float _targetYaw;
+        private float _targetPitch;
         // When true, the next Update will snap current focus/distance to target values (no smoothing)
 
         // Tunables
@@ -46,6 +52,14 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// Speed at which the camera rotates around the focus point.
         /// </summary>
         public float RotateSensitivity { get; set; } = 0.01f; // radians per mouse pixel
+        /// <summary>
+        /// Enable/disable smooth interpolation of rotation (yaw/pitch).
+        /// </summary>
+        public bool SmoothRotation { get; set; } = true;
+        /// <summary>
+        /// Speed at which yaw/pitch interpolate to their target values. Larger = snappier.
+        /// </summary>
+        public float RotationSmoothing { get; set; } = 3.0f;
         /// <summary>
         /// Speed at which the camera zooms in and out.
         /// </summary>
@@ -96,6 +110,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             _currentDistance = _targetDistance = Vector3.Distance(camera.Position, _currentFocus);
             _yaw = camera.Yaw;
             _pitch = camera.Pitch;
+            // Initialize rotation targets to the camera's current angles
+            _targetYaw = _yaw;
+            _targetPitch = _pitch;
         }
 
         /// <summary>
@@ -166,6 +183,49 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             var kb = inputs.Keyboard;
             var mouse = inputs.Mouse;
 
+            // On Windows, optionally clip the cursor to the window while performing camera drag/edge-pan
+            // to prevent the cursor from leaving the fullscreen/primary display when the user has multiple monitors.
+            // Use SDL relative mouse mode (cross-platform) to confine the cursor and get relative motion
+            // while dragging or edge-panning. Toggle via the Window API exposed by MoonWorks.
+            bool wantRelative = false;
+
+            // Edge-triggered relative mode is only enabled when the window is fullscreen.
+            if (EdgePanEnabled && window.ScreenMode == ScreenMode.Fullscreen && !mouse.RightButton.IsDown && !mouse.MiddleButton.IsDown)
+            {
+                int width = (int)window.Width;
+                int height = (int)window.Height;
+                int x = mouse.X;
+                int y = mouse.Y;
+                if (x >= 0 && x < width && y >= 0 && y < height)
+                {
+                    float threshold = MathF.Max(1, EdgePanThreshold);
+                    if (x <= threshold || x >= width - threshold || y <= threshold || y >= height - threshold)
+                    {
+                        wantRelative = true;
+                    }
+                }
+            }
+
+            if (mouse.MiddleButton.IsDown || mouse.RightButton.IsDown)
+            {
+                wantRelative = true;
+            }
+
+            try
+            {
+                if (wantRelative && !_isRelativeMouseMode)
+                {
+                    window.SetRelativeMouseMode(true);
+                    _isRelativeMouseMode = true;
+                }
+                else if (!wantRelative && _isRelativeMouseMode)
+                {
+                    window.SetRelativeMouseMode(false);
+                    _isRelativeMouseMode = false;
+                }
+            }
+            catch { }
+
             // If a live focus provider exists, sample it to update the target focus (follows moving objects)
             if (_focusProvider != null)
             {
@@ -185,10 +245,11 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 var md = new Vector2(mouse.DeltaX, mouse.DeltaY);
                 if (md != Vector2.Zero)
                 {
-                    _yaw += md.X * RotateSensitivity;
-                    _pitch += -md.Y * RotateSensitivity; // invert Y for natural feel
-                    // Clamp pitch slightly inside poles to avoid singularity
-                    _pitch = Math.Clamp(_pitch, -MathF.PI / 2f + 0.01f, MathF.PI / 2f - 0.01f);
+                    // Write to target angles so we can smoothly interpolate the current angles
+                    _targetYaw += md.X * RotateSensitivity;
+                    _targetPitch += -md.Y * RotateSensitivity; // invert Y for natural feel
+                    // Clamp target pitch slightly inside poles to avoid singularity
+                    _targetPitch = Math.Clamp(_targetPitch, -MathF.PI / 2f + 0.01f, MathF.PI / 2f - 0.01f);
                 }
             }
 
@@ -204,7 +265,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     var right = _camera.Right;
                     var camUp = _camera.Up;
                     float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
-                    var pan = (-right * md.X + camUp * md.Y) * (PanSpeed * distanceScale) * 0.016f * speedMult;
+                    var pan = (-right * md.X + camUp * md.Y) * (PanSpeed * distanceScale) * delta * speedMult;
                     _targetFocus += pan;
 
                     // vertical middle-drag also adjusts zoom a bit for convenience
@@ -243,7 +304,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             // --- Edge Panning (RTS-style) ---
             // When the mouse nears the edges of the window, pan the camera in the camera plane.
             // Disabled while holding middle or right mouse buttons to avoid conflicting with drag controls.
-            if (EdgePanEnabled && !mouse.RightButton.IsDown && !mouse.MiddleButton.IsDown)
+            if (EdgePanEnabled && window.ScreenMode == ScreenMode.Fullscreen && !mouse.RightButton.IsDown && !mouse.MiddleButton.IsDown)
             {
                 int width = (int)window.Width;
                 int height = (int)window.Height;
@@ -301,8 +362,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             float proximityScale = 0.1f + 0.9f * proximityCurve;
 
             // Keyboard zoom (Z/X) — scale step by proximityScale
-            if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed * 0.016f * speedMult * proximityScale;
-            if (kb.IsDown(KeyCode.X)) _targetDistance += ZoomSpeed * 0.016f * speedMult * proximityScale;
+            if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed * delta * speedMult * proximityScale;
+            if (kb.IsDown(KeyCode.X)) _targetDistance += ZoomSpeed * delta * speedMult * proximityScale;
 
             // --- Scroll-wheel zoom ---
             // MoonWorks provides `mouse.Wheel` as an integer delta for this frame.
@@ -319,11 +380,26 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             float effectiveMinDistance = _focusMinDistanceOverride ?? MinDistance;
             _targetDistance = Math.Clamp(_targetDistance, effectiveMinDistance, MaxDistance);
 
-            // --- Smooth interpolation ---
+            // --- Smooth interpolation for focus/distance ---
             // HERE WE MUST USE DELTA TIME OTHERWISE IT OUT OF SYNC! WITH THE REAL POSITION
             float t = 1f - MathF.Exp(-Smoothing * delta); // exponential smoothing factor
             _currentFocus = Vector3.Lerp(_currentFocus, _targetFocus, t);
             _currentDistance = _currentDistance + (_targetDistance - _currentDistance) * t;
+
+            // --- Smooth interpolation for rotation (yaw/pitch) ---
+            if (SmoothRotation && RotationSmoothing > 0f)
+            {
+                float tRot = 1f - MathF.Exp(-RotationSmoothing * delta);
+                // Manual Lerp: current + (target - current) * t
+                _yaw = _yaw + (_targetYaw - _yaw) * tRot;
+                _pitch = _pitch + (_targetPitch - _pitch) * tRot;
+            }
+            else
+            {
+                // No smoothing: snap current angles to targets
+                _yaw = _targetYaw;
+                _pitch = _targetPitch;
+            }
 
             // Apply yaw/pitch to camera and set position relative to focus
             _camera.Yaw = _yaw;
@@ -331,6 +407,28 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
             // Put camera at focus - forward * distance
             _camera.Position = _currentFocus - _camera.Forward * _currentDistance;
+        }
+
+        /// <summary>
+        /// Immediately snap the current rotation to the target rotation (no smoothing).
+        /// Useful to reset after tweaking smoothing settings.
+        /// </summary>
+        public void SnapRotationToTarget()
+        {
+            _yaw = _targetYaw;
+            _pitch = _targetPitch;
+        }
+
+        /// <summary>
+        /// Set the current and target rotation to match the camera's present yaw/pitch.
+        /// Useful to initialize targets after externally changing the camera.
+        /// </summary>
+        public void SnapRotationToCamera()
+        {
+            _yaw = _camera.Yaw;
+            _pitch = _camera.Pitch;
+            _targetYaw = _yaw;
+            _targetPitch = _pitch;
         }
     }
 }
