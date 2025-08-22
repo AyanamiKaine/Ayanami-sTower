@@ -1801,14 +1801,43 @@ internal static class Program
 
                     if (isDoubleClick)
                     {
-                        // On double-click, set the camera controller focus to the hit location so we orbit/pan around it.
-                        // Optionally nudge the camera to a comfortable distance if currently extremely far
-                        // (keeps user from being unable to zoom back in).
-                        float safeDistance = MathF.Max(10f, _cameraController.MinDistance * 5f);
-                        float currentDist = Vector3.Distance(_camera.Position, result.HitLocation);
-                        float desired = MathF.Max(safeDistance, MathF.Min(currentDist, 1000f));
-                        _cameraController.SetFocus(result.HitLocation, desired);
-                        Console.WriteLine($"Double-click focus at {result.HitLocation}");
+                        // On double-click, prefer to follow the clicked entity if it's dynamic/kinematic.
+                        if (result.Collidable.Mobility == CollidableMobility.Static)
+                        {
+                            if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
+                            {
+                                _cameraController.SetFocus(staticBody.Pose.Position, null);
+                                Console.WriteLine($"Double-click focus STATIC at {staticBody.Pose.Position}");
+                            }
+                        }
+                        else
+                        {
+                            var bh = result.Collidable.BodyHandle;
+                            // Find the ECS entity that owns this BodyHandle so we can follow it each frame
+                            Entity? found = null;
+                            foreach (var e in World.Query(typeof(PhysicsBody)))
+                            {
+                                if (e.GetMut<PhysicsBody>().Handle.Equals(bh))
+                                {
+                                    found = e;
+                                    break;
+                                }
+                            }
+
+                            if (found != null)
+                            {
+                                var followEntity = found.Value;
+                                // Provide a live focus point sampled each frame from the entity's world position
+                                _cameraController.SetFocusProvider(() => GetEntityWorldPosition(followEntity), null);
+                                Console.WriteLine($"Double-click follow ENTITY {followEntity.Id}");
+                            }
+                            else
+                            {
+                                // Fallback: set static focus at the hit location
+                                _cameraController.SetFocus(result.HitLocation, null);
+                                Console.WriteLine($"Double-click focus at hit location {result.HitLocation}");
+                            }
+                        }
                     }
 
                     // For now, we just print the result.

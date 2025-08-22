@@ -23,6 +23,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         // Focus (the point the camera orbits around)
         private Vector3 _targetFocus;
         private Vector3 _currentFocus;
+        // Optional provider that returns the live focus point each frame (useful to follow moving objects)
+        private Func<Vector3>? _focusProvider;
 
         // Distance from camera to focus
         private float _targetDistance;
@@ -87,7 +89,30 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// </summary>
         public void SetFocus(Vector3 focus, float? distance = null)
         {
+            _focusProvider = null;
             _targetFocus = focus;
+            if (distance.HasValue && distance.Value > 0f)
+            {
+                _targetDistance = Math.Clamp(distance.Value, MinDistance, MaxDistance);
+            }
+        }
+
+        /// <summary>
+        /// Set a live provider that supplies the focus point each frame. Useful to follow a moving entity.
+        /// Passing null as provider will clear the live follow and use the static focus instead.
+        /// </summary>
+        public void SetFocusProvider(Func<Vector3>? provider, float? distance = null)
+        {
+            _focusProvider = provider;
+            if (provider != null)
+            {
+                try
+                {
+                    _targetFocus = provider();
+                }
+                catch { }
+            }
+
             if (distance.HasValue && distance.Value > 0f)
             {
                 _targetDistance = Math.Clamp(distance.Value, MinDistance, MaxDistance);
@@ -119,6 +144,16 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             float dt = (float)delta.TotalSeconds;
             var kb = inputs.Keyboard;
             var mouse = inputs.Mouse;
+
+            // If a live focus provider exists, sample it to update the target focus (follows moving objects)
+            if (_focusProvider != null)
+            {
+                try
+                {
+                    _targetFocus = _focusProvider();
+                }
+                catch { }
+            }
 
             // Speed modifier
             float speedMult = kb.IsHeld(KeyCode.LeftShift) ? 4.0f : 1.0f;
