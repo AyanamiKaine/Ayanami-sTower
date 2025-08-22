@@ -51,6 +51,44 @@ public struct PhysicsStatic
 }
 
 /// <summary>
+/// Component that requests an orbit circle be drawn around a parent entity.
+/// The circle is drawn in the XZ plane at the parent's position with the given radius.
+/// </summary>
+public struct OrbitCircle
+{
+    /// <summary>
+    /// The parent entity around which the orbit circle is drawn.
+    /// </summary>
+    public Entity Parent;
+    /// <summary>
+    /// Radius of the orbit circle.
+    /// </summary>
+    public float Radius;
+    /// <summary>
+    /// Color of the orbit circle.
+    /// </summary>
+    public Color Color;
+    /// <summary>
+    /// Number of segments used to draw the orbit circle.
+    /// </summary>
+    public int Segments;
+    /// <summary>
+    /// Creates a new OrbitCircle component.
+    /// </summary>
+    /// <param name="parent"></param>
+    /// <param name="radius"></param>
+    /// <param name="color"></param>
+    /// <param name="segments"></param>
+    public OrbitCircle(Entity parent, float radius, Color color, int segments = 64)
+    {
+        Parent = parent;
+        Radius = radius;
+        Color = color;
+        Segments = Math.Max(4, segments);
+    }
+}
+
+/// <summary>
 /// Stores the absolute world position using double precision to avoid floating point issues.
 /// This is the "true" position in the universe, while Position3D stores the relative position
 /// from the current floating origin.
@@ -368,7 +406,7 @@ internal static class Program
         public readonly World World = new(10000000);
         // Camera
         private Camera _camera = null!;
-        private CameraController _cameraController = null!;
+        private SpaceStrategyCameraController _cameraController = null!;
 
         // GPU resources
         private GraphicsPipeline? _pipeline;
@@ -446,6 +484,28 @@ internal static class Program
             }
         }
 
+        /// <summary>
+        /// Helper: returns the best available world-space position for an entity.
+        /// Prefers the physics pose (dynamic/kinematic/static) then falls back to Position3D.
+        /// Returns Vector3.Zero if no position is available.
+        /// </summary>
+        private Vector3 GetEntityWorldPosition(Entity e)
+        {
+            if (e == default) return Vector3.Zero;
+            if (e.Has<PhysicsBody>())
+            {
+                var pb = e.GetMut<PhysicsBody>();
+                if (TryGetBodyRef(pb.Handle, out var bref)) return bref.Pose.Position;
+            }
+            if (e.Has<PhysicsStatic>())
+            {
+                var ps = e.GetMut<PhysicsStatic>();
+                if (TryGetStaticRef(ps.Handle, out var sref)) return sref.Pose.Position;
+            }
+            if (e.Has<Position3D>()) return e.GetMut<Position3D>().Value;
+            return Vector3.Zero;
+        }
+
         public void EnableMSAA(SampleCount sampleCount)
         {
 
@@ -509,7 +569,7 @@ internal static class Program
                 Far = 100f,
                 Fov = MathF.PI / 3f
             };
-            _cameraController = new CameraController(_camera);
+            _cameraController = new SpaceStrategyCameraController(_camera);
 
             _mousePicker = new MousePicker(_camera, _simulation);
 
@@ -822,6 +882,9 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
 
+            // Draw Mercury's orbit around the sun
+            mercury.Set(new OrbitCircle(sun, 0.39f * AU_SCALE_FACTOR, new Color(200, 200, 200, 96), segments: 128));
+
             // Venus: 0.72 AU from the Sun.
             var venus = World.CreateEntity()
                 .Set(new CelestialBody())
@@ -835,6 +898,8 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
 
+            venus.Set(new OrbitCircle(sun, 0.72f * AU_SCALE_FACTOR, new Color(200, 200, 200, 96), segments: 128));
+
             // Earth: 1.0 AU from the Sun (our baseline).
             var earth = World.CreateEntity()
                 .Set(new CelestialBody())
@@ -847,6 +912,8 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed = baseline
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
+
+            earth.Set(new OrbitCircle(sun, 1.0f * AU_SCALE_FACTOR, new Color(180, 220, 255, 96), segments: 128));
 
             // The Moon: Positioned relative to Earth.
             // Compute Earth's world position and place the moon at an offset from Earth.
@@ -868,6 +935,16 @@ internal static class Program
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
 
+            // Moon orbit around Earth (local small orbit)
+            // We created the moon as an anonymous entity above; find the last created entity for setting orbit circle
+            // Simpler: set orbit circle on the moon relative to Earth using its local offset
+            // (We just created it without storing a variable, so add the orbit as a child of earth by querying)
+            var moonEntity = World.Query(typeof(LocalPosition3D)).LastOrDefault();
+            if (moonEntity != default)
+            {
+                moonEntity.Set(new OrbitCircle(earth, moonLocalOffset.Length(), new Color(180, 180, 200, 120), segments: 64));
+            }
+
             // Mars: 1.52 AU from the Sun.
             var mars = World.CreateEntity()
                 .Set(new CelestialBody())
@@ -880,6 +957,8 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.0053f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mars.jpg") ?? _checkerTexture! });
+
+            mars.Set(new OrbitCircle(sun, 1.52f * AU_SCALE_FACTOR, new Color(220, 160, 120, 96), segments: 128));
 
             // Jupiter: 5.20 AU from the Sun.
             var jupiter = World.CreateEntity()
@@ -894,6 +973,8 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Jupiter.jpg") ?? _checkerTexture! });
 
+            jupiter.Set(new OrbitCircle(sun, 5.20f * AU_SCALE_FACTOR, new Color(240, 200, 160, 96), segments: 160));
+
             // Saturn: 9.58 AU from the Sun.
             var saturn = World.CreateEntity()
                 .Set(new CelestialBody())
@@ -906,6 +987,8 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.00034f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Saturn.jpg") ?? _checkerTexture! });
+
+            saturn.Set(new OrbitCircle(sun, 9.58f * AU_SCALE_FACTOR, new Color(240, 220, 200, 96), segments: 160));
 
             // Uranus: 19.22 AU from the Sun.
             var uranus = World.CreateEntity()
@@ -920,6 +1003,8 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Uranus.jpg") ?? _checkerTexture! });
 
+            uranus.Set(new OrbitCircle(sun, 19.22f * AU_SCALE_FACTOR, new Color(200, 220, 240, 96), segments: 160));
+
             // Neptune: 30.05 AU from the Sun. (Added for completeness)
             var neptune = World.CreateEntity()
                 .Set(new CelestialBody())
@@ -932,6 +1017,8 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.00006f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Neptune.jpg") ?? _checkerTexture! });
+
+            neptune.Set(new OrbitCircle(sun, 30.05f * AU_SCALE_FACTOR, new Color(180, 200, 240, 96), segments: 160));
 
             // Pluto: 39.48 AU from the Sun (average).
             var pluto = World.CreateEntity()
@@ -946,13 +1033,15 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Pluto.jpg") ?? _checkerTexture! });
 
+            pluto.Set(new OrbitCircle(sun, 39.48f * AU_SCALE_FACTOR, new Color(200, 180, 200, 96), segments: 160));
+            /*
             SpawnGridXZ(
                 halfLines: 100,   // creates lines from -100..100 in both axes
                 step: 1f,         // 1 unit spacing
                 y: 0f,
                 color: new Color(255, 255, 255, 32) // more transparent grid to avoid white plane in distance
             );
-
+            */
             World.CreateEntity()
                 .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(2000, 0, 0)))
                 .Set(new Color(255, 64, 64, 255));
@@ -977,13 +1066,6 @@ internal static class Program
                 .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, -20000, 0)))
                 .Set(Color.Green);
 
-
-            SpawnAsteroidField(new(20, 0, 20), 20, 5, 0.002f, 0.05f);
-            SpawnAsteroidField(new(-20, 0, -20), 20, 5, 0.002f, 0.05f);
-            SpawnAsteroidField(new(-30, 0, -60), 20, 5, 0.002f, 0.05f);
-            SpawnAsteroidField(new(-30, 0, 60), 20, 5, 0.002f, 0.05f);
-            SpawnAsteroidField(new(-80, 0, -60), 20, 5, 0.002f, 0.05f);
-            SpawnAsteroidField(new(-30, 0, -20), 20, 5, 0.002f, 0.05f);
 
             // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
             // Uses the same AU scale factor defined above so radii match planet positions
@@ -1594,6 +1676,8 @@ internal static class Program
                 {
                     // Keep the camera near origin too so it doesn't immediately trigger another rebase
                     _camera.Position -= rebaseOffset;
+                    // Also adjust camera controller internals so focus/distance remain valid after the world shift
+                    _cameraController.ApplyOriginShift(rebaseOffset);
                 }
             }
 
@@ -1848,6 +1932,24 @@ internal static class Program
                     var line = entity.GetMut<Line3D>();
                     var color = entity.GetMut<Color>();
                     _lineBatch.AddLine(line.Start, line.End, color);
+                }
+
+                // Draw orbit circles for entities that have OrbitCircle component
+                foreach (var ocEntity in World.Query(typeof(OrbitCircle)))
+                {
+                    var oc = ocEntity.GetMut<OrbitCircle>();
+                    // Get current parent world position
+                    var center = GetEntityWorldPosition(oc.Parent);
+                    int segs = Math.Max(4, oc.Segments);
+                    float angleStep = MathF.Tau / segs;
+                    Vector3 prev = center + new Vector3(oc.Radius, 0f, 0f);
+                    for (int i = 1; i <= segs; i++)
+                    {
+                        float a = i * angleStep;
+                        Vector3 p = center + new Vector3(MathF.Cos(a) * oc.Radius, 0f, MathF.Sin(a) * oc.Radius);
+                        _lineBatch.AddLine(prev, p, oc.Color);
+                        prev = p;
+                    }
                 }
 
                 // Add physics collider wireframes before uploading
