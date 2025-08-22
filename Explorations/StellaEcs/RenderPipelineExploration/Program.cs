@@ -851,7 +851,7 @@ internal static class Program
             // We use Astronomical Units (AU) for realistic scaling. 1 AU = Distance from Earth to Sun.
             // This scale factor determines how many units in our 3D world correspond to 1 AU.
             // You can increase/decrease this value to make the solar system larger or smaller.
-            const float AU_SCALE_FACTOR = 40.0f;
+            const float AU_SCALE_FACTOR = 80.0f;
 
             // --- CELESTIAL BODY CREATION ---
 
@@ -938,6 +938,24 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.12f, 0f)) // Orbits Earth faster
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
+
+
+
+            var spaceStationLocalOffset = new Vector3(1f, 0f, 0f); // distance from Earth in world units
+            var spaceStationWorldPos = earthPos + spaceStationLocalOffset;
+
+            World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(spaceStationWorldPos.X, spaceStationWorldPos.Y, spaceStationWorldPos.Z))
+                .Set(new LocalPosition3D(spaceStationLocalOffset.X, spaceStationLocalOffset.Y, spaceStationLocalOffset.Z))
+                .Set(new Size3D(0.01f)) // size = 0.01x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.01f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.05f, 0f)) // Orbits Earth faster
+                .Set(new Parent(earth))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             // Moon orbit around Earth (local small orbit)
             // We created the moon as an anonymous entity above; find the last created entity for setting orbit circle

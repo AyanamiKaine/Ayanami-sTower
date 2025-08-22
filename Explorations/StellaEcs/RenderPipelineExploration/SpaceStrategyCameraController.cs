@@ -63,7 +63,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// <summary>
         /// Minimum distance the camera can be from the focus point.
         /// </summary>
-        public float MinDistance { get; set; } = 1.0f;
+        public float MinDistance { get; set; } = 0.1f;
         /// <summary>
         /// Maximum distance the camera can be from the focus point.
         /// </summary>
@@ -219,16 +219,30 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             }
 
             // --- Zoom ---
-            // Keyboard zoom (Z/X)
-            if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed * dt * speedMult;
-            if (kb.IsDown(KeyCode.X)) _targetDistance += ZoomSpeed * dt * speedMult;
+            // Compute a proximity-based scale so zoom steps become smaller (more granular)
+            // as the camera approaches the minimum distance (i.e., when zoomed in).
+            // normalized in [0,1]: 0 == at MinDistance, 1 == at MaxDistance
+            float range = MathF.Max(1e-5f, MaxDistance - MinDistance);
+            float proximityUnclamped = (_currentDistance - MinDistance) / range;
+            float proximity = (float)Math.Max(0.0, Math.Min(1.0, (double)proximityUnclamped));
+            // scale in (0.1 .. 1.0] so close distances produce smaller steps.
+            // Use a sqrt curve so zoom-out accelerates faster while zoom-in remains granular.
+            float proximityCurve = (float)Math.Sqrt(proximity);
+            float proximityScale = 0.1f + 0.9f * proximityCurve;
+
+            // Keyboard zoom (Z/X) — scale step by proximityScale
+            if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed * dt * speedMult * proximityScale;
+            if (kb.IsDown(KeyCode.X)) _targetDistance += ZoomSpeed * dt * speedMult * proximityScale;
 
             // --- Scroll-wheel zoom ---
             // MoonWorks provides `mouse.Wheel` as an integer delta for this frame.
             if (mouse.Wheel != 0)
             {
                 // Negative wheel typically means zoom in on many platforms, so invert to match other zoom controls
-                _targetDistance += -mouse.Wheel * ZoomSpeed * 0.1f * speedMult * ScrollZoomMultiplier;
+                var rawDelta = -mouse.Wheel * ZoomSpeed * 0.1f * speedMult * ScrollZoomMultiplier * proximityScale;
+                // Clamp individual scroll step to avoid huge jumps on high-dpi / sensitive mice
+                var clamped = Math.Max(-MaxScrollZoomStep, Math.Min(MaxScrollZoomStep, rawDelta));
+                _targetDistance += clamped;
             }
 
             // Clamp target distance
