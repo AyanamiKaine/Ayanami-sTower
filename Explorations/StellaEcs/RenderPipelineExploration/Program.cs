@@ -393,6 +393,10 @@ internal static class Program
         private BufferPool _bufferPool = null!;
         private ThreadDispatcher _threadDispatcher = null!;
         private MousePicker _mousePicker = null!;
+        // Double-click detection state for pick-to-focus
+        private double _lastClickTime = 0.0;
+        private int _lastClickX = -9999;
+        private int _lastClickY = -9999;
         // Simulation speed control (press + / - to change)
         private readonly float[] _timeScaleOptions = new float[] { 0.125f, 0.25f, 0.5f, 1f, 2f, 4f, 8f, 16f };
         private int _timeScaleIndex = 3; // default = 1x
@@ -1777,56 +1781,91 @@ internal static class Program
             {
                 if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var result))
                 {
+                    // Detect double-click (time + proximity)
+                    double now = DateTime.UtcNow.TimeOfDay.TotalSeconds;
+                    bool isDoubleClick = false;
+                    const double DOUBLE_CLICK_TIME = 0.35; // seconds
+                    const int DOUBLE_CLICK_PIXEL_RADIUS = 6;
+                    if (now - _lastClickTime <= DOUBLE_CLICK_TIME)
+                    {
+                        int dx = Inputs.Mouse.X - _lastClickX;
+                        int dy = Inputs.Mouse.Y - _lastClickY;
+                        if (dx * dx + dy * dy <= DOUBLE_CLICK_PIXEL_RADIUS * DOUBLE_CLICK_PIXEL_RADIUS)
+                        {
+                            isDoubleClick = true;
+                        }
+                    }
+                    _lastClickTime = now;
+                    _lastClickX = Inputs.Mouse.X;
+                    _lastClickY = Inputs.Mouse.Y;
+
+                    if (isDoubleClick)
+                    {
+                        // On double-click, set the camera controller focus to the hit location so we orbit/pan around it.
+                        // Optionally nudge the camera to a comfortable distance if currently extremely far
+                        // (keeps user from being unable to zoom back in).
+                        float safeDistance = MathF.Max(10f, _cameraController.MinDistance * 5f);
+                        float currentDist = Vector3.Distance(_camera.Position, result.HitLocation);
+                        float desired = MathF.Max(safeDistance, MathF.Min(currentDist, 1000f));
+                        _cameraController.SetFocus(result.HitLocation, desired);
+                        Console.WriteLine($"Double-click focus at {result.HitLocation}");
+                    }
+
                     // For now, we just print the result.
-                    // The CollidableReference can be either a BodyHandle or a StaticHandle.
-                    if (result.Collidable.Mobility == CollidableMobility.Static)
+                    /*
+                    if (!isDoubleClick)
                     {
-                        if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
+                        // The CollidableReference can be either a BodyHandle or a StaticHandle.
+                        if (result.Collidable.Mobility == CollidableMobility.Static)
                         {
-                            // Rebase the world at the target so it sits at the grid origin, then place camera at desired offset
-                            if (_floatingOriginManager != null)
+                            if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
                             {
-                                var offset = staticBody.Pose.Position; // shift world by -offset
-                                _floatingOriginManager.ForceRebase(offset);
-                                _camera.Position = new Vector3(0, 10, 6); // camera relative to new origin
-                                _camera.LookAt(Vector3.Zero);
+                                // Rebase the world at the target so it sits at the grid origin, then place camera at desired offset
+                                if (_floatingOriginManager != null)
+                                {
+                                    var offset = staticBody.Pose.Position; // shift world by -offset
+                                    _floatingOriginManager.ForceRebase(offset);
+                                    _camera.Position = new Vector3(0, 10, 6); // camera relative to new origin
+                                    _camera.LookAt(Vector3.Zero);
+                                }
+                                else
+                                {
+                                    // Fallback: no floating origin manager, just move camera in-place
+                                    _camera.Position = staticBody.Pose.Position + new Vector3(0, 10, 6);
+                                    _camera.LookAt(staticBody.Pose.Position);
+                                }
                             }
                             else
                             {
-                                // Fallback: no floating origin manager, just move camera in-place
-                                _camera.Position = staticBody.Pose.Position + new Vector3(0, 10, 6);
-                                _camera.LookAt(staticBody.Pose.Position);
+                                Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}, but static handle is invalid now.");
                             }
                         }
-                        else
+                        else // It's a dynamic/kinematic body
                         {
-                            Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}, but static handle is invalid now.");
-                        }
-                    }
-                    else // It's a dynamic/kinematic body
-                    {
-                        var bh = result.Collidable.BodyHandle;
-                        if (TryGetBodyRef(bh, out var bref))
-                        {
-                            var p = bref.Pose.Position;
-                            if (_floatingOriginManager != null)
+                            var bh = result.Collidable.BodyHandle;
+                            if (TryGetBodyRef(bh, out var bref))
                             {
-                                _floatingOriginManager.ForceRebase(p);
-                                _camera.Position = new Vector3(0, 10, 6);
-                                _camera.LookAt(Vector3.Zero);
+                                var p = bref.Pose.Position;
+                                if (_floatingOriginManager != null)
+                                {
+                                    _floatingOriginManager.ForceRebase(p);
+                                    _camera.Position = new Vector3(0, 10, 6);
+                                    _camera.LookAt(Vector3.Zero);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}. Position: {p}");
+                                    _camera.Position = p + new Vector3(0, 10, 6);
+                                    _camera.LookAt(p);
+                                }
                             }
                             else
                             {
-                                Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}. Position: {p}");
-                                _camera.Position = p + new Vector3(0, 10, 6);
-                                _camera.LookAt(p);
+                                Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}, but body handle is invalid now (moved/removed).");
                             }
                         }
-                        else
-                        {
-                            Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}, but body handle is invalid now (moved/removed).");
-                        }
                     }
+                    */
                 }
                 else
                 {
