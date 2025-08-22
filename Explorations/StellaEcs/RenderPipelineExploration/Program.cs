@@ -1830,13 +1830,63 @@ internal static class Program
 
                     if (isDoubleClick)
                     {
-                        // On double-click, prefer to follow the clicked entity if it's dynamic/kinematic.
+                        // On double-click, prefer to follow the clicked entity if it's dynamic/kinematic,
+                        // and also choose a sensible zoom distance based on object size or hit distance.
+                        float ComputeDesiredDistanceForEntity(Entity? entity, float hitDistance)
+                        {
+                            // Prefer computing distance from the object's size so small objects get a close, sensible zoom.
+                            // If size is unavailable, fall back to a fraction of hit distance.
+                            const float targetScreenFraction = 0.35f; // object should occupy ~35% of vertical screen
+                            float desired = hitDistance * 0.6f;
+
+                            if (entity.HasValue && entity.Value != default && entity.Value.Has<Size3D>())
+                            {
+                                var s = entity.Value.GetMut<Size3D>().Value;
+                                float maxAxis = MathF.Max(s.X, MathF.Max(s.Y, s.Z));
+                                // Estimate a conservative bounding radius for the object. Use 0.6 factor (matches collider heuristics)
+                                float boundingRadius = MathF.Max(0.01f, maxAxis * 0.6f);
+
+                                // Compute distance so the object's bounding radius fits targetScreenFraction of vertical FOV.
+                                // distance = boundingRadius / (targetFraction * tan(fov/2))
+                                float fovHalfTan = MathF.Tan(_camera.Fov * 0.5f);
+                                if (fovHalfTan > 1e-6f)
+                                {
+                                    float fromSize = boundingRadius / (targetScreenFraction * fovHalfTan);
+                                    // Use the closer of size-based and hit-based suggestions, but never less than MinDistance
+                                    desired = Math.Max(fromSize, _cameraController.MinDistance);
+                                }
+                            }
+
+                            // As a final clamp, ensure it's within controller's limits
+                            desired = Math.Clamp(desired, _cameraController.MinDistance, _cameraController.MaxDistance);
+                            return desired;
+                        }
+
                         if (result.Collidable.Mobility == CollidableMobility.Static)
                         {
                             if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
                             {
-                                _cameraController.SetFocus(staticBody.Pose.Position, null);
-                                Console.WriteLine($"Double-click focus STATIC at {staticBody.Pose.Position}");
+                                // Try to find the ECS entity that owns this static handle to read its Size3D
+                                Entity? owner = null;
+                                foreach (var e in World.Query(typeof(PhysicsStatic)))
+                                {
+                                    if (e.GetMut<PhysicsStatic>().Handle.Equals(result.Collidable.StaticHandle))
+                                    {
+                                        owner = e;
+                                        break;
+                                    }
+                                }
+
+                                float distance = ComputeDesiredDistanceForEntity(owner, result.Distance);
+                                _cameraController.SetFocus(staticBody.Pose.Position, distance);
+                                Console.WriteLine($"Double-click focus STATIC at {staticBody.Pose.Position} (distance={distance:F2})");
+                            }
+                            else
+                            {
+                                // No static reference available; focus at hit location with hit-based distance
+                                float distance = ComputeDesiredDistanceForEntity(null, result.Distance);
+                                _cameraController.SetFocus(result.HitLocation, distance);
+                                Console.WriteLine($"Double-click focus at hit location {result.HitLocation} (distance={distance:F2})");
                             }
                         }
                         else
@@ -1856,15 +1906,17 @@ internal static class Program
                             if (found != null)
                             {
                                 var followEntity = found.Value;
+                                float distance = ComputeDesiredDistanceForEntity(followEntity, result.Distance);
                                 // Provide a live focus point sampled each frame from the entity's world position
-                                _cameraController.SetFocusProvider(() => GetEntityWorldPosition(followEntity), null);
-                                Console.WriteLine($"Double-click follow ENTITY {followEntity.Id}");
+                                _cameraController.SetFocusProvider(() => GetEntityWorldPosition(followEntity), distance);
+                                Console.WriteLine($"Double-click follow ENTITY {followEntity.Id} (distance={distance:F2})");
                             }
                             else
                             {
-                                // Fallback: set static focus at the hit location
-                                _cameraController.SetFocus(result.HitLocation, null);
-                                Console.WriteLine($"Double-click focus at hit location {result.HitLocation}");
+                                // Fallback: set static focus at the hit location with hit-based distance
+                                float distance = ComputeDesiredDistanceForEntity(null, result.Distance);
+                                _cameraController.SetFocus(result.HitLocation, distance);
+                                Console.WriteLine($"Double-click focus at hit location {result.HitLocation} (distance={distance:F2})");
                             }
                         }
                     }
