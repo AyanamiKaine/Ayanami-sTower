@@ -202,6 +202,12 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             if (kb.IsDown(KeyCode.E)) up += 1f; // move focus up
             if (kb.IsDown(KeyCode.Q)) up -= 1f; // move focus down
 
+            // If the user manually pans using keyboard, break any live-follow provider
+            if (_focusProvider != null && (forward != 0f || rightDir != 0f || up != 0f))
+            {
+                _focusProvider = null;
+            }
+
             if (forward != 0f || rightDir != 0f || up != 0f)
             {
                 // Project forward onto camera's XZ plane for more intuitive pan (prevent flying when pitched)
