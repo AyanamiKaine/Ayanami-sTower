@@ -51,7 +51,9 @@ public static class StarTextureGenerator
     /// <param name="outputPath"></param>
     /// <param name="width"></param>
     /// <param name="height"></param>
-    public static void GenerateStarTexture(int seed, string typeName, string outputPath, int width = 2048, int height = 1024)
+    /// <param name="cubeMap">If true, generates six cube-face PNGs instead of a single equirectangular texture. The files will be saved as &lt;outputPathWithoutExt&gt;_PX.png/_NX.png/_PY.png/_NY.png/_PZ.png/_NZ.png.</param>
+    /// <param name="faceSize">When <paramref name="cubeMap"/> is true, this is the size (width/height) of each cube face. Otherwise ignored.</param>
+    public static void GenerateStarTexture(int seed, string typeName, string outputPath, int width = 2048, int height = 1024, bool cubeMap = false, int faceSize = 1024)
     {
         var rng = new Random(seed);
 
@@ -134,73 +136,170 @@ public static class StarTextureGenerator
         // Frequency is relative to granulationScale so it adapts per star type
         surfaceNoise.SetFrequency(granulationScale * 6.0f);
 
-        using var img = new Image<Rgba32>(width, height);
-
-        for (int px = 0; px < width; px++)
+        if (!cubeMap)
         {
-            // longitude [0..2PI)
-            float lon = (px / (float)width) * MathF.PI * 2f;
-            for (int py = 0; py < height; py++)
+            using var img = new Image<Rgba32>(width, height);
+
+            for (int px = 0; px < width; px++)
             {
-                // latitude [-PI/2 .. PI/2]
-                float lat = ((py / (float)height) * MathF.PI) - (MathF.PI * 0.5f);
-
-                // convert to 3D unit vector on sphere
-                float cx = MathF.Cos(lat) * MathF.Cos(lon);
-                float cy = MathF.Sin(lat);
-                float cz = MathF.Cos(lat) * MathF.Sin(lon);
-
-                // sample 3D convection noise
-                float conv = convNoise.GetNoise(cx, cy, cz); // [-1,1]
-                conv = (conv + 1f) * 0.5f; // [0,1]
-
-                // sample granulation at higher frequency
-                float gran = granNoise.GetNoise(cx * 2.0f, cy * 2.0f, cz * 2.0f);
-                gran = (gran + 1f) * 0.5f;
-
-                // combine layers
-                float intensity = conv * 0.75f + gran * 0.25f;
-
-                // spots reduce intensity in localized regions
-                if (spots)
+                // longitude [0..2PI)
+                float lon = (px / (float)width) * MathF.PI * 2f;
+                for (int py = 0; py < height; py++)
                 {
-                    float s = spotNoise.GetNoise(cx * 0.8f, cy * 0.8f, cz * 0.8f);
-                    s = (s + 1f) * 0.5f;
-                    // threshold to create darker regions
-                    if (s < 0.35f)
+                    // latitude [-PI/2 .. PI/2]
+                    float lat = ((py / (float)height) * MathF.PI) - (MathF.PI * 0.5f);
+
+                    // convert to 3D unit vector on sphere
+                    float cx = MathF.Cos(lat) * MathF.Cos(lon);
+                    float cy = MathF.Sin(lat);
+                    float cz = MathF.Cos(lat) * MathF.Sin(lon);
+
+                    // sample 3D convection noise
+                    float conv = convNoise.GetNoise(cx, cy, cz); // [-1,1]
+                    conv = (conv + 1f) * 0.5f; // [0,1]
+
+                    // sample granulation at higher frequency
+                    float gran = granNoise.GetNoise(cx * 2.0f, cy * 2.0f, cz * 2.0f);
+                    gran = (gran + 1f) * 0.5f;
+
+                    // combine layers
+                    float intensity = conv * 0.75f + gran * 0.25f;
+
+                    // spots reduce intensity in localized regions
+                    if (spots)
                     {
-                        float dark = 1f - (0.35f - s) * 1.6f; // darkening factor
-                        intensity *= Math.Clamp(dark, 0.45f, 1f);
+                        float s = spotNoise.GetNoise(cx * 0.8f, cy * 0.8f, cz * 0.8f);
+                        s = (s + 1f) * 0.5f;
+                        // threshold to create darker regions
+                        if (s < 0.35f)
+                        {
+                            float dark = 1f - (0.35f - s) * 1.6f; // darkening factor
+                            intensity *= Math.Clamp(dark, 0.45f, 1f);
+                        }
+                    }
+
+                    // subtle latitude-dependent brightness (hotter poles effect optional)
+                    float latBoost = 1.0f + (0.03f * MathF.Cos(lat * 2f));
+                    intensity *= latBoost;
+
+                    // apply overall brightness and gamma
+                    float final = MathF.Pow(intensity * brightness, 0.9f);
+
+                    // add a subtle, high-frequency surface noise layer to give the
+                    // star a bit more perceived surface texture without changing
+                    // the overall brightness much. Sample the 3D surfaceNoise and
+                    // convert it to a small additive offset.
+                    float surf = surfaceNoise.GetNoise(cx * 3.0f, cy * 3.0f, cz * 3.0f); // [-1,1]
+                    surf = (surf + 1f) * 0.5f; // [0,1]
+                    // map to a small bipolar offset around 0 -> [-amp, +amp]
+                    const float surfaceAmp = 0.08f; // max +/- amplitude (tweakable)
+                    float surfOffset = (surf - 0.5f) * 2f * surfaceAmp; // [-amp,amp]
+
+                    final = Math.Clamp(final + surfOffset, 0f, 8f);
+
+                    // colorize by base color
+                    var col = Mul(baseColor, final);
+
+                    img[px, py] = col;
+                }
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
+            img.SaveAsPng(outputPath);
+        }
+        else
+        {
+            // Cube map generation: write six square faces named with suffixes
+            // PX, NX, PY, NY, PZ, NZ (positive/negative X/Y/Z).
+            string parentDir = Path.GetDirectoryName(outputPath) ?? ".";
+            string baseName = Path.GetFileNameWithoutExtension(outputPath);
+            // create a dedicated subfolder for the generated cubemap faces
+            string cubemapDir = Path.Combine(parentDir, baseName + "_cubemap");
+            Directory.CreateDirectory(cubemapDir);
+
+            string[] faceSuffix = new[] { "PX", "NX", "PY", "NY", "PZ", "NZ" };
+
+            for (int face = 0; face < 6; face++)
+            {
+                using var imgFace = new Image<Rgba32>(faceSize, faceSize);
+
+                for (int px = 0; px < faceSize; px++)
+                {
+                    // uv in [-1,1], center of texel
+                    float u = (2f * ((px + 0.5f) / faceSize)) - 1f;
+                    for (int py = 0; py < faceSize; py++)
+                    {
+                        float v = (2f * ((py + 0.5f) / faceSize)) - 1f;
+
+                        // map (u,v) to 3D direction for current cube face
+                        float cx, cy, cz;
+                        switch (face)
+                        {
+                            // +X
+                            case 0: cx = 1f; cy = v; cz = -u; break;
+                            // -X
+                            case 1: cx = -1f; cy = v; cz = u; break;
+                            // +Y
+                            case 2: cx = u; cy = 1f; cz = -v; break;
+                            // -Y
+                            case 3: cx = u; cy = -1f; cz = v; break;
+                            // +Z
+                            case 4: cx = u; cy = v; cz = 1f; break;
+                            // -Z
+                            default: cx = -u; cy = v; cz = -1f; break;
+                        }
+
+                        // normalize
+                        float len = MathF.Sqrt(cx * cx + cy * cy + cz * cz);
+                        cx /= len; cy /= len; cz /= len;
+
+                        // sample 3D convection noise
+                        float conv = convNoise.GetNoise(cx, cy, cz); // [-1,1]
+                        conv = (conv + 1f) * 0.5f; // [0,1]
+
+                        // sample granulation at higher frequency
+                        float gran = granNoise.GetNoise(cx * 2.0f, cy * 2.0f, cz * 2.0f);
+                        gran = (gran + 1f) * 0.5f;
+
+                        // combine layers
+                        float intensity = conv * 0.75f + gran * 0.25f;
+
+                        // spots reduce intensity in localized regions
+                        if (spots)
+                        {
+                            float s = spotNoise.GetNoise(cx * 0.8f, cy * 0.8f, cz * 0.8f);
+                            s = (s + 1f) * 0.5f;
+                            // threshold to create darker regions
+                            if (s < 0.35f)
+                            {
+                                float dark = 1f - (0.35f - s) * 1.6f; // darkening factor
+                                intensity *= Math.Clamp(dark, 0.45f, 1f);
+                            }
+                        }
+
+                        // latitude-dependent boost isn't meaningful per-face; use a
+                        // small pole-like boost based on absolute Y to preserve look.
+                        float latBoost = 1.0f + (0.03f * MathF.Abs(cy));
+                        intensity *= latBoost;
+
+                        // apply overall brightness and gamma
+                        float final = MathF.Pow(intensity * brightness, 0.9f);
+
+                        // surface noise
+                        float surf = surfaceNoise.GetNoise(cx * 3.0f, cy * 3.0f, cz * 3.0f); // [-1,1]
+                        surf = (surf + 1f) * 0.5f; // [0,1]
+                        const float surfaceAmp = 0.08f;
+                        float surfOffset = (surf - 0.5f) * 2f * surfaceAmp; // [-amp,amp]
+                        final = Math.Clamp(final + surfOffset, 0f, 8f);
+
+                        var col = Mul(baseColor, final);
+                        imgFace[px, py] = col;
                     }
                 }
 
-                // subtle latitude-dependent brightness (hotter poles effect optional)
-                float latBoost = 1.0f + (0.03f * MathF.Cos(lat * 2f));
-                intensity *= latBoost;
-
-                // apply overall brightness and gamma
-                float final = MathF.Pow(intensity * brightness, 0.9f);
-
-                // add a subtle, high-frequency surface noise layer to give the
-                // star a bit more perceived surface texture without changing
-                // the overall brightness much. Sample the 3D surfaceNoise and
-                // convert it to a small additive offset.
-                float surf = surfaceNoise.GetNoise(cx * 3.0f, cy * 3.0f, cz * 3.0f); // [-1,1]
-                surf = (surf + 1f) * 0.5f; // [0,1]
-                // map to a small bipolar offset around 0 -> [-amp, +amp]
-                const float surfaceAmp = 0.08f; // max +/- amplitude (tweakable)
-                float surfOffset = (surf - 0.5f) * 2f * surfaceAmp; // [-amp,amp]
-
-                final = Math.Clamp(final + surfOffset, 0f, 8f);
-
-                // colorize by base color
-                var col = Mul(baseColor, final);
-
-                img[px, py] = col;
+                string outFile = Path.Combine(cubemapDir, baseName + "_" + faceSuffix[face] + ".png");
+                imgFace.SaveAsPng(outFile);
             }
         }
-
-        Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
-        img.SaveAsPng(outputPath);
     }
 }

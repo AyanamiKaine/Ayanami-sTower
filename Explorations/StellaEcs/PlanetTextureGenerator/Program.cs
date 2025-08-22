@@ -11,6 +11,8 @@ static class PlanetGenerator
     // Defaults
     const int DEFAULT_WIDTH = 1024 * 2;
     const int DEFAULT_HEIGHT = 512 * 2;
+    // Levels of detail: lod0 = full, lod1 = half, lod2 = quarter, lod3 = eighth
+    const int LOD_COUNT = 4;
 
     enum PlanetType
     {
@@ -209,8 +211,27 @@ static class PlanetGenerator
 
     // Public contract: generate a single texture file with the chosen parameters.
     // Inputs: seed, type, output path, width/height. Output: PNG file written. Errors: throws on IO.
-    static void GeneratePlanetTexture(int seed, PlanetType type, string outputPath, int width = DEFAULT_WIDTH, int height = DEFAULT_HEIGHT)
+    /// <summary>
+    /// Generate a planet texture. Can either write a single equirectangular PNG
+    /// or a cubemap consisting of six face PNGs saved into a dedicated folder.
+    /// </summary>
+    /// <param name="seed">Random seed for noise generation.</param>
+    /// <param name="type">The planet type preset to use.</param>
+    /// <param name="outputPath">Path to write the output file; for cubemaps the folder will be created adjacent to this path.</param>
+    /// <param name="width">Width of the equirectangular output.</param>
+    /// <param name="height">Height of the equirectangular output.</param>
+    /// <param name="cubeMap">If true, generates six cube-face PNGs instead of a single equirectangular texture. Files are written to a folder named &lt;outputPathBase&gt;_cubemap.</param>
+    /// <param name="faceSize">When <paramref name="cubeMap"/> is true, this is the size (width/height) of each cube face.</param>
+    /// <param name="generateBoth">If true, create both a flat equirectangular texture AND a cubemap (saved into a subfolder).</param>
+    static void GeneratePlanetTexture(int seed, PlanetType type, string outputPath, int width = DEFAULT_WIDTH, int height = DEFAULT_HEIGHT, bool cubeMap = false, int faceSize = 1024, bool generateBoth = false)
     {
+        // If requested, produce both outputs and return.
+        if (generateBoth)
+        {
+            GeneratePlanetTexture(seed, type, outputPath, width, height, false, faceSize, false);
+            GeneratePlanetTexture(seed, type, outputPath, width, height, true, faceSize, false);
+            return;
+        }
         // Configure noise via preset
         var preset = GetPlanetPreset(type, seed);
         var noise = new FastNoiseLite();
@@ -263,8 +284,6 @@ static class PlanetGenerator
         rustNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
         rustNoise.SetFrequency(1.0f / preset.RustScale);
 
-        using var img = new Image<Rgba32>(width, height);
-
         // For Earth-like storms: create some storm centers determined by seed
         var rng = new Random(seed);
         var stormCenters = new List<(float x, float y, float radius)>();
@@ -277,125 +296,282 @@ static class PlanetGenerator
             }
         }
 
-        for (int x = 0; x < width; x++)
+        if (!cubeMap)
         {
-            for (int y = 0; y < height; y++)
+            using var img = new Image<Rgba32>(width, height);
+
+            for (int x = 0; x < width; x++)
             {
-                // Map pixel coordinates to a noise coordinate space
-                float nx = x / (float)width;
-                float ny = y / (float)height;
-
-                // Sample coordinates
-                float sampleX = nx * width;
-                float sampleY = ny * height;
-
-                float n = noise.GetNoise(sampleX, sampleY); // [-1,1]
-                float h = (n + 1f) * 0.5f; // [0,1]
-
-                // For gas giants, overlay banded noise
-                if (type == PlanetType.GasGiant)
+                for (int y = 0; y < height; y++)
                 {
-                    // create latitudinal bands by using y coordinate
-                    float band = (float)Math.Abs(Math.Sin(ny * Math.PI * (1.0 + (seed % 5))));
-                    float bandNoise = (noise.GetNoise(sampleX * 0.4f, sampleY * 0.4f) * 0.5f) + 0.5f;
-                    h = Math.Clamp((band * preset.BandStrength) + (bandNoise * (1f - preset.BandStrength)), 0f, 1f);
-                }
+                    // Map pixel coordinates to a noise coordinate space
+                    float nx = x / (float)width;
+                    float ny = y / (float)height;
 
-                // Base color from height ramp
-                var baseColor = ramp(h);
-                var finalColor = baseColor;
+                    // Sample coordinates
+                    float sampleX = nx * width;
+                    float sampleY = ny * height;
 
-                // --- Overlays ---
+                    float n = noise.GetNoise(sampleX, sampleY); // [-1,1]
+                    float h = (n + 1f) * 0.5f; // [0,1]
 
-                // --- Clouds ---
-                // Only add thick visible clouds for planets with significant atmospheres.
-                if (type == PlanetType.EarthLike || type == PlanetType.OceanWorld)
-                {
-                    float c = cloudNoise.GetNoise(sampleX * 0.06f, sampleY * 0.06f); // [-1,1]
-                    float cloudAlpha = Math.Clamp((c + 1f) * 0.5f - preset.CloudThreshold, 0f, 1f);
-                    // soften and reduce in high elevation
-                    cloudAlpha *= 1f - MathF.Pow(h, 1.5f);
-                    cloudAlpha = MathF.Pow(cloudAlpha, 0.8f);
-                    if (cloudAlpha > 0.01f)
+                    // For gas giants, overlay banded noise
+                    if (type == PlanetType.GasGiant)
                     {
-                        var cloudColor = new Rgba32(250, 250, 250);
-                        finalColor = Lerp(finalColor, cloudColor, cloudAlpha * 0.9f);
+                        // create latitudinal bands by using y coordinate
+                        float band = (float)Math.Abs(Math.Sin(ny * Math.PI * (1.0 + (seed % 5))));
+                        float bandNoise = (noise.GetNoise(sampleX * 0.4f, sampleY * 0.4f) * 0.5f) + 0.5f;
+                        h = Math.Clamp((band * preset.BandStrength) + (bandNoise * (1f - preset.BandStrength)), 0f, 1f);
                     }
-                }
 
-                // --- Storms (EarthLike) ---
-                if (type == PlanetType.EarthLike && stormCenters.Count > 0)
-                {
-                    foreach (var (sx, sy, sr) in stormCenters)
+                    // Base color from height ramp
+                    var baseColor = ramp(h);
+                    var finalColor = baseColor;
+
+                    // --- Overlays ---
+
+                    // --- Clouds ---
+                    // Only add thick visible clouds for planets with significant atmospheres.
+                    if (type == PlanetType.EarthLike || type == PlanetType.OceanWorld)
                     {
-                        float dx = nx - sx;
-                        float dy = ny - sy;
-                        // wrap horizontally
-                        if (dx > 0.5f) dx -= 1f;
-                        if (dx < -0.5f) dx += 1f;
-                        float dist = MathF.Sqrt(dx * dx + dy * dy);
-                        if (dist < sr)
+                        float c = cloudNoise.GetNoise(sampleX * 0.06f, sampleY * 0.06f); // [-1,1]
+                        float cloudAlpha = Math.Clamp((c + 1f) * 0.5f - preset.CloudThreshold, 0f, 1f);
+                        // soften and reduce in high elevation
+                        cloudAlpha *= 1f - MathF.Pow(h, 1.5f);
+                        cloudAlpha = MathF.Pow(cloudAlpha, 0.8f);
+                        if (cloudAlpha > 0.01f)
                         {
-                            // stronger at center, softer on edges
-                            float t = 1f - (dist / sr);
-                            t = MathF.Pow(t, 1.5f);
-                            // storm color : white with bluish tint
-                            var stormCol = new Rgba32(240, 245, 255);
-                            finalColor = Lerp(finalColor, stormCol, Math.Clamp(t * 0.85f, 0f, 1f));
+                            var cloudColor = new Rgba32(250, 250, 250);
+                            finalColor = Lerp(finalColor, cloudColor, cloudAlpha * 0.9f);
                         }
                     }
-                }
 
-                // --- Gas giant major storm (e.g., Great Red Spot) ---
-                if (type == PlanetType.GasGiant)
-                {
-                    // create one major storm per seed occasionally
-                    float gx = (float)((seed * 9301 + 49297) % 1000) / 1000f;
-                    float gy = 0.5f + (float)Math.Sin(seed % 37) * 0.12f;
-                    float dx = nx - gx;
-                    if (dx > 0.5f) dx -= 1f;
-                    float dy = ny - gy;
-                    float dist = MathF.Sqrt(dx * dx + dy * dy);
-                    if (dist < 0.12f)
+                    // --- Storms (EarthLike) ---
+                    if (type == PlanetType.EarthLike && stormCenters.Count > 0)
                     {
-                        float t = 1f - (dist / 0.12f);
-                        t = MathF.Pow(t, 1.2f);
-                        var gStorm = new Rgba32(210, 90, 60);
-                        finalColor = Lerp(finalColor, gStorm, Math.Clamp(t * 0.9f, 0f, 1f));
+                        foreach (var (sx, sy, sr) in stormCenters)
+                        {
+                            float dx = nx - sx;
+                            float dy = ny - sy;
+                            // wrap horizontally
+                            if (dx > 0.5f) dx -= 1f;
+                            if (dx < -0.5f) dx += 1f;
+                            float dist = MathF.Sqrt(dx * dx + dy * dy);
+                            if (dist < sr)
+                            {
+                                // stronger at center, softer on edges
+                                float t = 1f - (dist / sr);
+                                t = MathF.Pow(t, 1.5f);
+                                // storm color : white with bluish tint
+                                var stormCol = new Rgba32(240, 245, 255);
+                                finalColor = Lerp(finalColor, stormCol, Math.Clamp(t * 0.85f, 0f, 1f));
+                            }
+                        }
+                    }
+
+                    // --- Gas giant major storm (e.g., Great Red Spot) ---
+                    if (type == PlanetType.GasGiant)
+                    {
+                        // create one major storm per seed occasionally
+                        float gx = (float)((seed * 9301 + 49297) % 1000) / 1000f;
+                        float gy = 0.5f + (float)Math.Sin(seed % 37) * 0.12f;
+                        float dx = nx - gx;
+                        if (dx > 0.5f) dx -= 1f;
+                        float dy = ny - gy;
+                        float dist = MathF.Sqrt(dx * dx + dy * dy);
+                        if (dist < 0.12f)
+                        {
+                            float t = 1f - (dist / 0.12f);
+                            t = MathF.Pow(t, 1.2f);
+                            var gStorm = new Rgba32(210, 90, 60);
+                            finalColor = Lerp(finalColor, gStorm, Math.Clamp(t * 0.9f, 0f, 1f));
+                        }
+                    }
+
+                    // --- Rust / oxidation overlay for relevant bodies ---
+                    if (type == PlanetType.Rocky || type == PlanetType.IronRich || type == PlanetType.Metallic)
+                    {
+                        float r = rustNoise.GetNoise(sampleX * 0.08f, sampleY * 0.08f);
+                        float rustMask = Math.Clamp((r + 1f) * 0.5f, 0f, 1f);
+                        // bias so rust appears in patches
+                        rustMask = MathF.Pow(rustMask, 1.3f) * preset.RustAmount;
+                        var rustColor = new Rgba32(170, 80, 40);
+                        finalColor = Lerp(finalColor, rustColor, rustMask);
+                    }
+
+                    // --- Craters for bodies with no atmosphere to erode them ---
+                    if (type == PlanetType.Rocky || type == PlanetType.Barren || type == PlanetType.Metallic || type == PlanetType.Moon || type == PlanetType.Asteroid || type == PlanetType.Comet)
+                    {
+                        float cr = craterNoise.GetNoise(sampleX * 1.2f, sampleY * 1.2f);
+                        // Cellular noise produces spots; threshold to carve craters
+                        if (cr > preset.CraterThreshold)
+                        {
+                            float amt = (cr - preset.CraterThreshold) / (1f - preset.CraterThreshold);
+                            amt = MathF.Pow(amt, 2f);
+                            var craterDark = new Rgba32(30, 22, 18);
+                            finalColor = Lerp(finalColor, craterDark, Math.Clamp(amt * 0.6f, 0f, 1f));
+                        }
+                    }
+
+                    img[x, y] = finalColor;
+                }
+            }
+            // Ensure directory exists
+            Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
+            img.SaveAsPng(outputPath);
+        }
+        else
+        {
+            // Cube map generation for planets: create a dedicated folder
+            string parentDir = Path.GetDirectoryName(outputPath) ?? ".";
+            string baseName = Path.GetFileNameWithoutExtension(outputPath);
+            string cubemapDir = Path.Combine(parentDir, baseName + "_cubemap");
+            Directory.CreateDirectory(cubemapDir);
+
+            string[] faceSuffix = new[] { "PX", "NX", "PY", "NY", "PZ", "NZ" };
+
+            for (int face = 0; face < 6; face++)
+            {
+                using var imgFace = new Image<Rgba32>(faceSize, faceSize);
+
+                for (int px = 0; px < faceSize; px++)
+                {
+                    float u = (2f * ((px + 0.5f) / faceSize)) - 1f;
+                    for (int py = 0; py < faceSize; py++)
+                    {
+                        float v = (2f * ((py + 0.5f) / faceSize)) - 1f;
+
+                        // map (u,v) to 3D direction for current cube face
+                        float dx3, dy3, dz3;
+                        switch (face)
+                        {
+                            case 0: dx3 = 1f; dy3 = v; dz3 = -u; break; // +X
+                            case 1: dx3 = -1f; dy3 = v; dz3 = u; break; // -X
+                            case 2: dx3 = u; dy3 = 1f; dz3 = -v; break; // +Y
+                            case 3: dx3 = u; dy3 = -1f; dz3 = v; break; // -Y
+                            case 4: dx3 = u; dy3 = v; dz3 = 1f; break; // +Z
+                            default: dx3 = -u; dy3 = v; dz3 = -1f; break; // -Z
+                        }
+
+                        // normalize direction
+                        float len = MathF.Sqrt(dx3 * dx3 + dy3 * dy3 + dz3 * dz3);
+                        float cx = dx3 / len;
+                        float cy = dy3 / len;
+                        float cz = dz3 / len;
+
+                        // convert direction to spherical coordinates (lon/lat)
+                        float lat = MathF.Asin(cy); // [-pi/2, pi/2]
+                        float lon = MathF.Atan2(cz, cx); // [-pi, pi]
+                        // map lon from [-pi,pi] -> [0,1]
+                        float nx = (lon + MathF.PI) / (MathF.PI * 2f);
+                        float ny = (lat + (MathF.PI * 0.5f)) / MathF.PI;
+
+                        // compute equirectangular sample coords (used for fine detail overlays)
+                        float sampleX = nx * width;
+                        float sampleY = ny * height;
+
+                        // Sample both 3D (continuous across faces) and 2D equirectangular
+                        // (preserves fine-grained detail tuned for the presets). Mix them
+                        // so we get continuity without losing texture detail.
+                        float n3 = noise.GetNoise(cx, cy, cz); // [-1,1]  (large scale)
+                        float n2 = noise.GetNoise(sampleX, sampleY); // [-1,1] (fine detail)
+                        float n = (n3 * 0.55f) + (n2 * 0.45f);
+                        float h = (n + 1f) * 0.5f; // [0,1]
+
+                        // For gas giants, use ny (latitude) for banding
+                        if (type == PlanetType.GasGiant)
+                        {
+                            float band = (float)Math.Abs(Math.Sin(ny * Math.PI * (1.0 + (seed % 5))));
+                            float bandNoise = (noise.GetNoise(sampleX * 0.4f, sampleY * 0.4f) * 0.5f) + 0.5f;
+                            h = Math.Clamp((band * preset.BandStrength) + (bandNoise * (1f - preset.BandStrength)), 0f, 1f);
+                        }
+
+                        var baseColor = ramp(h);
+                        var finalColor = baseColor;
+
+                        // Clouds
+                        if (type == PlanetType.EarthLike || type == PlanetType.OceanWorld)
+                        {
+                            float c = cloudNoise.GetNoise(sampleX * 0.06f, sampleY * 0.06f); // [-1,1]
+                            float cloudAlpha = Math.Clamp((c + 1f) * 0.5f - preset.CloudThreshold, 0f, 1f);
+                            cloudAlpha *= 1f - MathF.Pow(h, 1.5f);
+                            cloudAlpha = MathF.Pow(cloudAlpha, 0.8f);
+                            if (cloudAlpha > 0.01f)
+                            {
+                                var cloudColor = new Rgba32(250, 250, 250);
+                                finalColor = Lerp(finalColor, cloudColor, cloudAlpha * 0.9f);
+                            }
+                        }
+
+                        // Storms (approximate using spherical nx/ny)
+                        if (type == PlanetType.EarthLike && stormCenters.Count > 0)
+                        {
+                            foreach (var (sx, sy, sr) in stormCenters)
+                            {
+                                float dx = nx - sx;
+                                float dy = ny - sy;
+                                if (dx > 0.5f) dx -= 1f;
+                                if (dx < -0.5f) dx += 1f;
+                                float dist = MathF.Sqrt(dx * dx + dy * dy);
+                                if (dist < sr)
+                                {
+                                    float t = 1f - (dist / sr);
+                                    t = MathF.Pow(t, 1.5f);
+                                    var stormCol = new Rgba32(240, 245, 255);
+                                    finalColor = Lerp(finalColor, stormCol, Math.Clamp(t * 0.85f, 0f, 1f));
+                                }
+                            }
+                        }
+
+                        // Gas giant major storm
+                        if (type == PlanetType.GasGiant)
+                        {
+                            float gx = (float)((seed * 9301 + 49297) % 1000) / 1000f;
+                            float gy = 0.5f + (float)Math.Sin(seed % 37) * 0.12f;
+                            float dxs = nx - gx;
+                            if (dxs > 0.5f) dxs -= 1f;
+                            float dys = ny - gy;
+                            float dist = MathF.Sqrt(dxs * dxs + dys * dys);
+                            if (dist < 0.12f)
+                            {
+                                float t = 1f - (dist / 0.12f);
+                                t = MathF.Pow(t, 1.2f);
+                                var gStorm = new Rgba32(210, 90, 60);
+                                finalColor = Lerp(finalColor, gStorm, Math.Clamp(t * 0.9f, 0f, 1f));
+                            }
+                        }
+
+                        // Rust
+                        if (type == PlanetType.Rocky || type == PlanetType.IronRich || type == PlanetType.Metallic)
+                        {
+                            float r = rustNoise.GetNoise(sampleX * 0.08f, sampleY * 0.08f);
+                            float rustMask = Math.Clamp((r + 1f) * 0.5f, 0f, 1f);
+                            rustMask = MathF.Pow(rustMask, 1.3f) * preset.RustAmount;
+                            var rustColor = new Rgba32(170, 80, 40);
+                            finalColor = Lerp(finalColor, rustColor, rustMask);
+                        }
+
+                        // Craters
+                        if (type == PlanetType.Rocky || type == PlanetType.Barren || type == PlanetType.Metallic || type == PlanetType.Moon || type == PlanetType.Asteroid || type == PlanetType.Comet)
+                        {
+                            float cr = craterNoise.GetNoise(sampleX * 1.2f, sampleY * 1.2f);
+                            if (cr > preset.CraterThreshold)
+                            {
+                                float amt = (cr - preset.CraterThreshold) / (1f - preset.CraterThreshold);
+                                amt = MathF.Pow(amt, 2f);
+                                var craterDark = new Rgba32(30, 22, 18);
+                                finalColor = Lerp(finalColor, craterDark, Math.Clamp(amt * 0.6f, 0f, 1f));
+                            }
+                        }
+
+                        imgFace[px, py] = finalColor;
                     }
                 }
 
-                // --- Rust / oxidation overlay for relevant bodies ---
-                if (type == PlanetType.Rocky || type == PlanetType.IronRich || type == PlanetType.Metallic)
-                {
-                    float r = rustNoise.GetNoise(sampleX * 0.08f, sampleY * 0.08f);
-                    float rustMask = Math.Clamp((r + 1f) * 0.5f, 0f, 1f);
-                    // bias so rust appears in patches
-                    rustMask = MathF.Pow(rustMask, 1.3f) * preset.RustAmount;
-                    var rustColor = new Rgba32(170, 80, 40);
-                    finalColor = Lerp(finalColor, rustColor, rustMask);
-                }
-
-                // --- Craters for bodies with no atmosphere to erode them ---
-                if (type == PlanetType.Rocky || type == PlanetType.Barren || type == PlanetType.Metallic || type == PlanetType.Moon || type == PlanetType.Asteroid || type == PlanetType.Comet)
-                {
-                    float cr = craterNoise.GetNoise(sampleX * 1.2f, sampleY * 1.2f);
-                    // Cellular noise produces spots; threshold to carve craters
-                    if (cr > preset.CraterThreshold)
-                    {
-                        float amt = (cr - preset.CraterThreshold) / (1f - preset.CraterThreshold);
-                        amt = MathF.Pow(amt, 2f);
-                        var craterDark = new Rgba32(30, 22, 18);
-                        finalColor = Lerp(finalColor, craterDark, Math.Clamp(amt * 0.6f, 0f, 1f));
-                    }
-                }
-
-                img[x, y] = finalColor;
+                string outFile = Path.Combine(cubemapDir, baseName + "_" + faceSuffix[face] + ".png");
+                imgFace.SaveAsPng(outFile);
             }
         }
-        // Ensure directory exists
-        Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
-        img.SaveAsPng(outputPath);
     }
 
     // Randomized batch generator. Creates `count` textures into `outDir`.
@@ -420,7 +596,7 @@ static class PlanetGenerator
                     Console.WriteLine($"Generating star texture {starOut} (type={type}, seed={seed})");
                     try
                     {
-                        StarTextureGenerator.GenerateStarTexture(seed, tname, starOut, width, height);
+                        StarTextureGenerator.GenerateStarTexture(seed, tname, starOut, width, height, true);
                     }
                     catch (Exception ex)
                     {
@@ -428,12 +604,43 @@ static class PlanetGenerator
                     }
                     continue;
                 }
-                GeneratePlanetTexture(seed, type, filename, width, height);
+                // Generate into a folder per texture with multiple LOD subfolders.
+                GeneratePlanetTextureWithLods(seed, type, filename, width, height, cubeMap: false, faceSize: 1024, generateBoth: true);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to generate {filename}: {ex.Message}");
             }
+        }
+    }
+
+    // Create a folder named after the texture (base filename without extension)
+    // and create LOD subfolders: lod0 (full), lod1 (half), lod2 (quarter).
+    // Each LOD folder will contain the equirect texture (and/or a cubemap subfolder
+    // if requested). This is a thin wrapper that calls GeneratePlanetTexture
+    // for each LOD with scaled sizes.
+    static void GeneratePlanetTextureWithLods(int seed, PlanetType type, string outputPath, int width = DEFAULT_WIDTH, int height = DEFAULT_HEIGHT, bool cubeMap = false, int faceSize = 1024, bool generateBoth = false)
+    {
+        string parentDir = Path.GetDirectoryName(outputPath) ?? ".";
+        string baseName = Path.GetFileNameWithoutExtension(outputPath);
+        string textureDir = Path.Combine(parentDir, baseName);
+        Directory.CreateDirectory(textureDir);
+
+        for (int lod = 0; lod < LOD_COUNT; lod++)
+        {
+            string lodFolder = Path.Combine(textureDir, $"lod{lod}");
+            Directory.CreateDirectory(lodFolder);
+
+            int divisor = 1 << lod; // 1,2,4
+            int lodW = Math.Max(1, width / divisor);
+            int lodH = Math.Max(1, height / divisor);
+            int lodFace = Math.Max(1, faceSize / divisor);
+
+            string outFile = Path.Combine(lodFolder, Path.GetFileName(outputPath));
+            Console.WriteLine($"  LOD{lod}: writing {outFile} ({lodW}x{lodH})");
+            // Delegate actual generation to existing function. It will create
+            // a cubemap folder inside the lod folder if cubeMap or generateBoth is set.
+            GeneratePlanetTexture(seed, type, outFile, lodW, lodH, cubeMap, lodFace, generateBoth);
         }
     }
 
