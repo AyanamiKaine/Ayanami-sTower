@@ -401,6 +401,9 @@ internal static class Program
         private bool _enableFrustumCulling = true;
         // Scale applied to bounding sphere radii used for culling. Useful for tuning.
         private float _cullingRadiusScale = 1.0f;
+        // Size-based visibility: objects with projected screen size above this threshold will be forced visible
+        private bool _enableSizeVisibility = true;
+        private float _minScreenPixelSize = 3.0f; // default minimum pixel radius to consider "visible"
 
         // Floating origin system
         private FloatingOriginManager? _floatingOriginManager;
@@ -1801,12 +1804,16 @@ internal static class Program
             var proj = _camera.GetProjectionMatrix();
             var viewProj = view * proj;
             var frustum = ExtractFrustumPlanes(viewProj);
-            // Runtime culling adjustments: keys to toggle culling and adjust radius scale
+            // Runtime culling adjustments: keys to toggle culling, toggle size-visibility and adjust radius/threshold
             if (Inputs.Keyboard.IsPressed(KeyCode.C))
             {
-                // toggle (edge-detection optional but simple toggle on press)
                 _enableFrustumCulling = !_enableFrustumCulling;
                 Console.WriteLine($"[Culling] Frustum culling: {(_enableFrustumCulling ? "ENABLED" : "DISABLED")}");
+            }
+            if (Inputs.Keyboard.IsPressed(KeyCode.V))
+            {
+                _enableSizeVisibility = !_enableSizeVisibility;
+                Console.WriteLine($"[Culling] Size-based visibility: {(_enableSizeVisibility ? "ENABLED" : "DISABLED")}");
             }
             // N/M to decrease/increase culling radius scale for more/less aggressive culling
             if (Inputs.Keyboard.IsHeld(KeyCode.N))
@@ -1818,6 +1825,17 @@ internal static class Program
             {
                 _cullingRadiusScale = MathF.Min(10f, _cullingRadiusScale + 0.1f);
                 Console.WriteLine($"[Culling] Radius scale: {_cullingRadiusScale:F2}");
+            }
+            // [ and ] to adjust minimum screen-pixel threshold for forced visibility
+            if (Inputs.Keyboard.IsHeld(KeyCode.LeftBracket))
+            {
+                _minScreenPixelSize = MathF.Max(0.5f, _minScreenPixelSize - 0.5f);
+                Console.WriteLine($"[Culling] Min pixel size: {_minScreenPixelSize:F1}");
+            }
+            if (Inputs.Keyboard.IsHeld(KeyCode.RightBracket))
+            {
+                _minScreenPixelSize = MathF.Min(200f, _minScreenPixelSize + 0.5f);
+                Console.WriteLine($"[Culling] Min pixel size: {_minScreenPixelSize:F1}");
             }
             // Prepare line batch for this frame and upload any lines
             _lineBatch?.Begin();
@@ -1916,7 +1934,34 @@ internal static class Program
 
                 // Sphere culling: use a conservative radius based on max scale axis scaled by tuning factor.
                 float radius = MathF.Max(size.X, MathF.Max(size.Y, size.Z)) * _cullingRadiusScale;
-                if (_enableFrustumCulling && !IsSphereVisible(translation, radius, frustum))
+
+                // Size-based visibility: compute projected pixel radius and force visible if above threshold
+                bool visibleBySize = false;
+                if (_enableSizeVisibility)
+                {
+                    // Transform center into clip space
+                    var center4 = new Vector4(translation, 1f);
+                    var clip = Vector4.Transform(center4, viewProj);
+                    if (clip.W > 0f)
+                    {
+                        // approximate projected pixel radius: r / (dist * tan(fov/2)) * (screenHeight/2)
+                        var toObj = translation - _camera.Position;
+                        var dist = toObj.Length();
+                        if (dist > 0f)
+                        {
+                            float tanHalfFov = MathF.Tan(_camera.Fov * 0.5f);
+                            float screenHeight = (float)MainWindow.Height;
+                            float pixelRadius = (radius / (dist * tanHalfFov)) * (screenHeight * 0.5f);
+                            if (pixelRadius >= _minScreenPixelSize)
+                            {
+                                visibleBySize = true;
+                            }
+                        }
+                    }
+                }
+
+                // Perform frustum culling unless size-based visibility forces rendering
+                if (_enableFrustumCulling && !visibleBySize && !IsSphereVisible(translation, radius, frustum))
                 {
                     continue; // culled
                 }
