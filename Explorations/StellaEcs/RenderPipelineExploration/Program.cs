@@ -396,6 +396,12 @@ internal static class Program
         // If true, also draw ECS-declared collider poses (helps spot divergence). Off by default.
         private bool _debugDrawEcsColliderPoses = false;
 
+        // Frustum culling controls
+        // When true, perform frustum culling on GPU-mesh entities; can be toggled at runtime.
+        private bool _enableFrustumCulling = true;
+        // Scale applied to bounding sphere radii used for culling. Useful for tuning.
+        private float _cullingRadiusScale = 1.0f;
+
         // Floating origin system
         private FloatingOriginManager? _floatingOriginManager;
         public StellaInvicta() : base(
@@ -1795,6 +1801,24 @@ internal static class Program
             var proj = _camera.GetProjectionMatrix();
             var viewProj = view * proj;
             var frustum = ExtractFrustumPlanes(viewProj);
+            // Runtime culling adjustments: keys to toggle culling and adjust radius scale
+            if (Inputs.Keyboard.IsPressed(KeyCode.C))
+            {
+                // toggle (edge-detection optional but simple toggle on press)
+                _enableFrustumCulling = !_enableFrustumCulling;
+                Console.WriteLine($"[Culling] Frustum culling: {(_enableFrustumCulling ? "ENABLED" : "DISABLED")}");
+            }
+            // N/M to decrease/increase culling radius scale for more/less aggressive culling
+            if (Inputs.Keyboard.IsHeld(KeyCode.N))
+            {
+                _cullingRadiusScale = MathF.Max(0.1f, _cullingRadiusScale - 0.1f);
+                Console.WriteLine($"[Culling] Radius scale: {_cullingRadiusScale:F2}");
+            }
+            if (Inputs.Keyboard.IsHeld(KeyCode.M))
+            {
+                _cullingRadiusScale = MathF.Min(10f, _cullingRadiusScale + 0.1f);
+                Console.WriteLine($"[Culling] Radius scale: {_cullingRadiusScale:F2}");
+            }
             // Prepare line batch for this frame and upload any lines
             _lineBatch?.Begin();
             // Example lines: axes at origin
@@ -1864,6 +1888,12 @@ internal static class Program
                 Quaternion rotation = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : Quaternion.Identity;
                 Vector3 size = entity.Has<Size3D>() ? entity.GetMut<Size3D>().Value : Vector3.One;
 
+                // Skip rendering if entity is explicitly marked Invisible via tag component
+                if (entity.Has<Invisible>())
+                {
+                    continue;
+                }
+
                 // If this entity has a physics representation, prefer the simulation pose for accuracy
                 if (entity.Has<PhysicsBody>())
                 {
@@ -1884,9 +1914,9 @@ internal static class Program
                     }
                 }
 
-                // Sphere culling: use a conservative radius based on max scale axis.
-                float radius = MathF.Max(size.X, MathF.Max(size.Y, size.Z));
-                if (!IsSphereVisible(translation, radius, frustum))
+                // Sphere culling: use a conservative radius based on max scale axis scaled by tuning factor.
+                float radius = MathF.Max(size.X, MathF.Max(size.Y, size.Z)) * _cullingRadiusScale;
+                if (_enableFrustumCulling && !IsSphereVisible(translation, radius, frustum))
                 {
                     continue; // culled
                 }
