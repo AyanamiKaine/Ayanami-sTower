@@ -12,6 +12,40 @@ using SixLabors.ImageSharp.PixelFormats;
 /// </summary>
 public static class StarTextureGenerator
 {
+    // Levels of detail used for saved star textures (lod0 full, lod1 half, etc.)
+    const int LOD_COUNT = 4;
+
+    /// <summary>
+    /// Create LOD subfolders and generate star textures at multiple resolutions.
+    /// Writes files named with their resolution (e.g. name_2048x1024.png) and
+    /// will also create cubemap subfolders when requested.
+    /// </summary>
+    public static void GenerateStarTextureWithLods(int seed, string typeName, string outputPath, int width = 2048, int height = 1024, bool cubeMap = false, int faceSize = 1024, bool generateBoth = false)
+    {
+        string parentDir = Path.GetDirectoryName(outputPath) ?? ".";
+        string baseName = Path.GetFileNameWithoutExtension(outputPath);
+        string textureDir = Path.Combine(parentDir, baseName);
+        Directory.CreateDirectory(textureDir);
+
+        for (int lod = 0; lod < LOD_COUNT; lod++)
+        {
+            string lodFolder = Path.Combine(textureDir, $"lod{lod}");
+            Directory.CreateDirectory(lodFolder);
+
+            int divisor = 1 << lod; // 1,2,4,8
+            int lodW = Math.Max(1, width / divisor);
+            int lodH = Math.Max(1, height / divisor);
+            int lodFace = Math.Max(1, faceSize / divisor);
+
+            string fileName = Path.GetFileNameWithoutExtension(outputPath);
+            string ext = Path.GetExtension(outputPath);
+            string outFileName = $"{fileName}_{lodW}x{lodH}{ext}";
+            string outFile = Path.Combine(lodFolder, outFileName);
+
+            Console.WriteLine($"  Star LOD{lod}: writing {outFile} ({lodW}x{lodH})");
+            GenerateStarTexture(seed, typeName, outFile, lodW, lodH, cubeMap, lodFace);
+        }
+    }
     static Rgba32 Lerp(Rgba32 a, Rgba32 b, float t)
     {
         t = Math.Clamp(t, 0f, 1f);

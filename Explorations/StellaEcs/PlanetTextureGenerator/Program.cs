@@ -590,13 +590,14 @@ static class PlanetGenerator
                 // Star generation removed: skip star types.
                 if (type.ToString().StartsWith("Star_") || type == PlanetType.RedGiant || type == PlanetType.WhiteDwarf || type == PlanetType.NeutronStar)
                 {
-                    // Route star/stellar-type generation to the star generator
+                    // Route star/stellar-type generation to the star generator with LODs
                     string tname = type.ToString();
                     string starOut = Path.Combine(outDir, $"star_{tname.ToLower()}_{seed}.png");
                     Console.WriteLine($"Generating star texture {starOut} (type={type}, seed={seed})");
                     try
                     {
-                        StarTextureGenerator.GenerateStarTexture(seed, tname, starOut, width, height, true);
+                        // Generate both equirect and cubemap LODs
+                        StarTextureGenerator.GenerateStarTextureWithLods(seed, tname, starOut, width, height, cubeMap: true);
                     }
                     catch (Exception ex)
                     {
@@ -636,7 +637,11 @@ static class PlanetGenerator
             int lodH = Math.Max(1, height / divisor);
             int lodFace = Math.Max(1, faceSize / divisor);
 
-            string outFile = Path.Combine(lodFolder, Path.GetFileName(outputPath));
+            // Append the LOD resolution to the filename so each output file contains its resolution.
+            string fileName = Path.GetFileNameWithoutExtension(outputPath);
+            string ext = Path.GetExtension(outputPath);
+            string outFileName = $"{fileName}_{lodW}x{lodH}{ext}";
+            string outFile = Path.Combine(lodFolder, outFileName);
             Console.WriteLine($"  LOD{lod}: writing {outFile} ({lodW}x{lodH})");
             // Delegate actual generation to existing function. It will create
             // a cubemap folder inside the lod folder if cubeMap or generateBoth is set.
