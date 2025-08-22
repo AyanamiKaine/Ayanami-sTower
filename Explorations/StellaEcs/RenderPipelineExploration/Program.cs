@@ -1045,7 +1045,7 @@ internal static class Program
                 y: 0f,
                 color: new Color(255, 255, 255, 32) // more transparent grid to avoid white plane in distance
             );
-            */
+            
             World.CreateEntity()
                 .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(2000, 0, 0)))
                 .Set(new Color(255, 64, 64, 255));
@@ -1070,7 +1070,7 @@ internal static class Program
                 .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, -20000, 0)))
                 .Set(Color.Green);
 
-
+            */
             // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
             // Uses the same AU scale factor defined above so radii match planet positions
             SpawnAsteroidBelt(new Vector3(0, 0, 0),
