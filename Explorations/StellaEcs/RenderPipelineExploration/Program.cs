@@ -1800,8 +1800,7 @@ internal static class Program
                 _simulationAccumulator = maxAccum;
             }
 
-            int steps = 0;
-            while (_simulationAccumulator >= _fixedSimulationStepSeconds && steps < _maxSimulationStepsPerFrame)
+            for (int steps = 0; _simulationAccumulator >= _fixedSimulationStepSeconds && steps < _maxSimulationStepsPerFrame; steps++)
             {
                 // Step physics with a fixed, deterministic timestep
                 _simulation.Timestep((float)_fixedSimulationStepSeconds, _threadDispatcher);
@@ -1810,19 +1809,15 @@ internal static class Program
                 World.Update((float)_fixedSimulationStepSeconds);
 
                 _simulationAccumulator -= _fixedSimulationStepSeconds;
-                steps++;
             }
 
             // Update floating origin system (check if rebase is needed)
-            if (_floatingOriginManager != null)
+            if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
             {
-                if (_floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
-                {
-                    // Keep the camera near origin too so it doesn't immediately trigger another rebase
-                    _camera.Position -= rebaseOffset;
-                    // Also adjust camera controller internals so focus/distance remain valid after the world shift
-                    _cameraController.ApplyOriginShift(rebaseOffset);
-                }
+                // Keep the camera near origin too so it doesn't immediately trigger another rebase
+                _camera.Position -= rebaseOffset;
+                // Also adjust camera controller internals so focus/distance remain valid after the world shift
+                _cameraController.ApplyOriginShift(rebaseOffset);
             }
 
             // Check for mouse click to perform picking
