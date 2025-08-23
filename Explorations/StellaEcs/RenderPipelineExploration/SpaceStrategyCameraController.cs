@@ -406,6 +406,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                         _focusProvider = null;
                         _focusMinDistanceOverride = null;
                         _followSmoothingRemaining = 0f;
+                        _followSmoothingTotal = 0f;
                     }
                 }
             }
@@ -431,6 +432,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 _focusProvider = null;
                 _focusMinDistanceOverride = null;
                 _followSmoothingRemaining = 0f;
+                _followSmoothingTotal = 0f;
             }
 
             if (forward != 0f || rightDir != 0f || up != 0f)
@@ -558,81 +560,101 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     providerPos = _targetFocus; // fallback: keep existing target
                 }
 
-                // Determine active rate: during the initial follow-smoothing window we
-                // smoothly interpolate the active rate from the regular Smoothing value
-                // up to FollowTrackingSmoothingRate. This prevents the activeRate from
-                // jumping abruptly on the final frame of smoothing which caused a
-                // perceptible jump when the provider was moving.
-                float activeRate;
-                if (_followSmoothingRemaining > 0f && _followSmoothingTotal > 0f)
-                {
-                    // ratio in (0..1], 1 == just started smoothing, 0 == about to finish
-                    float r = _followSmoothingRemaining / _followSmoothingTotal;
-                    if (r < 0f) r = 0f;
-                    if (r > 1f) r = 1f;
-                    // Interpolate from Smoothing -> FollowTrackingSmoothingRate, easing toward the tracking rate
-                    activeRate = FollowTrackingSmoothingRate * (1f - r) + Smoothing * r;
-                }
-                else
-                {
-                    activeRate = FollowTrackingSmoothingRate;
-                }
-                float providerBlend = 1f;
-                if (dt > 0f && activeRate > 0f)
-                {
-                    providerBlend = 1f - MathF.Exp(-activeRate * dt);
-                }
-
-                // Exponentially blend provider position into the target focus to avoid
-                // abrupt set of _targetFocus between frames when the provider is moving.
-                _targetFocus = Vector3.Lerp(_targetFocus, providerPos, providerBlend);
-
-                // Now perform the follow interpolation from current -> target using the
-                // activeRate we've computed (exponential smoothing step)
-                float localT = 1f;
-                if (dt > 0f && activeRate > 0f)
-                {
-                    localT = 1f - MathF.Exp(-activeRate * dt);
-                }
-
-                // Compute desired new values via interpolation
-                var desiredFocus = Vector3.Lerp(_currentFocus, _targetFocus, localT);
-                var desiredDistance = _currentDistance + (_targetDistance - _currentDistance) * localT;
-
-                // Clamp per-frame focus movement to avoid a single choppy snap when approaching
-                // a target. This keeps the approach smooth even if the interpolated step is large.
-                if (dt > 0f && FollowMaxFocusSpeed > 0f)
-                {
-                    var maxMove = FollowMaxFocusSpeed * dt;
-                    var focusDelta = desiredFocus - _currentFocus;
-                    var dist = focusDelta.Length();
-                    if (dist > maxMove)
-                    {
-                        desiredFocus = _currentFocus + Vector3.Normalize(focusDelta) * maxMove;
-                    }
-                }
-
-                if (dt > 0f && FollowMaxDistanceDeltaPerSecond > 0f)
-                {
-                    var maxDistChange = FollowMaxDistanceDeltaPerSecond * dt;
-                    var distDelta = desiredDistance - _currentDistance;
-                    if (MathF.Abs(distDelta) > maxDistChange)
-                    {
-                        desiredDistance = _currentDistance + MathF.Sign(distDelta) * maxDistChange;
-                    }
-                }
-
-                _currentFocus = desiredFocus;
-                _currentDistance = desiredDistance;
-
+                // If we're still in the initial follow-smoothing window, smoothly
+                // interpolate the camera from its current position to the provider.
+                // This prevents an abrupt teleport when switching targets.
                 if (_followSmoothingRemaining > 0f)
                 {
+                    // Compute activeRate that eases from Smoothing -> FollowTrackingSmoothingRate
+                    float activeRate;
+                    if (_followSmoothingTotal > 0f)
+                    {
+                        float r = _followSmoothingRemaining / _followSmoothingTotal;
+                        if (r < 0f) r = 0f;
+                        if (r > 1f) r = 1f;
+                        activeRate = FollowTrackingSmoothingRate * (1f - r) + Smoothing * r;
+                    }
+                    else
+                    {
+                        activeRate = FollowTrackingSmoothingRate;
+                    }
+
+                    // Exponential step
+                    float localT = 1f;
+                    if (dt > 0f && activeRate > 0f)
+                    {
+                        localT = 1f - MathF.Exp(-activeRate * dt);
+                    }
+
+                    _targetFocus = providerPos;
+
+                    var desiredFocus = Vector3.Lerp(_currentFocus, _targetFocus, localT);
+                    var desiredDistance = _currentDistance + (_targetDistance - _currentDistance) * localT;
+
+                    // Apply per-frame clamps to avoid huge instantaneous jumps
+                    if (dt > 0f && FollowMaxFocusSpeed > 0f)
+                    {
+                        var maxMove = FollowMaxFocusSpeed * dt;
+                        var focusDelta = desiredFocus - _currentFocus;
+                        var dist = focusDelta.Length();
+                        if (dist > maxMove)
+                        {
+                            desiredFocus = _currentFocus + Vector3.Normalize(focusDelta) * maxMove;
+                        }
+                    }
+
+                    if (dt > 0f && FollowMaxDistanceDeltaPerSecond > 0f)
+                    {
+                        var maxDistChange = FollowMaxDistanceDeltaPerSecond * dt;
+                        var distDelta = desiredDistance - _currentDistance;
+                        if (MathF.Abs(distDelta) > maxDistChange)
+                        {
+                            desiredDistance = _currentDistance + MathF.Sign(distDelta) * maxDistChange;
+                        }
+                    }
+
+                    _currentFocus = desiredFocus;
+                    _currentDistance = desiredDistance;
+
                     _followSmoothingRemaining = MathF.Max(0f, _followSmoothingRemaining - dt);
                     if (_followSmoothingRemaining == 0f)
                     {
-                        // Clear total when finished
                         _followSmoothingTotal = 0f;
                     }
+                }
+                else
+                {
+                    // Finished initial smoothing: snap to provider each frame so the
+                    // camera tracks the object immediately (no temporal smoothing).
+                    _targetFocus = providerPos;
+                    var desiredFocus = providerPos;
+                    var desiredDistance = _targetDistance;
+
+                    // Still apply per-frame clamps to avoid teleporting if the provider
+                    // teleports or moves extremely fast.
+                    if (dt > 0f && FollowMaxFocusSpeed > 0f)
+                    {
+                        var maxMove = FollowMaxFocusSpeed * dt;
+                        var focusDelta = desiredFocus - _currentFocus;
+                        var dist = focusDelta.Length();
+                        if (dist > maxMove)
+                        {
+                            desiredFocus = _currentFocus + Vector3.Normalize(focusDelta) * maxMove;
+                        }
+                    }
+
+                    if (dt > 0f && FollowMaxDistanceDeltaPerSecond > 0f)
+                    {
+                        var maxDistChange = FollowMaxDistanceDeltaPerSecond * dt;
+                        var distDelta = desiredDistance - _currentDistance;
+                        if (MathF.Abs(distDelta) > maxDistChange)
+                        {
+                            desiredDistance = _currentDistance + MathF.Sign(distDelta) * maxDistChange;
+                        }
+                    }
+
+                    _currentFocus = desiredFocus;
+                    _currentDistance = desiredDistance;
                 }
             }
             else
