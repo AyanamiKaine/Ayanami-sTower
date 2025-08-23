@@ -405,12 +405,7 @@ internal static class Program
         private double _lastClickTime = 0.0;
         private int _lastClickX = -9999;
         private int _lastClickY = -9999;
-        // Simulation speed control (press + / - to change)
-        private readonly float[] _timeScaleOptions = new float[] { 0.125f, 0.25f, 0.5f, 1f, 2f, 4f, 8f, 16f };
-        private int _timeScaleIndex = 3; // default = 1x
-        private float _timeScale => _timeScaleOptions[_timeScaleIndex];
-        private bool _prevIncreasePressed = false;
-        private bool _prevDecreasePressed = false;
+
         // Deterministic fixed-step simulation accumulator
         // The simulation will always step in discrete, fixed-sized steps so
         // identical inputs produce identical results regardless of frame timing.
@@ -1708,19 +1703,6 @@ internal static class Program
             // when the simulation time scale is increased which caused the camera to
             // trail the physics objects and accumulate an offset.
 
-            // Handle simulation speed +/- keys (edge-triggered)
-            bool incPressed = Inputs.Keyboard.IsPressed(KeyCode.KeypadPlus) || Inputs.Keyboard.IsPressed(KeyCode.Equals);
-            bool decPressed = Inputs.Keyboard.IsPressed(KeyCode.KeypadMinus) || Inputs.Keyboard.IsPressed(KeyCode.Minus);
-            if (incPressed && !_prevIncreasePressed)
-            {
-                if (_timeScaleIndex < _timeScaleOptions.Length - 1) { _timeScaleIndex++; Console.WriteLine($"[TimeScale] Increased to {_timeScale}x"); }
-            }
-            if (decPressed && !_prevDecreasePressed)
-            {
-                if (_timeScaleIndex > 0) { _timeScaleIndex--; Console.WriteLine($"[TimeScale] Decreased to {_timeScale}x"); }
-            }
-            _prevIncreasePressed = incPressed;
-            _prevDecreasePressed = decPressed;
 
             // NOTE: floating-origin update is performed after the camera update below
             // so it uses the camera's post-update position.
@@ -1808,13 +1790,8 @@ internal static class Program
                 }
             }
 
-            // Apply timescale to simulation and world updates using a fixed-step accumulator
-            // Do NOT change the step size; changing step size makes the simulation nondeterministic.
-            // Instead, scale the accumulated real time then consume it in fixed-size steps.
-            var scaledDeltaSeconds = delta.TotalSeconds * _timeScale;
-
             // Accumulate scaled real seconds
-            _simulationAccumulator += scaledDeltaSeconds;
+            _simulationAccumulator += delta.TotalSeconds;
 
             // Limit accumulated time to avoid spiral-of-death after freezes/hangs
             var maxAccum = _fixedSimulationStepSeconds * _maxSimulationStepsPerFrame;

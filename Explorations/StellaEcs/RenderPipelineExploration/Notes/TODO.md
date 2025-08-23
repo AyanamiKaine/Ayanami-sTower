@@ -1,6 +1,7 @@
 ## TODO
 
--   [X] Fix Floating point issue for large scale universe.
+-   [x] Fix Floating point issue for rendering large scale universe.
+-   [] Fix floating point calculations for simulations, our simuluation for star systems needs to use doubles because imagine a star system far away it will have the same rounding error as when rendering them, here the difference is the player wont see the problem until he moved far away and some time passes, the more we wait the more the error accumilates and results in wrong simulation results for example for planet orbits.
 
 ### Possible options
 
