@@ -874,11 +874,7 @@ internal static class Program
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             SunEntity = CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-
-            CreateStarSystem(new Vector3(10000f, 5000f, 500f), 80.0f);
-            CreateStarSystem(new Vector3(100000f, 0f, 500f), 80.0f);
-            CreateStarSystem(new Vector3(-10000f, -5000f, -500f), 80.0f);
-
+            SpawnGalaxies(250);
 
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
@@ -1137,7 +1133,7 @@ internal static class Program
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                 .Set(new CollisionShape(new Sphere(10.0f * 0.6f)))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             // Mercury: 0.39 AU from the Sun.
             var mercury = World.CreateEntity()
@@ -1151,7 +1147,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.048f, 0f)) // speed relative to Earth (fastest)
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             mercury.Set(new OrbitCircle(sun, 0.39f * auScale, new Color(200, 200, 200, 96), segments: 128));
 
@@ -1166,7 +1162,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.016f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             venus.Set(new OrbitCircle(sun, 0.72f * auScale, new Color(200, 200, 200, 96), segments: 128));
 
@@ -1181,7 +1177,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed = baseline
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             earth.Set(new OrbitCircle(sun, 1.0f * auScale, new Color(180, 220, 255, 96), segments: 128));
 
@@ -1201,7 +1197,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.27f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.12f, 0f)) // Orbits Earth faster
                 .Set(new Parent(earth))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             // Space station
             var spaceStationLocalOffset = new Vector3(1f, 0f, 0f); // distance from Earth in world units
@@ -1237,7 +1233,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.53f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.0053f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mars.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             mars.Set(new OrbitCircle(sun, 1.52f * auScale, new Color(220, 160, 120, 96), segments: 128));
 
@@ -1252,7 +1248,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(4.5f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.00084f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Jupiter.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             jupiter.Set(new OrbitCircle(sun, 5.20f * auScale, new Color(240, 200, 160, 96), segments: 160));
 
@@ -1267,7 +1263,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(4.0f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.00034f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Saturn.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             saturn.Set(new OrbitCircle(sun, 9.58f * auScale, new Color(240, 220, 200, 96), segments: 160));
 
@@ -1282,7 +1278,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(2.5f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.00012f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Uranus.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             uranus.Set(new OrbitCircle(sun, 19.22f * auScale, new Color(200, 220, 240, 96), segments: 160));
 
@@ -1297,7 +1293,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(2.4f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.00006f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Neptune.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             neptune.Set(new OrbitCircle(sun, 30.05f * auScale, new Color(180, 200, 240, 96), segments: 160));
 
@@ -1312,14 +1308,14 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.18f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.00004f, 0f)) // speed relative to Earth (slowest)
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Pluto.jpg") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             pluto.Set(new OrbitCircle(sun, 39.48f * auScale, new Color(200, 180, 200, 96), segments: 160));
 
             // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
             SpawnAsteroidBelt(origin,
                 parent: sun,
-                count: 200,
+                count: 50,
                 innerRadius: 2.2f * auScale,
                 outerRadius: 3.2f * auScale,
                 minSize: 0.02f,
@@ -1530,6 +1526,59 @@ internal static class Program
                     _simulation.Statics.Add(staticDesc);
                 }
             }
+        }
+
+        // New helper: spawn multiple galaxies
+        /// <summary>
+        /// Spawns <paramref name="count"/> galaxies (star systems) randomly distributed within a sphere of
+        /// radius <paramref name="maxRadius"/>. Ensures each spawned galaxy center is at least
+        /// <paramref name="minSeparation"/> units from any other. Returns a list of the created star (sun) entities.
+        /// </summary>
+        private System.Collections.Generic.List<Entity> SpawnGalaxies(int count, float minSeparation = 50000f, float maxRadius = 200000f, float auScale = 80.0f, int seed = 12345)
+        {
+            var result = new System.Collections.Generic.List<Entity>();
+            if (count <= 0) return result;
+
+            var rng = new Random(seed);
+            var centers = new System.Collections.Generic.List<Vector3>();
+            float minSepSq = minSeparation * minSeparation;
+            const int maxAttemptsPerGalaxy = 1000;
+
+            for (int i = 0; i < count; i++)
+            {
+                int attempts = 0;
+                Vector3 pos;
+                bool tooClose;
+
+                do
+                {
+                    // sample a random direction and radius within sphere
+                    var dir = new Vector3((float)(rng.NextDouble() * 2.0 - 1.0), (float)(rng.NextDouble() * 2.0 - 1.0), (float)(rng.NextDouble() * 2.0 - 1.0));
+                    if (dir.LengthSquared() <= 1e-6f) dir = new Vector3(1f, 0f, 0f);
+                    dir = Vector3.Normalize(dir);
+                    float r = (float)rng.NextDouble() * maxRadius;
+                    pos = dir * r;
+
+                    tooClose = false;
+                    for (int j = 0; j < centers.Count; j++)
+                    {
+                        if (Vector3.DistanceSquared(centers[j], pos) < minSepSq)
+                        {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+
+                    attempts++;
+                } while (tooClose && attempts < maxAttemptsPerGalaxy);
+
+                // accept position even if it hit the attempts limit
+                centers.Add(pos);
+                // Create a star system at the chosen position. Use the provided auScale.
+                result.Add(CreateStarSystem(pos, auScale));
+            }
+
+            return result;
         }
 
         /// <summary>
