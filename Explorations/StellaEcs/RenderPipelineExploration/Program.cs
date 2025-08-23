@@ -2036,8 +2036,11 @@ internal static class Program
             // when the simulation is sped up.
             _cameraController.Update(Inputs, MainWindow, delta);
 
-            // Update floating origin system (check if rebase is needed)
-            if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
+            // Update floating origin system (check if rebase is needed).
+            // When using camera-relative rendering we *don't* rebase the world because
+            // rendering already keeps active coordinates near the origin. Rebasing while
+            // rendering camera-relative causes visible jumps and line/orbit mismatch.
+            if (!_useCameraRelativeRendering && _floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
             {
                 // Keep the camera near origin too so it doesn't immediately trigger another rebase
                 _camera.Position -= rebaseOffset;
