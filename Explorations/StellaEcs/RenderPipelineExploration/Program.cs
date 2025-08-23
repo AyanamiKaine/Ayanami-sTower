@@ -874,7 +874,7 @@ internal static class Program
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             SunEntity = CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-            SpawnGalaxies(250);
+            SpawnGalaxies(10);
 
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
