@@ -208,20 +208,13 @@ public class FloatingOriginManager
 
     /// <summary>
     /// Checks if a rebase is needed based on the camera position and performs it if necessary.
-    /// Returns true if a rebase occurred and outputs the rebase offset that was applied.
-    /// The caller should subtract this offset from the camera position (and any other view-space
-    /// references) to keep them near the origin as well.
     /// </summary>
     public bool Update(Vector3Double cameraPosition, out Vector3Double rebaseOffset)
     {
-        // Distance from origin in double precision.
         var cameraDistance = new Vector3Double(cameraPosition.X, cameraPosition.Y, cameraPosition.Z).Length();
 
         if (cameraDistance > _rebaseThreshold)
         {
-            // Snap the camera position to the configured grid before rebasing. This ensures we
-            // don't introduce small fractional offsets that cause precision loss when converting
-            // to single-precision for physics and rendering.
             rebaseOffset = SnapToGrid(cameraPosition);
             PerformRebase(rebaseOffset);
             return true;
@@ -238,10 +231,10 @@ public class FloatingOriginManager
     {
         IsRebasing = true;
 
-        // Update the current origin (move origin forward by offset)
         _currentOrigin += offset;
 
-        // Shift all Position3D values (which use double precision) by -offset so they become relative to the new origin.
+        // Shift all Position3D values (which use double precision) by -offset.
+        // This is the source of truth for the new positions.
         foreach (var entity in _world.Query(typeof(Position3D)))
         {
             var pos = entity.GetMut<Position3D>();
@@ -249,53 +242,47 @@ public class FloatingOriginManager
             entity.Set(new Position3D(newPosD.X, newPosD.Y, newPosD.Z));
         }
 
-        // Rebase physics objects (adjust simulation poses etc.)
-        RebasePhysicsObjects(offset);
+        // Rebase physics objects to sync them with the new ECS positions.
+        //RebasePhysicsObjects();
 
         IsRebasing = false;
     }
 
     /// <summary>
-    /// Rebases all physics objects in the simulation.
-    /// Uses explicit single-precision casts and removes/reattaches statics to avoid subtle precision jitter.
+    /// Rebases physics objects to keep them in sync with their ECS components after a world rebase.
     /// </summary>
-    private void RebasePhysicsObjects(Vector3Double offset)
+    private void RebasePhysicsObjects()
     {
-        // Convert to single precision after snapping to grid. This reduces the
-        // chance of tiny fractional components producing per-frame jitter.
-        var offsetVector = new Vector3((float)offset.X, (float)offset.Y, (float)offset.Z);
+        // KINEMATIC/DYNAMIC BODIES ARE NO LONGER REBASED HERE.
+        // The main game update loop has a system that syncs the PhysicsBody's pose
+        // from the entity's Position3D component every frame.
+        // Since PerformRebase already shifted all Position3D components, that
+        // sync system will automatically handle the rebasing of kinematic bodies
+        // on the next frame, using the high-precision, correctly shifted coordinates.
+        // This avoids redundant, low-precision rebasing and potential race conditions.
 
-        // Rebase kinematic/dynamic bodies
-        foreach (var entity in _world.Query(typeof(PhysicsBody)))
-        {
-            var physicsBody = entity.GetMut<PhysicsBody>();
-
-            if (TryGetBodyReference(physicsBody.Handle, out var bodyRef))
-            {
-                var currentPose = bodyRef.Pose;
-                var newPosition = currentPose.Position - offsetVector;
-                bodyRef.Pose = new RigidPose(newPosition, currentPose.Orientation);
-                bodyRef.Awake = true; // Ensure the body is awake after position change
-                _simulation.Bodies.UpdateBounds(physicsBody.Handle);
-            }
-        }
-
-        // Rebase static objects
-        foreach (var entity in _world.Query(typeof(PhysicsStatic)))
+        // STATIC OBJECTS MUST BE MANUALLY REBASED.
+        // Statics are not typically updated every frame, so we must explicitly
+        // move them. We do this by reading the entity's Position3D component,
+        // which was already shifted in PerformRebase, ensuring we use the correct
+        // high-precision new position.
+        foreach (var entity in _world.Query(typeof(PhysicsStatic), typeof(Position3D)))
         {
             var physicsStatic = entity.GetMut<PhysicsStatic>();
 
             if (TryGetStaticReference(physicsStatic.Handle, out var staticRef))
             {
-                var currentPose = staticRef.Pose;
-                var newPosition = currentPose.Position - offsetVector;
+                // Get the Position3D component, which has already been rebased with double precision.
+                var rebasedPosition = entity.GetCopy<Position3D>().Value;
+                var newPositionVec3 = HighPrecisionConversions.ToVector3(rebasedPosition);
 
-                // For static objects, we need to remove and re-add them with the new position
-                // since static objects in BepuPhysics don't allow direct position modification
+                // For static objects, we need to remove and re-add them with the new position.
                 var shapeIndex = staticRef.Shape;
                 _simulation.Statics.Remove(physicsStatic.Handle);
 
-                var newDesc = new StaticDescription(newPosition, shapeIndex);
+                // Note: Bepu's StaticDescription does not store orientation for this constructor.
+                // If orientation is needed, the entity should also have a Rotation3D.
+                var newDesc = new StaticDescription(newPositionVec3, shapeIndex);
                 var newHandle = _simulation.Statics.Add(newDesc);
                 entity.Set(new PhysicsStatic { Handle = newHandle });
             }
@@ -2002,6 +1989,19 @@ internal static class Program
                 _camera.Position -= rebaseOffset;
                 // Also adjust camera controller internals so focus/distance remain valid after the world shift
                 _cameraController.ApplyOriginShift(rebaseOffset);
+            }
+
+            foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(Position3D)))
+            {
+                var body = entity.GetMut<PhysicsBody>();
+                var pos = entity.GetMut<Position3D>().Value;
+                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
+                if (TryGetBodyRef(body.Handle, out var bodyRef))
+                {
+                    bodyRef.Pose = new RigidPose(pos, rot);
+                    bodyRef.Awake = true;
+                    _simulation.Bodies.UpdateBounds(body.Handle);
+                }
             }
 
             // Debug: Print floating origin info (uncomment for debugging)
