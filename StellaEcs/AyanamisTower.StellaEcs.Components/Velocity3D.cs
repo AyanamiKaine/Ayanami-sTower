@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.Components;
 
@@ -11,6 +12,6 @@ public struct Velocity3D(float X = 0, float Y = 0, float Z = 0)
     /// <summary>
     /// Access to the vector3 type
     /// </summary>
-    public Vector3 Value  = new(X, Y, Z);
+    public Vector3Double Value  = new(X, Y, Z);
 }
 

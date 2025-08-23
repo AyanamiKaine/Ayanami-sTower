@@ -1,4 +1,5 @@
 using System.Numerics;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.Components;
 
@@ -11,7 +12,7 @@ public struct Size3D
     /// Creates a new instance of the <see cref="Size3D"/> struct.
     /// </summary>
     /// <param name="size"></param>
-    public Size3D(Vector3 size)
+    public Size3D(Vector3Double size)
     {
         Value = size;
     }
@@ -21,7 +22,7 @@ public struct Size3D
     /// <param name="size"></param>
     public Size3D(float size)
     {
-        Value = new Vector3(size, size, size);
+        Value = new Vector3Double(size, size, size);
     }
     /// <summary>
     /// Creates a new instance of the <see cref="Size3D"/> struct.
@@ -31,13 +32,13 @@ public struct Size3D
     /// <param name="z"></param>
     public Size3D(float x, float y, float z)
     {
-        Value = new Vector3(x, y, z);
+        Value = new Vector3Double(x, y, z);
     }
 
     /// <summary>
     /// The non-uniform scale vector. Use uniform values for best lighting with basic shaders.
     /// </summary>
-    public Vector3 Value = Vector3.One;
+    public Vector3Double Value = Vector3Double.One;
 
     /// <summary>
     /// Identity scale.

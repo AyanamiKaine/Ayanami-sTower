@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -83,6 +84,17 @@ public struct Vector3Double : IEquatable<Vector3Double>, IFormattable
 
     /// <summary>Gets a vector whose elements are all zero.</summary>
     public static Vector3Double Zero => new Vector3Double(0.0);
+
+    /// <summary>
+    /// Implicitly convert a double-precision vector to a System.Numerics.Vector3 (float-based).
+    /// This narrows precision; use explicitly when precision isn't required by the consumer.
+    /// </summary>
+    public static implicit operator Vector3(Vector3Double v) => new Vector3((float)v.X, (float)v.Y, (float)v.Z);
+
+    /// <summary>
+    /// Implicitly convert a System.Numerics.Vector3 (float-based) to a double-precision vector.
+    /// </summary>
+    public static implicit operator Vector3Double(Vector3 v) => new Vector3Double(v.X, v.Y, v.Z);
 
     /// <summary>Gets or sets the element at the specified index.</summary>
     /// <param name="index">The index of the element to get or set.</param>

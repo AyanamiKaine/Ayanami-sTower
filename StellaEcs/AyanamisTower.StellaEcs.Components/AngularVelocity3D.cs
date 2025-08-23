@@ -1,4 +1,5 @@
 using System.Numerics;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.Components;
 
@@ -11,17 +12,17 @@ public struct AngularVelocity3D
     /// <summary>
     /// The angular velocity vector.
     /// </summary>
-    public Vector3 Value = Vector3.Zero;
+    public Vector3Double Value = Vector3Double.Zero;
     /// <summary>
     /// Creates a new instance of the <see cref="AngularVelocity3D"/> struct.
     /// </summary>
     /// <param name="v"></param>
-    public AngularVelocity3D(Vector3 v) { Value = v; }
+    public AngularVelocity3D(Vector3Double v) { Value = v; }
     /// <summary>
     /// Creates a new instance of the <see cref="AngularVelocity3D"/> struct.
     /// </summary>
     /// <param name="pitch"></param>
     /// <param name="yaw"></param>
     /// <param name="roll"></param>
-    public AngularVelocity3D(float pitch, float yaw, float roll) { Value = new Vector3(pitch, yaw, roll); }
+    public AngularVelocity3D(float pitch, float yaw, float roll) { Value = new Vector3Double(pitch, yaw, roll); }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.Components;
 
@@ -11,6 +12,6 @@ public struct Position2D(float X = 0, float Y = 0)
     /// <summary>
     /// Access to the vector2 type
     /// </summary>
-    public Vector2 Value  = new(X, Y);
+    public Vector2Double Value  = new(X, Y);
 }
 

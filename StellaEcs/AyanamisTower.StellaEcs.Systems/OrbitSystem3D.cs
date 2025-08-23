@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using System.Threading.Tasks;
 using AyanamisTower.StellaEcs.Components;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.CorePlugin;
 
@@ -48,7 +49,7 @@ public sealed class OrbitSystem3D : ISystem
             var parentWorldPos = parent.GetCopy<Position3D>();
 
             // Work in local space: use LocalPosition3D as the radius vector.
-            Vector3 r;
+            Vector3Double r;
             if (entity.Has<LocalPosition3D>())
             {
                 r = entity.GetCopy<LocalPosition3D>().Value;
@@ -58,26 +59,26 @@ public sealed class OrbitSystem3D : ISystem
                 // Initialize local from current world offset if missing
                 r = childWorldPos.Value - parentWorldPos.Value;
             }
-            float radiusSq = r.LengthSquared();
+            double radiusSq = r.LengthSquared();
             if (radiusSq <= 1e-9f)
             {
                 // If colocated, give it a tiny nudge on X to establish an orbit plane
-                r = new Vector3(1f, 0f, 0f);
+                r = new Vector3Double(1f, 0f, 0f);
             }
 
             // AngularVelocity3D.Y drives orbit around global Y axis
-            float omega = angVel.Value.Y; // radians per second
-            if (MathF.Abs(omega) <= 1e-6f)
+            double omega = angVel.Value.Y; // radians per second
+            if (Math.Abs(omega) <= 1e-6f)
             {
                 needSet[i] = false;
                 return; // no orbit this frame
             }
 
-            float angle = omega * deltaTime;
-            var q = Quaternion.CreateFromAxisAngle(Vector3.UnitY, angle);
-            Vector3 rRot = Vector3.Transform(r, q);
+            double angle = omega * deltaTime;
+            var q = QuaternionDouble.CreateFromAxisAngle(Vector3Double.UnitY, angle);
+            Vector3Double rRot = Vector3Double.Transform(r, q);
 
-            newLocals[i] = new LocalPosition3D(rRot.X, rRot.Y, rRot.Z);
+            newLocals[i] = new LocalPosition3D(rRot);
             needSet[i] = true;
         });
 

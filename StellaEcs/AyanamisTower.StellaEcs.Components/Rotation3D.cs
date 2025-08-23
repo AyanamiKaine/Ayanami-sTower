@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.Components;
 
@@ -14,7 +15,7 @@ public struct Rotation3D : IEquatable<Rotation3D>
     /// Initializes a new instance of the <see cref="Rotation3D"/> struct.
     /// </summary>
     /// <param name="rotation"></param>
-    public Rotation3D(Quaternion rotation)
+    public Rotation3D(QuaternionDouble rotation)
     {
         Value = rotation;
     }
@@ -23,24 +24,24 @@ public struct Rotation3D : IEquatable<Rotation3D>
     /// </summary>
     public Rotation3D()
     {
-        Value = Quaternion.Identity;
+        Value = QuaternionDouble.Identity;
     }
     /// <summary>
     /// The quaternion representing the rotation.
     /// </summary>
-    public Quaternion Value;
+    public QuaternionDouble Value;
     /// <summary>
     /// Gets the identity rotation (no rotation).
     /// </summary>
-    public static Rotation3D Identity => new() { Value = Quaternion.Identity };
+    public static Rotation3D Identity => new() { Value = QuaternionDouble.Identity };
     /// <summary>
     /// Creates a rotation from an axis and angle.
     /// </summary>
     /// <param name="axis"></param>
     /// <param name="radians"></param>
     /// <returns></returns>
-    public static Rotation3D FromAxisAngle(Vector3 axis, float radians)
-        => new() { Value = Quaternion.CreateFromAxisAngle(Vector3.Normalize(axis), radians) };
+    public static Rotation3D FromAxisAngle(Vector3Double axis, float radians)
+        => new() { Value = QuaternionDouble.CreateFromAxisAngle(Vector3Double.Normalize(axis), radians) };
     /// <summary>
     /// Creates a rotation from Euler angles (pitch, yaw, roll).
     /// </summary>
@@ -49,11 +50,11 @@ public struct Rotation3D : IEquatable<Rotation3D>
     /// <param name="roll"></param>
     /// <returns></returns>
     public static Rotation3D FromEulerRadians(float pitch, float yaw, float roll)
-        => new() { Value = Quaternion.CreateFromYawPitchRoll(yaw, pitch, roll) };
+        => new() { Value = QuaternionDouble.CreateFromYawPitchRoll(yaw, pitch, roll) };
     /// <summary>
     /// Normalizes the rotation.
     /// </summary>
-    public void Normalize() => Value = Quaternion.Normalize(Value);
+    public void Normalize() => Value = QuaternionDouble.Normalize(Value);
     /// <summary>
     /// Checks if this rotation is equal to another rotation.
     /// </summary>

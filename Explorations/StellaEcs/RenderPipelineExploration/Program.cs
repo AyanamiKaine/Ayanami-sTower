@@ -15,6 +15,7 @@ using BepuUtilities;
 using BepuPhysics.CollisionDetection;
 using BepuPhysics.Collidables;
 using BepuPhysics.Constraints;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -63,7 +64,7 @@ public struct OrbitCircle
     /// <summary>
     /// Radius of the orbit circle.
     /// </summary>
-    public float Radius;
+    public double Radius;
     /// <summary>
     /// Color of the orbit circle.
     /// </summary>
@@ -72,6 +73,21 @@ public struct OrbitCircle
     /// Number of segments used to draw the orbit circle.
     /// </summary>
     public int Segments;
+    /// <summary>
+    /// Creates a new OrbitCircle component.
+    /// </summary>
+    /// <param name="parent"></param>
+    /// <param name="radius"></param>
+    /// <param name="color"></param>
+    /// <param name="segments"></param>
+    public OrbitCircle(Entity parent, double radius, Color color, int segments = 64)
+    {
+        Parent = parent;
+        Radius = radius;
+        Color = color;
+        Segments = Math.Max(4, segments);
+    }
+
     /// <summary>
     /// Creates a new OrbitCircle component.
     /// </summary>
@@ -104,12 +120,12 @@ public struct AbsolutePosition
     /// <summary>
     /// The absolute position in double precision coordinates.
     /// </summary>
-    public Vector3d Value;
+    public Vector3Double Value;
 
     /// <summary>
     /// Creates a new AbsolutePosition with the specified position.
     /// </summary>
-    public AbsolutePosition(Vector3d position)
+    public AbsolutePosition(Vector3Double position)
     {
         Value = position;
     }
@@ -119,7 +135,7 @@ public struct AbsolutePosition
     /// </summary>
     public AbsolutePosition(double x, double y, double z)
     {
-        Value = new Vector3d(x, y, z);
+        Value = new Vector3Double(x, y, z);
     }
 }
 
@@ -175,13 +191,13 @@ public struct Vector3d
 /// </summary>
 public class FloatingOriginManager
 {
-    private Vector3d _currentOrigin = Vector3d.Zero;
+    private Vector3Double _currentOrigin = Vector3Double.Zero;
     private readonly double _rebaseThreshold;
     private readonly World _world;
     private readonly Simulation _simulation;
 
     /// <summary>The current floating origin offset in world coordinates.</summary>
-    public Vector3d CurrentOrigin => _currentOrigin;
+    public Vector3Double CurrentOrigin => _currentOrigin;
     /// <summary>True if a rebase operation is currently in progress.</summary>
     public bool IsRebasing { get; private set; }
 
@@ -191,7 +207,7 @@ public class FloatingOriginManager
     /// <param name="world">The ECS world instance.</param>
     /// <param name="simulation">The BepuPhysics simulation instance.</param>
     /// <param name="rebaseThreshold">Distance threshold that triggers a rebase.</param>
-    public FloatingOriginManager(World world, Simulation simulation, double rebaseThreshold = 10000.0)
+    public FloatingOriginManager(World world, Simulation simulation, double rebaseThreshold = 1000.0)
     {
         _world = world;
         _simulation = simulation;
@@ -205,7 +221,7 @@ public class FloatingOriginManager
     /// </summary>
     public void ForceRebase(Vector3 offset)
     {
-        var d = new Vector3d(offset.X, offset.Y, offset.Z);
+        var d = new Vector3Double(offset.X, offset.Y, offset.Z);
         PerformRebase(d);
     }
 
@@ -215,14 +231,14 @@ public class FloatingOriginManager
     /// The caller should subtract this offset from the camera position (and any other view-space
     /// references) to keep them near the origin as well.
     /// </summary>
-    public bool Update(Vector3 cameraPosition, out Vector3 rebaseOffset)
+    public bool Update(Vector3Double cameraPosition, out Vector3Double rebaseOffset)
     {
-        var cameraDistance = new Vector3d(cameraPosition.X, cameraPosition.Y, cameraPosition.Z).Length();
+        var cameraDistance = new Vector3Double(cameraPosition.X, cameraPosition.Y, cameraPosition.Z).Length();
 
         if (cameraDistance > _rebaseThreshold)
         {
             rebaseOffset = cameraPosition; // shift world by -camera, move origin by +camera
-            var rebaseOffsetD = new Vector3d(rebaseOffset.X, rebaseOffset.Y, rebaseOffset.Z);
+            var rebaseOffsetD = new Vector3Double(rebaseOffset.X, rebaseOffset.Y, rebaseOffset.Z);
             PerformRebase(rebaseOffsetD);
             return true;
         }
@@ -234,7 +250,7 @@ public class FloatingOriginManager
     /// <summary>
     /// Performs a floating origin rebase by shifting all entities and physics objects.
     /// </summary>
-    private void PerformRebase(Vector3d offset)
+    private void PerformRebase(Vector3Double offset)
     {
         IsRebasing = true;
 
@@ -265,7 +281,7 @@ public class FloatingOriginManager
     /// <summary>
     /// Rebases all physics objects in the simulation.
     /// </summary>
-    private void RebasePhysicsObjects(Vector3d offset)
+    private void RebasePhysicsObjects(Vector3Double offset)
     {
         var offsetVector = (Vector3)offset;
 
@@ -309,7 +325,7 @@ public class FloatingOriginManager
     /// <summary>
     /// Converts an absolute position to a relative position from the current origin.
     /// </summary>
-    public Vector3 ToRelativePosition(Vector3d absolutePosition)
+    public Vector3 ToRelativePosition(Vector3Double absolutePosition)
     {
         return (Vector3)(absolutePosition - _currentOrigin);
     }
@@ -317,9 +333,9 @@ public class FloatingOriginManager
     /// <summary>
     /// Converts a relative position to an absolute position.
     /// </summary>
-    public Vector3d ToAbsolutePosition(Vector3 relativePosition)
+    public Vector3Double ToAbsolutePosition(Vector3 relativePosition)
     {
-        return _currentOrigin + new Vector3d(relativePosition.X, relativePosition.Y, relativePosition.Z);
+        return _currentOrigin + new Vector3Double(relativePosition.X, relativePosition.Y, relativePosition.Z);
     }
 
     private bool TryGetBodyReference(BodyHandle handle, out BodyReference bodyRef)
@@ -509,10 +525,10 @@ internal static class Program
         /// Prefers the physics pose (dynamic/kinematic/static) then falls back to Position3D.
         /// Returns Vector3.Zero if no position is available.
         /// </summary>
-        private Vector3 GetEntityWorldPosition(Entity e)
+        private Vector3Double GetEntityWorldPosition(Entity e)
         {
             if (e.Has<Position3D>()) return e.GetCopy<Position3D>().Value;
-            return Vector3.Zero;
+            return Vector3Double.Zero;
         }
 
         /// <summary>
@@ -849,8 +865,8 @@ internal static class Program
                 }
 
                 // Pull initial transform
-                var pos = entity.Has<Position3D>() ? entity.GetMut<Position3D>().Value : Vector3.Zero;
-                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                var pos = entity.Has<Position3D>() ? entity.GetMut<Position3D>().Value : Vector3Double.Zero;
+                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
 
                 if (entity.Has<Kinematic>())
                 {
@@ -865,7 +881,7 @@ internal static class Program
                 else
                 {
                     // Create a static collider
-                    var staticDescription = new StaticDescription(pos, (TypedIndex)shapeIndex!);
+                    var staticDescription = new StaticDescription(HighPrecisionConversions.ToVector3(pos), (TypedIndex)shapeIndex!);
                     var staticHandle = _simulation.Statics.Add(staticDescription);
                     entity.Set(new PhysicsStatic { Handle = staticHandle });
                 }
@@ -1183,7 +1199,7 @@ internal static class Program
 
             // The Moon: Positioned relative to Earth.
             var earthPos = earth.GetCopy<Position3D>().Value;
-            var moonLocalOffset = new Vector3(2.0f, 0f, 0f); // distance from Earth in world units
+            var moonLocalOffset = new Vector3Double(2, 0, 0); // distance from Earth in world units
             var moonWorldPos = earthPos + moonLocalOffset;
 
             var moonEntity = World.CreateEntity()
@@ -1200,7 +1216,7 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             // Space station
-            var spaceStationLocalOffset = new Vector3(1f, 0f, 0f); // distance from Earth in world units
+            var spaceStationLocalOffset = new Vector3Double(1f, 0f, 0f); // distance from Earth in world units
             var spaceStationWorldPos = earthPos + spaceStationLocalOffset;
 
             World.CreateEntity()
@@ -1737,7 +1753,7 @@ internal static class Program
                 if (!entity.Has<AbsolutePosition>())
                 {
                     var pos = entity.GetMut<Position3D>().Value;
-                    var absolutePos = _floatingOriginManager?.ToAbsolutePosition(pos) ?? new Vector3d(pos.X, pos.Y, pos.Z);
+                    var absolutePos = _floatingOriginManager?.ToAbsolutePosition(pos) ?? new Vector3Double(pos.X, pos.Y, pos.Z);
                     entity.Set(new AbsolutePosition(absolutePos));
                 }
             }
@@ -1760,8 +1776,8 @@ internal static class Program
                         case Capsule c: sidx = _simulation.Shapes.Add(c); break;
                         case Cylinder cy: sidx = _simulation.Shapes.Add(cy); break;
                     }
-                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3.Zero;
-                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3Double.Zero;
+                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
                     if (sidx.HasValue)
                     {
                         var pose = new RigidPose(pos, rot);
@@ -1783,11 +1799,11 @@ internal static class Program
                         case Capsule c: sidx = _simulation.Shapes.Add(c); break;
                         case Cylinder cy: sidx = _simulation.Shapes.Add(cy); break;
                     }
-                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3.Zero;
-                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3Double.Zero;
+                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
                     if (sidx.HasValue)
                     {
-                        var sdesc = new StaticDescription(pos, sidx.Value) { }; // orientation not in this overload; use position-only static
+                        var sdesc = new StaticDescription(HighPrecisionConversions.ToVector3(pos), sidx.Value) { }; // orientation not in this overload; use position-only static
                         var sh = _simulation.Statics.Add(sdesc);
                         e.Set(new PhysicsStatic { Handle = sh });
                     }
@@ -1799,7 +1815,7 @@ internal static class Program
             {
                 var body = entity.GetMut<PhysicsBody>();
                 var pos = entity.GetMut<Position3D>().Value;
-                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
                 if (TryGetBodyRef(body.Handle, out var bodyRef))
                 {
                     bodyRef.Pose = new RigidPose(pos, rot);
@@ -1876,26 +1892,26 @@ internal static class Program
                     {
                         // On double-click, prefer to follow the clicked entity if it's dynamic/kinematic,
                         // and also choose a sensible zoom distance based on object size or hit distance.
-                        float ComputeDesiredDistanceForEntity(Entity? entity, float hitDistance)
+                        double ComputeDesiredDistanceForEntity(Entity? entity, float hitDistance)
                         {
                             // Prefer computing distance from the object's size so small objects get a close, sensible zoom.
                             // If size is unavailable, fall back to a fraction of hit distance.
                             const float targetScreenFraction = 0.35f; // object should occupy ~35% of vertical screen
-                            float desired = hitDistance * 0.6f;
+                            double desired = hitDistance * 0.6f;
 
                             if (entity.HasValue && entity.Value != default && entity.Value.Has<Size3D>())
                             {
                                 var s = entity.Value.GetMut<Size3D>().Value;
-                                float maxAxis = MathF.Max(s.X, MathF.Max(s.Y, s.Z));
+                                double maxAxis = Math.Max(s.X, Math.Max(s.Y, s.Z));
                                 // Estimate a conservative bounding radius for the object. Use 0.6 factor (matches collider heuristics)
-                                float boundingRadius = MathF.Max(0.01f, maxAxis * 0.6f);
+                                double boundingRadius = Math.Max(0.01f, maxAxis * 0.6f);
 
                                 // Compute distance so the object's bounding radius fits targetScreenFraction of vertical FOV.
                                 // distance = boundingRadius / (targetFraction * tan(fov/2))
-                                float fovHalfTan = MathF.Tan(_camera.Fov * 0.5f);
+                                double fovHalfTan = Math.Tan(_camera.Fov * 0.5f);
                                 if (fovHalfTan > 1e-6f)
                                 {
-                                    float fromSize = boundingRadius / (targetScreenFraction * fovHalfTan);
+                                    double fromSize = boundingRadius / (targetScreenFraction * fovHalfTan);
                                     // Use the closer of size-based and hit-based suggestions, but never less than MinDistance
                                     desired = Math.Max(fromSize, _cameraController.MinDistance);
                                 }
@@ -1921,14 +1937,14 @@ internal static class Program
                                     }
                                 }
 
-                                float distance = ComputeDesiredDistanceForEntity(owner, result.Distance);
+                                double distance = ComputeDesiredDistanceForEntity(owner, result.Distance);
                                 _cameraController.SetFocus(staticBody.Pose.Position, distance);
                                 Console.WriteLine($"Double-click focus STATIC at {staticBody.Pose.Position} (distance={distance:F2})");
                             }
                             else
                             {
                                 // No static reference available; focus at hit location with hit-based distance
-                                float distance = ComputeDesiredDistanceForEntity(null, result.Distance);
+                                double distance = ComputeDesiredDistanceForEntity(null, result.Distance);
                                 _cameraController.SetFocus(result.HitLocation, distance);
                                 Console.WriteLine($"Double-click focus at hit location {result.HitLocation} (distance={distance:F2})");
                             }
@@ -1950,7 +1966,7 @@ internal static class Program
                             if (found != null)
                             {
                                 var followEntity = found.Value;
-                                float distance = ComputeDesiredDistanceForEntity(followEntity, result.Distance);
+                                double distance = ComputeDesiredDistanceForEntity(followEntity, result.Distance);
                                 // Provide a live focus point sampled each frame from the entity's world position
                                 _cameraController.SetFocusProvider(() => GetEntityWorldPosition(followEntity), distance);
                                 Console.WriteLine($"Double-click follow ENTITY {followEntity.Id} (distance={distance:F2})");
@@ -1958,7 +1974,7 @@ internal static class Program
                             else
                             {
                                 // Fallback: set static focus at the hit location with hit-based distance
-                                float distance = ComputeDesiredDistanceForEntity(null, result.Distance);
+                                double distance = ComputeDesiredDistanceForEntity(null, result.Distance);
                                 _cameraController.SetFocus(result.HitLocation, distance);
                                 Console.WriteLine($"Double-click focus at hit location {result.HitLocation} (distance={distance:F2})");
                             }
@@ -2139,12 +2155,12 @@ internal static class Program
                     // Get current parent world position
                     var center = GetEntityWorldPosition(oc.Parent);
                     int segs = Math.Max(4, oc.Segments);
-                    float angleStep = MathF.Tau / segs;
-                    Vector3 prev = center + new Vector3(oc.Radius, 0f, 0f);
+                    double angleStep = MathF.Tau / segs;
+                    Vector3Double prev = center + new Vector3Double(oc.Radius, 0f, 0f);
                     for (int i = 1; i <= segs; i++)
                     {
-                        float a = i * angleStep;
-                        Vector3 p = center + new Vector3(MathF.Cos(a) * oc.Radius, 0f, MathF.Sin(a) * oc.Radius);
+                        double a = i * angleStep;
+                        Vector3Double p = center + new Vector3Double(Math.Cos(a) * oc.Radius, 0f, Math.Sin(a) * oc.Radius);
                         _lineBatch.AddLine(prev, p, oc.Color);
                         prev = p;
                     }
@@ -2163,7 +2179,7 @@ internal static class Program
                     foreach (var e in World.Query(typeof(Position3D)))
                     {
                         var ent = e; // capture
-                        var pos = ent.Has<Position3D>() ? ent.GetMut<Position3D>().Value : Vector3.Zero;
+                        var pos = ent.Has<Position3D>() ? ent.GetMut<Position3D>().Value : Vector3Double.Zero;
                         DrawEntityAxes(pos, 1.0f);
                     }
                 }
@@ -2211,7 +2227,7 @@ internal static class Program
                 pass.BindFragmentSamplers(0, new TextureSamplerBinding[] { new(_skyboxTexture, skySampler) });
 
                 var modelSky = Matrix4x4.CreateScale(_skyboxScale) * Matrix4x4.CreateTranslation(_camera.Position);
-                var mvpSky = modelSky * _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
+                var mvpSky = modelSky * HighPrecisionConversions.ToMatrix(_camera.GetViewMatrix()) * HighPrecisionConversions.ToMatrix(_camera.GetProjectionMatrix());
                 cmdbuf.PushVertexUniformData(mvpSky, slot: 0);
                 pass.DrawIndexedPrimitives(skyMesh.IndexCount, 1, 0, 0, 0);
                 skySampler.Dispose();
@@ -2267,11 +2283,11 @@ internal static class Program
                     if (clip.W > 0f)
                     {
                         // approximate projected pixel radius: r / (dist * tan(fov/2)) * (screenHeight/2)
-                        var toObj = translation - _camera.Position;
+                        var toObj = translation - HighPrecisionConversions.ToVector3(_camera.Position);
                         var dist = toObj.Length();
                         if (dist > 0f)
                         {
-                            float tanHalfFov = MathF.Tan(_camera.Fov * 0.5f);
+                            float tanHalfFov = MathF.Tan((float)_camera.Fov * 0.5f);
                             float screenHeight = (float)MainWindow.Height;
                             float pixelRadius = (radius / (dist * tanHalfFov)) * (screenHeight * 0.5f);
                             if (pixelRadius >= _minScreenPixelSize)
@@ -2302,7 +2318,7 @@ internal static class Program
 
                 // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
                 var model = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(translation);
-                var mvp = model * viewProj;
+                var mvp = model * HighPrecisionConversions.ToMatrix(viewProj);
 
                 cmdbuf.PushVertexUniformData(mvp, slot: 0);
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
@@ -2574,8 +2590,8 @@ internal static class Program
                 foreach (var e in World.Query(typeof(CollisionShape)))
                 {
                     var cs = e.GetMut<CollisionShape>();
-                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3.Zero;
-                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : Quaternion.Identity;
+                    var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3Double.Zero;
+                    var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
                     DrawShapeFromEcs(cs.Shape, pos, rot, new Color(64, 255, 64, 160));
                 }
             }

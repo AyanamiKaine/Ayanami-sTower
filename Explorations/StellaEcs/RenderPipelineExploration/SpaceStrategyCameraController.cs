@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 using MoonWorks;
 using MoonWorks.Input;
 
@@ -24,43 +25,43 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         private bool _isRelativeMouseMode = false;
 
         // Focus (the point the camera orbits around)
-        private Vector3 _targetFocus;
-        private Vector3 _currentFocus;
+        private Vector3Double _targetFocus;
+        private Vector3Double _currentFocus;
         // Optional provider that returns the live focus point each frame (useful to follow moving objects)
-        private Func<Vector3>? _focusProvider;
+        private Func<Vector3Double>? _focusProvider;
         // When a live provider is set we may want to smooth the initial transition
         // so selecting a new object doesn't teleport the camera. This timer tracks
         // remaining seconds to apply smoothing while beginning to follow a provider.
-        private float _followSmoothingRemaining = 0f;
+        private double _followSmoothingRemaining = 0f;
         // Total smoothing duration originally requested (used to blend rates smoothly)
-        private float _followSmoothingTotal = 0f;
+        private double _followSmoothingTotal = 0f;
         // Optional key used to identify the currently-followed object so repeated
         // calls to follow the same object can be ignored.
         private object? _currentProviderKey;
 
         // Distance from camera to focus
-        private float _targetDistance;
-        private float _currentDistance;
+        private double _targetDistance;
+        private double _currentDistance;
         // Optional per-focus minimum distance override to prevent camera clipping into focused objects.
-        private float? _focusMinDistanceOverride;
+        private double? _focusMinDistanceOverride;
 
         // Spherical angles (radians)
-        private float _yaw;
-        private float _pitch;
+        private double _yaw;
+        private double _pitch;
         // Targets for smooth rotation and tuning
-        private float _targetYaw;
-        private float _targetPitch;
+        private double _targetYaw;
+        private double _targetPitch;
         // When true, the next Update will snap current focus/distance to target values (no smoothing)
 
         // Tunables
         /// <summary>
         /// Speed at which the camera pans (moves) in the world.
         /// </summary>
-        public float PanSpeed { get; set; } = 8.0f; // world units per second (scaled by distance)
+        public double PanSpeed { get; set; } = 8.0f; // world units per second (scaled by distance)
         /// <summary>
         /// Speed at which the camera rotates around the focus point.
         /// </summary>
-        public float RotateSensitivity { get; set; } = 0.01f; // radians per mouse pixel
+        public double RotateSensitivity { get; set; } = 0.01f; // radians per mouse pixel
         /// <summary>
         /// Enable/disable smooth interpolation of rotation (yaw/pitch).
         /// </summary>
@@ -68,32 +69,32 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// <summary>
         /// Speed at which yaw/pitch interpolate to their target values. Larger = snappier.
         /// </summary>
-        public float RotationSmoothing { get; set; } = 3.0f;
+        public double RotationSmoothing { get; set; } = 3.0f;
         /// <summary>
         /// Speed at which the camera zooms in and out.
         /// </summary>
-        public float ZoomSpeed { get; set; } = 20.0f; // units per second
+        public double ZoomSpeed { get; set; } = 20.0f; // units per second
         /// <summary>
         /// Multiplier applied to scroll-wheel zoom steps.
         /// </summary>
-        public float ScrollZoomMultiplier { get; set; } = 1.0f;
+        public double ScrollZoomMultiplier { get; set; } = 1.0f;
         /// <summary>
         /// Maximum absolute zoom change (world units) applied from the scroll wheel in a single update.
         /// This prevents a large mouse wheel delta or high sensitivity from zooming too far in one frame.
         /// </summary>
-        public float MaxScrollZoomStep { get; set; } = 1000.0f;
+        public double MaxScrollZoomStep { get; set; } = 1000.0f;
         /// <summary>
         /// Speed at which the camera smoothly interpolates its position and distance.
         /// </summary>
-        public float Smoothing { get; set; } = 8.0f; // larger = snappier
+        public double Smoothing { get; set; } = 8.0f; // larger = snappier
         /// <summary>
         /// Minimum distance the camera can be from the focus point.
         /// </summary>
-        public float MinDistance { get; set; } = 0.1f;
+        public double MinDistance { get; set; } = 0.1f;
         /// <summary>
         /// Maximum distance the camera can be from the focus point.
         /// </summary>
-        public float MaxDistance { get; set; } = 10000f;
+        public double MaxDistance { get; set; } = 10000f;
         /// <summary>
         /// Enable/disable RTS-style edge panning (move mouse to screen edges to pan camera).
         /// </summary>
@@ -105,14 +106,14 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// <summary>
         /// Edge pan speed in world units per second (scaled by distance). Defaults to PanSpeed.
         /// </summary>
-        public float EdgePanSpeed { get; set; } = 8.0f;
+        public double EdgePanSpeed { get; set; } = 8.0f;
 
         /// <summary>
         /// Exponent used when scaling pan speed by distance. The controller computes a
         /// distance scale from _currentDistance/10 and raises it to this exponent.
         /// Use values &lt;1 to reduce growth when zoomed out (default 0.5 = sqrt).
         /// </summary>
-        public float PanDistanceScaleExponent { get; set; } = 0.5f;
+        public double PanDistanceScaleExponent { get; set; } = 0.5f;
 
         /// <summary>
         /// Creates a new strategy-style camera controller driving the given <see cref="Camera"/>.
@@ -135,7 +136,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// Immediately set the focus point and optionally the distance (if distance &gt; 0).
         /// Use this to focus the camera on a selected object.
         /// </summary>
-        public void SetFocus(Vector3 focus, float? distance = null, float? minDistanceOverride = null)
+        public void SetFocus(Vector3 focus, double? distance = null, double? minDistanceOverride = null)
         {
             _focusProvider = null;
             // Clear any follow-smoothing timer when manually setting focus
@@ -147,7 +148,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             if (distance.HasValue && distance.Value > 0f)
             {
                 // When an override exists, ensure initial target distance respects it
-                float effectiveMin = _focusMinDistanceOverride ?? MinDistance;
+                double effectiveMin = _focusMinDistanceOverride ?? MinDistance;
                 _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
             }
         }
@@ -160,7 +161,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         // same key is passed again, the call will not restart follow smoothing (prevents
         // re-selecting the same object and retriggering animations). If providerKey is
         // null, we fall back to comparing the delegate reference.
-        public void SetFocusProvider(Func<Vector3>? provider, float? distance = null, float? minDistanceOverride = null, object? providerKey = null)
+        public void SetFocusProvider(Func<Vector3Double>? provider, double? distance = null, double? minDistanceOverride = null, object? providerKey = null)
         {
             // If the caller requests clearing the provider, clear everything.
             if (provider == null)
@@ -191,7 +192,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     _currentProviderKey = providerKey ?? _currentProviderKey;
                     if (distance.HasValue && distance.Value > 0f)
                     {
-                        float effectiveMin = _focusMinDistanceOverride ?? MinDistance;
+                        double effectiveMin = _focusMinDistanceOverride ?? MinDistance;
                         _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
                     }
                     if (minDistanceOverride.HasValue)
@@ -236,7 +237,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
             if (distance.HasValue && distance.Value > 0f)
             {
-                float effectiveMin = _focusMinDistanceOverride ?? MinDistance;
+                double effectiveMin = _focusMinDistanceOverride ?? MinDistance;
                 _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
             }
         }
@@ -274,7 +275,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// and distances remain consistent after the world has been rebased.
         /// The offset should be the same value subtracted from the camera and world positions.
         /// </summary>
-        public void ApplyOriginShift(Vector3 offset)
+        public void ApplyOriginShift(Vector3Double offset)
         {
             _targetFocus -= offset;
             _currentFocus -= offset;
@@ -285,21 +286,21 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// and raises it to <see cref="PanDistanceScaleExponent"/>. Clamped to a small
         /// minimum to avoid zero/near-zero scaling.
         /// </summary>
-        private float GetDistanceScale()
+        private double GetDistanceScale()
         {
             // base scale: distance divided by 10 (preserves existing behavior as baseline)
-            float baseScale = MathF.Max(0.01f, _currentDistance / 10f);
+            double baseScale = Math.Max(0.01, _currentDistance / 10.0);
             // if exponent is ~1, returns baseScale; <1 reduces growth when zoomed out
-            if (MathF.Abs(PanDistanceScaleExponent - 1f) < 1e-6f)
+            if (Math.Abs(PanDistanceScaleExponent - 1.0) < 1e-6)
             {
                 return baseScale;
             }
             // Negative or zero exponent is not meaningful for scaling; treat <= 0 as 1
-            if (PanDistanceScaleExponent <= 0f)
+            if (PanDistanceScaleExponent <= 0.0)
             {
                 return baseScale;
             }
-            return MathF.Pow(baseScale, PanDistanceScaleExponent);
+            return Math.Pow(baseScale, PanDistanceScaleExponent);
         }
 
         /// <summary>
@@ -369,8 +370,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             // --- Rotation (orbit) ---
             if (mouse.RightButton.IsDown)
             {
-                var md = new Vector2(mouse.DeltaX, mouse.DeltaY);
-                if (md != Vector2.Zero)
+                var md = new Vector2Double(mouse.DeltaX, mouse.DeltaY);
+                if (md != Vector2Double.Zero)
                 {
                     // Write to target angles so we can smoothly interpolate the current angles
                     _targetYaw += md.X * RotateSensitivity;
@@ -385,13 +386,13 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             // that panning feels consistent at different zoom levels.
             if (mouse.MiddleButton.IsDown)
             {
-                var md = new Vector2(mouse.DeltaX, mouse.DeltaY);
-                if (md != Vector2.Zero)
+                var md = new Vector2Double(mouse.DeltaX, mouse.DeltaY);
+                if (md != Vector2Double.Zero)
                 {
                     // move opposite to drag (dragging right moves world left)
                     var right = _camera.Right;
                     var camUp = _camera.Up;
-                    float distanceScale = GetDistanceScale();
+                    double distanceScale = GetDistanceScale();
                     var pan = (-right * md.X + camUp * md.Y) * (PanSpeed * distanceScale) * speedMult;
                     _targetFocus += pan;
 
@@ -439,9 +440,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             {
                 // Project forward onto camera's XZ plane for more intuitive pan (prevent flying when pitched)
                 var camForward = _camera.Forward;
-                var camForwardXZ = Vector3.Normalize(new Vector3(camForward.X, 0f, camForward.Z));
-                var panVec = camForwardXZ * forward + _camera.Right * rightDir + Vector3.UnitY * up;
-                float distanceScale = GetDistanceScale();
+                var camForwardXZ = Vector3Double.Normalize(new Vector3Double(camForward.X, 0f, camForward.Z));
+                var panVec = camForwardXZ * forward + _camera.Right * rightDir + Vector3Double.UnitY * up;
+                double distanceScale = GetDistanceScale();
                 _targetFocus += panVec * (PanSpeed * distanceScale) * speedMult;
             }
 
@@ -457,35 +458,35 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 // Only if the pointer is inside the window bounds
                 if (x >= 0 && x < width && y >= 0 && y < height)
                 {
-                    float threshold = MathF.Max(1, EdgePanThreshold);
-                    float leftStrength = x <= threshold ? (threshold - x) / threshold : 0f;
-                    float rightStrength = x >= width - threshold ? (x - (width - threshold)) / threshold : 0f;
-                    float topStrength = y <= threshold ? (threshold - y) / threshold : 0f;
-                    float bottomStrength = y >= height - threshold ? (y - (height - threshold)) / threshold : 0f;
+                    double threshold = Math.Max(1, EdgePanThreshold);
+                    double leftStrength = x <= threshold ? (threshold - x) / threshold : 0f;
+                    double rightStrength = x >= width - threshold ? (x - (width - threshold)) / threshold : 0f;
+                    double topStrength = y <= threshold ? (threshold - y) / threshold : 0f;
+                    double bottomStrength = y >= height - threshold ? (y - (height - threshold)) / threshold : 0f;
 
                     if (leftStrength > 0f || rightStrength > 0f || topStrength > 0f || bottomStrength > 0f)
                     {
                         // Pan in camera plane. Forward is camera forward projected onto XZ.
                         var camForward = _camera.Forward;
-                        var camForwardXZ = new Vector3(camForward.X, 0f, camForward.Z);
+                        var camForwardXZ = new Vector3Double(camForward.X, 0f, camForward.Z);
                         if (camForwardXZ.LengthSquared() > 1e-6f)
                         {
-                            camForwardXZ = Vector3.Normalize(camForwardXZ);
+                            camForwardXZ = Vector3Double.Normalize(camForwardXZ);
                         }
 
                         var right = _camera.Right;
-                        float distanceScale = GetDistanceScale();
-                        float speed = EdgePanSpeed > 0f ? EdgePanSpeed : PanSpeed;
+                        double distanceScale = GetDistanceScale();
+                        double speed = EdgePanSpeed > 0f ? EdgePanSpeed : PanSpeed;
 
                         // Left/right pan
-                        var pan = Vector3.Zero;
+                        var pan = Vector3Double.Zero;
                         pan += -right * leftStrength;
                         pan += right * rightStrength;
                         // Top/bottom: top moves forward, bottom moves backward
                         pan += camForwardXZ * topStrength;
                         pan += -camForwardXZ * bottomStrength;
 
-                        if (pan != Vector3.Zero)
+                        if (pan != Vector3Double.Zero)
                         {
                             _targetFocus += pan * (speed * distanceScale) * speedMult;
                         }
@@ -497,13 +498,13 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             // Compute a proximity-based scale so zoom steps become smaller (more granular)
             // as the camera approaches the minimum distance (i.e., when zoomed in).
             // normalized in [0,1]: 0 == at MinDistance, 1 == at MaxDistance
-            float range = MathF.Max(1e-5f, MaxDistance - MinDistance);
-            float proximityUnclamped = (_currentDistance - MinDistance) / range;
-            float proximity = (float)Math.Max(0.0, Math.Min(1.0, (double)proximityUnclamped));
+            double range = Math.Max(1e-5f, MaxDistance - MinDistance);
+            double proximityUnclamped = (_currentDistance - MinDistance) / range;
+            double proximity = Math.Max(0.0, Math.Min(1.0, proximityUnclamped));
             // scale in (0.1 .. 1.0] so close distances produce smaller steps.
             // Use a sqrt curve so zoom-out accelerates faster while zoom-in remains granular.
-            float proximityCurve = (float)Math.Sqrt(proximity);
-            float proximityScale = 0.1f + 0.9f * proximityCurve;
+            double proximityCurve = Math.Sqrt(proximity);
+            double proximityScale = 0.1f + 0.9f * proximityCurve;
 
             // Keyboard zoom (Z/X) — scale step by proximityScale
             if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed * speedMult * proximityScale;
@@ -521,14 +522,14 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             }
 
             // Clamp target distance, respecting any per-focus minimum override to avoid clipping into focused objects
-            float effectiveMinDistance = _focusMinDistanceOverride ?? MinDistance;
+            double effectiveMinDistance = _focusMinDistanceOverride ?? MinDistance;
             _targetDistance = Math.Clamp(_targetDistance, effectiveMinDistance, MaxDistance);
 
             // --- Smooth interpolation for focus/distance ---
             // Use frame delta so smoothing behaves consistently across varying frame rates.
             // Exponential smoothing: t = 1 - exp(-rate * dt)
-            float dt = (float)delta.TotalSeconds;
-            float t;
+            double dt = delta.TotalSeconds;
+            double t;
             if (dt <= 0f)
             {
                 // No time passed: snap to target to avoid stalling.
@@ -541,7 +542,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             }
             else
             {
-                t = 1f - MathF.Exp(-Smoothing * dt);
+                t = 1f - Math.Exp(-Smoothing * dt);
             }
 
             if (_focusProvider != null)
@@ -550,7 +551,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 // jump when the provider's position changes between frames. We use a
                 // small smoothing factor derived from FollowTrackingSmoothingRate so the
                 // target follows responsively but without jitter.
-                Vector3 providerPos;
+                Vector3Double providerPos;
                 try
                 {
                     providerPos = _focusProvider();
@@ -566,10 +567,10 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 if (_followSmoothingRemaining > 0f)
                 {
                     // Compute activeRate that eases from Smoothing -> FollowTrackingSmoothingRate
-                    float activeRate;
+                    double activeRate;
                     if (_followSmoothingTotal > 0f)
                     {
-                        float r = _followSmoothingRemaining / _followSmoothingTotal;
+                        double r = _followSmoothingRemaining / _followSmoothingTotal;
                         if (r < 0f) r = 0f;
                         if (r > 1f) r = 1f;
                         activeRate = FollowTrackingSmoothingRate * (1f - r) + Smoothing * r;
@@ -580,15 +581,15 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     }
 
                     // Exponential step
-                    float localT = 1f;
+                    double localT = 1f;
                     if (dt > 0f && activeRate > 0f)
                     {
-                        localT = 1f - MathF.Exp(-activeRate * dt);
+                        localT = 1f - Math.Exp(-activeRate * dt);
                     }
 
                     _targetFocus = providerPos;
 
-                    var desiredFocus = Vector3.Lerp(_currentFocus, _targetFocus, localT);
+                    var desiredFocus = Vector3Double.Lerp(_currentFocus, _targetFocus, localT);
                     var desiredDistance = _currentDistance + (_targetDistance - _currentDistance) * localT;
 
                     // Apply per-frame clamps to avoid huge instantaneous jumps
@@ -599,7 +600,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                         var dist = focusDelta.Length();
                         if (dist > maxMove)
                         {
-                            desiredFocus = _currentFocus + Vector3.Normalize(focusDelta) * maxMove;
+                            desiredFocus = _currentFocus + Vector3Double.Normalize(focusDelta) * maxMove;
                         }
                     }
 
@@ -607,16 +608,16 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     {
                         var maxDistChange = FollowMaxDistanceDeltaPerSecond * dt;
                         var distDelta = desiredDistance - _currentDistance;
-                        if (MathF.Abs(distDelta) > maxDistChange)
+                        if (Math.Abs(distDelta) > maxDistChange)
                         {
-                            desiredDistance = _currentDistance + MathF.Sign(distDelta) * maxDistChange;
+                            desiredDistance = _currentDistance + Math.Sign(distDelta) * maxDistChange;
                         }
                     }
 
                     _currentFocus = desiredFocus;
                     _currentDistance = desiredDistance;
 
-                    _followSmoothingRemaining = MathF.Max(0f, _followSmoothingRemaining - dt);
+                    _followSmoothingRemaining = Math.Max(0f, _followSmoothingRemaining - dt);
                     if (_followSmoothingRemaining == 0f)
                     {
                         _followSmoothingTotal = 0f;
@@ -639,7 +640,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                         var dist = focusDelta.Length();
                         if (dist > maxMove)
                         {
-                            desiredFocus = _currentFocus + Vector3.Normalize(focusDelta) * maxMove;
+                            desiredFocus = _currentFocus + Vector3Double.Normalize(focusDelta) * maxMove;
                         }
                     }
 
@@ -647,9 +648,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     {
                         var maxDistChange = FollowMaxDistanceDeltaPerSecond * dt;
                         var distDelta = desiredDistance - _currentDistance;
-                        if (MathF.Abs(distDelta) > maxDistChange)
+                        if (Math.Abs(distDelta) > maxDistChange)
                         {
-                            desiredDistance = _currentDistance + MathF.Sign(distDelta) * maxDistChange;
+                            desiredDistance = _currentDistance + Math.Sign(distDelta) * maxDistChange;
                         }
                     }
 
@@ -659,21 +660,21 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             }
             else
             {
-                _currentFocus = Vector3.Lerp(_currentFocus, _targetFocus, t);
+                _currentFocus = Vector3Double.Lerp(_currentFocus, _targetFocus, t);
                 _currentDistance = _currentDistance + (_targetDistance - _currentDistance) * t;
             }
 
             // --- Smooth interpolation for rotation (yaw/pitch) ---
             if (SmoothRotation && RotationSmoothing > 0f)
             {
-                float tRot;
+                double tRot;
                 if (dt <= 0f)
                 {
                     tRot = 1f;
                 }
                 else
                 {
-                    tRot = 1f - MathF.Exp(-RotationSmoothing * dt);
+                    tRot = 1f - Math.Exp(-RotationSmoothing * dt);
                 }
 
                 // Manual Lerp: current + (target - current) * t

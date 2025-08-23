@@ -1,6 +1,7 @@
 using System.Numerics;
 using AyanamisTower.StellaEcs;
 using AyanamisTower.StellaEcs.Components;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.CorePlugin;
 
@@ -31,11 +32,11 @@ public class RotationSystem3D : ISystem
             // Pull rotation; if absent, skip (shouldn't happen due to query)
             var rot = entity.GetCopy<Rotation3D>();
             // Angular velocity source: try dynamic component first
-            Vector3 av = entity.GetCopy<AngularVelocity3D>().Value;
+            Vector3Double av = entity.GetCopy<AngularVelocity3D>().Value;
 
             // Integrate yaw/pitch/roll in radians
-            var incr = Quaternion.CreateFromYawPitchRoll(av.Y * deltaTime, av.X * deltaTime, av.Z * deltaTime);
-            rot.Value = Quaternion.Normalize(incr * rot.Value);
+            var incr = QuaternionDouble.CreateFromYawPitchRoll(av.Y * deltaTime, av.X * deltaTime, av.Z * deltaTime);
+            rot.Value = QuaternionDouble.Normalize(incr * rot.Value);
 
             entity.Set(rot);
         }

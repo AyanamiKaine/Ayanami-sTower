@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AyanamisTower.StellaEcs.Components;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.CorePlugin;
 
@@ -69,7 +70,7 @@ public sealed class ParentChildPositionSyncSystem : ISystem
 
             int n = group.Count;
             // Prepare a results array to store writes required for each entity.
-            var results = new (Entity Entity, bool NeedSetLocal, LocalPosition3D NewLocal, bool NeedSetPosition, Vector3 NewPosition)?[n];
+            var results = new (Entity Entity, bool NeedSetLocal, LocalPosition3D NewLocal, bool NeedSetPosition, Vector3Double NewPosition)?[n];
 
             Parallel.For(0, n, i =>
             {
