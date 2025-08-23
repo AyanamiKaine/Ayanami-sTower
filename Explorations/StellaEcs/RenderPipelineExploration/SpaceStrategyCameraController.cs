@@ -295,14 +295,13 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     _targetDistance += -md.Y * (ZoomSpeed * 0.01f) * speedMult;
 
                     // Manual middle-drag indicates an intentional user pan; detach any live follow
-                    // and snap the current camera focus/distance so it doesn't lag behind the provider.
+                    // and clear the follow smoothing timer so the manual pan uses the regular
+                    // smoothing behaviour (avoids teleporting but still feels responsive).
                     if (_focusProvider != null)
                     {
                         _focusProvider = null;
                         _focusMinDistanceOverride = null;
                         _followSmoothingRemaining = 0f;
-                        _currentFocus = _targetFocus;
-                        _currentDistance = _targetDistance;
                     }
                 }
             }
@@ -322,11 +321,12 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             // and snap current focus/distance so the camera detaches immediately.
             if (_focusProvider != null && (forward != 0f || rightDir != 0f || up != 0f))
             {
+                // Detach live-follow when the user starts keyboard panning. Do not snap
+                // immediately; allow the existing smoothing to interpolate the camera so
+                // movement feels smooth rather than instant.
                 _focusProvider = null;
                 _focusMinDistanceOverride = null;
                 _followSmoothingRemaining = 0f;
-                _currentFocus = _targetFocus;
-                _currentDistance = _targetDistance;
             }
 
             if (forward != 0f || rightDir != 0f || up != 0f)
