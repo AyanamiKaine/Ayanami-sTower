@@ -871,259 +871,14 @@ internal static class Program
                 }
             });
 
-            // --- SCENE SETUP CONSTANTS ---
-            // We use Astronomical Units (AU) for realistic scaling. 1 AU = Distance from Earth to Sun.
-            // This scale factor determines how many units in our 3D world correspond to 1 AU.
-            // You can increase/decrease this value to make the solar system larger or smaller.
-            const float AU_SCALE_FACTOR = 80.0f;
-
-            // --- CELESTIAL BODY CREATION ---
-
-            // The Sun: Center of the solar system.
-            // Note: The Sun's size is drastically scaled down for visibility.
-            // In reality, it's ~109 times the diameter of Earth.
-            var sun = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(0, 0, 0))
-                .Set(new AbsolutePosition(0, 0, 0)) // Store absolute position for floating origin
-                .Set(new Size3D(10.0f)) // Artistically scaled size
-                .Set(Rotation3D.Identity)
-                .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
-                .Set(new CollisionShape(new Sphere(10.0f * 0.6f)))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
-
-            SunEntity = sun;
-
-            // Mercury: 0.39 AU from the Sun.
-            var mercury = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(0.39f * AU_SCALE_FACTOR, 0, 0)) // distance = 0.39 AU
-                .Set(new AbsolutePosition(0.39f * AU_SCALE_FACTOR, 0, 0)) // Store absolute position
-                .Set(new Size3D(0.38f)) // size = 0.38x Earth
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.048f, 0f)) // speed relative to Earth (fastest)
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
-
-            // Draw Mercury's orbit around the sun
-            mercury.Set(new OrbitCircle(sun, 0.39f * AU_SCALE_FACTOR, new Color(200, 200, 200, 96), segments: 128));
-
-            // Venus: 0.72 AU from the Sun.
-            var venus = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(0.72f * AU_SCALE_FACTOR, 0, 0)) // distance = 0.72 AU
-                .Set(new Size3D(0.95f)) // size = 0.95x Earth
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.016f, 0f)) // speed relative to Earth
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
-
-            venus.Set(new OrbitCircle(sun, 0.72f * AU_SCALE_FACTOR, new Color(200, 200, 200, 96), segments: 128));
-
-            // Earth: 1.0 AU from the Sun (our baseline).
-            var earth = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(1.0f * AU_SCALE_FACTOR, 0, 0)) // distance = 1.0 AU
-                .Set(new Size3D(1.0f)) // size = 1.0x (baseline)
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed = baseline
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
-
-            earth.Set(new OrbitCircle(sun, 1.0f * AU_SCALE_FACTOR, new Color(180, 220, 255, 96), segments: 128));
-
-            // The Moon: Positioned relative to Earth.
-            // Compute Earth's world position and place the moon at an offset from Earth.
-            // Also explicitly set LocalPosition3D so the OrbitSystem rotates around the Earth.
-            var earthPos = earth.GetCopy<Position3D>().Value;
-            var moonLocalOffset = new Vector3(2.0f, 0f, 0f); // distance from Earth in world units
-            var moonWorldPos = earthPos + moonLocalOffset;
-
-            World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(moonWorldPos.X, moonWorldPos.Y, moonWorldPos.Z))
-                .Set(new LocalPosition3D(moonLocalOffset.X, moonLocalOffset.Y, moonLocalOffset.Z))
-                .Set(new Size3D(0.27f)) // size = 0.27x Earth
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.27f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.12f, 0f)) // Orbits Earth faster
-                .Set(new Parent(earth))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
+            // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
+            SunEntity = CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
 
+            CreateStarSystem(new Vector3(10000f, 5000f, 500f), 80.0f);
+            CreateStarSystem(new Vector3(100000f, 0f, 500f), 80.0f);
+            CreateStarSystem(new Vector3(-10000f, -5000f, -500f), 80.0f);
 
-            var spaceStationLocalOffset = new Vector3(1f, 0f, 0f); // distance from Earth in world units
-            var spaceStationWorldPos = earthPos + spaceStationLocalOffset;
-
-            World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(spaceStationWorldPos.X, spaceStationWorldPos.Y, spaceStationWorldPos.Z))
-                .Set(new LocalPosition3D(spaceStationLocalOffset.X, spaceStationLocalOffset.Y, spaceStationLocalOffset.Z))
-                .Set(new Size3D(0.01f)) // size = 0.01x Earth
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.01f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.05f, 0f)) // Orbits Earth faster
-                .Set(new Parent(earth))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
-
-            // Moon orbit around Earth (local small orbit)
-            // We created the moon as an anonymous entity above; find the last created entity for setting orbit circle
-            // Simpler: set orbit circle on the moon relative to Earth using its local offset
-            // (We just created it without storing a variable, so add the orbit as a child of earth by querying)
-            var moonEntity = World.Query(typeof(LocalPosition3D)).LastOrDefault();
-            if (moonEntity != default)
-            {
-                moonEntity.Set(new OrbitCircle(earth, moonLocalOffset.Length(), new Color(180, 180, 200, 120), segments: 64));
-            }
-
-            // Mars: 1.52 AU from the Sun.
-            var mars = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(1.52f * AU_SCALE_FACTOR, 0, 0)) // distance = 1.52 AU
-                .Set(new Size3D(0.53f)) // size = 0.53x Earth
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.53f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.0053f, 0f)) // speed relative to Earth
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mars.jpg") ?? _checkerTexture! });
-
-            mars.Set(new OrbitCircle(sun, 1.52f * AU_SCALE_FACTOR, new Color(220, 160, 120, 96), segments: 128));
-
-            // Jupiter: 5.20 AU from the Sun.
-            var jupiter = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(5.20f * AU_SCALE_FACTOR, 0, 0)) // distance = 5.20 AU
-                .Set(new Size3D(4.5f)) // size = 11.2x Earth (scaled down artistically)
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(4.5f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00084f, 0f)) // speed relative to Earth
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Jupiter.jpg") ?? _checkerTexture! });
-
-            jupiter.Set(new OrbitCircle(sun, 5.20f * AU_SCALE_FACTOR, new Color(240, 200, 160, 96), segments: 160));
-
-            // Saturn: 9.58 AU from the Sun.
-            var saturn = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(9.58f * AU_SCALE_FACTOR, 0, 0)) // distance = 9.58 AU
-                .Set(new Size3D(4.0f)) // size = 9.45x Earth (scaled down artistically)
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(4.0f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00034f, 0f)) // speed relative to Earth
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Saturn.jpg") ?? _checkerTexture! });
-
-            saturn.Set(new OrbitCircle(sun, 9.58f * AU_SCALE_FACTOR, new Color(240, 220, 200, 96), segments: 160));
-
-            // Uranus: 19.22 AU from the Sun.
-            var uranus = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(19.22f * AU_SCALE_FACTOR, 0, 0)) // distance = 19.22 AU
-                .Set(new Size3D(2.5f)) // size = 4.0x Earth (scaled down artistically)
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(2.5f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00012f, 0f)) // speed relative to Earth
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Uranus.jpg") ?? _checkerTexture! });
-
-            uranus.Set(new OrbitCircle(sun, 19.22f * AU_SCALE_FACTOR, new Color(200, 220, 240, 96), segments: 160));
-
-            // Neptune: 30.05 AU from the Sun. (Added for completeness)
-            var neptune = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(30.05f * AU_SCALE_FACTOR, 0, 0)) // distance = 30.05 AU
-                .Set(new Size3D(2.4f)) // size = 3.88x Earth (scaled down artistically)
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(2.4f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00006f, 0f)) // speed relative to Earth
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Neptune.jpg") ?? _checkerTexture! });
-
-            neptune.Set(new OrbitCircle(sun, 30.05f * AU_SCALE_FACTOR, new Color(180, 200, 240, 96), segments: 160));
-
-            // Pluto: 39.48 AU from the Sun (average).
-            var pluto = World.CreateEntity()
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(39.48f * AU_SCALE_FACTOR, 0, 0)) // distance = 39.48 AU
-                .Set(new Size3D(0.18f)) // size = 0.18x Earth
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.18f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00004f, 0f)) // speed relative to Earth (slowest)
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Pluto.jpg") ?? _checkerTexture! });
-
-            pluto.Set(new OrbitCircle(sun, 39.48f * AU_SCALE_FACTOR, new Color(200, 180, 200, 96), segments: 160));
-            /*
-            SpawnGridXZ(
-                halfLines: 100,   // creates lines from -100..100 in both axes
-                step: 1f,         // 1 unit spacing
-                y: 0f,
-                color: new Color(255, 255, 255, 32) // more transparent grid to avoid white plane in distance
-            );
-            
-            World.CreateEntity()
-                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(2000, 0, 0)))
-                .Set(new Color(255, 64, 64, 255));
-
-            World.CreateEntity()
-                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(-2000, 0, 0)))
-                .Set(new Color(255, 64, 64, 255));
-
-            World.CreateEntity()
-                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, 0, 2000)))
-                .Set(Color.Blue);
-
-            World.CreateEntity()
-                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, 0, -2000)))
-                .Set(Color.Blue);
-
-            World.CreateEntity()
-                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, 20000, 0)))
-                .Set(Color.Green);
-
-            World.CreateEntity()
-                .Set(new Line3D(new Vector3(0, 0, 0), new Vector3(0, -20000, 0)))
-                .Set(Color.Green);
-
-            */
-            // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
-            // Uses the same AU scale factor defined above so radii match planet positions
-            SpawnAsteroidBelt(new Vector3(0, 0, 0),
-                count: 4000,
-                innerRadius: 2.2f * AU_SCALE_FACTOR,
-                outerRadius: 3.2f * AU_SCALE_FACTOR,
-                minSize: 0.02f,
-                maxSize: 0.05f,
-                inclinationDegrees: 1.5f,
-                seed: 8675309,
-                addStaticCollider: false);
 
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
@@ -1361,6 +1116,224 @@ internal static class Program
         /// Spawns a large number of planet-like entities for stress testing.
         /// Entities are distributed on random circular orbits on the XZ plane with slight Y jitter.
         /// Optionally attaches static sphere colliders so they can be ray-picked.
+        ///
+        /// Creates a star system (sun + planets + moon + station + asteroid belt) centered at the given origin.
+        /// Returns the created sun entity.
+        /// </summary>
+        private Entity CreateStarSystem(Vector3 origin, float auScale = 80.0f)
+        {
+            // Local helper to convert AU offsets to world positions relative to origin
+            Vector3 AuToWorld(float auX, float auY, float auZ) => origin + new Vector3(auX * auScale, auY * auScale, auZ * auScale);
+
+            // --- CELESTIAL BODY CREATION ---
+
+            var sun = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(origin.X, origin.Y, origin.Z))
+                .Set(new AbsolutePosition(origin.X, origin.Y, origin.Z)) // Store absolute position for floating origin
+                .Set(new Size3D(10.0f)) // Artistically scaled size
+                .Set(Rotation3D.Identity)
+                .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
+                .Set(new CollisionShape(new Sphere(10.0f * 0.6f)))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Sun.jpg") ?? _checkerTexture! });
+
+            // Mercury: 0.39 AU from the Sun.
+            var mercury = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(0.39f, 0, 0).X, AuToWorld(0.39f, 0, 0).Y, AuToWorld(0.39f, 0, 0).Z)) // distance = 0.39 AU
+                .Set(new AbsolutePosition(AuToWorld(0.39f, 0, 0).X, AuToWorld(0.39f, 0, 0).Y, AuToWorld(0.39f, 0, 0).Z)) // Store absolute position
+                .Set(new Size3D(0.38f)) // size = 0.38x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.048f, 0f)) // speed relative to Earth (fastest)
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mercury.jpg") ?? _checkerTexture! });
+
+            mercury.Set(new OrbitCircle(sun, 0.39f * auScale, new Color(200, 200, 200, 96), segments: 128));
+
+            // Venus: 0.72 AU from the Sun.
+            var venus = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(0.72f, 0, 0).X, AuToWorld(0.72f, 0, 0).Y, AuToWorld(0.72f, 0, 0).Z))
+                .Set(new Size3D(0.95f)) // size = 0.95x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.016f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Venus.jpg") ?? _checkerTexture! });
+
+            venus.Set(new OrbitCircle(sun, 0.72f * auScale, new Color(200, 200, 200, 96), segments: 128));
+
+            // Earth: 1.0 AU from the Sun (our baseline).
+            var earth = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(1.0f, 0, 0).X, AuToWorld(1.0f, 0, 0).Y, AuToWorld(1.0f, 0, 0).Z))
+                .Set(new Size3D(1.0f)) // size = 1.0x (baseline)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed = baseline
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Earth.jpg") ?? _checkerTexture! });
+
+            earth.Set(new OrbitCircle(sun, 1.0f * auScale, new Color(180, 220, 255, 96), segments: 128));
+
+            // The Moon: Positioned relative to Earth.
+            var earthPos = earth.GetCopy<Position3D>().Value;
+            var moonLocalOffset = new Vector3(2.0f, 0f, 0f); // distance from Earth in world units
+            var moonWorldPos = earthPos + moonLocalOffset;
+
+            var moonEntity = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(moonWorldPos.X, moonWorldPos.Y, moonWorldPos.Z))
+                .Set(new LocalPosition3D(moonLocalOffset.X, moonLocalOffset.Y, moonLocalOffset.Z))
+                .Set(new Size3D(0.27f)) // size = 0.27x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.27f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.12f, 0f)) // Orbits Earth faster
+                .Set(new Parent(earth))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Moon.jpg") ?? _checkerTexture! });
+
+            // Space station
+            var spaceStationLocalOffset = new Vector3(1f, 0f, 0f); // distance from Earth in world units
+            var spaceStationWorldPos = earthPos + spaceStationLocalOffset;
+
+            World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(spaceStationWorldPos.X, spaceStationWorldPos.Y, spaceStationWorldPos.Z))
+                .Set(new LocalPosition3D(spaceStationLocalOffset.X, spaceStationLocalOffset.Y, spaceStationLocalOffset.Z))
+                .Set(new Size3D(0.01f)) // size = 0.01x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.01f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.05f, 0f)) // Orbits Earth faster
+                .Set(new Parent(earth))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
+
+            // Moon orbit indicator
+            if (moonEntity != default)
+            {
+                moonEntity.Set(new OrbitCircle(earth, moonLocalOffset.Length(), new Color(180, 180, 200, 120), segments: 64));
+            }
+
+            // Mars: 1.52 AU from the Sun.
+            var mars = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(1.52f, 0, 0).X, AuToWorld(1.52f, 0, 0).Y, AuToWorld(1.52f, 0, 0).Z)) // distance = 1.52 AU
+                .Set(new Size3D(0.53f)) // size = 0.53x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.53f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.0053f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Mars.jpg") ?? _checkerTexture! });
+
+            mars.Set(new OrbitCircle(sun, 1.52f * auScale, new Color(220, 160, 120, 96), segments: 128));
+
+            // Jupiter: 5.20 AU from the Sun.
+            var jupiter = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(5.20f, 0, 0).X, AuToWorld(5.20f, 0, 0).Y, AuToWorld(5.20f, 0, 0).Z)) // distance = 5.20 AU
+                .Set(new Size3D(4.5f)) // size = 11.2x Earth (scaled down artistically)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(4.5f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00084f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Jupiter.jpg") ?? _checkerTexture! });
+
+            jupiter.Set(new OrbitCircle(sun, 5.20f * auScale, new Color(240, 200, 160, 96), segments: 160));
+
+            // Saturn: 9.58 AU from the Sun.
+            var saturn = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(9.58f, 0, 0).X, AuToWorld(9.58f, 0, 0).Y, AuToWorld(9.58f, 0, 0).Z)) // distance = 9.58 AU
+                .Set(new Size3D(4.0f)) // size = 9.45x Earth (scaled down artistically)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(4.0f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00034f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Saturn.jpg") ?? _checkerTexture! });
+
+            saturn.Set(new OrbitCircle(sun, 9.58f * auScale, new Color(240, 220, 200, 96), segments: 160));
+
+            // Uranus: 19.22 AU from the Sun.
+            var uranus = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(19.22f, 0, 0).X, AuToWorld(19.22f, 0, 0).Y, AuToWorld(19.22f, 0, 0).Z)) // distance = 19.22 AU
+                .Set(new Size3D(2.5f)) // size = 4.0x Earth (scaled down artistically)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(2.5f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00012f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Uranus.jpg") ?? _checkerTexture! });
+
+            uranus.Set(new OrbitCircle(sun, 19.22f * auScale, new Color(200, 220, 240, 96), segments: 160));
+
+            // Neptune: 30.05 AU from the Sun. (Added for completeness)
+            var neptune = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(30.05f, 0, 0).X, AuToWorld(30.05f, 0, 0).Y, AuToWorld(30.05f, 0, 0).Z)) // distance = 30.05 AU
+                .Set(new Size3D(2.4f)) // size = 3.88x Earth (scaled down artistically)
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(2.4f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00006f, 0f)) // speed relative to Earth
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Neptune.jpg") ?? _checkerTexture! });
+
+            neptune.Set(new OrbitCircle(sun, 30.05f * auScale, new Color(180, 200, 240, 96), segments: 160));
+
+            // Pluto: 39.48 AU from the Sun (average).
+            var pluto = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(39.48f, 0, 0).X, AuToWorld(39.48f, 0, 0).Y, AuToWorld(39.48f, 0, 0).Z)) // distance = 39.48 AU
+                .Set(new Size3D(0.18f)) // size = 0.18x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.18f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.00004f, 0f)) // speed relative to Earth (slowest)
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = LoadTextureFromFile("Assets/Pluto.jpg") ?? _checkerTexture! });
+
+            pluto.Set(new OrbitCircle(sun, 39.48f * auScale, new Color(200, 180, 200, 96), segments: 160));
+
+            // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
+            SpawnAsteroidBelt(origin,
+                parent: sun,
+                count: 200,
+                innerRadius: 2.2f * auScale,
+                outerRadius: 3.2f * auScale,
+                minSize: 0.02f,
+                maxSize: 0.05f,
+                inclinationDegrees: 1.5f,
+                seed: 8675309,
+                addStaticCollider: false);
+
+            return sun;
+        }
+        /// <summary>
+        /// Spawns a large number of planet-like entities for stress testing.
+        /// Entities are distributed on random circular orbits on the XZ plane with slight Y jitter.
+        /// Optionally attaches static sphere colliders so they can be ray-picked.
         /// </summary>
         /// <param name="count">How many entities to spawn.</param>
         /// <param name="minOrbitRadius">Minimum orbit radius from origin.</param>
@@ -1492,6 +1465,7 @@ internal static class Program
         /// on the XZ plane with small random inclinations to give a torus-like appearance.
         /// </summary>
         /// <param name="center">Center of the belt (usually the star position)</param>
+        /// <param name="parent">Parent entity (usually the star entity)</param>
         /// <param name="count">Total asteroids to spawn</param>
         /// <param name="innerRadius">Inner radius of belt</param>
         /// <param name="outerRadius">Outer radius of belt</param>
@@ -1500,7 +1474,7 @@ internal static class Program
         /// <param name="inclinationDegrees">Max inclination in degrees applied as small tilt from XZ plane</param>
         /// <param name="seed">Random seed</param>
         /// <param name="addStaticCollider">If true, adds static colliders for picking</param>
-        private void SpawnAsteroidBelt(Vector3 center, int count = 1000, float innerRadius = 200f, float outerRadius = 400f, float minSize = 0.2f, float maxSize = 1.5f, float inclinationDegrees = 2.0f, int seed = 424242, bool addStaticCollider = false)
+        private void SpawnAsteroidBelt(Vector3 center, Entity parent, int count = 1000, float innerRadius = 200f, float outerRadius = 400f, float minSize = 0.2f, float maxSize = 1.5f, float inclinationDegrees = 2.0f, int seed = 424242, bool addStaticCollider = false)
         {
             if (count <= 0) return;
             if (innerRadius < 0f) innerRadius = 0f;
@@ -1540,7 +1514,7 @@ internal static class Program
                     .Set(new CelestialBody())
                     .Set(sharedSphere)
                     .Set(new Kinematic())
-                    .Set(new Parent((Entity)SunEntity!))
+                    .Set(new Parent(parent))
                     .Set(new Position3D(pos.X, pos.Y, pos.Z))
                     .Set(new Size3D(s))
                     .Set(new CollisionShape(new Sphere(s)))
