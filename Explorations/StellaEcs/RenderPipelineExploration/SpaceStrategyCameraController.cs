@@ -28,6 +28,10 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         private Vector3 _currentFocus;
         // Optional provider that returns the live focus point each frame (useful to follow moving objects)
         private Func<Vector3>? _focusProvider;
+        // When a live provider is set we may want to smooth the initial transition
+        // so selecting a new object doesn't teleport the camera. This timer tracks
+        // remaining seconds to apply smoothing while beginning to follow a provider.
+        private float _followSmoothingRemaining = 0f;
 
         // Distance from camera to focus
         private float _targetDistance;
@@ -122,6 +126,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         public void SetFocus(Vector3 focus, float? distance = null, float? minDistanceOverride = null)
         {
             _focusProvider = null;
+            // Clear any follow-smoothing timer when manually setting focus
+            _followSmoothingRemaining = 0f;
             _targetFocus = focus;
             // Store optional per-focus min distance override (used to prevent clipping into focused objects)
             _focusMinDistanceOverride = minDistanceOverride;
@@ -149,6 +155,10 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     _targetFocus = provider();
                 }
                 catch { }
+                // Apply a short smoothing window so switching to follow a new target
+                // animates the camera instead of teleporting. Duration (seconds) is
+                // controlled by InitialFollowSmoothingSeconds and can be tuned externally.
+                _followSmoothingRemaining = InitialFollowSmoothingSeconds;
             }
 
             if (distance.HasValue && distance.Value > 0f)
@@ -157,6 +167,19 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
             }
         }
+
+        /// <summary>
+        /// Duration in seconds to smooth the initial transition when a live focus provider
+        /// is set. Default is a short time so focusing a new object doesn't feel like a teleport.
+        /// </summary>
+        public float InitialFollowSmoothingSeconds { get; set; } = 0.10f;
+        /// <summary>
+        /// Smoothing rate used while actively tracking a live focus provider after the
+        /// initial follow smoothing window. A high value (e.g., 60) makes tracking feel
+        /// immediate while still applying per-frame exponential smoothing to avoid
+        /// single-frame visual snaps.
+        /// </summary>
+        public float FollowTrackingSmoothingRate { get; set; } = 60.0f;
 
         /// <summary>
         /// Applies an origin shift (rebase offset) to the controller so its internal focus
@@ -400,8 +423,34 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 t = 1f - MathF.Exp(-Smoothing * dt);
             }
 
-            _currentFocus = Vector3.Lerp(_currentFocus, _targetFocus, t);
-            _currentDistance = _currentDistance + (_targetDistance - _currentDistance) * t;
+            if (_focusProvider != null)
+            {
+                // While following a live provider we want two behaviors:
+                // - Smoothly transition when we first start following (InitialFollowSmoothingSeconds)
+                // - After that, track the moving target nearly-instantly but still smoothly to avoid
+                //   a single-frame snap. We accomplish this by switching to a high-but-finite
+                //   smoothing rate (`FollowTrackingSmoothingRate`) after the initial window.
+                float activeRate = (_followSmoothingRemaining > 0f) ? Smoothing : FollowTrackingSmoothingRate;
+
+                float localT = 1f;
+                if (dt > 0f && activeRate > 0f)
+                {
+                    localT = 1f - MathF.Exp(-activeRate * dt);
+                }
+
+                _currentFocus = Vector3.Lerp(_currentFocus, _targetFocus, localT);
+                _currentDistance = _currentDistance + (_targetDistance - _currentDistance) * localT;
+
+                if (_followSmoothingRemaining > 0f)
+                {
+                    _followSmoothingRemaining = MathF.Max(0f, _followSmoothingRemaining - dt);
+                }
+            }
+            else
+            {
+                _currentFocus = Vector3.Lerp(_currentFocus, _targetFocus, t);
+                _currentDistance = _currentDistance + (_targetDistance - _currentDistance) * t;
+            }
 
             // --- Smooth interpolation for rotation (yaw/pitch) ---
             if (SmoothRotation && RotationSmoothing > 0f)
