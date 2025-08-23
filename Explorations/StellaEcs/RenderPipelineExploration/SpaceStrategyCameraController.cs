@@ -293,6 +293,17 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
                     // vertical middle-drag also adjusts zoom a bit for convenience
                     _targetDistance += -md.Y * (ZoomSpeed * 0.01f) * speedMult;
+
+                    // Manual middle-drag indicates an intentional user pan; detach any live follow
+                    // and snap the current camera focus/distance so it doesn't lag behind the provider.
+                    if (_focusProvider != null)
+                    {
+                        _focusProvider = null;
+                        _focusMinDistanceOverride = null;
+                        _followSmoothingRemaining = 0f;
+                        _currentFocus = _targetFocus;
+                        _currentDistance = _targetDistance;
+                    }
                 }
             }
 
@@ -308,10 +319,14 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             if (kb.IsDown(KeyCode.Q)) up -= 1f; // move focus down
 
             // If the user manually pans using keyboard, break any live-follow provider
+            // and snap current focus/distance so the camera detaches immediately.
             if (_focusProvider != null && (forward != 0f || rightDir != 0f || up != 0f))
             {
                 _focusProvider = null;
                 _focusMinDistanceOverride = null;
+                _followSmoothingRemaining = 0f;
+                _currentFocus = _targetFocus;
+                _currentDistance = _targetDistance;
             }
 
             if (forward != 0f || rightDir != 0f || up != 0f)
