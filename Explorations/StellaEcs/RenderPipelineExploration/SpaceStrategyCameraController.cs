@@ -32,6 +32,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         // so selecting a new object doesn't teleport the camera. This timer tracks
         // remaining seconds to apply smoothing while beginning to follow a provider.
         private float _followSmoothingRemaining = 0f;
+        // Optional key used to identify the currently-followed object so repeated
+        // calls to follow the same object can be ignored.
+        private object? _currentProviderKey;
 
         // Distance from camera to focus
         private float _targetDistance;
@@ -143,29 +146,81 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// Set a live provider that supplies the focus point each frame. Useful to follow a moving entity.
         /// Passing null as provider will clear the live follow and use the static focus instead.
         /// </summary>
-        public void SetFocusProvider(Func<Vector3>? provider, float? distance = null, float? minDistanceOverride = null)
+        // providerKey: optional object used to identify the target being followed. If the
+        // same key is passed again, the call will not restart follow smoothing (prevents
+        // re-selecting the same object and retriggering animations). If providerKey is
+        // null, we fall back to comparing the delegate reference.
+        public void SetFocusProvider(Func<Vector3>? provider, float? distance = null, float? minDistanceOverride = null, object? providerKey = null)
         {
-            _focusProvider = provider;
+            // If the caller requests clearing the provider, clear everything.
+            if (provider == null)
+            {
+                _focusProvider = null;
+                _currentProviderKey = null;
+                _followSmoothingRemaining = 0f;
+            }
+            else
+            {
+                // If a providerKey is supplied and matches the current one, treat this as
+                // a redundant selection. Allow distance updates but don't reset smoothing.
+                bool isSameTarget = false;
+                if (providerKey != null && _currentProviderKey != null)
+                {
+                    isSameTarget = providerKey.Equals(_currentProviderKey);
+                }
+                else if (providerKey == null && _focusProvider != null)
+                {
+                    // No key supplied; fall back to comparing delegate references.
+                    isSameTarget = ReferenceEquals(_focusProvider, provider);
+                }
+
+                if (isSameTarget)
+                {
+                    // Update distance/minDistance override if requested, but do not restart smoothing.
+                    _focusProvider = provider;
+                    _currentProviderKey = providerKey ?? _currentProviderKey;
+                    if (distance.HasValue && distance.Value > 0f)
+                    {
+                        float effectiveMin = _focusMinDistanceOverride ?? MinDistance;
+                        _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
+                    }
+                    if (minDistanceOverride.HasValue)
+                    {
+                        _focusMinDistanceOverride = minDistanceOverride;
+                    }
+                    return;
+                }
+
+                _focusProvider = provider;
+                _currentProviderKey = providerKey;
+            }
             // Store optional per-focus min distance override for live-follow
             _focusMinDistanceOverride = minDistanceOverride;
-            if (provider != null)
+            if (_focusProvider != null)
             {
                 try
                 {
-                    _targetFocus = provider();
+                    _targetFocus = _focusProvider();
                 }
                 catch { }
 
-                // If we're switching from an existing provider to a different one, use a
-                // longer smoothing duration so the camera eases between the two tracked objects.
-                if (_focusProvider != null && !ReferenceEquals(_focusProvider, provider))
+                // Determine whether we are switching providers. Use the provider key when
+                // available; otherwise fallback to delegate reference equality.
+                bool switched = false;
+                if (providerKey != null)
                 {
-                    _followSmoothingRemaining = FollowSwitchSmoothingSeconds;
+                    // If previous key existed and is different, it's a switch. Otherwise
+                    // if there was no previous key, treat as a switch as well.
+                    switched = !object.Equals(_currentProviderKey, providerKey);
                 }
                 else
                 {
-                    _followSmoothingRemaining = InitialFollowSmoothingSeconds;
+                    // No key: we already set _focusProvider above, compare delegate references
+                    // against the previously stored delegate (we compared earlier for redundancy)
+                    switched = true; // conservative: assume switch if we reached here
                 }
+
+                _followSmoothingRemaining = switched ? FollowSwitchSmoothingSeconds : InitialFollowSmoothingSeconds;
             }
 
             if (distance.HasValue && distance.Value > 0f)
