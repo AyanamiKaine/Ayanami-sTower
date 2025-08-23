@@ -411,6 +411,12 @@ internal static class Program
         private float _timeScale => _timeScaleOptions[_timeScaleIndex];
         private bool _prevIncreasePressed = false;
         private bool _prevDecreasePressed = false;
+        // Deterministic fixed-step simulation accumulator
+        // The simulation will always step in discrete, fixed-sized steps so
+        // identical inputs produce identical results regardless of frame timing.
+        private double _simulationAccumulator = 0.0;
+        private const double _fixedSimulationStepSeconds = 1.0 / 60.0; // 60 Hz deterministic step
+        private const int _maxSimulationStepsPerFrame = 16; // safety clamp to avoid spiral-of-death
         private Entity? SunEntity;
         /// <summary>
         /// Represents the current game world.
@@ -1802,9 +1808,33 @@ internal static class Program
                 }
             }
 
-            // Apply timescale to simulation and world updates
-            var scaledSeconds = (float)delta.TotalSeconds * _timeScale;
-            _simulation.Timestep(scaledSeconds, _threadDispatcher);
+            // Apply timescale to simulation and world updates using a fixed-step accumulator
+            // Do NOT change the step size; changing step size makes the simulation nondeterministic.
+            // Instead, scale the accumulated real time then consume it in fixed-size steps.
+            var scaledDeltaSeconds = delta.TotalSeconds * _timeScale;
+
+            // Accumulate scaled real seconds
+            _simulationAccumulator += scaledDeltaSeconds;
+
+            // Limit accumulated time to avoid spiral-of-death after freezes/hangs
+            var maxAccum = _fixedSimulationStepSeconds * _maxSimulationStepsPerFrame;
+            if (_simulationAccumulator > maxAccum)
+            {
+                _simulationAccumulator = maxAccum;
+            }
+
+            int steps = 0;
+            while (_simulationAccumulator >= _fixedSimulationStepSeconds && steps < _maxSimulationStepsPerFrame)
+            {
+                // Step physics with a fixed, deterministic timestep
+                _simulation.Timestep((float)_fixedSimulationStepSeconds, _threadDispatcher);
+
+                // Advance the ECS world by the same fixed timestep
+                World.Update((float)_fixedSimulationStepSeconds);
+
+                _simulationAccumulator -= _fixedSimulationStepSeconds;
+                steps++;
+            }
 
             // Update floating origin system (check if rebase is needed)
             if (_floatingOriginManager != null)
@@ -1998,7 +2028,7 @@ internal static class Program
                 }
             }
 
-            World.Update(scaledSeconds);
+            // Note: World.Update was already called inside the fixed-step loop above.
             // Update camera via controller abstraction AFTER physics step so any live
             // focus providers (which read physics poses) get the latest, post-step
             // positions. This avoids the camera lagging behind fast-moving objects
