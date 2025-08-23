@@ -1820,6 +1820,13 @@ internal static class Program
                 _cameraController.ApplyOriginShift(rebaseOffset);
             }
 
+            // Toggle drawing axes: press X to toggle drawing axes for all Position3D entities
+            if (Inputs.Keyboard.IsPressed(KeyCode.F1))
+            {
+                _debugDrawAxesAll = !_debugDrawAxesAll;
+                Console.WriteLine($"[Debug] Draw axes for all entities: {_debugDrawAxesAll}");
+            }
+
             // Check for mouse click to perform picking
             // Note: Mouse picking works correctly with floating origin since it operates on 
             // the physics simulation's coordinate space which is kept relative to the current origin
@@ -2149,12 +2156,6 @@ internal static class Program
                     DebugDrawColliders();
                 }
 
-                // Toggle drawing axes: press X to toggle drawing axes for all Position3D entities
-                if (Inputs.Keyboard.IsPressed(KeyCode.X))
-                {
-                    _debugDrawAxesAll = !_debugDrawAxesAll;
-                    Console.WriteLine($"[Debug] Draw axes for all entities: {_debugDrawAxesAll}");
-                }
 
                 // Draw axes for entities that request it, or for all entities when toggled.
                 if (_debugDrawAxesAll)
