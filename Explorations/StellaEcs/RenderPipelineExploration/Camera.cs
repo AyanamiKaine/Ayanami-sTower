@@ -104,7 +104,17 @@ public class Camera
     /// <summary>
     /// Far clipping plane distance.
     /// </summary>
-    public double Far { get; set; } = 20f;
+    public double Far { get; set; } = 100000f;
+
+    /// <summary>
+    /// Ensure the far clip distance is at least <paramref name="minFar"/>.
+    /// Use this to temporarily expand the view frustum to include distant targets.
+    /// </summary>
+    public void EnsureFar(double minFar)
+    {
+        if (minFar <= 0.0) return;
+        if (Far < minFar) Far = minFar;
+    }
 
     /// <summary>
     /// Gets the view matrix for the camera.

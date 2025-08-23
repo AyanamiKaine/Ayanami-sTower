@@ -150,6 +150,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 // When an override exists, ensure initial target distance respects it
                 double effectiveMin = _focusMinDistanceOverride ?? MinDistance;
                 _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
+                // Ensure the camera's far plane can see the desired focus distance.
+                try { _camera.EnsureFar(_targetDistance * 2.0); } catch { }
             }
         }
 

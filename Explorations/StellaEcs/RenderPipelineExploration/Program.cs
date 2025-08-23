@@ -2293,13 +2293,19 @@ internal static class Program
                 bool visibleBySize = false;
                 if (_enableSizeVisibility)
                 {
-                    // Transform center into clip space
-                    var center4 = new Vector4(translation, 1f);
+                    // Use the same translation that will be used for rendering. When using
+                    // camera-relative rendering the model matrices subtract the camera position,
+                    // so do the same here so clip-space and distance calculations match.
+                    var camPos = HighPrecisionConversions.ToVector3(_camera.Position);
+                    var renderTranslation = _useCameraRelativeRendering ? (translation - camPos) : translation;
+
+                    // Transform center into clip space (use renderTranslation for consistency)
+                    var center4 = new Vector4(renderTranslation, 1f);
                     var clip = Vector4.Transform(center4, viewProj);
                     if (clip.W > 0f)
                     {
                         // approximate projected pixel radius: r / (dist * tan(fov/2)) * (screenHeight/2)
-                        var toObj = translation - (_useCameraRelativeRendering ? Vector3.Zero : HighPrecisionConversions.ToVector3(_camera.Position));
+                        var toObj = renderTranslation; // already in camera-relative space when appropriate
                         var dist = toObj.Length();
                         if (dist > 0f)
                         {
