@@ -180,6 +180,16 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// single-frame visual snaps.
         /// </summary>
         public float FollowTrackingSmoothingRate { get; set; } = 60.0f;
+    /// <summary>
+    /// Maximum focus movement speed (world units per second) allowed when tracking a live target.
+    /// This prevents single-frame large jumps when the provider's target moves suddenly.
+    /// </summary>
+    public float FollowMaxFocusSpeed { get; set; } = 500.0f;
+
+    /// <summary>
+    /// Maximum change in distance (world units per second) allowed when tracking a live target.
+    /// </summary>
+    public float FollowMaxDistanceDeltaPerSecond { get; set; } = 500.0f;
 
         /// <summary>
         /// Applies an origin shift (rebase offset) to the controller so its internal focus
@@ -453,8 +463,35 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     localT = 1f - MathF.Exp(-activeRate * dt);
                 }
 
-                _currentFocus = Vector3.Lerp(_currentFocus, _targetFocus, localT);
-                _currentDistance = _currentDistance + (_targetDistance - _currentDistance) * localT;
+                // Compute desired new values via interpolation
+                var desiredFocus = Vector3.Lerp(_currentFocus, _targetFocus, localT);
+                var desiredDistance = _currentDistance + (_targetDistance - _currentDistance) * localT;
+
+                // Clamp per-frame focus movement to avoid a single choppy snap when approaching
+                // a target. This keeps the approach smooth even if the interpolated step is large.
+                if (dt > 0f && FollowMaxFocusSpeed > 0f)
+                {
+                    var maxMove = FollowMaxFocusSpeed * dt;
+                    var focusDelta = desiredFocus - _currentFocus;
+                    var dist = focusDelta.Length();
+                    if (dist > maxMove)
+                    {
+                        desiredFocus = _currentFocus + Vector3.Normalize(focusDelta) * maxMove;
+                    }
+                }
+
+                if (dt > 0f && FollowMaxDistanceDeltaPerSecond > 0f)
+                {
+                    var maxDistChange = FollowMaxDistanceDeltaPerSecond * dt;
+                    var distDelta = desiredDistance - _currentDistance;
+                    if (MathF.Abs(distDelta) > maxDistChange)
+                    {
+                        desiredDistance = _currentDistance + MathF.Sign(distDelta) * maxDistChange;
+                    }
+                }
+
+                _currentFocus = desiredFocus;
+                _currentDistance = desiredDistance;
 
                 if (_followSmoothingRemaining > 0f)
                 {
