@@ -1852,6 +1852,12 @@ internal static class Program
                 Console.WriteLine($"[Debug] Draw axes for all entities: {_debugDrawAxesAll}");
             }
 
+            if (Inputs.Keyboard.IsPressed(KeyCode.F2))
+            {
+                _debugDrawColliders = !_debugDrawColliders;
+                Console.WriteLine($"[Debug] Draw colliders for all entities: {_debugDrawColliders}");
+            }
+
             // Check for mouse click to perform picking
             // Note: Mouse picking works correctly with floating origin since it operates on 
             // the physics simulation's coordinate space which is kept relative to the current origin
@@ -1969,62 +1975,6 @@ internal static class Program
                             }
                         }
                     }
-
-                    // For now, we just print the result.
-                    /*
-                    if (!isDoubleClick)
-                    {
-                        // The CollidableReference can be either a BodyHandle or a StaticHandle.
-                        if (result.Collidable.Mobility == CollidableMobility.Static)
-                        {
-                            if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
-                            {
-                                // Rebase the world at the target so it sits at the grid origin, then place camera at desired offset
-                                if (_floatingOriginManager != null)
-                                {
-                                    var offset = staticBody.Pose.Position; // shift world by -offset
-                                    _floatingOriginManager.ForceRebase(offset);
-                                    _camera.Position = new Vector3(0, 10, 6); // camera relative to new origin
-                                    _camera.LookAt(Vector3.Zero);
-                                }
-                                else
-                                {
-                                    // Fallback: no floating origin manager, just move camera in-place
-                                    _camera.Position = staticBody.Pose.Position + new Vector3(0, 10, 6);
-                                    _camera.LookAt(staticBody.Pose.Position);
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine($"SUCCESS: Hit a STATIC object at distance {result.Distance}, but static handle is invalid now.");
-                            }
-                        }
-                        else // It's a dynamic/kinematic body
-                        {
-                            var bh = result.Collidable.BodyHandle;
-                            if (TryGetBodyRef(bh, out var bref))
-                            {
-                                var p = bref.Pose.Position;
-                                if (_floatingOriginManager != null)
-                                {
-                                    _floatingOriginManager.ForceRebase(p);
-                                    _camera.Position = new Vector3(0, 10, 6);
-                                    _camera.LookAt(Vector3.Zero);
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}. Position: {p}");
-                                    _camera.Position = p + new Vector3(0, 10, 6);
-                                    _camera.LookAt(p);
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine($"SUCCESS: Hit a DYNAMIC object at distance {result.Distance}, but body handle is invalid now (moved/removed).");
-                            }
-                        }
-                    }
-                    */
                 }
                 else
                 {
