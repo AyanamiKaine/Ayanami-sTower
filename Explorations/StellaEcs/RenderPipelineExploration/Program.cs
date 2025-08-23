@@ -2618,6 +2618,16 @@ internal static class Program
 
         private void DrawShapeFromEcs(object? shape, Vector3 position, Quaternion orientation, Color color)
         {
+            // If rendering is camera-relative, convert the camera position to single precision
+            // and subtract it so collider wireframes are placed in the same local/render space
+            // as the rest of the scene. This fixes collider debug visuals appearing offset
+            // after a floating-origin rebase when camera-relative rendering is enabled.
+            if (_useCameraRelativeRendering && _camera != null)
+            {
+                var camPos = HighPrecisionConversions.ToVector3(_camera.Position);
+                position -= camPos;
+            }
+
             switch (shape)
             {
                 case Sphere s:
