@@ -421,6 +421,10 @@ internal static class Program
         // This reduces the need to move world objects and avoids rebase-induced jitter.
         private bool _useCameraRelativeRendering = true;
 
+        // Lines (debug/overlay) further than this distance from the camera will be skipped.
+        // Tune this value for your scene scale. Units are world units (same as _camera.Position).
+        private double _maxDebugLineDistance = 100000.0;
+
         // GPU resources
         private GraphicsPipeline? _pipeline;
         // rotation
@@ -2099,10 +2103,21 @@ internal static class Program
                 // Do the subtraction in double precision then convert to float to avoid
                 // large-value precision loss when converting directly to float first.
                 var camPosDouble = _camera.Position; // Vector3Double
+                double maxDistSq = _maxDebugLineDistance * _maxDebugLineDistance;
                 foreach (var entity in World.Query(typeof(Line3D), typeof(Color)))
                 {
                     var line = entity.GetMut<Line3D>();
                     var color = entity.GetMut<Color>();
+
+                    // Cull lines whose both endpoints are beyond the max debug distance.
+                    // Compute squared distances in double precision for accuracy.
+                    var da = Vector3Double.DistanceSquared(line.Start, camPosDouble);
+                    var db = Vector3Double.DistanceSquared(line.End, camPosDouble);
+                    if (da > maxDistSq && db > maxDistSq)
+                    {
+                        continue;
+                    }
+
                     Vector3 aVec, bVec;
                     if (_useCameraRelativeRendering)
                     {
@@ -2125,6 +2140,13 @@ internal static class Program
                     var oc = ocEntity.GetMut<OrbitCircle>();
                     // Get current parent world position
                     var center = GetEntityWorldPosition(oc.Parent);
+
+                    // Cull entire orbit if center is too far from camera (fast-path)
+                    if (Vector3Double.DistanceSquared(center, camPosDouble) > maxDistSq)
+                    {
+                        continue;
+                    }
+
                     if (_useCameraRelativeRendering)
                     {
                         center = new Vector3Double(center.X - camPosDouble.X, center.Y - camPosDouble.Y, center.Z - camPosDouble.Z);
@@ -2157,6 +2179,10 @@ internal static class Program
                     {
                         var ent = e; // capture
                         var pos = ent.Has<Position3D>() ? ent.GetMut<Position3D>().Value : Vector3Double.Zero;
+
+                        // Cull axes if center is too far
+                        if (Vector3Double.DistanceSquared(pos, camPosDouble) > maxDistSq) continue;
+
                         if (_useCameraRelativeRendering)
                         {
                             pos = new Vector3Double(pos.X - camPosDouble.X, pos.Y - camPosDouble.Y, pos.Z - camPosDouble.Z);
@@ -2170,6 +2196,10 @@ internal static class Program
                     {
                         var ent = e; // capture
                         var pos = ent.GetMut<Position3D>().Value;
+
+                        // Cull axes if center is too far
+                        if (Vector3Double.DistanceSquared(pos, camPosDouble) > maxDistSq) continue;
+
                         if (_useCameraRelativeRendering)
                         {
                             pos = new Vector3Double(pos.X - camPosDouble.X, pos.Y - camPosDouble.Y, pos.Z - camPosDouble.Z);
@@ -2626,6 +2656,19 @@ internal static class Program
             {
                 var camPos = HighPrecisionConversions.ToVector3(_camera.Position);
                 position -= camPos;
+            }
+
+            // Cull shapes that are too far from the camera. Note: position here is in single-precision
+            // camera-relative space when _useCameraRelativeRendering is true; otherwise it's world-space.
+            // Compare squared distances for efficiency.
+            if (_camera != null)
+            {
+                var camPosDouble = _camera.Position;
+                var posDouble = new AyanamisTower.StellaEcs.HighPrecisionMath.Vector3Double(position.X, position.Y, position.Z);
+                if (Vector3Double.DistanceSquared(posDouble, camPosDouble) > (_maxDebugLineDistance * _maxDebugLineDistance))
+                {
+                    return;
+                }
             }
 
             switch (shape)
