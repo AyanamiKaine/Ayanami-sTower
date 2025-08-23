@@ -2139,17 +2139,31 @@ internal static class Program
             if (_lineBatch != null)
             {
 
-                // Add all lines, converting to camera-relative positions if enabled
-                var camPosVec = _useCameraRelativeRendering ? HighPrecisionConversions.ToVector3(_camera.Position) : Vector3.Zero;
+                // Add all lines, converting to camera-relative positions if enabled.
+                // Do the subtraction in double precision then convert to float to avoid
+                // large-value precision loss when converting directly to float first.
+                var camPosDouble = _camera.Position; // Vector3Double
                 foreach (var entity in World.Query(typeof(Line3D), typeof(Color)))
                 {
                     var line = entity.GetMut<Line3D>();
                     var color = entity.GetMut<Color>();
-                    var a = HighPrecisionConversions.ToVector3(line.Start) - camPosVec;
-                    var b = HighPrecisionConversions.ToVector3(line.End) - camPosVec;
-                    _lineBatch.AddLine(a, b, color);
+                    Vector3 aVec, bVec;
+                    if (_useCameraRelativeRendering)
+                    {
+                        var aRel = line.Start - camPosDouble;
+                        var bRel = line.End - camPosDouble;
+                        aVec = HighPrecisionConversions.ToVector3(aRel);
+                        bVec = HighPrecisionConversions.ToVector3(bRel);
+                    }
+                    else
+                    {
+                        aVec = HighPrecisionConversions.ToVector3(line.Start);
+                        bVec = HighPrecisionConversions.ToVector3(line.End);
+                    }
+                    _lineBatch.AddLine(aVec, bVec, color);
                 }
 
+                var camPosDouble = _camera.Position;
                 // Draw orbit circles for entities that have OrbitCircle component
                 foreach (var ocEntity in World.Query(typeof(OrbitCircle)))
                 {
@@ -2158,7 +2172,7 @@ internal static class Program
                     var center = GetEntityWorldPosition(oc.Parent);
                     if (_useCameraRelativeRendering)
                     {
-                        center = new Vector3Double(center.X - _camera.Position.X, center.Y - _camera.Position.Y, center.Z - _camera.Position.Z);
+                        center = new Vector3Double(center.X - camPosDouble.X, center.Y - camPosDouble.Y, center.Z - camPosDouble.Z);
                     }
                     int segs = Math.Max(4, oc.Segments);
                     double angleStep = MathF.Tau / segs;
@@ -2167,7 +2181,9 @@ internal static class Program
                     {
                         double a = i * angleStep;
                         Vector3Double p = center + new Vector3Double(Math.Cos(a) * oc.Radius, 0f, Math.Sin(a) * oc.Radius);
-                        _lineBatch.AddLine(HighPrecisionConversions.ToVector3(prev) - camPosVec, HighPrecisionConversions.ToVector3(p) - camPosVec, oc.Color);
+                        var p0 = HighPrecisionConversions.ToVector3(prev);
+                        var p1 = HighPrecisionConversions.ToVector3(p);
+                        _lineBatch.AddLine(p0, p1, oc.Color);
                         prev = p;
                     }
                 }
@@ -2188,7 +2204,7 @@ internal static class Program
                         var pos = ent.Has<Position3D>() ? ent.GetMut<Position3D>().Value : Vector3Double.Zero;
                         if (_useCameraRelativeRendering)
                         {
-                            pos = new Vector3Double(pos.X - _camera.Position.X, pos.Y - _camera.Position.Y, pos.Z - _camera.Position.Z);
+                            pos = new Vector3Double(pos.X - camPosDouble.X, pos.Y - camPosDouble.Y, pos.Z - camPosDouble.Z);
                         }
                         DrawEntityAxes(pos, 1.0f);
                     }
@@ -2201,7 +2217,7 @@ internal static class Program
                         var pos = ent.GetMut<Position3D>().Value;
                         if (_useCameraRelativeRendering)
                         {
-                            pos = new Vector3Double(pos.X - _camera.Position.X, pos.Y - _camera.Position.Y, pos.Z - _camera.Position.Z);
+                            pos = new Vector3Double(pos.X - camPosDouble.X, pos.Y - camPosDouble.Y, pos.Z - camPosDouble.Z);
                         }
                         DrawEntityAxes(pos, 1.0f);
                     }

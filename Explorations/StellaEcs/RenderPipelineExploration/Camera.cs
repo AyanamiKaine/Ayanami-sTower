@@ -104,7 +104,7 @@ public class Camera
     /// <summary>
     /// Far clipping plane distance.
     /// </summary>
-    public double Far { get; set; } = 100000f;
+    public double Far { get; set; } = 20.0f;
 
     /// <summary>
     /// Ensure the far clip distance is at least <paramref name="minFar"/>.
