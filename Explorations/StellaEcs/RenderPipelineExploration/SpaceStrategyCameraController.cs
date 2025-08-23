@@ -32,6 +32,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         // so selecting a new object doesn't teleport the camera. This timer tracks
         // remaining seconds to apply smoothing while beginning to follow a provider.
         private float _followSmoothingRemaining = 0f;
+        // Total smoothing duration originally requested (used to blend rates smoothly)
+        private float _followSmoothingTotal = 0f;
         // Optional key used to identify the currently-followed object so repeated
         // calls to follow the same object can be ignored.
         private object? _currentProviderKey;
@@ -106,6 +108,13 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         public float EdgePanSpeed { get; set; } = 8.0f;
 
         /// <summary>
+        /// Exponent used when scaling pan speed by distance. The controller computes a
+        /// distance scale from _currentDistance/10 and raises it to this exponent.
+        /// Use values &lt;1 to reduce growth when zoomed out (default 0.5 = sqrt).
+        /// </summary>
+        public float PanDistanceScaleExponent { get; set; } = 0.5f;
+
+        /// <summary>
         /// Creates a new strategy-style camera controller driving the given <see cref="Camera"/>.
         /// The controller will initialize its focus to the camera's current Target.
         /// </summary>
@@ -131,6 +140,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             _focusProvider = null;
             // Clear any follow-smoothing timer when manually setting focus
             _followSmoothingRemaining = 0f;
+            _followSmoothingTotal = 0f;
             _targetFocus = focus;
             // Store optional per-focus min distance override (used to prevent clipping into focused objects)
             _focusMinDistanceOverride = minDistanceOverride;
@@ -221,6 +231,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 }
 
                 _followSmoothingRemaining = switched ? FollowSwitchSmoothingSeconds : InitialFollowSmoothingSeconds;
+                _followSmoothingTotal = _followSmoothingRemaining;
             }
 
             if (distance.HasValue && distance.Value > 0f)
@@ -267,6 +278,28 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         {
             _targetFocus -= offset;
             _currentFocus -= offset;
+        }
+
+        /// <summary>
+        /// Compute the distance-based pan scale. Uses _currentDistance/10 as the base
+        /// and raises it to <see cref="PanDistanceScaleExponent"/>. Clamped to a small
+        /// minimum to avoid zero/near-zero scaling.
+        /// </summary>
+        private float GetDistanceScale()
+        {
+            // base scale: distance divided by 10 (preserves existing behavior as baseline)
+            float baseScale = MathF.Max(0.01f, _currentDistance / 10f);
+            // if exponent is ~1, returns baseScale; <1 reduces growth when zoomed out
+            if (MathF.Abs(PanDistanceScaleExponent - 1f) < 1e-6f)
+            {
+                return baseScale;
+            }
+            // Negative or zero exponent is not meaningful for scaling; treat <= 0 as 1
+            if (PanDistanceScaleExponent <= 0f)
+            {
+                return baseScale;
+            }
+            return MathF.Pow(baseScale, PanDistanceScaleExponent);
         }
 
         /// <summary>
@@ -326,15 +359,9 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             }
             catch { }
 
-            // If a live focus provider exists, sample it to update the target focus (follows moving objects)
-            if (_focusProvider != null)
-            {
-                try
-                {
-                    _targetFocus = _focusProvider();
-                }
-                catch { }
-            }
+            // NOTE: we no longer sample the provider here directly. Sampling is
+            // performed later (after dt is known) and blended into _targetFocus to
+            // avoid a single-frame jump when a moving object is focused.
 
             // Speed modifier
             float speedMult = kb.IsHeld(KeyCode.LeftShift) ? 4.0f : 1.0f;
@@ -364,7 +391,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     // move opposite to drag (dragging right moves world left)
                     var right = _camera.Right;
                     var camUp = _camera.Up;
-                    float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
+                    float distanceScale = GetDistanceScale();
                     var pan = (-right * md.X + camUp * md.Y) * (PanSpeed * distanceScale) * speedMult;
                     _targetFocus += pan;
 
@@ -412,7 +439,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 var camForward = _camera.Forward;
                 var camForwardXZ = Vector3.Normalize(new Vector3(camForward.X, 0f, camForward.Z));
                 var panVec = camForwardXZ * forward + _camera.Right * rightDir + Vector3.UnitY * up;
-                float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
+                float distanceScale = GetDistanceScale();
                 _targetFocus += panVec * (PanSpeed * distanceScale) * speedMult;
             }
 
@@ -445,7 +472,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                         }
 
                         var right = _camera.Right;
-                        float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
+                        float distanceScale = GetDistanceScale();
                         float speed = EdgePanSpeed > 0f ? EdgePanSpeed : PanSpeed;
 
                         // Left/right pan
@@ -517,13 +544,51 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
             if (_focusProvider != null)
             {
-                // While following a live provider we want two behaviors:
-                // - Smoothly transition when we first start following (InitialFollowSmoothingSeconds)
-                // - After that, track the moving target nearly-instantly but still smoothly to avoid
-                //   a single-frame snap. We accomplish this by switching to a high-but-finite
-                //   smoothing rate (`FollowTrackingSmoothingRate`) after the initial window.
-                float activeRate = (_followSmoothingRemaining > 0f) ? Smoothing : FollowTrackingSmoothingRate;
+                // Sample provider once and blend into _targetFocus to avoid a last-frame
+                // jump when the provider's position changes between frames. We use a
+                // small smoothing factor derived from FollowTrackingSmoothingRate so the
+                // target follows responsively but without jitter.
+                Vector3 providerPos;
+                try
+                {
+                    providerPos = _focusProvider();
+                }
+                catch
+                {
+                    providerPos = _targetFocus; // fallback: keep existing target
+                }
 
+                // Determine active rate: during the initial follow-smoothing window we
+                // smoothly interpolate the active rate from the regular Smoothing value
+                // up to FollowTrackingSmoothingRate. This prevents the activeRate from
+                // jumping abruptly on the final frame of smoothing which caused a
+                // perceptible jump when the provider was moving.
+                float activeRate;
+                if (_followSmoothingRemaining > 0f && _followSmoothingTotal > 0f)
+                {
+                    // ratio in (0..1], 1 == just started smoothing, 0 == about to finish
+                    float r = _followSmoothingRemaining / _followSmoothingTotal;
+                    if (r < 0f) r = 0f;
+                    if (r > 1f) r = 1f;
+                    // Interpolate from Smoothing -> FollowTrackingSmoothingRate, easing toward the tracking rate
+                    activeRate = FollowTrackingSmoothingRate * (1f - r) + Smoothing * r;
+                }
+                else
+                {
+                    activeRate = FollowTrackingSmoothingRate;
+                }
+                float providerBlend = 1f;
+                if (dt > 0f && activeRate > 0f)
+                {
+                    providerBlend = 1f - MathF.Exp(-activeRate * dt);
+                }
+
+                // Exponentially blend provider position into the target focus to avoid
+                // abrupt set of _targetFocus between frames when the provider is moving.
+                _targetFocus = Vector3.Lerp(_targetFocus, providerPos, providerBlend);
+
+                // Now perform the follow interpolation from current -> target using the
+                // activeRate we've computed (exponential smoothing step)
                 float localT = 1f;
                 if (dt > 0f && activeRate > 0f)
                 {
@@ -563,6 +628,11 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 if (_followSmoothingRemaining > 0f)
                 {
                     _followSmoothingRemaining = MathF.Max(0f, _followSmoothingRemaining - dt);
+                    if (_followSmoothingRemaining == 0f)
+                    {
+                        // Clear total when finished
+                        _followSmoothingTotal = 0f;
+                    }
                 }
             }
             else
