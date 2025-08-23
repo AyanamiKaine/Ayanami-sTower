@@ -2022,36 +2022,8 @@ internal static class Program
             //     var camDist = new Vector3d(_camera.Position.X, _camera.Position.Y, _camera.Position.Z).Length();
             //     Console.WriteLine($"[FloatingOrigin] Current Origin: {origin}, Camera Distance from Origin: {camDist:F1}");
             // }
-
-            // Debug: Press F5 to manually trigger a floating origin rebase for testing
-            if (Inputs.Keyboard.IsPressed(KeyCode.F5))
-            {
-                TestFloatingOriginRebase();
-            }
         }
 
-        /// <summary>
-        /// Test method to manually trigger a floating origin rebase for debugging.
-        /// </summary>
-        private void TestFloatingOriginRebase()
-        {
-            if (_floatingOriginManager != null)
-            {
-                Console.WriteLine("[Test] Manually triggering floating origin rebase...");
-
-                // Simulate moving the camera far from origin to trigger rebase
-                var farPosition = new Vector3(5000, 0, 5000);
-                _camera.Position = farPosition;
-
-                // Force an update to trigger the rebase
-                if (_floatingOriginManager.Update(farPosition, out var rebaseOffset))
-                {
-                    _camera.Position -= rebaseOffset;
-                }
-
-                Console.WriteLine($"[Test] Camera moved to {farPosition}, rebase should have occurred.");
-            }
-        }
 
         protected override void Draw(double alpha)
         {
