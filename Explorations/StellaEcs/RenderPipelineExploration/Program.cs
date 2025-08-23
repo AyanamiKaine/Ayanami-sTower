@@ -615,6 +615,8 @@ internal static class Program
             _mousePicker = new MousePicker(_camera, _simulation)
             {
                 UseCameraRelativeRendering = _useCameraRelativeRendering
+                ,
+                FloatingOriginManager = _floatingOriginManager
             };
 
             // MSAA targets are (re)created in Draw to match the actual swapchain size.
@@ -1837,6 +1839,7 @@ internal static class Program
                 _simulationAccumulator -= _fixedSimulationStepSeconds;
             }
 
+
             // NOTE: floating-origin update is intentionally performed after the camera update below
             // so it uses the camera's post-update position when deciding to rebase. The actual
             // rebase is executed after `_cameraController.Update(...)` to avoid mixed pre/post
@@ -2040,7 +2043,10 @@ internal static class Program
             // When using camera-relative rendering we *don't* rebase the world because
             // rendering already keeps active coordinates near the origin. Rebasing while
             // rendering camera-relative causes visible jumps and line/orbit mismatch.
-            if (!_useCameraRelativeRendering && _floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
+            // Always consider rebasing the world when the camera drifts far from origin.
+            // Keeping ECS/physics positions small in magnitude prevents single-precision
+            // precision loss and visible jitter when converting to floats for rendering.
+            if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
             {
                 // Keep the camera near origin too so it doesn't immediately trigger another rebase
                 _camera.Position -= rebaseOffset;
