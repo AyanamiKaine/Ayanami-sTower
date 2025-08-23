@@ -185,7 +185,7 @@ public class FloatingOriginManager
     /// <param name="rebaseThreshold">Distance threshold that triggers a rebase.</param>
     /// <param name="snapGridSize">Grid size to snap rebase offsets to (default 1.0).
     /// Larger values cause coarser, less frequent fractional moves but keep numbers smaller.</param>
-    public FloatingOriginManager(World world, Simulation simulation, double rebaseThreshold = 1000.0, double snapGridSize = 1.0)
+    public FloatingOriginManager(World world, Simulation simulation, double rebaseThreshold = 200.0, double snapGridSize = 1.0)
     {
         _world = world;
         _simulation = simulation;
@@ -595,7 +595,7 @@ internal static class Program
             InitializePhysics();
 
             // Initialize floating origin system
-            _floatingOriginManager = new FloatingOriginManager(World, _simulation, 1000.0);
+            _floatingOriginManager = new FloatingOriginManager(World, _simulation, 200.0);
 
             // Camera setup
             var aspect = (float)MainWindow.Width / MainWindow.Height;
@@ -1152,7 +1152,7 @@ internal static class Program
                 .Set(new Size3D(0.38f)) // size = 0.38x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.048f, 0f)) // speed relative to Earth (fastest)
+                .Set(new AngularVelocity3D(0f, 0.48f, 0f)) // speed relative to Earth (fastest)
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1167,7 +1167,7 @@ internal static class Program
                 .Set(new Size3D(0.95f)) // size = 0.95x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.016f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.16f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1182,7 +1182,7 @@ internal static class Program
                 .Set(new Size3D(1.0f)) // size = 1.0x (baseline)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed = baseline
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed = baseline
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1219,7 +1219,7 @@ internal static class Program
                 .Set(new Size3D(0.01f)) // size = 0.01x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.01f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.05f, 0f)) // Orbits Earth faster
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // Orbits Earth faster
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1238,7 +1238,7 @@ internal static class Program
                 .Set(new Size3D(0.53f)) // size = 0.53x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.53f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.0053f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1253,7 +1253,7 @@ internal static class Program
                 .Set(new Size3D(4.5f)) // size = 11.2x Earth (scaled down artistically)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(4.5f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00084f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1268,7 +1268,7 @@ internal static class Program
                 .Set(new Size3D(4.0f)) // size = 9.45x Earth (scaled down artistically)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(4.0f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00034f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1283,7 +1283,7 @@ internal static class Program
                 .Set(new Size3D(2.5f)) // size = 4.0x Earth (scaled down artistically)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(2.5f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00012f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1298,7 +1298,7 @@ internal static class Program
                 .Set(new Size3D(2.4f)) // size = 3.88x Earth (scaled down artistically)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(2.4f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00006f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1313,7 +1313,7 @@ internal static class Program
                 .Set(new Size3D(0.18f)) // size = 0.18x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.18f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.00004f, 0f)) // speed relative to Earth (slowest)
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth (slowest)
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1450,7 +1450,7 @@ internal static class Program
                     .Set(new Size3D(s))
                     .Set(new CollisionShape(new Sphere(s)))
                     .Set(Rotation3D.Identity)
-                    .Set(new AngularVelocity3D(0, 0.005f, 0))
+                    .Set(new AngularVelocity3D(0, 0.1f, 0))
                     .Set(new Texture2DRef { Texture = tex });
 
                 if (addStaticCollider)
