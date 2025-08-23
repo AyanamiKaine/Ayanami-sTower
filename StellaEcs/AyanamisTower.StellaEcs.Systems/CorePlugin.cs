@@ -58,7 +58,7 @@ public class CorePlugin : IPlugin
     /// <inheritdoc/>
     public string Name => "Core Features";
     /// <inheritdoc/>
-    public string Version => "1.0.0";
+    public string Version => "1.1.0";
     /// <inheritdoc/>
     public string Author => "Ayanami Kaine";
     /// <inheritdoc/>

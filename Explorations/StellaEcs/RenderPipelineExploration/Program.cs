@@ -111,35 +111,6 @@ public struct DebugAxes { }
 
 
 /// <summary>
-/// Stores the absolute world position using double precision to avoid floating point issues.
-/// This is the "true" position in the universe, while Position3D stores the relative position
-/// from the current floating origin.
-/// </summary>
-public struct AbsolutePosition
-{
-    /// <summary>
-    /// The absolute position in double precision coordinates.
-    /// </summary>
-    public Vector3Double Value;
-
-    /// <summary>
-    /// Creates a new AbsolutePosition with the specified position.
-    /// </summary>
-    public AbsolutePosition(Vector3Double position)
-    {
-        Value = position;
-    }
-
-    /// <summary>
-    /// Creates a new AbsolutePosition with the specified coordinates.
-    /// </summary>
-    public AbsolutePosition(double x, double y, double z)
-    {
-        Value = new Vector3Double(x, y, z);
-    }
-}
-
-/// <summary>
 /// A Vector3 using double precision for large coordinate values.
 /// </summary>
 public struct Vector3d
@@ -201,28 +172,38 @@ public class FloatingOriginManager
     /// <summary>True if a rebase operation is currently in progress.</summary>
     public bool IsRebasing { get; private set; }
 
+    // Grid size used to snap rebase offsets. Snapping to integer values (1.0)
+    // removes small fractional offsets that otherwise cause repeated tiny
+    // float conversions and visible jitter when converting to single-precision.
+    private readonly double _snapGridSize;
+
     /// <summary>
     /// Creates a new FloatingOriginManager.
     /// </summary>
     /// <param name="world">The ECS world instance.</param>
     /// <param name="simulation">The BepuPhysics simulation instance.</param>
     /// <param name="rebaseThreshold">Distance threshold that triggers a rebase.</param>
-    public FloatingOriginManager(World world, Simulation simulation, double rebaseThreshold = 1000.0)
+    /// <param name="snapGridSize">Grid size to snap rebase offsets to (default 1.0).
+    /// Larger values cause coarser, less frequent fractional moves but keep numbers smaller.</param>
+    public FloatingOriginManager(World world, Simulation simulation, double rebaseThreshold = 1000.0, double snapGridSize = 1.0)
     {
         _world = world;
         _simulation = simulation;
         _rebaseThreshold = rebaseThreshold;
+        _snapGridSize = Math.Max(1e-9, snapGridSize);
     }
 
     /// <summary>
     /// Forces a rebase by a specific offset in world coordinates.
     /// Callers should also subtract the same offset from the camera position to keep
     /// the camera near the origin.
+    /// The offset will be snapped to the configured grid to avoid fractional offsets.
     /// </summary>
     public void ForceRebase(Vector3 offset)
     {
         var d = new Vector3Double(offset.X, offset.Y, offset.Z);
-        PerformRebase(d);
+        var snapped = SnapToGrid(d);
+        PerformRebase(snapped);
     }
 
     /// <summary>
@@ -233,13 +214,16 @@ public class FloatingOriginManager
     /// </summary>
     public bool Update(Vector3Double cameraPosition, out Vector3Double rebaseOffset)
     {
+        // Distance from origin in double precision.
         var cameraDistance = new Vector3Double(cameraPosition.X, cameraPosition.Y, cameraPosition.Z).Length();
 
         if (cameraDistance > _rebaseThreshold)
         {
-            rebaseOffset = cameraPosition; // shift world by -camera, move origin by +camera
-            var rebaseOffsetD = new Vector3Double(rebaseOffset.X, rebaseOffset.Y, rebaseOffset.Z);
-            PerformRebase(rebaseOffsetD);
+            // Snap the camera position to the configured grid before rebasing. This ensures we
+            // don't introduce small fractional offsets that cause precision loss when converting
+            // to single-precision for physics and rendering.
+            rebaseOffset = SnapToGrid(cameraPosition);
+            PerformRebase(rebaseOffset);
             return true;
         }
 
@@ -254,25 +238,18 @@ public class FloatingOriginManager
     {
         IsRebasing = true;
 
-        // Update the current origin
+        // Update the current origin (move origin forward by offset)
         _currentOrigin += offset;
 
-        // Rebase all entities with AbsolutePosition
-        foreach (var entity in _world.Query(typeof(AbsolutePosition)))
+        // Shift all Position3D values (which use double precision) by -offset so they become relative to the new origin.
+        foreach (var entity in _world.Query(typeof(Position3D)))
         {
-            var absolutePos = entity.GetMut<AbsolutePosition>();
-
-            // Update relative position
-            var newRelativePos = absolutePos.Value - _currentOrigin;
-
-            if (entity.Has<Position3D>())
-            {
-                var relativeVector = (Vector3)newRelativePos;
-                entity.Set(new Position3D(relativeVector.X, relativeVector.Y, relativeVector.Z));
-            }
+            var pos = entity.GetMut<Position3D>();
+            var newPosD = pos.Value - offset;
+            entity.Set(new Position3D(newPosD.X, newPosD.Y, newPosD.Z));
         }
 
-        // Rebase physics objects
+        // Rebase physics objects (adjust simulation poses etc.)
         RebasePhysicsObjects(offset);
 
         IsRebasing = false;
@@ -280,10 +257,13 @@ public class FloatingOriginManager
 
     /// <summary>
     /// Rebases all physics objects in the simulation.
+    /// Uses explicit single-precision casts and removes/reattaches statics to avoid subtle precision jitter.
     /// </summary>
     private void RebasePhysicsObjects(Vector3Double offset)
     {
-        var offsetVector = (Vector3)offset;
+        // Convert to single precision after snapping to grid. This reduces the
+        // chance of tiny fractional components producing per-frame jitter.
+        var offsetVector = new Vector3((float)offset.X, (float)offset.Y, (float)offset.Z);
 
         // Rebase kinematic/dynamic bodies
         foreach (var entity in _world.Query(typeof(PhysicsBody)))
@@ -320,6 +300,19 @@ public class FloatingOriginManager
                 entity.Set(new PhysicsStatic { Handle = newHandle });
             }
         }
+    }
+
+    /// <summary>
+    /// Snaps a double-precision position to the configured grid size.
+    /// </summary>
+    private Vector3Double SnapToGrid(Vector3Double v)
+    {
+        if (_snapGridSize <= 0.0) return v;
+        double inv = 1.0 / _snapGridSize;
+        return new Vector3Double(
+            Math.Round(v.X * inv) / inv,
+            Math.Round(v.Y * inv) / inv,
+            Math.Round(v.Z * inv) / inv);
     }
 
     /// <summary>
@@ -534,13 +527,13 @@ internal static class Program
         /// <summary>
         /// Draws RGB axes (X=red, Y=green, Z=blue) centered at the given world position.
         /// </summary>
-        private void DrawEntityAxes(Vector3 center, float length = 1.0f)
+        private void DrawEntityAxes(Vector3Double center, double length = 1.0f)
         {
             if (_lineBatch == null) return;
 
-            var xEnd = center + new Vector3(length, 0, 0);
-            var yEnd = center + new Vector3(0, length, 0);
-            var zEnd = center + new Vector3(0, 0, length);
+            var xEnd = center + new Vector3Double(length, 0, 0);
+            var yEnd = center + new Vector3Double(0, length, 0);
+            var zEnd = center + new Vector3Double(0, 0, length);
 
             // Red for X
             _lineBatch.AddLine(center, xEnd, new Color(255, 64, 64, 255));
@@ -602,7 +595,7 @@ internal static class Program
             InitializePhysics();
 
             // Initialize floating origin system
-            _floatingOriginManager = new FloatingOriginManager(World, _simulation, 10000.0); // Rebase when camera is 5000 units from origin
+            _floatingOriginManager = new FloatingOriginManager(World, _simulation, 1000.0);
 
             // Camera setup
             var aspect = (float)MainWindow.Width / MainWindow.Height;
@@ -890,7 +883,7 @@ internal static class Program
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             SunEntity = CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-            SpawnGalaxies(10);
+            SpawnGalaxies(1);
 
             // Example usage:
             // SetSkybox("Assets/skybox.jpg", 50f);
@@ -917,13 +910,13 @@ internal static class Program
                 float x = i * step;
                 // Lines parallel to Z (varying X)
                 World.CreateEntity()
-                    .Set(new Line3D(new Vector3(x, y, -extent), new Vector3(x, y, extent)))
+                    .Set(new Line3D(new Vector3Double(x, y, -extent), new Vector3Double(x, y, extent)))
                     .Set(color);
 
                 float z = i * step;
                 // Lines parallel to X (varying Z)
                 World.CreateEntity()
-                    .Set(new Line3D(new Vector3(-extent, y, z), new Vector3(extent, y, z)))
+                    .Set(new Line3D(new Vector3Double(-extent, y, z), new Vector3Double(extent, y, z)))
                     .Set(color);
             }
         }
@@ -1144,7 +1137,6 @@ internal static class Program
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(origin.X, origin.Y, origin.Z))
-                .Set(new AbsolutePosition(origin.X, origin.Y, origin.Z)) // Store absolute position for floating origin
                 .Set(new Size3D(10.0f)) // Artistically scaled size
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
@@ -1157,7 +1149,6 @@ internal static class Program
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
                 .Set(new Position3D(AuToWorld(0.39f, 0, 0).X, AuToWorld(0.39f, 0, 0).Y, AuToWorld(0.39f, 0, 0).Z)) // distance = 0.39 AU
-                .Set(new AbsolutePosition(AuToWorld(0.39f, 0, 0).X, AuToWorld(0.39f, 0, 0).Y, AuToWorld(0.39f, 0, 0).Z)) // Store absolute position
                 .Set(new Size3D(0.38f)) // size = 0.38x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
@@ -1331,7 +1322,7 @@ internal static class Program
             // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
             SpawnAsteroidBelt(origin,
                 parent: sun,
-                count: 50,
+                count: 5,
                 innerRadius: 2.2f * auScale,
                 outerRadius: 3.2f * auScale,
                 minSize: 0.02f,
@@ -1745,18 +1736,6 @@ internal static class Program
 
             // NOTE: floating-origin update is performed after the camera update below
             // so it uses the camera's post-update position.
-
-            // Ensure entities with Position3D also have AbsolutePosition (for newly created entities)
-            foreach (var entity in World.Query(typeof(Position3D)))
-
-            {
-                if (!entity.Has<AbsolutePosition>())
-                {
-                    var pos = entity.GetMut<Position3D>().Value;
-                    var absolutePos = _floatingOriginManager?.ToAbsolutePosition(pos) ?? new Vector3Double(pos.X, pos.Y, pos.Z);
-                    entity.Set(new AbsolutePosition(absolutePos));
-                }
-            }
 
             // Ensure any entities with CollisionShape have corresponding physics objects even if OnSetPost timing missed
             foreach (var e in World.Query(typeof(CollisionShape)))

@@ -25,4 +25,11 @@ public struct AngularVelocity3D
     /// <param name="yaw"></param>
     /// <param name="roll"></param>
     public AngularVelocity3D(float pitch, float yaw, float roll) { Value = new Vector3Double(pitch, yaw, roll); }
+    /// <summary>
+    /// Creates a new instance of the <see cref="AngularVelocity3D"/> struct.
+    /// </summary>
+    /// <param name="pitch"></param>
+    /// <param name="yaw"></param>
+    /// <param name="roll"></param>
+    public AngularVelocity3D(double pitch, double yaw, double roll) { Value = new Vector3Double(pitch, yaw, roll); }
 }
