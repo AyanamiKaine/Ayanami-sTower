@@ -586,7 +586,7 @@ internal static class Program
             InitializePhysics();
 
             // Initialize floating origin system
-            _floatingOriginManager = new FloatingOriginManager(World, _simulation, 1000.0); // Rebase when camera is 1000 units from origin
+            _floatingOriginManager = new FloatingOriginManager(World, _simulation, 10000.0); // Rebase when camera is 5000 units from origin
 
             // Camera setup
             var aspect = (float)MainWindow.Width / MainWindow.Height;
@@ -667,7 +667,7 @@ internal static class Program
                 FragmentShader = fs,
                 VertexInputState = vertexInput,
                 PrimitiveType = PrimitiveType.TriangleList,
-                RasterizerState = RasterizerState.CCW_CullBack,
+                RasterizerState = new RasterizerState { CullMode = CullMode.Back, FrontFace = FrontFace.CounterClockwise },
                 MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
                 DepthStencilState = new DepthStencilState
                 {
@@ -1683,6 +1683,7 @@ internal static class Program
 
             // Ensure entities with Position3D also have AbsolutePosition (for newly created entities)
             foreach (var entity in World.Query(typeof(Position3D)))
+
             {
                 if (!entity.Has<AbsolutePosition>())
                 {
@@ -1785,14 +1786,10 @@ internal static class Program
                 _simulationAccumulator -= _fixedSimulationStepSeconds;
             }
 
-            // Update floating origin system (check if rebase is needed)
-            if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
-            {
-                // Keep the camera near origin too so it doesn't immediately trigger another rebase
-                _camera.Position -= rebaseOffset;
-                // Also adjust camera controller internals so focus/distance remain valid after the world shift
-                _cameraController.ApplyOriginShift(rebaseOffset);
-            }
+            // NOTE: floating-origin update is intentionally performed after the camera update below
+            // so it uses the camera's post-update position when deciding to rebase. The actual
+            // rebase is executed after `_cameraController.Update(...)` to avoid mixed pre/post
+            // rebase state within a single frame which can cause visible teleports.
 
             // Toggle drawing axes: press X to toggle drawing axes for all Position3D entities
             if (Inputs.Keyboard.IsPressed(KeyCode.F1))
@@ -1987,7 +1984,15 @@ internal static class Program
             // positions. This avoids the camera lagging behind fast-moving objects
             // when the simulation is sped up.
             _cameraController.Update(Inputs, MainWindow, delta);
-            // (FPS is measured from Draw to capture actual render rate)
+
+            // Update floating origin system (check if rebase is needed)
+            if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
+            {
+                // Keep the camera near origin too so it doesn't immediately trigger another rebase
+                _camera.Position -= rebaseOffset;
+                // Also adjust camera controller internals so focus/distance remain valid after the world shift
+                _cameraController.ApplyOriginShift(rebaseOffset);
+            }
 
             // Debug: Print floating origin info (uncomment for debugging)
             // if (_floatingOriginManager != null)
