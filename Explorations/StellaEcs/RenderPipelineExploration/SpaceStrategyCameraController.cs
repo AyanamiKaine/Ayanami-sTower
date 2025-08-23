@@ -155,10 +155,17 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                     _targetFocus = provider();
                 }
                 catch { }
-                // Apply a short smoothing window so switching to follow a new target
-                // animates the camera instead of teleporting. Duration (seconds) is
-                // controlled by InitialFollowSmoothingSeconds and can be tuned externally.
-                _followSmoothingRemaining = InitialFollowSmoothingSeconds;
+
+                // If we're switching from an existing provider to a different one, use a
+                // longer smoothing duration so the camera eases between the two tracked objects.
+                if (_focusProvider != null && !ReferenceEquals(_focusProvider, provider))
+                {
+                    _followSmoothingRemaining = FollowSwitchSmoothingSeconds;
+                }
+                else
+                {
+                    _followSmoothingRemaining = InitialFollowSmoothingSeconds;
+                }
             }
 
             if (distance.HasValue && distance.Value > 0f)
@@ -180,16 +187,21 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         /// single-frame visual snaps.
         /// </summary>
         public float FollowTrackingSmoothingRate { get; set; } = 60.0f;
-    /// <summary>
-    /// Maximum focus movement speed (world units per second) allowed when tracking a live target.
-    /// This prevents single-frame large jumps when the provider's target moves suddenly.
-    /// </summary>
-    public float FollowMaxFocusSpeed { get; set; } = 500.0f;
+        /// <summary>
+        /// When switching from one live provider to another, use this longer smoothing
+        /// duration so the camera eases between tracked objects rather than snapping.
+        /// </summary>
+        public float FollowSwitchSmoothingSeconds { get; set; } = 1f;
+        /// <summary>
+        /// Maximum focus movement speed (world units per second) allowed when tracking a live target.
+        /// This prevents single-frame large jumps when the provider's target moves suddenly.
+        /// </summary>
+        public float FollowMaxFocusSpeed { get; set; } = 500.0f;
 
-    /// <summary>
-    /// Maximum change in distance (world units per second) allowed when tracking a live target.
-    /// </summary>
-    public float FollowMaxDistanceDeltaPerSecond { get; set; } = 500.0f;
+        /// <summary>
+        /// Maximum change in distance (world units per second) allowed when tracking a live target.
+        /// </summary>
+        public float FollowMaxDistanceDeltaPerSecond { get; set; } = 500.0f;
 
         /// <summary>
         /// Applies an origin shift (rebase offset) to the controller so its internal focus
