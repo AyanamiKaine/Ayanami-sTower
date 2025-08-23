@@ -89,6 +89,12 @@ public struct OrbitCircle
 }
 
 /// <summary>
+/// Tag component to request drawing local XYZ axes at an entity's world center for debugging.
+/// </summary>
+public struct DebugAxes { }
+
+
+/// <summary>
 /// Stores the absolute world position using double precision to avoid floating point issues.
 /// This is the "true" position in the universe, while Position3D stores the relative position
 /// from the current floating origin.
@@ -393,6 +399,8 @@ internal static class Program
         private BufferPool _bufferPool = null!;
         private ThreadDispatcher _threadDispatcher = null!;
         private MousePicker _mousePicker = null!;
+        // Debug: draw axes at entity centers
+        private bool _debugDrawAxesAll = false;
         // Double-click detection state for pick-to-focus
         private double _lastClickTime = 0.0;
         private int _lastClickX = -9999;
@@ -502,19 +510,27 @@ internal static class Program
         /// </summary>
         private Vector3 GetEntityWorldPosition(Entity e)
         {
-            if (e == default) return Vector3.Zero;
-            if (e.Has<PhysicsBody>())
-            {
-                var pb = e.GetMut<PhysicsBody>();
-                if (TryGetBodyRef(pb.Handle, out var bref)) return bref.Pose.Position;
-            }
-            if (e.Has<PhysicsStatic>())
-            {
-                var ps = e.GetMut<PhysicsStatic>();
-                if (TryGetStaticRef(ps.Handle, out var sref)) return sref.Pose.Position;
-            }
-            if (e.Has<Position3D>()) return e.GetMut<Position3D>().Value;
+            if (e.Has<Position3D>()) return e.GetCopy<Position3D>().Value;
             return Vector3.Zero;
+        }
+
+        /// <summary>
+        /// Draws RGB axes (X=red, Y=green, Z=blue) centered at the given world position.
+        /// </summary>
+        private void DrawEntityAxes(Vector3 center, float length = 1.0f)
+        {
+            if (_lineBatch == null) return;
+
+            var xEnd = center + new Vector3(length, 0, 0);
+            var yEnd = center + new Vector3(0, length, 0);
+            var zEnd = center + new Vector3(0, 0, length);
+
+            // Red for X
+            _lineBatch.AddLine(center, xEnd, new Color(255, 64, 64, 255));
+            // Green for Y
+            _lineBatch.AddLine(center, yEnd, new Color(64, 255, 64, 255));
+            // Blue for Z
+            _lineBatch.AddLine(center, zEnd, new Color(64, 64, 255, 255));
         }
 
         public void EnableMSAA(SampleCount sampleCount)
@@ -1790,12 +1806,6 @@ internal static class Program
             var scaledSeconds = (float)delta.TotalSeconds * _timeScale;
             _simulation.Timestep(scaledSeconds, _threadDispatcher);
 
-            // Update camera via controller abstraction AFTER physics step so any live
-            // focus providers (which read physics poses) get the latest, post-step
-            // positions. This avoids the camera lagging behind fast-moving objects
-            // when the simulation is sped up.
-            _cameraController.Update(Inputs, MainWindow, scaledSeconds);
-
             // Update floating origin system (check if rebase is needed)
             if (_floatingOriginManager != null)
             {
@@ -1989,7 +1999,11 @@ internal static class Program
             }
 
             World.Update(scaledSeconds);
-
+            // Update camera via controller abstraction AFTER physics step so any live
+            // focus providers (which read physics poses) get the latest, post-step
+            // positions. This avoids the camera lagging behind fast-moving objects
+            // when the simulation is sped up.
+            _cameraController.Update(Inputs, MainWindow, delta);
             // (FPS is measured from Draw to capture actual render rate)
 
             // Debug: Print floating origin info (uncomment for debugging)
@@ -2131,6 +2145,33 @@ internal static class Program
                 if (_debugDrawColliders)
                 {
                     DebugDrawColliders();
+                }
+
+                // Toggle drawing axes: press X to toggle drawing axes for all Position3D entities
+                if (Inputs.Keyboard.IsPressed(KeyCode.X))
+                {
+                    _debugDrawAxesAll = !_debugDrawAxesAll;
+                    Console.WriteLine($"[Debug] Draw axes for all entities: {_debugDrawAxesAll}");
+                }
+
+                // Draw axes for entities that request it, or for all entities when toggled.
+                if (_debugDrawAxesAll)
+                {
+                    foreach (var e in World.Query(typeof(Position3D)))
+                    {
+                        var ent = e; // capture
+                        var pos = ent.Has<Position3D>() ? ent.GetMut<Position3D>().Value : Vector3.Zero;
+                        DrawEntityAxes(pos, 1.0f);
+                    }
+                }
+                else
+                {
+                    foreach (var e in World.Query(typeof(DebugAxes), typeof(Position3D)))
+                    {
+                        var ent = e; // capture
+                        var pos = ent.GetMut<Position3D>().Value;
+                        DrawEntityAxes(pos, 1.0f);
+                    }
                 }
 
                 // Upload line vertex data
