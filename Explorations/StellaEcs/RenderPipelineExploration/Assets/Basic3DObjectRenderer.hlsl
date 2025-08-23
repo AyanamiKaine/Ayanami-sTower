@@ -45,7 +45,7 @@ struct DirLight
     float3 diffuse;
     float3 specular;
 };
-
+/*
 cbuffer DirLightProperties : register(b0, space3)
 {
     DirLight dirLight;
@@ -58,7 +58,7 @@ cbuffer PointLightsData : register(b1, space3)
 {
     PointLight pointLights[NR_POINT_LIGHTS];
 }
-
+*/
 VSOutput VSMain(VSInput input)
 {
     VSOutput o;
@@ -73,10 +73,19 @@ VSOutput VSMain(VSInput input)
 // Texture bindings (space2 to avoid collision with existing spaces)
 Texture2D    DiffuseTex  : register(t0, space2);
 SamplerState DiffuseSamp : register(s0, space2);
+// Per-draw tint (rgb*alpha, alpha) pushed from the CPU. Use a distinct space to avoid
+// collisions with other constant buffers used elsewhere.
+cbuffer FragmentParams : register(b0, space3)
+{
+    float4 tint; // rgb * alpha in xyz, alpha in w
+}
 
 float4 PSMain(VSOutput input) : SV_Target
 {
-    // Sample the texture and output directly without vertex color tinting.
-    float3 texRgb = DiffuseTex.Sample(DiffuseSamp, input.uv).rgb;
-    return float4(texRgb, 1.0);
+    // Sample the texture and modulate by per-draw tint. The tint's alpha controls
+    // the final alpha output so the CPU can animate fade-ins.
+    float4 texSample = DiffuseTex.Sample(DiffuseSamp, input.uv);
+    float3 rgb = texSample.rgb * tint.xyz;
+    float a = tint.w; // use pushed alpha
+    return float4(rgb, a);
 }

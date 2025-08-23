@@ -93,6 +93,35 @@ public struct OrbitCircle
 /// </summary>
 public struct DebugAxes { }
 
+/// <summary>
+/// Component to animate a per-entity fade-in over time.
+/// </summary>
+public struct FadeIn
+{
+    /// <summary>
+    /// Current alpha in [0,1]
+    /// </summary>
+    public float Alpha;
+    /// <summary>
+    /// Duration of fade in seconds
+    /// </summary>
+    public float Duration;
+    /// <summary>
+    /// Elapsed time since spawn
+    /// </summary>
+    public float Elapsed;
+    /// <summary>
+    /// Creates a new FadeIn component.
+    /// </summary>
+    /// <param name="duration"></param>
+    public FadeIn(float duration)
+    {
+        Alpha = 0f;
+        Duration = Math.Max(0.0001f, duration);
+        Elapsed = 0f;
+    }
+}
+
 
 /// <summary>
 /// Stores the absolute world position using double precision to avoid floating point issues.
@@ -686,7 +715,8 @@ internal static class Program
                         {
                             // Must match the swapchain format for the active window
                             Format = MainWindow.SwapchainFormat,
-                            BlendState = ColorTargetBlendState.NoBlend
+                            // Enable alpha blending so shader alpha controls fade-in
+                            BlendState = ColorTargetBlendState.NonPremultipliedAlphaBlend
                         }
                     ],
                     HasDepthStencilTarget = true,
@@ -822,7 +852,13 @@ internal static class Program
 
             World.OnSetPost((Entity entity, in Mesh _, in Mesh mesh, bool _) =>
             {
-                entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
+                var gm = GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube");
+                entity.Set(gm);
+                // If the entity doesn't already have a FadeIn component, add a short default fade
+                if (!entity.Has<FadeIn>())
+                {
+                    entity.Set(new FadeIn(0.6f)); // 600ms default fade-in
+                }
             });
 
             World.OnSetPost((Entity entity, in CollisionShape _, in CollisionShape collisionShape, bool _) =>
@@ -2035,6 +2071,20 @@ internal static class Program
             _cameraController.Update(Inputs, MainWindow, delta);
 
             // Update floating origin system (check if rebase is needed)
+            // Advance fade-in timers for entities
+            float dtSeconds = (float)delta.TotalSeconds;
+            foreach (var e in World.Query(typeof(FadeIn)))
+            {
+                var f = e.GetMut<FadeIn>();
+                if (f.Alpha < 1.0f)
+                {
+                    f.Elapsed += dtSeconds;
+                    float t = Math.Clamp(f.Elapsed / f.Duration, 0f, 1f);
+                    f.Alpha = t;
+                    e.Set(f);
+                }
+            }
+
             if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
             {
                 // Keep the camera near origin too so it doesn't immediately trigger another rebase
@@ -2305,6 +2355,19 @@ internal static class Program
                 var mvp = model * viewProj;
 
                 cmdbuf.PushVertexUniformData(mvp, slot: 0);
+
+                // Compute per-entity tint: default white. If entity has FadeIn, use its alpha.
+                var tintRgb = new Vector3(1f, 1f, 1f);
+                float fadeAlpha = 1f;
+                if (entity.Has<FadeIn>())
+                {
+                    fadeAlpha = entity.GetMut<FadeIn>().Alpha;
+                }
+
+                // Pack into Vector4 (rgb * alpha, alpha) to match shader expectations
+                var tintVec = new Vector4(tintRgb * fadeAlpha, fadeAlpha);
+                cmdbuf.PushFragmentUniformData(tintVec, slot: 0);
+
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
             }
 
