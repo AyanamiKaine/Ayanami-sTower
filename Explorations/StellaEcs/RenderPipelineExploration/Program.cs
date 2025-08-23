@@ -2231,6 +2231,7 @@ internal static class Program
                 }
 
                 // If this entity has a physics representation, prefer the simulation pose for accuracy
+                /*
                 if (entity.Has<PhysicsBody>())
                 {
                     var body = entity.GetMut<PhysicsBody>();
@@ -2249,7 +2250,7 @@ internal static class Program
                         rotation = sref.Pose.Orientation;
                     }
                 }
-
+                */
                 // Sphere culling: use a conservative radius based on max scale axis scaled by tuning factor.
                 float radius = MathF.Max(size.X, MathF.Max(size.Y, size.Z)) * _cullingRadiusScale;
 
