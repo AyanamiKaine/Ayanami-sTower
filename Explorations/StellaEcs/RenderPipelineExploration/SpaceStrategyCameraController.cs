@@ -298,7 +298,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
                 var camForwardXZ = Vector3.Normalize(new Vector3(camForward.X, 0f, camForward.Z));
                 var panVec = camForwardXZ * forward + _camera.Right * rightDir + Vector3.UnitY * up;
                 float distanceScale = MathF.Max(0.01f, _currentDistance / 10f);
-                _targetFocus += panVec * (PanSpeed * distanceScale)  * speedMult;
+                _targetFocus += panVec * (PanSpeed * distanceScale) * speedMult;
             }
 
             // --- Edge Panning (RTS-style) ---
@@ -343,7 +343,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
                         if (pan != Vector3.Zero)
                         {
-                            _targetFocus += pan * (speed * distanceScale)  * speedMult;
+                            _targetFocus += pan * (speed * distanceScale) * speedMult;
                         }
                     }
                 }
@@ -362,8 +362,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             float proximityScale = 0.1f + 0.9f * proximityCurve;
 
             // Keyboard zoom (Z/X) — scale step by proximityScale
-            if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed  * speedMult * proximityScale;
-            if (kb.IsDown(KeyCode.X)) _targetDistance += ZoomSpeed  * speedMult * proximityScale;
+            if (kb.IsDown(KeyCode.Z)) _targetDistance -= ZoomSpeed * speedMult * proximityScale;
+            if (kb.IsDown(KeyCode.X)) _targetDistance += ZoomSpeed * speedMult * proximityScale;
 
             // --- Scroll-wheel zoom ---
             // MoonWorks provides `mouse.Wheel` as an integer delta for this frame.
@@ -381,15 +381,41 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             _targetDistance = Math.Clamp(_targetDistance, effectiveMinDistance, MaxDistance);
 
             // --- Smooth interpolation for focus/distance ---
-            // HERE WE MUST USE DELTA TIME OTHERWISE IT OUT OF SYNC! WITH THE REAL POSITION
-            float t = 1f - MathF.Exp(-Smoothing ); // exponential smoothing factor
+            // Use frame delta so smoothing behaves consistently across varying frame rates.
+            // Exponential smoothing: t = 1 - exp(-rate * dt)
+            float dt = (float)delta.TotalSeconds;
+            float t;
+            if (dt <= 0f)
+            {
+                // No time passed: snap to target to avoid stalling.
+                t = 1f;
+            }
+            else if (Smoothing <= 0f)
+            {
+                // Zero/negative smoothing treated as instant (no smoothing)
+                t = 1f;
+            }
+            else
+            {
+                t = 1f - MathF.Exp(-Smoothing * dt);
+            }
+
             _currentFocus = Vector3.Lerp(_currentFocus, _targetFocus, t);
             _currentDistance = _currentDistance + (_targetDistance - _currentDistance) * t;
 
             // --- Smooth interpolation for rotation (yaw/pitch) ---
             if (SmoothRotation && RotationSmoothing > 0f)
             {
-                float tRot = 1f - MathF.Exp(-RotationSmoothing);
+                float tRot;
+                if (dt <= 0f)
+                {
+                    tRot = 1f;
+                }
+                else
+                {
+                    tRot = 1f - MathF.Exp(-RotationSmoothing * dt);
+                }
+
                 // Manual Lerp: current + (target - current) * t
                 _yaw = _yaw + (_targetYaw - _yaw) * tRot;
                 _pitch = _pitch + (_targetPitch - _pitch) * tRot;
