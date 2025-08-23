@@ -456,7 +456,7 @@ internal static class Program
         private GraphicsPipeline? _linePipeline;
         private LineBatch3D? _lineBatch;
         // Debug: visualize physics colliders with wireframes
-        private bool _debugDrawColliders = true;
+        private bool _debugDrawColliders = false;
         // If true, also draw ECS-declared collider poses (helps spot divergence). Off by default.
         private bool _debugDrawEcsColliderPoses = false;
 

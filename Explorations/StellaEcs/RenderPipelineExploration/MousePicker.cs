@@ -16,6 +16,12 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
     {
         private readonly Camera _camera;
         private readonly Simulation _simulation;
+    /// <summary>
+    /// Optional floating origin manager. If set, ray origins will be converted
+    /// from absolute/world coordinates into the simulation's relative coordinates
+    /// before calling into the physics <see cref="Simulation"/>.
+    /// </summary>
+    public FloatingOriginManager? FloatingOriginManager { get; set; }
         /// <summary>
         /// When true, MousePicker will remove the camera translation from the view
         /// matrix used for unprojection so picking matches camera-relative rendering.
@@ -93,19 +99,56 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             const float EPS = 1e-3f;
             rayOrigin += rayDirection * EPS;
 
-            // 6) Raycast.
-            var hitHandler = new ClosestHitHandler();
-            _simulation.RayCast(rayOrigin, rayDirection, 50000f, ref hitHandler);
+            // 6) Convert ray into the simulation's coordinate space and Raycast.
+            // If UseCameraRelativeRendering is enabled we unprojected into camera-relative
+            // space, so add the camera absolute position back to get world coordinates.
+            Vector3 rayOriginWorld = rayOrigin;
+            if (UseCameraRelativeRendering)
+            {
+                rayOriginWorld = rayOrigin + (Vector3)_camera.Position; // cast Vector3Double -> Vector3
+            }
 
-            // 7) Fill result if hit.
+            // If a FloatingOriginManager is present, convert the absolute world origin
+            // to the physics-relative origin expected by the simulation.
+            Vector3 simRayOrigin = rayOriginWorld;
+            if (FloatingOriginManager != null)
+            {
+                simRayOrigin = FloatingOriginManager.ToRelativePosition(new Vector3Double(rayOriginWorld.X, rayOriginWorld.Y, rayOriginWorld.Z));
+            }
+
+            var hitHandler = new ClosestHitHandler();
+            _simulation.RayCast(simRayOrigin, rayDirection, 50000f, ref hitHandler);
+
+            // 7) Fill result if hit. Convert hit location/distance back to world coordinates
+            // so callers always receive world-space hit data regardless of floating origin.
             if (hitHandler.HasHit)
             {
+                // Hit point in simulation-relative coordinates
+                Vector3 hitSimPoint = simRayOrigin + rayDirection * hitHandler.T;
+
+                // Convert to absolute/world coordinates if we used a FloatingOriginManager
+                Vector3 hitWorldPoint;
+                if (FloatingOriginManager != null)
+                {
+                    var abs = FloatingOriginManager.ToAbsolutePosition(hitSimPoint);
+                    hitWorldPoint = new Vector3((float)abs.X, (float)abs.Y, (float)abs.Z);
+                }
+                else
+                {
+                    // If no floating origin is used, sim coordinates are world coordinates.
+                    hitWorldPoint = hitSimPoint;
+                }
+
+                // Distance from camera (expressed in world units). Use camera absolute position.
+                var camPos = (Vector3)_camera.Position;
+                float distanceFromCamera = Vector3.Distance(camPos, hitWorldPoint);
+
                 hitResult = new PickResult
                 {
                     Collidable = hitHandler.HitCollidable,
-                    Distance = hitHandler.T,
+                    Distance = distanceFromCamera,
                     Normal = hitHandler.Normal,
-                    HitLocation = rayOrigin + rayDirection * hitHandler.T
+                    HitLocation = hitWorldPoint
                 };
                 return true;
             }
