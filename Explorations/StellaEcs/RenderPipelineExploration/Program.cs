@@ -1159,7 +1159,7 @@ internal static class Program
                 .Set(new Size3D(0.38f)) // size = 0.38x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.48f, 0f)) // speed relative to Earth (fastest)
+                .Set(new AngularVelocity3D(0f, 0.048f, 0f)) // speed relative to Earth (fastest)
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1174,7 +1174,7 @@ internal static class Program
                 .Set(new Size3D(0.95f)) // size = 0.95x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.16f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.016f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1189,7 +1189,7 @@ internal static class Program
                 .Set(new Size3D(1.0f)) // size = 1.0x (baseline)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed = baseline
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed = baseline
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1209,7 +1209,7 @@ internal static class Program
                 .Set(new Size3D(0.27f)) // size = 0.27x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.27f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.12f, 0f)) // Orbits Earth faster
+                .Set(new AngularVelocity3D(0f, 0.012f, 0f)) // Orbits Earth faster
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1226,7 +1226,7 @@ internal static class Program
                 .Set(new Size3D(0.01f)) // size = 0.01x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.01f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // Orbits Earth faster
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // Orbits Earth faster
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1245,7 +1245,7 @@ internal static class Program
                 .Set(new Size3D(0.53f)) // size = 0.53x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.53f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1260,7 +1260,7 @@ internal static class Program
                 .Set(new Size3D(4.5f)) // size = 11.2x Earth (scaled down artistically)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(4.5f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1275,7 +1275,7 @@ internal static class Program
                 .Set(new Size3D(4.0f)) // size = 9.45x Earth (scaled down artistically)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(4.0f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1290,7 +1290,7 @@ internal static class Program
                 .Set(new Size3D(2.5f)) // size = 4.0x Earth (scaled down artistically)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(2.5f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1305,7 +1305,7 @@ internal static class Program
                 .Set(new Size3D(2.4f)) // size = 3.88x Earth (scaled down artistically)
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(2.4f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1320,11 +1320,11 @@ internal static class Program
                 .Set(new Size3D(0.18f)) // size = 0.18x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.18f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth (slowest)
+                .Set(new AngularVelocity3D(0f, 0.01f, 0f)) // speed relative to Earth (slowest)
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
-            pluto.Set(new OrbitCircle(sun, 39.48f * auScale, new Color(200, 180, 200, 96), segments: 160));
+            pluto.Set(new OrbitCircle(sun, 39.48f * auScale, new Color(200, 180, 200, 96), segments: 6400));
 
             // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
             SpawnAsteroidBelt(origin,
@@ -2163,7 +2163,6 @@ internal static class Program
                     _lineBatch.AddLine(aVec, bVec, color);
                 }
 
-                var camPosDouble = _camera.Position;
                 // Draw orbit circles for entities that have OrbitCircle component
                 foreach (var ocEntity in World.Query(typeof(OrbitCircle)))
                 {
