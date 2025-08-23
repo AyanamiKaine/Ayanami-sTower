@@ -5,6 +5,7 @@ using BepuPhysics;
 using BepuPhysics.Collidables;
 using BepuPhysics.Trees;
 using MoonWorks.Input;
+using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta
 {
@@ -15,6 +16,11 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
     {
         private readonly Camera _camera;
         private readonly Simulation _simulation;
+        /// <summary>
+        /// When true, MousePicker will remove the camera translation from the view
+        /// matrix used for unprojection so picking matches camera-relative rendering.
+        /// </summary>
+        public bool UseCameraRelativeRendering { get; set; } = false;
         /// <summary>
         /// Initializes a new instance of the <see cref="MousePicker"/> class.
         /// </summary>
@@ -48,9 +54,15 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             // 3) Invert combined (Projection * View) to unproject from NDC to world.
             var proj = _camera.GetProjectionMatrix();
             var view = _camera.GetViewMatrix();
+            var viewMat = HighPrecisionConversions.ToMatrix(view);
+            var projMat = HighPrecisionConversions.ToMatrix(proj);
+            if (UseCameraRelativeRendering)
+            {
+                viewMat.Translation = Vector3.Zero;
+            }
+            var viewProj = viewMat * projMat;
             // System.Numerics uses row-vector convention for Transform; world -> clip is v * (view * projection).
             // So unprojection uses inverse(view * projection).
-            var viewProj = Matrix4x4.Multiply(view, proj);
             if (!Matrix4x4.Invert(viewProj, out var invViewProj))
             {
                 hitResult = default;

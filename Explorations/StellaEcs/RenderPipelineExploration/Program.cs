@@ -429,6 +429,10 @@ internal static class Program
         // Camera
         private Camera _camera = null!;
         private SpaceStrategyCameraController _cameraController = null!;
+        // When true, render everything relative to the camera (subtract camera position
+        // when building model matrices / line vertices) instead of performing world rebasing.
+        // This reduces the need to move world objects and avoids rebase-induced jitter.
+        private bool _useCameraRelativeRendering = true;
 
         // GPU resources
         private GraphicsPipeline? _pipeline;
@@ -452,7 +456,7 @@ internal static class Program
         private GraphicsPipeline? _linePipeline;
         private LineBatch3D? _lineBatch;
         // Debug: visualize physics colliders with wireframes
-        private bool _debugDrawColliders = false;
+        private bool _debugDrawColliders = true;
         // If true, also draw ECS-declared collider poses (helps spot divergence). Off by default.
         private bool _debugDrawEcsColliderPoses = false;
 
@@ -608,7 +612,10 @@ internal static class Program
             };
             _cameraController = new SpaceStrategyCameraController(_camera);
 
-            _mousePicker = new MousePicker(_camera, _simulation);
+            _mousePicker = new MousePicker(_camera, _simulation)
+            {
+                UseCameraRelativeRendering = _useCameraRelativeRendering
+            };
 
             // MSAA targets are (re)created in Draw to match the actual swapchain size.
             _msaaColor = null;
@@ -2076,10 +2083,19 @@ internal static class Program
                 _fpsFrames = 0;
                 _fpsTimer = 0f;
             }
-            // Compute view-projection and extract frustum once per frame.
-            var view = _camera.GetViewMatrix();
-            var proj = _camera.GetProjectionMatrix();
-            var viewProj = view * proj;
+            // Compute single-precision view/projection and extract frustum once per frame.
+            var viewDouble = _camera.GetViewMatrix();
+            var projDouble = _camera.GetProjectionMatrix();
+            var viewMat = HighPrecisionConversions.ToMatrix(viewDouble);
+            var projMat = HighPrecisionConversions.ToMatrix(projDouble);
+            // When using camera-relative rendering, remove the camera translation from the view
+            // (we already subtract the camera from model positions). This prevents double-subtraction
+            // and keeps the camera effectively at the origin for rendering.
+            if (_useCameraRelativeRendering)
+            {
+                viewMat.Translation = Vector3.Zero;
+            }
+            var viewProj = viewMat * projMat;
             var frustum = ExtractFrustumPlanes(viewProj);
             // Runtime culling adjustments: keys to toggle culling, toggle size-visibility and adjust radius/threshold
             if (Inputs.Keyboard.IsPressed(KeyCode.C))
@@ -2120,11 +2136,15 @@ internal static class Program
             if (_lineBatch != null)
             {
 
+                // Add all lines, converting to camera-relative positions if enabled
+                var camPosVec = _useCameraRelativeRendering ? HighPrecisionConversions.ToVector3(_camera.Position) : Vector3.Zero;
                 foreach (var entity in World.Query(typeof(Line3D), typeof(Color)))
                 {
                     var line = entity.GetMut<Line3D>();
                     var color = entity.GetMut<Color>();
-                    _lineBatch.AddLine(line.Start, line.End, color);
+                    var a = HighPrecisionConversions.ToVector3(line.Start) - camPosVec;
+                    var b = HighPrecisionConversions.ToVector3(line.End) - camPosVec;
+                    _lineBatch.AddLine(a, b, color);
                 }
 
                 // Draw orbit circles for entities that have OrbitCircle component
@@ -2133,6 +2153,10 @@ internal static class Program
                     var oc = ocEntity.GetMut<OrbitCircle>();
                     // Get current parent world position
                     var center = GetEntityWorldPosition(oc.Parent);
+                    if (_useCameraRelativeRendering)
+                    {
+                        center = new Vector3Double(center.X - _camera.Position.X, center.Y - _camera.Position.Y, center.Z - _camera.Position.Z);
+                    }
                     int segs = Math.Max(4, oc.Segments);
                     double angleStep = MathF.Tau / segs;
                     Vector3Double prev = center + new Vector3Double(oc.Radius, 0f, 0f);
@@ -2140,7 +2164,7 @@ internal static class Program
                     {
                         double a = i * angleStep;
                         Vector3Double p = center + new Vector3Double(Math.Cos(a) * oc.Radius, 0f, Math.Sin(a) * oc.Radius);
-                        _lineBatch.AddLine(prev, p, oc.Color);
+                        _lineBatch.AddLine(HighPrecisionConversions.ToVector3(prev) - camPosVec, HighPrecisionConversions.ToVector3(p) - camPosVec, oc.Color);
                         prev = p;
                     }
                 }
@@ -2159,6 +2183,10 @@ internal static class Program
                     {
                         var ent = e; // capture
                         var pos = ent.Has<Position3D>() ? ent.GetMut<Position3D>().Value : Vector3Double.Zero;
+                        if (_useCameraRelativeRendering)
+                        {
+                            pos = new Vector3Double(pos.X - _camera.Position.X, pos.Y - _camera.Position.Y, pos.Z - _camera.Position.Z);
+                        }
                         DrawEntityAxes(pos, 1.0f);
                     }
                 }
@@ -2168,6 +2196,10 @@ internal static class Program
                     {
                         var ent = e; // capture
                         var pos = ent.GetMut<Position3D>().Value;
+                        if (_useCameraRelativeRendering)
+                        {
+                            pos = new Vector3Double(pos.X - _camera.Position.X, pos.Y - _camera.Position.Y, pos.Z - _camera.Position.Z);
+                        }
                         DrawEntityAxes(pos, 1.0f);
                     }
                 }
@@ -2205,8 +2237,10 @@ internal static class Program
                 var skySampler = Sampler.Create(GraphicsDevice, SamplerCreateInfo.LinearWrap);
                 pass.BindFragmentSamplers(0, new TextureSamplerBinding[] { new(_skyboxTexture, skySampler) });
 
-                var modelSky = Matrix4x4.CreateScale(_skyboxScale) * Matrix4x4.CreateTranslation(_camera.Position);
-                var mvpSky = modelSky * HighPrecisionConversions.ToMatrix(_camera.GetViewMatrix()) * HighPrecisionConversions.ToMatrix(_camera.GetProjectionMatrix());
+                // Skybox should follow the camera; when using camera-relative rendering the view translation
+                // has been removed so placing the skybox at the origin keeps it centered on the camera.
+                var modelSky = Matrix4x4.CreateScale(_skyboxScale);
+                var mvpSky = modelSky * viewProj;
                 cmdbuf.PushVertexUniformData(mvpSky, slot: 0);
                 pass.DrawIndexedPrimitives(skyMesh.IndexCount, 1, 0, 0, 0);
                 skySampler.Dispose();
@@ -2262,7 +2296,7 @@ internal static class Program
                     if (clip.W > 0f)
                     {
                         // approximate projected pixel radius: r / (dist * tan(fov/2)) * (screenHeight/2)
-                        var toObj = translation - HighPrecisionConversions.ToVector3(_camera.Position);
+                        var toObj = translation - (_useCameraRelativeRendering ? Vector3.Zero : HighPrecisionConversions.ToVector3(_camera.Position));
                         var dist = toObj.Length();
                         if (dist > 0f)
                         {
@@ -2296,8 +2330,15 @@ internal static class Program
                 pass.BindFragmentSamplers(new TextureSamplerBinding(texture, GraphicsDevice.LinearSampler));
 
                 // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
-                var model = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(translation);
-                var mvp = model * HighPrecisionConversions.ToMatrix(viewProj);
+                // If using camera-relative rendering, subtract camera position from the translation so
+                // model matrices are built in view-local coordinates and avoid large world coordinates.
+                var modelTrans = translation;
+                if (_useCameraRelativeRendering)
+                {
+                    modelTrans = translation - HighPrecisionConversions.ToVector3(_camera.Position);
+                }
+                var model = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(modelTrans);
+                var mvp = model * viewProj;
 
                 cmdbuf.PushVertexUniformData(mvp, slot: 0);
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
@@ -2307,8 +2348,7 @@ internal static class Program
             if (_lineBatch != null)
             {
                 pass.BindGraphicsPipeline(_linePipeline!);
-                var vp = _camera.GetViewMatrix() * _camera.GetProjectionMatrix();
-                _lineBatch.Render(pass, vp);
+                _lineBatch.Render(pass, viewProj);
             }
 
 
