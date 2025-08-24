@@ -304,8 +304,8 @@ internal static class Program
                 "SkyboxCubePS"
             );
             // Create simple textures
-            _whiteTexture = CreateSolidTexture(255, 255, 255, 255);
-            _checkerTexture = CreateCheckerboard(256, 256, 8,
+            _whiteTexture = AssetManager.CreateSolidTexture(this, 255, 255, 255, 255);
+            _checkerTexture = AssetManager.CreateCheckerboardTexture(this, 256, 256, 8,
                 (230, 230, 230, 255), (40, 40, 40, 255));
 
 
@@ -630,48 +630,8 @@ internal static class Program
             _skyboxEnabled = true;
         }
 
-        private Texture CreateSolidTexture(byte r, byte g, byte b, byte a)
-        {
-            using var uploader = new ResourceUploader(GraphicsDevice, 4);
-            var tex = uploader.CreateTexture2D(
-                "Solid",
-                [r, g, b, a],
-                TextureFormat.R8G8B8A8Unorm,
-                TextureUsageFlags.Sampler,
-                1, 1);
-            uploader.UploadAndWait();
-            return tex;
-        }
 
-        private Texture CreateCheckerboard(uint width, uint height, int cells, (byte r, byte g, byte b, byte a) c0, (byte r, byte g, byte b, byte a) c1)
-        {
-            int w = (int)width, h = (int)height;
-            var data = new byte[w * h * 4];
-            int cellW = Math.Max(1, w / cells);
-            int cellH = Math.Max(1, h / cells);
-            for (int y = 0; y < h; y++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    bool useC0 = ((x / cellW) + (y / cellH)) % 2 == 0;
-                    var (r, g, b, a) = useC0 ? c0 : c1;
-                    int i = ((y * w) + x) * 4;
-                    data[i + 0] = r;
-                    data[i + 1] = g;
-                    data[i + 2] = b;
-                    data[i + 3] = a;
-                }
-            }
-            using var uploader = new ResourceUploader(GraphicsDevice, (uint)data.Length);
-            var tex = uploader.CreateTexture2D<byte>(
-                "Checker",
-                data,
-                TextureFormat.R8G8B8A8Unorm,
-                TextureUsageFlags.Sampler,
-                width, height);
-            uploader.UploadAndWait();
-            return tex;
-        }
+
 
         /// <summary>
         /// Spawns a large number of planet-like entities for stress testing.
@@ -919,7 +879,7 @@ internal static class Program
             var rng = new Random(seed);
 
             // Ensure we have at least a fallback texture
-            var tex = _checkerTexture ?? _whiteTexture ?? CreateSolidTexture(255, 255, 255, 255);
+            var tex = _checkerTexture ?? _whiteTexture ?? AssetManager.CreateSolidTexture(this, 255, 255, 255, 255);
 
             // Pre-create a GPU mesh for spheres to avoid duplicating per-entity CPU meshes
             var sharedSphere = Mesh.CreateSphere3D();
@@ -978,7 +938,7 @@ internal static class Program
             if (count <= 0) return;
             var rng = new Random(seed);
 
-            var tex = _checkerTexture ?? _whiteTexture ?? CreateSolidTexture(255, 255, 255, 255);
+            var tex = _checkerTexture ?? _whiteTexture ?? AssetManager.CreateSolidTexture(this, 255, 255, 255, 255);
 
             // Shared CPU mesh for all asteroids
             var sharedSphere = Mesh.CreateSphere3D();
@@ -1041,7 +1001,7 @@ internal static class Program
             if (outerRadius < innerRadius) outerRadius = innerRadius + 1f;
 
             var rng = new Random(seed);
-            var tex = _checkerTexture ?? _whiteTexture ?? CreateSolidTexture(255, 255, 255, 255);
+            var tex = _checkerTexture ?? _whiteTexture ?? AssetManager.CreateSolidTexture(this, 255, 255, 255, 255);
             var sharedSphere = Mesh.CreateSphere3D();
 
             // convert inclination to radians

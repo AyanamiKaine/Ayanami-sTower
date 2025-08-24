@@ -240,4 +240,58 @@ public static class AssetManager
         uploader.UploadAndWait();
         return texture;
     }
+    /// <summary>
+    /// Creates a solid color texture.
+    /// </summary>
+    /// <param name="game"></param>
+    /// <param name="r"></param>
+    /// <param name="g"></param>
+    /// <param name="b"></param>
+    /// <param name="a"></param>
+    /// <returns></returns>
+    public static Texture CreateSolidTexture(Game game, byte r, byte g, byte b, byte a)
+    {
+        using var uploader = new ResourceUploader(game.GraphicsDevice, 4);
+        var tex = uploader.CreateTexture2D(
+            "Solid",
+            [r, g, b, a],
+            TextureFormat.R8G8B8A8Unorm,
+            TextureUsageFlags.Sampler,
+            1, 1);
+        uploader.UploadAndWait();
+        return tex;
+    }
+
+    /// <summary>
+    /// Creates a checkerboard texture. Used as placeholder for missing textures.
+    /// </summary>
+    public static Texture CreateCheckerboardTexture(Game game, uint width, uint height, int cells, (byte r, byte g, byte b, byte a) c0, (byte r, byte g, byte b, byte a) c1)
+    {
+        int w = (int)width, h = (int)height;
+        var data = new byte[w * h * 4];
+        int cellW = Math.Max(1, w / cells);
+        int cellH = Math.Max(1, h / cells);
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                bool useC0 = ((x / cellW) + (y / cellH)) % 2 == 0;
+                var (r, g, b, a) = useC0 ? c0 : c1;
+                int i = ((y * w) + x) * 4;
+                data[i + 0] = r;
+                data[i + 1] = g;
+                data[i + 2] = b;
+                data[i + 3] = a;
+            }
+        }
+        using var uploader = new ResourceUploader(game.GraphicsDevice, (uint)data.Length);
+        var tex = uploader.CreateTexture2D<byte>(
+            "Checker",
+            data,
+            TextureFormat.R8G8B8A8Unorm,
+            TextureUsageFlags.Sampler,
+            width, height);
+        uploader.UploadAndWait();
+        return tex;
+    }
 }
