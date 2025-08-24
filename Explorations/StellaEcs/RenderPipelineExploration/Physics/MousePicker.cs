@@ -6,6 +6,7 @@ using BepuPhysics.Collidables;
 using BepuPhysics.Trees;
 using MoonWorks.Input;
 using AyanamisTower.StellaEcs.HighPrecisionMath;
+using AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta.Physics;
 
