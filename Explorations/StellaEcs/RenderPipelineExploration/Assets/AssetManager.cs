@@ -1,5 +1,7 @@
 using MoonWorks;
 using MoonWorks.Graphics;
+using System.Collections.Concurrent;
+using System.Linq;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta.Assets;
 
@@ -32,6 +34,36 @@ public static class AssetManager
         return normalized.TrimStart('/');
     }
 
+    // Simple thread-safe cache for created textures. Keys are normalized strings
+    // that uniquely identify the requested texture. We keep strong references here
+    // so repeated calls return the same Texture instance rather than creating a
+    // duplicate GPU resource.
+    private static readonly ConcurrentDictionary<string, Texture> s_textureCache = new();
+
+    /// <summary>
+    /// Clears the texture cache and returns the cached Texture instances so the
+    /// caller can dispose them if desired. This does not automatically destroy
+    /// GPU resources; callers should call Dispose() on the Texture objects if
+    /// the framework requires it.
+    /// </summary>
+    public static IEnumerable<Texture> ClearTextureCache()
+    {
+        var values = s_textureCache.Values.ToArray();
+        s_textureCache.Clear();
+        return values;
+    }
+
+    /// <summary>
+    /// Removes a single texture from the cache by path and returns it (or null)
+    /// so the caller may dispose it.
+    /// </summary>
+    public static Texture? RemoveTextureFromCache(string path)
+    {
+        var key = NormalizeTitlePath(path);
+        if (s_textureCache.TryRemove(key, out var tex)) return tex;
+        return null;
+    }
+
     /// <summary>
     /// Creates a cubemap texture from six images. Expected order: +X, -X, +Y, -Y, +Z, -Z.
     /// All images must be square and same size. Returns null on failure.
@@ -47,6 +79,14 @@ public static class AssetManager
                 NormalizeTitlePath(posZ),
                 NormalizeTitlePath(negZ)
         ];
+
+        // Cache key for cubemap: join the six normalized paths with | to form a
+        // reproducible identifier.
+        var cacheKey = "cubemap:" + string.Join("|", input);
+        if (s_textureCache.TryGetValue(cacheKey, out var cachedCube))
+        {
+            return cachedCube;
+        }
 
         // Validate existence and gather dimensions
         uint size = 0;
@@ -102,6 +142,12 @@ public static class AssetManager
         }
 
         uploader.UploadAndWait();
+
+        if (cube != null)
+        {
+            s_textureCache.TryAdd(cacheKey, cube);
+        }
+
         return cube;
     }
 
@@ -125,6 +171,12 @@ public static class AssetManager
 
         // Choose loader by file extension
         var ext = Path.GetExtension(normalized).ToLowerInvariant();
+
+        // Check cache first
+        if (s_textureCache.TryGetValue(normalized, out var cached))
+        {
+            return cached;
+        }
 
         using var uploader = new ResourceUploader(game.GraphicsDevice);
         Texture? texture = null;
@@ -236,7 +288,18 @@ public static class AssetManager
             return null;
         }
 
+        // Final defensive validation
+        if (texture == null)
+        {
+            Console.WriteLine($"[LoadTextureFromFile] Failed to create texture for: {normalized}");
+            return null;
+        }
+
         uploader.UploadAndWait();
+
+        // Cache the created texture for future requests
+        s_textureCache.TryAdd(normalized, texture);
+
         return texture;
     }
     /// <summary>
@@ -250,6 +313,9 @@ public static class AssetManager
     /// <returns></returns>
     public static Texture CreateSolidTexture(Game game, byte r, byte g, byte b, byte a)
     {
+        var key = $"solid:{r},{g},{b},{a}";
+        if (s_textureCache.TryGetValue(key, out var cached)) return cached;
+
         using var uploader = new ResourceUploader(game.GraphicsDevice, 4);
         var tex = uploader.CreateTexture2D(
             "Solid",
@@ -258,6 +324,13 @@ public static class AssetManager
             TextureUsageFlags.Sampler,
             1, 1);
         uploader.UploadAndWait();
+
+        if (tex == null)
+        {
+            throw new InvalidOperationException("CreateSolidTexture failed to create texture");
+        }
+
+        s_textureCache.TryAdd(key, tex);
         return tex;
     }
 
@@ -283,6 +356,9 @@ public static class AssetManager
                 data[i + 3] = a;
             }
         }
+        var key = $"checker:{width}x{height}:cells={cells}:{c0.r},{c0.g},{c0.b},{c0.a}:{c1.r},{c1.g},{c1.b},{c1.a}";
+        if (s_textureCache.TryGetValue(key, out var cached)) return cached;
+
         using var uploader = new ResourceUploader(game.GraphicsDevice, (uint)data.Length);
         var tex = uploader.CreateTexture2D<byte>(
             "Checker",
@@ -291,6 +367,13 @@ public static class AssetManager
             TextureUsageFlags.Sampler,
             width, height);
         uploader.UploadAndWait();
+
+        if (tex == null)
+        {
+            throw new InvalidOperationException("CreateCheckerboardTexture failed to create texture");
+        }
+
+        s_textureCache.TryAdd(key, tex);
         return tex;
     }
 }
