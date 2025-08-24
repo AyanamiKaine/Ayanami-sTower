@@ -97,6 +97,8 @@ internal static class Program
 
         // Floating origin system
         private FloatingOriginManager? _floatingOriginManager;
+        // Input manager to simplify checked inputs
+        private InputManager _inputManager = new();
         // FPS counter for window title
         private readonly string _baseTitle = "Stella Invicta";
         private float _fpsTimer = 0f;
@@ -232,6 +234,161 @@ internal static class Program
                 ,
                 FloatingOriginManager = _floatingOriginManager
             };
+
+            // Register input handlers with InputManager so adding new inputs is easy
+            _inputManager.RegisterKeyPressed(KeyCode.F1, () =>
+            {
+                _debugDrawAxesAll = !_debugDrawAxesAll;
+                Console.WriteLine($"[Debug] Draw axes for all entities: {_debugDrawAxesAll}");
+            }, "ToggleAxesAll");
+
+            _inputManager.RegisterKeyPressed(KeyCode.F2, () =>
+            {
+                _debugDrawColliders = !_debugDrawColliders;
+                Console.WriteLine($"[Debug] Draw colliders for all entities: {_debugDrawColliders}");
+            }, "ToggleColliders");
+
+            // Mouse pick (edge on left mouse)
+            _inputManager.RegisterLeftMousePressed(() =>
+            {
+                if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var result))
+                {
+                    // Keep the existing pick/double-click logic but readonly capture necessary variables
+                    double now = DateTime.UtcNow.TimeOfDay.TotalSeconds;
+                    bool isDoubleClick = false;
+                    const double DOUBLE_CLICK_TIME = 0.35; // seconds
+                    const int DOUBLE_CLICK_PIXEL_RADIUS = 6;
+                    if (now - _lastClickTime <= DOUBLE_CLICK_TIME)
+                    {
+                        int dx = Inputs.Mouse.X - _lastClickX;
+                        int dy = Inputs.Mouse.Y - _lastClickY;
+                        if ((dx * dx) + (dy * dy) <= DOUBLE_CLICK_PIXEL_RADIUS * DOUBLE_CLICK_PIXEL_RADIUS)
+                        {
+                            isDoubleClick = true;
+                        }
+                    }
+                    _lastClickTime = now;
+                    _lastClickX = Inputs.Mouse.X;
+                    _lastClickY = Inputs.Mouse.Y;
+
+                    if (isDoubleClick)
+                    {
+                        // inline ComputeDesiredDistanceForEntity
+                        double ComputeDesiredDistanceForEntity(Entity? entity, float hitDistance)
+                        {
+                            const float targetScreenFraction = 0.35f;
+                            double desired = hitDistance * 0.6f;
+                            if (entity.HasValue && entity.Value != default && entity.Value.Has<Size3D>())
+                            {
+                                var s = entity.Value.GetMut<Size3D>().Value;
+                                double maxAxis = Math.Max(s.X, Math.Max(s.Y, s.Z));
+                                double boundingRadius = Math.Max(0.01f, maxAxis * 0.6f);
+                                double fovHalfTan = Math.Tan(_camera.Fov * 0.5f);
+                                if (fovHalfTan > 1e-6f)
+                                {
+                                    double fromSize = boundingRadius / (targetScreenFraction * fovHalfTan);
+                                    desired = Math.Max(fromSize, _cameraController.MinDistance);
+                                }
+                            }
+                            desired = Math.Clamp(desired, _cameraController.MinDistance, _cameraController.MaxDistance);
+                            return desired;
+                        }
+
+                        if (result.Collidable.Mobility == CollidableMobility.Static)
+                        {
+                            if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
+                            {
+                                Entity? owner = null;
+                                foreach (var e in World.Query(typeof(PhysicsStatic)))
+                                {
+                                    if (e.GetMut<PhysicsStatic>().Handle.Equals(result.Collidable.StaticHandle))
+                                    {
+                                        owner = e;
+                                        break;
+                                    }
+                                }
+                                double distance = ComputeDesiredDistanceForEntity(owner, result.Distance);
+                                _cameraController.SetFocus(staticBody.Pose.Position, distance);
+                                Console.WriteLine($"Double-click focus STATIC at {staticBody.Pose.Position} (distance={distance:F2})");
+                            }
+                            else
+                            {
+                                double distance = ComputeDesiredDistanceForEntity(null, result.Distance);
+                                _cameraController.SetFocus(result.HitLocation, distance);
+                                Console.WriteLine($"Double-click focus at hit location {result.HitLocation} (distance={distance:F2})");
+                            }
+                        }
+                        else
+                        {
+                            var bh = result.Collidable.BodyHandle;
+                            Entity? found = null;
+                            foreach (var e in World.Query(typeof(PhysicsBody)))
+                            {
+                                if (e.GetMut<PhysicsBody>().Handle.Equals(bh))
+                                {
+                                    found = e;
+                                    break;
+                                }
+                            }
+
+                            if (found != null)
+                            {
+                                var followEntity = found.Value;
+                                double distance = ComputeDesiredDistanceForEntity(followEntity, result.Distance);
+                                _cameraController.SetFocusProvider(() => GetEntityWorldPosition(followEntity), distance);
+                                Console.WriteLine($"Double-click follow ENTITY {followEntity.Id} (distance={distance:F2})");
+                            }
+                            else
+                            {
+                                double distance = ComputeDesiredDistanceForEntity(null, result.Distance);
+                                _cameraController.SetFocus(result.HitLocation, distance);
+                                Console.WriteLine($"Double-click focus at hit location {result.HitLocation} (distance={distance:F2})");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("PICK: Missed. No object was hit.");
+                }
+            }, "MousePick");
+
+            // Culling toggles and adjustments
+            _inputManager.RegisterKeyPressed(KeyCode.C, () =>
+            {
+                _enableFrustumCulling = !_enableFrustumCulling;
+                Console.WriteLine($"[Culling] Frustum culling: {(_enableFrustumCulling ? "ENABLED" : "DISABLED")}");
+            }, "ToggleCulling");
+
+            _inputManager.RegisterKeyPressed(KeyCode.V, () =>
+            {
+                _enableSizeVisibility = !_enableSizeVisibility;
+                Console.WriteLine($"[Culling] Size-based visibility: {(_enableSizeVisibility ? "ENABLED" : "DISABLED")}");
+            }, "ToggleSizeVisibility");
+
+            _inputManager.RegisterKeyHeld(KeyCode.N, () =>
+            {
+                _cullingRadiusScale = MathF.Max(0.1f, _cullingRadiusScale - 0.1f);
+                Console.WriteLine($"[Culling] Radius scale: {_cullingRadiusScale:F2}");
+            }, "DecreaseCullingRadius");
+
+            _inputManager.RegisterKeyHeld(KeyCode.M, () =>
+            {
+                _cullingRadiusScale = MathF.Min(10f, _cullingRadiusScale + 0.1f);
+                Console.WriteLine($"[Culling] Radius scale: {_cullingRadiusScale:F2}");
+            }, "IncreaseCullingRadius");
+
+            _inputManager.RegisterKeyHeld(KeyCode.LeftBracket, () =>
+            {
+                _minScreenPixelSize = MathF.Max(0.5f, _minScreenPixelSize - 0.5f);
+                Console.WriteLine($"[Culling] Min pixel size: {_minScreenPixelSize:F1}");
+            }, "DecreaseMinPixelSize");
+
+            _inputManager.RegisterKeyHeld(KeyCode.RightBracket, () =>
+            {
+                _minScreenPixelSize = MathF.Min(200f, _minScreenPixelSize + 0.5f);
+                Console.WriteLine($"[Culling] Min pixel size: {_minScreenPixelSize:F1}");
+            }, "IncreaseMinPixelSize");
 
             // MSAA targets are (re)created in Draw to match the actual swapchain size.
             _msaaColor = null;
@@ -1088,6 +1245,9 @@ internal static class Program
 
         protected override void Update(TimeSpan delta)
         {
+            // Snapshot inputs early so edge/held queries are stable during the frame
+            _inputManager.Update(Inputs);
+
             _angle += (float)delta.TotalSeconds * 0.7f;
             // Keep camera aspect up-to-date on resize
             _camera.Aspect = (float)((float)MainWindow.Width / MainWindow.Height);
@@ -1199,142 +1359,7 @@ internal static class Program
             // rebase is executed after `_cameraController.Update(...)` to avoid mixed pre/post
             // rebase state within a single frame which can cause visible teleports.
 
-            // Toggle drawing axes: press X to toggle drawing axes for all Position3D entities
-            if (Inputs.Keyboard.IsPressed(KeyCode.F1))
-            {
-                _debugDrawAxesAll = !_debugDrawAxesAll;
-                Console.WriteLine($"[Debug] Draw axes for all entities: {_debugDrawAxesAll}");
-            }
-
-            if (Inputs.Keyboard.IsPressed(KeyCode.F2))
-            {
-                _debugDrawColliders = !_debugDrawColliders;
-                Console.WriteLine($"[Debug] Draw colliders for all entities: {_debugDrawColliders}");
-            }
-
-            // Check for mouse click to perform picking
-            // Note: Mouse picking works correctly with floating origin since it operates on 
-            // the physics simulation's coordinate space which is kept relative to the current origin
-            if (Inputs.Mouse.LeftButton.IsPressed)
-            {
-                if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var result))
-                {
-                    // Detect double-click (time + proximity)
-                    double now = DateTime.UtcNow.TimeOfDay.TotalSeconds;
-                    bool isDoubleClick = false;
-                    const double DOUBLE_CLICK_TIME = 0.35; // seconds
-                    const int DOUBLE_CLICK_PIXEL_RADIUS = 6;
-                    if (now - _lastClickTime <= DOUBLE_CLICK_TIME)
-                    {
-                        int dx = Inputs.Mouse.X - _lastClickX;
-                        int dy = Inputs.Mouse.Y - _lastClickY;
-                        if ((dx * dx) + (dy * dy) <= DOUBLE_CLICK_PIXEL_RADIUS * DOUBLE_CLICK_PIXEL_RADIUS)
-                        {
-                            isDoubleClick = true;
-                        }
-                    }
-                    _lastClickTime = now;
-                    _lastClickX = Inputs.Mouse.X;
-                    _lastClickY = Inputs.Mouse.Y;
-
-                    if (isDoubleClick)
-                    {
-                        // On double-click, prefer to follow the clicked entity if it's dynamic/kinematic,
-                        // and also choose a sensible zoom distance based on object size or hit distance.
-                        double ComputeDesiredDistanceForEntity(Entity? entity, float hitDistance)
-                        {
-                            // Prefer computing distance from the object's size so small objects get a close, sensible zoom.
-                            // If size is unavailable, fall back to a fraction of hit distance.
-                            const float targetScreenFraction = 0.35f; // object should occupy ~35% of vertical screen
-                            double desired = hitDistance * 0.6f;
-
-                            if (entity.HasValue && entity.Value != default && entity.Value.Has<Size3D>())
-                            {
-                                var s = entity.Value.GetMut<Size3D>().Value;
-                                double maxAxis = Math.Max(s.X, Math.Max(s.Y, s.Z));
-                                // Estimate a conservative bounding radius for the object. Use 0.6 factor (matches collider heuristics)
-                                double boundingRadius = Math.Max(0.01f, maxAxis * 0.6f);
-
-                                // Compute distance so the object's bounding radius fits targetScreenFraction of vertical FOV.
-                                // distance = boundingRadius / (targetFraction * tan(fov/2))
-                                double fovHalfTan = Math.Tan(_camera.Fov * 0.5f);
-                                if (fovHalfTan > 1e-6f)
-                                {
-                                    double fromSize = boundingRadius / (targetScreenFraction * fovHalfTan);
-                                    // Use the closer of size-based and hit-based suggestions, but never less than MinDistance
-                                    desired = Math.Max(fromSize, _cameraController.MinDistance);
-                                }
-                            }
-
-                            // As a final clamp, ensure it's within controller's limits
-                            desired = Math.Clamp(desired, _cameraController.MinDistance, _cameraController.MaxDistance);
-                            return desired;
-                        }
-
-                        if (result.Collidable.Mobility == CollidableMobility.Static)
-                        {
-                            if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
-                            {
-                                // Try to find the ECS entity that owns this static handle to read its Size3D
-                                Entity? owner = null;
-                                foreach (var e in World.Query(typeof(PhysicsStatic)))
-                                {
-                                    if (e.GetMut<PhysicsStatic>().Handle.Equals(result.Collidable.StaticHandle))
-                                    {
-                                        owner = e;
-                                        break;
-                                    }
-                                }
-
-                                double distance = ComputeDesiredDistanceForEntity(owner, result.Distance);
-                                _cameraController.SetFocus(staticBody.Pose.Position, distance);
-                                Console.WriteLine($"Double-click focus STATIC at {staticBody.Pose.Position} (distance={distance:F2})");
-                            }
-                            else
-                            {
-                                // No static reference available; focus at hit location with hit-based distance
-                                double distance = ComputeDesiredDistanceForEntity(null, result.Distance);
-                                _cameraController.SetFocus(result.HitLocation, distance);
-                                Console.WriteLine($"Double-click focus at hit location {result.HitLocation} (distance={distance:F2})");
-                            }
-                        }
-                        else
-                        {
-                            var bh = result.Collidable.BodyHandle;
-                            // Find the ECS entity that owns this BodyHandle so we can follow it each frame
-                            Entity? found = null;
-                            foreach (var e in World.Query(typeof(PhysicsBody)))
-                            {
-                                if (e.GetMut<PhysicsBody>().Handle.Equals(bh))
-                                {
-                                    found = e;
-                                    break;
-                                }
-                            }
-
-                            if (found != null)
-                            {
-                                var followEntity = found.Value;
-                                double distance = ComputeDesiredDistanceForEntity(followEntity, result.Distance);
-                                // Provide a live focus point sampled each frame from the entity's world position
-                                _cameraController.SetFocusProvider(() => GetEntityWorldPosition(followEntity), distance);
-                                Console.WriteLine($"Double-click follow ENTITY {followEntity.Id} (distance={distance:F2})");
-                            }
-                            else
-                            {
-                                // Fallback: set static focus at the hit location with hit-based distance
-                                double distance = ComputeDesiredDistanceForEntity(null, result.Distance);
-                                _cameraController.SetFocus(result.HitLocation, distance);
-                                Console.WriteLine($"Double-click focus at hit location {result.HitLocation} (distance={distance:F2})");
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("PICK: Missed. No object was hit.");
-                }
-            }
+            // Input checks (F1,F2, mouse pick, culling toggles) are registered with _inputManager in InitializeScene
 
             // Note: World.Update was already called inside the fixed-step loop above.
             // Update camera via controller abstraction AFTER physics step so any live
@@ -1423,39 +1448,7 @@ internal static class Program
             }
             var viewProj = viewMat * projMat;
             var frustum = ExtractFrustumPlanes(viewProj);
-            // Runtime culling adjustments: keys to toggle culling, toggle size-visibility and adjust radius/threshold
-            if (Inputs.Keyboard.IsPressed(KeyCode.C))
-            {
-                _enableFrustumCulling = !_enableFrustumCulling;
-                Console.WriteLine($"[Culling] Frustum culling: {(_enableFrustumCulling ? "ENABLED" : "DISABLED")}");
-            }
-            if (Inputs.Keyboard.IsPressed(KeyCode.V))
-            {
-                _enableSizeVisibility = !_enableSizeVisibility;
-                Console.WriteLine($"[Culling] Size-based visibility: {(_enableSizeVisibility ? "ENABLED" : "DISABLED")}");
-            }
-            // N/M to decrease/increase culling radius scale for more/less aggressive culling
-            if (Inputs.Keyboard.IsHeld(KeyCode.N))
-            {
-                _cullingRadiusScale = MathF.Max(0.1f, _cullingRadiusScale - 0.1f);
-                Console.WriteLine($"[Culling] Radius scale: {_cullingRadiusScale:F2}");
-            }
-            if (Inputs.Keyboard.IsHeld(KeyCode.M))
-            {
-                _cullingRadiusScale = MathF.Min(10f, _cullingRadiusScale + 0.1f);
-                Console.WriteLine($"[Culling] Radius scale: {_cullingRadiusScale:F2}");
-            }
-            // [ and ] to adjust minimum screen-pixel threshold for forced visibility
-            if (Inputs.Keyboard.IsHeld(KeyCode.LeftBracket))
-            {
-                _minScreenPixelSize = MathF.Max(0.5f, _minScreenPixelSize - 0.5f);
-                Console.WriteLine($"[Culling] Min pixel size: {_minScreenPixelSize:F1}");
-            }
-            if (Inputs.Keyboard.IsHeld(KeyCode.RightBracket))
-            {
-                _minScreenPixelSize = MathF.Min(200f, _minScreenPixelSize + 0.5f);
-                Console.WriteLine($"[Culling] Min pixel size: {_minScreenPixelSize:F1}");
-            }
+            // Runtime culling adjustments are handled by _inputManager registrations in InitializeScene
             // Prepare line batch for this frame and upload any lines
             _lineBatch?.Begin();
             // Example lines: axes at origin
