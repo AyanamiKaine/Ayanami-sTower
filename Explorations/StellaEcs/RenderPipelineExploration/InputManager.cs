@@ -8,6 +8,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
     {
         private readonly HashSet<KeyCode> _prevKeys = new();
         private readonly HashSet<KeyCode> _currKeys = new();
+        // Only poll these keys (populated from registrations) to avoid iterating full enum
+        private readonly HashSet<KeyCode> _registeredKeys = new();
 
         private bool _prevLeftMouse = false;
         private bool _currLeftMouse = false;
@@ -21,6 +23,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             public Func<Inputs, bool>? Predicate;
             public Action Action = () => { };
             public string Name = string.Empty;
+            public string Context = "global"; // context/layer name
+            public bool Enabled = true;
         }
 
         private readonly List<Check> _checks = new();
@@ -32,8 +36,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             foreach (var k in _currKeys) _prevKeys.Add(k);
             _currKeys.Clear();
 
-            // snapshot current keyboard state for all KeyCode values
-            foreach (KeyCode kc in Enum.GetValues(typeof(KeyCode)))
+            // snapshot only registered keyboard keys for performance
+            foreach (var kc in _registeredKeys)
             {
                 try
                 {
@@ -49,9 +53,12 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
             _prevLeftMouse = _currLeftMouse;
             _currLeftMouse = inputs.Mouse.LeftButton.IsPressed;
 
-            // Evaluate registered checks
+            // Evaluate registered checks that are enabled and whose context is active
             foreach (var c in _checks)
             {
+                if (!c.Enabled) continue;
+                if (!_activeContexts.Contains(c.Context)) continue; // skip checks not in active contexts
+
                 switch (c.Type)
                 {
                     case TriggerType.Pressed:
@@ -83,9 +90,65 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         public bool IsLeftMouseHeld() => _currLeftMouse;
 
         // Registration helpers
-        public void RegisterKeyPressed(KeyCode key, Action action, string name = "") => _checks.Add(new Check { Type = TriggerType.Pressed, Key = key, Action = action, Name = name });
-        public void RegisterKeyHeld(KeyCode key, Action action, string name = "") => _checks.Add(new Check { Type = TriggerType.Held, Key = key, Action = action, Name = name });
-        public void RegisterLeftMousePressed(Action action, string name = "") => _checks.Add(new Check { Type = TriggerType.LeftMousePressed, Action = action, Name = name });
-        public void RegisterCustom(Func<Inputs, bool> predicate, Action action, string name = "") => _checks.Add(new Check { Type = TriggerType.Custom, Predicate = predicate, Action = action, Name = name });
+        public void RegisterKeyPressed(KeyCode key, Action action, string name = "", string context = "global")
+        {
+            _registeredKeys.Add(key);
+            _checks.Add(new Check { Type = TriggerType.Pressed, Key = key, Action = action, Name = name, Context = context });
+        }
+
+        public void RegisterKeyHeld(KeyCode key, Action action, string name = "", string context = "global")
+        {
+            _registeredKeys.Add(key);
+            _checks.Add(new Check { Type = TriggerType.Held, Key = key, Action = action, Name = name, Context = context });
+        }
+
+        public void RegisterLeftMousePressed(Action action, string name = "", string context = "global")
+        {
+            _checks.Add(new Check { Type = TriggerType.LeftMousePressed, Action = action, Name = name, Context = context });
+        }
+
+        public void RegisterCustom(Func<Inputs, bool> predicate, Action action, string name = "", string context = "global")
+        {
+            _checks.Add(new Check { Type = TriggerType.Custom, Predicate = predicate, Action = action, Name = name, Context = context });
+        }
+
+        // Unregister / enable / disable helpers
+        public void UnregisterByName(string name)
+        {
+            _checks.RemoveAll(c => c.Name == name);
+        }
+
+        public void UnregisterAllInContext(string context)
+        {
+            _checks.RemoveAll(c => c.Context == context);
+        }
+
+        public void SetEnabled(string name, bool enabled)
+        {
+            foreach (var c in _checks)
+            {
+                if (c.Name == name) c.Enabled = enabled;
+            }
+        }
+
+        // Context / layer support: active contexts determine which checks run
+        private readonly HashSet<string> _activeContexts = new() { "global" };
+        private readonly Stack<string> _contextStack = new();
+
+        public void ActivateContext(string context) => _activeContexts.Add(context);
+        public void DeactivateContext(string context) { if (context != "global") _activeContexts.Remove(context); }
+
+        public void PushContext(string context)
+        {
+            _contextStack.Push(context);
+            ActivateContext(context);
+        }
+
+        public void PopContext()
+        {
+            if (_contextStack.Count == 0) return;
+            var ctx = _contextStack.Pop();
+            DeactivateContext(ctx);
+        }
     }
 }
