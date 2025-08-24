@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace AyanamisTower.StellaEcs.StellaInvicta;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 /// <summary>
 /// Represents a 3D mesh.

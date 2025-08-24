@@ -2,7 +2,7 @@ using System;
 using MoonWorks.Graphics;
 using Buffer = MoonWorks.Graphics.Buffer;
 
-namespace AyanamisTower.StellaEcs.StellaInvicta;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 /// <summary>
 /// Represents a mesh stored on the GPU.

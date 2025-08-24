@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using AyanamisTower.StellaEcs.HighPrecisionMath;
 
-namespace StellaInvicta;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 /// <summary>
 /// Represents a 3D line segment.

@@ -8,7 +8,8 @@ using MoonWorks;
 using MoonWorks.Graphics;
 using MoonWorks.Input;
 using MoonWorks.Storage;
-using StellaInvicta;
+using AyanamisTower.StellaEcs.StellaInvicta.Graphics;
+using AyanamisTower.StellaEcs.StellaInvicta.Physics;
 using BepuPhysics;
 using BepuUtilities.Memory;
 using BepuUtilities;
@@ -16,6 +17,7 @@ using BepuPhysics.CollisionDetection;
 using BepuPhysics.Collidables;
 using BepuPhysics.Constraints;
 using AyanamisTower.StellaEcs.HighPrecisionMath;
+using Mesh = AyanamisTower.StellaEcs.StellaInvicta.Graphics.Mesh;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 

@@ -2,7 +2,7 @@ using System;
 using AyanamisTower.StellaEcs.StellaInvicta;
 using BepuPhysics.Collidables;
 
-namespace AyanamisTower.StellaEcs.StellaInvicta;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Physics;
 
 /// <summary>
 /// defines a collision shape for an entity.

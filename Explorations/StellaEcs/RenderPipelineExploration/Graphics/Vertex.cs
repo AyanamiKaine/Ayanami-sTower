@@ -3,7 +3,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
 
-namespace AyanamisTower.StellaEcs.StellaInvicta;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 
 /// <summary>
