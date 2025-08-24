@@ -29,9 +29,7 @@ internal static class Program
     private sealed class StellaInvicta : Game
     {
         // BepuPhysics v2 Simulation
-        private Simulation _simulation = null!;
-        private BufferPool _bufferPool = null!;
-        private ThreadDispatcher _threadDispatcher = null!;
+        private readonly PhysicsManager _physicsManager;
         private MousePicker _mousePicker = null!;
         // Debug: draw axes at entity centers
         private bool _debugDrawAxesAll = false;
@@ -113,6 +111,7 @@ internal static class Program
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
+            _physicsManager = new PhysicsManager(World);
             InitializeScene();
         }
 
@@ -121,7 +120,7 @@ internal static class Program
         {
             try
             {
-                bodyRef = _simulation.Bodies.GetBodyReference(handle);
+                bodyRef = _physicsManager.Simulation.Bodies.GetBodyReference(handle);
                 return true;
             }
             catch
@@ -135,7 +134,7 @@ internal static class Program
         {
             try
             {
-                staticRef = _simulation.Statics[handle];
+                staticRef = _physicsManager.Simulation.Statics[handle];
                 return true;
             }
             catch
@@ -186,18 +185,6 @@ internal static class Program
 
         }
 
-        private void InitializePhysics()
-        {
-            // BepuPhysics requires a BufferPool for memory management and a ThreadDispatcher for multi-threading.
-            _bufferPool = new BufferPool();
-            // Using '0' for thread count will default to Environment.ProcessorCount.
-            _threadDispatcher = new ThreadDispatcher(Environment.ProcessorCount);
-
-            // Create the simulation. The constructor takes callbacks for handling collisions.
-            // For this example, we can use the default narrow-phase callbacks.
-            _simulation = Simulation.Create(_bufferPool, new NarrowPhaseCallbacks(), new PoseIntegratorCallbacks(new Vector3(0, 0, 0)), new SolveDescription(8, 1));
-        }
-
         public void EnableVSync()
         {
             GraphicsDevice.SetSwapchainParameters(MainWindow, MainWindow.SwapchainComposition, PresentMode.VSync);
@@ -224,10 +211,9 @@ internal static class Program
             World.EnableRestApi();
 
             //EnableVSync();
-            InitializePhysics();
 
             // Initialize floating origin system
-            _floatingOriginManager = new FloatingOriginManager(World, _simulation, 200.0);
+            _floatingOriginManager = new FloatingOriginManager(World, _physicsManager.Simulation, 200.0);
 
             // Camera setup
             var aspect = (float)MainWindow.Width / MainWindow.Height;
@@ -240,7 +226,7 @@ internal static class Program
             };
             _cameraController = new SpaceStrategyCameraController(_camera);
 
-            _mousePicker = new MousePicker(_camera, _simulation)
+            _mousePicker = new MousePicker(_camera, _physicsManager.Simulation)
             {
                 UseCameraRelativeRendering = _useCameraRelativeRendering
                 ,
@@ -478,16 +464,16 @@ internal static class Program
                 switch (collisionShape.Shape)
                 {
                     case Sphere sphere:
-                        shapeIndex = _simulation.Shapes.Add(sphere);
+                        shapeIndex = _physicsManager.Simulation.Shapes.Add(sphere);
                         break;
                     case Box box:
-                        shapeIndex = _simulation.Shapes.Add(box);
+                        shapeIndex = _physicsManager.Simulation.Shapes.Add(box);
                         break;
                     case Capsule capsule:
-                        shapeIndex = _simulation.Shapes.Add(capsule);
+                        shapeIndex = _physicsManager.Simulation.Shapes.Add(capsule);
                         break;
                     case Cylinder cylinder:
-                        shapeIndex = _simulation.Shapes.Add(cylinder);
+                        shapeIndex = _physicsManager.Simulation.Shapes.Add(cylinder);
                         break;
                     default:
                         Console.WriteLine($"[Physics] Unsupported collision shape type: {collisionShape.Shape?.GetType().Name ?? "null"}");
@@ -505,14 +491,14 @@ internal static class Program
                     var collidable = new CollidableDescription((TypedIndex)shapeIndex!, 0.1f);
                     var activity = new BodyActivityDescription(0.01f);
                     var bodyDesc = BodyDescription.CreateKinematic(pose, collidable, activity);
-                    var bodyHandle = _simulation.Bodies.Add(bodyDesc);
+                    var bodyHandle = _physicsManager.Simulation.Bodies.Add(bodyDesc);
                     entity.Set(new PhysicsBody { Handle = bodyHandle });
                 }
                 else
                 {
                     // Create a static collider
                     var staticDescription = new StaticDescription(HighPrecisionConversions.ToVector3(pos), (TypedIndex)shapeIndex!);
-                    var staticHandle = _simulation.Statics.Add(staticDescription);
+                    var staticHandle = _physicsManager.Simulation.Statics.Add(staticDescription);
                     entity.Set(new PhysicsStatic { Handle = staticHandle });
                 }
             });
@@ -908,9 +894,9 @@ internal static class Program
                 if (addStaticCollider)
                 {
                     var sphereShape = new Sphere(s * 0.5f);
-                    var shapeIndex = _simulation.Shapes.Add(sphereShape);
+                    var shapeIndex = _physicsManager.Simulation.Shapes.Add(sphereShape);
                     var staticDesc = new StaticDescription(pos, shapeIndex);
-                    _simulation.Statics.Add(staticDesc);
+                    _physicsManager.Simulation.Statics.Add(staticDesc);
                 }
             }
         }
@@ -967,9 +953,9 @@ internal static class Program
                 if (addStaticCollider)
                 {
                     var sphereShape = new Sphere(s * 0.5f);
-                    var shapeIndex = _simulation.Shapes.Add(sphereShape);
+                    var shapeIndex = _physicsManager.Simulation.Shapes.Add(sphereShape);
                     var staticDesc = new StaticDescription(pos, shapeIndex);
-                    _simulation.Statics.Add(staticDesc);
+                    _physicsManager.Simulation.Statics.Add(staticDesc);
                 }
             }
         }
@@ -1039,9 +1025,9 @@ internal static class Program
                 if (addStaticCollider)
                 {
                     var sphereShape = new Sphere(s * 0.5f);
-                    var shapeIndex = _simulation.Shapes.Add(sphereShape);
+                    var shapeIndex = _physicsManager.Simulation.Shapes.Add(sphereShape);
                     var staticDesc = new StaticDescription(pos, shapeIndex);
-                    _simulation.Statics.Add(staticDesc);
+                    _physicsManager.Simulation.Statics.Add(staticDesc);
                 }
             }
         }
@@ -1127,10 +1113,10 @@ internal static class Program
                     TypedIndex? sidx = null;
                     switch (cs.Shape)
                     {
-                        case Sphere s: sidx = _simulation.Shapes.Add(s); break;
-                        case Box b: sidx = _simulation.Shapes.Add(b); break;
-                        case Capsule c: sidx = _simulation.Shapes.Add(c); break;
-                        case Cylinder cy: sidx = _simulation.Shapes.Add(cy); break;
+                        case Sphere s: sidx = _physicsManager.Simulation.Shapes.Add(s); break;
+                        case Box b: sidx = _physicsManager.Simulation.Shapes.Add(b); break;
+                        case Capsule c: sidx = _physicsManager.Simulation.Shapes.Add(c); break;
+                        case Cylinder cy: sidx = _physicsManager.Simulation.Shapes.Add(cy); break;
                     }
                     var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3Double.Zero;
                     var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
@@ -1140,7 +1126,7 @@ internal static class Program
                         var collidable = new CollidableDescription(sidx.Value, 0.1f);
                         var activity = new BodyActivityDescription(0.01f);
                         var bodyDesc = BodyDescription.CreateKinematic(pose, collidable, activity);
-                        var handle = _simulation.Bodies.Add(bodyDesc);
+                        var handle = _physicsManager.Simulation.Bodies.Add(bodyDesc);
                         e.Set(new PhysicsBody { Handle = handle });
                     }
                 }
@@ -1150,17 +1136,17 @@ internal static class Program
                     TypedIndex? sidx = null;
                     switch (cs.Shape)
                     {
-                        case Sphere s: sidx = _simulation.Shapes.Add(s); break;
-                        case Box b: sidx = _simulation.Shapes.Add(b); break;
-                        case Capsule c: sidx = _simulation.Shapes.Add(c); break;
-                        case Cylinder cy: sidx = _simulation.Shapes.Add(cy); break;
+                        case Sphere s: sidx = _physicsManager.Simulation.Shapes.Add(s); break;
+                        case Box b: sidx = _physicsManager.Simulation.Shapes.Add(b); break;
+                        case Capsule c: sidx = _physicsManager.Simulation.Shapes.Add(c); break;
+                        case Cylinder cy: sidx = _physicsManager.Simulation.Shapes.Add(cy); break;
                     }
                     var pos = e.Has<Position3D>() ? e.GetMut<Position3D>().Value : Vector3Double.Zero;
                     var rot = e.Has<Rotation3D>() ? e.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
                     if (sidx.HasValue)
                     {
                         var sdesc = new StaticDescription(HighPrecisionConversions.ToVector3(pos), sidx.Value) { }; // orientation not in this overload; use position-only static
-                        var sh = _simulation.Statics.Add(sdesc);
+                        var sh = _physicsManager.Simulation.Statics.Add(sdesc);
                         e.Set(new PhysicsStatic { Handle = sh });
                     }
                 }
@@ -1178,7 +1164,7 @@ internal static class Program
                     // Ensure the body is awake and its broadphase bounds reflect the new pose for accurate raycasts
                     // Awake must be set to true otherwise it simply wont work
                     bodyRef.Awake = true;
-                    _simulation.Bodies.UpdateBounds(body.Handle);
+                    _physicsManager.Simulation.Bodies.UpdateBounds(body.Handle);
                 }
                 else
                 {
@@ -1199,7 +1185,7 @@ internal static class Program
             for (int steps = 0; _simulationAccumulator >= _fixedSimulationStepSeconds && steps < _maxSimulationStepsPerFrame; steps++)
             {
                 // Step physics with a fixed, deterministic timestep
-                _simulation.Timestep((float)_fixedSimulationStepSeconds, _threadDispatcher);
+                _physicsManager.Step((float)_fixedSimulationStepSeconds);
 
                 // Advance the ECS world by the same fixed timestep
                 World.Update((float)_fixedSimulationStepSeconds);
@@ -1381,7 +1367,7 @@ internal static class Program
                 {
                     bodyRef.Pose = new RigidPose(pos, rot);
                     bodyRef.Awake = true;
-                    _simulation.Bodies.UpdateBounds(body.Handle);
+                    _physicsManager.Simulation.Bodies.UpdateBounds(body.Handle);
                 }
             }
 
@@ -2018,7 +2004,7 @@ internal static class Program
             {
                 var st = e.GetMut<PhysicsStatic>();
                 var cs = e.GetMut<CollisionShape>();
-                var sref = _simulation.Statics[st.Handle];
+                var sref = _physicsManager.Simulation.Statics[st.Handle];
                 DrawShapeFromEcs(cs.Shape, sref.Pose.Position, sref.Pose.Orientation, new Color(64, 200, 255, 200));
             }
         }
