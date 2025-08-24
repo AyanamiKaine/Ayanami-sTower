@@ -6,7 +6,7 @@ This is probably a simple bindings mistake.
 
 Shader resource bindings must be authored to follow a particular order depending on the shader format.
 
-For SPIR-V shaders, use the following resource sets:
+For SPIR-V shaders (This will be our default target on all platforms!), use the following resource sets:
 
 For vertex shaders:
 

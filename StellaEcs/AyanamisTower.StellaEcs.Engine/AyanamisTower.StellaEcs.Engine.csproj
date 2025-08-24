@@ -23,4 +23,8 @@
     <ProjectReference Include="..\AyanamisTower.StellaEcs.RestAPI\AyanamisTower.StellaEcs.RestAPI.csproj" />
     <ProjectReference Include="..\AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="NOTES\" />
+  </ItemGroup>
 </Project>
