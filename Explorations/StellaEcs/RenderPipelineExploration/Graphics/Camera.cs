@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using AyanamisTower.StellaEcs.HighPrecisionMath;
 
-namespace AyanamisTower.StellaEcs.StellaInvicta;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 
 /// <summary>
@@ -85,7 +85,7 @@ public class Camera
         get => _pitch;
         set
         {
-            _pitch = Math.Clamp(value, -Math.PI / 2f + 0.01f, Math.PI / 2f - 0.01f);
+            _pitch = Math.Clamp(value, (-Math.PI / 2f) + 0.01f, (Math.PI / 2f) - 0.01f);
             UpdateVectors();
         }
     }
@@ -180,7 +180,7 @@ public class Camera
     /// <param name="up">Up/down movement</param>
     public void MoveRelative(double forward, double right, double up)
     {
-        _position += _forward * forward + _right * right + Vector3Double.UnitY * up;
+        _position += (_forward * forward) + (_right * right) + (Vector3Double.UnitY * up);
     }
 
     /// <summary>

@@ -334,7 +334,7 @@ public struct Mesh
         {
             float t = (float)r / rings; // 0 = top, 1 = bottom
             float y = (0.5f - t) * h;
-            float radius = topRadius + rPrime * t;
+            float radius = topRadius + (rPrime * t);
             for (int s = 0; s <= radialSegments; s++)
             {
                 float u = (float)s / radialSegments;
@@ -364,7 +364,7 @@ public struct Mesh
             var n = Vector3.UnitY;
             var color = 0.5f * (n + Vector3.One);
             var uv = topRadius > 0
-                ? new Vector2(0.5f + 0.5f * cos, 0.5f + 0.5f * sin)
+                ? new Vector2(0.5f + (0.5f * cos), 0.5f + (0.5f * sin))
                 : new Vector2(0.5f, 0.5f);
             vertices[vi++] = new Vertex(pos, n, color, uv);
         }
@@ -383,7 +383,7 @@ public struct Mesh
             var n = -Vector3.UnitY;
             var color = 0.5f * (n + Vector3.One);
             var uv = bottomRadius > 0
-                ? new Vector2(0.5f + 0.5f * cos, 0.5f + 0.5f * sin)
+                ? new Vector2(0.5f + (0.5f * cos), 0.5f + (0.5f * sin))
                 : new Vector2(0.5f, 0.5f);
             vertices[vi++] = new Vertex(pos, n, color, uv);
         }
@@ -396,9 +396,9 @@ public struct Mesh
         {
             for (int s = 0; s < radialSegments; s++)
             {
-                int a0 = r * cols + s;
+                int a0 = (r * cols) + s;
                 int a1 = a0 + 1;
-                int b0 = (r + 1) * cols + s;
+                int b0 = ((r + 1) * cols) + s;
                 int b1 = b0 + 1;
 
                 // CCW: (a0, a1, b0), (a1, b1, b0)

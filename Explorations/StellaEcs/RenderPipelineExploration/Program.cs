@@ -147,7 +147,7 @@ public struct Vector3d
     public static implicit operator Vector3d(Vector3 v) => new(v.X, v.Y, v.Z);
 
     /// <summary>Gets the length of the vector.</summary>
-    public double Length() => Math.Sqrt(X * X + Y * Y + Z * Z);
+    public double Length() => Math.Sqrt((X * X) + (Y * Y) + (Z * Z));
     /// <summary>Returns a normalized version of this vector.</summary>
     public Vector3d Normalized() => this / Length();
 
@@ -1496,20 +1496,20 @@ internal static class Program
             {
                 // pick a radius with probability proportional to area (so uniform density across annulus)
                 float u = (float)rng.NextDouble();
-                float r = MathF.Sqrt(u * (outerRadius * outerRadius - innerRadius * innerRadius) + innerRadius * innerRadius);
+                float r = MathF.Sqrt((u * ((outerRadius * outerRadius) - (innerRadius * innerRadius))) + (innerRadius * innerRadius));
                 float angle = (float)(rng.NextDouble() * Math.PI * 2.0);
 
                 // small inclination: tilt by a small angle around random node line
-                float tilt = ((float)rng.NextDouble() * 2f - 1f) * inclRad; // [-inclRad, inclRad]
+                float tilt = (((float)rng.NextDouble() * 2f) - 1f) * inclRad; // [-inclRad, inclRad]
                 // choose random longitude of ascending node
                 float node = (float)(rng.NextDouble() * Math.PI * 2.0);
 
                 // base position in XZ
-                float x = center.X + MathF.Cos(angle) * r;
-                float z = center.Z + MathF.Sin(angle) * r;
+                float x = center.X + (MathF.Cos(angle) * r);
+                float z = center.Z + (MathF.Sin(angle) * r);
                 // apply inclination by rotating point about node axis roughly (approx)
                 // We'll compute small Y displacement using sin(tilt) * r * sin(some offset)
-                float y = center.Y + MathF.Sin(tilt) * r * MathF.Sin(angle - node);
+                float y = center.Y + (MathF.Sin(tilt) * r * MathF.Sin(angle - node));
 
                 var pos = new Vector3(x, y, z);
 
@@ -1562,7 +1562,7 @@ internal static class Program
                 do
                 {
                     // sample a random direction and radius within sphere
-                    var dir = new Vector3((float)(rng.NextDouble() * 2.0 - 1.0), (float)(rng.NextDouble() * 2.0 - 1.0), (float)(rng.NextDouble() * 2.0 - 1.0));
+                    var dir = new Vector3((float)((rng.NextDouble() * 2.0) - 1.0), (float)((rng.NextDouble() * 2.0) - 1.0), (float)((rng.NextDouble() * 2.0) - 1.0));
                     if (dir.LengthSquared() <= 1e-6f) dir = new Vector3(1f, 0f, 0f);
                     dir = Vector3.Normalize(dir);
                     float r = (float)rng.NextDouble() * maxRadius;
@@ -1867,7 +1867,7 @@ internal static class Program
                     {
                         int dx = Inputs.Mouse.X - _lastClickX;
                         int dy = Inputs.Mouse.Y - _lastClickY;
-                        if (dx * dx + dy * dy <= DOUBLE_CLICK_PIXEL_RADIUS * DOUBLE_CLICK_PIXEL_RADIUS)
+                        if ((dx * dx) + (dy * dy) <= DOUBLE_CLICK_PIXEL_RADIUS * DOUBLE_CLICK_PIXEL_RADIUS)
                         {
                             isDoubleClick = true;
                         }

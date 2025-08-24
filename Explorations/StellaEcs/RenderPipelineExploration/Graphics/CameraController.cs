@@ -4,7 +4,7 @@ using AyanamisTower.StellaEcs.HighPrecisionMath;
 using MoonWorks;
 using MoonWorks.Input;
 
-namespace AyanamisTower.StellaEcs.StellaInvicta;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 /// <summary>
 /// FPS-style camera controller with mouse-look and immediate movement (no smoothing).
@@ -97,7 +97,7 @@ public sealed class CameraController
         if (kb.IsDown(KeyCode.LeftControl)) up -= 1f;
 
         // Normalize to avoid faster diagonals
-        double inputMag = Math.Sqrt(forward * forward + right * right + up * up);
+        double inputMag = Math.Sqrt((forward * forward) + (right * right) + (up * up));
         if (inputMag > 1f)
         {
             forward /= inputMag; right /= inputMag; up /= inputMag;
@@ -106,7 +106,7 @@ public sealed class CameraController
         double speed = MaxSpeed * (kb.IsHeld(KeyCode.LeftShift) ? SprintMultiplier : 1.0);
 
         // World-space velocity based on current camera basis
-        Vector3Double worldVel = (_camera.Forward * forward + _camera.Right * right + Vector3Double.UnitY * up) * speed;
+        Vector3Double worldVel = ((_camera.Forward * forward) + (_camera.Right * right) + (Vector3Double.UnitY * up)) * speed;
         if (worldVel != Vector3Double.Zero)
         {
             _camera.Move(worldVel * dt);

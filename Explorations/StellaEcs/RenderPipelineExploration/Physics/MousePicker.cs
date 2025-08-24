@@ -49,8 +49,8 @@ public class MousePicker
     public bool Pick(Mouse mouse, int windowWidth, int windowHeight, out PickResult hitResult)
     {
         // 1) Mouse position to Normalized Device Coordinates [-1,1] for X/Y.
-        float ndcX = (mouse.X / (float)windowWidth) * 2f - 1f;
-        float ndcY = 1f - (mouse.Y / (float)windowHeight) * 2f;
+        float ndcX = ((mouse.X / (float)windowWidth) * 2f) - 1f;
+        float ndcY = 1f - ((mouse.Y / (float)windowHeight) * 2f);
 
         // 2) Near/Far in NDC. Use 0 for near, 1 for far in DX/Vulkan conventions.
         var nearNDC = new Vector4(ndcX, ndcY, 0f, 1f);
@@ -109,7 +109,7 @@ public class MousePicker
         }
         var simRayDirection = Vector3.Normalize(simDir);
         const float EPS = 1e-3f;
-        var simRayOrigin = simNear + simRayDirection * EPS;
+        var simRayOrigin = simNear + (simRayDirection * EPS);
 
         var hitHandler = new ClosestHitHandler();
         _simulation.RayCast(simRayOrigin, simRayDirection, 50000f, ref hitHandler);
@@ -118,7 +118,7 @@ public class MousePicker
         if (hitHandler.HasHit)
         {
             // The hit point is in simulation-relative coordinates.
-            Vector3 hitSimPoint = simRayOrigin + simRayDirection * hitHandler.T;
+            Vector3 hitSimPoint = simRayOrigin + (simRayDirection * hitHandler.T);
 
             // Convert to absolute/world coordinates using the FloatingOriginManager.
             Vector3 hitWorldPoint;
