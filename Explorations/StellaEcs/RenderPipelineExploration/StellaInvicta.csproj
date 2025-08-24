@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\**\*">
+    <Content Include="GameAssets\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 
     </Content>

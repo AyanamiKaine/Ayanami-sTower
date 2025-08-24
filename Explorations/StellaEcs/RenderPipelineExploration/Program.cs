@@ -19,6 +19,7 @@ using BepuPhysics.Collidables;
 using BepuPhysics.Constraints;
 using AyanamisTower.StellaEcs.HighPrecisionMath;
 using Mesh = AyanamisTower.StellaEcs.StellaInvicta.Graphics.Mesh;
+using AyanamisTower.StellaEcs.StellaInvicta.Assets;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -262,7 +263,7 @@ internal static class Program
             var vs = ShaderCross.Create(
                 GraphicsDevice,
                 RootTitleStorage,
-                "Assets/Basic3DObjectRenderer.hlsl",
+                AssetManager.AssetFolderName + "/Basic3DObjectRenderer.hlsl",
                 "VSMain",
                 ShaderCross.ShaderFormat.HLSL,
                 ShaderStage.Vertex,
@@ -275,7 +276,7 @@ internal static class Program
             var fs = ShaderCross.Create(
                 GraphicsDevice,
                 RootTitleStorage,
-                "Assets/Basic3DObjectRenderer.hlsl",
+                AssetManager.AssetFolderName + "/Basic3DObjectRenderer.hlsl",
                 "PSMain",
                 ShaderCross.ShaderFormat.HLSL,
                 ShaderStage.Fragment,
@@ -285,7 +286,7 @@ internal static class Program
             var vsSkyCube = ShaderCross.Create(
                 GraphicsDevice,
                 RootTitleStorage,
-                "Assets/SkyboxCube.hlsl",
+                AssetManager.AssetFolderName + "/SkyboxCube.hlsl",
                 "VSMain",
                 ShaderCross.ShaderFormat.HLSL,
                 ShaderStage.Vertex,
@@ -295,7 +296,7 @@ internal static class Program
             var fsSkyCube = ShaderCross.Create(
                 GraphicsDevice,
                 RootTitleStorage,
-                "Assets/SkyboxCube.hlsl",
+                AssetManager.AssetFolderName + "/SkyboxCube.hlsl",
                 "PSMain",
                 ShaderCross.ShaderFormat.HLSL,
                 ShaderStage.Fragment,
@@ -417,7 +418,7 @@ internal static class Program
             var vsLine = ShaderCross.Create(
                 GraphicsDevice,
                 RootTitleStorage,
-                "Assets/LineColor.hlsl",
+                AssetManager.AssetFolderName + "/LineColor.hlsl",
                 "VSMain",
                 ShaderCross.ShaderFormat.HLSL,
                 ShaderStage.Vertex,
@@ -427,7 +428,7 @@ internal static class Program
             var fsLine = ShaderCross.Create(
                 GraphicsDevice,
                 RootTitleStorage,
-                "Assets/LineColor.hlsl",
+                AssetManager.AssetFolderName + "/LineColor.hlsl",
                 "PSMain",
                 ShaderCross.ShaderFormat.HLSL,
                 ShaderStage.Fragment,
@@ -528,12 +529,15 @@ internal static class Program
             SpawnGalaxies(25);
 
             // Example usage:
-            // SetSkybox("Assets/skybox.jpg", 50f);
+            // SetSkybox("AssetManager.AssetFolderName + "/skybox.jpg", 50f);
             // Or, for cubemap:
             SetSkyboxCube([
-                "Assets/Sky/px.png","Assets/Sky/nx.png",
-                "Assets/Sky/py.png","Assets/Sky/ny.png",
-                "Assets/Sky/pz.png","Assets/Sky/nz.png"
+                AssetManager.AssetFolderName + "/Sky/px.png",
+                AssetManager.AssetFolderName + "/Sky/nx.png",
+                AssetManager.AssetFolderName + "/Sky/py.png",
+                AssetManager.AssetFolderName + "/Sky/ny.png",
+                AssetManager.AssetFolderName + "/Sky/pz.png",
+                AssetManager.AssetFolderName + "/Sky/nz.png"
             ]);
         }
 
@@ -569,7 +573,7 @@ internal static class Program
         /// </summary>
         private void SetSkybox(string path, float scale = 50f)
         {
-            var tex = LoadTextureFromFile(path);
+            var tex = AssetManager.LoadTextureFromFile(this, path);
             if (tex == null)
             {
                 Console.WriteLine($"[SetSkybox] Failed to load skybox texture: {path}");
@@ -590,96 +594,6 @@ internal static class Program
             _skyboxEnabled = true;
         }
 
-        // Normalize to TitleStorage-friendly relative POSIX path
-        private static string NormalizeTitlePath(string path)
-        {
-            var normalized = path.Replace('\\', '/');
-            if (Path.IsPathRooted(normalized))
-            {
-                var baseDir = AppContext.BaseDirectory.Replace('\\', '/');
-                if (normalized.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
-                {
-                    normalized = normalized.Substring(baseDir.Length);
-                }
-                else
-                {
-                    // Leave as-is; TitleStorage calls will fail and log
-                }
-            }
-            return normalized.TrimStart('/');
-        }
-
-        /// <summary>
-        /// Creates a cubemap texture from six images. Expected order: +X, -X, +Y, -Y, +Z, -Z.
-        /// All images must be square and same size. Returns null on failure.
-        /// </summary>
-        private Texture? CreateCubemapFromSixFiles(string posX, string negX, string posY, string negY, string posZ, string negZ)
-        {
-            string[] input =
-            [
-                NormalizeTitlePath(posX),
-                NormalizeTitlePath(negX),
-                NormalizeTitlePath(posY),
-                NormalizeTitlePath(negY),
-                NormalizeTitlePath(posZ),
-                NormalizeTitlePath(negZ)
-            ];
-
-            // Validate existence and gather dimensions
-            uint size = 0;
-            for (int i = 0; i < 6; i++)
-            {
-                if (!RootTitleStorage.GetFileSize(input[i], out _))
-                {
-                    Console.WriteLine($"[CreateCubemap] Missing file: {input[i]}");
-                    return null;
-                }
-                if (!MoonWorks.Graphics.ImageUtils.ImageInfoFromFile(RootTitleStorage, input[i], out var w, out var h, out _))
-                {
-                    Console.WriteLine($"[CreateCubemap] Unsupported or corrupt image: {input[i]}");
-                    return null;
-                }
-                if (w != h)
-                {
-                    Console.WriteLine($"[CreateCubemap] Image is not square: {input[i]} ({w}x{h})");
-                    return null;
-                }
-                if (i == 0) { size = w; }
-                else if (w != size || h != size)
-                {
-                    Console.WriteLine($"[CreateCubemap] Image size mismatch: {input[i]} ({w}x{h}) expected {size}x{size}");
-                    return null;
-                }
-            }
-
-            using var uploader = new ResourceUploader(GraphicsDevice);
-            var cube = Texture.CreateCube(GraphicsDevice, "Cubemap", size, TextureFormat.R8G8B8A8Unorm, TextureUsageFlags.Sampler, levelCount: 1);
-            if (cube == null)
-            {
-                Console.WriteLine("[CreateCubemap] Failed to create cube texture");
-                return null;
-            }
-
-            for (int face = 0; face < 6; face++)
-            {
-                var region = new TextureRegion
-                {
-                    Texture = cube.Handle,
-                    Layer = (uint)face,
-                    MipLevel = 0,
-                    X = 0,
-                    Y = 0,
-                    Z = 0,
-                    W = size,
-                    H = size,
-                    D = 1
-                };
-                uploader.SetTextureDataFromCompressed(RootTitleStorage, input[face], region);
-            }
-
-            uploader.UploadAndWait();
-            return cube;
-        }
 
         /// <summary>
         /// Sets a cubemap skybox using 6 face file paths in the order:
@@ -694,7 +608,7 @@ internal static class Program
                 return;
             }
 
-            var cubeTex = CreateCubemapFromSixFiles(facePaths[0], facePaths[1], facePaths[2], facePaths[3], facePaths[4], facePaths[5]);
+            var cubeTex = AssetManager.CreateCubemapFromSixFiles(this, facePaths[0], facePaths[1], facePaths[2], facePaths[3], facePaths[4], facePaths[5]);
             if (cubeTex == null)
             {
                 Console.WriteLine("[SetSkyboxCube] Failed to create cubemap");
@@ -1229,140 +1143,6 @@ internal static class Program
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// Loads an image file (PNG, JPG, BMP, etc.) or a DDS file and uploads it as a GPU texture.
-        /// For standard image formats, data is decoded to RGBA8 and uploaded as a 2D texture.
-        /// For DDS, existing mip levels and cube faces are preserved.
-        /// Returns null if the file could not be read or decoded.
-        /// </summary>
-        private Texture? LoadTextureFromFile(string path)
-        {
-            // Normalize to TitleStorage-friendly relative POSIX path
-            var normalized = NormalizeTitlePath(path);
-
-            // Quick existence + file size check
-            if (!RootTitleStorage.GetFileSize(normalized, out var fileSize))
-            {
-                Console.WriteLine($"[LoadTextureFromFile] File not found in TitleStorage: {normalized}");
-                return null;
-            }
-
-            // Choose loader by file extension
-            var ext = Path.GetExtension(normalized).ToLowerInvariant();
-
-            using var uploader = new ResourceUploader(GraphicsDevice);
-            Texture? texture = null;
-            var name = Path.GetFileNameWithoutExtension(normalized);
-
-            // Try to obtain basic image info (width/height). If this fails, prefer the explicit StbImageSharp fallback
-            bool haveImageInfo = false;
-            int imgW = 0, imgH = 0;
-            if (MoonWorks.Graphics.ImageUtils.ImageInfoFromFile(RootTitleStorage, normalized, out var w, out var h, out _))
-            {
-                imgW = (int)w;
-                imgH = (int)h;
-                haveImageInfo = true;
-                if (imgW < 1 || imgH < 1)
-                {
-                    Console.WriteLine($"[LoadTextureFromFile] Image has invalid dimensions ({imgW}x{imgH}): {normalized}");
-                    return null;
-                }
-            }
-
-            if (ext == ".dds")
-            {
-                texture = uploader.CreateTextureFromDDS(name, RootTitleStorage, normalized);
-                if (texture == null)
-                {
-                    Console.WriteLine($"[LoadTextureFromFile] CreateTextureFromDDS failed for: {normalized}");
-                    return null;
-                }
-            }
-            else
-            {
-                // Only attempt the compressed-path uploader if we successfully read image dimensions.
-                // Some backends may create an invalid/zero-sized texture if fed an unknown container.
-                if (haveImageInfo)
-                {
-                    texture = uploader.CreateTexture2DFromCompressed(
-                        name,
-                        RootTitleStorage,
-                        normalized,
-                        TextureFormat.R8G8B8A8Unorm,
-                        TextureUsageFlags.Sampler
-                    );
-
-                    if (texture == null)
-                    {
-                        Console.WriteLine($"[LoadTextureFromFile] CreateTexture2DFromCompressed returned null for: {normalized}, falling back to software decode");
-                    }
-                    else
-                    {
-                        // We trust ImageInfoFromFile here; assume texture dimensions match. If you still see assertions,
-                        // we'll fall back below when texture is null.
-                    }
-                }
-
-                if (texture == null)
-                {
-                    // Fallback: try StbImageSharp to decode common formats (JPEG/PNG/etc.)
-                    try
-                    {
-                        if (fileSize == 0)
-                        {
-                            Console.WriteLine($"[LoadTextureFromFile] Fallback: file is empty: {normalized}");
-                            return null;
-                        }
-
-                        var bytes = new byte[fileSize];
-                        if (!RootTitleStorage.ReadFile(normalized, bytes))
-                        {
-                            Console.WriteLine($"[LoadTextureFromFile] Fallback: failed to read file: {normalized}");
-                            return null;
-                        }
-
-                        // Decode to RGBA using StbImageSharp
-                        var img = StbImageSharp.ImageResult.FromMemory(bytes, StbImageSharp.ColorComponents.RedGreenBlueAlpha);
-                        if (img == null || img.Data == null || img.Width <= 0 || img.Height <= 0)
-                        {
-                            Console.WriteLine($"[LoadTextureFromFile] Fallback: decode failed or invalid dimensions for: {normalized}");
-                            return null;
-                        }
-
-                        texture = uploader.CreateTexture2D<byte>(
-                            name,
-                            img.Data,
-                            TextureFormat.R8G8B8A8Unorm,
-                            TextureUsageFlags.Sampler,
-                            (uint)img.Width,
-                            (uint)img.Height
-                        );
-
-                        if (texture == null)
-                        {
-                            Console.WriteLine($"[LoadTextureFromFile] Fallback: texture creation failed for: {normalized}");
-                            return null;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[LoadTextureFromFile] Fallback exception for {normalized}: {ex.Message}");
-                        return null;
-                    }
-                }
-            }
-
-            // Final defensive validation
-            if (texture == null)
-            {
-                Console.WriteLine($"[LoadTextureFromFile] Failed to create texture for: {normalized}");
-                return null;
-            }
-
-            uploader.UploadAndWait();
-            return texture;
         }
 
 
