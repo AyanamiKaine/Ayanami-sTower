@@ -10,6 +10,7 @@ using MoonWorks.Input;
 using MoonWorks.Storage;
 using AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 using AyanamisTower.StellaEcs.StellaInvicta.Physics;
+using AyanamisTower.StellaEcs.StellaInvicta.Components;
 using BepuPhysics;
 using BepuUtilities.Memory;
 using BepuUtilities;
@@ -21,366 +22,6 @@ using Mesh = AyanamisTower.StellaEcs.StellaInvicta.Graphics.Mesh;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
-/// <summary>
-/// Represents a celestial body in the game world.
-/// </summary>
-public struct CelestialBody { };
-
-/// <summary>
-/// Tag component to mark an entity as a kinematic body in the physics world.
-/// </summary>
-public struct Kinematic { };
-
-/// <summary>
-/// Stores a Bepu body handle for entities that have a physics body.
-/// </summary>
-public struct PhysicsBody
-{
-    /// <summary>
-    /// Handle to the kinematic/dynamic body in the Bepu simulation.
-    /// </summary>
-    public BodyHandle Handle;
-}
-
-/// <summary>
-/// Stores a Bepu static handle for entities that use static colliders.
-/// </summary>
-public struct PhysicsStatic
-{
-    /// <summary>
-    /// Handle to the static object in the Bepu simulation.
-    /// </summary>
-    public StaticHandle Handle;
-}
-
-/// <summary>
-/// Component that requests an orbit circle be drawn around a parent entity.
-/// The circle is drawn in the XZ plane at the parent's position with the given radius.
-/// </summary>
-public struct OrbitCircle
-{
-    /// <summary>
-    /// The parent entity around which the orbit circle is drawn.
-    /// </summary>
-    public Entity Parent;
-    /// <summary>
-    /// Radius of the orbit circle.
-    /// </summary>
-    public double Radius;
-    /// <summary>
-    /// Color of the orbit circle.
-    /// </summary>
-    public Color Color;
-    /// <summary>
-    /// Number of segments used to draw the orbit circle.
-    /// </summary>
-    public int Segments;
-    /// <summary>
-    /// Creates a new OrbitCircle component.
-    /// </summary>
-    /// <param name="parent"></param>
-    /// <param name="radius"></param>
-    /// <param name="color"></param>
-    /// <param name="segments"></param>
-    public OrbitCircle(Entity parent, double radius, Color color, int segments = 64)
-    {
-        Parent = parent;
-        Radius = radius;
-        Color = color;
-        Segments = Math.Max(4, segments);
-    }
-
-    /// <summary>
-    /// Creates a new OrbitCircle component.
-    /// </summary>
-    /// <param name="parent"></param>
-    /// <param name="radius"></param>
-    /// <param name="color"></param>
-    /// <param name="segments"></param>
-    public OrbitCircle(Entity parent, float radius, Color color, int segments = 64)
-    {
-        Parent = parent;
-        Radius = radius;
-        Color = color;
-        Segments = Math.Max(4, segments);
-    }
-}
-
-/// <summary>
-/// Tag component to request drawing local XYZ axes at an entity's world center for debugging.
-/// </summary>
-public struct DebugAxes { }
-
-
-/// <summary>
-/// A Vector3 using double precision for large coordinate values.
-/// </summary>
-public struct Vector3d
-{
-    /// <summary>X coordinate</summary>
-    public double X;
-    /// <summary>Y coordinate</summary>
-    public double Y;
-    /// <summary>Z coordinate</summary>
-    public double Z;
-
-    /// <summary>
-    /// Creates a new Vector3d with the specified coordinates.
-    /// </summary>
-    public Vector3d(double x, double y, double z)
-    {
-        X = x; Y = y; Z = z;
-    }
-
-    /// <summary>Adds two Vector3d instances.</summary>
-    public static Vector3d operator +(Vector3d a, Vector3d b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
-    /// <summary>Subtracts two Vector3d instances.</summary>
-    public static Vector3d operator -(Vector3d a, Vector3d b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
-    /// <summary>Multiplies a Vector3d by a scalar.</summary>
-    public static Vector3d operator *(Vector3d a, double scalar) => new(a.X * scalar, a.Y * scalar, a.Z * scalar);
-    /// <summary>Divides a Vector3d by a scalar.</summary>
-    public static Vector3d operator /(Vector3d a, double scalar) => new(a.X / scalar, a.Y / scalar, a.Z / scalar);
-
-    /// <summary>Implicitly converts Vector3d to Vector3 (with precision loss).</summary>
-    public static implicit operator Vector3(Vector3d v) => new((float)v.X, (float)v.Y, (float)v.Z);
-    /// <summary>Implicitly converts Vector3 to Vector3d.</summary>
-    public static implicit operator Vector3d(Vector3 v) => new(v.X, v.Y, v.Z);
-
-    /// <summary>Gets the length of the vector.</summary>
-    public double Length() => Math.Sqrt((X * X) + (Y * Y) + (Z * Z));
-    /// <summary>Returns a normalized version of this vector.</summary>
-    public Vector3d Normalized() => this / Length();
-
-    /// <summary>Zero vector constant.</summary>
-    public static readonly Vector3d Zero = new(0, 0, 0);
-
-    /// <summary>String representation of the vector.</summary>
-    public override string ToString() => $"({X:F2}, {Y:F2}, {Z:F2})";
-}
-
-/// <summary>
-/// Manages the floating origin system to prevent floating point precision issues.
-/// Periodically rebases all world coordinates by subtracting a large offset.
-/// </summary>
-public class FloatingOriginManager
-{
-    private Vector3Double _currentOrigin = Vector3Double.Zero;
-    private readonly double _rebaseThreshold;
-    private readonly World _world;
-    private readonly Simulation _simulation;
-
-    /// <summary>The current floating origin offset in world coordinates.</summary>
-    public Vector3Double CurrentOrigin => _currentOrigin;
-    /// <summary>True if a rebase operation is currently in progress.</summary>
-    public bool IsRebasing { get; private set; }
-
-    // Grid size used to snap rebase offsets. Snapping to integer values (1.0)
-    // removes small fractional offsets that otherwise cause repeated tiny
-    // float conversions and visible jitter when converting to single-precision.
-    private readonly double _snapGridSize;
-
-    /// <summary>
-    /// Creates a new FloatingOriginManager.
-    /// </summary>
-    /// <param name="world">The ECS world instance.</param>
-    /// <param name="simulation">The BepuPhysics simulation instance.</param>
-    /// <param name="rebaseThreshold">Distance threshold that triggers a rebase.</param>
-    /// <param name="snapGridSize">Grid size to snap rebase offsets to (default 1.0).
-    /// Larger values cause coarser, less frequent fractional moves but keep numbers smaller.</param>
-    public FloatingOriginManager(World world, Simulation simulation, double rebaseThreshold = 200.0, double snapGridSize = 1.0)
-    {
-        _world = world;
-        _simulation = simulation;
-        _rebaseThreshold = rebaseThreshold;
-        _snapGridSize = Math.Max(1e-9, snapGridSize);
-    }
-
-    /// <summary>
-    /// Forces a rebase by a specific offset in world coordinates.
-    /// Callers should also subtract the same offset from the camera position to keep
-    /// the camera near the origin.
-    /// The offset will be snapped to the configured grid to avoid fractional offsets.
-    /// </summary>
-    public void ForceRebase(Vector3 offset)
-    {
-        var d = new Vector3Double(offset.X, offset.Y, offset.Z);
-        var snapped = SnapToGrid(d);
-        PerformRebase(snapped);
-    }
-
-    /// <summary>
-    /// Checks if a rebase is needed based on the camera position and performs it if necessary.
-    /// </summary>
-    public bool Update(Vector3Double cameraPosition, out Vector3Double rebaseOffset)
-    {
-        var cameraDistance = new Vector3Double(cameraPosition.X, cameraPosition.Y, cameraPosition.Z).Length();
-
-        if (cameraDistance > _rebaseThreshold)
-        {
-            rebaseOffset = SnapToGrid(cameraPosition);
-            PerformRebase(rebaseOffset);
-            return true;
-        }
-
-        rebaseOffset = default;
-        return false;
-    }
-
-    /// <summary>
-    /// Performs a floating origin rebase by shifting all entities and physics objects.
-    /// </summary>
-    private void PerformRebase(Vector3Double offset)
-    {
-        IsRebasing = true;
-
-        _currentOrigin += offset;
-
-        // Shift all Position3D values (which use double precision) by -offset.
-        // This is the source of truth for the new positions.
-        foreach (var entity in _world.Query(typeof(Position3D)))
-        {
-            var pos = entity.GetMut<Position3D>();
-            var newPosD = pos.Value - offset;
-            entity.Set(new Position3D(newPosD.X, newPosD.Y, newPosD.Z));
-        }
-
-        // Rebase physics objects to sync them with the new ECS positions.
-        //RebasePhysicsObjects();
-
-        IsRebasing = false;
-    }
-
-    /// <summary>
-    /// Rebases physics objects to keep them in sync with their ECS components after a world rebase.
-    /// </summary>
-    private void RebasePhysicsObjects()
-    {
-        // KINEMATIC/DYNAMIC BODIES ARE NO LONGER REBASED HERE.
-        // The main game update loop has a system that syncs the PhysicsBody's pose
-        // from the entity's Position3D component every frame.
-        // Since PerformRebase already shifted all Position3D components, that
-        // sync system will automatically handle the rebasing of kinematic bodies
-        // on the next frame, using the high-precision, correctly shifted coordinates.
-        // This avoids redundant, low-precision rebasing and potential race conditions.
-
-        // STATIC OBJECTS MUST BE MANUALLY REBASED.
-        // Statics are not typically updated every frame, so we must explicitly
-        // move them. We do this by reading the entity's Position3D component,
-        // which was already shifted in PerformRebase, ensuring we use the correct
-        // high-precision new position.
-        foreach (var entity in _world.Query(typeof(PhysicsStatic), typeof(Position3D)))
-        {
-            var physicsStatic = entity.GetMut<PhysicsStatic>();
-
-            if (TryGetStaticReference(physicsStatic.Handle, out var staticRef))
-            {
-                // Get the Position3D component, which has already been rebased with double precision.
-                var rebasedPosition = entity.GetCopy<Position3D>().Value;
-                var newPositionVec3 = HighPrecisionConversions.ToVector3(rebasedPosition);
-
-                // For static objects, we need to remove and re-add them with the new position.
-                var shapeIndex = staticRef.Shape;
-                _simulation.Statics.Remove(physicsStatic.Handle);
-
-                // Note: Bepu's StaticDescription does not store orientation for this constructor.
-                // If orientation is needed, the entity should also have a Rotation3D.
-                var newDesc = new StaticDescription(newPositionVec3, shapeIndex);
-                var newHandle = _simulation.Statics.Add(newDesc);
-                entity.Set(new PhysicsStatic { Handle = newHandle });
-            }
-        }
-    }
-
-    /// <summary>
-    /// Snaps a double-precision position to the configured grid size.
-    /// </summary>
-    private Vector3Double SnapToGrid(Vector3Double v)
-    {
-        if (_snapGridSize <= 0.0) return v;
-        double inv = 1.0 / _snapGridSize;
-        return new Vector3Double(
-            Math.Round(v.X * inv) / inv,
-            Math.Round(v.Y * inv) / inv,
-            Math.Round(v.Z * inv) / inv);
-    }
-
-    /// <summary>
-    /// Converts an absolute position to a relative position from the current origin.
-    /// </summary>
-    public Vector3 ToRelativePosition(Vector3Double absolutePosition)
-    {
-        return (Vector3)(absolutePosition - _currentOrigin);
-    }
-
-    /// <summary>
-    /// Converts a relative position to an absolute position.
-    /// </summary>
-    public Vector3Double ToAbsolutePosition(Vector3 relativePosition)
-    {
-        return _currentOrigin + new Vector3Double(relativePosition.X, relativePosition.Y, relativePosition.Z);
-    }
-
-    private bool TryGetBodyReference(BodyHandle handle, out BodyReference bodyRef)
-    {
-        try
-        {
-            bodyRef = _simulation.Bodies.GetBodyReference(handle);
-            return true;
-        }
-        catch
-        {
-            bodyRef = default;
-            return false;
-        }
-    }
-
-    private bool TryGetStaticReference(StaticHandle handle, out StaticReference staticRef)
-    {
-        try
-        {
-            staticRef = _simulation.Statics[handle];
-            return true;
-        }
-        catch
-        {
-            staticRef = default;
-            return false;
-        }
-    }
-}
-
-#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
-{
-    public void Initialize(Simulation simulation) { }
-    public bool AllowContactGeneration(int workerIndex, CollidableReference a, CollidableReference b, ref float speculativeMargin) => true;
-    public bool AllowContactGeneration(int workerIndex, CollidablePair pair, int childIndexA, int childIndexB) => true;
-    public bool ConfigureContactManifold<TManifold>(int workerIndex, CollidablePair pair, ref TManifold manifold, out PairMaterialProperties material) where TManifold : unmanaged, IContactManifold<TManifold>
-    {
-        material = new PairMaterialProperties { FrictionCoefficient = 1f, MaximumRecoveryVelocity = 2f, SpringSettings = new SpringSettings(30, 1) };
-        return true;
-    }
-    public bool ConfigureContactManifold(int workerIndex, CollidablePair pair, int childIndexA, int childIndexB, ref ConvexContactManifold manifold) => true;
-    public void Dispose() { }
-}
-
-public struct PoseIntegratorCallbacks : IPoseIntegratorCallbacks
-{
-    public Vector3 Gravity;
-    public PoseIntegratorCallbacks(Vector3 gravity) : this() { Gravity = gravity; }
-    public AngularIntegrationMode AngularIntegrationMode => AngularIntegrationMode.Nonconserving;
-    public bool AllowSubstepsForUnconstrainedBodies => false;
-    public bool IntegrateVelocityForKinematics => false;
-    public void Initialize(Simulation simulation) { }
-    public void PrepareForIntegration(float dt) { }
-    public void IntegrateVelocity(Vector<int> bodyIndices, Vector3Wide position, QuaternionWide orientation, BodyInertiaWide localInertia, Vector<int> integrationMask, int workerIndex, Vector<float> dt, ref BodyVelocityWide velocity)
-    {
-        // Broadcast scalar gravity to a wide vector and scale by the per-lane timestep.
-        Vector3Wide.Broadcast(Gravity, out var gravityWide);
-        Vector3Wide.Scale(gravityWide, dt, out var gravityDt);
-        velocity.Linear += gravityDt;
-    }
-}
 
 internal static class Program
 {
@@ -410,7 +51,6 @@ internal static class Program
         private double _simulationAccumulator = 0.0;
         private const double _fixedSimulationStepSeconds = 1.0 / 60.0; // 60 Hz deterministic step
         private const int _maxSimulationStepsPerFrame = 16; // safety clamp to avoid spiral-of-death
-        private Entity? SunEntity;
         /// <summary>
         /// Represents the current game world.
         /// </summary>
@@ -883,7 +523,7 @@ internal static class Program
             });
 
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
-            SunEntity = CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
+            CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
             SpawnGalaxies(25);
 
@@ -1417,8 +1057,9 @@ internal static class Program
         /// <param name="maxSize">Maximum asteroid uniform scale.</param>
         /// <param name="seed">Random seed for reproducible fields.</param>
         /// <param name="addStaticCollider">If true, adds a static sphere collider for each asteroid.</param>
+        /// <param name="parent">The parent entity to attach the asteroids to.</param>
         /// <param name="planeThickness">Thickness of the asteroid field plane.</param>
-        private void SpawnAsteroidField(Vector3 center, int count = 200, float fieldRadius = 100f, float minSize = 0.2f, float maxSize = 2.0f, float planeThickness = 0.5f, int seed = 424242, bool addStaticCollider = false)
+        private void SpawnAsteroidField(Vector3 center, Entity parent, int count = 200, float fieldRadius = 100f, float minSize = 0.2f, float maxSize = 2.0f, float planeThickness = 0.5f, int seed = 424242, bool addStaticCollider = false)
         {
             if (count <= 0) return;
             var rng = new Random(seed);
@@ -1447,7 +1088,7 @@ internal static class Program
                     .Set(new CelestialBody())
                     .Set(sharedSphere)
                     .Set(new Kinematic())
-                    .Set(new Parent((Entity)SunEntity!))
+                    .Set(new Parent(parent))
                     .Set(new Position3D(pos.X, pos.Y, pos.Z))
                     .Set(new Size3D(s))
                     .Set(new CollisionShape(new Sphere(s)))
