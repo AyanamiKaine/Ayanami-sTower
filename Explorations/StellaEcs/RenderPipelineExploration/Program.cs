@@ -970,7 +970,7 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
-            pluto.Set(new OrbitCircle(sun, 39.48f * auScale, new Color(200, 180, 200, 96), segments: 6400));
+            pluto.Set(new OrbitCircle(sun, 39.48f * auScale, new Color(200, 180, 200, 96), segments: 160));
 
             // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
             SpawnAsteroidBelt(origin,
