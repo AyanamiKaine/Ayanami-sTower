@@ -1,5 +1,3 @@
-using System;
-using System.Numerics;
 using AyanamisTower.StellaEcs.HighPrecisionMath;
 using MoonWorks;
 using MoonWorks.Input;

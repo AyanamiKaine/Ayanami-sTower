@@ -1,5 +1,3 @@
-using System;
-using AyanamisTower.StellaEcs.StellaInvicta;
 using BepuPhysics.Collidables;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta.Physics;

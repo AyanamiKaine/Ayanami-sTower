@@ -1,4 +1,3 @@
-using System;
 using MoonWorks.Graphics;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta.Components;

@@ -1,4 +1,3 @@
-using System;
 using System.Numerics;
 using AyanamisTower.StellaEcs.Components;
 using AyanamisTower.StellaEcs.HighPrecisionMath;

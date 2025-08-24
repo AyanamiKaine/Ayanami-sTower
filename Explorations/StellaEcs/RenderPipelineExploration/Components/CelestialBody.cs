@@ -1,4 +1,3 @@
-using System;
 namespace AyanamisTower.StellaEcs.StellaInvicta.Components;
 
 /// <summary>

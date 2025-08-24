@@ -1,4 +1,3 @@
-using System;
 using BepuPhysics;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta.Components;

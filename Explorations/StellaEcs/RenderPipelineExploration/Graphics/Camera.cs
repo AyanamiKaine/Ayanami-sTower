@@ -1,5 +1,3 @@
-using System;
-using System.Numerics;
 using AyanamisTower.StellaEcs.HighPrecisionMath;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;

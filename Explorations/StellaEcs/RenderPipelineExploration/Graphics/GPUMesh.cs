@@ -1,4 +1,3 @@
-using System;
 using MoonWorks.Graphics;
 using Buffer = MoonWorks.Graphics.Buffer;
 

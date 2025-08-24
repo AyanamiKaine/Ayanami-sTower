@@ -1,4 +1,3 @@
-using System;
 using MoonWorks;
 using MoonWorks.Graphics;
 
