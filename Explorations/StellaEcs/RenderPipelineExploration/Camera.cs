@@ -122,7 +122,7 @@ public class Camera
     /// <returns></returns>
     public Matrix4x4Double GetViewMatrix()
     {
-        return Matrix4x4.CreateLookAt(Position, Target, Up);
+        return Matrix4x4Double.CreateLookAt(Position, Target, Up);
     }
 
     /// <summary>
