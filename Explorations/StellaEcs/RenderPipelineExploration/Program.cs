@@ -387,6 +387,60 @@ internal static class Program
             {
                 ImGui.Text($"Camera Position: {_camera.Position.X:F2}, {_camera.Position.Y:F2}, {_camera.Position.Z:F2}");
             }
+            // Camera tuning controls
+            if (_cameraController != null && ImGui.CollapsingHeader("Camera"))
+            {
+                // Pan speed
+                float pan = (float)_cameraController.PanSpeed;
+                if (ImGui.SliderFloat("Pan Speed", ref pan, 0f, 200f)) _cameraController.PanSpeed = pan;
+
+                // Edge pan
+                bool edge = _cameraController.EdgePanEnabled;
+                if (ImGui.Checkbox("Edge Pan", ref edge)) _cameraController.EdgePanEnabled = edge;
+                int edgeThreshold = _cameraController.EdgePanThreshold;
+                if (ImGui.SliderInt("Edge Threshold", ref edgeThreshold, 0, 200)) _cameraController.EdgePanThreshold = edgeThreshold;
+                float edgeSpeed = (float)_cameraController.EdgePanSpeed;
+                if (ImGui.SliderFloat("Edge Pan Speed", ref edgeSpeed, 0f, 200f)) _cameraController.EdgePanSpeed = edgeSpeed;
+
+                // Rotation
+                float rotate = (float)_cameraController.RotateSensitivity;
+                if (ImGui.SliderFloat("Rotate Sensitivity", ref rotate, 0.0001f, 0.1f)) _cameraController.RotateSensitivity = rotate;
+                bool smoothRot = _cameraController.SmoothRotation;
+                if (ImGui.Checkbox("Smooth Rotation", ref smoothRot)) _cameraController.SmoothRotation = smoothRot;
+                float rotSmooth = (float)_cameraController.RotationSmoothing;
+                if (ImGui.SliderFloat("Rotation Smoothing", ref rotSmooth, 0f, 120f)) _cameraController.RotationSmoothing = rotSmooth;
+
+                // Zoom
+                float zoom = (float)_cameraController.ZoomSpeed;
+                if (ImGui.SliderFloat("Zoom Speed", ref zoom, 0f, 1000f)) _cameraController.ZoomSpeed = zoom;
+                float scrollMul = (float)_cameraController.ScrollZoomMultiplier;
+                if (ImGui.SliderFloat("Scroll Multiplier", ref scrollMul, 0f, 10f)) _cameraController.ScrollZoomMultiplier = scrollMul;
+                float maxScroll = (float)_cameraController.MaxScrollZoomStep;
+                if (ImGui.SliderFloat("Max Scroll Step", ref maxScroll, 0f, 10000f)) _cameraController.MaxScrollZoomStep = maxScroll;
+
+                // Smoothing
+                float smoothing = (float)_cameraController.Smoothing;
+                if (ImGui.SliderFloat("Camera Smoothing", ref smoothing, 0f, 60f)) _cameraController.Smoothing = smoothing;
+
+                // Distance limits
+                float minDist = (float)_cameraController.MinDistance;
+                float maxDist = (float)_cameraController.MaxDistance;
+                if (ImGui.InputFloat("Min Distance", ref minDist, 0f, 0f, "F2")) _cameraController.MinDistance = Math.Max(0.001, minDist);
+                if (ImGui.InputFloat("Max Distance", ref maxDist, 0f, 0f, "F2")) _cameraController.MaxDistance = Math.Max(_cameraController.MinDistance, maxDist);
+
+                // Pan distance exponent
+                float panExp = (float)_cameraController.PanDistanceScaleExponent;
+                if (ImGui.SliderFloat("Pan Distance Exponent", ref panExp, 0f, 2f)) _cameraController.PanDistanceScaleExponent = panExp;
+
+                // Follow smoothing params
+                float followInit = _cameraController.InitialFollowSmoothingSeconds;
+                if (ImGui.SliderFloat("Follow Initial Smoothing", ref followInit, 0f, 3f)) _cameraController.InitialFollowSmoothingSeconds = followInit;
+                float followTrack = _cameraController.FollowTrackingSmoothingRate;
+                if (ImGui.SliderFloat("Follow Tracking Rate", ref followTrack, 0f, 240f)) _cameraController.FollowTrackingSmoothingRate = followTrack;
+
+                if (ImGui.Button("Snap Rotation To Target")) _cameraController.SnapRotationToTarget(); ImGui.SameLine();
+                if (ImGui.Button("Snap Rotation To Camera")) _cameraController.SnapRotationToCamera();
+            }
             // Mouse position from the input system
             try
             {
@@ -1295,7 +1349,7 @@ internal static class Program
             // Classic main-belt style asteroid belt between Mars and Jupiter (~2.2 - 3.2 AU)
             SpawnAsteroidBelt(origin,
                 parent: sun,
-                count: 5,
+                count: 20,
                 innerRadius: 2.2f * auScale,
                 outerRadius: 3.2f * auScale,
                 minSize: 0.02f,
