@@ -1209,6 +1209,16 @@ internal static class Program
                 Console.WriteLine($"[Mouse] Entered Sun entity {e.Id}");
             });
 
+            sun.OnMouseExit(_mouseInteraction, (Entity e) =>
+              {
+                  Console.WriteLine($"[Mouse] Exited Sun entity {e.Id}");
+              });
+
+            sun.OnClick(_mouseInteraction, (Entity e) =>
+              {
+                  Console.WriteLine($"[Mouse] Clicked Sun entity {e.Id}");
+              });
+
             // Mercury: 0.39 AU from the Sun.
             var mercury = World.CreateEntity()
                 .Set(new CelestialBody())
