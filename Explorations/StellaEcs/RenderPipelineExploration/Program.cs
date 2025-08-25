@@ -231,6 +231,118 @@ internal static class Program
             return Vector3Double.Zero;
         }
 
+        // Render arbitrary objects into ImGui in a readable, expandable form.
+        // Handles primitives, enums, strings, IEnumerable (lists/arrays), and nested objects via reflection.
+        private void RenderObjectForImGui(object? obj, int depth = 0)
+        {
+            const int MAX_DEPTH = 5;
+            if (obj == null)
+            {
+                ImGui.Text("(null)");
+                return;
+            }
+            if (depth > MAX_DEPTH)
+            {
+                ImGui.Text("(max depth)");
+                return;
+            }
+
+            var type = obj.GetType();
+
+            // Simple scalars and enums
+            if (type.IsPrimitive || obj is string || obj is decimal || type.IsEnum)
+            {
+                ImGui.Text(obj.ToString() ?? "(null)");
+                return;
+            }
+
+            // IEnumerable (but not string)
+            if (obj is System.Collections.IEnumerable enumerable && !(obj is string))
+            {
+                if (ImGui.TreeNode($"{type.Name}"))
+                {
+                    int i = 0;
+                    foreach (var item in enumerable)
+                    {
+                        ImGui.PushID(i);
+                        RenderObjectForImGui(item, depth + 1);
+                        ImGui.PopID();
+                        i++;
+                    }
+                    ImGui.TreePop();
+                }
+                return;
+            }
+
+            // Complex object: show properties and fields
+            if (ImGui.TreeNode(type.Name))
+            {
+                // Properties
+                var props = type.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                foreach (var p in props)
+                {
+                    try
+                    {
+                        // Skip indexers
+                        if (p.GetIndexParameters().Length != 0) continue;
+                        object? val = null;
+                        try { val = p.GetValue(obj); } catch { val = "(ex)"; }
+                        ImGui.PushID(p.Name);
+                        if (val == null)
+                        {
+                            ImGui.Text($"{p.Name}: (null)");
+                        }
+                        else if (p.PropertyType.IsPrimitive || val is string || val is decimal || p.PropertyType.IsEnum)
+                        {
+                            ImGui.Text($"{p.Name}: {val}");
+                        }
+                        else
+                        {
+                            if (ImGui.TreeNode(p.Name))
+                            {
+                                RenderObjectForImGui(val, depth + 1);
+                                ImGui.TreePop();
+                            }
+                        }
+                        ImGui.PopID();
+                    }
+                    catch { /* ignore property reflection issues */ }
+                }
+
+                // Fields
+                var fields = type.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                foreach (var f in fields)
+                {
+                    try
+                    {
+                        object? val = null;
+                        try { val = f.GetValue(obj); } catch { val = "(ex)"; }
+                        ImGui.PushID(f.Name);
+                        if (val == null)
+                        {
+                            ImGui.Text($"{f.Name}: (null)");
+                        }
+                        else if (f.FieldType.IsPrimitive || val is string || val is decimal || f.FieldType.IsEnum)
+                        {
+                            ImGui.Text($"{f.Name}: {val}");
+                        }
+                        else
+                        {
+                            if (ImGui.TreeNode(f.Name))
+                            {
+                                RenderObjectForImGui(val, depth + 1);
+                                ImGui.TreePop();
+                            }
+                        }
+                        ImGui.PopID();
+                    }
+                    catch { /* ignore field reflection issues */ }
+                }
+
+                ImGui.TreePop();
+            }
+        }
+
         /// <summary>
         /// Draws RGB axes (X=red, Y=green, Z=blue) centered at the given world position.
         /// </summary>
@@ -366,8 +478,8 @@ internal static class Program
                     {
                         if (data != null)
                         {
-                            // Show simple string representation. For complex types, ToString may be brief.
-                            ImGui.Text(data.ToString() ?? "(null)");
+                            // Use the recursive ImGui renderer for better visibility of fields
+                            RenderObjectForImGui(data);
                         }
                         else
                         {
