@@ -1070,7 +1070,7 @@ internal static class Program
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-            SpawnGalaxies(100);
+            SpawnGalaxies(10);
 
             // Example usage:
             // SetSkybox("AssetManager.AssetFolderName + "/skybox.jpg", 50f);
