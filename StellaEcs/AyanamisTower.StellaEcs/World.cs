@@ -78,6 +78,11 @@ public class World
     /// </summary>
     private readonly HashSet<uint> _activeEntityIds = new();
 
+    /// <summary>
+    /// Public read-only count of currently active entities. Useful for debugging and telemetry.
+    /// </summary>
+    public int ActiveEntityCount => _activeEntityIds.Count;
+
     // Note: REST API integration was removed from the core ECS to avoid leaking web concerns.
 
     // --- NEW: System Management ---

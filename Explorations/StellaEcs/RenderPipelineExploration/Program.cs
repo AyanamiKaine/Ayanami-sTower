@@ -124,6 +124,18 @@ internal static class Program
             EnableImgui();
         }
 
+        protected override unsafe void OnSdlEvent(SDL.SDL_Event evt)
+        {
+            // Only forward to ImGui when our program has enabled it.
+            if (_imguiEnabled)
+            {
+                SDLEvent* pev = (SDLEvent*)&evt;                 // address-of local
+                SDLEventPtr ptr = new(pev);
+                ImGuiImplSDL3.ProcessEvent(ptr);
+            }
+            // Leave the rest of event handling to the base Game class (it will handle window events, etc.)
+        }
+
         public unsafe void EnableImgui()
         {
             if (_imguiEnabled) return; // already enabled
@@ -234,6 +246,54 @@ internal static class Program
             _lineBatch.AddLine(center, yEnd, new Color(64, 255, 64, 255));
             // Blue for Z
             _lineBatch.AddLine(center, zEnd, new Color(64, 64, 255, 255));
+        }
+
+        private int WorldEntityCount()
+        {
+            try
+            {
+                return World != null ? World.ActiveEntityCount : 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        // Renders the custom in-game ImGui debug window
+        private void RenderImguiDebugWindow()
+        {
+            ImGui.Begin("StellaInvicta Debug");
+            if (_camera != null)
+            {
+                ImGui.Text($"Camera Position: {_camera.Position.X:F2}, {_camera.Position.Y:F2}, {_camera.Position.Z:F2}");
+            }
+            // Mouse position from the input system
+            try
+            {
+                ImGui.Text($"Mouse: {Inputs.Mouse.X}, {Inputs.Mouse.Y}");
+            }
+            catch { ImGui.Text("Mouse: N/A"); }
+
+            // Window size
+            try
+            {
+                ImGui.Text($"Window: {MainWindow.Width} x {MainWindow.Height}");
+            }
+            catch { ImGui.Text("Window: N/A"); }
+            ImGui.Text($"Entities: {WorldEntityCount()}");
+            ImGui.Separator();
+            ImGui.Checkbox("Debug Draw Colliders", ref _debugDrawColliders);
+            ImGui.Checkbox("Debug Draw Axes (All)", ref _debugDrawAxesAll);
+            ImGui.Checkbox("Frustum Culling", ref _enableFrustumCulling);
+            ImGui.SliderFloat("Culling Radius Scale", ref _cullingRadiusScale, 0.1f, 10f);
+            ImGui.End();
+        }
+
+        // Grouped call for all ImGui windows we want to show
+        private void RenderImguiWindows()
+        {
+            RenderImguiDebugWindow();
         }
 
         public void EnableMSAA(SampleCount sampleCount)
@@ -1650,11 +1710,8 @@ internal static class Program
                 ImGuiImplSDL3.NewFrame();
                 ImGui.NewFrame();
 
-                ImGui.Begin("Hello, world!");
-                ImGui.Text("This is some useful text.");
-                ImGui.End();
-
-                ImGui.ShowDemoWindow();
+                // Render all our ImGui windows (extracted helpers)
+                RenderImguiWindows();
 
                 ImGui.Render();
                 drawData = ImGui.GetDrawData();
