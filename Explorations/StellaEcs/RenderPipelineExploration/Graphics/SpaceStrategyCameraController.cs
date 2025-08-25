@@ -28,9 +28,6 @@ public sealed class SpaceStrategyCameraController
     private Vector3Double _currentFocus;
     // Optional provider that returns the live focus point each frame (useful to follow moving objects)
     private Func<Vector3Double>? _focusProvider;
-    // NEW FIELD: This is the damped target that closely follows the live provider
-    // but absorbs high-frequency motion so the camera can transition smoothly.
-    private Vector3Double _dampedTargetFocus;
     // When a live provider is set we may want to smooth the initial transition
     // so selecting a new object doesn't teleport the camera. This timer tracks
     // remaining seconds to apply smoothing while beginning to follow a provider.
@@ -59,11 +56,11 @@ public sealed class SpaceStrategyCameraController
     /// <summary>
     /// Speed at which the camera pans (moves) in the world.
     /// </summary>
-    public double PanSpeed { get; set; } = 0.45f; // world units per second (scaled by distance)
+    public double PanSpeed { get; set; } = 8.0f; // world units per second (scaled by distance)
     /// <summary>
     /// Speed at which the camera rotates around the focus point.
     /// </summary>
-    public double RotateSensitivity { get; set; } = 0.003f; // radians per mouse pixel
+    public double RotateSensitivity { get; set; } = 0.01f; // radians per mouse pixel
     /// <summary>
     /// Enable/disable smooth interpolation of rotation (yaw/pitch).
     /// </summary>
@@ -111,13 +108,6 @@ public sealed class SpaceStrategyCameraController
     public double EdgePanSpeed { get; set; } = 8.0f;
 
     /// <summary>
-    /// When true, double-click focus requests may instantly snap the camera to the
-    /// new target if the caller requests a snap. This is intended to be toggled
-    /// from an IMGUI option in the application.
-    /// </summary>
-    public bool SnapToDoubleClick { get; set; } = true;
-
-    /// <summary>
     /// Exponent used when scaling pan speed by distance. The controller computes a
     /// distance scale from _currentDistance/10 and raises it to this exponent.
     /// Use values &lt;1 to reduce growth when zoomed out (default 0.5 = sqrt).
@@ -133,7 +123,6 @@ public sealed class SpaceStrategyCameraController
         _camera = camera ?? throw new ArgumentNullException(nameof(camera));
 
         _currentFocus = _targetFocus = camera.Target;
-        _dampedTargetFocus = _currentFocus;
         _currentDistance = _targetDistance = Vector3.Distance(camera.Position, _currentFocus);
         _yaw = camera.Yaw;
         _pitch = camera.Pitch;
@@ -146,16 +135,13 @@ public sealed class SpaceStrategyCameraController
     /// Immediately set the focus point and optionally the distance (if distance &gt; 0).
     /// Use this to focus the camera on a selected object.
     /// </summary>
-    public void SetFocus(Vector3 focus, double? distance = null, double? minDistanceOverride = null, bool snap = false)
+    public void SetFocus(Vector3 focus, double? distance = null, double? minDistanceOverride = null)
     {
         _focusProvider = null;
         // Clear any follow-smoothing timer when manually setting focus
         _followSmoothingRemaining = 0f;
         _followSmoothingTotal = 0f;
         _targetFocus = focus;
-        // Initialize the damped target. If snapping, set it to the target immediately,
-        // otherwise start it at the camera's current focus so transition is smooth.
-        _dampedTargetFocus = snap ? _targetFocus : _currentFocus;
         // Store optional per-focus min distance override (used to prevent clipping into focused objects)
         _focusMinDistanceOverride = minDistanceOverride;
         if (distance > 0f)
@@ -165,26 +151,6 @@ public sealed class SpaceStrategyCameraController
             _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
             // Ensure the camera's far plane can see the desired focus distance.
             try { _camera.EnsureFar(_targetDistance * 2.0); } catch { }
-        }
-        if (snap)
-        {
-            // Immediately apply the target to current so the camera snaps
-            _currentFocus = _targetFocus;
-            _dampedTargetFocus = _targetFocus; // snap the damped target as well
-            _currentDistance = _targetDistance;
-            // Apply to camera immediately using consistent spherical coordinate calculation
-            double cosYaw = Math.Cos(_yaw);
-            double sinYaw = Math.Sin(_yaw);
-            double cosPitch = Math.Cos(_pitch);
-            double sinPitch = Math.Sin(_pitch);
-
-            var forwardVec = new Vector3Double(
-                cosYaw * cosPitch,
-                sinPitch,
-                sinYaw * cosPitch
-            );
-
-            _camera.Position = _currentFocus - (forwardVec * _currentDistance);
         }
     }
 
@@ -196,7 +162,7 @@ public sealed class SpaceStrategyCameraController
     // same key is passed again, the call will not restart follow smoothing (prevents
     // re-selecting the same object and retriggering animations). If providerKey is
     // null, we fall back to comparing the delegate reference.
-    public void SetFocusProvider(Func<Vector3Double>? provider, double? distance = null, double? minDistanceOverride = null, object? providerKey = null, bool snap = false)
+    public void SetFocusProvider(Func<Vector3Double>? provider, double? distance = null, double? minDistanceOverride = null, object? providerKey = null)
     {
         // If the caller requests clearing the provider, clear everything.
         if (provider == null)
@@ -239,9 +205,6 @@ public sealed class SpaceStrategyCameraController
 
             _focusProvider = provider;
             _currentProviderKey = providerKey;
-            // Initialize the damped target from the camera's current focus so the
-            // transition starts from where the camera already is.
-            _dampedTargetFocus = _currentFocus;
         }
         // Store optional per-focus min distance override for live-follow
         _focusMinDistanceOverride = minDistanceOverride;
@@ -278,34 +241,6 @@ public sealed class SpaceStrategyCameraController
             double effectiveMin = _focusMinDistanceOverride ?? MinDistance;
             _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
         }
-
-        if (snap)
-        {
-            // Immediately apply the target to current and clear follow smoothing
-            _currentFocus = _targetFocus;
-            _dampedTargetFocus = _targetFocus; // snap the damped target too
-            _currentDistance = _targetDistance;
-            _followSmoothingRemaining = 0f;
-            _followSmoothingTotal = 0f;
-            // If following a provider we still want the provider to be active (so keep _focusProvider)
-            try
-            {
-                // Use consistent spherical coordinate calculation to match Update loop
-                double cosYaw = Math.Cos(_yaw);
-                double sinYaw = Math.Sin(_yaw);
-                double cosPitch = Math.Cos(_pitch);
-                double sinPitch = Math.Sin(_pitch);
-
-                var forwardVec = new Vector3Double(
-                    cosYaw * cosPitch,
-                    sinPitch,
-                    sinYaw * cosPitch
-                );
-
-                _camera.Position = _currentFocus - (forwardVec * _currentDistance);
-            }
-            catch { }
-        }
     }
 
     /// <summary>
@@ -319,23 +254,7 @@ public sealed class SpaceStrategyCameraController
     /// immediate while still applying per-frame exponential smoothing to avoid
     /// single-frame visual snaps.
     /// </summary>
-    // Smoothing rate used while actively tracking a live focus provider after the
-    // initial follow smoothing window. A high value makes tracking feel immediate.
-    // You can increase this to reduce jitter, but very large values will make
-    // the camera snap quickly to close objects. Use the "close" settings below
-    // to moderate snaps when the provider is nearby.
-    public float FollowTrackingSmoothingRate { get; set; } = 1600000000000000.0f;
-    /// <summary>
-    /// Distance (world units) under which the controller will apply additional
-    /// damping to per-frame tracking steps. This reduces fast jumps when the
-    /// provider is very close to the current camera focus.
-    /// </summary>
-    public float FollowCloseSmoothingDistance { get; set; } = 0.1f;
-    /// <summary>
-    /// Minimum multiplier applied to the exponential step when the provider is
-    /// at zero distance. Values in (0,1]. Smaller values slow the jump more.
-    /// </summary>
-    public float FollowCloseMinTMultiplier { get; set; } = 1f;
+    public float FollowTrackingSmoothingRate { get; set; } = 60000000000000.0f;
     /// <summary>
     /// When switching from one live provider to another, use this longer smoothing
     /// duration so the camera eases between tracked objects rather than snapping.
@@ -669,18 +588,6 @@ public sealed class SpaceStrategyCameraController
                     localT = 1f - Math.Exp(-activeRate * dt);
                 }
 
-                // If the provider is very close to current focus, reduce the
-                // effective interpolation step so the camera doesn't snap too fast.
-                // We compute a multiplier based on distance clamped to [FollowCloseMinTMultiplier, 1].
-                var providerDelta = providerPos - _currentFocus;
-                double providerDist = providerDelta.Length();
-                if (providerDist < FollowCloseSmoothingDistance && FollowCloseSmoothingDistance > 0f)
-                {
-                    double closeness = providerDist / FollowCloseSmoothingDistance; // 0..1
-                    double tMul = FollowCloseMinTMultiplier + ((1.0 - FollowCloseMinTMultiplier) * closeness);
-                    localT *= tMul;
-                }
-
                 _targetFocus = providerPos;
 
                 var desiredFocus = Vector3Double.Lerp(_currentFocus, _targetFocus, localT);
@@ -724,19 +631,6 @@ public sealed class SpaceStrategyCameraController
                 _targetFocus = providerPos;
                 var desiredFocus = providerPos;
                 var desiredDistance = _targetDistance;
-
-                // When not in the initial smoothing window, we usually snap to the provider
-                // each frame. However if the provider is extremely close we scale down
-                // the per-frame move to avoid a fast jump.
-                var postProviderDelta = providerPos - _currentFocus;
-                double postProviderDist = postProviderDelta.Length();
-                if (postProviderDist < FollowCloseSmoothingDistance && FollowCloseSmoothingDistance > 0f)
-                {
-                    double closeness = postProviderDist / FollowCloseSmoothingDistance; // 0..1
-                    double tMul = FollowCloseMinTMultiplier + ((1.0 - FollowCloseMinTMultiplier) * closeness);
-                    // apply as a fraction of the desired move
-                    desiredFocus = Vector3Double.Lerp(_currentFocus, desiredFocus, tMul);
-                }
 
                 // Still apply per-frame clamps to avoid teleporting if the provider
                 // teleports or moves extremely fast.
@@ -800,21 +694,7 @@ public sealed class SpaceStrategyCameraController
         _camera.Pitch = _pitch;
 
         // Put camera at focus - forward * distance
-        // Calculate position using spherical coordinates to maintain consistent orbit geometry
-        // This prevents jitter when focus and orientation are smoothing simultaneously
-        double cosYaw = Math.Cos(_yaw);
-        double sinYaw = Math.Sin(_yaw);
-        double cosPitch = Math.Cos(_pitch);
-        double sinPitch = Math.Sin(_pitch);
-
-        // Calculate forward vector from spherical angles (consistent with camera's Forward)
-        var forwardVec = new Vector3Double(
-            cosYaw * cosPitch,
-            sinPitch,
-            sinYaw * cosPitch
-        );
-
-        _camera.Position = _currentFocus - (forwardVec * _currentDistance);
+        _camera.Position = _currentFocus - (_camera.Forward * _currentDistance);
     }
 
     /// <summary>
