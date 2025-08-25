@@ -19,6 +19,9 @@
     <!--We love flecs-->
     <PackageVersion Include="Flecs.NET.Debug" Version="4.0.4-build.548" />
     <PackageVersion Include="Flecs.NET.Release" Version="4.0.4-build.548" />
+    <PackageVersion Include="Hexa.NET.ImGui" Version="2.2.8.5" />
+    <PackageVersion Include="Hexa.NET.ImGui.Backends" Version="1.0.17.4" />
+    <PackageVersion Include="Hexa.NET.ImGui.Backends.SDL3" Version="1.0.17.4" />
     <!--End-->
     <PackageVersion Include="MemoryPack" Version="1.21.4" />
     <PackageVersion Include="MessagePack" Version="3.1.4" />

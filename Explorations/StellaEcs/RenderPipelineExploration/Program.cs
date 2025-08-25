@@ -14,6 +14,10 @@ using BepuPhysics.Collidables;
 using AyanamisTower.StellaEcs.HighPrecisionMath;
 using Mesh = AyanamisTower.StellaEcs.StellaInvicta.Graphics.Mesh;
 using AyanamisTower.StellaEcs.StellaInvicta.Assets;
+using Hexa.NET.ImGui;
+using Hexa.NET.ImGui.Backends.SDL3;
+using static SDL3.SDL;
+using SDL3;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -28,6 +32,8 @@ internal static class Program
 
     private sealed class StellaInvicta : Game
     {
+        private ImGuiIOPtr io;
+        private bool _imguiEnabled = false;
         // BepuPhysics v2 Simulation
         private readonly PhysicsManager _physicsManager;
         private MousePicker _mousePicker = null!;
@@ -108,13 +114,67 @@ internal static class Program
         private DateTime _lastDrawTime = DateTime.UtcNow;
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
-            new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, true),
+            new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
             FramePacingSettings.CreateCapped(60, 360),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
             _physicsManager = new PhysicsManager(World);
             InitializeScene();
+            EnableImgui();
+        }
+
+        public unsafe void EnableImgui()
+        {
+            if (_imguiEnabled) return; // already enabled
+
+            var ctx = ImGui.CreateContext();
+            ImGui.SetCurrentContext(ctx);
+            io = ImGui.GetIO();
+            io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard
+                            | ImGuiConfigFlags.NavEnableGamepad
+                            | ImGuiConfigFlags.DockingEnable;
+
+            ImGui.StyleColorsDark();
+            var style = ImGui.GetStyle();
+
+
+            if ((io.ConfigFlags & ImGuiConfigFlags.ViewportsEnable) != 0)
+            {
+                style.WindowRounding = 0.0f;
+                style.Colors[(int)ImGuiCol.WindowBg].W = 1.0f;
+            }
+
+
+            ImGuiImplSDL3.SetCurrentContext(ctx);
+            ImGuiImplSDL3.InitForSDLGPU((SDLWindow*)MainWindow.Handle);
+
+            ImGuiImplSDLGPU3InitInfo initInfo = new()
+            {
+
+                Device = (SDLGPUDevice*)GraphicsDevice.Handle,
+                ColorTargetFormat = (int)SDL_GetGPUSwapchainTextureFormat(GraphicsDevice.Handle, MainWindow.Handle),
+                // Imgui gpu info does not have a depth stencil field, so a render pipeline used for imgui cannot use one too, other wise you will get validation errors.
+                // DepthStencilFormat = (int)GraphicsDevice.SupportedDepthStencilFormat,
+                MSAASamples = (int)_msaaSamples
+            };
+            ImGuiImplSDL3.SDLGPU3Init(&initInfo);
+
+            _imguiEnabled = true;
+
+        }
+
+        public void DisableImgui()
+        {
+            if (!_imguiEnabled) return;
+
+            // Shutdown backend and SDLGPU integration, then destroy context
+            ImGuiImplSDL3.Shutdown();
+            ImGuiImplSDL3.SDLGPU3Shutdown();
+            ImGui.DestroyContext();
+
+            io = default;
+            _imguiEnabled = false;
         }
 
         // Safely get a BodyReference; returns false if the handle is invalid (e.g., removed or not yet added)
@@ -1243,7 +1303,7 @@ internal static class Program
         }
 
 
-        protected override void Update(TimeSpan delta)
+        protected unsafe override void Update(TimeSpan delta)
         {
             // Snapshot inputs early so edge/held queries are stable during the frame
             _inputManager.Update(Inputs);
@@ -1406,7 +1466,7 @@ internal static class Program
         }
 
 
-        protected override void Draw(double alpha)
+        protected unsafe override void Draw(double alpha)
         {
             var cmdbuf = GraphicsDevice.AcquireCommandBuffer();
             var backbuffer = cmdbuf.AcquireSwapchainTexture(MainWindow);
@@ -1580,6 +1640,27 @@ internal static class Program
                 colorTarget.StoreOp = StoreOp.Resolve; // Perform resolve into swapchain
             }
             var depthTarget = new DepthStencilTargetInfo(_msaaDepth!, clearDepth: 1f);
+
+
+
+            ImDrawData* drawData = null;
+            if (_imguiEnabled)
+            {
+                ImGuiImplSDL3.SDLGPU3NewFrame();
+                ImGuiImplSDL3.NewFrame();
+                ImGui.NewFrame();
+
+                ImGui.Begin("Hello, world!");
+                ImGui.Text("This is some useful text.");
+                ImGui.End();
+
+                ImGui.ShowDemoWindow();
+
+                ImGui.Render();
+                drawData = ImGui.GetDrawData();
+                ImGuiImplSDL3.SDLGPU3PrepareDrawData(drawData, (SDLGPUCommandBuffer*)cmdbuf.Handle);
+            }
+
             /////////////////////
             // RENDER PASS BEGIN
             /////////////////////
@@ -1748,12 +1829,23 @@ internal static class Program
 
             */
 
+            if (_imguiEnabled && drawData != null)
+            {
+                ImGuiImplSDL3.SDLGPU3RenderDrawData(drawData, (SDLGPUCommandBuffer*)cmdbuf.Handle, (SDLGPURenderPass*)pass.Handle, null);
+            }
 
             cmdbuf.EndRenderPass(pass);
+
 
             /////////////////////
             // RENDER PASS END
             /////////////////////
+
+            if (_imguiEnabled && (io.ConfigFlags & ImGuiConfigFlags.ViewportsEnable) != 0)
+            {
+                ImGui.UpdatePlatformWindows();
+                ImGui.RenderPlatformWindowsDefault();
+            }
 
             GraphicsDevice.Submit(cmdbuf);
         }
@@ -2094,8 +2186,15 @@ internal static class Program
             }
         }
 
+        private void DestroyImgui()
+        {
+            // Delegate to the centralized disable method which is idempotent.
+            DisableImgui();
+        }
+
         protected override void Destroy()
         {
+            DestroyImgui();
             _msaaColor?.Dispose();
             _msaaDepth?.Dispose();
             _pipeline?.Dispose();
