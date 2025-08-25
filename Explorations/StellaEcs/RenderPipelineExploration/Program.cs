@@ -112,6 +112,8 @@ internal static class Program
         private double _fps = 0.0;
         // Track last draw time to measure actual render FPS (not update rate)
         private DateTime _lastDrawTime = DateTime.UtcNow;
+        // Currently selected entity in the ImGui entities window
+        private Entity _selectedEntity = default;
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
@@ -294,6 +296,96 @@ internal static class Program
         private void RenderImguiWindows()
         {
             RenderImguiDebugWindow();
+            RenderImguiEntitiesWindow();
+        }
+
+        private void RenderImguiEntitiesWindow()
+        {
+            ImGui.Begin("Entities");
+            ImGui.Text($"Total Entities: {WorldEntityCount()}");
+            ImGui.Separator();
+
+            // Left: list of entities
+            ImGui.BeginChild(ImGui.GetID("entity_list"), new System.Numerics.Vector2(320, 400), ImGuiChildFlags.None);
+            foreach (var e in World.GetAllEntities())
+            {
+                string label = $"E{e.Id} (Gen {e.Generation})";
+                bool isSelected = !_selectedEntity.Equals(default) && _selectedEntity.Equals(e);
+                if (ImGui.Selectable(label, isSelected))
+                {
+                    _selectedEntity = e;
+                }
+            }
+            ImGui.EndChild();
+
+            ImGui.SameLine();
+
+            // Right: details for selected entity
+            ImGui.BeginGroup();
+            if (_selectedEntity != default && _selectedEntity != Entity.Null)
+            {
+                ImGui.Text($"Selected: E{_selectedEntity.Id} (Gen {_selectedEntity.Generation})");
+
+                if (_selectedEntity.Has<Position3D>())
+                {
+                    var pos = _selectedEntity.GetCopy<Position3D>().Value;
+                    ImGui.Text($"Position: {pos.X:F2}, {pos.Y:F2}, {pos.Z:F2}");
+                }
+                else
+                {
+                    ImGui.Text("Position: (no Position3D)");
+                }
+
+                if (ImGui.Button("Jump to position"))
+                {
+                    var worldPos = GetEntityWorldPosition(_selectedEntity);
+                    // Compute a reasonable distance based on Size3D when available
+                    double distance = _cameraController.MinDistance;
+                    if (_selectedEntity.Has<Size3D>())
+                    {
+                        var s = _selectedEntity.GetMut<Size3D>().Value;
+                        double maxAxis = Math.Max(s.X, Math.Max(s.Y, s.Z));
+                        double boundingRadius = Math.Max(0.01, maxAxis * 0.6);
+                        double fovHalfTan = Math.Tan(_camera.Fov * 0.5f);
+                        if (fovHalfTan > 1e-6f)
+                        {
+                            distance = Math.Max(boundingRadius / (0.35 * fovHalfTan), _cameraController.MinDistance);
+                        }
+                        distance = Math.Clamp(distance, _cameraController.MinDistance, _cameraController.MaxDistance);
+                    }
+                    _cameraController.SetFocus(worldPos, distance);
+                }
+
+                ImGui.Separator();
+                ImGui.Text("Components:");
+                ImGui.BeginChild(ImGui.GetID("entity_components"), new System.Numerics.Vector2(0, 200), ImGuiChildFlags.None);
+                foreach (var (type, data) in World.GetComponentsForEntityAsObjects(_selectedEntity))
+                {
+                    ImGui.PushID(type.FullName);
+                    if (ImGui.TreeNode(type.Name))
+                    {
+                        if (data != null)
+                        {
+                            // Show simple string representation. For complex types, ToString may be brief.
+                            ImGui.Text(data.ToString() ?? "(null)");
+                        }
+                        else
+                        {
+                            ImGui.Text("(null)");
+                        }
+                        ImGui.TreePop();
+                    }
+                    ImGui.PopID();
+                }
+                ImGui.EndChild();
+            }
+            else
+            {
+                ImGui.Text("No entity selected");
+            }
+
+            ImGui.EndGroup();
+            ImGui.End();
         }
 
         public void EnableMSAA(SampleCount sampleCount)
