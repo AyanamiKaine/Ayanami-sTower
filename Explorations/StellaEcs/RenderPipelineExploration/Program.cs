@@ -1741,19 +1741,6 @@ internal static class Program
             // receives the render-frame delta (not the fixed simulation delta) and remains smooth even when
             // the simulation runs at a lower fixed-step rate.
 
-            foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(RenderPosition3D)))
-            {
-                var body = entity.GetMut<PhysicsBody>();
-                var pos = entity.GetMut<RenderPosition3D>().Value;
-                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
-                if (TryGetBodyRef(body.Handle, out var bodyRef))
-                {
-                    bodyRef.Pose = new RigidPose(pos, rot);
-                    bodyRef.Awake = true;
-                    _physicsManager.Simulation.Bodies.UpdateBounds(body.Handle);
-                }
-            }
-
             // Debug: Print floating origin info (uncomment for debugging)
             // if (_floatingOriginManager != null)
             // {
@@ -1807,6 +1794,20 @@ internal static class Program
                 }
             }
             catch { }
+
+
+            foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(RenderPosition3D)))
+            {
+                var body = entity.GetMut<PhysicsBody>();
+                var pos = entity.GetMut<RenderPosition3D>().Value;
+                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
+                if (TryGetBodyRef(body.Handle, out var bodyRef))
+                {
+                    bodyRef.Pose = new RigidPose(pos, rot);
+                    bodyRef.Awake = true;
+                    _physicsManager.Simulation.Bodies.UpdateBounds(body.Handle);
+                }
+            }
 
             // Update camera using render-frame delta so camera movement is smooth regardless of simulation step rate
             try
