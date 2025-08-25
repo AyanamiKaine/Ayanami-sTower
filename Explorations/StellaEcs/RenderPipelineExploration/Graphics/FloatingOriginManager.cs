@@ -77,9 +77,22 @@ public class FloatingOriginManager
             var newPosD = pos.Value - offset;
             entity.Set(new Position3D(newPosD.X, newPosD.Y, newPosD.Z));
 
-            var renderPos = entity.GetMut<RenderPosition3D>();
-            var newRenderPosD = renderPos.Value - offset;
-            entity.Set(new RenderPosition3D(newRenderPosD));
+            // RenderPosition3D may not exist on all entities; only shift if present.
+            if (entity.Has<RenderPosition3D>())
+            {
+                var renderPos = entity.GetMut<RenderPosition3D>();
+                var newRenderPosD = renderPos.Value - offset;
+                entity.Set(new RenderPosition3D(newRenderPosD));
+            }
+
+            // Also shift the previous-position snapshot used by interpolation so
+            // interpolation continues to produce smooth results after a rebase.
+            if (entity.Has<PreviousPosition3D>())
+            {
+                var prev = entity.GetMut<PreviousPosition3D>();
+                var newPrev = prev.Value - offset;
+                entity.Set(new PreviousPosition3D(newPrev));
+            }
         }
 
         // Rebase physics objects to sync them with the new ECS positions.
