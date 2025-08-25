@@ -48,7 +48,8 @@ internal static class Program
         // The simulation will always step in discrete, fixed-sized steps so
         // identical inputs produce identical results regardless of frame timing.
         private double _simulationAccumulator = 0.0;
-        private const double _fixedSimulationStepSeconds = 1.0 / 30.0; // 60 Hz deterministic step
+        private float _tickRate = 30.0f; // Runtime-controlled tick rate (Hz). Adjust in ImGui to change fixed timestep.
+        private double _fixedSimulationStepSeconds => 1.0 / Math.Max(0.0001, _tickRate); // Computed fixed timestep seconds from tick rate. Use this everywhere instead of a const.
         private const int _maxSimulationStepsPerFrame = 16; // safety clamp to avoid spiral-of-death
         /// <summary>
         /// Represents the current game world.
@@ -404,6 +405,10 @@ internal static class Program
             ImGui.Checkbox("Debug Draw Colliders", ref _debugDrawColliders);
             ImGui.Checkbox("Debug Draw Axes (All)", ref _debugDrawAxesAll);
             ImGui.Checkbox("Interpolation Enabled", ref _interpolationEnabled);
+            // Tweak the fixed simulation tick rate at runtime. Changing this will immediately affect
+            // how many fixed steps are processed each frame.
+            ImGui.SliderFloat("Tick Rate (Hz)", ref _tickRate, 1f, 240f);
+            ImGui.Text($"Fixed dt: {_fixedSimulationStepSeconds:F4} s");
             ImGui.Checkbox("Frustum Culling", ref _enableFrustumCulling);
             ImGui.SliderFloat("Culling Radius Scale", ref _cullingRadiusScale, 0.1f, 10f);
             ImGui.End();
