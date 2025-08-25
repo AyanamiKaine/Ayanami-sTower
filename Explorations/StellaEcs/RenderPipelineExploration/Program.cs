@@ -48,7 +48,7 @@ internal static class Program
         // The simulation will always step in discrete, fixed-sized steps so
         // identical inputs produce identical results regardless of frame timing.
         private double _simulationAccumulator = 0.0;
-        private const double _fixedSimulationStepSeconds = 1.0 / 60.0; // 60 Hz deterministic step
+        private const double _fixedSimulationStepSeconds = 1.0 / 10.0; // 60 Hz deterministic step
         private const int _maxSimulationStepsPerFrame = 16; // safety clamp to avoid spiral-of-death
         /// <summary>
         /// Represents the current game world.
@@ -222,11 +222,12 @@ internal static class Program
 
         /// <summary>
         /// Helper: returns the best available world-space position for an entity.
-        /// Prefers the physics pose (dynamic/kinematic/static) then falls back to Position3D.
-        /// Returns Vector3.Zero if no position is available.
+        /// Prefers the interpolated render position (RenderPosition3D), then the simulation position (Position3D).
+        /// Returns Vector3Zero if no position is available.
         /// </summary>
         private Vector3Double GetEntityWorldPosition(Entity e)
         {
+            if (e.Has<RenderPosition3D>()) return e.GetCopy<RenderPosition3D>().Value;
             if (e.Has<Position3D>()) return e.GetCopy<Position3D>().Value;
             return Vector3Double.Zero;
         }
@@ -1651,6 +1652,9 @@ internal static class Program
 
             for (int steps = 0; _simulationAccumulator >= _fixedSimulationStepSeconds && steps < _maxSimulationStepsPerFrame; steps++)
             {
+                // Snapshot entity positions BEFORE running physics/world update for this tick
+                AyanamisTower.StellaEcs.StellaInvicta.Systems.InterpolationSystems.SnapshotPositions(World);
+
                 // Step physics with a fixed, deterministic timestep
                 _physicsManager.Step((float)_fixedSimulationStepSeconds);
 
@@ -1718,6 +1722,14 @@ internal static class Program
                 _fpsFrames = 0;
                 _fpsTimer = 0f;
             }
+            // Interpolate render positions using leftover accumulator fraction so visuals are smooth
+            try
+            {
+                double alphaInterp = Math.Clamp(_simulationAccumulator / _fixedSimulationStepSeconds, 0.0, 1.0);
+                AyanamisTower.StellaEcs.StellaInvicta.Systems.InterpolationSystems.InterpolateRenderPositions(World, alphaInterp);
+            }
+            catch { }
+
             // Update camera using render-frame delta so camera movement is smooth regardless of simulation step rate
             try
             {
@@ -1732,6 +1744,7 @@ internal static class Program
             // Compute single-precision view/projection and extract frustum once per frame.
             var viewDouble = _camera.GetViewMatrix();
             var projDouble = _camera.GetProjectionMatrix();
+            // (interpolation already performed earlier so rendering can use RenderPosition3D)
             var viewMat = HighPrecisionConversions.ToMatrix(viewDouble);
             var projMat = HighPrecisionConversions.ToMatrix(projDouble);
             // When using camera-relative rendering, remove the camera translation from the view
@@ -1925,7 +1938,7 @@ internal static class Program
             {
                 var gpuMesh = entity.GetMut<GpuMesh>();
                 // Gather transform components first (needed for culling, avoids binding for culled)
-                Vector3 translation = entity.Has<Position3D>() ? entity.GetMut<Position3D>().Value : Vector3.Zero;
+                Vector3 translation = entity.Has<RenderPosition3D>() ? entity.GetMut<RenderPosition3D>().Value : Vector3.Zero;
                 Quaternion rotation = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : Quaternion.Identity;
                 Vector3 size = entity.Has<Size3D>() ? entity.GetMut<Size3D>().Value : Vector3.One;
 
