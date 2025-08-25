@@ -56,11 +56,11 @@ public sealed class SpaceStrategyCameraController
     /// <summary>
     /// Speed at which the camera pans (moves) in the world.
     /// </summary>
-    public double PanSpeed { get; set; } = 8.0f; // world units per second (scaled by distance)
+    public double PanSpeed { get; set; } = 0.45f; // world units per second (scaled by distance)
     /// <summary>
     /// Speed at which the camera rotates around the focus point.
     /// </summary>
-    public double RotateSensitivity { get; set; } = 0.01f; // radians per mouse pixel
+    public double RotateSensitivity { get; set; } = 0.003f; // radians per mouse pixel
     /// <summary>
     /// Enable/disable smooth interpolation of rotation (yaw/pitch).
     /// </summary>
@@ -254,7 +254,7 @@ public sealed class SpaceStrategyCameraController
     /// immediate while still applying per-frame exponential smoothing to avoid
     /// single-frame visual snaps.
     /// </summary>
-    public float FollowTrackingSmoothingRate { get; set; } = 60.0f;
+    public float FollowTrackingSmoothingRate { get; set; } = 160.0f;
     /// <summary>
     /// When switching from one live provider to another, use this longer smoothing
     /// duration so the camera eases between tracked objects rather than snapping.
