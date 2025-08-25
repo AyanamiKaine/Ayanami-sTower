@@ -1,0 +1,48 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs", "AyanamisTower.StellaEcs\AyanamisTower.StellaEcs.csproj", "{A8D8AA87-083E-14FF-7388-1A23DBF7B44C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.Components", "AyanamisTower.StellaEcs.Components\AyanamisTower.StellaEcs.Components.csproj", "{FCC99E38-0558-9CFF-E6A1-3BAEC77F1198}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.Engine", "AyanamisTower.StellaEcs.Engine\AyanamisTower.StellaEcs.Engine.csproj", "{969AD0CB-F871-9747-34A1-F1E790D3BC0A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.RestAPI", "AyanamisTower.StellaEcs.RestAPI\AyanamisTower.StellaEcs.RestAPI.csproj", "{8BBB98D2-18EB-DDD7-2875-5294F90AFF39}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AyanamisTower.StellaEcs.CorePlugin", "AyanamisTower.StellaEcs.Systems\AyanamisTower.StellaEcs.CorePlugin.csproj", "{FFCAAC36-06D6-FBC9-93C4-5AFCB8E61376}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A8D8AA87-083E-14FF-7388-1A23DBF7B44C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8D8AA87-083E-14FF-7388-1A23DBF7B44C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8D8AA87-083E-14FF-7388-1A23DBF7B44C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8D8AA87-083E-14FF-7388-1A23DBF7B44C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCC99E38-0558-9CFF-E6A1-3BAEC77F1198}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCC99E38-0558-9CFF-E6A1-3BAEC77F1198}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCC99E38-0558-9CFF-E6A1-3BAEC77F1198}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCC99E38-0558-9CFF-E6A1-3BAEC77F1198}.Release|Any CPU.Build.0 = Release|Any CPU
+		{969AD0CB-F871-9747-34A1-F1E790D3BC0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{969AD0CB-F871-9747-34A1-F1E790D3BC0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{969AD0CB-F871-9747-34A1-F1E790D3BC0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{969AD0CB-F871-9747-34A1-F1E790D3BC0A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8BBB98D2-18EB-DDD7-2875-5294F90AFF39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8BBB98D2-18EB-DDD7-2875-5294F90AFF39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8BBB98D2-18EB-DDD7-2875-5294F90AFF39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8BBB98D2-18EB-DDD7-2875-5294F90AFF39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFCAAC36-06D6-FBC9-93C4-5AFCB8E61376}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFCAAC36-06D6-FBC9-93C4-5AFCB8E61376}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFCAAC36-06D6-FBC9-93C4-5AFCB8E61376}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFCAAC36-06D6-FBC9-93C4-5AFCB8E61376}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {013926EC-DFD2-429A-9E41-020B2688E4D1}
+	EndGlobalSection
+EndGlobal

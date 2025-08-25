@@ -4,6 +4,8 @@
     let loading = false;
     let error: string | null = null;
     let working: Record<string, boolean> = {};
+    let timings: Record<string, { lastMs: number; avgMs: number; calls: number }> = {};
+    let loadingTimings = false;
 
     async function loadSystems() {
         loading = true;
@@ -19,7 +21,28 @@
         }
     }
 
+    async function loadTimings() {
+        loadingTimings = true;
+        try {
+            const list = await api.systemTimings();
+            const map: Record<string, { lastMs: number; avgMs: number; calls: number }> = {};
+            for (const s of list) map[s.name] = { lastMs: s.lastMs, avgMs: s.avgMs, calls: s.calls };
+            timings = map;
+        } catch {
+            // ignore
+        } finally {
+            loadingTimings = false;
+        }
+    }
+
+    // Refresh timings periodically while the view is open
+    let timingsTimer: any = null;
+    import { onDestroy } from 'svelte';
+    // initial load
     loadSystems();
+    loadTimings();
+    timingsTimer = setInterval(() => loadTimings(), 2000);
+    onDestroy(() => { if (timingsTimer) clearInterval(timingsTimer); });
 
     async function disableSystem(name: string) {
         if (working[name]) return;
@@ -76,6 +99,11 @@
                     {/if}
                     {#if s.pluginOwner}<span class="badge">{s.pluginOwner}</span>{/if}
                     {#if !s.enabled}<span class="text-red-400 text-xs">(disabled)</span>{/if}
+                    {#if timings[s.name]}
+                        <div class="text-xs text-zinc-400 ml-3">
+                            Last: {timings[s.name].lastMs.toFixed(2)} ms · Avg: {timings[s.name].avgMs.toFixed(2)} ms · Calls: {timings[s.name].calls}
+                        </div>
+                    {/if}
                     <span class="ml-auto" />
                     <div class="flex gap-2">
                         {#if s.enabled}

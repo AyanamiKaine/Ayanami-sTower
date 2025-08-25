@@ -28,6 +28,18 @@ While we can use the components to model relationships, we might want to have a 
 /// </summary>
 public class World
 {
+    /// <summary>
+    /// Gets a snapshot of the current system timings.
+    /// </summary>
+    public IEnumerable<SystemTimingSnapshot> GetSystemTimingSnapshot()
+    {
+        return _systemTimings.Select(kvp => new SystemTimingSnapshot(
+            kvp.Key,
+            kvp.Value.LastMs,
+            kvp.Value.Calls > 0 ? kvp.Value.TotalMs / kvp.Value.Calls : 0.0,
+            kvp.Value.Calls
+        )).OrderByDescending(s => s.AvgMs).ToArray();
+    }
     private readonly ILogger _logger;
     /// <summary>
     /// The current tick of the world. This is incremented on each update by one.
@@ -103,6 +115,28 @@ public class World
     /// Systems that prepare data for rendering (e.g., Animation, Camera, UIRendering).
     /// </summary>
     private List<ISystem> _presentationSystems = [];
+
+    // --- System timing / profiling ---
+    // Tracks lightweight timing stats for each system to help diagnose slow systems during development.
+    private readonly Dictionary<string, SystemTiming> _systemTimings = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// If a single system frame time exceeds this threshold (ms) it will be logged at Warning level.
+    /// Set to 0 to disable logging.
+    /// </summary>
+    public double SlowSystemLogThresholdMs { get; set; } = 10.0;
+
+    private record SystemTiming
+    {
+        public double TotalMs { get; set; }
+        public int Calls { get; set; }
+        public double LastMs { get; set; }
+    }
+
+    /// <summary>
+    /// A snapshot of timing info for a single system.
+    /// </summary>
+    public record SystemTimingSnapshot(string Name, double LastMs, double AvgMs, int Calls);
 
     /*
     Decoupling: A plugin can request a service by its interface (IPathfindingService) without needing a direct reference to the plugin that provides it (SuperPathfindingPlugin.dll).
@@ -1098,22 +1132,49 @@ public class World
             SortAndGroupSystems();
         }
 
-        // Execute systems in their guaranteed group order.
+        // Execute systems in their guaranteed group order and measure per-system execution time.
         // A temporary copy is used to prevent issues if a system modifies the list during iteration (e.g., via hot-reloading).
-        foreach (var system in _initializationSystems.ToArray())
+        void executeList(IEnumerable<ISystem> list)
         {
-            if (system.Enabled) system.Update(this, deltaTime);
+            foreach (var system in list.ToArray())
+            {
+                if (!system.Enabled) continue;
+
+                var sw = Stopwatch.StartNew();
+                try
+                {
+                    system.Update(this, deltaTime);
+                }
+                finally
+                {
+                    sw.Stop();
+                    var ms = sw.Elapsed.TotalMilliseconds;
+                    // update timing record
+                    if (!_systemTimings.TryGetValue(system.Name, out var t))
+                    {
+                        t = new SystemTiming();
+                        _systemTimings[system.Name] = t;
+                    }
+                    t.LastMs = ms;
+                    t.TotalMs += ms;
+                    t.Calls += 1;
+
+                    // Log slow systems for quick feedback during development
+                    if (SlowSystemLogThresholdMs > 0 && ms >= SlowSystemLogThresholdMs)
+                    {
+                        try
+                        {
+                            _logger.LogWarning("System {System} took {Ms} ms (avg {AvgMs} ms over {Calls} calls)", system.Name, ms, t.TotalMs / t.Calls, t.Calls);
+                        }
+                        catch { }
+                    }
+                }
+            }
         }
 
-        foreach (var system in _simulationSystems.ToArray())
-        {
-            if (system.Enabled) system.Update(this, deltaTime);
-        }
-
-        foreach (var system in _presentationSystems.ToArray())
-        {
-            if (system.Enabled) system.Update(this, deltaTime);
-        }
+        executeList(_initializationSystems);
+        executeList(_simulationSystems);
+        executeList(_presentationSystems);
 
         Tick++;
         ClearAllMessages();

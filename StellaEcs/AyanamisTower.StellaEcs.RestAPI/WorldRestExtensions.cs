@@ -288,6 +288,37 @@ namespace AyanamisTower.StellaEcs.Api
         }
 
         /// <summary>
+        /// DTO for system timing snapshot suitable for JSON transport.
+        /// </summary>
+        public class SystemTimingSnapshotDto
+        {
+            /// <summary>
+            /// The name of the system.
+            /// </summary>
+            public string Name { get; set; } = string.Empty;
+            /// <summary>
+            /// The last recorded execution time in milliseconds.
+            /// </summary>
+            public double LastMs { get; set; }
+            /// <summary>
+            /// The average execution time in milliseconds.
+            /// </summary>
+            public double AvgMs { get; set; }
+            /// <summary>
+            /// The number of times the system was called.
+            /// </summary>
+            public int Calls { get; set; }
+        }
+
+        /// <summary>
+        /// Returns timing snapshot for systems as DTOs.
+        /// </summary>
+        public static IEnumerable<SystemTimingSnapshotDto> GetSystemTimings(this World w)
+        {
+            return w.GetSystemTimingSnapshot().Select(s => new SystemTimingSnapshotDto { Name = s.Name, LastMs = s.LastMs, AvgMs = s.AvgMs, Calls = s.Calls });
+        }
+
+        /// <summary>
         /// Returns a list of loaded plugins with basic metadata and URL.
         /// </summary>
         /// <param name="w">The ECS world instance.</param>

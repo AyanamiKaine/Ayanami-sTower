@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using static AyanamisTower.StellaEcs.World;
 
 namespace AyanamisTower.StellaEcs.Api
 {
@@ -55,6 +56,13 @@ namespace AyanamisTower.StellaEcs.Api
                .WithName("GetRegisteredSystems")
                .WithSummary("Retrieves a list of all registered systems.")
                .Produces<IEnumerable<SystemInfoDto>>(StatusCodes.Status200OK);
+
+            // System timing/profiling snapshot
+            api.MapGet("/systems/timings", (World w) => Results.Ok(w.GetSystemTimings()))
+                .WithName("GetSystemTimings")
+                .WithSummary("Retrieves recent timing stats for systems.")
+                .WithDescription("Returns per-system last and average execution times and call counts.")
+                   .Produces<object>(StatusCodes.Status200OK);
 
             // --- Logs Endpoints ---
             api.MapGet("/logs", (HttpContext ctx, [FromServices] ILogStore logs) =>

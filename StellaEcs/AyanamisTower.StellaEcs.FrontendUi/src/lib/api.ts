@@ -24,6 +24,7 @@ export interface EntitySummary { id: number; url: string; }
 export interface ComponentInfo { typeName: string; data?: unknown; pluginOwner?: string; }
 export interface EntityDetail { id: number; components: ComponentInfo[]; }
 export interface SystemInfo { name: string; enabled: boolean; pluginOwner: string; group?: string; order?: number; }
+export interface SystemTiming { name: string; lastMs: number; avgMs: number; calls: number; }
 export interface ServiceInfo { typeName: string; methods: string[]; pluginOwner: string; }
 export interface PluginInfo { name: string; version: string; author: string; description: string; prefix: string; url: string; }
 export interface PluginDetail extends PluginInfo { systems: string[]; services: string[]; components: string[]; }
@@ -48,6 +49,7 @@ export const api = {
   addComponent: (idGen: string, type: string, data: unknown) => fetch(`${API_BASE}/entities/${idGen}/components/${type}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(handle<{ message: string }>),
   removeComponent: (idGen: string, type: string) => fetch(`${API_BASE}/entities/${idGen}/components/${type}`, { method: 'DELETE' }).then(handle<{ message: string }>),
   systems: () => fetch(`${API_BASE}/systems`).then(handle<SystemInfo[]>),
+  systemTimings: () => fetch(`${API_BASE}/systems/timings`).then(handle<SystemTiming[]>),
   disableSystem: (name: string) => fetch(`${API_BASE}/systems/${encodeURIComponent(name)}/disable`, { method: 'POST' }).then(handle<{ message: string }>),
   enableSystem: (name: string) => fetch(`${API_BASE}/systems/${encodeURIComponent(name)}/enable`, { method: 'POST' }).then(handle<{ message: string }>),
   components: () => fetch(`${API_BASE}/components`).then(handle<ComponentInfo[]>),
