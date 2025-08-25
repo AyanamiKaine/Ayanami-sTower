@@ -56,7 +56,7 @@ public sealed class SpaceStrategyCameraController
     /// <summary>
     /// Speed at which the camera pans (moves) in the world.
     /// </summary>
-    public double PanSpeed { get; set; } = 8.0f; // world units per second (scaled by distance)
+    public double PanSpeed { get; set; } = 0.4f; // world units per second (scaled by distance)
     /// <summary>
     /// Speed at which the camera rotates around the focus point.
     /// </summary>
@@ -113,6 +113,35 @@ public sealed class SpaceStrategyCameraController
     /// Use values &lt;1 to reduce growth when zoomed out (default 0.5 = sqrt).
     /// </summary>
     public double PanDistanceScaleExponent { get; set; } = 0.5f;
+
+
+    /// <summary>
+    /// Duration in seconds to smooth the initial transition when a live focus provider
+    /// is set. Default is a short time so focusing a new object doesn't feel like a teleport.
+    /// </summary>
+    public float InitialFollowSmoothingSeconds { get; set; } = 0.10f;
+    /// <summary>
+    /// Smoothing rate used while actively tracking a live focus provider after the
+    /// initial follow smoothing window. A high value (e.g., 60) makes tracking feel
+    /// immediate while still applying per-frame exponential smoothing to avoid
+    /// single-frame visual snaps.
+    /// </summary>
+    public float FollowTrackingSmoothingRate { get; set; } = 60000.0f;
+    /// <summary>
+    /// When switching from one live provider to another, use this longer smoothing
+    /// duration so the camera eases between tracked objects rather than snapping.
+    /// </summary>
+    public float FollowSwitchSmoothingSeconds { get; set; } = 1f;
+    /// <summary>
+    /// Maximum focus movement speed (world units per second) allowed when tracking a live target.
+    /// This prevents single-frame large jumps when the provider's target moves suddenly.
+    /// </summary>
+    public float FollowMaxFocusSpeed { get; set; } = 500.0f;
+
+    /// <summary>
+    /// Maximum change in distance (world units per second) allowed when tracking a live target.
+    /// </summary>
+    public float FollowMaxDistanceDeltaPerSecond { get; set; } = 500.0f;
 
     /// <summary>
     /// Creates a new strategy-style camera controller driving the given <see cref="Camera"/>.
@@ -242,34 +271,6 @@ public sealed class SpaceStrategyCameraController
             _targetDistance = Math.Clamp(distance.Value, effectiveMin, MaxDistance);
         }
     }
-
-    /// <summary>
-    /// Duration in seconds to smooth the initial transition when a live focus provider
-    /// is set. Default is a short time so focusing a new object doesn't feel like a teleport.
-    /// </summary>
-    public float InitialFollowSmoothingSeconds { get; set; } = 0.10f;
-    /// <summary>
-    /// Smoothing rate used while actively tracking a live focus provider after the
-    /// initial follow smoothing window. A high value (e.g., 60) makes tracking feel
-    /// immediate while still applying per-frame exponential smoothing to avoid
-    /// single-frame visual snaps.
-    /// </summary>
-    public float FollowTrackingSmoothingRate { get; set; } = 60000000000000.0f;
-    /// <summary>
-    /// When switching from one live provider to another, use this longer smoothing
-    /// duration so the camera eases between tracked objects rather than snapping.
-    /// </summary>
-    public float FollowSwitchSmoothingSeconds { get; set; } = 1f;
-    /// <summary>
-    /// Maximum focus movement speed (world units per second) allowed when tracking a live target.
-    /// This prevents single-frame large jumps when the provider's target moves suddenly.
-    /// </summary>
-    public float FollowMaxFocusSpeed { get; set; } = 500.0f;
-
-    /// <summary>
-    /// Maximum change in distance (world units per second) allowed when tracking a live target.
-    /// </summary>
-    public float FollowMaxDistanceDeltaPerSecond { get; set; } = 500.0f;
 
     /// <summary>
     /// Applies an origin shift (rebase offset) to the controller so its internal focus
