@@ -110,6 +110,8 @@ internal static class Program
         // Input manager to simplify checked inputs
         private InputManager _inputManager = new();
         private readonly MouseInteractionService _mouseInteraction = new();
+        // Collision interaction service (initialized in ctor after physics manager)
+        private CollisionInteractionService _collisionInteraction = null!;
         // FPS counter for window title
         private readonly string _baseTitle = "Stella Invicta";
         private float _fpsTimer = 0f;
@@ -127,6 +129,9 @@ internal static class Program
             debugMode: true)
         {
             _physicsManager = new PhysicsManager(World);
+            // Initialize collision interaction service so entities can register handlers
+            _collisionInteraction = new CollisionInteractionService(_physicsManager);
+
             InitializeScene();
             EnableImgui();
         }
@@ -1203,6 +1208,11 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(10.0f * 0.6f)))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
+            // Example collision handler: spawn a similar sphere at the same position when the sun collides with anything
+            sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
+            {
+                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}");
+            });
 
             sun.OnMouseEnter(_mouseInteraction, (Entity e) =>
             {
