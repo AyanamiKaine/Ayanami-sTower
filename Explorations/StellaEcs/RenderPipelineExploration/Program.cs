@@ -117,7 +117,7 @@ internal static class Program
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
-            FramePacingSettings.CreateCapped(60, 360),
+            FramePacingSettings.CreateCapped(30, 360),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
@@ -468,28 +468,7 @@ internal static class Program
                     _cameraController.SetFocus(worldPos, distance);
                 }
 
-                ImGui.Separator();
-                ImGui.Text("Components:");
-                ImGui.BeginChild(ImGui.GetID("entity_components"), new System.Numerics.Vector2(0, 200), ImGuiChildFlags.None);
-                foreach (var (type, data) in World.GetComponentsForEntityAsObjects(_selectedEntity))
-                {
-                    ImGui.PushID(type.FullName);
-                    if (ImGui.TreeNode(type.Name))
-                    {
-                        if (data != null)
-                        {
-                            // Use the recursive ImGui renderer for better visibility of fields
-                            RenderObjectForImGui(data);
-                        }
-                        else
-                        {
-                            ImGui.Text("(null)");
-                        }
-                        ImGui.TreePop();
-                    }
-                    ImGui.PopID();
-                }
-                ImGui.EndChild();
+                // Components list removed per user request.
             }
             else
             {
@@ -1678,34 +1657,11 @@ internal static class Program
             }
 
 
-            // NOTE: floating-origin update is intentionally performed after the camera update below
-            // so it uses the camera's post-update position when deciding to rebase. The actual
-            // rebase is executed after `_cameraController.Update(...)` to avoid mixed pre/post
-            // rebase state within a single frame which can cause visible teleports.
-
+            // NOTE: World.Update was already called inside the fixed-step loop above.
             // Input checks (F1,F2, mouse pick, culling toggles) are registered with _inputManager in InitializeScene
-
-            // Note: World.Update was already called inside the fixed-step loop above.
-            // Update camera via controller abstraction AFTER physics step so any live
-            // focus providers (which read physics poses) get the latest, post-step
-            // positions. This avoids the camera lagging behind fast-moving objects
-            // when the simulation is sped up.
-            _cameraController.Update(Inputs, MainWindow, delta);
-
-            // Update floating origin system (check if rebase is needed).
-            // When using camera-relative rendering we *don't* rebase the world because
-            // rendering already keeps active coordinates near the origin. Rebasing while
-            // rendering camera-relative causes visible jumps and line/orbit mismatch.
-            // Always consider rebasing the world when the camera drifts far from origin.
-            // Keeping ECS/physics positions small in magnitude prevents single-precision
-            // precision loss and visible jitter when converting to floats for rendering.
-            if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
-            {
-                // Keep the camera near origin too so it doesn't immediately trigger another rebase
-                _camera.Position -= rebaseOffset;
-                // Also adjust camera controller internals so focus/distance remain valid after the world shift
-                _cameraController.ApplyOriginShift(rebaseOffset);
-            }
+            // Camera updates and floating-origin rebasing are performed per-render in Draw() so the camera
+            // receives the render-frame delta (not the fixed simulation delta) and remains smooth even when
+            // the simulation runs at a lower fixed-step rate.
 
             foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(Position3D)))
             {
@@ -1758,6 +1714,22 @@ internal static class Program
                 _fpsFrames = 0;
                 _fpsTimer = 0f;
             }
+            // Update camera using render-frame delta so camera movement is smooth regardless of simulation step rate
+            try
+            {
+                // Convert dt to a TimeSpan-like delta used by the controller Update signature
+                var renderDelta = TimeSpan.FromSeconds(dt);
+                _cameraController.Update(Inputs, MainWindow, renderDelta);
+
+                // Update floating origin system (check if rebase is needed) using camera's post-update position
+                if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
+                {
+                    // Keep the camera near origin too so it doesn't immediately trigger another rebase
+                    _camera.Position -= rebaseOffset;
+                    _cameraController.ApplyOriginShift(rebaseOffset);
+                }
+            }
+            catch { }
             // Compute single-precision view/projection and extract frustum once per frame.
             var viewDouble = _camera.GetViewMatrix();
             var projDouble = _camera.GetProjectionMatrix();
