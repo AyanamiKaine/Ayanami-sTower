@@ -109,6 +109,7 @@ internal static class Program
         private FloatingOriginManager? _floatingOriginManager;
         // Input manager to simplify checked inputs
         private InputManager _inputManager = new();
+        private readonly MouseInteractionService _mouseInteraction = new();
         // FPS counter for window title
         private readonly string _baseTitle = "Stella Invicta";
         private float _fpsTimer = 0f;
@@ -620,6 +621,35 @@ internal static class Program
             {
                 if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var result))
                 {
+                    // Map pick result to an Entity? so the interaction service can notify handlers.
+                    Entity? clickedEntity = null;
+                    if (result.Collidable.Mobility == CollidableMobility.Static)
+                    {
+                        if (TryGetStaticRef(result.Collidable.StaticHandle, out var staticBody))
+                        {
+                            foreach (var e in World.Query(typeof(PhysicsStatic)))
+                            {
+                                if (e.GetMut<PhysicsStatic>().Handle.Equals(result.Collidable.StaticHandle))
+                                {
+                                    clickedEntity = e;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var bh = result.Collidable.BodyHandle;
+                        foreach (var e in World.Query(typeof(PhysicsBody)))
+                        {
+                            if (e.GetMut<PhysicsBody>().Handle.Equals(bh))
+                            {
+                                clickedEntity = e;
+                                break;
+                            }
+                        }
+                    }
+
                     // Keep the existing pick/double-click logic but readonly capture necessary variables
                     double now = DateTime.UtcNow.TimeOfDay.TotalSeconds;
                     bool isDoubleClick = false;
@@ -713,6 +743,9 @@ internal static class Program
                             }
                         }
                     }
+
+                    // Notify interaction service about this click (if any entity was associated)
+                    _mouseInteraction.NotifyClick(clickedEntity);
                 }
                 else
                 {
@@ -1170,6 +1203,12 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(10.0f * 0.6f)))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
+
+            sun.OnMouseEnter(_mouseInteraction, (Entity e) =>
+            {
+                Console.WriteLine($"[Mouse] Entered Sun entity {e.Id}");
+            });
+
             // Mercury: 0.39 AU from the Sun.
             var mercury = World.CreateEntity()
                 .Set(new CelestialBody())
@@ -1229,7 +1268,7 @@ internal static class Program
                 .Set(new Size3D(0.27f)) // size = 0.27x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.27f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.0012f, 0f)) 
+                .Set(new AngularVelocity3D(0f, 0.0012f, 0f))
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1246,7 +1285,7 @@ internal static class Program
                 .Set(new Size3D(0.01f)) // size = 0.01x Earth
                 .Set(Rotation3D.Identity)
                 .Set(new CollisionShape(new Sphere(0.01f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.0018f, 0f)) 
+                .Set(new AngularVelocity3D(0f, 0.0018f, 0f))
                 .Set(new Parent(earth))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
@@ -1621,6 +1660,45 @@ internal static class Program
         {
             // Snapshot inputs early so edge/held queries are stable during the frame
             _inputManager.Update(Inputs);
+
+            // Per-frame hover: pick under cursor and notify mouse interaction service so
+            // OnMouseEnter / OnMouseExit callbacks are triggered automatically.
+            try
+            {
+                Entity? hoveredEntity = null;
+                if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var hoverResult))
+                {
+                    if (hoverResult.Collidable.Mobility == CollidableMobility.Static)
+                    {
+                        if (TryGetStaticRef(hoverResult.Collidable.StaticHandle, out var staticBody))
+                        {
+                            foreach (var e in World.Query(typeof(PhysicsStatic)))
+                            {
+                                if (e.GetMut<PhysicsStatic>().Handle.Equals(hoverResult.Collidable.StaticHandle))
+                                {
+                                    hoveredEntity = e;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var bh = hoverResult.Collidable.BodyHandle;
+                        foreach (var e in World.Query(typeof(PhysicsBody)))
+                        {
+                            if (e.GetMut<PhysicsBody>().Handle.Equals(bh))
+                            {
+                                hoveredEntity = e;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                _mouseInteraction.NotifyHover(hoveredEntity);
+            }
+            catch { }
 
             _angle += (float)delta.TotalSeconds * 0.7f;
             // Keep camera aspect up-to-date on resize
