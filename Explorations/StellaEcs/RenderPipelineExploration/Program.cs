@@ -1691,10 +1691,10 @@ internal static class Program
             }
 
             // Ensure kinematic bodies follow ECS transforms BEFORE stepping the simulation
-            foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(Position3D)))
+            foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(RenderPosition3D)))
             {
                 var body = entity.GetMut<PhysicsBody>();
-                var pos = entity.GetMut<Position3D>().Value;
+                var pos = entity.GetMut<RenderPosition3D>().Value;
                 var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
                 if (TryGetBodyRef(body.Handle, out var bodyRef))
                 {
@@ -1741,10 +1741,10 @@ internal static class Program
             // receives the render-frame delta (not the fixed simulation delta) and remains smooth even when
             // the simulation runs at a lower fixed-step rate.
 
-            foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(Position3D)))
+            foreach (var entity in World.Query(typeof(PhysicsBody), typeof(Kinematic), typeof(RenderPosition3D)))
             {
                 var body = entity.GetMut<PhysicsBody>();
-                var pos = entity.GetMut<Position3D>().Value;
+                var pos = entity.GetMut<RenderPosition3D>().Value;
                 var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
                 if (TryGetBodyRef(body.Handle, out var bodyRef))
                 {
@@ -1917,10 +1917,10 @@ internal static class Program
                 // Draw axes for entities that request it, or for all entities when toggled.
                 if (_debugDrawAxesAll)
                 {
-                    foreach (var e in World.Query(typeof(Position3D)))
+                    foreach (var e in World.Query(typeof(RenderPosition3D)))
                     {
                         var ent = e; // capture
-                        var pos = ent.Has<Position3D>() ? ent.GetMut<Position3D>().Value : Vector3Double.Zero;
+                        var pos = ent.Has<RenderPosition3D>() ? ent.GetMut<RenderPosition3D>().Value : Vector3Double.Zero;
 
                         // Cull axes if center is too far
                         if (Vector3Double.DistanceSquared(pos, camPosDouble) > maxDistSq) continue;
@@ -1934,10 +1934,10 @@ internal static class Program
                 }
                 else
                 {
-                    foreach (var e in World.Query(typeof(DebugAxes), typeof(Position3D)))
+                    foreach (var e in World.Query(typeof(DebugAxes), typeof(RenderPosition3D)))
                     {
                         var ent = e; // capture
-                        var pos = ent.GetMut<Position3D>().Value;
+                        var pos = ent.GetMut<RenderPosition3D>().Value;
 
                         // Cull axes if center is too far
                         if (Vector3Double.DistanceSquared(pos, camPosDouble) > maxDistSq) continue;

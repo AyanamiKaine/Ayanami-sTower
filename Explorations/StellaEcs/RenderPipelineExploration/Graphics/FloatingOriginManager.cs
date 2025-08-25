@@ -76,6 +76,10 @@ public class FloatingOriginManager
             var pos = entity.GetMut<Position3D>();
             var newPosD = pos.Value - offset;
             entity.Set(new Position3D(newPosD.X, newPosD.Y, newPosD.Z));
+
+            var renderPos = entity.GetMut<RenderPosition3D>();
+            var newRenderPosD = renderPos.Value - offset;
+            entity.Set(new RenderPosition3D(newRenderPosD));
         }
 
         // Rebase physics objects to sync them with the new ECS positions.
