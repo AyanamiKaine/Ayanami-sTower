@@ -1559,9 +1559,13 @@ internal static class Program
             // when the simulation time scale is increased which caused the camera to
             // trail the physics objects and accumulate an offset.
 
-
-            // NOTE: floating-origin update is performed after the camera update below
-            // so it uses the camera's post-update position.
+            // While our camera updates in drawing our rebase is done in the update loop
+            if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
+            {
+                // Keep the camera near origin too so it doesn't immediately trigger another rebase
+                _camera.Position -= rebaseOffset;
+                _cameraController.ApplyOriginShift(rebaseOffset);
+            }
 
             // Ensure any entities with CollisionShape have corresponding physics objects even if OnSetPost timing missed
             foreach (var e in World.Query(typeof(CollisionShape)))
@@ -1722,12 +1726,7 @@ internal static class Program
                 _cameraController.Update(Inputs, MainWindow, renderDelta);
 
                 // Update floating origin system (check if rebase is needed) using camera's post-update position
-                if (_floatingOriginManager != null && _floatingOriginManager.Update(_camera.Position, out var rebaseOffset))
-                {
-                    // Keep the camera near origin too so it doesn't immediately trigger another rebase
-                    _camera.Position -= rebaseOffset;
-                    _cameraController.ApplyOriginShift(rebaseOffset);
-                }
+
             }
             catch { }
             // Compute single-precision view/projection and extract frustum once per frame.
