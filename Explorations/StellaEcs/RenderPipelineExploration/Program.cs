@@ -48,7 +48,7 @@ internal static class Program
         // The simulation will always step in discrete, fixed-sized steps so
         // identical inputs produce identical results regardless of frame timing.
         private double _simulationAccumulator = 0.0;
-        private const double _fixedSimulationStepSeconds = 1.0 / 10.0; // 60 Hz deterministic step
+        private const double _fixedSimulationStepSeconds = 1.0 / 30.0; // 60 Hz deterministic step
         private const int _maxSimulationStepsPerFrame = 16; // safety clamp to avoid spiral-of-death
         /// <summary>
         /// Represents the current game world.
@@ -101,6 +101,9 @@ internal static class Program
         private bool _enableSizeVisibility = true;
         private float _minScreenPixelSize = 6.0f; // default minimum pixel radius to consider "visible"
 
+        // Interpolation toggle
+        private bool _interpolationEnabled = true;
+
         // Floating origin system
         private FloatingOriginManager? _floatingOriginManager;
         // Input manager to simplify checked inputs
@@ -117,7 +120,7 @@ internal static class Program
         public StellaInvicta() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
-            FramePacingSettings.CreateCapped(30, 360),
+            FramePacingSettings.CreateCapped(60, 360),
             ShaderFormat.SPIRV | ShaderFormat.DXIL | ShaderFormat.DXBC,
             debugMode: true)
         {
@@ -400,6 +403,7 @@ internal static class Program
             ImGui.Separator();
             ImGui.Checkbox("Debug Draw Colliders", ref _debugDrawColliders);
             ImGui.Checkbox("Debug Draw Axes (All)", ref _debugDrawAxesAll);
+            ImGui.Checkbox("Interpolation Enabled", ref _interpolationEnabled);
             ImGui.Checkbox("Frustum Culling", ref _enableFrustumCulling);
             ImGui.SliderFloat("Culling Radius Scale", ref _cullingRadiusScale, 0.1f, 10f);
             ImGui.End();
@@ -669,6 +673,13 @@ internal static class Program
                 _enableSizeVisibility = !_enableSizeVisibility;
                 Console.WriteLine($"[Culling] Size-based visibility: {(_enableSizeVisibility ? "ENABLED" : "DISABLED")}");
             }, "ToggleSizeVisibility");
+
+            // Toggle interpolation (I)
+            _inputManager.RegisterKeyPressed(KeyCode.I, () =>
+            {
+                _interpolationEnabled = !_interpolationEnabled;
+                Console.WriteLine($"[Interpolation] Enabled: {_interpolationEnabled}");
+            }, "ToggleInterpolation");
 
             _inputManager.RegisterKeyHeld(KeyCode.N, () =>
             {
@@ -1726,7 +1737,15 @@ internal static class Program
             try
             {
                 double alphaInterp = Math.Clamp(_simulationAccumulator / _fixedSimulationStepSeconds, 0.0, 1.0);
-                AyanamisTower.StellaEcs.StellaInvicta.Systems.InterpolationSystems.InterpolateRenderPositions(World, alphaInterp);
+                if (_interpolationEnabled)
+                {
+                    AyanamisTower.StellaEcs.StellaInvicta.Systems.InterpolationSystems.InterpolateRenderPositions(World, alphaInterp);
+                }
+                else
+                {
+                    // If interpolation is disabled, copy current simulation positions to render positions
+                    AyanamisTower.StellaEcs.StellaInvicta.Systems.InterpolationSystems.SetRenderPositionsToCurrent(World);
+                }
             }
             catch { }
 

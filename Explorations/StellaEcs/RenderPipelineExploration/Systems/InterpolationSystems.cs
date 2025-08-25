@@ -31,6 +31,18 @@ namespace AyanamisTower.StellaEcs.StellaInvicta.Systems
             }
         }
 
+        // When interpolation is disabled we still want render systems to have a valid
+        // RenderPosition3D component. This copies the current simulation position into
+        // the render component so visuals immediately reflect physics without smoothing.
+        public static void SetRenderPositionsToCurrent(World world)
+        {
+            foreach (var e in world.Query(typeof(Position3D)))
+            {
+                var cur = e.GetMut<Position3D>().Value;
+                e.Set(new RenderPosition3D(cur));
+            }
+        }
+
         private static Vector3Double Lerp(Vector3Double a, Vector3Double b, float t)
         {
             return new Vector3Double(
