@@ -166,7 +166,7 @@ public readonly struct Entity : IEquatable<Entity>
     public void Destroy()
     {
         if (_world == null) throw new InvalidOperationException("Cannot destroy an entity that is not associated with a world.");
-        _world.DestroyEntity(this);
+        _world.DestroyEntityDeferred(this);
     }
 
     /// <summary>

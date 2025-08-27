@@ -166,6 +166,14 @@ public class World
     /// </summary>
     private readonly Dictionary<Type, IMessageBus> _messageBuses = [];
 
+    // Deferred destruction queue: entities scheduled to be destroyed at the end of the update.
+    private readonly Queue<Entity> _deferredDestroyQueue = new();
+    private readonly HashSet<uint> _deferredDestroySet = new();
+
+    // Destroy callbacks: run before an entity is destroyed (pre) and after destruction (post).
+    private readonly List<Action<Entity>> _preDestroyHandlers = new();
+    private readonly List<Action<Entity>> _postDestroyHandlers = new();
+
     // --- NEW: Component Observers (typed + dynamic) ---
     // Delegates for typed component observers
     /// <summary>
@@ -471,31 +479,9 @@ public class World
     /// <param name="entity">The entity to destroy.</param>
     public void DestroyEntity(Entity entity)
     {
-        if (!IsEntityValid(entity))
-            throw new ArgumentException($"Entity {entity} is no longer valid");
-
-        // Remove all components associated with this entity.
-        foreach (var storage in _storages.Values)
-        {
-            storage.Remove(entity);
-        }
-
-        // Remove all dynamic components for this entity.
-        foreach (var map in _dynamicComponents.Values)
-        {
-            map.Remove(entity);
-        }
-
-        // Mark as not alive.
-        _activeEntityIds.Remove(entity.Id);
-
-        // Invalidate the entity handle by incrementing the generation
-        // (for future use if/when entity handles carry generation).
-        _generations[entity.Id]++;
-
-        // Add the ID to the free list for recycling.
-        _freeIds.Enqueue(entity.Id);
-        _logger.LogTrace("Destroyed entity {EntityId}", entity.Id);
+        // Schedule for deferred destruction at end of tick. This avoids invalidating handles mid-frame
+        // while systems are iterating component storages.
+        DestroyEntityDeferred(entity);
     }
 
     /// <summary>
@@ -1177,8 +1163,93 @@ public class World
         executeList(_presentationSystems);
 
         Tick++;
+
+        // Process deferred destructions after systems have run, but before messages are cleared.
+        ProcessDeferredDestructions();
+
         ClearAllMessages();
     }
+
+    /// <summary>
+    /// Schedule an entity to be destroyed at the end of the current tick.
+    /// Safe to call from systems while iterating components.
+    /// </summary>
+    public void DestroyEntityDeferred(Entity entity)
+    {
+        if (entity.Equals(Entity.Null)) return;
+        // Avoid double enqueue for the same id.
+        if (_deferredDestroySet.Add(entity.Id))
+        {
+            _deferredDestroyQueue.Enqueue(entity);
+        }
+    }
+
+    /// <summary>
+    /// Process all entities queued for deferred destruction. This runs once per tick.
+    /// </summary>
+    private void ProcessDeferredDestructions()
+    {
+        while (_deferredDestroyQueue.Count > 0)
+        {
+            var e = _deferredDestroyQueue.Dequeue();
+            _deferredDestroySet.Remove(e.Id);
+            try
+            {
+                DestroyEntityImmediate(e);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Exception during deferred destruction of entity {Entity}", e);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Internal immediate destroy used by both immediate and deferred flows.
+    /// </summary>
+    private void DestroyEntityImmediate(Entity entity)
+    {
+        if (!IsEntityValid(entity))
+        {
+            _logger.LogDebug("DestroyEntityImmediate called on already-invalid entity {Entity}", entity);
+            return;
+        }
+
+        // Run pre-destroy handlers. They may perform cleanup that requires components to still exist.
+        foreach (var handler in _preDestroyHandlers)
+        {
+            try { handler(entity); } catch (Exception ex) { _logger.LogWarning(ex, "Pre-destroy handler threw for {Entity}", entity); }
+        }
+
+        foreach (var storage in _storages.Values)
+        {
+            try { storage.Remove(entity); } catch (Exception ex) { _logger.LogWarning(ex, "Error removing storage component while destroying {Entity}", entity); }
+        }
+        foreach (var map in _dynamicComponents.Values)
+        {
+            try { map.Remove(entity); } catch { }
+        }
+        _activeEntityIds.Remove(entity.Id);
+        _generations[entity.Id]++;
+        _freeIds.Enqueue(entity.Id);
+        _logger.LogTrace("Destroyed entity {EntityId}", entity.Id);
+
+        // Run post-destroy handlers after cleanup.
+        foreach (var handler in _postDestroyHandlers)
+        {
+            try { handler(entity); } catch (Exception ex) { _logger.LogWarning(ex, "Post-destroy handler threw for {Entity}", entity); }
+        }
+    }
+
+    /// <summary>
+    /// Register a callback to run just before an entity is destroyed (components still present).
+    /// </summary>
+    public void OnPreDestroy(Action<Entity> handler) => _preDestroyHandlers.Add(handler);
+
+    /// <summary>
+    /// Register a callback to run immediately after an entity has been destroyed (components removed).
+    /// </summary>
+    public void OnPostDestroy(Action<Entity> handler) => _postDestroyHandlers.Add(handler);
 
     /// <summary>
     /// Publishes a message to the world. Any system can read this message during the current frame.
