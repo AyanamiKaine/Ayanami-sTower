@@ -1169,7 +1169,7 @@ internal static class Program
                 .Set(new Size3D(10.0f)) // Artistically scaled size
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
-                .Set(new CollisionShape(new Sphere(10.0f * 0.6f)))
+                .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
 
@@ -1182,7 +1182,7 @@ internal static class Program
                 .Set(Rotation3D.Identity)
                 .Set(new Velocity3D(-0.5, 0, 0))
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
-                .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
+                .Set(new CollisionShape(new Sphere(1.0f * 0.5f)))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             asteroid.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
