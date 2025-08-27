@@ -1170,8 +1170,8 @@ internal static class Program
                 .Set(Rotation3D.Identity)
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                                                             // Put sun on a different collision layer than asteroids so they won't collide.
-                .Set(new CollisionLayer(1 << 0, 1 << 0))
                 .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
+                .Set(new CollisionLayer(1 << 0, 1 << 0))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
 
@@ -1184,16 +1184,35 @@ internal static class Program
                 .Set(Rotation3D.Identity)
                 .Set(new Velocity3D(-0.5, 0, 0))
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
-                .Set(new CollisionLayer(2 << 2, 1 << 1))
                 .Set(new CollisionShape(new Sphere(1.0f * 0.5f)))
+                .Set(new CollisionLayer(1 << 0, 1 << 0))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
+
+            var asteroidBDifferentPhysicsLayer = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(origin.X - 10, origin.Y, origin.Z))
+                .Set(new Size3D(1.0f)) // Artistically scaled size
+                .Set(Rotation3D.Identity)
+                .Set(new Velocity3D(0.5, 0, 0))
+                .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
+                .Set(new CollisionShape(new Sphere(1.0f * 0.5f)))
+                .Set(new CollisionLayer(2 << 1, 2 << 1))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
+
+            // Should not trigger!
+            asteroidBDifferentPhysicsLayer.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
+            {
+                self.Destroy();
+                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, destroying asteroid! THIS SHOULD NOT HAPPEN!");
+            });
 
             asteroid.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
             {
                 self.Destroy();
                 Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, destroying asteroid!");
             });
-
 
             // Example collision handler: spawn a similar sphere at the same position when the sun collides with anything
             /*
