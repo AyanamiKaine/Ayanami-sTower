@@ -35,15 +35,12 @@ public sealed class CollisionInteractionService : IDisposable
 
     private void HandleEnter(Entity a, Entity b)
     {
+        // PhysicsManager now emits directed collision events: (subject, other).
+        // Invoke only the subject's registered handler so entities that did not
+        // request the contact don't receive callbacks.
         if (_entries.TryGetValue(a, out var ea))
         {
             try { ea.OnEnter?.Invoke(a, b); } catch { }
-        }
-        if (_entries.TryGetValue(b, out var eb))
-        {
-            // When invoking the handler registered on the second entity, flip the
-            // argument order so the handler receives (self, other).
-            try { eb.OnEnter?.Invoke(b, a); } catch { }
         }
     }
 
@@ -53,10 +50,6 @@ public sealed class CollisionInteractionService : IDisposable
         {
             try { ea.OnStay?.Invoke(a, b); } catch { }
         }
-        if (_entries.TryGetValue(b, out var eb))
-        {
-            try { eb.OnStay?.Invoke(b, a); } catch { }
-        }
     }
 
     private void HandleExit(Entity a, Entity b)
@@ -64,10 +57,6 @@ public sealed class CollisionInteractionService : IDisposable
         if (_entries.TryGetValue(a, out var ea))
         {
             try { ea.OnExit?.Invoke(a, b); } catch { }
-        }
-        if (_entries.TryGetValue(b, out var eb))
-        {
-            try { eb.OnExit?.Invoke(b, a); } catch { }
         }
     }
     /// <summary>

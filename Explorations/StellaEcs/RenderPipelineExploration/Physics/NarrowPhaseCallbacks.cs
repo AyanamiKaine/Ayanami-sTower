@@ -17,18 +17,19 @@ namespace AyanamisTower.StellaEcs.StellaInvicta.Physics;
 public sealed class NarrowPhaseContactStorage : IDisposable
 {
     private readonly object _lock = new();
-    private readonly List<(CollidableReference A, CollidableReference B)> _contacts = new();
+    // Store per-pair desire flags so the dispatcher can invoke callbacks asymmetrically.
+    private readonly List<(CollidableReference A, CollidableReference B, bool AWants, bool BWants)> _contacts = new();
 
-    internal void Add((CollidableReference A, CollidableReference B) pair)
+    internal void Add((CollidableReference A, CollidableReference B, bool AWants, bool BWants) item)
     {
-        lock (_lock) _contacts.Add(pair);
+        lock (_lock) _contacts.Add(item);
     }
 
-    public List<(CollidableReference A, CollidableReference B)> SnapshotAndClear()
+    public List<(CollidableReference A, CollidableReference B, bool AWants, bool BWants)> SnapshotAndClear()
     {
         lock (_lock)
         {
-            var copy = new List<(CollidableReference, CollidableReference)>(_contacts);
+            var copy = new List<(CollidableReference, CollidableReference, bool, bool)>(_contacts);
             _contacts.Clear();
             return copy;
         }
@@ -58,8 +59,9 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
         {
             if (LayerRegistry.TryGetLayer(a, out var ca, out var ma) && LayerRegistry.TryGetLayer(b, out var cb, out var mb))
             {
-                // Two objects should generate contacts if (A.mask & B.category) != 0 && (B.mask & A.category) != 0
-                if (((ma & cb) == 0) || ((mb & ca) == 0)) return false;
+                // Two objects should generate contacts if either side wants to interact.
+                // Allow contact generation when (A.mask & B.category) != 0 || (B.mask & A.category) != 0
+                if (((ma & cb) == 0) && ((mb & ca) == 0)) return false;
             }
         }
         return true;
@@ -87,7 +89,8 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
         {
             if (LayerRegistry.TryGetLayer(pair.A, out var ca, out var ma) && LayerRegistry.TryGetLayer(pair.B, out var cb, out var mb))
             {
-                if (((ma & cb) == 0) || ((mb & ca) == 0))
+                // If neither side wants interaction, skip recording.
+                if (((ma & cb) == 0) && ((mb & ca) == 0))
                     return true;
             }
         }
@@ -96,7 +99,17 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
         {
             if (manifold.GetDepth(i) >= penetrationEpsilon)
             {
-                Storage?.Add((pair.A, pair.B));
+                if (LayerRegistry != null && LayerRegistry.TryGetLayer(pair.A, out var ca2, out var ma2) && LayerRegistry.TryGetLayer(pair.B, out var cb2, out var mb2))
+                {
+                    bool aWants = (ma2 & cb2) != 0;
+                    bool bWants = (mb2 & ca2) != 0;
+                    Storage?.Add((pair.A, pair.B, aWants, bWants));
+                }
+                else
+                {
+                    // If no registry, assume both sides want it (backwards compatible)
+                    Storage?.Add((pair.A, pair.B, true, true));
+                }
                 break;
             }
         }
@@ -111,7 +124,7 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
         {
             if (LayerRegistry.TryGetLayer(pair.A, out var ca, out var ma) && LayerRegistry.TryGetLayer(pair.B, out var cb, out var mb))
             {
-                if (((ma & cb) == 0) || ((mb & ca) == 0))
+                if (((ma & cb) == 0) && ((mb & ca) == 0))
                     return true;
             }
         }
@@ -120,7 +133,16 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
         {
             if (manifold.GetDepth(i) >= penetrationEpsilon)
             {
-                Storage?.Add((pair.A, pair.B));
+                if (LayerRegistry != null && LayerRegistry.TryGetLayer(pair.A, out var ca2, out var ma2) && LayerRegistry.TryGetLayer(pair.B, out var cb2, out var mb2))
+                {
+                    bool aWants = (ma2 & cb2) != 0;
+                    bool bWants = (mb2 & ca2) != 0;
+                    Storage?.Add((pair.A, pair.B, aWants, bWants));
+                }
+                else
+                {
+                    Storage?.Add((pair.A, pair.B, true, true));
+                }
                 break;
             }
         }

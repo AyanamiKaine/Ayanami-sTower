@@ -29,9 +29,11 @@ public class PhysicsManager : IDisposable
     // handle -> entity mappings
     private readonly Dictionary<int, Entity> _bodyHandleToEntity = new();
     private readonly Dictionary<int, Entity> _staticHandleToEntity = new();
-    // Collision tracking sets used to detect enter/exit/stay
-    private readonly HashSet<(Entity, Entity)> _previousCollisions = new();
-    private readonly HashSet<(Entity, Entity)> _currentCollisions = new();
+    // Collision tracking sets used to detect enter/exit/stay.
+    // We track directed collisions (subject -> other) so callbacks can be dispatched
+    // only to entities that "wanted" the interaction.
+    private readonly HashSet<(Entity Subject, Entity Other)> _previousDirectedCollisions = new();
+    private readonly HashSet<(Entity Subject, Entity Other)> _currentDirectedCollisions = new();
 
     // Events fired when collisions begin, persist, or end
     /// <summary>
@@ -190,38 +192,48 @@ public class PhysicsManager : IDisposable
         Simulation.Timestep((float)deltaTime, _threadDispatcher);
 
         // Process contacts recorded by the narrow-phase collector.
-        // Snapshot via the shared storage instance. _narrowPhase contains the struct wrapper; extract the storage.
+        // Snapshot via the shared storage instance. Each contact now includes flags indicating
+        // whether the A side wanted the contact and whether the B side wanted it.
         var contacts = _narrowStorage.SnapshotAndClear();
 
-        _currentCollisions.Clear();
-        foreach ((CollidableReference aRef, CollidableReference bRef) in contacts)
+        _currentDirectedCollisions.Clear();
+        foreach ((CollidableReference aRef, CollidableReference bRef, bool aWants, bool bWants) in contacts)
         {
-            if (TryResolveEntity(aRef, out var ea) && TryResolveEntity(bRef, out var eb))
+            if (!TryResolveEntity(aRef, out var ea) || !TryResolveEntity(bRef, out var eb))
+                continue;
+
+            // If A wanted the contact, record directed pair (A -> B)
+            if (aWants)
             {
-                // canonicalize ordering to avoid duplicate pairs with swapped order
-                var pair = ea.GetHashCode() <= eb.GetHashCode() ? (ea, eb) : (eb, ea);
-                _currentCollisions.Add(pair);
+                _currentDirectedCollisions.Add((ea, eb));
+            }
+
+            // If B wanted the contact, record directed pair (B -> A)
+            if (bWants)
+            {
+                _currentDirectedCollisions.Add((eb, ea));
             }
         }
 
-        // Enter / Stay
-        foreach (var p in _currentCollisions)
+        // Enter / Stay (directed)
+        foreach (var p in _currentDirectedCollisions)
         {
-            if (!_previousCollisions.Contains(p))
-                OnCollisionEnter?.Invoke(p.Item1, p.Item2);
+            if (!_previousDirectedCollisions.Contains(p))
+                OnCollisionEnter?.Invoke(p.Subject, p.Other);
             else
-                OnCollisionStay?.Invoke(p.Item1, p.Item2);
+                OnCollisionStay?.Invoke(p.Subject, p.Other);
         }
-        // Exit
-        foreach (var p in _previousCollisions)
+
+        // Exit (directed)
+        foreach (var p in _previousDirectedCollisions)
         {
-            if (!_currentCollisions.Contains(p))
-                OnCollisionExit?.Invoke(p.Item1, p.Item2);
+            if (!_currentDirectedCollisions.Contains(p))
+                OnCollisionExit?.Invoke(p.Subject, p.Other);
         }
 
         // prepare for next frame
-        _previousCollisions.Clear();
-        foreach (var p in _currentCollisions) _previousCollisions.Add(p);
+        _previousDirectedCollisions.Clear();
+        foreach (var p in _currentDirectedCollisions) _previousDirectedCollisions.Add(p);
     }
 
     /// <summary>

@@ -1172,9 +1172,13 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                                                             // Put sun on a different collision layer than asteroids so they won't collide.
                 .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
-                .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.Asteroid)) // <- layer first
+                .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None)) // <- layer first
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
+            sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
+            {
+                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, This should not trigger because the sun does not want to collide with anything and should ignore any collision!");
+            });
 
             var asteroid = World.CreateEntity()
                 .Set(new CelestialBody())
