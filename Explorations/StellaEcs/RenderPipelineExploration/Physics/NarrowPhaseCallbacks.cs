@@ -44,21 +44,54 @@ public sealed class NarrowPhaseContactStorage : IDisposable
 public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
 {
     public NarrowPhaseContactStorage Storage;
+    public CollisionLayerRegistry? LayerRegistry;
 
-    public NarrowPhaseCallbacks(NarrowPhaseContactStorage storage) { Storage = storage; }
+    public NarrowPhaseCallbacks(NarrowPhaseContactStorage storage, CollisionLayerRegistry? registry = null) { Storage = storage; LayerRegistry = registry; }
 
     public void Initialize(Simulation simulation) { }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool AllowContactGeneration(int workerIndex, CollidableReference a, CollidableReference b, ref float speculativeMargin) => true;
+    public bool AllowContactGeneration(int workerIndex, CollidableReference a, CollidableReference b, ref float speculativeMargin)
+    {
+        // If a layer registry is present, consult it and skip pair if categories/masks don't match.
+        if (LayerRegistry != null)
+        {
+            if (LayerRegistry.TryGetLayer(a, out var ca, out var ma) && LayerRegistry.TryGetLayer(b, out var cb, out var mb))
+            {
+                // Two objects should generate contacts if (A.mask & B.category) != 0 && (B.mask & A.category) != 0
+                if (((ma & cb) == 0) || ((mb & ca) == 0)) return false;
+            }
+        }
+        return true;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool AllowContactGeneration(int workerIndex, CollidablePair pair, int childIndexA, int childIndexB) => true;
+    public bool AllowContactGeneration(int workerIndex, CollidablePair pair, int childIndexA, int childIndexB)
+    {
+        if (LayerRegistry != null)
+        {
+            if (LayerRegistry.TryGetLayer(pair.A, out var ca, out var ma) && LayerRegistry.TryGetLayer(pair.B, out var cb, out var mb))
+            {
+                if (((ma & cb) == 0) || ((mb & ca) == 0)) return false;
+            }
+        }
+        return true;
+    }
 
     public bool ConfigureContactManifold<TManifold>(int workerIndex, CollidablePair pair, ref TManifold manifold, out PairMaterialProperties material) where TManifold : unmanaged, IContactManifold<TManifold>
     {
         material = new PairMaterialProperties { FrictionCoefficient = 1f, MaximumRecoveryVelocity = 2f, SpringSettings = new SpringSettings(30, 1) };
         const float penetrationEpsilon = -1e-3f;
+        // If a layer registry exists and indicates these two collidables should not interact, skip recording.
+        if (LayerRegistry != null)
+        {
+            if (LayerRegistry.TryGetLayer(pair.A, out var ca, out var ma) && LayerRegistry.TryGetLayer(pair.B, out var cb, out var mb))
+            {
+                if (((ma & cb) == 0) || ((mb & ca) == 0))
+                    return true;
+            }
+        }
+
         for (int i = 0; i < manifold.Count; ++i)
         {
             if (manifold.GetDepth(i) >= penetrationEpsilon)
@@ -74,6 +107,15 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
     public bool ConfigureContactManifold(int workerIndex, CollidablePair pair, int childIndexA, int childIndexB, ref ConvexContactManifold manifold)
     {
         const float penetrationEpsilon = -1e-3f;
+        if (LayerRegistry != null)
+        {
+            if (LayerRegistry.TryGetLayer(pair.A, out var ca, out var ma) && LayerRegistry.TryGetLayer(pair.B, out var cb, out var mb))
+            {
+                if (((ma & cb) == 0) || ((mb & ca) == 0))
+                    return true;
+            }
+        }
+
         for (int i = 0; i < manifold.Count; ++i)
         {
             if (manifold.GetDepth(i) >= penetrationEpsilon)

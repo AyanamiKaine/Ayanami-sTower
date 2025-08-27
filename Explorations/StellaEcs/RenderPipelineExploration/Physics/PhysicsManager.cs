@@ -25,6 +25,7 @@ public class PhysicsManager : IDisposable
     private readonly World _world;
     private readonly NarrowPhaseCallbacks _narrowPhase;
     private readonly NarrowPhaseContactStorage _narrowStorage;
+    private readonly CollisionLayerRegistry _layerRegistry;
     // handle -> entity mappings
     private readonly Dictionary<int, Entity> _bodyHandleToEntity = new();
     private readonly Dictionary<int, Entity> _staticHandleToEntity = new();
@@ -60,7 +61,8 @@ public class PhysicsManager : IDisposable
         _bufferPool = new BufferPool();
         _threadDispatcher = new ThreadDispatcher(Environment.ProcessorCount);
         _narrowStorage = new NarrowPhaseContactStorage();
-        _narrowPhase = new NarrowPhaseCallbacks(_narrowStorage);
+        _layerRegistry = new CollisionLayerRegistry();
+        _narrowPhase = new NarrowPhaseCallbacks(_narrowStorage, _layerRegistry);
         Simulation = Simulation.Create(_bufferPool, _narrowPhase, new PoseIntegratorCallbacks(new Vector3(0, 0, 0)), new SolveDescription(8, 1));
 
 
@@ -101,6 +103,23 @@ public class PhysicsManager : IDisposable
                 var bodyHandle = Simulation.Bodies.Add(bodyDesc);
                 entity.Set(new PhysicsBody { Handle = bodyHandle });
                 _bodyHandleToEntity[bodyHandle.Value] = entity;
+                // Register collision layer for this handle. If entity doesn't have one yet,
+                // register a sensible default (category = 1<<0, mask = all) so layer lookups always succeed.
+                uint defaultCategory = 1u << 0;
+                uint defaultMask = uint.MaxValue;
+                // Kinematic bodies are reported as Kinematic mobility by Bepu; register with that mobility.
+                if (entity.Has<CollisionLayer>())
+                {
+                    var layer = entity.GetCopy<CollisionLayer>();
+                    // Register under both Kinematic and Dynamic to be robust to mobility reporting.
+                    _layerRegistry.RegisterHandle(CollidableMobility.Kinematic, bodyHandle.Value, layer.Category, layer.Mask);
+                    _layerRegistry.RegisterHandle(CollidableMobility.Dynamic, bodyHandle.Value, layer.Category, layer.Mask);
+                }
+                else
+                {
+                    _layerRegistry.RegisterHandle(CollidableMobility.Kinematic, bodyHandle.Value, defaultCategory, defaultMask);
+                    _layerRegistry.RegisterHandle(CollidableMobility.Dynamic, bodyHandle.Value, defaultCategory, defaultMask);
+                }
             }
             else
             {
@@ -109,7 +128,41 @@ public class PhysicsManager : IDisposable
                 var staticHandle = Simulation.Statics.Add(staticDescription);
                 entity.Set(new PhysicsStatic { Handle = staticHandle });
                 _staticHandleToEntity[staticHandle.Value] = entity;
+                uint defaultCategory = 1u << 0;
+                uint defaultMask = uint.MaxValue;
+                if (entity.Has<CollisionLayer>())
+                {
+                    var layer = entity.GetCopy<CollisionLayer>();
+                    _layerRegistry.RegisterHandle(CollidableMobility.Static, staticHandle.Value, layer.Category, layer.Mask);
+                }
+                else
+                {
+                    _layerRegistry.RegisterHandle(CollidableMobility.Static, staticHandle.Value, defaultCategory, defaultMask);
+                }
 
+            }
+        });
+
+        // When a CollisionLayer component is set on an entity, register any existing physics handles with the registry.
+        world.OnSetPost((Entity entity, in CollisionLayer _, in CollisionLayer layer, bool _) =>
+        {
+            try
+            {
+                if (entity.Has<PhysicsBody>())
+                {
+                    var pb = entity.GetCopy<PhysicsBody>();
+                    _layerRegistry.RegisterHandle(CollidableMobility.Kinematic, pb.Handle.Value, layer.Category, layer.Mask);
+                    _layerRegistry.RegisterHandle(CollidableMobility.Dynamic, pb.Handle.Value, layer.Category, layer.Mask);
+                }
+                if (entity.Has<PhysicsStatic>())
+                {
+                    var ps = entity.GetCopy<PhysicsStatic>();
+                    _layerRegistry.RegisterStaticHandle(ps.Handle.Value, layer.Category, layer.Mask);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Physics] Exception registering collision layer for entity {entity.Id}: {ex}");
             }
         });
 
@@ -235,6 +288,9 @@ public class PhysicsManager : IDisposable
                 Console.WriteLine($"[Physics] Warning: failed to remove body handle {handle.Value}: {ex.Message}");
             }
             _bodyHandleToEntity.Remove(handle.Value);
+            // Body could be Kinematic/Dynamic — try to remove both possible mobility entries.
+            _layerRegistry.UnregisterHandle(CollidableMobility.Kinematic, handle.Value);
+            _layerRegistry.UnregisterHandle(CollidableMobility.Dynamic, handle.Value);
         }
 
         // Statics
@@ -256,6 +312,7 @@ public class PhysicsManager : IDisposable
                 Console.WriteLine($"[Physics] Warning: failed to remove static handle {handle.Value}: {ex.Message}");
             }
             _staticHandleToEntity.Remove(handle.Value);
+            _layerRegistry.UnregisterHandle(CollidableMobility.Static, handle.Value);
         }
     }
 }
