@@ -41,7 +41,9 @@ public sealed class CollisionInteractionService : IDisposable
         }
         if (_entries.TryGetValue(b, out var eb))
         {
-            try { eb.OnEnter?.Invoke(a, b); } catch { }
+            // When invoking the handler registered on the second entity, flip the
+            // argument order so the handler receives (self, other).
+            try { eb.OnEnter?.Invoke(b, a); } catch { }
         }
     }
 
@@ -53,7 +55,7 @@ public sealed class CollisionInteractionService : IDisposable
         }
         if (_entries.TryGetValue(b, out var eb))
         {
-            try { eb.OnStay?.Invoke(a, b); } catch { }
+            try { eb.OnStay?.Invoke(b, a); } catch { }
         }
     }
 
@@ -65,7 +67,7 @@ public sealed class CollisionInteractionService : IDisposable
         }
         if (_entries.TryGetValue(b, out var eb))
         {
-            try { eb.OnExit?.Invoke(a, b); } catch { }
+            try { eb.OnExit?.Invoke(b, a); } catch { }
         }
     }
     /// <summary>

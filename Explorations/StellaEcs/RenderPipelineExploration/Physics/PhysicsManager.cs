@@ -113,6 +113,20 @@ public class PhysicsManager : IDisposable
             }
         });
 
+        // Ensure physics objects are removed from the simulation when an entity is destroyed.
+        // Use the world's pre-destroy hook so components are still readable.
+        world.OnPreDestroy((Entity entity) =>
+        {
+            try
+            {
+                RemovePhysicsForEntity(entity);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Physics] Exception while removing physics for destroyed entity: {ex}");
+            }
+        });
+
     }
     /// <summary>
     /// Advances the physics simulation by a single timestep.
@@ -196,6 +210,52 @@ public class PhysicsManager : IDisposable
         {
             var sh = cref.StaticHandle;
             return _staticHandleToEntity.TryGetValue(sh.Value, out e);
+        }
+    }
+
+    // Remove any physics objects (body or static) associated with an entity from the simulation
+    private void RemovePhysicsForEntity(Entity entity)
+    {
+        // Bodies (dynamic/kinematic)
+        if (entity.Has<PhysicsBody>())
+        {
+            var pb = entity.GetCopy<PhysicsBody>();
+            var handle = pb.Handle;
+            try
+            {
+                // Safely check and remove the body if it still exists
+                var bodyRef = Simulation.Bodies.GetBodyReference(handle);
+                if (bodyRef.Exists)
+                {
+                    Simulation.Bodies.Remove(handle);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Physics] Warning: failed to remove body handle {handle.Value}: {ex.Message}");
+            }
+            _bodyHandleToEntity.Remove(handle.Value);
+        }
+
+        // Statics
+        if (entity.Has<PhysicsStatic>())
+        {
+            var ps = entity.GetCopy<PhysicsStatic>();
+            var handle = ps.Handle;
+            try
+            {
+                // Statics use the Statics set
+                var staticRef = Simulation.Statics.GetStaticReference(handle);
+                if (staticRef.Exists)
+                {
+                    Simulation.Statics.Remove(handle);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Physics] Warning: failed to remove static handle {handle.Value}: {ex.Message}");
+            }
+            _staticHandleToEntity.Remove(handle.Value);
         }
     }
 }

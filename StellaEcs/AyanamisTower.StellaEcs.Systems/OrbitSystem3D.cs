@@ -40,6 +40,9 @@ public sealed class OrbitSystem3D : ISystem
 
             // Ensure parent has a position
             var parent = parentRef.Entity;
+
+            if (!parent.IsValid()) return;
+
             if (!parent.Has<Position3D>())
             {
                 needSet[i] = false;
