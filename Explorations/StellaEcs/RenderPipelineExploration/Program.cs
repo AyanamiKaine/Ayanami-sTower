@@ -1172,7 +1172,16 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                                                             // Put sun on a different collision layer than asteroids so they won't collide.
                 .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
-                .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None)) // <- layer first
+
+                /*
+                Category = what the object is. Here the entity is a Sun (its category bit = Sun).
+                
+                Mask = which categories this entity wants the engine to notify it about. CollisionCategory.None means the Sun does not want to receive collision callbacks for any category.
+                
+                The engine treats contacts as something either side may request, but only notifies the side(s) that actually requested the contact (directed events).
+                */
+
+                .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
@@ -1180,7 +1189,7 @@ internal static class Program
                 Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, This should not trigger because the sun does not want to collide with anything and should ignore any collision!");
             });
 
-            var asteroid = World.CreateEntity()
+            var asteroidA = World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1206,6 +1215,17 @@ internal static class Program
                 .Set(CollisionCategory.Asteroid.ToLayer(CollisionCategory.None))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
+
+            /*
+
+            When AsteroidA overlaps Sun:
+            Physics contact may be generated and resolved (because AsteroidA wanted it).
+            AsteroidA’s OnCollisionEnter handler will be invoked with (self=AsteroidA, other=Sun).
+            Sun’s OnCollisionEnter will NOT be invoked.
+            
+            When AsteroidB overlaps Sun:
+            No contact generated (neither side requested), nothing happens. 
+            */
             // Should not trigger!
             asteroidBDifferentPhysicsLayer.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
             {
@@ -1213,7 +1233,7 @@ internal static class Program
                 Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, destroying asteroid! THIS SHOULD NOT HAPPEN!");
             });
 
-            asteroid.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
+            asteroidA.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
             {
                 self.Destroy();
                 Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, destroying asteroid!");
