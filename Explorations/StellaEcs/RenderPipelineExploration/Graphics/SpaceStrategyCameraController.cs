@@ -105,7 +105,7 @@ public sealed class SpaceStrategyCameraController
     /// <summary>
     /// Edge pan speed in world units per second (scaled by distance). Defaults to PanSpeed.
     /// </summary>
-    public double EdgePanSpeed { get; set; } = 8.0f;
+    public double EdgePanSpeed { get; set; } = 0.4f;
 
     /// <summary>
     /// Exponent used when scaling pan speed by distance. The controller computes a
