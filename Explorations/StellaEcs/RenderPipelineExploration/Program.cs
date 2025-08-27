@@ -1039,7 +1039,7 @@ internal static class Program
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-            SpawnGalaxies(10);
+            // SpawnGalaxies(10);
 
             // Example usage:
             // SetSkybox("AssetManager.AssetFolderName + "/skybox.jpg", 50f);
@@ -1191,17 +1191,21 @@ internal static class Program
                 Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, destroying asteroid!");
             });
 
+
             // Example collision handler: spawn a similar sphere at the same position when the sun collides with anything
             /*
-            sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
+
+            asteroid.OnCollisionExit(_collisionInteraction, (Entity self, Entity other) =>
             {
-                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}");
+                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, exiting asteroid!");
             });
 
-            sun.OnCollisionStay(_collisionInteraction, (Entity self, Entity other) =>
+
+            asteroid.OnCollisionStay(_collisionInteraction, (Entity self, Entity other) =>
             {
-                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}");
+                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, staying asteroid!");
             });
+
 
             sun.OnMouseEnter(_mouseInteraction, (Entity e) =>
             {
