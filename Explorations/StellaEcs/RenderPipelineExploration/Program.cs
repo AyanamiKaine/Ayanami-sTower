@@ -18,6 +18,7 @@ using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Backends.SDL3;
 using static SDL3.SDL;
 using SDL3;
+using StellaInvicta.Physics;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -1171,7 +1172,7 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                                                             // Put sun on a different collision layer than asteroids so they won't collide.
                 .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
-                .Set(new CollisionLayer(1 << 0, 1 << 0))
+                .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.Asteroid)) // <- layer first
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
 
@@ -1185,7 +1186,7 @@ internal static class Program
                 .Set(new Velocity3D(-0.5, 0, 0))
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                 .Set(new CollisionShape(new Sphere(1.0f * 0.5f)))
-                .Set(new CollisionLayer(1 << 0, 1 << 0))
+                .Set(CollisionCategory.Asteroid.ToLayer(CollisionCategory.Sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             var asteroidBDifferentPhysicsLayer = World.CreateEntity()
@@ -1198,7 +1199,7 @@ internal static class Program
                 .Set(new Velocity3D(0.5, 0, 0))
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                 .Set(new CollisionShape(new Sphere(1.0f * 0.5f)))
-                .Set(new CollisionLayer(2 << 1, 2 << 1))
+                .Set(CollisionCategory.Asteroid.ToLayer(CollisionCategory.None))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             // Should not trigger!
