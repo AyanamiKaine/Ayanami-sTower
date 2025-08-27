@@ -237,6 +237,7 @@ internal static class Program
         /// </summary>
         private Vector3Double GetEntityWorldPosition(Entity e)
         {
+            if (!World.IsEntityValid(e)) return Vector3Double.Zero;
             if (e.Has<RenderPosition3D>()) return e.GetCopy<RenderPosition3D>().Value;
             if (e.Has<Position3D>()) return e.GetCopy<Position3D>().Value;
             return Vector3Double.Zero;
@@ -1021,55 +1022,18 @@ internal static class Program
 
             _lineBatch = new LineBatch3D(GraphicsDevice, 409600);
 
+
+            World.OnPreDestroy((Entity entity) =>
+            {
+                if (entity.Has<GpuMesh>())
+                {
+                    entity.GetMut<GpuMesh>().Dispose();
+                }
+            });
+
             World.OnSetPost((Entity entity, in Mesh _, in Mesh mesh, bool _) =>
             {
                 entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
-            });
-
-            World.OnSetPost((Entity entity, in CollisionShape _, in CollisionShape collisionShape, bool _) =>
-            {
-                TypedIndex? shapeIndex = null; // Default to invalid index
-                // Add concrete shape type; Shapes.Add<T>() requires an unmanaged struct, not the IShape interface.
-                switch (collisionShape.Shape)
-                {
-                    case Sphere sphere:
-                        shapeIndex = _physicsManager.Simulation.Shapes.Add(sphere);
-                        break;
-                    case Box box:
-                        shapeIndex = _physicsManager.Simulation.Shapes.Add(box);
-                        break;
-                    case Capsule capsule:
-                        shapeIndex = _physicsManager.Simulation.Shapes.Add(capsule);
-                        break;
-                    case Cylinder cylinder:
-                        shapeIndex = _physicsManager.Simulation.Shapes.Add(cylinder);
-                        break;
-                    default:
-                        Console.WriteLine($"[Physics] Unsupported collision shape type: {collisionShape.Shape?.GetType().Name ?? "null"}");
-                        return;
-                }
-
-                // Pull initial transform
-                var pos = entity.Has<Position3D>() ? entity.GetMut<Position3D>().Value : Vector3Double.Zero;
-                var rot = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
-
-                if (entity.Has<Kinematic>())
-                {
-                    // Create a kinematic body
-                    var pose = new RigidPose(pos, rot);
-                    var collidable = new CollidableDescription((TypedIndex)shapeIndex!, 0.1f);
-                    var activity = new BodyActivityDescription(0.01f);
-                    var bodyDesc = BodyDescription.CreateKinematic(pose, collidable, activity);
-                    var bodyHandle = _physicsManager.Simulation.Bodies.Add(bodyDesc);
-                    entity.Set(new PhysicsBody { Handle = bodyHandle });
-                }
-                else
-                {
-                    // Create a static collider
-                    var staticDescription = new StaticDescription(HighPrecisionConversions.ToVector3(pos), (TypedIndex)shapeIndex!);
-                    var staticHandle = _physicsManager.Simulation.Statics.Add(staticDescription);
-                    entity.Set(new PhysicsStatic { Handle = staticHandle });
-                }
             });
 
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
@@ -1208,8 +1172,33 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(10.0f * 0.6f)))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
+
+            var asteroid = World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(origin.X + 10, origin.Y, origin.Z))
+                .Set(new Size3D(1.0f)) // Artistically scaled size
+                .Set(Rotation3D.Identity)
+                .Set(new Velocity3D(-0.5, 0, 0))
+                .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
+                .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
+
+            asteroid.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
+            {
+                self.Destroy();
+                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, destroying asteroid!");
+            });
+
             // Example collision handler: spawn a similar sphere at the same position when the sun collides with anything
+            /*
             sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
+            {
+                Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}");
+            });
+
+            sun.OnCollisionStay(_collisionInteraction, (Entity self, Entity other) =>
             {
                 Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}");
             });
@@ -1228,6 +1217,7 @@ internal static class Program
               {
                   Console.WriteLine($"[Mouse] Clicked Sun entity {e.Id}");
               });
+            */
 
             // Mercury: 0.39 AU from the Sun.
             var mercury = World.CreateEntity()
