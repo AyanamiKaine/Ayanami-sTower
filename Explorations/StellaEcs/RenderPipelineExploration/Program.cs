@@ -22,6 +22,8 @@ using SDL3;
 using StellaInvicta.Physics;
 using AyanamisTower.StellaEcs.StellaInvicta.Systems;
 using System.Runtime.InteropServices;
+using StellaInvicta.Components;
+using StellaInvicta.Graphics;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -62,9 +64,7 @@ internal static class Program
     [StructLayout(LayoutKind.Sequential)]
     private struct MaterialPropertiesUniform
     {
-        public Vector3 AmbientColor; private float _pad0;
-        public Vector3 DiffuseColor; private float _pad1;
-        public Vector3 SpecularColor; public float Shininess; public float AmbientStrength; private float _pad2;
+        public Material material;
     }
 
     // GPU-packed light structs matching HLSL std140-like packing used in the shader.
@@ -2327,7 +2327,7 @@ internal static class Program
                 cmdbuf.PushFragmentUniformData(in counts, slot: 3);
 
                 // Push default material into slot 4 (MaterialProperties cbuffer b4, space3)
-                var mat = new MaterialPropertiesUniform { AmbientColor = new Vector3(0.1f), DiffuseColor = new Vector3(1f), SpecularColor = new Vector3(1f), Shininess = 16f, AmbientStrength = 0.2f };
+                var mat = new MaterialPropertiesUniform { material = PredefinedMaterials.Gold };
                 cmdbuf.PushFragmentUniformData(in mat, slot: 4);
             }
 

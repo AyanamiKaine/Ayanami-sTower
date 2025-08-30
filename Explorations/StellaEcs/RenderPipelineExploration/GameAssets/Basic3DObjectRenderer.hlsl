@@ -22,6 +22,18 @@ cbuffer VSParams : register(b0, space1)
     float4x4 modelWorld; // world-space model matrix (no camera-relative subtraction)
 };
 
+struct Material
+{
+    float3 ambient;
+    float pad0;
+    float3 diffuse;
+    float pad1;
+    float3 specular;
+    float shininess;
+    float ambientStrength;
+    float3 _pad_material;
+};
+
 // Light structures (matching C# components)
 struct DirectionalLight
 {
@@ -76,11 +88,7 @@ cbuffer LightCounts : register(b3, space3)
 // Material properties
 cbuffer MaterialProperties : register(b4, space3)
 {
-    float3 ambientColor;
-    float3 diffuseColor;
-    float3 specularColor;
-    float shininess;
-    float ambientStrength;
+    Material material;
 };
 
 VSOutput VSMain(VSInput input)
@@ -115,14 +123,17 @@ cbuffer ShadowParams : register(b5, space3)
 // Lighting calculation functions
 float3 CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 viewDir)
 {
-    // Diffuse
-    float diff = max(dot(normal, -light.direction), 0.0);
-    float3 diffuse = light.color * diff * light.intensity;
+    // Directional light direction (from fragment towards light)
+    float3 lightDir = normalize(-light.direction);
 
-    // Specular (Blinn-Phong)
-    float3 halfwayDir = normalize(-light.direction + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
-    float3 specular = light.color * spec * light.intensity;
+    // Diffuse (Lambert)
+    float diff = max(dot(normal, lightDir), 0.0);
+    float3 diffuse = light.color * (diff * material.diffuse) * light.intensity;
+
+    // Specular (Phong)
+    float3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    float3 specular = light.color * (spec * material.specular) * light.intensity;
 
     return diffuse + specular;
 }
@@ -138,12 +149,12 @@ float3 CalculatePointLight(PointLight light, float3 normal, float3 fragPos, floa
 
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
-    float3 diffuse = light.color * diff * light.intensity * attenuation;
+    float3 diffuse = light.color * (diff * material.diffuse) * light.intensity * attenuation;
 
-    // Specular
-    float3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
-    float3 specular = light.color * spec * light.intensity * attenuation;
+    // Specular (Phong)
+    float3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    float3 specular = light.color * (spec * material.specular) * light.intensity * attenuation;
 
     return diffuse + specular;
 }
@@ -165,12 +176,12 @@ float3 CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3
 
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
-    float3 diffuse = light.color * diff * light.intensity * attenuation;
+    float3 diffuse = light.color * (diff * material.diffuse) * light.intensity * attenuation;
 
-    // Specular
-    float3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
-    float3 specular = light.color * spec * light.intensity * attenuation;
+    // Specular (Phong)
+    float3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    float3 specular = light.color * (spec * material.specular) * light.intensity * attenuation;
 
     return diffuse + specular;
 }
@@ -224,8 +235,8 @@ float4 PSMain(VSOutput input) : SV_Target
     // If no lights, just return texture color with ambient
     if (directionalLightCount == 0 && pointLightCount == 0 && spotLightCount == 0)
     {
-        float3 ambient = ambientColor * ambientStrength;
-        return float4(texRgb * (ambient + diffuseColor), 1.0);
+    float3 ambient = material.ambient * material.ambientStrength;
+    return float4(texRgb * (ambient + material.diffuse), 1.0);
     }
 
     // Initialize lighting
@@ -255,19 +266,19 @@ float4 PSMain(VSOutput input) : SV_Target
     }
 
     // Combine texture color with lighting
-    float3 ambient = ambientColor * ambientStrength;
-    float3 finalColor = texRgb * (ambient + diffuseColor + lighting);
+    float3 ambient = material.ambient * material.ambientStrength;
+    float3 finalColor = texRgb * (ambient + material.diffuse + lighting);
 
     //Debug Show only light and shadow 
-    
+    /*
     for (uint i = 0; i < directionalLightCount; i++)
     {
-        float3 lightContribution = CalculateDirectionalLight(directionalLights[i], input.nrm, viewDir);
-        float shadow = CalculateShadow(input.wpos);
-        lighting += lightContribution * shadow;
-        finalColor = float3(shadow, shadow, shadow);
+    float3 lightContribution = CalculateDirectionalLight(directionalLights[i], input.nrm, viewDir);
+    float shadow = CalculateShadow(input.wpos);
+    lighting += lightContribution * shadow;
+    finalColor = float3(shadow, shadow, shadow);
     }
-
+    */
 
     return float4(finalColor, 1.0);
 }
