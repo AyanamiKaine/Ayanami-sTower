@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using AyanamisTower.StellaEcs.Api;
 using AyanamisTower.StellaEcs.Components;
 using MoonWorks;
@@ -19,12 +20,32 @@ using Hexa.NET.ImGui.Backends.SDL3;
 using static SDL3.SDL;
 using SDL3;
 using StellaInvicta.Physics;
+using AyanamisTower.StellaEcs.StellaInvicta.Systems;
+using System.Runtime.InteropServices;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
 
 internal static class Program
 {
+    // Struct for vertex uniforms matching the HLSL cbuffer
+    private struct VertexUniforms
+    {
+        public Matrix4x4 MVP;
+        public Matrix4x4 Model;
+    }
+
+    // Struct for shadow parameters
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ShadowUniforms
+    {
+        public Matrix4x4 LightViewProjection;
+        public float ShadowBias;
+        public float ShadowIntensity;
+        private float _padding1;
+        private float _padding2;
+    }
+
     public static void Main()
     {
         var game = new StellaInvicta();
@@ -90,6 +111,13 @@ internal static class Program
         // Lines
         private GraphicsPipeline? _linePipeline;
         private GraphicsPipeline? _imguiPipeline;
+
+        // Shadow mapping resources
+        private GraphicsPipeline? _shadowMapPipeline;
+        private Texture? _shadowMapTexture;
+        private Sampler? _shadowMapSampler;
+        private const int ShadowMapSize = 2048;
+        private Matrix4x4 _lightViewProjectionMatrix;
 
         private LineBatch3D? _lineBatch;
         // Debug: visualize physics colliders with wireframes
@@ -598,6 +626,8 @@ internal static class Program
 
             World.EnableRestApi();
 
+            World.RegisterSystem(new LightingSystem());
+
             //EnableVSync();
 
             // Initialize floating origin system
@@ -914,7 +944,63 @@ internal static class Program
             var lineVertexInput = VertexInputState.CreateSingleBinding<LineBatch3D.LineVertex>(0);
             _linePipeline = _pipelineFactory!.CreateLinePipeline(vsLine, fsLine, lineVertexInput, "LineColorRenderer");
 
+            // Shadow map shaders
+            var vsShadow = ShaderCross.Create(
+                GraphicsDevice,
+                RootTitleStorage,
+                AssetManager.AssetFolderName + "/ShadowMap.hlsl",
+                "VSMain",
+                ShaderCross.ShaderFormat.HLSL,
+                ShaderStage.Vertex,
+                false,
+                "ShadowMapVS"
+            );
+            var fsShadow = ShaderCross.Create(
+                GraphicsDevice,
+                RootTitleStorage,
+                AssetManager.AssetFolderName + "/ShadowMap.hlsl",
+                "PSMain",
+                ShaderCross.ShaderFormat.HLSL,
+                ShaderStage.Fragment,
+                false,
+                "ShadowMapPS"
+            );
+
             _lineBatch = new LineBatch3D(GraphicsDevice, 409600);
+
+            // Create shadow map texture
+            _shadowMapTexture = Texture.Create2D(
+                GraphicsDevice,
+                ShadowMapSize,
+                ShadowMapSize,
+                GraphicsDevice.SupportedDepthStencilFormat,
+                TextureUsageFlags.DepthStencilTarget | TextureUsageFlags.Sampler,
+                levelCount: 1,
+                sampleCount: SampleCount.One
+            );
+
+            // Create shadow map sampler
+            _shadowMapSampler = Sampler.Create(
+                GraphicsDevice,
+                SamplerCreateInfo.LinearClamp
+            );
+
+            // Create shadow map pipeline (depth-only, single-sampled)
+            _shadowMapPipeline = _pipelineFactory!.CreatePipeline("ShadowMapRenderer")
+                .WithShaders(vsShadow, fsShadow)
+                .WithVertexInput(vertexInput)
+                .WithDepthTesting(true, true)
+                .WithRasterizer(RasterizerState.CCW_CullNone)
+                .WithMultisample(new MultisampleState { SampleCount = SampleCount.One })
+                .WithDepthStencil(true)
+                .WithBlendState(ColorTargetBlendState.NoBlend)
+                .WithTargetInfo(new GraphicsPipelineTargetInfo
+                {
+                    ColorTargetDescriptions = Array.Empty<ColorTargetDescription>(), // No color target for depth-only
+                    HasDepthStencilTarget = true,
+                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
+                })
+                .Build();
 
 
             World.OnPreDestroy((Entity entity) =>
@@ -1075,7 +1161,8 @@ internal static class Program
                 */
 
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = _checkerTexture! })
+                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, -1.0f, 1.0f)), new Vector3(1.0f, 1.0f, 0.8f), 1.0f));
 
             sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
             {
@@ -2018,6 +2105,58 @@ internal static class Program
             }
 
             /////////////////////
+            // SHADOW MAP RENDERING
+            /////////////////////
+            var lightingSystem = World.GetSystemsWithOrder().FirstOrDefault(s => s.system is LightingSystem).system as LightingSystem;
+            if (lightingSystem != null && lightingSystem.HasLights && lightingSystem.DirectionalLightCount > 0)
+            {
+                // Use the first directional light for shadows
+                var light = lightingSystem.DirectionalLights[0];
+
+                // Calculate light view matrix (looking from light position towards scene)
+                var lightPos = -light.Direction * 100.0f; // Position light far away in opposite direction
+                var lightView = Matrix4x4.CreateLookAt(lightPos, Vector3.Zero, Vector3.UnitY);
+
+                // Calculate light projection matrix (orthographic for directional lights)
+                var lightProj = Matrix4x4.CreateOrthographic(200.0f, 200.0f, 0.1f, 500.0f);
+
+                _lightViewProjectionMatrix = lightView * lightProj;
+
+                // Render shadow map
+                var shadowDepthTarget = new DepthStencilTargetInfo(_shadowMapTexture!, clearDepth: 1f);
+                var shadowPass = cmdbuf.BeginRenderPass(shadowDepthTarget);
+
+                shadowPass.BindGraphicsPipeline(_shadowMapPipeline!);
+
+                foreach (var entity in World.Query(typeof(GpuMesh)))
+                {
+                    var gpuMesh = entity.GetMut<GpuMesh>();
+
+                    // Skip entities without position
+                    if (!entity.Has<RenderPosition3D>()) continue;
+
+                    var translation = entity.GetMut<RenderPosition3D>().Value;
+                    var rotation = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
+                    var size = entity.Has<Size3D>() ? entity.GetMut<Size3D>().Value : Vector3Double.One;
+
+                    // Skip invisible entities
+                    if (entity.Has<Invisible>()) continue;
+
+                    gpuMesh.Bind(shadowPass);
+
+                    var model = Matrix4x4.CreateScale(HighPrecisionConversions.ToVector3(size)) *
+                               Matrix4x4.CreateFromQuaternion(HighPrecisionConversions.ToQuaternion(rotation)) *
+                               Matrix4x4.CreateTranslation(HighPrecisionConversions.ToVector3(translation));
+                    var lightMVP = model * _lightViewProjectionMatrix;
+
+                    cmdbuf.PushVertexUniformData(lightMVP, slot: 0);
+                    shadowPass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
+                }
+
+                cmdbuf.EndRenderPass(shadowPass);
+            }
+
+            /////////////////////
             // RENDER PASS BEGIN
             /////////////////////
             var pass = cmdbuf.BeginRenderPass(depthTarget, colorTarget);
@@ -2044,6 +2183,21 @@ internal static class Program
             }
 
             pass.BindGraphicsPipeline(_pipeline!);
+
+            // Bind shadow map if available
+            if (_shadowMapTexture != null && _shadowMapSampler != null)
+            {
+                pass.BindFragmentSamplers(1, [new TextureSamplerBinding(_shadowMapTexture, _shadowMapSampler)]);
+
+                // Push shadow parameters
+                var shadowUniforms = new ShadowUniforms
+                {
+                    LightViewProjection = _lightViewProjectionMatrix,
+                    ShadowBias = 0.005f,
+                    ShadowIntensity = 0.5f
+                };
+                cmdbuf.PushFragmentUniformData(in shadowUniforms, slot: 5);
+            }
 
             foreach (var entity in World.Query(typeof(GpuMesh)))
             {
@@ -2143,7 +2297,14 @@ internal static class Program
                 var model = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(modelTrans);
                 var mvp = model * viewProj;
 
-                cmdbuf.PushVertexUniformData(mvp, slot: 0);
+                // Create struct for vertex uniforms
+                var vertexUniforms = new VertexUniforms
+                {
+                    MVP = mvp,
+                    Model = model
+                };
+
+                cmdbuf.PushVertexUniformData(in vertexUniforms, slot: 0);
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
             }
 
@@ -2542,6 +2703,9 @@ internal static class Program
             _whiteTexture?.Dispose();
             _checkerTexture?.Dispose();
             _skyboxTexture?.Dispose();
+            _shadowMapTexture?.Dispose();
+            _shadowMapSampler?.Dispose();
+            _shadowMapPipeline?.Dispose();
 
             // Cleanup floating origin manager if needed
             // _floatingOriginManager doesn't implement IDisposable, so no cleanup needed
