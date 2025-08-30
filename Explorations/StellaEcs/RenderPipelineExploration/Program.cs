@@ -69,6 +69,7 @@ internal static class Program
         private double _maxDebugLineDistance = 100000.0;
 
         // GPU resources
+        private PipelineFactory? _pipelineFactory;
         private GraphicsPipeline? _pipeline;
         // rotation
         private float _angle;
@@ -132,6 +133,14 @@ internal static class Program
             _physicsManager = new PhysicsManager(World);
             // Initialize collision interaction service so entities can register handlers
             _collisionInteraction = new CollisionInteractionService(_physicsManager);
+
+            // Initialize pipeline factory
+            _pipelineFactory = new PipelineFactory(
+                GraphicsDevice,
+                _msaaSamples,
+                MainWindow.SwapchainFormat,
+                GraphicsDevice.SupportedDepthStencilFormat
+            );
 
             InitializeScene();
             EnableImgui();
@@ -863,107 +872,19 @@ internal static class Program
 
             var vertexInput = VertexInputState.CreateSingleBinding<Vertex>(0);
 
-            // Pipeline (no depth for minimal sample -> use depth if needed)
-            _pipeline = GraphicsPipeline.Create(GraphicsDevice, new GraphicsPipelineCreateInfo
-            {
-                VertexShader = vs,
-                FragmentShader = fs,
-                VertexInputState = vertexInput,
-                PrimitiveType = PrimitiveType.TriangleList,
-                RasterizerState = new RasterizerState { CullMode = CullMode.Back, FrontFace = FrontFace.CounterClockwise },
-                MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
-                DepthStencilState = new DepthStencilState
-                {
-                    EnableDepthTest = true,
-                    EnableDepthWrite = true,
-                    CompareOp = CompareOp.LessOrEqual,
-                    CompareMask = 0xFF,
-                    WriteMask = 0xFF,
-                    EnableStencilTest = false
-                },
-                TargetInfo = new GraphicsPipelineTargetInfo
-                {
-                    ColorTargetDescriptions =
-                    [
-                        new ColorTargetDescription
-                        {
-                            // Must match the swapchain format for the active window
-                            Format = MainWindow.SwapchainFormat,
-                            BlendState = ColorTargetBlendState.NoBlend
-                        }
-                    ],
-                    HasDepthStencilTarget = true,
-                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
-                },
-                Name = "Basic3DObjectRenderer"
-            });
+            // Create pipelines using the factory
+            _pipeline = _pipelineFactory!.CreateStandard3DPipeline(vs, fs, vertexInput, "Basic3DObjectRenderer");
 
             // Dedicated skybox pipeline: no depth write/test, no culling (render inside of sphere)
-            _skyboxPipeline = GraphicsPipeline.Create(GraphicsDevice, new GraphicsPipelineCreateInfo
-            {
-                VertexShader = vs,
-                FragmentShader = fs,
-                VertexInputState = vertexInput,
-                PrimitiveType = PrimitiveType.TriangleList,
-                RasterizerState = RasterizerState.CCW_CullNone,
-                MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
-                DepthStencilState = new DepthStencilState
-                {
-                    EnableDepthTest = false,
-                    EnableDepthWrite = false,
-                    CompareOp = CompareOp.Always,
-                    CompareMask = 0xFF,
-                    WriteMask = 0x00,
-                    EnableStencilTest = false
-                },
-                TargetInfo = new GraphicsPipelineTargetInfo
-                {
-                    ColorTargetDescriptions =
-                    [
-                        new ColorTargetDescription
-                        {
-                            Format = MainWindow.SwapchainFormat,
-                            BlendState = ColorTargetBlendState.NoBlend
-                        }
-                    ],
-                    HasDepthStencilTarget = true,
-                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
-                },
-                Name = "SkyboxRenderer"
-            });
+            _skyboxPipeline = _pipelineFactory!.CreateSkyboxPipeline(vs, fs, vertexInput, "SkyboxRenderer");
 
-            _skyboxCubePipeline = GraphicsPipeline.Create(GraphicsDevice, new GraphicsPipelineCreateInfo
-            {
-                VertexShader = vsSkyCube,
-                FragmentShader = fsSkyCube,
-                VertexInputState = vertexInput,
-                PrimitiveType = PrimitiveType.TriangleList,
-                RasterizerState = RasterizerState.CCW_CullNone,
-                MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
-                DepthStencilState = new DepthStencilState
-                {
-                    EnableDepthTest = false,
-                    EnableDepthWrite = false,
-                    CompareOp = CompareOp.Always,
-                    CompareMask = 0xFF,
-                    WriteMask = 0x00,
-                    EnableStencilTest = false
-                },
-                TargetInfo = new GraphicsPipelineTargetInfo
-                {
-                    ColorTargetDescriptions =
-                    [
-                        new ColorTargetDescription
-                        {
-                            Format = MainWindow.SwapchainFormat,
-                            BlendState = ColorTargetBlendState.NoBlend
-                        }
-                    ],
-                    HasDepthStencilTarget = true,
-                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
-                },
-                Name = "SkyboxCubeRenderer"
-            });
+            _skyboxCubePipeline = _pipelineFactory!.CreatePipeline("SkyboxCubeRenderer")
+                .WithShaders(vsSkyCube, fsSkyCube)
+                .WithVertexInput(vertexInput)
+                .WithRasterizer(RasterizerState.CCW_CullNone)
+                .WithDepthTesting(false, false)
+                .WithBlendState(ColorTargetBlendState.NoBlend)
+                .Build();
 
             // Line pipeline setup (position+color, line list)
             var vsLine = ShaderCross.Create(
@@ -987,39 +908,7 @@ internal static class Program
                 "LinePS"
             );
             var lineVertexInput = VertexInputState.CreateSingleBinding<LineBatch3D.LineVertex>(0);
-            _linePipeline = GraphicsPipeline.Create(GraphicsDevice, new GraphicsPipelineCreateInfo
-            {
-                VertexShader = vsLine,
-                FragmentShader = fsLine,
-                VertexInputState = lineVertexInput,
-                PrimitiveType = PrimitiveType.LineList,
-                RasterizerState = RasterizerState.CCW_CullNone,
-                MultisampleState = new MultisampleState { SampleCount = _msaaSamples },
-                DepthStencilState = new DepthStencilState
-                {
-                    EnableDepthTest = true,
-                    EnableDepthWrite = false, // lines typically don't write depth
-                    CompareOp = CompareOp.LessOrEqual,
-                    CompareMask = 0xFF,
-                    WriteMask = 0x00,
-                    EnableStencilTest = false
-                },
-                TargetInfo = new GraphicsPipelineTargetInfo
-                {
-                    ColorTargetDescriptions =
-                    [
-                        new ColorTargetDescription
-                        {
-                            Format = MainWindow.SwapchainFormat,
-                            // Use standard non-premultiplied alpha blending for line transparency
-                            BlendState = ColorTargetBlendState.NonPremultipliedAlphaBlend
-                        }
-                    ],
-                    HasDepthStencilTarget = true,
-                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
-                },
-                Name = "LineColorRenderer"
-            });
+            _linePipeline = _pipelineFactory!.CreateLinePipeline(vsLine, fsLine, lineVertexInput, "LineColorRenderer");
 
             _lineBatch = new LineBatch3D(GraphicsDevice, 409600);
 
