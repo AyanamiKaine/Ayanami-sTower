@@ -65,6 +65,32 @@ internal static class Program
         public Vector3 SpecularColor; public float Shininess; public float AmbientStrength; private float _pad2;
     }
 
+    // GPU-packed light structs matching HLSL std140-like packing used in the shader.
+    // Use Vector4 groups so fields align to 16-byte registers exactly.
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct GpuDirectionalLight
+    {
+        public Vector4 Direction_padtow16; // xyz = direction, w = padding
+        public Vector4 Color_and_Intensity; // xyz = color, w = intensity
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct GpuPointLight
+    {
+        public Vector4 Position_pad; // xyz = position, w = padding
+        public Vector4 Color_and_Intensity; // xyz = color, w = intensity
+        public Vector4 Range_pad; // x = range, yzw = padding
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct GpuSpotLight
+    {
+        public Vector4 Position_pad; // xyz = position
+        public Vector4 Direction_pad; // xyz = direction
+        public Vector4 Color_and_Intensity; // xyz = color, w = intensity
+        public Vector4 Range_Inner_Outer_pad; // x = range, y = innerAngle, z = outerAngle
+    }
+
     public static void Main()
     {
         var game = new StellaInvicta();
@@ -1159,7 +1185,6 @@ internal static class Program
             Vector3 AuToWorld(float auX, float auY, float auZ) => origin + new Vector3(auX * auScale, auY * auScale, auZ * auScale);
 
             // --- CELESTIAL BODY CREATION ---
-
             var sun = World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
@@ -1181,7 +1206,8 @@ internal static class Program
 
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
-                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, -1.0f, 1.0f)), new Vector3(1.0f, 1.0f, 0.8f), 1.0f));
+                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, -1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 10.0f))
+                .Set(new PointLight(new(20, 0, 0), new(0.3f, 0.8f, 1f), 100.0f, 10000f));
 
             sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
             {
@@ -2218,35 +2244,69 @@ internal static class Program
             // Reuse lightingSystem retrieved earlier when rendering the shadow map.
             if (lightingSystem != null && lightingSystem.HasLights)
             {
-                // Push directional/point/spot light arrays as contiguous blocks into fragment uniform slots (space3 b0..b2).
-                var dirLights = new DirectionalLight[4];
-                for (int i = 0; i < dirLights.Length; i++) dirLights[i] = i < lightingSystem.DirectionalLightCount ? lightingSystem.DirectionalLights[i] : new DirectionalLight();
-
+                // Convert scene light data to GPU-packed structs that match HLSL packing, and push them.
+                var gpuDir = new GpuDirectionalLight[4];
+                int usedDir = 0;
+                for (int i = 0; i < lightingSystem.DirectionalLightCount && usedDir < 4; i++)
+                {
+                    var s = lightingSystem.DirectionalLights[i];
+                    if (s.Intensity <= 0f) continue; // ignore non-contributing lights
+                    var gd = new GpuDirectionalLight();
+                    var dir = Vector3.Normalize(s.Direction);
+                    gd.Direction_padtow16 = new Vector4(dir, 0f);
+                    gd.Color_and_Intensity = new Vector4(s.Color, s.Intensity);
+                    gpuDir[usedDir++] = gd;
+                }
+                // zero-fill rest
+                for (int i = usedDir; i < gpuDir.Length; i++) gpuDir[i] = new GpuDirectionalLight();
                 unsafe
                 {
-                    fixed (DirectionalLight* pDir = dirLights)
+                    fixed (GpuDirectionalLight* p = gpuDir)
                     {
-                        cmdbuf.PushFragmentUniformData(pDir, (uint)(Marshal.SizeOf<DirectionalLight>() * dirLights.Length), slot: 0);
+                        cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuDirectionalLight>() * gpuDir.Length), slot: 0);
                     }
                 }
 
-                var pointLights = new PointLight[120];
-                for (int i = 0; i < pointLights.Length; i++) pointLights[i] = i < lightingSystem.PointLightCount ? lightingSystem.PointLights[i] : new PointLight();
+                var gpuPoint = new GpuPointLight[120];
+                int usedPoint = 0;
+                for (int i = 0; i < lightingSystem.PointLightCount && usedPoint < gpuPoint.Length; i++)
+                {
+                    var s = lightingSystem.PointLights[i];
+                    if (s.Intensity <= 0f) continue;
+                    var gp = new GpuPointLight();
+                    gp.Position_pad = new Vector4(s.Position, 0f);
+                    gp.Color_and_Intensity = new Vector4(s.Color, s.Intensity);
+                    gp.Range_pad = new Vector4(s.Range, 0f, 0f, 0f);
+                    gpuPoint[usedPoint++] = gp;
+                }
+                for (int i = usedPoint; i < gpuPoint.Length; i++) gpuPoint[i] = new GpuPointLight();
                 unsafe
                 {
-                    fixed (PointLight* pPoint = pointLights)
+                    fixed (GpuPointLight* p = gpuPoint)
                     {
-                        cmdbuf.PushFragmentUniformData(pPoint, (uint)(Marshal.SizeOf<PointLight>() * pointLights.Length), slot: 1);
+                        cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuPointLight>() * gpuPoint.Length), slot: 1);
                     }
                 }
 
-                var spotLights = new SpotLight[16];
-                for (int i = 0; i < spotLights.Length; i++) spotLights[i] = i < lightingSystem.SpotLightCount ? lightingSystem.SpotLights[i] : new SpotLight();
+                var gpuSpot = new GpuSpotLight[16];
+                int usedSpot = 0;
+                for (int i = 0; i < lightingSystem.SpotLightCount && usedSpot < gpuSpot.Length; i++)
+                {
+                    var s = lightingSystem.SpotLights[i];
+                    if (s.Intensity <= 0f) continue;
+                    var gs = new GpuSpotLight();
+                    gs.Position_pad = new Vector4(s.Position, 0f);
+                    gs.Direction_pad = new Vector4(Vector3.Normalize(s.Direction), 0f);
+                    gs.Color_and_Intensity = new Vector4(s.Color, s.Intensity);
+                    gs.Range_Inner_Outer_pad = new Vector4(s.Range, s.InnerAngle, s.OuterAngle, 0f);
+                    gpuSpot[usedSpot++] = gs;
+                }
+                for (int i = usedSpot; i < gpuSpot.Length; i++) gpuSpot[i] = new GpuSpotLight();
                 unsafe
                 {
-                    fixed (SpotLight* pSpot = spotLights)
+                    fixed (GpuSpotLight* p = gpuSpot)
                     {
-                        cmdbuf.PushFragmentUniformData(pSpot, (uint)(Marshal.SizeOf<SpotLight>() * spotLights.Length), slot: 2);
+                        cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuSpotLight>() * gpuSpot.Length), slot: 2);
                     }
                 }
 
