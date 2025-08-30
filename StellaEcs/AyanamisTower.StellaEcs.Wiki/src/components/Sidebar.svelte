@@ -1,21 +1,21 @@
 <script>
 	import { writable } from 'svelte/store';
 
-	const navItems = [
+	export let navItems = [
 		{
 			title: 'Lore',
 			path: '/wiki/lore',
 			children: [
 				{ title: 'Factions', path: '/wiki/lore/factions' },
-				{ title: 'Timeline', path: '#' }
+				{ title: 'Timeline', path: '/wiki/lore/timeline' }
 			]
 		},
 		{
 			title: 'Engine',
 			path: '/wiki/engine',
 			children: [
-				{ title: 'Getting Started', path: '#' },
-				{ title: 'Rendering', path: '#' }
+				{ title: 'Getting Started', path: '/wiki/engine/getting-started' },
+				{ title: 'Rendering', path: '/wiki/engine/rendering' }
 			]
 		}
 	];
