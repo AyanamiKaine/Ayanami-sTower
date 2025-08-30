@@ -58,7 +58,7 @@ public readonly struct Entity : IEquatable<Entity>
     /// <param name="component">The component instance to set.</param>
     /// <exception cref="InvalidOperationException">Thrown if the entity is not associated with a world.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Entity Set<T>(T component) where T : struct
+    public Entity Set<T>(T component) where T : notnull
     {
         if (_world == null) throw new InvalidOperationException("Cannot set component on an entity that is not associated with a world.");
         _world.SetComponent(this, component);
@@ -74,7 +74,7 @@ public readonly struct Entity : IEquatable<Entity>
     /// <exception cref="InvalidOperationException">Thrown if the entity is not associated with a world.</exception>
     /// <exception cref="KeyNotFoundException">Thrown if the entity does not have the component.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T GetCopy<T>() where T : struct
+    public T GetCopy<T>() where T : notnull
     {
         if (_world == null) throw new InvalidOperationException("Cannot get component from an entity that is not associated with a world.");
         // Assumes World.GetComponent<T> returns a copy.
@@ -90,7 +90,7 @@ public readonly struct Entity : IEquatable<Entity>
     /// <exception cref="InvalidOperationException">Thrown if the entity is not associated with a world.</exception>
     /// <exception cref="KeyNotFoundException">Thrown if the entity does not have the component.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ref T GetMut<T>() where T : struct
+    public ref T GetMut<T>() where T : notnull
     {
         if (_world == null) throw new InvalidOperationException("Cannot get component from an entity that is not associated with a world.");
         // Assumes World has a corresponding GetMutComponent<T> that returns a ref.
@@ -103,7 +103,7 @@ public readonly struct Entity : IEquatable<Entity>
     /// <typeparam name="T">The type of the component.</typeparam>
     /// <returns>True if the entity has the component, false otherwise.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Has<T>() where T : struct
+    public bool Has<T>() where T : notnull
     {
         // If the world is null or the entity is invalid, it can't have components.
         return _world != null && _world.HasComponent<T>(this);
@@ -115,7 +115,7 @@ public readonly struct Entity : IEquatable<Entity>
     /// <typeparam name="T">The type of the component.</typeparam>
     /// <exception cref="InvalidOperationException">Thrown if the entity is not associated with a world.</exception>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Remove<T>() where T : struct
+    public void Remove<T>() where T : notnull
     {
         if (_world == null) throw new InvalidOperationException("Cannot remove component from an entity that is not associated with a world.");
         _world.RemoveComponent<T>(this);

@@ -12,7 +12,7 @@ CHECK IT OUT!
 /// messages of a specific type for a single frame/tick.
 /// </summary>
 /// <typeparam name="T">The type of the message, which should be a struct.</typeparam>
-public class MessageBus<T> : IMessageBus where T : struct
+public class MessageBus<T> : IMessageBus where T : notnull
 {
     private readonly List<T> _messages = [];
 

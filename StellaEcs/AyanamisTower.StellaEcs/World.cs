@@ -179,19 +179,19 @@ public class World
     /// <summary>
     /// Called before a typed component is set on an entity. Handlers can mutate the component via ref and cancel the operation.
     /// </summary>
-    public delegate void BeforeComponentSetHandler<T>(Entity entity, ref T value, ref bool cancel) where T : struct;
+    public delegate void BeforeComponentSetHandler<T>(Entity entity, ref T value, ref bool cancel) where T : notnull;
     /// <summary>
     /// Called after a typed component is set on an entity. Provides previous and current values and whether the entity previously had the component.
     /// </summary>
-    public delegate void AfterComponentSetHandler<T>(Entity entity, in T previous, in T current, bool hadPrevious) where T : struct;
+    public delegate void AfterComponentSetHandler<T>(Entity entity, in T previous, in T current, bool hadPrevious) where T : notnull;
     /// <summary>
     /// Called before a typed component is removed from an entity. Handlers can cancel the removal.
     /// </summary>
-    public delegate void BeforeComponentRemoveHandler<T>(Entity entity, ref bool cancel) where T : struct;
+    public delegate void BeforeComponentRemoveHandler<T>(Entity entity, ref bool cancel) where T : notnull;
     /// <summary>
     /// Called after a typed component is removed from an entity. Provides the removed value.
     /// </summary>
-    public delegate void AfterComponentRemoveHandler<T>(Entity entity, in T removed) where T : struct;
+    public delegate void AfterComponentRemoveHandler<T>(Entity entity, in T removed) where T : notnull;
 
     // Delegates for dynamic component observers (by name)
     /// <summary>
@@ -227,7 +227,7 @@ public class World
     /// <summary>
     /// Registers a pre-set observer for typed components of type T. Multiple observers are invoked in registration order.
     /// </summary>
-    public void OnSetPre<T>(BeforeComponentSetHandler<T> handler) where T : struct
+    public void OnSetPre<T>(BeforeComponentSetHandler<T> handler) where T : notnull
     {
         ArgumentNullException.ThrowIfNull(handler);
         var key = typeof(T);
@@ -242,7 +242,7 @@ public class World
     /// <summary>
     /// Unregisters a previously registered pre-set observer for type T.
     /// </summary>
-    public bool OffSetPre<T>(BeforeComponentSetHandler<T> handler) where T : struct
+    public bool OffSetPre<T>(BeforeComponentSetHandler<T> handler) where T : notnull
     {
         var key = typeof(T);
         return _typedSetPreHandlers.TryGetValue(key, out var list) && list.Remove(handler);
@@ -251,7 +251,7 @@ public class World
     /// <summary>
     /// Registers an after-set observer for typed components of type T. Multiple observers are invoked in registration order.
     /// </summary>
-    public void OnSetPost<T>(AfterComponentSetHandler<T> handler) where T : struct
+    public void OnSetPost<T>(AfterComponentSetHandler<T> handler) where T : notnull
     {
         ArgumentNullException.ThrowIfNull(handler);
         var key = typeof(T);
@@ -266,7 +266,7 @@ public class World
     /// <summary>
     /// Unregisters a previously registered post-set observer for type T.
     /// </summary>
-    public bool OffSetPost<T>(AfterComponentSetHandler<T> handler) where T : struct
+    public bool OffSetPost<T>(AfterComponentSetHandler<T> handler) where T : notnull
     {
         var key = typeof(T);
         return _typedSetPostHandlers.TryGetValue(key, out var list) && list.Remove(handler);
@@ -275,7 +275,7 @@ public class World
     /// <summary>
     /// Registers a before-remove observer for typed components of type T. Multiple observers are invoked in registration order.
     /// </summary>
-    public void OnRemovePre<T>(BeforeComponentRemoveHandler<T> handler) where T : struct
+    public void OnRemovePre<T>(BeforeComponentRemoveHandler<T> handler) where T : notnull
     {
         ArgumentNullException.ThrowIfNull(handler);
         var key = typeof(T);
@@ -290,7 +290,7 @@ public class World
     /// <summary>
     /// Unregisters a previously registered pre-remove observer for type T.
     /// </summary>
-    public bool OffRemovePre<T>(BeforeComponentRemoveHandler<T> handler) where T : struct
+    public bool OffRemovePre<T>(BeforeComponentRemoveHandler<T> handler) where T : notnull
     {
         var key = typeof(T);
         return _typedRemovePreHandlers.TryGetValue(key, out var list) && list.Remove(handler);
@@ -299,7 +299,7 @@ public class World
     /// <summary>
     /// Registers an after-remove observer for typed components of type T. Multiple observers are invoked in registration order.
     /// </summary>
-    public void OnRemovePost<T>(AfterComponentRemoveHandler<T> handler) where T : struct
+    public void OnRemovePost<T>(AfterComponentRemoveHandler<T> handler) where T : notnull
     {
         ArgumentNullException.ThrowIfNull(handler);
         var key = typeof(T);
@@ -314,7 +314,7 @@ public class World
     /// <summary>
     /// Unregisters a previously registered post-remove observer for type T.
     /// </summary>
-    public bool OffRemovePost<T>(AfterComponentRemoveHandler<T> handler) where T : struct
+    public bool OffRemovePost<T>(AfterComponentRemoveHandler<T> handler) where T : notnull
     {
         var key = typeof(T);
         return _typedRemovePostHandlers.TryGetValue(key, out var list) && list.Remove(handler);
@@ -499,7 +499,7 @@ public class World
     /// Registers a new component type.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public void RegisterComponent<T>() where T : struct
+    public void RegisterComponent<T>() where T : notnull
     {
         GetOrCreateStorage<T>();
     }
@@ -510,7 +510,7 @@ public class World
     /// <typeparam name="T">The type of the component.</typeparam>
     /// <param name="entity">The entity to which the component is attached.</param>
     /// <param name="component">The component instance.</param>
-    public void SetComponent<T>(Entity entity, T component) where T : struct
+    public void SetComponent<T>(Entity entity, T component) where T : notnull
     {
         if (!IsEntityValid(entity))
             throw new ArgumentException($"Entity {entity} is no longer valid");
@@ -561,7 +561,7 @@ public class World
     /// <param name="entity">The entity whose component to get.</param>
     /// <returns>A copy of the component.</returns>
     /// <exception cref="KeyNotFoundException">Thrown if the entity does not have the component.</exception>
-    public T GetComponent<T>(Entity entity) where T : struct
+    public T GetComponent<T>(Entity entity) where T : notnull
     {
         if (!IsEntityValid(entity))
             throw new ArgumentException($"Entity {entity} is no longer valid");
@@ -581,7 +581,7 @@ public class World
     /// <param name="entity">The entity whose component to get.</param>
     /// <returns>A mutable reference to the component.</returns>
     /// <exception cref="KeyNotFoundException">Thrown if the entity does not have the component.</exception>
-    public ref T GetMutComponent<T>(Entity entity) where T : struct
+    public ref T GetMutComponent<T>(Entity entity) where T : notnull
     {
         if (!IsEntityValid(entity))
             throw new ArgumentException($"Entity {entity} is no longer valid");
@@ -598,7 +598,7 @@ public class World
     /// <typeparam name="T">The type of the component.</typeparam>
     /// <param name="entity">The entity to check.</param>
     /// <returns>True if the entity has the component, false otherwise.</returns>
-    public bool HasComponent<T>(Entity entity) where T : struct
+    public bool HasComponent<T>(Entity entity) where T : notnull
     {
         if (!IsEntityValid(entity))
             throw new ArgumentException($"Entity {entity} is no longer valid");
@@ -614,7 +614,7 @@ public class World
     /// </summary>
     /// <typeparam name="T">The type of the component.</typeparam>
     /// <param name="entity">The entity from which to remove the component.</param>
-    public void RemoveComponent<T>(Entity entity) where T : struct
+    public void RemoveComponent<T>(Entity entity) where T : notnull
     {
         if (!IsEntityValid(entity))
             throw new ArgumentException($"Entity {entity} is no longer valid");
@@ -869,7 +869,7 @@ public class World
     /// <summary>
     /// Gets the existing storage for a component type, or creates a new one if it doesn't exist.
     /// </summary>
-    private ComponentStorage<T> GetOrCreateStorage<T>() where T : struct
+    private ComponentStorage<T> GetOrCreateStorage<T>() where T : notnull
     {
         var type = typeof(T);
         if (!_storages.TryGetValue(type, out var storage))
@@ -883,7 +883,7 @@ public class World
     /// <summary>
     /// Gets the existing message bus for a message type, or creates a new one if it doesn't exist.
     /// </summary>
-    private MessageBus<T> GetOrCreateMessageBus<T>() where T : struct
+    private MessageBus<T> GetOrCreateMessageBus<T>() where T : notnull
     {
         var type = typeof(T);
         if (!_messageBuses.TryGetValue(type, out var bus))
@@ -1257,7 +1257,7 @@ public class World
     /// </summary>
     /// <typeparam name="T">The type of the message.</typeparam>
     /// <param name="message">The message instance to publish.</param>
-    public void PublishMessage<T>(T message) where T : struct
+    public void PublishMessage<T>(T message) where T : notnull
     {
         var bus = GetOrCreateMessageBus<T>();
         bus.Publish(message);
@@ -1268,7 +1268,7 @@ public class World
     /// </summary>
     /// <typeparam name="T">The type of the message to read.</typeparam>
     /// <returns>A read-only list of messages. Returns an empty list if no messages of this type were published.</returns>
-    public IReadOnlyList<T> ReadMessages<T>() where T : struct
+    public IReadOnlyList<T> ReadMessages<T>() where T : notnull
     {
         var type = typeof(T);
         if (_messageBuses.TryGetValue(type, out var bus))
