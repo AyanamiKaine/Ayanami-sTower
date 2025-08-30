@@ -183,12 +183,16 @@ float CalculateShadow(float3 worldPos)
     
     // Convert to texture coordinates (0 to 1)
     float2 shadowUV = lightClipPos.xy * 0.5 + 0.5;
-    
+        shadowUV.y = 1.0 - shadowUV.y;
+
     // Check if position is within shadow map bounds
     if (shadowUV.x < 0.0 || shadowUV.x > 1.0 || shadowUV.y < 0.0 || shadowUV.y > 1.0)
     {
         return 1.0; // No shadow
     }
+    
+    // Get current depth in light space
+    float currentDepth = lightClipPos.z;
     
     // Sample shadow map with PCF (Percentage Closer Filtering)
     float shadow = 0.0;
@@ -201,7 +205,9 @@ float CalculateShadow(float3 worldPos)
         {
             float2 offset = float2(x, y) * texelSize;
             float shadowDepth = ShadowMap.Sample(ShadowSamp, shadowUV + offset).r;
-            shadow += (lightClipPos.z - shadowBias > shadowDepth) ? shadowIntensity : 1.0;
+            
+            // Compare with bias
+            shadow += (currentDepth - shadowBias > shadowDepth) ? shadowIntensity : 1.0;
         }
     }
     
@@ -251,6 +257,17 @@ float4 PSMain(VSOutput input) : SV_Target
     // Combine texture color with lighting
     float3 ambient = ambientColor * ambientStrength;
     float3 finalColor = texRgb * (ambient + diffuseColor + lighting);
+
+    //Debug Show only light and shadow 
+    
+    for (uint i = 0; i < directionalLightCount; i++)
+    {
+        float3 lightContribution = CalculateDirectionalLight(directionalLights[i], input.nrm, viewDir);
+        float shadow = CalculateShadow(input.wpos);
+        lighting += lightContribution * shadow;
+        finalColor = float3(shadow, shadow, shadow);
+    }
+
 
     return float4(finalColor, 1.0);
 }

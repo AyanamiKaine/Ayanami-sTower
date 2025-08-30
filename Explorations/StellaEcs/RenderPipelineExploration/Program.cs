@@ -1210,6 +1210,15 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
                 .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, -1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
 
+            World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(origin.X + 5, origin.Y, origin.Z + 5))
+                .Set(new Size3D(1.0f)) // Artistically scaled size
+                .Set(Rotation3D.Identity)
+                .Set(new Texture2DRef { Texture = _checkerTexture! });
+
             sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
             {
                 Console.WriteLine($"[Collision] Self: {self.Id}, Other: {other.Id}, This should not trigger because the sun does not want to collide with anything and should ignore any collision!");
