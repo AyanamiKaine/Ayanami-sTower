@@ -41,10 +41,6 @@ public struct DirectionalLight
 public struct PointLight
 {
     /// <summary>
-    /// The position of the light.
-    /// </summary>
-    public Vector3 Position;
-    /// <summary>
     /// The color of the light.
     /// </summary>
     public Vector3 Color;
@@ -59,13 +55,11 @@ public struct PointLight
     /// <summary>
     /// Initializes a new instance of the <see cref="PointLight"/> struct.
     /// </summary>
-    /// <param name="position"></param>
     /// <param name="color"></param>
     /// <param name="intensity"></param>
     /// <param name="range"></param>
-    public PointLight(Vector3 position, Vector3 color, float intensity, float range)
+    public PointLight(Vector3 color, float intensity, float range)
     {
-        Position = position;
         Color = color;
         Intensity = intensity;
         Range = range;
@@ -77,10 +71,6 @@ public struct PointLight
 /// </summary>
 public struct SpotLight
 {
-    /// <summary>
-    /// The position of the light.
-    /// </summary>
-    public Vector3 Position;
     /// <summary>
     /// The direction the light is shining.
     /// </summary>
@@ -108,16 +98,14 @@ public struct SpotLight
     /// <summary>
     /// Initializes a new instance of the <see cref="SpotLight"/> struct.
     /// </summary>
-    /// <param name="position"></param>
     /// <param name="direction"></param>
     /// <param name="color"></param>
     /// <param name="intensity"></param>
     /// <param name="range"></param>
     /// <param name="innerAngle"></param>
     /// <param name="outerAngle"></param>
-    public SpotLight(Vector3 position, Vector3 direction, Vector3 color, float intensity, float range, float innerAngle, float outerAngle)
+    public SpotLight(Vector3 direction, Vector3 color, float intensity, float range, float innerAngle, float outerAngle)
     {
-        Position = position;
         Direction = direction;
         Color = color;
         Intensity = intensity;

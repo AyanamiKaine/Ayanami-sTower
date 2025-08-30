@@ -1,5 +1,6 @@
 using AyanamisTower.StellaEcs.Api;
 using AyanamisTower.StellaEcs.StellaInvicta.Components;
+using AyanamisTower.StellaEcs.Components;
 using System.Numerics;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta.Systems;
@@ -28,6 +29,15 @@ public class LightingSystem : ISystem
     /// The array of active spot lights.
     /// </summary>
     public SpotLight[] SpotLights { get; private set; } = new SpotLight[MaxSpotLights];
+
+    /// <summary>
+    /// The positions of active point lights.
+    /// </summary>
+    public Vector3[] PointLightPositions { get; private set; } = new Vector3[MaxPointLights];
+    /// <summary>
+    /// The positions of active spot lights.
+    /// </summary>
+    public Vector3[] SpotLightPositions { get; private set; } = new Vector3[MaxSpotLights];
 
     /// <summary>
     /// The number of active directional lights.
@@ -60,20 +70,22 @@ public class LightingSystem : ISystem
         }
 
         // Collect point lights
-        foreach (var entity in world.Query(typeof(PointLight)))
+        foreach (var entity in world.Query(typeof(PointLight), typeof(Position3D)))
         {
             if (PointLightCount >= MaxPointLights) break;
 
             PointLights[PointLightCount] = entity.GetMut<PointLight>();
+            PointLightPositions[PointLightCount] = entity.GetMut<Position3D>().Value;
             PointLightCount++;
         }
 
         // Collect spot lights
-        foreach (var entity in world.Query(typeof(SpotLight)))
+        foreach (var entity in world.Query(typeof(SpotLight), typeof(Position3D)))
         {
             if (SpotLightCount >= MaxSpotLights) break;
 
             SpotLights[SpotLightCount] = entity.GetMut<SpotLight>();
+            SpotLightPositions[SpotLightCount] = entity.GetMut<Position3D>().Value;
             SpotLightCount++;
         }
     }

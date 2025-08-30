@@ -2286,7 +2286,7 @@ internal static class Program
                     var s = lightingSystem.PointLights[i];
                     if (s.Intensity <= 0f) continue;
                     var gp = new GpuPointLight();
-                    gp.Position_pad = new Vector4(s.Position, 0f);
+                    gp.Position_pad = new Vector4(lightingSystem.PointLightPositions[i], 0f);
                     gp.Color_and_Intensity = new Vector4(s.Color, s.Intensity);
                     gp.Range_pad = new Vector4(s.Range, 0f, 0f, 0f);
                     gpuPoint[usedPoint++] = gp;
@@ -2307,7 +2307,7 @@ internal static class Program
                     var s = lightingSystem.SpotLights[i];
                     if (s.Intensity <= 0f) continue;
                     var gs = new GpuSpotLight();
-                    gs.Position_pad = new Vector4(s.Position, 0f);
+                    gs.Position_pad = new Vector4(lightingSystem.SpotLightPositions[i], 0f);
                     gs.Direction_pad = new Vector4(Vector3.Normalize(s.Direction), 0f);
                     gs.Color_and_Intensity = new Vector4(s.Color, s.Intensity);
                     gs.Range_Inner_Outer_pad = new Vector4(s.Range, s.InnerAngle, s.OuterAngle, 0f);
