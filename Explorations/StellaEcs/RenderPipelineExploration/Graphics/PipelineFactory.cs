@@ -89,6 +89,7 @@ public class PipelineFactory
             .WithVertexInput(vertexInput)
             .WithDepthStencil(false)
             .WithDepthTesting(false, false)
+            .WithMultisample(new MultisampleState { SampleCount = SampleCount.Two })
             .WithBlendState(ColorTargetBlendState.NonPremultipliedAlphaBlend)
             .Build();
     }
