@@ -14,6 +14,18 @@ const folders = fs
     .filter((dirent) => dirent.isDirectory())
     .map((dirent) => dirent.name);
 
+// Load frontmatters for sorting
+const pageModules = import.meta.glob("/src/pages/wiki/**/*.mdx", {
+    eager: true,
+}) as Record<string, { frontmatter: any }>;
+const frontmatters: Record<string, any> = {};
+for (const [path, module] of Object.entries(pageModules)) {
+    const relativePath = path
+        .replace("/src/pages/wiki/", "")
+        .replace(".mdx", "");
+    frontmatters[relativePath] = module.frontmatter;
+}
+
 const navItems = folders
     .map((folder) => {
         const folderPath = path.join(wikiPath, folder);
@@ -31,9 +43,12 @@ const navItems = folders
             .map((file) => {
                 let title;
                 let pagePath;
+                let sortOrder;
                 if (file === "index") {
                     title = "Overview";
                     pagePath = `/wiki/${folder}/`;
+                    sortOrder =
+                        frontmatters[`${folder}/index`]?.sidebarOrder || 0;
                 } else {
                     title = file
                         .split("-")
@@ -43,15 +58,34 @@ const navItems = folders
                         )
                         .join(" ");
                     pagePath = `/wiki/${folder}/${file}`;
+                    sortOrder =
+                        frontmatters[`${folder}/${file}`]?.sidebarOrder || 999;
                 }
-                return { title, path: pagePath };
+                return { title, path: pagePath, sortOrder };
             })
-            .sort((a, b) => a.title.localeCompare(b.title));
+            .sort((a, b) => {
+                if (a.sortOrder !== b.sortOrder) {
+                    return a.sortOrder - b.sortOrder;
+                }
+                return a.title.localeCompare(b.title);
+            });
 
         const sectionTitle = folder.charAt(0).toUpperCase() + folder.slice(1);
-        return { title: sectionTitle, path: `/wiki/${folder}`, children };
+        const sectionSortOrder =
+            frontmatters[`${folder}/index`]?.sidebarOrder || 999;
+        return {
+            title: sectionTitle,
+            path: `/wiki/${folder}`,
+            children,
+            sortOrder: sectionSortOrder,
+        };
     })
-    .sort((a, b) => a.title.localeCompare(b.title));
+    .sort((a, b) => {
+        if (a.sortOrder !== b.sortOrder) {
+            return a.sortOrder - b.sortOrder;
+        }
+        return a.title.localeCompare(b.title);
+    });
 ---
 
 <Layout>
