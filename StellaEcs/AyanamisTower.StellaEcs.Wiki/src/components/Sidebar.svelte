@@ -1,5 +1,6 @@
 <script>
 	import { writable } from 'svelte/store';
+	import { onMount } from 'svelte';
 
 	export let navItems = [
 		{
@@ -23,11 +24,22 @@
 	const expandedItems = writable({});
 
 	function toggleItem(itemTitle) {
-		expandedItems.update((items) => ({
-			...items,
-			[itemTitle]: !items[itemTitle]
-		}));
+		expandedItems.update((items) => {
+			const newItems = {
+				...items,
+				[itemTitle]: !items[itemTitle]
+			};
+			localStorage.setItem('sidebar-expanded', JSON.stringify(newItems));
+			return newItems;
+		});
 	}
+
+	onMount(() => {
+		const saved = localStorage.getItem('sidebar-expanded');
+		if (saved) {
+			expandedItems.set(JSON.parse(saved));
+		}
+	});
 </script>
 
 <div class="bg-gray-800 h-full p-4 text-gray-400 border-r border-gray-700">
