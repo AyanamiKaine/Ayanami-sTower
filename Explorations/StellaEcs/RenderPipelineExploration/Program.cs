@@ -46,6 +46,25 @@ internal static class Program
         private float _padding2;
     }
 
+    // Light counts uniform (matches HLSL 'LightCounts' cbuffer at b3, space3)
+    [StructLayout(LayoutKind.Sequential)]
+    private struct LightCountsUniform
+    {
+        public uint directionalLightCount;
+        public uint pointLightCount;
+        public uint spotLightCount;
+        private uint _padding;
+    }
+
+    // Material properties uniform (matches HLSL 'MaterialProperties' cbuffer at b4, space3)
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MaterialPropertiesUniform
+    {
+        public Vector3 AmbientColor; private float _pad0;
+        public Vector3 DiffuseColor; private float _pad1;
+        public Vector3 SpecularColor; public float Shininess; public float AmbientStrength; private float _pad2;
+    }
+
     public static void Main()
     {
         var game = new StellaInvicta();
@@ -2108,7 +2127,7 @@ internal static class Program
             // SHADOW MAP RENDERING
             /////////////////////
             var lightingSystem = World.GetSystemsWithOrder().FirstOrDefault(s => s.system is LightingSystem).system as LightingSystem;
-            if (lightingSystem != null && lightingSystem.HasLights && lightingSystem.DirectionalLightCount > 0)
+            if (lightingSystem?.HasLights == true && lightingSystem.DirectionalLightCount > 0)
             {
                 // Use the first directional light for shadows
                 var light = lightingSystem.DirectionalLights[0];
@@ -2183,6 +2202,50 @@ internal static class Program
             }
 
             pass.BindGraphicsPipeline(_pipeline!);
+
+            // Push lighting data into fragment uniform slots so HLSL cbuffers see them.
+            // Reuse lightingSystem retrieved earlier when rendering the shadow map.
+            if (lightingSystem != null && lightingSystem.HasLights)
+            {
+                // Push directional lights array (matches cbuffer b0, space3)
+                // Note: PushFragmentUniformData uses contiguous memory; arrays of structs work when passing as ref to first element.
+                // Ensure we send the full sized array so shader indexing is safe (shader expects fixed-size arrays).
+                // Build managed copies matching the HLSL struct layout.
+                var dirLights = new Components.DirectionalLight[4];
+                for (int i = 0; i < dirLights.Length; i++)
+                {
+                    if (i < lightingSystem.DirectionalLightCount) dirLights[i] = lightingSystem.DirectionalLights[i];
+                    else dirLights[i] = new Components.DirectionalLight();
+                }
+                // Push as fragment uniform slot 0 (space3, b0 in HLSL)
+                cmdbuf.PushFragmentUniformData(in dirLights[0], slot: 0);
+
+                // Push point lights array into slot 1 (cbuffer b1, space3)
+                var pointLights = new Components.PointLight[120];
+                for (int i = 0; i < pointLights.Length; i++)
+                {
+                    if (i < lightingSystem.PointLightCount) pointLights[i] = lightingSystem.PointLights[i];
+                    else pointLights[i] = new Components.PointLight();
+                }
+                cmdbuf.PushFragmentUniformData(in pointLights[0], slot: 1);
+
+                // Push spot lights array into slot 2 (cbuffer b2, space3)
+                var spotLights = new Components.SpotLight[16];
+                for (int i = 0; i < spotLights.Length; i++)
+                {
+                    if (i < lightingSystem.SpotLightCount) spotLights[i] = lightingSystem.SpotLights[i];
+                    else spotLights[i] = new Components.SpotLight();
+                }
+                cmdbuf.PushFragmentUniformData(in spotLights[0], slot: 2);
+
+                // Push counts into slot 3 (LightCounts cbuffer b3, space3)
+                var counts = new LightCountsUniform { directionalLightCount = (uint)lightingSystem.DirectionalLightCount, pointLightCount = (uint)lightingSystem.PointLightCount, spotLightCount = (uint)lightingSystem.SpotLightCount };
+                cmdbuf.PushFragmentUniformData(in counts, slot: 3);
+
+                // Push default material into slot 4 (MaterialProperties cbuffer b4, space3)
+                var mat = new MaterialPropertiesUniform { AmbientColor = new Vector3(0.1f), DiffuseColor = new Vector3(1f), SpecularColor = new Vector3(1f), Shininess = 16f, AmbientStrength = 0.2f };
+                cmdbuf.PushFragmentUniformData(in mat, slot: 4);
+            }
 
             // Bind shadow map if available
             if (_shadowMapTexture != null && _shadowMapSampler != null)
