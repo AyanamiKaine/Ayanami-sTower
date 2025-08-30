@@ -1208,7 +1208,7 @@ internal static class Program
 
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
-                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, -1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
+                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, 1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
 
             World.CreateEntity()
                 .Set(new CelestialBody())
