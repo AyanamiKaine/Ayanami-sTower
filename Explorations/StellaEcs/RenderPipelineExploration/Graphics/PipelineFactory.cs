@@ -77,6 +77,44 @@ public class PipelineFactory
             .WithBlendState(ColorTargetBlendState.NonPremultipliedAlphaBlend)
             .Build();
     }
+    /// <summary>
+    /// Creates a wireframe rendering pipeline.
+    /// </summary>
+    /// <param name="vs"></param>
+    /// <param name="fs"></param>
+    /// <param name="vertexInput"></param>
+    /// <returns></returns>
+    public GraphicsPipeline CreateWireframePipeline(Shader vs, Shader fs, VertexInputState vertexInput)
+    {
+        return CreatePipeline("WireframePipeline")
+            .WithShaders(vs, fs)
+            .WithVertexInput(vertexInput)
+            .WithPrimitiveType(PrimitiveType.LineList)
+            .WithRasterizer(new RasterizerState
+            {
+                CullMode = CullMode.None,
+                FrontFace = FrontFace.CounterClockwise,
+                FillMode = FillMode.Line // Wireframe mode
+            })
+            .WithDepthTesting(true, false)
+            .WithBlendState(ColorTargetBlendState.NoBlend)
+            .Build();
+    }
+
+    /// <summary>
+    /// Create a post-processing pipeline (full screen quad, no depth)
+    /// </summary>
+    public GraphicsPipeline CreatePostProcessPipeline(Shader vs, Shader fs, VertexInputState vertexInput)
+    {
+        return CreatePipeline("PostProcessPipeline")
+            .WithShaders(vs, fs)
+            .WithVertexInput(vertexInput)
+            .WithPrimitiveType(PrimitiveType.TriangleList)
+            .WithRasterizer(RasterizerState.CCW_CullNone)
+            .WithDepthStencil(false) // No depth for post-processing
+            .WithBlendState(ColorTargetBlendState.NoBlend)
+            .Build();
+    }
 
     /// <summary>
     /// Creates an ImGui pipeline without depth stencil.
