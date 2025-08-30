@@ -2032,7 +2032,7 @@ internal static class Program
                 skyMesh.Bind(pass);
                 // Use wrap sampling for skyboxes
                 var skySampler = Sampler.Create(GraphicsDevice, SamplerCreateInfo.LinearWrap);
-                pass.BindFragmentSamplers(0, new TextureSamplerBinding[] { new(_skyboxTexture, skySampler) });
+                pass.BindFragmentSamplers(0, [new(_skyboxTexture, skySampler)]);
 
                 // Skybox should follow the camera; when using camera-relative rendering the view translation
                 // has been removed so placing the skybox at the origin keeps it centered on the camera.
