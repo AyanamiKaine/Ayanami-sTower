@@ -33,6 +33,8 @@ internal static class Program
     {
         public Matrix4x4 MVP;
         public Matrix4x4 Model;
+        // World-space model matrix (no camera-relative subtraction). Used for shadow sampling.
+        public Matrix4x4 ModelWorld;
     }
 
     // Struct for shadow parameters
@@ -1206,8 +1208,7 @@ internal static class Program
 
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
-                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, -1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 10.0f))
-                .Set(new PointLight(new(20, 0, 0), new(0.3f, 0.8f, 1f), 100.0f, 10000f));
+                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, -1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
 
             sun.OnCollisionEnter(_collisionInteraction, (Entity self, Entity other) =>
             {
@@ -2158,9 +2159,11 @@ internal static class Program
                 // Use the first directional light for shadows
                 var light = lightingSystem.DirectionalLights[0];
 
-                // Calculate light view matrix (looking from light position towards scene)
-                var lightPos = -light.Direction * 100.0f; // Position light far away in opposite direction
-                var lightView = Matrix4x4.CreateLookAt(lightPos, Vector3.Zero, Vector3.UnitY);
+                // Calculate light view matrix (place the light looking at the camera center so the
+                // shadow map covers the visible scene and does not slide when the camera moves)
+                var camPos = HighPrecisionConversions.ToVector3(_camera.Position);
+                var lightPos = camPos - light.Direction * 100.0f; // Position light far along its direction, centered on camera
+                var lightView = Matrix4x4.CreateLookAt(lightPos, camPos, Vector3.UnitY);
 
                 // Calculate light projection matrix (orthographic for directional lights)
                 var lightProj = Matrix4x4.CreateOrthographic(200.0f, 200.0f, 0.1f, 500.0f);
@@ -2433,10 +2436,13 @@ internal static class Program
                 var mvp = model * viewProj;
 
                 // Create struct for vertex uniforms
+                // Model = camera-relative model (used for rendering to avoid floating-origin issues)
+                // ModelWorld = full world-space model (used for shadow sampling so shadow coords match depth pass)
                 var vertexUniforms = new VertexUniforms
                 {
                     MVP = mvp,
-                    Model = model
+                    Model = model,
+                    ModelWorld = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(translation)
                 };
 
                 cmdbuf.PushVertexUniformData(in vertexUniforms, slot: 0);

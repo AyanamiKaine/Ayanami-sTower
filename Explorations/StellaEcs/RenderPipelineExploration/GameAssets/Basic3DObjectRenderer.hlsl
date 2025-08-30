@@ -19,6 +19,7 @@ cbuffer VSParams : register(b0, space1)
 {
     float4x4 mvp;
     float4x4 model;
+    float4x4 modelWorld; // world-space model matrix (no camera-relative subtraction)
 };
 
 // Light structures (matching C# components)
@@ -89,7 +90,8 @@ VSOutput VSMain(VSInput input)
     o.nrm  = normalize(input.nrm);
     o.col  = input.col;
     o.mpos = input.pos; // model space
-    o.wpos = mul(model, float4(input.pos, 1.0)).xyz; // world space
+    // modelWorld is the world-space model matrix (no camera subtraction) used by the shadow pass
+    o.wpos = mul(modelWorld, float4(input.pos, 1.0)).xyz; // world space for shadow sampling
     o.uv   = input.uv;
     return o;
 }
