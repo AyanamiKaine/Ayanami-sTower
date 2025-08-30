@@ -2142,7 +2142,18 @@ internal static class Program
                 _lightViewProjectionMatrix = lightView * lightProj;
 
                 // Render shadow map
-                var shadowDepthTarget = new DepthStencilTargetInfo(_shadowMapTexture!, clearDepth: 1f);
+                // Create a DepthStencilTargetInfo that stores the results so the shadow map texture can be sampled later.
+                var shadowDepthTarget = new DepthStencilTargetInfo
+                {
+                    Texture = _shadowMapTexture!,
+                    ClearDepth = 1f,
+                    LoadOp = LoadOp.Clear,
+                    StoreOp = StoreOp.Store,
+                    StencilLoadOp = LoadOp.DontCare,
+                    StencilStoreOp = StoreOp.DontCare,
+                    Cycle = false,
+                    ClearStencil = 0
+                };
                 var shadowPass = cmdbuf.BeginRenderPass(shadowDepthTarget);
 
                 shadowPass.BindGraphicsPipeline(_shadowMapPipeline!);
@@ -2207,36 +2218,37 @@ internal static class Program
             // Reuse lightingSystem retrieved earlier when rendering the shadow map.
             if (lightingSystem != null && lightingSystem.HasLights)
             {
-                // Push directional lights array (matches cbuffer b0, space3)
-                // Note: PushFragmentUniformData uses contiguous memory; arrays of structs work when passing as ref to first element.
-                // Ensure we send the full sized array so shader indexing is safe (shader expects fixed-size arrays).
-                // Build managed copies matching the HLSL struct layout.
-                var dirLights = new Components.DirectionalLight[4];
-                for (int i = 0; i < dirLights.Length; i++)
-                {
-                    if (i < lightingSystem.DirectionalLightCount) dirLights[i] = lightingSystem.DirectionalLights[i];
-                    else dirLights[i] = new Components.DirectionalLight();
-                }
-                // Push as fragment uniform slot 0 (space3, b0 in HLSL)
-                cmdbuf.PushFragmentUniformData(in dirLights[0], slot: 0);
+                // Push directional/point/spot light arrays as contiguous blocks into fragment uniform slots (space3 b0..b2).
+                var dirLights = new DirectionalLight[4];
+                for (int i = 0; i < dirLights.Length; i++) dirLights[i] = i < lightingSystem.DirectionalLightCount ? lightingSystem.DirectionalLights[i] : new DirectionalLight();
 
-                // Push point lights array into slot 1 (cbuffer b1, space3)
-                var pointLights = new Components.PointLight[120];
-                for (int i = 0; i < pointLights.Length; i++)
+                unsafe
                 {
-                    if (i < lightingSystem.PointLightCount) pointLights[i] = lightingSystem.PointLights[i];
-                    else pointLights[i] = new Components.PointLight();
+                    fixed (DirectionalLight* pDir = dirLights)
+                    {
+                        cmdbuf.PushFragmentUniformData(pDir, (uint)(Marshal.SizeOf<DirectionalLight>() * dirLights.Length), slot: 0);
+                    }
                 }
-                cmdbuf.PushFragmentUniformData(in pointLights[0], slot: 1);
 
-                // Push spot lights array into slot 2 (cbuffer b2, space3)
-                var spotLights = new Components.SpotLight[16];
-                for (int i = 0; i < spotLights.Length; i++)
+                var pointLights = new PointLight[120];
+                for (int i = 0; i < pointLights.Length; i++) pointLights[i] = i < lightingSystem.PointLightCount ? lightingSystem.PointLights[i] : new PointLight();
+                unsafe
                 {
-                    if (i < lightingSystem.SpotLightCount) spotLights[i] = lightingSystem.SpotLights[i];
-                    else spotLights[i] = new Components.SpotLight();
+                    fixed (PointLight* pPoint = pointLights)
+                    {
+                        cmdbuf.PushFragmentUniformData(pPoint, (uint)(Marshal.SizeOf<PointLight>() * pointLights.Length), slot: 1);
+                    }
                 }
-                cmdbuf.PushFragmentUniformData(in spotLights[0], slot: 2);
+
+                var spotLights = new SpotLight[16];
+                for (int i = 0; i < spotLights.Length; i++) spotLights[i] = i < lightingSystem.SpotLightCount ? lightingSystem.SpotLights[i] : new SpotLight();
+                unsafe
+                {
+                    fixed (SpotLight* pSpot = spotLights)
+                    {
+                        cmdbuf.PushFragmentUniformData(pSpot, (uint)(Marshal.SizeOf<SpotLight>() * spotLights.Length), slot: 2);
+                    }
+                }
 
                 // Push counts into slot 3 (LightCounts cbuffer b3, space3)
                 var counts = new LightCountsUniform { directionalLightCount = (uint)lightingSystem.DirectionalLightCount, pointLightCount = (uint)lightingSystem.PointLightCount, spotLightCount = (uint)lightingSystem.SpotLightCount };
