@@ -55,7 +55,12 @@ public class HotReloadablePluginLoader : IDisposable
     public HotReloadablePluginLoader(World world, string pluginPath = "Plugins")
     {
         _world = world;
-        _pluginDirectory = Path.GetFullPath(pluginPath);
+        // Use the application's base directory for relative plugin paths so the
+        // plugin folder is always relative to the exe, not the current working directory.
+        var baseDir = AppContext.BaseDirectory;
+        _pluginDirectory = Path.GetFullPath(Path.IsPathRooted(pluginPath)
+            ? pluginPath
+            : Path.Combine(baseDir, pluginPath));
 
         if (!Directory.Exists(_pluginDirectory))
         {
