@@ -87,7 +87,8 @@ public class PipelineFactory
         return CreatePipeline(name)
             .WithShaders(vertexShader, fragmentShader)
             .WithVertexInput(vertexInput)
-            .WithDepthStencil(false) // No depth stencil for ImGui
+            .WithDepthStencil(false)
+            .WithDepthTesting(false, false)
             .WithBlendState(ColorTargetBlendState.NonPremultipliedAlphaBlend)
             .Build();
     }

@@ -89,6 +89,8 @@ internal static class Program
         private bool _skyboxEnabled;
         // Lines
         private GraphicsPipeline? _linePipeline;
+        private GraphicsPipeline? _imguiPipeline;
+
         private LineBatch3D? _lineBatch;
         // Debug: visualize physics colliders with wireframes
         private bool _debugDrawColliders = false;
@@ -877,6 +879,8 @@ internal static class Program
 
             // Dedicated skybox pipeline: no depth write/test, no culling (render inside of sphere)
             _skyboxPipeline = _pipelineFactory!.CreateSkyboxPipeline(vs, fs, vertexInput, "SkyboxRenderer");
+
+            _imguiPipeline = _pipelineFactory!.CreateImGuiPipeline(vs, fs, vertexInput, "ImGuiRenderer");
 
             _skyboxCubePipeline = _pipelineFactory!.CreatePipeline("SkyboxCubeRenderer")
                 .WithShaders(vsSkyCube, fsSkyCube)
@@ -1992,7 +1996,7 @@ internal static class Program
             if (_msaaColor != null)
             {
                 colorTarget.ResolveTexture = backbuffer.Handle; // Resolve MSAA to backbuffer
-                colorTarget.StoreOp = StoreOp.Resolve; // Perform resolve into swapchain
+                colorTarget.StoreOp = StoreOp.Store; // Store for first pass
             }
             var depthTarget = new DepthStencilTargetInfo(_msaaDepth!, clearDepth: 1f);
 
@@ -2150,43 +2154,24 @@ internal static class Program
                 _lineBatch.Render(pass, viewProj);
             }
 
+            cmdbuf.EndRenderPass(pass);
 
-            /*
-
-            var dirDir = Vector3.Normalize(new Vector3(-0.4f, -1.0f, -0.3f));
-            var dirIntensity = 1.0f;
-            var dirColor = new Vector3(1, 1, 1);
-
-            var ptPos = new Vector3(0, 0, 2);
-            var ptRange = 8.0f;
-            var ptColor = new Vector3(1.0f, 0.85f, 0.7f);
-            var ptIntensity = 1.0f;
-            var attLin = 0.0f;
-            var attQuad = 0.2f;
-
-            var ambient = 0.2f;
-
-            var lightUbo = new LightUniforms
+            // Second render pass for ImGui (no depth)
+            colorTarget.LoadOp = LoadOp.Load; // Load the contents from first pass
+            if (_msaaColor != null)
             {
-                Dir_Dir_Intensity = new Vector4(dirDir, dirIntensity),
-                Dir_Color = new Vector4(dirColor, 0f),
-                Pt_Pos_Range = new Vector4(ptPos, ptRange),
-                Pt_Color_Intensity = new Vector4(ptColor, ptIntensity),
-                Pt_Attenuation = new Vector2(attLin, attQuad),
-                Ambient = ambient
-            };
+                colorTarget.StoreOp = StoreOp.ResolveAndStore; // Resolve in second pass
+            }
+            var imguiPass = cmdbuf.BeginRenderPass(colorTarget); // No depth target
 
-            // cbuffer LightParams : register(b0, space3), slot 0 but space(set) 3
-            cmdbuf.PushFragmentUniformData(lightUbo, slot: 0);
-
-            */
+            imguiPass.BindGraphicsPipeline(_imguiPipeline!);
 
             if (_imguiEnabled && drawData != null)
             {
-                ImGuiImplSDL3.SDLGPU3RenderDrawData(drawData, (SDLGPUCommandBuffer*)cmdbuf.Handle, (SDLGPURenderPass*)pass.Handle, null);
+                ImGuiImplSDL3.SDLGPU3RenderDrawData(drawData, (SDLGPUCommandBuffer*)cmdbuf.Handle, (SDLGPURenderPass*)imguiPass.Handle, null);
             }
 
-            cmdbuf.EndRenderPass(pass);
+            cmdbuf.EndRenderPass(imguiPass);
 
 
             /////////////////////
