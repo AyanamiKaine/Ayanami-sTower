@@ -33,3 +33,7 @@ For MSL/metallib, use the following order:
 [[texture]]: Sampled textures, followed by storage textures
 [[sampler]]: Samplers with indices corresponding to the sampled textures
 [[buffer]]: Uniform buffers, followed by storage buffers. Vertex buffer 0 is bound at [[buffer(14)]], vertex buffer 1 at [[buffer(15)]], and so on. Rather than manually authoring vertex buffer indices, use the [[stage_in]] attribute which will automatically use the vertex input information from the SDL_GPUGraphicsPipeline.
+
+## Why Do Constant Buffers Need to Be 16-Byte Aligned?
+
+Why do we want to have a 16-byte aligned constant buffer? Because of performance mostly. And because the GPU mostly expects it. Its good practice to always 16-byte aligned it. I.e. 16 byte = (4 float);

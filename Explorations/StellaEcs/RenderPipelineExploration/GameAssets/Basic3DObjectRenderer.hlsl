@@ -186,46 +186,7 @@ float3 CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3
     return diffuse + specular;
 }
 
-float CalculateShadow(float3 worldPos)
-{
-    // Transform world position to light's clip space
-    float4 lightClipPos = mul(lightViewProjection, float4(worldPos, 1.0));
-    lightClipPos.xyz /= lightClipPos.w; // Perspective divide
-    
-    // Convert to texture coordinates (0 to 1)
-    float2 shadowUV = lightClipPos.xy * 0.5 + 0.5;
-        shadowUV.y = 1.0 - shadowUV.y;
 
-    // Check if position is within shadow map bounds
-    if (shadowUV.x < 0.0 || shadowUV.x > 1.0 || shadowUV.y < 0.0 || shadowUV.y > 1.0)
-    {
-        return 1.0; // No shadow
-    }
-    
-    // Get current depth in light space
-    float currentDepth = lightClipPos.z;
-    
-    // Sample shadow map with PCF (Percentage Closer Filtering)
-    float shadow = 0.0;
-    float2 texelSize = 1.0 / 2048.0; // Shadow map size
-    
-    // 3x3 PCF kernel
-    for (int x = -1; x <= 1; x++)
-    {
-        for (int y = -1; y <= 1; y++)
-        {
-            float2 offset = float2(x, y) * texelSize;
-            float shadowDepth = ShadowMap.Sample(ShadowSamp, shadowUV + offset).r;
-            
-            // Compare with bias
-            shadow += (currentDepth - shadowBias > shadowDepth) ? shadowIntensity : 1.0;
-        }
-    }
-    
-    shadow /= 9.0; // Average the 9 samples
-    
-    return shadow;
-}
 
 float4 PSMain(VSOutput input) : SV_Target
 {
@@ -249,8 +210,7 @@ float4 PSMain(VSOutput input) : SV_Target
     for (uint i = 0; i < directionalLightCount; i++)
     {
         float3 lightContribution = CalculateDirectionalLight(directionalLights[i], input.nrm, viewDir);
-        float shadow = CalculateShadow(input.wpos);
-        lighting += lightContribution * shadow;
+        lighting += lightContribution;
     }
 
     // Calculate point lights
@@ -268,17 +228,6 @@ float4 PSMain(VSOutput input) : SV_Target
     // Combine texture color with lighting
     float3 ambient = material.ambient * material.ambientStrength;
     float3 finalColor = texRgb * (ambient + material.diffuse + lighting);
-
-    //Debug Show only light and shadow 
-    /*
-    for (uint i = 0; i < directionalLightCount; i++)
-    {
-    float3 lightContribution = CalculateDirectionalLight(directionalLights[i], input.nrm, viewDir);
-    float shadow = CalculateShadow(input.wpos);
-    lighting += lightContribution * shadow;
-    finalColor = float3(shadow, shadow, shadow);
-    }
-    */
 
     return float4(finalColor, 1.0);
 }

@@ -68,29 +68,64 @@ internal static class Program
     }
 
     // GPU-packed light structs matching HLSL std140-like packing used in the shader.
-    // Use Vector4 groups so fields align to 16-byte registers exactly.
+    // GPU-packed light structs matching HLSL std140-like packing used in the shader.
+    // Use explicit Vector3 + padding floats so individual values (color, intensity, range, etc.)
+    // are stored in their own fields instead of being mangled into a single Vector4.
+    // Each logical 16-byte GPU register is represented as either a Vector4 or a Vector3 + float
+    // padding to guarantee correct alignment.
+
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     private struct GpuDirectionalLight
     {
-        public Vector4 Direction_padtow16; // xyz = direction, w = padding
-        public Vector4 Color_and_Intensity; // xyz = color, w = intensity
+        // 16 bytes: direction.xyz + padding
+        public Vector3 Direction;
+        private float _pad0;
+
+        // 16 bytes: color.xyz + padding
+        public Vector3 Color;
+        private float _pad1;
+
+        // 16 bytes: intensity (first component) + padding to fill the register
+        public float Intensity;
+        private Vector3 _pad2;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     private struct GpuPointLight
     {
-        public Vector4 Position_pad; // xyz = position, w = padding
-        public Vector4 Color_and_Intensity; // xyz = color, w = intensity
-        public Vector4 Range_pad; // x = range, yzw = padding
+        // 16 bytes: position.xyz + padding
+        public Vector3 Position;
+        private float _pad0;
+
+        // 16 bytes: color.xyz + padding
+        public Vector3 Color;
+        private float _pad1;
+
+        // 16 bytes: range (x) + padding
+        public float Range;
+        private Vector3 _pad2;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 4)]
     private struct GpuSpotLight
     {
-        public Vector4 Position_pad; // xyz = position
-        public Vector4 Direction_pad; // xyz = direction
-        public Vector4 Color_and_Intensity; // xyz = color, w = intensity
-        public Vector4 Range_Inner_Outer_pad; // x = range, y = innerAngle, z = outerAngle
+        // 16 bytes: position.xyz + padding
+        public Vector3 Position;
+        private float _pad0;
+
+        // 16 bytes: direction.xyz + padding
+        public Vector3 Direction;
+        private float _pad1;
+
+        // 16 bytes: color.xyz + padding
+        public Vector3 Color;
+        private float _pad2;
+
+        // 16 bytes: range, innerAngle, outerAngle, padding
+        public float Range;
+        public float InnerAngle;
+        public float OuterAngle;
+        private float _pad3;
     }
 
     public static void Main()
@@ -2265,8 +2300,9 @@ internal static class Program
                     if (s.Intensity <= 0f) continue; // ignore non-contributing lights
                     var gd = new GpuDirectionalLight();
                     var dir = Vector3.Normalize(s.Direction);
-                    gd.Direction_padtow16 = new Vector4(dir, 0f);
-                    gd.Color_and_Intensity = new Vector4(s.Color, s.Intensity);
+                    gd.Direction = dir;
+                    gd.Color = s.Color;
+                    gd.Intensity = s.Intensity;
                     gpuDir[usedDir++] = gd;
                 }
                 // zero-fill rest
@@ -2286,9 +2322,9 @@ internal static class Program
                     var s = lightingSystem.PointLights[i];
                     if (s.Intensity <= 0f) continue;
                     var gp = new GpuPointLight();
-                    gp.Position_pad = new Vector4(lightingSystem.PointLightPositions[i], 0f);
-                    gp.Color_and_Intensity = new Vector4(s.Color, s.Intensity);
-                    gp.Range_pad = new Vector4(s.Range, 0f, 0f, 0f);
+                    gp.Position = lightingSystem.PointLightPositions[i];
+                    gp.Color = s.Color;
+                    gp.Range = s.Range;
                     gpuPoint[usedPoint++] = gp;
                 }
                 for (int i = usedPoint; i < gpuPoint.Length; i++) gpuPoint[i] = new GpuPointLight();
@@ -2307,10 +2343,12 @@ internal static class Program
                     var s = lightingSystem.SpotLights[i];
                     if (s.Intensity <= 0f) continue;
                     var gs = new GpuSpotLight();
-                    gs.Position_pad = new Vector4(lightingSystem.SpotLightPositions[i], 0f);
-                    gs.Direction_pad = new Vector4(Vector3.Normalize(s.Direction), 0f);
-                    gs.Color_and_Intensity = new Vector4(s.Color, s.Intensity);
-                    gs.Range_Inner_Outer_pad = new Vector4(s.Range, s.InnerAngle, s.OuterAngle, 0f);
+                    gs.Position = lightingSystem.SpotLightPositions[i];
+                    gs.Direction = Vector3.Normalize(s.Direction);
+                    gs.Color = s.Color;
+                    gs.Range = s.Range;
+                    gs.InnerAngle = s.InnerAngle;
+                    gs.OuterAngle = s.OuterAngle;
                     gpuSpot[usedSpot++] = gs;
                 }
                 for (int i = usedSpot; i < gpuSpot.Length; i++) gpuSpot[i] = new GpuSpotLight();
