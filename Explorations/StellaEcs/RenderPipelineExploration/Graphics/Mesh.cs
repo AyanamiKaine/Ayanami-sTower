@@ -180,28 +180,28 @@ public struct Mesh
     }
 
     /// <summary>
-    /// Creates a simple XY plane centered at the origin with +Z normal.
+    /// Creates a simple XZ plane centered at the origin with -Y normal.
     /// </summary>
     /// <param name="sizeX">Full width along X.</param>
-    /// <param name="sizeY">Full height along Y.</param>
-    public static Mesh CreatePlane3D(float sizeX = 2.0f, float sizeY = 2.0f)
+    /// <param name="sizeZ">Full depth along Z.</param>
+    public static Mesh CreatePlane3D(float sizeX = 2.0f, float sizeZ = 2.0f)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizeX);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizeY);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizeZ);
 
         float hx = sizeX * 0.5f;
-        float hy = sizeY * 0.5f;
+        float hz = sizeZ * 0.5f;
 
-        var n = new Vector3(0, 0, 1);
+        var n = new Vector3(0, -1, 0);
         var vertices = new Vertex[]
         {
-            new(new(-hx,-hy, 0), n, new(1,0,0), new(0,1)),
-            new(new( hx,-hy, 0), n, new(0,1,0), new(1,1)),
-            new(new( hx, hy, 0), n, new(0,0,1), new(1,0)),
-            new(new(-hx, hy, 0), n, new(1,1,0), new(0,0)),
+            new(new(-hx, 0, -hz), n, new(1,0,0), new(0,1)),
+            new(new( hx, 0, -hz), n, new(0,1,0), new(1,1)),
+            new(new( hx, 0,  hz), n, new(0,0,1), new(1,0)),
+            new(new(-hx, 0,  hz), n, new(1,1,0), new(0,0)),
         };
 
-        var indices = new uint[] { 0, 1, 2, 0, 2, 3 };
+        var indices = new uint[] { 0, 2, 1, 0, 3, 2 };
 
         return new Mesh { Vertices = vertices, Indices = indices };
     }
