@@ -1146,7 +1146,7 @@ internal static class Program
                 */
 
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Sun.jpg") ?? _checkerTexture! });
 
             World.CreateEntity()
                 .Set(new CelestialBody())
@@ -1160,7 +1160,7 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.01f, 100f));
+                .Set(new PointLight(Color.White, 0.01f, 10000f));
 
 
             World.CreateEntity()
@@ -1168,7 +1168,7 @@ internal static class Program
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.01f, 10f));
+                .Set(new PointLight(Color.White, 0.01f, 1000f));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
@@ -1303,7 +1303,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.0048f, 0f)) // speed relative to Earth (fastest)
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Mercury.jpg") ?? _checkerTexture! });
 
             mercury.Set(new OrbitCircle(sun, 0.39f * auScale, new Color(200, 200, 200, 96), segments: 128));
 
@@ -1318,7 +1318,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.95f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.0016f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Venus.jpg") ?? _checkerTexture! });
 
             venus.Set(new OrbitCircle(sun, 0.72f * auScale, new Color(200, 200, 200, 96), segments: 128));
 
@@ -1333,7 +1333,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(1.0f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // speed = baseline
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Earth.jpg") ?? _checkerTexture! });
 
             earth.Set(new OrbitCircle(sun, 1.0f * auScale, new Color(180, 220, 255, 96), segments: 128));
 
@@ -1353,7 +1353,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.27f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.0012f, 0f))
                 .Set(new Parent(earth))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Moon.jpg") ?? _checkerTexture! });
 
             // Space station
             var spaceStationLocalOffset = new Vector3Double(1f, 0f, 0f); // distance from Earth in world units
