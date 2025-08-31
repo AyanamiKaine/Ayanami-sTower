@@ -75,6 +75,7 @@ internal static class Program
         // GPU resources
         private PipelineFactory? _pipelineFactory;
         private GraphicsPipeline? _pipeline;
+        private VertexInputState _defaultVertexInput;
         // rotation
         private float _angle;
         // textures
@@ -885,19 +886,19 @@ internal static class Program
 
 
 
-            var vertexInput = VertexInputState.CreateSingleBinding<Vertex>(0);
+            _defaultVertexInput = VertexInputState.CreateSingleBinding<Vertex>(0);
 
             // Create pipelines using the factory
-            _pipeline = _pipelineFactory!.CreateStandard3DPipeline(vs, fs, vertexInput, "Basic3DObjectRenderer");
+            _pipeline = _pipelineFactory!.CreateStandard3DPipeline(vs, fs, _defaultVertexInput, "Basic3DObjectRenderer");
 
             // Dedicated skybox pipeline: no depth write/test, no culling (render inside of sphere)
-            _skyboxPipeline = _pipelineFactory!.CreateSkyboxPipeline(vs, fs, vertexInput, "SkyboxRenderer");
+            _skyboxPipeline = _pipelineFactory!.CreateSkyboxPipeline(vs, fs, _defaultVertexInput, "SkyboxRenderer");
 
-            _imguiPipeline = _pipelineFactory!.CreateImGuiPipeline(vs, fs, vertexInput, "ImGuiRenderer");
+            _imguiPipeline = _pipelineFactory!.CreateImGuiPipeline(vs, fs, _defaultVertexInput, "ImGuiRenderer");
 
             _skyboxCubePipeline = _pipelineFactory!.CreatePipeline("SkyboxCubeRenderer")
                 .WithShaders(vsSkyCube, fsSkyCube)
-                .WithVertexInput(vertexInput)
+                .WithVertexInput(_defaultVertexInput)
                 .WithRasterizer(RasterizerState.CCW_CullNone)
                 .WithDepthTesting(false, false)
                 .WithBlendState(ColorTargetBlendState.NoBlend)
@@ -971,7 +972,7 @@ internal static class Program
             // Create shadow map pipeline (depth-only, single-sampled)
             _shadowMapPipeline = _pipelineFactory!.CreatePipeline("ShadowMapRenderer")
                 .WithShaders(vsShadow, fsShadow)
-                .WithVertexInput(vertexInput)
+                .WithVertexInput(_defaultVertexInput)
                 .WithDepthTesting(true, true)
                 .WithRasterizer(RasterizerState.CCW_CullNone)
                 .WithMultisample(new MultisampleState { SampleCount = SampleCount.One })
@@ -2401,6 +2402,33 @@ internal static class Program
 
                 // Bind mesh only for visible entities
                 gpuMesh.Bind(pass);
+
+                // If entity defines a custom shader, prefer its pipeline. Build it on-demand.
+                if (entity.Has<Components.Shader>())
+                {
+                    var s = entity.GetMut<Components.Shader>();
+                    if (s.Pipeline == null)
+                    {
+                        // Build pipeline with defaults for this shader using our factory and the default vertex layout
+                        if (_pipelineFactory != null)
+                        {
+                            s.BuildOrUpdatePipeline(_pipelineFactory, _defaultVertexInput, s.Name + "_Pipeline");
+                        }
+                    }
+
+                    if (s.Pipeline != null)
+                    {
+                        pass.BindGraphicsPipeline(s.Pipeline);
+                    }
+                    else
+                    {
+                        pass.BindGraphicsPipeline(_pipeline!);
+                    }
+                }
+                else
+                {
+                    pass.BindGraphicsPipeline(_pipeline!);
+                }
 
                 // Bind entity texture if present, otherwise bind dummy
                 var texture = _whiteTexture!;
