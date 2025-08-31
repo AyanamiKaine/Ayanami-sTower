@@ -1156,11 +1156,11 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             var lightSource = World.CreateEntity()
-                .Set(new Position3D(origin.X, origin.Y + 100, origin.Z))
+                .Set(new Position3D(origin.X, origin.Y + 60, origin.Z))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.Gold, 0.5f, 60f));
+                .Set(new PointLight(Color.Gold, 0.5f, 100f));
 
 
             World.CreateEntity()
