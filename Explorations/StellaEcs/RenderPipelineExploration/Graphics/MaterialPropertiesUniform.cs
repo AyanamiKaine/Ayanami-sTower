@@ -1,6 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
-using StellaInvicta.Components;
+using AyanamisTower.StellaEcs.StellaInvicta.Components;
 
 namespace StellaInvicta.Graphics;
 

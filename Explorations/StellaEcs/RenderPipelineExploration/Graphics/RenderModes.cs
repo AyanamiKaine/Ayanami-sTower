@@ -1,4 +1,4 @@
-namespace StellaInvicta.Graphics;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 /// <summary>
 /// Represents blending modes for rendering.
@@ -36,6 +36,10 @@ public enum BlendMode
 /// </summary>
 public enum CullMode
 {
+    /// <summary>
+    /// No culling.
+    /// </summary>
+    None,
     /// <summary>
     /// Clockwise back-face culling.
     /// </summary>

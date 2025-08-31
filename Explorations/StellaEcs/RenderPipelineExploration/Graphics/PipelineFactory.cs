@@ -92,7 +92,7 @@ public class PipelineFactory
             .WithPrimitiveType(PrimitiveType.LineList)
             .WithRasterizer(new RasterizerState
             {
-                CullMode = CullMode.None,
+                CullMode = (MoonWorks.Graphics.CullMode)CullMode.None,
                 FrontFace = FrontFace.CounterClockwise,
                 FillMode = FillMode.Line // Wireframe mode
             })

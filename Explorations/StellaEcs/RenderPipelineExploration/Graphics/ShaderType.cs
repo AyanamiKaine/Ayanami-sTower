@@ -1,6 +1,6 @@
 using System;
 
-namespace StellaInvicta.Graphics;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 /// <summary>
 /// Represents a shader type.

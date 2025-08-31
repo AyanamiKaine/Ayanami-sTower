@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace StellaInvicta.Graphics;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 /// <summary>
 /// Struct for vertex uniforms matching the HLSL cbuffer

@@ -22,7 +22,6 @@ using SDL3;
 using StellaInvicta.Physics;
 using AyanamisTower.StellaEcs.StellaInvicta.Systems;
 using System.Runtime.InteropServices;
-using StellaInvicta.Components;
 using StellaInvicta.Graphics;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
@@ -32,11 +31,11 @@ internal static class Program
 {
     public static void Main()
     {
-        var game = new StellaInvicta();
+        var game = new StellaInvictaGame();
         game.Run();
     }
 
-    private sealed class StellaInvicta : Game
+    private sealed class StellaInvictaGame : Game
     {
         private ImGuiIOPtr io;
         private bool _imguiEnabled = false;
@@ -137,7 +136,7 @@ internal static class Program
         private DateTime _lastDrawTime = DateTime.UtcNow;
         // Currently selected entity in the ImGui entities window
         private Entity _selectedEntity = default;
-        public StellaInvicta() : base(
+        public StellaInvictaGame() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
             FramePacingSettings.CreateCapped(60, 360),
@@ -1159,7 +1158,8 @@ internal static class Program
                 .Set(new Position3D(origin.X, origin.Y + 10, origin.Z))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Components.Shader(this, "Light"))
+                .Set(new PointLight(Color.Gold, 1.0f, 1000f));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
@@ -1168,7 +1168,7 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             World.CreateEntity()
-                .Set(new Position3D(10 + origin.X, origin.Y , 5 + origin.Z))
+                .Set(new Position3D(10 + origin.X, origin.Y, 5 + origin.Z))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });

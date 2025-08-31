@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace StellaInvicta.Components;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Components;
 
 /// <summary>
 /// Represents the material properties of an object.

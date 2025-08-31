@@ -1,8 +1,8 @@
 using System;
 using System.Numerics;
-using StellaInvicta.Components;
+using AyanamisTower.StellaEcs.StellaInvicta.Components;
 
-namespace StellaInvicta.Graphics;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 /// <summary>
 /// A static class containing predefined material properties for various real-world objects.

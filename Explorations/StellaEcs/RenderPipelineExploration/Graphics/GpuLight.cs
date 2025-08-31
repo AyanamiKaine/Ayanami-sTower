@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace StellaInvicta.Graphics;
+namespace AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 
 // GPU-packed light structs matching HLSL std140-like packing used in the shader.
 // GPU-packed light structs matching HLSL std140-like packing used in the shader.
