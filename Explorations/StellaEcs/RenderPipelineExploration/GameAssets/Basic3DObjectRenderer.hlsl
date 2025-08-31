@@ -20,6 +20,7 @@ cbuffer VSParams : register(b0, space1)
     float4x4 mvp;
     float4x4 model;
     float4x4 modelWorld; // world-space model matrix (no camera-relative subtraction)
+    float3   cameraPosition;
 };
 
 struct Material

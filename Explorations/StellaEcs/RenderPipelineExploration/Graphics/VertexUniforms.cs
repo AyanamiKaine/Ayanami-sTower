@@ -22,5 +22,11 @@ public struct VertexUniforms
     /// World-space model matrix (no camera-relative subtraction). Used for shadow sampling.
     /// </summary>
     public Matrix4x4 ModelWorld;
+    /// <summary>
+    /// World-space camera position. Used by shaders to compute view direction in world space.
+    /// </summary>
+    public Vector3 CameraPosition;
+    // Padding to align to 16 bytes if needed
+    private float _pad0;
 }
 

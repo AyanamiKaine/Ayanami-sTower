@@ -18,6 +18,9 @@ public static class HighPrecisionConversions
             return 0f;
         if (v > float.MaxValue) return float.MaxValue;
         if (v < float.MinValue) return float.MinValue;
+        // Avoid producing tiny denormal/subnormal floats from numerical noise.
+        // Treat very small magnitudes as zero to keep renderer/shader constants clean.
+        if (Math.Abs(v) < 1e-6) return 0f;
         return (float)v;
     }
 

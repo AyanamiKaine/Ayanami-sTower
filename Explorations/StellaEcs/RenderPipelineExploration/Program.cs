@@ -2459,7 +2459,9 @@ internal static class Program
                 {
                     MVP = mvp,
                     Model = model,
-                    ModelWorld = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(translation)
+                    ModelWorld = Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(rotation) * Matrix4x4.CreateTranslation(translation),
+                    // Camera position in world space (used by shader for correct viewDir)
+                    CameraPosition = HighPrecisionConversions.ToVector3(_camera.Position)
                 };
 
                 cmdbuf.PushVertexUniformData(in vertexUniforms, slot: 0);
