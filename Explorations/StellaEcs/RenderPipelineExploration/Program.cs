@@ -1160,7 +1160,7 @@ internal static class Program
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.Gold, 1.0f, 1000f));
+                .Set(new PointLight(Color.Gold, 0.5f, 20f));
 
 
             World.CreateEntity()
@@ -2257,7 +2257,7 @@ internal static class Program
                     }
                 }
 
-                var gpuPoint = new GpuPointLight[120];
+                var gpuPoint = new GpuPointLight[60];
                 int usedPoint = 0;
                 for (int i = 0; i < lightingSystem.PointLightCount && usedPoint < gpuPoint.Length; i++)
                 {
@@ -2266,6 +2266,7 @@ internal static class Program
                     var gp = new GpuPointLight();
                     gp.Position = lightingSystem.PointLightPositions[i];
                     gp.Color = s.Color;
+                    gp.Intensity = s.Intensity;
                     gp.Range = s.Range;
                     gpuPoint[usedPoint++] = gp;
                 }

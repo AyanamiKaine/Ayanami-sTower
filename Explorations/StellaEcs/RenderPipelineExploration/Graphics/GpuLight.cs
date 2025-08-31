@@ -59,7 +59,7 @@ public struct GpuDirectionalLight
 /// <summary>
 /// Represents a point light source in the scene.
 /// </summary>
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
+[StructLayout(LayoutKind.Sequential)]
 public struct GpuPointLight
 {
     /// <summary>
@@ -72,13 +72,14 @@ public struct GpuPointLight
     ///  bytes: color.xyz + padding
     /// </summary>
     public Vector3 Color;
-    private float _pad1;
-
     /// <summary>
-    ///  bytes: range (x) + padding
+    ///  bytes: intensity (x) + range (y) + padding
+    /// </summary>
+    public float Intensity;
+    /// <summary>
+    /// The effective range of the point light.
     /// </summary>
     public float Range;
-    private Vector3 _pad2;
 }
 /// <summary>
 /// Represents a spot light source in the scene.

@@ -69,7 +69,7 @@ cbuffer DirectionalLightsData : register(b0, space3)
 
 cbuffer PointLightsData : register(b1, space3)
 {
-    PointLight pointLights[120];
+    PointLight pointLights[60];
 }
 
 cbuffer SpotLightsData : register(b2, space3)
@@ -121,45 +121,43 @@ cbuffer ShadowParams : register(b5, space3)
 };
 
 // Lighting calculation functions
-float3 CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 viewDir)
+// Return diffuse and specular separately so the PS can combine them appropriately (Phong model)
+void CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 viewDir, out float3 outDiffuse, out float3 outSpecular)
 {
     // Directional light direction (from fragment towards light)
     float3 lightDir = normalize(-light.direction);
 
     // Diffuse (Lambert)
     float diff = max(dot(normal, lightDir), 0.0);
-    float3 diffuse = light.color * (diff * material.diffuse) * light.intensity;
+    outDiffuse = light.color * (diff * material.diffuse) * light.intensity;
 
     // Specular (Phong)
     float3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    float3 specular = light.color * (spec * material.specular) * light.intensity;
-
-    return diffuse + specular;
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
+    outSpecular = light.color * (spec * material.specular) * light.intensity;
 }
 
-float3 CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3 viewDir)
+void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3 viewDir, out float3 outDiffuse, out float3 outSpecular)
 {
     float3 lightDir = normalize(light.position - fragPos);
     float distance = length(light.position - fragPos);
 
-    // Attenuation
+    // Attenuation (common quadratic approximation)
     float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
-    attenuation *= smoothstep(light.range, light.range * 0.8, distance); // Smooth falloff
+    // Optional smooth falloff near range (note: keep as-is if host code expects this behavior)
+    attenuation *= smoothstep(light.range, light.range * 0.8, distance);
 
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
-    float3 diffuse = light.color * (diff * material.diffuse) * light.intensity * attenuation;
+    outDiffuse = light.color * (diff * material.diffuse) * light.intensity * attenuation;
 
     // Specular (Phong)
     float3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    float3 specular = light.color * (spec * material.specular) * light.intensity * attenuation;
-
-    return diffuse + specular;
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
+    outSpecular = light.color * (spec * material.specular) * light.intensity * attenuation;
 }
 
-float3 CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 viewDir)
+void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 viewDir, out float3 outDiffuse, out float3 outSpecular)
 {
     float3 lightDir = normalize(light.position - fragPos);
     float distance = length(light.position - fragPos);
@@ -168,22 +166,20 @@ float3 CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3
     float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
     attenuation *= smoothstep(light.range, light.range * 0.8, distance);
 
-    // Spotlight intensity
+    // Spotlight intensity (inner/outer cone)
     float theta = dot(lightDir, normalize(-light.direction));
     float epsilon = light.innerAngle - light.outerAngle;
-    float intensity = clamp((theta - light.outerAngle) / epsilon, 0.0, 1.0);
-    attenuation *= intensity;
+    float coneIntensity = clamp((theta - light.outerAngle) / max(0.0001, epsilon), 0.0, 1.0);
+    attenuation *= coneIntensity;
 
     // Diffuse
     float diff = max(dot(normal, lightDir), 0.0);
-    float3 diffuse = light.color * (diff * material.diffuse) * light.intensity * attenuation;
+    outDiffuse = light.color * (diff * material.diffuse) * light.intensity * attenuation;
 
     // Specular (Phong)
     float3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    float3 specular = light.color * (spec * material.specular) * light.intensity * attenuation;
-
-    return diffuse + specular;
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
+    outSpecular = light.color * (spec * material.specular) * light.intensity * attenuation;
 }
 
 
@@ -192,42 +188,53 @@ float4 PSMain(VSOutput input) : SV_Target
 {
     // Sample the texture
     float3 texRgb = DiffuseTex.Sample(DiffuseSamp, input.uv).rgb;
-
-    // If no lights, just return texture color with ambient
+    // If no lights, return texture color modulated by ambient + material diffuse (preserve previous behavior)
     if (directionalLightCount == 0 && pointLightCount == 0 && spotLightCount == 0)
     {
-    float3 ambient = material.ambient * material.ambientStrength;
-    return float4(texRgb * (ambient + material.diffuse), 1.0);
+        float3 ambientOnly = material.ambient * material.ambientStrength;
+        return float4(texRgb * (ambientOnly + material.diffuse), 1.0);
     }
 
-    // Initialize lighting
-    float3 lighting = float3(0.0, 0.0, 0.0);
+    // Normalize interpolants
+    float3 normal = normalize(input.nrm);
 
-    // View direction (simplified - assuming camera at origin for now)
-    float3 viewDir = normalize(float3(0.0, 0.0, 1.0) - input.mpos);
+    // View direction: assume camera at origin in model-space. (If camera pos is available, replace this.)
+    float3 viewDir = normalize(-input.mpos);
 
-    // Calculate directional lights
+    // Accumulators for Phong components
+    float3 ambient = material.ambient * material.ambientStrength;
+    float3 diffuseAccum = float3(0.0, 0.0, 0.0);
+    float3 specularAccum = float3(0.0, 0.0, 0.0);
+
+    // Directional lights
     for (uint i = 0; i < directionalLightCount; i++)
     {
-        float3 lightContribution = CalculateDirectionalLight(directionalLights[i], input.nrm, viewDir);
-        lighting += lightContribution;
+        float3 d, s;
+        CalculateDirectionalLight(directionalLights[i], normal, viewDir, d, s);
+        diffuseAccum += d;
+        specularAccum += s;
     }
 
-    // Calculate point lights
+    // Point lights
     for (uint j = 0; j < pointLightCount; j++)
     {
-        lighting += CalculatePointLight(pointLights[j], input.nrm, input.mpos, viewDir);
+        float3 d, s;
+        CalculatePointLight(pointLights[j], normal, input.mpos, viewDir, d, s);
+        diffuseAccum += d;
+        specularAccum += s;
     }
 
-    // Calculate spot lights
+    // Spot lights
     for (uint k = 0; k < spotLightCount; k++)
     {
-        lighting += CalculateSpotLight(spotLights[k], input.nrm, input.mpos, viewDir);
+        float3 d, s;
+        CalculateSpotLight(spotLights[k], normal, input.mpos, viewDir, d, s);
+        diffuseAccum += d;
+        specularAccum += s;
     }
 
-    // Combine texture color with lighting
-    float3 ambient = material.ambient * material.ambientStrength;
-    float3 finalColor = texRgb * (ambient + material.diffuse + lighting);
+    // Final color: follow previous convention and include material.diffuse as a base term
+    float3 finalColor = texRgb * (ambient + material.diffuse + diffuseAccum) + specularAccum;
 
     return float4(finalColor, 1.0);
 }

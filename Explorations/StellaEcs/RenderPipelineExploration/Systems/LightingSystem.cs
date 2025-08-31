@@ -14,7 +14,7 @@ public class LightingSystem : ISystem
 {
     // Maximum number of lights supported (matches shader limits)
     private const int MaxDirectionalLights = 4;
-    private const int MaxPointLights = 120;
+    private const int MaxPointLights = 60;
     private const int MaxSpotLights = 16;
 
     /// <summary>
