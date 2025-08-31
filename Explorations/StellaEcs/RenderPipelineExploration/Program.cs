@@ -1146,8 +1146,8 @@ internal static class Program
                 */
 
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
-            //.Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, 1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
+                .Set(new Texture2DRef { Texture = _checkerTexture! })
+                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, 1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
 
 
 
@@ -1190,7 +1190,8 @@ internal static class Program
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                // Try loading a per-entity diffuse map from the Asset folder. If it fails, fall back to the checker texture.
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/diffuseMapExample.png") ?? _checkerTexture! });
 
             World.CreateEntity()
                 .Set(new Position3D(10 + origin.X, origin.Y, 5 + origin.Z))

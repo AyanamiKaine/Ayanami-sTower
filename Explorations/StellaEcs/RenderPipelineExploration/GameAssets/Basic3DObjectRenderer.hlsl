@@ -126,23 +126,24 @@ cbuffer ShadowParams : register(b5, space3)
 };
 
 // Lighting calculation functions
+// Use a sampled albedo map (passed in) for the diffuse term and keep material.specular/shininess for specular.
 // Return diffuse and specular separately so the PS can combine them appropriately (Phong model)
-void CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 viewDir, out float3 outDiffuse, out float3 outSpecular)
+void CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 viewDir, float3 albedo, out float3 outDiffuse, out float3 outSpecular)
 {
     // Directional light direction (from fragment towards light)
     float3 lightDir = normalize(-light.direction);
 
-    // Diffuse (Lambert)
+    // Diffuse (Lambert) driven by texture albedo (optionally tinted on the CPU by material.diffuse)
     float diff = max(dot(normal, lightDir), 0.0);
-    outDiffuse = light.color * (diff * material.diffuse) * light.intensity;
+    outDiffuse = light.color * (diff * albedo) * light.intensity;
 
-    // Specular (Phong)
+    // Specular (Phong) still uses material.specular/shininess
     float3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
     outSpecular = light.color * (spec * material.specular) * light.intensity;
 }
 
-void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3 viewDir, out float3 outDiffuse, out float3 outSpecular)
+void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, out float3 outDiffuse, out float3 outSpecular)
 {
     float3 lightDir = normalize(light.position - fragPos);
     float distance = length(light.position - fragPos);
@@ -152,9 +153,9 @@ void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3
     // Optional smooth falloff near range (note: keep as-is if host code expects this behavior)
     attenuation *= smoothstep(light.range, light.range * 0.8, distance);
 
-    // Diffuse
+    // Diffuse driven by albedo
     float diff = max(dot(normal, lightDir), 0.0);
-    outDiffuse = light.color * (diff * material.diffuse) * light.intensity * attenuation;
+    outDiffuse = light.color * (diff * albedo) * light.intensity * attenuation;
 
     // Specular (Phong)
     float3 reflectDir = reflect(-lightDir, normal);
@@ -162,7 +163,7 @@ void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3
     outSpecular = light.color * (spec * material.specular) * light.intensity * attenuation;
 }
 
-void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 viewDir, out float3 outDiffuse, out float3 outSpecular)
+void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, out float3 outDiffuse, out float3 outSpecular)
 {
     float3 lightDir = normalize(light.position - fragPos);
     float distance = length(light.position - fragPos);
@@ -177,9 +178,9 @@ void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 v
     float coneIntensity = clamp((theta - light.outerAngle) / max(0.0001, epsilon), 0.0, 1.0);
     attenuation *= coneIntensity;
 
-    // Diffuse
+    // Diffuse driven by albedo
     float diff = max(dot(normal, lightDir), 0.0);
-    outDiffuse = light.color * (diff * material.diffuse) * light.intensity * attenuation;
+    outDiffuse = light.color * (diff * albedo) * light.intensity * attenuation;
 
     // Specular (Phong)
     float3 reflectDir = reflect(-lightDir, normal);
@@ -191,13 +192,18 @@ void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 v
 
 float4 PSMain(VSOutput input) : SV_Target
 {
-    // Sample the texture
+    // Sample the diffuse texture (albedo)
     float3 texRgb = DiffuseTex.Sample(DiffuseSamp, input.uv).rgb;
-    // If no lights, return texture color modulated by ambient + material diffuse (preserve previous behavior)
+
+    // Allow material.diffuse to act as an optional tint on the albedo.
+    // If you want the texture to completely replace material.diffuse, set material.diffuse = float3(1,1,1) on the CPU.
+    float3 albedoTinted = texRgb * material.diffuse;
+
+    // If no lights, return albedo (tinted) modulated by ambient + full base albedo
     if (directionalLightCount == 0 && pointLightCount == 0 && spotLightCount == 0)
     {
         float3 ambientOnly = material.ambient * material.ambientStrength;
-        return float4(texRgb * (ambientOnly + material.diffuse), 1.0);
+        return float4(albedoTinted * (ambientOnly + 1.0), 1.0);
     }
 
     // Normalize interpolants
@@ -215,7 +221,7 @@ float4 PSMain(VSOutput input) : SV_Target
     for (uint i = 0; i < directionalLightCount; i++)
     {
         float3 d, s;
-        CalculateDirectionalLight(directionalLights[i], normal, viewDir, d, s);
+        CalculateDirectionalLight(directionalLights[i], normal, viewDir, albedoTinted, d, s);
         diffuseAccum += d;
         specularAccum += s;
     }
@@ -224,7 +230,7 @@ float4 PSMain(VSOutput input) : SV_Target
     for (uint j = 0; j < pointLightCount; j++)
     {
         float3 d, s;
-    CalculatePointLight(pointLights[j], normal, input.wpos, viewDir, d, s);
+        CalculatePointLight(pointLights[j], normal, input.wpos, viewDir, albedoTinted, d, s);
         diffuseAccum += d;
         specularAccum += s;
     }
@@ -233,13 +239,13 @@ float4 PSMain(VSOutput input) : SV_Target
     for (uint k = 0; k < spotLightCount; k++)
     {
         float3 d, s;
-    CalculateSpotLight(spotLights[k], normal, input.wpos, viewDir, d, s);
+        CalculateSpotLight(spotLights[k], normal, input.wpos, viewDir, albedoTinted, d, s);
         diffuseAccum += d;
         specularAccum += s;
     }
 
-    // Final color: follow previous convention and include material.diffuse as a base term
-    float3 finalColor = texRgb * (ambient + material.diffuse + diffuseAccum) + specularAccum;
+    // Final color: textured albedo drives diffuse; specular is added on top.
+    float3 finalColor = albedoTinted * (ambient + diffuseAccum) + specularAccum;
 
     return float4(finalColor, 1.0);
 }
