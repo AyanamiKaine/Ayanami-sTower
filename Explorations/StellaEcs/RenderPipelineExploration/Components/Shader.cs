@@ -48,6 +48,100 @@ public class Shader
     public MoonWorks.Graphics.Shader? FragmentShader { get; set; }
 
     /// <summary>
+    /// Create a GraphicsPipeline for this shader using the provided <see cref="PipelineFactory"/> and vertex input layout.
+    /// This keeps pipeline creation close to the shader component so entities that own this component can easily build
+    /// a matching pipeline.
+    /// </summary>
+    /// <param name="factory">PipelineFactory configured for the current GraphicsDevice and swap/depth formats.</param>
+    /// <param name="vertexInput">Vertex input state describing vertex attributes for the mesh to render.</param>
+    /// <param name="pipelineName">Optional pipeline name override. Defaults to the shader name.</param>
+    /// <returns>A created <see cref="GraphicsPipeline"/> instance.</returns>
+    public GraphicsPipeline CreatePipeline(PipelineFactory factory, VertexInputState vertexInput, string? pipelineName = null)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+
+        // Ensure shaders are built
+        if (VertexShader == null || FragmentShader == null)
+        {
+            BuildShader();
+        }
+
+        if (VertexShader == null || FragmentShader == null)
+        {
+            throw new InvalidOperationException("Vertex and fragment shaders must be available to create a pipeline.");
+        }
+
+        var name = pipelineName ?? Name;
+
+        var builder = factory.CreatePipeline(name + "Pipeline")
+            .WithShaders(VertexShader, FragmentShader)
+            .WithVertexInput(vertexInput);
+
+        // Blend
+        builder = RenderMode.Blend switch
+        {
+            BlendMode.NoBlend or BlendMode.Opaque => builder.WithBlendState(ColorTargetBlendState.NoBlend),
+            BlendMode.NonPremultipliedAlpha => builder.WithBlendState(ColorTargetBlendState.NonPremultipliedAlphaBlend),
+            BlendMode.PremultipliedAlpha => builder.WithBlendState(ColorTargetBlendState.PremultipliedAlphaBlend),
+            BlendMode.Additive => builder.WithBlendState(ColorTargetBlendState.Additive),
+            BlendMode.NoWrite => builder.WithBlendState(ColorTargetBlendState.NoWrite),// Map to the engine's NoWrite preset which disables color writes.
+            _ => builder.WithBlendState(ColorTargetBlendState.NoBlend),
+        };
+
+        // Rasterizer: culling and wireframe
+        RasterizerState raster = RasterizerState.CCW_CullBack;
+        switch (RenderMode.Cull)
+        {
+            case Graphics.CullMode.None:
+                raster = RasterizerState.CCW_CullNone;
+                break;
+            case Graphics.CullMode.CounterClockwiseBack:
+                raster = RasterizerState.CCW_CullBack;
+                break;
+            case Graphics.CullMode.ClockwiseBack:
+                raster = new RasterizerState { CullMode = MoonWorks.Graphics.CullMode.Back, FrontFace = FrontFace.Clockwise };
+                break;
+            case Graphics.CullMode.CounterClockwiseFront:
+                raster = new RasterizerState { CullMode = MoonWorks.Graphics.CullMode.Front, FrontFace = FrontFace.CounterClockwise };
+                break;
+            case Graphics.CullMode.ClockwiseFront:
+                raster = new RasterizerState { CullMode = MoonWorks.Graphics.CullMode.Front, FrontFace = FrontFace.Clockwise };
+                break;
+            case Graphics.CullMode.ClockwiseDisabled:
+                raster = new RasterizerState { CullMode = MoonWorks.Graphics.CullMode.None, FrontFace = FrontFace.Clockwise };
+                break;
+            case Graphics.CullMode.CounterClockwiseDisabled:
+                raster = new RasterizerState { CullMode = MoonWorks.Graphics.CullMode.None, FrontFace = FrontFace.CounterClockwise };
+                break;
+        }
+
+        // Wireframe fill mode
+        if (RenderMode.Wireframe != WireframeMode.None)
+        {
+            raster = new RasterizerState
+            {
+                CullMode = raster.CullMode,
+                FrontFace = raster.FrontFace,
+                FillMode = FillMode.Line
+            };
+        }
+
+        builder = builder.WithRasterizer(raster);
+
+        // Depth mode
+        builder = RenderMode.Depth switch
+        {
+            DepthMode.DrawOpaque => builder.WithDepthTesting(true, true, CompareOp.LessOrEqual),
+            DepthMode.DrawAlways => builder.WithDepthTesting(true, true, CompareOp.Always),// Always pass; still write depth so this object effectively forces its depth into the buffer.
+            DepthMode.DrawNever => builder.WithDepthTesting(true, false, CompareOp.Never),
+            DepthMode.PrepassAlpha => builder.WithDepthTesting(true, true, CompareOp.LessOrEqual),
+            DepthMode.TestDisabled => builder.WithDepthTesting(false, false),
+            _ => builder.WithDepthTesting(true, true, CompareOp.LessOrEqual),
+        };
+        return builder.Build();
+    }
+
+    /// <summary>
     /// Represents a shader configuration for an entity.
     /// This component allows entities to specify which shaders to use for rendering.
     /// When you define a shader component for an entity it creates an appropriate render
