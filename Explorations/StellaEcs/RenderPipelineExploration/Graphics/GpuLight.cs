@@ -12,6 +12,27 @@ namespace StellaInvicta.Graphics;
 // padding to guarantee correct alignment.
 
 /// <summary>
+/// Light counts uniform (matches HLSL 'LightCounts' cbuffer at b3, space3)
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct LightCountsUniform
+{
+    /// <summary>
+    /// Number of directional lights in the scene.
+    /// </summary>
+    public uint directionalLightCount;
+    /// <summary>
+    /// Number of point lights in the scene.
+    /// </summary>
+    public uint pointLightCount;
+    /// <summary>
+    /// Number of spot lights in the scene.
+    /// </summary>
+    public uint spotLightCount;
+    private uint _padding;
+}
+
+/// <summary>
 /// Represents a directional light source in the scene.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
