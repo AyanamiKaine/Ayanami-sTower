@@ -11,7 +11,7 @@ struct VSOutput {
     float3 col  : COLOR0;
     float3 mpos : TEXCOORD0; // model-space position for point light
     float3 wpos : TEXCOORD2; // world-space position for shadows
-    float3 viewDir : TEXCOORD3; // world-space view direction (computed in VS to avoid fragment cbuffer use)
+    float3 cameraPos : TEXCOORD3; // camera position for per-pixel view direction
     float2 uv   : TEXCOORD1;
 };
 
@@ -98,13 +98,19 @@ VSOutput VSMain(VSInput input)
     VSOutput o;
     o.pos  = mul(mvp, float4(input.pos, 1.0));
     // transform normal to world space using the world model matrix so lighting uses world-space normals
-    o.nrm  = normalize(mul((float3x3)modelWorld, input.nrm));
+    // Use the inverse-transpose (normal matrix) to correctly transform normals when the model
+    // matrix contains non-uniform scale or shear. Normalize after transforming.
+    // Prefer operating on the float4x4 modelWorld for inverse/transpose to avoid
+    // compiler issues with inverses on 3x3 types in some backends. Cast the
+    // resulting 4x4 inverse-transpose to 3x3 for normal transformation.
+        // Transform normal to world space using the modelWorld matrix. Do not normalize here
+        // because interpolation across the triangle will require per-pixel normalization.
+        o.nrm = mul((float3x3)modelWorld, input.nrm);
     o.col  = input.col;
     o.mpos = input.pos; // model space
     // modelWorld is the world-space model matrix (no camera subtraction) used by the shadow pass
     o.wpos = mul(modelWorld, float4(input.pos, 1.0)).xyz; // world space for shadow sampling
-    // compute world-space view direction in VS so the fragment shader doesn't need to read the vertex-only cbuffer
-    o.viewDir = normalize(cameraPosition - o.wpos);
+    o.cameraPos = cameraPosition; // pass camera position to pixel shader
     o.uv   = input.uv;
     return o;
 }
@@ -214,7 +220,8 @@ float4 PSMain(VSOutput input) : SV_Target
     float3 normal = normalize(input.nrm);
 
     // View direction provided by VS as world-space vector
-    float3 viewDir = normalize(input.viewDir);
+        // Compute per-pixel view direction from camera to fragment in world space
+        float3 viewDir = normalize(input.cameraPos - input.wpos);
 
     // Accumulators for Phong components
     float3 ambient = material.ambient * material.ambientStrength;
