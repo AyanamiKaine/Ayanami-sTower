@@ -273,4 +273,14 @@ public static class PredefinedMaterials
         Specular = new Vector3(0.7f, 0.7f, 0.04f),
         Shininess = 10.0f
     };
+    /// <summary>
+    /// Material properties for the default material.
+    /// </summary>
+    public static readonly Material Default = new()
+    {
+        Ambient = new Vector3(1.0f, 1.0f, 1.0f),
+        Diffuse = new Vector3(1.0f, 1.0f, 1.0f),
+        Specular = new Vector3(0.0f, 0.0f, 0.00f),
+        Shininess = 0.0f
+    };
 }

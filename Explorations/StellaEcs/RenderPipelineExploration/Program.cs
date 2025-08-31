@@ -1134,7 +1134,7 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                                                             // Put sun on a different collision layer than asteroids so they won't collide.
                 .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
-
+                .Set(PredefinedMaterials.Silver)
 
 
                 /*
@@ -1147,7 +1147,9 @@ internal static class Program
 
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
-                //.Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, 1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
+            //.Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, 1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
+
+
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X, origin.Y - 5, origin.Z))
@@ -1161,6 +1163,20 @@ internal static class Program
                 .Set(new Size3D(2f))
                 .Set(new Components.Shader(this, "Light", true))
                 .Set(new PointLight(Color.Gold, 0.5f, 100f));
+
+            World.CreateEntity()
+                .Set(new CelestialBody())
+                .Set(new Kinematic())
+                .Set(Mesh.CreateSphere3D())
+                .Set(new Position3D(AuToWorld(0.2f, 0, 0).X, AuToWorld(0.2f, 0, 0).Y, AuToWorld(0.2f, 0, 0).Z)) // distance = 0.39 AU
+                .Set(new Size3D(0.38f)) // size = 0.38x Earth
+                .Set(Rotation3D.Identity)
+                .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
+                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth (fastest)
+                .Set(new Parent(sun))
+                .Set(new Texture2DRef { Texture = _checkerTexture! })
+                .Set(new Components.Shader(this, "Light", true))
+                .Set(new PointLight(Color.Aqua, 0.1f, 100f));
 
 
             World.CreateEntity()
@@ -2314,9 +2330,7 @@ internal static class Program
                 var counts = new LightCountsUniform { directionalLightCount = (uint)lightingSystem.DirectionalLightCount, pointLightCount = (uint)lightingSystem.PointLightCount, spotLightCount = (uint)lightingSystem.SpotLightCount };
                 cmdbuf.PushFragmentUniformData(in counts, slot: 3);
 
-                // Push default material into slot 4 (MaterialProperties cbuffer b4, space3)
-                var mat = new MaterialPropertiesUniform { material = PredefinedMaterials.Silver };
-                cmdbuf.PushFragmentUniformData(in mat, slot: 4);
+                // Note: per-entity material will be pushed before each draw. Keep no global default here.
             }
 
             // Bind shadow map if available
@@ -2472,6 +2486,21 @@ internal static class Program
                 };
 
                 cmdbuf.PushVertexUniformData(in vertexUniforms, slot: 0);
+
+                // Push per-entity material into fragment slot 4 (MaterialProperties cbuffer b4, space3)
+                // Use the entity's Material component if present, otherwise fall back to a predefined default.
+                MaterialPropertiesUniform matUniform;
+                if (entity.Has<Components.Material>())
+                {
+                    var matComp = entity.GetMut<Components.Material>();
+                    matUniform = new MaterialPropertiesUniform { material = matComp };
+                }
+                else
+                {
+                    matUniform = new MaterialPropertiesUniform { material = PredefinedMaterials.Default };
+                }
+                cmdbuf.PushFragmentUniformData(in matUniform, slot: 4);
+
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
             }
 
