@@ -112,10 +112,13 @@ VSOutput VSMain(VSInput input)
 // Texture bindings (space2 for fragment shaders in SPIR-V)
 Texture2D    DiffuseTex  : register(t0, space2);
 SamplerState DiffuseSamp : register(s0, space2);
+// Specular map binding (per-entity)
+Texture2D    SpecularTex : register(t1, space2);
+SamplerState SpecularSamp: register(s1, space2);
 
 // Shadow map bindings
-Texture2D    ShadowMap   : register(t1, space2);
-SamplerState ShadowSamp  : register(s1, space2);
+Texture2D    ShadowMap   : register(t2, space2);
+SamplerState ShadowSamp  : register(s2, space2);
 
 // Shadow map parameters
 cbuffer ShadowParams : register(b5, space3)
@@ -128,7 +131,7 @@ cbuffer ShadowParams : register(b5, space3)
 // Lighting calculation functions
 // Use a sampled albedo map (passed in) for the diffuse term and keep material.specular/shininess for specular.
 // Return diffuse and specular separately so the PS can combine them appropriately (Phong model)
-void CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 viewDir, float3 albedo, out float3 outDiffuse, out float3 outSpecular)
+void CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 viewDir, float3 albedo, float3 specularMap, out float3 outDiffuse, out float3 outSpecular)
 {
     // Directional light direction (from fragment towards light)
     float3 lightDir = normalize(-light.direction);
@@ -137,13 +140,14 @@ void CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 vie
     float diff = max(dot(normal, lightDir), 0.0);
     outDiffuse = light.color * (diff * albedo) * light.intensity;
 
-    // Specular (Phong) still uses material.specular/shininess
+    // Specular (Phong) uses a specular map (per-channel) modulating the material.specular
     float3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
-    outSpecular = light.color * (spec * material.specular) * light.intensity;
+    // specularMap is expected to be RGB where white=full specular, black=no specular
+    outSpecular = light.color * (spec * material.specular * specularMap) * light.intensity;
 }
 
-void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, out float3 outDiffuse, out float3 outSpecular)
+void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float3 specularMap, out float3 outDiffuse, out float3 outSpecular)
 {
     float3 lightDir = normalize(light.position - fragPos);
     float distance = length(light.position - fragPos);
@@ -160,10 +164,10 @@ void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3
     // Specular (Phong)
     float3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
-    outSpecular = light.color * (spec * material.specular) * light.intensity * attenuation;
+    outSpecular = light.color * (spec * material.specular * specularMap) * light.intensity * attenuation;
 }
 
-void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, out float3 outDiffuse, out float3 outSpecular)
+void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 viewDir, float3 albedo, float3 specularMap, out float3 outDiffuse, out float3 outSpecular)
 {
     float3 lightDir = normalize(light.position - fragPos);
     float distance = length(light.position - fragPos);
@@ -185,7 +189,7 @@ void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 v
     // Specular (Phong)
     float3 reflectDir = reflect(-lightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
-    outSpecular = light.color * (spec * material.specular) * light.intensity * attenuation;
+    outSpecular = light.color * (spec * material.specular * specularMap) * light.intensity * attenuation;
 }
 
 
@@ -217,11 +221,14 @@ float4 PSMain(VSOutput input) : SV_Target
     float3 diffuseAccum = float3(0.0, 0.0, 0.0);
     float3 specularAccum = float3(0.0, 0.0, 0.0);
 
+    // Sample specular map (if bound, otherwise expect CPU to bind a white 1x1 texture)
+    float3 specularTex = SpecularTex.Sample(SpecularSamp, input.uv).rgb;
+
     // Directional lights
     for (uint i = 0; i < directionalLightCount; i++)
     {
         float3 d, s;
-        CalculateDirectionalLight(directionalLights[i], normal, viewDir, albedoTinted, d, s);
+        CalculateDirectionalLight(directionalLights[i], normal, viewDir, albedoTinted, specularTex, d, s);
         diffuseAccum += d;
         specularAccum += s;
     }
@@ -230,7 +237,7 @@ float4 PSMain(VSOutput input) : SV_Target
     for (uint j = 0; j < pointLightCount; j++)
     {
         float3 d, s;
-        CalculatePointLight(pointLights[j], normal, input.wpos, viewDir, albedoTinted, d, s);
+        CalculatePointLight(pointLights[j], normal, input.wpos, viewDir, albedoTinted, specularTex, d, s);
         diffuseAccum += d;
         specularAccum += s;
     }
@@ -239,7 +246,7 @@ float4 PSMain(VSOutput input) : SV_Target
     for (uint k = 0; k < spotLightCount; k++)
     {
         float3 d, s;
-        CalculateSpotLight(spotLights[k], normal, input.wpos, viewDir, albedoTinted, d, s);
+        CalculateSpotLight(spotLights[k], normal, input.wpos, viewDir, albedoTinted, specularTex, d, s);
         diffuseAccum += d;
         specularAccum += s;
     }

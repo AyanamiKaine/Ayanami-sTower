@@ -1162,7 +1162,7 @@ internal static class Program
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.Gold, 0.5f, 100f));
+                .Set(new PointLight(Color.White, 0.1f, 100f));
 
             World.CreateEntity()
                 .Set(new CelestialBody())
@@ -1176,7 +1176,7 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.Aqua, 0.1f, 100f));
+                .Set(new PointLight(Color.White, 0.1f, 100f));
 
 
             World.CreateEntity()
@@ -1184,14 +1184,16 @@ internal static class Program
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.Blue, 0.6f, 10f));
+                .Set(new PointLight(Color.White, 0.1f, 10f));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 // Try loading a per-entity diffuse map from the Asset folder. If it fails, fall back to the checker texture.
-                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/diffuseMapExample.png") ?? _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/diffuseMapExample.png") ?? _checkerTexture! })
+                // Attach a specular map for per-pixel specular control (falls back to white texture meaning "full specular")
+                .Set(new SpecularMapRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/specularMapExample.png") ?? _whiteTexture! });
 
             World.CreateEntity()
                 .Set(new Position3D(10 + origin.X, origin.Y, 5 + origin.Z))
@@ -2337,7 +2339,7 @@ internal static class Program
             // Bind shadow map if available
             if (_shadowMapTexture != null && _shadowMapSampler != null)
             {
-                pass.BindFragmentSamplers(1, [new TextureSamplerBinding(_shadowMapTexture, _shadowMapSampler)]);
+                pass.BindFragmentSamplers(2, [new TextureSamplerBinding(_shadowMapTexture, _shadowMapSampler)]);
 
                 // Push shadow parameters
                 var shadowUniforms = new ShadowUniforms
@@ -2454,14 +2456,22 @@ internal static class Program
                     pass.BindGraphicsPipeline(_pipeline!);
                 }
 
-                // Bind entity texture if present, otherwise bind dummy
-                var texture = _whiteTexture!;
+                // Bind entity textures (diffuse at slot 0, specular at slot 2). Fall back to defaults when missing.
+                var diffuseTex = _whiteTexture!;
                 if (entity.Has<Texture2DRef>())
                 {
                     var texRef = entity.GetMut<Texture2DRef>();
-                    if (texRef.Texture != null) { texture = texRef.Texture; }
+                    if (texRef.Texture != null) { diffuseTex = texRef.Texture; }
                 }
-                pass.BindFragmentSamplers(new TextureSamplerBinding(texture, GraphicsDevice.LinearSampler));
+                pass.BindFragmentSamplers(0, [new TextureSamplerBinding(diffuseTex, GraphicsDevice.LinearSampler)]);
+
+                var specularTex = _whiteTexture!; // white -> full specular by default
+                if (entity.Has<SpecularMapRef>())
+                {
+                    var specRef = entity.GetMut<SpecularMapRef>();
+                    if (specRef.Texture != null) { specularTex = specRef.Texture; }
+                }
+                pass.BindFragmentSamplers(1, [new TextureSamplerBinding(specularTex, GraphicsDevice.LinearSampler)]);
 
                 // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
                 // If using camera-relative rendering, subtract camera position from the translation so

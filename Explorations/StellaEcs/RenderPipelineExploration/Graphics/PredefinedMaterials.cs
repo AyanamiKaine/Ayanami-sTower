@@ -280,7 +280,7 @@ public static class PredefinedMaterials
     {
         Ambient = new Vector3(1.0f, 1.0f, 1.0f),
         Diffuse = new Vector3(1.0f, 1.0f, 1.0f),
-        Specular = new Vector3(0.0f, 0.0f, 0.00f),
+        Specular = new Vector3(1.0f, 1.0f, 1.00f),
         Shininess = 0.0f
     };
 }
