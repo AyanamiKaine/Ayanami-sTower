@@ -54,7 +54,7 @@ public class Shader
     /// Cached graphics pipeline created for this shader.
     /// Call <see cref="BuildOrUpdatePipeline"/> to create or refresh this pipeline.
     /// </summary>
-    public MoonWorks.Graphics.GraphicsPipeline? Pipeline { get; private set; }
+    public GraphicsPipeline? Pipeline { get; private set; }
 
     // Hot-reload support fields
     private FileSystemWatcher? fileWatcher;
