@@ -48,6 +48,12 @@ public class Shader
     public MoonWorks.Graphics.Shader? FragmentShader { get; set; }
 
     /// <summary>
+    /// Cached graphics pipeline created for this shader.
+    /// Call <see cref="BuildOrUpdatePipeline"/> to create or refresh this pipeline.
+    /// </summary>
+    public MoonWorks.Graphics.GraphicsPipeline? Pipeline { get; private set; }
+
+    /// <summary>
     /// Create a GraphicsPipeline for this shader using the provided <see cref="PipelineFactory"/> and vertex input layout.
     /// This keeps pipeline creation close to the shader component so entities that own this component can easily build
     /// a matching pipeline.
@@ -139,6 +145,30 @@ public class Shader
             _ => builder.WithDepthTesting(true, true, CompareOp.LessOrEqual),
         };
         return builder.Build();
+    }
+
+    /// <summary>
+    /// Build or update the cached <see cref="Pipeline"/> using the provided factory and vertex input.
+    /// Disposes any previously-created pipeline before assigning the new one.
+    /// </summary>
+    public MoonWorks.Graphics.GraphicsPipeline BuildOrUpdatePipeline(PipelineFactory factory, VertexInputState vertexInput, string? pipelineName = null)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+
+        var newPipeline = CreatePipeline(factory, vertexInput, pipelineName);
+
+        // Dispose previous pipeline if present to avoid leaking GPU resources
+        try
+        {
+            Pipeline?.Dispose();
+        }
+        catch
+        {
+            // swallow - disposal failures are non-fatal here; caller can log if desired
+        }
+
+        Pipeline = newPipeline;
+        return Pipeline;
     }
 
     /// <summary>
