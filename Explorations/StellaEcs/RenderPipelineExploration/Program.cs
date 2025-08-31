@@ -1160,8 +1160,15 @@ internal static class Program
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.Gold, 0.5f, 20f));
+                .Set(new PointLight(Color.Gold, 0.1f, 5f));
 
+
+            World.CreateEntity()
+                .Set(new Position3D(origin.X, origin.Y + 5, origin.Z + 5))
+                .Set(Mesh.CreateBox3D())
+                .Set(new Size3D(2f))
+                .Set(new Components.Shader(this, "Light", true))
+                .Set(new PointLight(Color.Blue, 0.6f, 10f));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
@@ -2308,7 +2315,7 @@ internal static class Program
                 cmdbuf.PushFragmentUniformData(in counts, slot: 3);
 
                 // Push default material into slot 4 (MaterialProperties cbuffer b4, space3)
-                var mat = new MaterialPropertiesUniform { material = PredefinedMaterials.WhitePlastic };
+                var mat = new MaterialPropertiesUniform { material = PredefinedMaterials.Silver };
                 cmdbuf.PushFragmentUniformData(in mat, slot: 4);
             }
 

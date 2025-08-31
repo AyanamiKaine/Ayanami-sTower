@@ -11,6 +11,7 @@ struct VSOutput {
     float3 col  : COLOR0;
     float3 mpos : TEXCOORD0; // model-space position for point light
     float3 wpos : TEXCOORD2; // world-space position for shadows
+    float3 viewDir : TEXCOORD3; // world-space view direction (computed in VS to avoid fragment cbuffer use)
     float2 uv   : TEXCOORD1;
 };
 
@@ -96,11 +97,14 @@ VSOutput VSMain(VSInput input)
 {
     VSOutput o;
     o.pos  = mul(mvp, float4(input.pos, 1.0));
-    o.nrm  = normalize(input.nrm);
+    // transform normal to world space using the world model matrix so lighting uses world-space normals
+    o.nrm  = normalize(mul((float3x3)modelWorld, input.nrm));
     o.col  = input.col;
     o.mpos = input.pos; // model space
     // modelWorld is the world-space model matrix (no camera subtraction) used by the shadow pass
     o.wpos = mul(modelWorld, float4(input.pos, 1.0)).xyz; // world space for shadow sampling
+    // compute world-space view direction in VS so the fragment shader doesn't need to read the vertex-only cbuffer
+    o.viewDir = normalize(cameraPosition - o.wpos);
     o.uv   = input.uv;
     return o;
 }
@@ -199,8 +203,8 @@ float4 PSMain(VSOutput input) : SV_Target
     // Normalize interpolants
     float3 normal = normalize(input.nrm);
 
-    // View direction: assume camera at origin in model-space. (If camera pos is available, replace this.)
-    float3 viewDir = normalize(-input.mpos);
+    // View direction provided by VS as world-space vector
+    float3 viewDir = normalize(input.viewDir);
 
     // Accumulators for Phong components
     float3 ambient = material.ambient * material.ambientStrength;
@@ -220,7 +224,7 @@ float4 PSMain(VSOutput input) : SV_Target
     for (uint j = 0; j < pointLightCount; j++)
     {
         float3 d, s;
-        CalculatePointLight(pointLights[j], normal, input.mpos, viewDir, d, s);
+    CalculatePointLight(pointLights[j], normal, input.wpos, viewDir, d, s);
         diffuseAccum += d;
         specularAccum += s;
     }
@@ -229,7 +233,7 @@ float4 PSMain(VSOutput input) : SV_Target
     for (uint k = 0; k < spotLightCount; k++)
     {
         float3 d, s;
-        CalculateSpotLight(spotLights[k], normal, input.mpos, viewDir, d, s);
+    CalculateSpotLight(spotLights[k], normal, input.wpos, viewDir, d, s);
         diffuseAccum += d;
         specularAccum += s;
     }

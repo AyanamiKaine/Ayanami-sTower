@@ -48,13 +48,10 @@ public struct GpuDirectionalLight
     ///  bytes: color.xyz + padding
     /// </summary>
     public Vector3 Color;
-    private float _pad1;
-
     /// <summary>
     ///  bytes: intensity (first component) + padding to fill the register
     /// </summary>
     public float Intensity;
-    private Vector3 _pad2;
 }
 /// <summary>
 /// Represents a point light source in the scene.
@@ -80,6 +77,9 @@ public struct GpuPointLight
     /// The effective range of the point light.
     /// </summary>
     public float Range;
+    private float _pad1;
+    private float _pad2;
+    private float _pad3;
 }
 /// <summary>
 /// Represents a spot light source in the scene.
@@ -103,7 +103,6 @@ public struct GpuSpotLight
     ///  bytes: color.xyz + padding
     /// </summary>
     public Vector3 Color;
-    private float _pad2;
 
     /// <summary>
     ///  bytes: range, innerAngle, outerAngle, padding
@@ -117,5 +116,5 @@ public struct GpuSpotLight
     ///  bytes: outerAngle, padding
     /// </summary>
     public float OuterAngle;
-    private float _pad3;
+    private float _pad2;
 }
