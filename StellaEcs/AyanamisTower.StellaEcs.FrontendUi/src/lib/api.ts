@@ -1,7 +1,7 @@
 // Build an API base that works in browser, dev server, and during SSR/build.
 const isSSR = typeof window === 'undefined';
 const devBase = '/api';
-const prodBase = (import.meta as any).env.PUBLIC_API_BASE_URL || 'http://localhost:5123/api';
+const prodBase = (import.meta as any).env.PUBLIC_API_BASE_URL || 'http://localhost:8123/api';
 let resolvedBase = devBase;
 if (!((import.meta as any).env?.DEV)) {
   resolvedBase = prodBase;
