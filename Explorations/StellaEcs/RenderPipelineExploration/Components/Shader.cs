@@ -197,12 +197,15 @@ public class Shader
     /// Depth = DepthMode.DrawAlways;
     /// Wireframe = WireframeMode.None;
     /// </summary>
-    public Shader(Game game, string name)
+    public Shader(Game game, string name, bool enableHotReload = false)
     {
         Game = game;
         Name = name;
         RenderMode = new RenderMode();
         BuildShader();
+
+        if (enableHotReload)
+            EnableHotReload();
     }
 
     /// <summary>
@@ -220,6 +223,20 @@ public class Shader
             StartFileWatcher();
         else
             StopFileWatcher();
+    }
+
+    /// <summary>
+    /// disable hot-reloading for this shader. When enabled a FileSystemWatcher will
+    /// monitor the shader source file and attempt to rebuild it after edits. If the rebuild
+    /// succeeds the shaders are swapped in and any existing pipeline is disposed (so the
+    /// caller can recreate a matching pipeline). If the rebuild fails the previous shaders
+    /// remain in use.
+    /// </summary>
+    public void DisableHotReload()
+    {
+        if (!HotReloadEnabled) return;
+        HotReloadEnabled = false;
+        StopFileWatcher();
     }
 
     private void StartFileWatcher()
@@ -390,12 +407,16 @@ public class Shader
     /// <param name="renderMode"></param>
     /// <param name="game"></param>
     /// <param name="name"></param>
-    public Shader(Game game, string name, RenderMode renderMode)
+    /// <param name="enableHotReload"></param>
+    public Shader(Game game, string name, RenderMode renderMode, bool enableHotReload = false)
     {
         Game = game;
         Name = name;
         RenderMode = renderMode;
         BuildShader();
+
+        if (enableHotReload)
+            EnableHotReload();
     }
 
     /// <summary>

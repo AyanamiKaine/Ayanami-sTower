@@ -1159,10 +1159,9 @@ internal static class Program
                 .Set(new Position3D(origin.X, origin.Y + 10, origin.Z))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
-                .Set(new Components.Shader(this, "Light"))
+                .Set(new Components.Shader(this, "Light", true))
                 .Set(new PointLight(Color.Gold, 1.0f, 1000f));
 
-            lightSource.GetMut<Components.Shader>().EnableHotReload();
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
