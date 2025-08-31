@@ -1146,23 +1146,7 @@ internal static class Program
                 */
 
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
-                .Set(new Texture2DRef { Texture = _checkerTexture! })
-                .Set(new DirectionalLight(Vector3.Normalize(new Vector3(1.0f, 1.0f, 1.0f)), new Vector3(0.0f, 0.2f, 0.8f), 5.0f));
-
-
-
-            World.CreateEntity()
-                .Set(new Position3D(origin.X, origin.Y - 5, origin.Z))
-                .Set(Mesh.CreatePlane3D())
-                .Set(new Size3D(100f))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
-
-            var lightSource = World.CreateEntity()
-                .Set(new Position3D(origin.X, origin.Y + 60, origin.Z))
-                .Set(Mesh.CreateBox3D())
-                .Set(new Size3D(2f))
-                .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.1f, 100f));
 
             World.CreateEntity()
                 .Set(new CelestialBody())
@@ -1176,7 +1160,7 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.1f, 100f));
+                .Set(new PointLight(Color.White, 0.01f, 100f));
 
 
             World.CreateEntity()
@@ -1184,7 +1168,7 @@ internal static class Program
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.1f, 10f));
+                .Set(new PointLight(Color.White, 0.01f, 10f));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
