@@ -1,4 +1,5 @@
 using System.Numerics;
+using MoonWorks.Graphics;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta.Components;
 
@@ -32,6 +33,19 @@ public struct DirectionalLight
         Color = color;
         Intensity = intensity;
     }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DirectionalLight"/> struct using a MoonWorks Color.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <param name="color"></param>
+    /// <param name="intensity"></param>
+    public DirectionalLight(Vector3 direction, Color color, float intensity)
+    {
+        Direction = direction;
+        Color = new Vector3(color.R, color.G, color.B);
+        Intensity = intensity;
+    }
 }
 
 /// <summary>
@@ -61,6 +75,19 @@ public struct PointLight
     public PointLight(Vector3 color, float intensity, float range)
     {
         Color = color;
+        Intensity = intensity;
+        Range = range;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PointLight"/> struct using a MoonWorks Color.
+    /// </summary>
+    /// <param name="color"></param>
+    /// <param name="intensity"></param>
+    /// <param name="range"></param>
+    public PointLight(Color color, float intensity, float range)
+    {
+        Color = new Vector3(color.R, color.G, color.B);
         Intensity = intensity;
         Range = range;
     }
@@ -108,6 +135,25 @@ public struct SpotLight
     {
         Direction = direction;
         Color = color;
+        Intensity = intensity;
+        Range = range;
+        InnerAngle = innerAngle;
+        OuterAngle = outerAngle;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SpotLight"/> struct using a MoonWorks Color.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <param name="color"></param>
+    /// <param name="intensity"></param>
+    /// <param name="range"></param>
+    /// <param name="innerAngle"></param>
+    /// <param name="outerAngle"></param>
+    public SpotLight(Vector3 direction, Color color, float intensity, float range, float innerAngle, float outerAngle)
+    {
+        Direction = direction;
+        Color = new Vector3(color.R, color.G, color.B);
         Intensity = intensity;
         Range = range;
         InnerAngle = innerAngle;
