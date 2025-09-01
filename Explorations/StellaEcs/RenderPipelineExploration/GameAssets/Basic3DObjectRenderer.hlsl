@@ -268,5 +268,15 @@ float4 PSMain(VSOutput input) : SV_Target
     // Final color: textured albedo drives diffuse; specular is added on top.
     float3 finalColor = albedoTinted * (ambient + diffuseAccum) + specularAccum;
 
+    // manual gamma encode for linear -> sRGB when render target is linear
+    /*
+    Textures: R8G8B8A8UnormSRGB (color) → linear sampling OK.
+    Lighting: linear.
+    Output:
+        sRGB target(s) → no pow in shader.
+        UNORM target(s) → do pow in shader (once). (By default the target will be a unnorm)
+    */
+    finalColor = pow(saturate(finalColor), 1.0 / 2.2);
+    
     return float4(finalColor, 1.0);
 }

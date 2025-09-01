@@ -155,9 +155,13 @@ public static class AssetManager
     /// Loads an image file (PNG, JPG, BMP, etc.) or a DDS file and uploads it as a GPU texture.
     /// For standard image formats, data is decoded to RGBA8 and uploaded as a 2D texture.
     /// For DDS, existing mip levels and cube faces are preserved.
+    ///
+    /// If <paramref name="sRGB"/> is true, uses R8G8B8A8UnormSRGB for 8-bit color textures so sampling returns
+    /// linear values automatically on the GPU. Use sRGB=true for color/albedo/baseColor maps. Use sRGB=false for
+    /// data maps (normal/roughness/metalness/AO/specular masks).
     /// Returns null if the file could not be read or decoded.
     /// </summary>
-    public static Texture? LoadTextureFromFile(Game game, string path)
+    public static Texture? LoadTextureFromFile(Game game, string path, bool sRGB = false)
     {
         // Normalize to TitleStorage-friendly relative POSIX path
         var normalized = NormalizeTitlePath(path);
@@ -216,7 +220,7 @@ public static class AssetManager
                     name,
                     game.RootTitleStorage,
                     normalized,
-                    TextureFormat.R8G8B8A8Unorm,
+                    sRGB ? TextureFormat.R8G8B8A8UnormSRGB : TextureFormat.R8G8B8A8Unorm,
                     TextureUsageFlags.Sampler
                 );
 
@@ -261,7 +265,7 @@ public static class AssetManager
                     texture = uploader.CreateTexture2D<byte>(
                         name,
                         img.Data,
-                        TextureFormat.R8G8B8A8Unorm,
+                        sRGB ? TextureFormat.R8G8B8A8UnormSRGB : TextureFormat.R8G8B8A8Unorm,
                         TextureUsageFlags.Sampler,
                         (uint)img.Width,
                         (uint)img.Height
