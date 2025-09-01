@@ -942,10 +942,63 @@ internal static class Program
                 entity.Set(GpuMesh.Upload(GraphicsDevice, mesh.Vertices.AsSpan(), mesh.Indices.AsSpan(), "Cube"));
             });
 
+
+            // Weak outer star lights: primary above/below plus several subtle fills
+            var outerStarLightAbove = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(-0.3f, -1.0f, -0.2f)),
+                    new Color(220, 215, 200, 255),
+                    0.0001f
+                ));
+
+            var outerStarLightBelow = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(0.3f, 1.0f, 0.2f)),
+                    new Color(220, 215, 200, 255),
+                    0.0001f
+                ));
+
+            // Additional faint directional fills to simulate distant starlight / ambient glow
+            var outerStarLightNE = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(-0.6f, -0.7f, -0.1f)),
+                    new Color(200, 210, 230, 255),
+                    0.00005f
+                ));
+
+            var outerStarLightNW = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(0.6f, -0.7f, -0.1f)),
+                    new Color(230, 225, 210, 255),
+                    0.00005f
+                ));
+
+            var outerStarLightSE = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(-0.4f, 0.8f, 0.3f)),
+                    new Color(200, 215, 200, 255),
+                    0.00003f
+                ));
+
+            var outerStarLightSW = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(0.4f, 0.8f, 0.3f)),
+                    new Color(210, 200, 215, 255),
+                    0.00003f
+                ));
+
+            // Optional cool-tinted moonlike fill
+            var outerStarLightCool = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(0.0f, -1.0f, 0.5f)),
+                    new Color(200, 220, 255, 255),
+                    0.00002f
+                ));
+
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-            // SpawnGalaxies(10);
+            SpawnGalaxies(10);
 
             // Example usage:
             // SetSkybox("AssetManager.AssetFolderName + "/skybox.jpg", 50f);
@@ -1065,59 +1118,6 @@ internal static class Program
             // Local helper to convert AU offsets to world positions relative to origin
             Vector3 AuToWorld(float auX, float auY, float auZ) => origin + new Vector3(auX * auScale, auY * auScale, auZ * auScale);
 
-
-            // Weak outer star lights: primary above/below plus several subtle fills
-            var outerStarLightAbove = World.CreateEntity()
-                .Set(new DirectionalLight(
-                    Vector3.Normalize(new Vector3(-0.3f, -1.0f, -0.2f)),
-                    new Color(220, 215, 200, 255),
-                    0.0001f
-                ));
-
-            var outerStarLightBelow = World.CreateEntity()
-                .Set(new DirectionalLight(
-                    Vector3.Normalize(new Vector3(0.3f, 1.0f, 0.2f)),
-                    new Color(220, 215, 200, 255),
-                    0.0001f
-                ));
-
-            // Additional faint directional fills to simulate distant starlight / ambient glow
-            var outerStarLightNE = World.CreateEntity()
-                .Set(new DirectionalLight(
-                    Vector3.Normalize(new Vector3(-0.6f, -0.7f, -0.1f)),
-                    new Color(200, 210, 230, 255),
-                    0.00005f
-                ));
-
-            var outerStarLightNW = World.CreateEntity()
-                .Set(new DirectionalLight(
-                    Vector3.Normalize(new Vector3(0.6f, -0.7f, -0.1f)),
-                    new Color(230, 225, 210, 255),
-                    0.00005f
-                ));
-
-            var outerStarLightSE = World.CreateEntity()
-                .Set(new DirectionalLight(
-                    Vector3.Normalize(new Vector3(-0.4f, 0.8f, 0.3f)),
-                    new Color(200, 215, 200, 255),
-                    0.00003f
-                ));
-
-            var outerStarLightSW = World.CreateEntity()
-                .Set(new DirectionalLight(
-                    Vector3.Normalize(new Vector3(0.4f, 0.8f, 0.3f)),
-                    new Color(210, 200, 215, 255),
-                    0.00003f
-                ));
-
-            // Optional cool-tinted moonlike fill
-            var outerStarLightCool = World.CreateEntity()
-                .Set(new DirectionalLight(
-                    Vector3.Normalize(new Vector3(0.0f, -1.0f, 0.5f)),
-                    new Color(200, 220, 255, 255),
-                    0.00002f
-                ));
-
             // --- CELESTIAL BODY CREATION ---
             var sun = World.CreateEntity()
                 .Set(new CelestialBody())
@@ -1154,7 +1154,7 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.01f, 3250f, 1.0f, 0.0014f, 0.000007f));
+                .Set(new PointLight(Color.White, 0.01f, 6250f, 1.0f, 0.0014f, 0.000007f));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
