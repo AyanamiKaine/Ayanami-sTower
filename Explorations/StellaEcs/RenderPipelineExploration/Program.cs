@@ -80,6 +80,7 @@ internal static class Program
         private float _angle;
         // textures
         private Texture? _whiteTexture;
+        private Texture? _blackTexture;
         private Texture? _checkerTexture;
 
         private SampleCount _msaaSamples = SampleCount.Four;
@@ -881,6 +882,8 @@ internal static class Program
             );
             // Create simple textures
             _whiteTexture = AssetManager.CreateSolidTexture(this, 255, 255, 255, 255);
+            _blackTexture = AssetManager.CreateSolidTexture(this, 0, 0, 0, 255);
+
             _checkerTexture = AssetManager.CreateCheckerboardTexture(this, 256, 256, 8,
                 (230, 230, 230, 255), (40, 40, 40, 255));
 
@@ -1160,7 +1163,7 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.01f, 10000f));
+                .Set(new PointLight(Color.White, 0.01f, 3250f, 1.0f, 0.0014f, 0.000007f));
 
 
             World.CreateEntity()
@@ -1389,7 +1392,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(0.53f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.0011f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Mars.jpg") ?? _checkerTexture! });
 
             mars.Set(new OrbitCircle(sun, 1.52f * auScale, new Color(220, 160, 120, 96), segments: 128));
 
@@ -1404,7 +1407,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(4.5f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.009f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Jupiter.jpg") ?? _checkerTexture! });
 
             jupiter.Set(new OrbitCircle(sun, 5.20f * auScale, new Color(240, 200, 160, 96), segments: 160));
 
@@ -1419,7 +1422,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(4.0f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.0016f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Saturn.jpg") ?? _checkerTexture! });
 
             saturn.Set(new OrbitCircle(sun, 9.58f * auScale, new Color(240, 220, 200, 96), segments: 160));
 
@@ -1449,7 +1452,7 @@ internal static class Program
                 .Set(new CollisionShape(new Sphere(2.4f * 0.6f)))
                 .Set(new AngularVelocity3D(0f, 0.008f, 0f)) // speed relative to Earth
                 .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Neptune.jpg") ?? _checkerTexture! });
 
             neptune.Set(new OrbitCircle(sun, 30.05f * auScale, new Color(180, 200, 240, 96), segments: 160));
 
@@ -2455,7 +2458,7 @@ internal static class Program
                 }
                 pass.BindFragmentSamplers(0, [new TextureSamplerBinding(diffuseTex, GraphicsDevice.LinearSampler)]);
 
-                var specularTex = _whiteTexture!; // white -> full specular by default
+                var specularTex = _blackTexture!; // black -> no specular by default
                 if (entity.Has<SpecularMapRef>())
                 {
                     var specRef = entity.GetMut<SpecularMapRef>();

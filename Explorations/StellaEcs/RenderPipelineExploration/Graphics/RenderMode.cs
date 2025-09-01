@@ -35,7 +35,7 @@ public class RenderMode
     {
         Blend = BlendMode.NoBlend;
         Cull = CullMode.CounterClockwiseBack;
-        Depth = DepthMode.DrawAlways;
+        Depth = DepthMode.PrepassAlpha;
         Wireframe = WireframeMode.None;
     }
 }
