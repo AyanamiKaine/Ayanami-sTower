@@ -164,22 +164,37 @@
         event: Event,
     ) {
         const target = event.target as HTMLInputElement;
-        const value =
-            target.type === "number"
-                ? parseFloat(target.value) || 0
-                : target.type === "checkbox"
-                  ? target.checked
-                  : target.value;
+        // For numbers, keep the raw string so editing (like "1.") isn't coerced away.
+        // Parse a numeric value for sending when it represents a valid number.
+        let raw: any = target.value;
+        let sendValue: any = raw;
+        let isNumber = false;
+
+        if (target.type === 'number') {
+            isNumber = true;
+            raw = target.value; // keep the raw string
+            // Accept comma as decimal separator when parsing for send
+            const normalized = raw.replace(',', '.');
+            const parsed = Number(normalized);
+            sendValue = { raw, parsed, isNumber: true };
+        } else if (target.type === 'checkbox') {
+            raw = target.checked;
+            sendValue = raw;
+        } else {
+            raw = target.value;
+            sendValue = raw;
+        }
 
         // Ensure the componentType exists in editingValues
         if (!editingValues[componentType]) {
             editingValues[componentType] = {};
         }
 
-        editingValues[componentType][key] = value;
+        // Store raw for display/editing. For non-number, raw is already the typed value/boolean.
+        editingValues[componentType][key] = raw;
 
-        // Debounce the update
-        debounceUpdate(componentType, key, value);
+        // Debounce the update; pass the sendValue wrapper for number inputs so debounce can decide.
+        debounceUpdate(componentType, key, sendValue);
     }
 
     let updateTimeouts: Record<string, any> = {};
@@ -194,9 +209,27 @@
 
         // Set new timeout
         updateTimeouts[timeoutKey] = setTimeout(() => {
-            updateComponentValue(componentType, key, value);
+            // If this was a numeric input, value is an object { raw, parsed, isNumber }
+            if (value && typeof value === 'object' && value.isNumber) {
+                const raw: string = String(value.raw ?? '');
+                const parsed: number = value.parsed;
+
+                // Don't send updates for incomplete numeric input states like empty string,
+                // a lone '-' or a trailing decimal point (e.g., '1.'), or a NaN parse.
+                const lastChar = raw.length > 0 ? raw[raw.length - 1] : '';
+                const isIncomplete = raw === '' || raw === '-' || lastChar === '.' || lastChar === ',';
+                if (!isIncomplete && Number.isFinite(parsed)) {
+                    updateComponentValue(componentType, key, parsed);
+                } else {
+                    // Skip sending; keep the raw editing value in the UI only.
+                }
+            } else {
+                // Non-number: send value directly
+                updateComponentValue(componentType, key, value);
+            }
+
             delete updateTimeouts[timeoutKey];
-        }, 500); // 500ms debounce
+        }, 1000); // 500ms debounce
     }
 </script>
 
