@@ -48,6 +48,22 @@ public class PipelineFactory
     }
 
     /// <summary>
+    /// Creates a shadow mapping pipeline with depth testing enabled.
+    /// </summary>
+    public GraphicsPipeline CreateShadowPipeline(Shader vertexShader, Shader fragmentShader,
+                                                   VertexInputState vertexInput, string name = "Shadow")
+    {
+        return CreatePipeline(name)
+            .WithShaders(vertexShader, fragmentShader)
+            .WithVertexInput(vertexInput)
+            .WithDepthTesting(true, true)
+            .WithBlendState(ColorTargetBlendState.NoBlend)
+            .WithColorTarget(TextureFormat.R32G32B32A32Float) // Dummy format, just to have a target
+            .WithDepthStencilTarget(TextureFormat.D32Float)
+            .Build();
+    }
+
+    /// <summary>
     /// Creates a skybox pipeline with no depth testing/writing and no culling.
     /// </summary>
     public GraphicsPipeline CreateSkyboxPipeline(Shader vertexShader, Shader fragmentShader,
@@ -127,7 +143,7 @@ public class PipelineFactory
             .WithVertexInput(vertexInput)
             .WithDepthStencil(false)
             .WithDepthTesting(false, false)
-            .WithMultisample(new MultisampleState { SampleCount = _msaaSamples})
+            .WithMultisample(new MultisampleState { SampleCount = _msaaSamples })
             .WithBlendState(ColorTargetBlendState.NonPremultipliedAlphaBlend)
             .Build();
     }
@@ -171,6 +187,9 @@ public class PipelineBuilder
     private GraphicsPipelineTargetInfo _targetInfo;
     private ColorTargetBlendState _blendState = ColorTargetBlendState.NoBlend;
     private bool _hasDepthStencil = true;
+    // Allow callers to override the color/depth formats per-builder
+    private TextureFormat _colorTargetFormat;
+    private TextureFormat _depthStencilTargetFormat;
 
     /// <summary>
     /// Initializes a new instance of the PipelineBuilder class.
@@ -208,6 +227,9 @@ public class PipelineBuilder
             HasDepthStencilTarget = _hasDepthStencil,
             DepthStencilFormat = _depthStencilFormat
         };
+        // initialize overridable formats
+        _colorTargetFormat = _swapchainFormat;
+        _depthStencilTargetFormat = _depthStencilFormat;
     }
 
     /// <summary>
@@ -309,6 +331,36 @@ public class PipelineBuilder
     public PipelineBuilder WithTargetInfo(GraphicsPipelineTargetInfo targetInfo)
     {
         _targetInfo = targetInfo;
+        return this;
+    }
+
+    /// <summary>
+    /// Override the color target format for the pipeline's first render target.
+    /// </summary>
+    public PipelineBuilder WithColorTarget(TextureFormat format)
+    {
+        _colorTargetFormat = format;
+        // ensure target info exists and has at least one color target
+        if (_targetInfo.ColorTargetDescriptions == null || _targetInfo.ColorTargetDescriptions.Length == 0)
+        {
+            _targetInfo.ColorTargetDescriptions = new[] { new ColorTargetDescription { Format = format, BlendState = _blendState } };
+        }
+        else
+        {
+            _targetInfo.ColorTargetDescriptions[0].Format = format;
+        }
+        return this;
+    }
+
+    /// <summary>
+    /// Override the depth-stencil target format (and enable depth-stencil target).
+    /// </summary>
+    public PipelineBuilder WithDepthStencilTarget(TextureFormat format)
+    {
+        _depthStencilTargetFormat = format;
+        _hasDepthStencil = true;
+        _targetInfo.HasDepthStencilTarget = true;
+        _targetInfo.DepthStencilFormat = format;
         return this;
     }
 
