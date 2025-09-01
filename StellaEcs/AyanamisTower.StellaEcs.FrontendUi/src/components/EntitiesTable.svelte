@@ -14,6 +14,31 @@
         sortDir === 'asc' ? a.id - b.id : b.id - a.id,
     );
     const sortIcon = () => (sortDir === 'asc' ? '▲' : '▼');
+    
+    import { beforeUpdate, afterUpdate } from 'svelte';
+    let scrollEl: HTMLElement | null = null;
+    let _savedScrollTop: number | null = null;
+
+    beforeUpdate(() => {
+        if (scrollEl) {
+            // Save current scroll position before DOM updates so we can restore it
+            _savedScrollTop = scrollEl.scrollTop;
+        }
+    });
+
+    afterUpdate(() => {
+        if (scrollEl && _savedScrollTop !== null) {
+            // Restore saved scroll position. Use requestAnimationFrame to ensure layout done.
+            requestAnimationFrame(() => {
+                try {
+                    scrollEl!.scrollTop = _savedScrollTop!;
+                } catch (e) {
+                    // ignore
+                }
+                _savedScrollTop = null;
+            });
+        }
+    });
 </script>
 
 <div class="card fade-in">
