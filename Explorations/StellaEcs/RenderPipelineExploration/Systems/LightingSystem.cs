@@ -13,7 +13,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta.Systems;
 public class LightingSystem : ISystem
 {
     // Maximum number of lights supported (matches shader limits)
-    private const int MaxDirectionalLights = 4;
+    private const int MaxDirectionalLights = 12;
     private const int MaxPointLights = 60;
     private const int MaxSpotLights = 16;
 

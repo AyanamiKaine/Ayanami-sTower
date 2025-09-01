@@ -72,7 +72,7 @@ struct SpotLight
 // Light data buffers
 cbuffer DirectionalLightsData : register(b0, space3)
 {
-    DirectionalLight directionalLights[4];
+    DirectionalLight directionalLights[12];
 }
 
 cbuffer PointLightsData : register(b1, space3)

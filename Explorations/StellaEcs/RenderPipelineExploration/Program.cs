@@ -1065,6 +1065,59 @@ internal static class Program
             // Local helper to convert AU offsets to world positions relative to origin
             Vector3 AuToWorld(float auX, float auY, float auZ) => origin + new Vector3(auX * auScale, auY * auScale, auZ * auScale);
 
+
+            // Weak outer star lights: primary above/below plus several subtle fills
+            var outerStarLightAbove = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(-0.3f, -1.0f, -0.2f)),
+                    new Color(220, 215, 200, 255),
+                    0.0001f
+                ));
+
+            var outerStarLightBelow = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(0.3f, 1.0f, 0.2f)),
+                    new Color(220, 215, 200, 255),
+                    0.0001f
+                ));
+
+            // Additional faint directional fills to simulate distant starlight / ambient glow
+            var outerStarLightNE = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(-0.6f, -0.7f, -0.1f)),
+                    new Color(200, 210, 230, 255),
+                    0.00005f
+                ));
+
+            var outerStarLightNW = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(0.6f, -0.7f, -0.1f)),
+                    new Color(230, 225, 210, 255),
+                    0.00005f
+                ));
+
+            var outerStarLightSE = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(-0.4f, 0.8f, 0.3f)),
+                    new Color(200, 215, 200, 255),
+                    0.00003f
+                ));
+
+            var outerStarLightSW = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(0.4f, 0.8f, 0.3f)),
+                    new Color(210, 200, 215, 255),
+                    0.00003f
+                ));
+
+            // Optional cool-tinted moonlike fill
+            var outerStarLightCool = World.CreateEntity()
+                .Set(new DirectionalLight(
+                    Vector3.Normalize(new Vector3(0.0f, -1.0f, 0.5f)),
+                    new Color(200, 220, 255, 255),
+                    0.00002f
+                ));
+
             // --- CELESTIAL BODY CREATION ---
             var sun = World.CreateEntity()
                 .Set(new CelestialBody())
@@ -1077,7 +1130,6 @@ internal static class Program
                                                             // Put sun on a different collision layer than asteroids so they won't collide.
                 .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
                 .Set(PredefinedMaterials.Silver)
-
 
                 /*
                 Category = what the object is. Here the entity is a Sun (its category bit = Sun).
@@ -1103,14 +1155,6 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
                 .Set(new Components.Shader(this, "Light", true))
                 .Set(new PointLight(Color.White, 0.01f, 3250f, 1.0f, 0.0014f, 0.000007f));
-
-
-            World.CreateEntity()
-                .Set(new Position3D(origin.X, origin.Y + 5, origin.Z + 5))
-                .Set(Mesh.CreateBox3D())
-                .Set(new Size3D(2f))
-                .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.01f, 1000f));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
@@ -2123,9 +2167,9 @@ internal static class Program
             if (lightingSystem != null && lightingSystem.HasLights)
             {
                 // Convert scene light data to GPU-packed structs that match HLSL packing, and push them.
-                var gpuDir = new GpuDirectionalLight[4];
+                var gpuDir = new GpuDirectionalLight[lightingSystem.DirectionalLightCount];
                 int usedDir = 0;
-                for (int i = 0; i < lightingSystem.DirectionalLightCount && usedDir < 4; i++)
+                for (int i = 0; i < lightingSystem.DirectionalLightCount && usedDir < lightingSystem.DirectionalLightCount; i++)
                 {
                     var s = lightingSystem.DirectionalLights[i];
                     if (s.Intensity <= 0f) continue; // ignore non-contributing lights
