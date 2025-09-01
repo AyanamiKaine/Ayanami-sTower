@@ -11,6 +11,14 @@
     let updatingComponents: Set<string> = new Set();
     let currentEntityId: string | null = null;
     let isInteracting = false; // true while an input inside the panel has focus
+    // Track expanded/collapsed state for large vectors/arrays per component+key
+    let expandedVectors: Record<string, Record<string, boolean>> = {};
+
+    function toggleExpanded(componentType: string, key: string) {
+        if (!expandedVectors[componentType]) expandedVectors[componentType] = {};
+        expandedVectors[componentType][key] = !expandedVectors[componentType][key];
+        expandedVectors = expandedVectors; // trigger reactivity
+    }
 
     // Keep UI in sync with latest server data on any detail refresh.
     // Do NOT pre-populate editingValues from server; only store user edits.
@@ -109,12 +117,28 @@
                 let cur = obj;
                 for (let i = 0; i < path.length - 1; i++) {
                     const k = path[i];
+                    const next = path[i + 1];
+                    const nextIsIndex = Number.isInteger(Number(next));
                     if (cur[k] === undefined || cur[k] === null || typeof cur[k] !== 'object') {
-                        cur[k] = {};
+                        // Create array if next segment looks like an index
+                        cur[k] = nextIsIndex ? [] : {};
+                    }
+                    // If existing value is object but not the desired container, convert
+                    if (nextIsIndex && !Array.isArray(cur[k])) {
+                        cur[k] = [];
+                    }
+                    if (!nextIsIndex && Array.isArray(cur[k])) {
+                        cur[k] = { ...cur[k] };
                     }
                     cur = cur[k];
                 }
-                cur[path[path.length - 1]] = value;
+                const last = path[path.length - 1];
+                // If last is numeric index and container is array, set at index
+                if (Array.isArray(cur) && Number.isInteger(Number(last))) {
+                    cur[Number(last)] = value;
+                } else {
+                    cur[last] = value;
+                }
             }
 
             const path = String(key).split('.');
@@ -344,45 +368,122 @@
                                                             )}
                                                     />
                                                 {:else if isExpandableObject(value)}
-                                                    <div class="grid gap-1 w-full">
-                                                        {#each Object.entries(value) as [subKey, subValue]}
-                                                            <div class="flex gap-2 items-center bg-zinc-800/40 p-2 rounded">
-                                                                <span class="text-zinc-400 w-16 text-xs font-medium">{subKey}:</span>
-                                                                <span class="text-xs">{getValueTypeIcon(subValue)}</span>
-                                                                <div class="flex-1">
-                                                                    {#if typeof subValue === 'number'}
-                                                                        <input
-                                                                            type="number"
-                                                                            class="input text-xs w-20"
-                                                                            value={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
-                                                                            on:input={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
-                                                                            step="any"
-                                                                        />
-                                                                    {:else if typeof subValue === 'boolean'}
-                                                                        <label class="flex items-center gap-1">
-                                                                            <input
-                                                                                type="checkbox"
-                                                                                checked={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
-                                                                                on:change={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
-                                                                            />
-                                                                            <span class="text-xs">{(editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue) ? 'True' : 'False'}</span>
-                                                                        </label>
-                                                                    {:else if typeof subValue === 'string'}
-                                                                        <input
-                                                                            type="text"
-                                                                            class="input text-xs flex-1"
-                                                                            value={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
-                                                                            on:input={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
-                                                                        />
-                                                                    {:else if isExpandableObject(subValue)}
-                                                                        <pre class="text-xs font-mono">{JSON.stringify(subValue, null, 2)}</pre>
-                                                                    {:else}
-                                                                        <span class="text-emerald-400 text-xs font-mono">{formatComponentValue(subValue)}</span>
-                                                                    {/if}
-                                                                </div>
+                                                    {#if Array.isArray(value)}
+                                                        {#if value.length > 10 && !(expandedVectors[c.typeName]?.[key])}
+                                                            <div class="flex items-center justify-between gap-2">
+                                                                <div class="text-xs text-zinc-400">Array({value.length})</div>
+                                                                <button class="btn text-xs" on:click={() => toggleExpanded(c.typeName, key)}>Show all</button>
                                                             </div>
-                                                        {/each}
-                                                    </div>
+                                                            <ul class="pl-4 text-xs mt-2 space-y-1">
+                                                                {#each value.slice(0, 10) as item, idx}
+                                                                    <li class="font-mono">{idx}: {formatComponentValue(item)}</li>
+                                                                {/each}
+                                                            </ul>
+                                                        {:else}
+                                                            <div class="grid gap-1 w-full">
+                                                                {#each value as subValue, idx}
+                                                                    <div class="flex gap-2 items-start bg-zinc-800/40 p-2 rounded">
+                                                                        <span class="text-zinc-400 w-16 text-xs font-medium">{idx}:</span>
+                                                                        <span class="text-xs">{getValueTypeIcon(subValue)}</span>
+                                                                        <div class="flex-1">
+                                                                            {#if typeof subValue === 'number'}
+                                                                                <input
+                                                                                    type="number"
+                                                                                    class="input text-xs w-20"
+                                                                                    value={editingValues[c.typeName]?.[`${key}.${idx}`] ?? subValue}
+                                                                                    on:input={(e) => handleInputChange(c.typeName, `${key}.${idx}`, e)}
+                                                                                    step="any"
+                                                                                />
+                                                                            {:else if typeof subValue === 'boolean'}
+                                                                                <label class="flex items-center gap-1">
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={editingValues[c.typeName]?.[`${key}.${idx}`] ?? subValue}
+                                                                                        on:change={(e) => handleInputChange(c.typeName, `${key}.${idx}`, e)}
+                                                                                    />
+                                                                                    <span class="text-xs">{(editingValues[c.typeName]?.[`${key}.${idx}`] ?? subValue) ? 'True' : 'False'}</span>
+                                                                                </label>
+                                                                            {:else if typeof subValue === 'string'}
+                                                                                <input
+                                                                                    type="text"
+                                                                                    class="input text-xs flex-1"
+                                                                                    value={editingValues[c.typeName]?.[`${key}.${idx}`] ?? subValue}
+                                                                                    on:input={(e) => handleInputChange(c.typeName, `${key}.${idx}`, e)}
+                                                                                />
+                                                                            {:else if isExpandableObject(subValue)}
+                                                                                <div class="grid gap-1">
+                                                                                    {#each Object.entries(subValue) as [innerKey, innerVal]}
+                                                                                        <div class="flex gap-2 items-center bg-zinc-800/30 p-2 rounded">
+                                                                                            <span class="text-zinc-400 w-16 text-xs font-medium">{innerKey}:</span>
+                                                                                            <span class="text-xs">{getValueTypeIcon(innerVal)}</span>
+                                                                                            <div class="flex-1">
+                                                                                                {#if typeof innerVal === 'number'}
+                                                                                                    <input type="number" class="input text-xs w-20" value={editingValues[c.typeName]?.[`${key}.${idx}.${innerKey}`] ?? innerVal} on:input={(e) => handleInputChange(c.typeName, `${key}.${idx}.${innerKey}`, e)} step="any" />
+                                                                                                {:else if typeof innerVal === 'boolean'}
+                                                                                                    <label class="flex items-center gap-1"><input type="checkbox" checked={editingValues[c.typeName]?.[`${key}.${idx}.${innerKey}`] ?? innerVal} on:change={(e) => handleInputChange(c.typeName, `${key}.${idx}.${innerKey}`, e)} /><span class="text-xs">{(editingValues[c.typeName]?.[`${key}.${idx}.${innerKey}`] ?? innerVal) ? 'True' : 'False'}</span></label>
+                                                                                                {:else if typeof innerVal === 'string'}
+                                                                                                    <input type="text" class="input text-xs flex-1" value={editingValues[c.typeName]?.[`${key}.${idx}.${innerKey}`] ?? innerVal} on:input={(e) => handleInputChange(c.typeName, `${key}.${idx}.${innerKey}`, e)} />
+                                                                                                {:else}
+                                                                                                    <pre class="text-xs font-mono">{formatComponentValue(innerVal)}</pre>
+                                                                                                {/if}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    {/each}
+                                                                                </div>
+                                                                            {:else}
+                                                                                <span class="text-emerald-400 text-xs font-mono">{formatComponentValue(subValue)}</span>
+                                                                            {/if}
+                                                                        </div>
+                                                                    </div>
+                                                                {/each}
+                                                                {#if value.length > 10}
+                                                                    <div class="text-right">
+                                                                        <button class="btn text-xs" on:click={() => toggleExpanded(c.typeName, key)}>Hide</button>
+                                                                    </div>
+                                                                {/if}
+                                                            </div>
+                                                        {/if}
+                                                    {:else}
+                                                        <div class="grid gap-1 w-full">
+                                                            {#each Object.entries(value) as [subKey, subValue]}
+                                                                <div class="flex gap-2 items-center bg-zinc-800/40 p-2 rounded">
+                                                                    <span class="text-zinc-400 w-16 text-xs font-medium">{subKey}:</span>
+                                                                    <span class="text-xs">{getValueTypeIcon(subValue)}</span>
+                                                                    <div class="flex-1">
+                                                                        {#if typeof subValue === 'number'}
+                                                                            <input
+                                                                                type="number"
+                                                                                class="input text-xs w-20"
+                                                                                value={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
+                                                                                on:input={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
+                                                                                step="any"
+                                                                            />
+                                                                        {:else if typeof subValue === 'boolean'}
+                                                                            <label class="flex items-center gap-1">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
+                                                                                    on:change={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
+                                                                                />
+                                                                                <span class="text-xs">{(editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue) ? 'True' : 'False'}</span>
+                                                                            </label>
+                                                                        {:else if typeof subValue === 'string'}
+                                                                            <input
+                                                                                type="text"
+                                                                                class="input text-xs flex-1"
+                                                                                value={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
+                                                                                on:input={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
+                                                                            />
+                                                                        {:else if isExpandableObject(subValue)}
+                                                                            <pre class="text-xs font-mono">{JSON.stringify(subValue, null, 2)}</pre>
+                                                                        {:else}
+                                                                            <span class="text-emerald-400 text-xs font-mono">{formatComponentValue(subValue)}</span>
+                                                                        {/if}
+                                                                    </div>
+                                                                </div>
+                                                            {/each}
+                                                        </div>
+                                                    {/if}
                                                 {:else}
                                                     <span
                                                         class="text-emerald-400 text-xs font-mono"
