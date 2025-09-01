@@ -152,9 +152,9 @@ void CalculateDirectionalLight(DirectionalLight light, float3 normal, float3 vie
     float diff = max(dot(normal, lightDir), 0.0);
     outDiffuse = light.color * (diff * albedo) * light.intensity;
 
-    // Specular (Phong) uses a specular map (per-channel) modulating the material.specular
-    float3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
+    // Specular (Blinn-Phong) with halfway vector; mask by N·L so unlit areas don't shine
+    float3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), max(1.0, material.shininess)) * diff;
     // specularMap is expected to be RGB where white=full specular, black=no specular
     outSpecular = light.color * (spec * material.specular * specularMap) * light.intensity;
 }
@@ -174,9 +174,9 @@ void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3
     float diff = max(dot(normal, lightDir), 0.0);
     outDiffuse = light.color * (diff * albedo) * light.intensity * attenuation;
 
-    // Specular (Phong)
-    float3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
+    // Specular (Blinn-Phong); mask by N·L
+    float3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), max(1.0, material.shininess)) * diff;
     outSpecular = light.color * (spec * material.specular * specularMap) * light.intensity * attenuation;
 }
 
@@ -199,9 +199,9 @@ void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 v
     float diff = max(dot(normal, lightDir), 0.0);
     outDiffuse = light.color * (diff * albedo) * light.intensity * attenuation;
 
-    // Specular (Phong)
-    float3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), max(1.0, material.shininess));
+    // Specular (Blinn-Phong); mask by N·L
+    float3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), max(1.0, material.shininess)) * diff;
     outSpecular = light.color * (spec * material.specular * specularMap) * light.intensity * attenuation;
 }
 
