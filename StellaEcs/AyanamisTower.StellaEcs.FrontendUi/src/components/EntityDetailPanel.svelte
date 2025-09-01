@@ -89,46 +89,43 @@
             );
             if (!component) return;
 
-            // Reconstruct the data in the original structure expected by backend
-            let dataToSend: any;
+            // Deep-clone the original data so we can set nested keys safely
             const original = component.data as any;
-            const hasValueWrapper =
-                original &&
-                typeof original === "object" &&
-                Object.prototype.hasOwnProperty.call(original, "value");
-            const wrappedVal = hasValueWrapper ? original.value : undefined;
-
-            if (hasValueWrapper && wrappedVal && typeof wrappedVal === "object") {
-                // If the key exists in the wrapped value, update inside it; otherwise update sibling key
-                if (Object.prototype.hasOwnProperty.call(wrappedVal, key)) {
-                    dataToSend = {
-                        ...original,
-                        value: { ...wrappedVal, [key]: newValue },
-                    };
-                } else {
-                    dataToSend = { ...original, [key]: newValue };
-                }
-            } else if (hasValueWrapper && (typeof wrappedVal !== "object" || wrappedVal === null)) {
-                // Primitive 'value' wrapper: only update if editing the special 'value' key, else sibling key
-                if (key === "value") {
-                    dataToSend = { ...original, value: newValue };
-                } else {
-                    dataToSend = { ...original, [key]: newValue };
+            let dataToSend: any;
+            if (original && typeof original === 'object') {
+                try {
+                    dataToSend = JSON.parse(JSON.stringify(original));
+                } catch (err) {
+                    // Fallback to shallow clone if structured clone fails
+                    dataToSend = { ...(original ?? {}) };
                 }
             } else {
-                // No wrapper: update top-level
-                dataToSend = { ...(original ?? {}), [key]: newValue };
+                // If original is primitive or missing, start with an object so nested sets work
+                dataToSend = {};
             }
 
-            // Call the update function
-            console.log(
-                `Updating component ${componentType}.${key} = ${newValue}`,
-            );
-            console.log("Original component data:", component.data);
-            console.log("Data being sent to backend:", dataToSend);
+            // Support dot-path keys for nested fields (e.g. "Direction.X" or "Direction.x")
+            function setDeep(obj: any, path: string[], value: any) {
+                let cur = obj;
+                for (let i = 0; i < path.length - 1; i++) {
+                    const k = path[i];
+                    if (cur[k] === undefined || cur[k] === null || typeof cur[k] !== 'object') {
+                        cur[k] = {};
+                    }
+                    cur = cur[k];
+                }
+                cur[path[path.length - 1]] = value;
+            }
+
+            const path = String(key).split('.');
+            setDeep(dataToSend, path, newValue);
+
+            console.log(`Updating component ${componentType}.${key} = ${newValue}`);
+            console.log('Original component data:', component.data);
+            console.log('Data being sent to backend:', dataToSend);
             await onUpdateComponent(componentType, dataToSend);
 
-            // Update the editing value to match what was saved
+            // Save the editing value so UI reflects what was saved
             editingValues[componentType][key] = newValue;
         } catch (error) {
             console.error("Failed to update component:", error);
@@ -139,7 +136,18 @@
             if (component) {
                 const displayMerged = buildDisplayData(component.data);
                 if (displayMerged && typeof displayMerged === "object") {
-                    editingValues[componentType][key] = (displayMerged as any)[key];
+                    // If this was a nested key path, try to read the nested value
+                    if (key.includes('.')) {
+                        const parts = key.split('.');
+                        let cur: any = displayMerged;
+                        for (const p of parts) {
+                            if (cur && typeof cur === 'object') cur = cur[p];
+                            else { cur = undefined; break; }
+                        }
+                        editingValues[componentType][key] = cur;
+                    } else {
+                        editingValues[componentType][key] = (displayMerged as any)[key];
+                    }
                 } else {
                     editingValues[componentType][key] = displayMerged;
                 }
@@ -303,10 +311,45 @@
                                                             )}
                                                     />
                                                 {:else if isExpandableObject(value)}
-                                                    <pre
-                                                        class="text-xs bg-zinc-800 p-2 rounded overflow-auto flex-1 max-h-32">{formatComponentValue(
-                                                            value,
-                                                        )}</pre>
+                                                    <div class="grid gap-1 w-full">
+                                                        {#each Object.entries(value) as [subKey, subValue]}
+                                                            <div class="flex gap-2 items-center bg-zinc-800/40 p-2 rounded">
+                                                                <span class="text-zinc-400 w-16 text-xs font-medium">{subKey}:</span>
+                                                                <span class="text-xs">{getValueTypeIcon(subValue)}</span>
+                                                                <div class="flex-1">
+                                                                    {#if typeof subValue === 'number'}
+                                                                        <input
+                                                                            type="number"
+                                                                            class="input text-xs w-20"
+                                                                            value={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
+                                                                            on:input={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
+                                                                            step="any"
+                                                                        />
+                                                                    {:else if typeof subValue === 'boolean'}
+                                                                        <label class="flex items-center gap-1">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
+                                                                                on:change={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
+                                                                            />
+                                                                            <span class="text-xs">{(editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue) ? 'True' : 'False'}</span>
+                                                                        </label>
+                                                                    {:else if typeof subValue === 'string'}
+                                                                        <input
+                                                                            type="text"
+                                                                            class="input text-xs flex-1"
+                                                                            value={editingValues[c.typeName]?.[`${key}.${subKey}`] ?? subValue}
+                                                                            on:input={(e) => handleInputChange(c.typeName, `${key}.${subKey}`, e)}
+                                                                        />
+                                                                    {:else if isExpandableObject(subValue)}
+                                                                        <pre class="text-xs font-mono">{JSON.stringify(subValue, null, 2)}</pre>
+                                                                    {:else}
+                                                                        <span class="text-emerald-400 text-xs font-mono">{formatComponentValue(subValue)}</span>
+                                                                    {/if}
+                                                                </div>
+                                                            </div>
+                                                        {/each}
+                                                    </div>
                                                 {:else}
                                                     <span
                                                         class="text-emerald-400 text-xs font-mono"

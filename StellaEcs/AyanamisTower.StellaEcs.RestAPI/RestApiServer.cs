@@ -25,7 +25,7 @@ namespace AyanamisTower.StellaEcs.Api
         /// </summary>
         /// <param name="world"></param>
         /// <param name="url"></param>
-        public static void Start(World world, string url = "http://localhost:8123")
+        public static void Start(World world, string url = "http://localhost:5123")
         {
             if (_webApp != null)
             {

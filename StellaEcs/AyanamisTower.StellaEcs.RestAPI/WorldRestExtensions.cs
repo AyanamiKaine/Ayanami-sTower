@@ -17,7 +17,7 @@ namespace AyanamisTower.StellaEcs.Api
         /// </summary>
         /// <param name="w">The ECS world instance.</param>
         /// <param name="url">The URL the API server should listen on.</param>
-        public static void EnableRestApi(this World w, string url = "http://localhost:8123")
+        public static void EnableRestApi(this World w, string url = "http://localhost:5123")
         {
             RestApiServer.Start(w, url);
         }
