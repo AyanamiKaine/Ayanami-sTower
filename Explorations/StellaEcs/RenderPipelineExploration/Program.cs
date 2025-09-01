@@ -1130,7 +1130,8 @@ internal static class Program
                                                             // Put sun on a different collision layer than asteroids so they won't collide.
                 .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
                 .Set(PredefinedMaterials.Silver)
-
+                .Set(new Components.Shader(this, "Sun", true))
+                .Set(new PointLight(Color.LightYellow, 0.01f, 3250f, 1.0f, 0.0014f, 0.000007f))
                 /*
                 Category = what the object is. Here the entity is a Sun (its category bit = Sun).
                 
@@ -1153,8 +1154,7 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth (fastest)
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
-                .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.01f, 3250f, 1.0f, 0.0014f, 0.000007f));
+                .Set(new Components.Shader(this, "Light", true));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
