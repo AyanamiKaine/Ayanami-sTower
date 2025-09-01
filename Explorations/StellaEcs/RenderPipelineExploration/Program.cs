@@ -97,8 +97,6 @@ internal static class Program
         private GraphicsPipeline? _linePipeline;
         private GraphicsPipeline? _imguiPipeline;
 
-        private const int ShadowMapSize = 2048;
-
         private LineBatch3D? _lineBatch;
         // Debug: visualize physics colliders with wireframes
         private bool _debugDrawColliders = false;
