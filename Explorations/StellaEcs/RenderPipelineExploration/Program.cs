@@ -1154,7 +1154,7 @@ internal static class Program
                 .Set(new Parent(sun))
                 .Set(new Texture2DRef { Texture = _checkerTexture! })
                 .Set(new Components.Shader(this, "Light", true))
-                .Set(new PointLight(Color.White, 0.01f, 6250f, 1.0f, 0.0014f, 0.000007f));
+                .Set(new PointLight(Color.White, 0.01f, 3250f, 1.0f, 0.0014f, 0.000007f));
 
             World.CreateEntity()
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
