@@ -97,12 +97,7 @@ internal static class Program
         private GraphicsPipeline? _linePipeline;
         private GraphicsPipeline? _imguiPipeline;
 
-        // Shadow mapping resources
-        private GraphicsPipeline? _shadowMapPipeline;
-        private Texture? _shadowMapTexture;
-        private Sampler? _shadowMapSampler;
         private const int ShadowMapSize = 2048;
-        private Matrix4x4 _lightViewProjectionMatrix;
 
         private LineBatch3D? _lineBatch;
         // Debug: visualize physics colliders with wireframes
@@ -931,63 +926,7 @@ internal static class Program
             var lineVertexInput = VertexInputState.CreateSingleBinding<LineBatch3D.LineVertex>(0);
             _linePipeline = _pipelineFactory!.CreateLinePipeline(vsLine, fsLine, lineVertexInput, "LineColorRenderer");
 
-            // Shadow map shaders
-            var vsShadow = ShaderCross.Create(
-                GraphicsDevice,
-                RootTitleStorage,
-                AssetManager.AssetFolderName + "/ShadowMap.hlsl",
-                "VSMain",
-                ShaderCross.ShaderFormat.HLSL,
-                ShaderStage.Vertex,
-                false,
-                "ShadowMapVS"
-            );
-            var fsShadow = ShaderCross.Create(
-                GraphicsDevice,
-                RootTitleStorage,
-                AssetManager.AssetFolderName + "/ShadowMap.hlsl",
-                "PSMain",
-                ShaderCross.ShaderFormat.HLSL,
-                ShaderStage.Fragment,
-                false,
-                "ShadowMapPS"
-            );
-
             _lineBatch = new LineBatch3D(GraphicsDevice, 409600);
-
-            // Create shadow map texture
-            _shadowMapTexture = Texture.Create2D(
-                GraphicsDevice,
-                ShadowMapSize,
-                ShadowMapSize,
-                GraphicsDevice.SupportedDepthStencilFormat,
-                TextureUsageFlags.DepthStencilTarget | TextureUsageFlags.Sampler,
-                levelCount: 1,
-                sampleCount: SampleCount.One
-            );
-
-            // Create shadow map sampler
-            _shadowMapSampler = Sampler.Create(
-                GraphicsDevice,
-                SamplerCreateInfo.LinearClamp
-            );
-
-            // Create shadow map pipeline (depth-only, single-sampled)
-            _shadowMapPipeline = _pipelineFactory!.CreatePipeline("ShadowMapRenderer")
-                .WithShaders(vsShadow, fsShadow)
-                .WithVertexInput(_defaultVertexInput)
-                .WithDepthTesting(true, true)
-                .WithRasterizer(RasterizerState.CCW_CullNone)
-                .WithMultisample(new MultisampleState { SampleCount = SampleCount.One })
-                .WithDepthStencil(true)
-                .WithBlendState(ColorTargetBlendState.NoBlend)
-                .WithTargetInfo(new GraphicsPipelineTargetInfo
-                {
-                    ColorTargetDescriptions = Array.Empty<ColorTargetDescription>(), // No color target for depth-only
-                    HasDepthStencilTarget = true,
-                    DepthStencilFormat = GraphicsDevice.SupportedDepthStencilFormat
-                })
-                .Build();
 
 
             World.OnPreDestroy((Entity entity) =>
@@ -2149,70 +2088,7 @@ internal static class Program
                 ImGuiImplSDL3.SDLGPU3PrepareDrawData(drawData, (SDLGPUCommandBuffer*)cmdbuf.Handle);
             }
 
-            /////////////////////
-            // SHADOW MAP RENDERING
-            /////////////////////
             var lightingSystem = World.GetSystemsWithOrder().FirstOrDefault(s => s.system is LightingSystem).system as LightingSystem;
-            if (lightingSystem?.HasLights == true && lightingSystem.DirectionalLightCount > 0)
-            {
-                // Use the first directional light for shadows
-                var light = lightingSystem.DirectionalLights[0];
-
-                // Calculate light view matrix (place the light looking at the camera center so the
-                // shadow map covers the visible scene and does not slide when the camera moves)
-                var camPos = HighPrecisionConversions.ToVector3(_camera.Position);
-                var lightPos = camPos - light.Direction * 100.0f; // Position light far along its direction, centered on camera
-                var lightView = Matrix4x4.CreateLookAt(lightPos, camPos, Vector3.UnitY);
-
-                // Calculate light projection matrix (orthographic for directional lights)
-                var lightProj = Matrix4x4.CreateOrthographic(200.0f, 200.0f, 0.1f, 500.0f);
-
-                _lightViewProjectionMatrix = lightView * lightProj;
-
-                // Render shadow map
-                // Create a DepthStencilTargetInfo that stores the results so the shadow map texture can be sampled later.
-                var shadowDepthTarget = new DepthStencilTargetInfo
-                {
-                    Texture = _shadowMapTexture!,
-                    ClearDepth = 1f,
-                    LoadOp = LoadOp.Clear,
-                    StoreOp = StoreOp.Store,
-                    StencilLoadOp = LoadOp.DontCare,
-                    StencilStoreOp = StoreOp.DontCare,
-                    Cycle = false,
-                    ClearStencil = 0
-                };
-                var shadowPass = cmdbuf.BeginRenderPass(shadowDepthTarget);
-
-                shadowPass.BindGraphicsPipeline(_shadowMapPipeline!);
-
-                foreach (var entity in World.Query(typeof(GpuMesh)))
-                {
-                    var gpuMesh = entity.GetMut<GpuMesh>();
-
-                    // Skip entities without position
-                    if (!entity.Has<RenderPosition3D>()) continue;
-
-                    var translation = entity.GetMut<RenderPosition3D>().Value;
-                    var rotation = entity.Has<Rotation3D>() ? entity.GetMut<Rotation3D>().Value : QuaternionDouble.Identity;
-                    var size = entity.Has<Size3D>() ? entity.GetMut<Size3D>().Value : Vector3Double.One;
-
-                    // Skip invisible entities
-                    if (entity.Has<Invisible>()) continue;
-
-                    gpuMesh.Bind(shadowPass);
-
-                    var model = Matrix4x4.CreateScale(HighPrecisionConversions.ToVector3(size)) *
-                               Matrix4x4.CreateFromQuaternion(HighPrecisionConversions.ToQuaternion(rotation)) *
-                               Matrix4x4.CreateTranslation(HighPrecisionConversions.ToVector3(translation));
-                    var lightMVP = model * _lightViewProjectionMatrix;
-
-                    cmdbuf.PushVertexUniformData(lightMVP, slot: 0);
-                    shadowPass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
-                }
-
-                cmdbuf.EndRenderPass(shadowPass);
-            }
 
             /////////////////////
             // RENDER PASS BEGIN
@@ -2327,21 +2203,6 @@ internal static class Program
                 cmdbuf.PushFragmentUniformData(in counts, slot: 3);
 
                 // Note: per-entity material will be pushed before each draw. Keep no global default here.
-            }
-
-            // Bind shadow map if available
-            if (_shadowMapTexture != null && _shadowMapSampler != null)
-            {
-                pass.BindFragmentSamplers(2, [new TextureSamplerBinding(_shadowMapTexture, _shadowMapSampler)]);
-
-                // Push shadow parameters
-                var shadowUniforms = new ShadowUniforms
-                {
-                    LightViewProjection = _lightViewProjectionMatrix,
-                    ShadowBias = 0.005f,
-                    ShadowIntensity = 0.5f
-                };
-                cmdbuf.PushFragmentUniformData(in shadowUniforms, slot: 5);
             }
 
             foreach (var entity in World.Query(typeof(GpuMesh)))
@@ -2903,9 +2764,6 @@ internal static class Program
             _whiteTexture?.Dispose();
             _checkerTexture?.Dispose();
             _skyboxTexture?.Dispose();
-            _shadowMapTexture?.Dispose();
-            _shadowMapSampler?.Dispose();
-            _shadowMapPipeline?.Dispose();
 
             // Cleanup floating origin manager if needed
             // _floatingOriginManager doesn't implement IDisposable, so no cleanup needed
