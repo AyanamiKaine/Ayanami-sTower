@@ -67,6 +67,18 @@ public struct PointLight
     /// </summary>
     public float Range;
     /// <summary>
+    /// Attenuation constant term Kc. Usually 1.0.
+    /// </summary>
+    public float Constant;
+    /// <summary>
+    /// Attenuation linear term Kl. Typical values ~0.07 - 0.027 for mid/long range.
+    /// </summary>
+    public float Linear;
+    /// <summary>
+    /// Attenuation quadratic term Kq. Typical values ~0.017 - 0.0028 for mid/long range.
+    /// </summary>
+    public float Quadratic;
+    /// <summary>
     /// Initializes a new instance of the <see cref="PointLight"/> struct.
     /// </summary>
     /// <param name="color"></param>
@@ -77,6 +89,23 @@ public struct PointLight
         Color = color;
         Intensity = intensity;
         Range = range;
+        // Sensible default attenuation roughly matching ~50 units effective range from the table
+        Constant = 1.0f;
+        Linear = 0.09f;
+        Quadratic = 0.032f;
+    }
+
+    /// <summary>
+    /// Initializes a new instance including explicit attenuation terms.
+    /// </summary>
+    public PointLight(Vector3 color, float intensity, float range, float constant, float linear, float quadratic)
+    {
+        Color = color;
+        Intensity = intensity;
+        Range = range;
+        Constant = constant;
+        Linear = linear;
+        Quadratic = quadratic;
     }
 
     /// <summary>
@@ -90,6 +119,22 @@ public struct PointLight
         Color = new Vector3(color.R, color.G, color.B);
         Intensity = intensity;
         Range = range;
+        Constant = 1.0f;
+        Linear = 0.09f;
+        Quadratic = 0.032f;
+    }
+
+    /// <summary>
+    /// Initializes a new instance using a Color and explicit attenuation terms.
+    /// </summary>
+    public PointLight(Color color, float intensity, float range, float constant, float linear, float quadratic)
+    {
+        Color = new Vector3(color.R, color.G, color.B);
+        Intensity = intensity;
+        Range = range;
+        Constant = constant;
+        Linear = linear;
+        Quadratic = quadratic;
     }
 }
 
@@ -123,6 +168,18 @@ public struct SpotLight
     /// </summary>
     public float OuterAngle;
     /// <summary>
+    /// Attenuation constant term Kc. Usually 1.0.
+    /// </summary>
+    public float Constant;
+    /// <summary>
+    /// Attenuation linear term Kl.
+    /// </summary>
+    public float Linear;
+    /// <summary>
+    /// Attenuation quadratic term Kq.
+    /// </summary>
+    public float Quadratic;
+    /// <summary>
     /// Initializes a new instance of the <see cref="SpotLight"/> struct.
     /// </summary>
     /// <param name="direction"></param>
@@ -139,6 +196,26 @@ public struct SpotLight
         Range = range;
         InnerAngle = innerAngle;
         OuterAngle = outerAngle;
+        // Defaults similar to point light with ~50 unit effective range
+        Constant = 1.0f;
+        Linear = 0.09f;
+        Quadratic = 0.032f;
+    }
+
+    /// <summary>
+    /// Initializes a new instance including explicit attenuation terms.
+    /// </summary>
+    public SpotLight(Vector3 direction, Vector3 color, float intensity, float range, float innerAngle, float outerAngle, float constant, float linear, float quadratic)
+    {
+        Direction = direction;
+        Color = color;
+        Intensity = intensity;
+        Range = range;
+        InnerAngle = innerAngle;
+        OuterAngle = outerAngle;
+        Constant = constant;
+        Linear = linear;
+        Quadratic = quadratic;
     }
 
     /// <summary>
@@ -158,5 +235,24 @@ public struct SpotLight
         Range = range;
         InnerAngle = innerAngle;
         OuterAngle = outerAngle;
+        Constant = 1.0f;
+        Linear = 0.09f;
+        Quadratic = 0.032f;
+    }
+
+    /// <summary>
+    /// Initializes a new instance using a Color and explicit attenuation terms.
+    /// </summary>
+    public SpotLight(Vector3 direction, Color color, float intensity, float range, float innerAngle, float outerAngle, float constant, float linear, float quadratic)
+    {
+        Direction = direction;
+        Color = new Vector3(color.R, color.G, color.B);
+        Intensity = intensity;
+        Range = range;
+        InnerAngle = innerAngle;
+        OuterAngle = outerAngle;
+        Constant = constant;
+        Linear = linear;
+        Quadratic = quadratic;
     }
 }

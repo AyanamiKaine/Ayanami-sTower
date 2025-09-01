@@ -2278,6 +2278,9 @@ internal static class Program
                     gp.Color = s.Color;
                     gp.Intensity = s.Intensity;
                     gp.Range = s.Range;
+                    gp.Kc = s.Constant;
+                    gp.Kl = s.Linear;
+                    gp.Kq = s.Quadratic;
                     gpuPoint[usedPoint++] = gp;
                 }
                 for (int i = usedPoint; i < gpuPoint.Length; i++) gpuPoint[i] = new GpuPointLight();
@@ -2302,6 +2305,9 @@ internal static class Program
                     gs.Range = s.Range;
                     gs.InnerAngle = s.InnerAngle;
                     gs.OuterAngle = s.OuterAngle;
+                    gs.Kc = s.Constant;
+                    gs.Kl = s.Linear;
+                    gs.Kq = s.Quadratic;
                     gpuSpot[usedSpot++] = gs;
                 }
                 for (int i = usedSpot; i < gpuSpot.Length; i++) gpuSpot[i] = new GpuSpotLight();

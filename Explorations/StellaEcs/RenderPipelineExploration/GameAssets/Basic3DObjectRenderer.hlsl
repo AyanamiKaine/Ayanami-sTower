@@ -50,6 +50,9 @@ struct PointLight
     float3 color;
     float intensity;
     float range;
+    float kc;
+    float kl;
+    float kq;
 };
 
 struct SpotLight
@@ -61,6 +64,9 @@ struct SpotLight
     float range;
     float innerAngle;
     float outerAngle;
+    float kc;
+    float kl;
+    float kq;
 };
 
 // Light data buffers
@@ -159,7 +165,8 @@ void CalculatePointLight(PointLight light, float3 normal, float3 fragPos, float3
     float distance = length(light.position - fragPos);
 
     // Attenuation (common quadratic approximation)
-    float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
+    // Physically-inspired attenuation using per-light coefficients
+    float attenuation = 1.0 / (light.kc + light.kl * distance + light.kq * distance * distance);
     // Optional smooth falloff near range (note: keep as-is if host code expects this behavior)
     attenuation *= smoothstep(light.range, light.range * 0.8, distance);
 
@@ -179,7 +186,7 @@ void CalculateSpotLight(SpotLight light, float3 normal, float3 fragPos, float3 v
     float distance = length(light.position - fragPos);
 
     // Attenuation
-    float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
+    float attenuation = 1.0 / (light.kc + light.kl * distance + light.kq * distance * distance);
     attenuation *= smoothstep(light.range, light.range * 0.8, distance);
 
     // Spotlight intensity (inner/outer cone)

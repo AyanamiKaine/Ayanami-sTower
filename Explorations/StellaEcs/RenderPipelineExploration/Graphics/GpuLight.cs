@@ -70,16 +70,25 @@ public struct GpuPointLight
     /// </summary>
     public Vector3 Color;
     /// <summary>
-    ///  bytes: intensity (x) + range (y) + padding
+    /// Intensity of the light.
     /// </summary>
     public float Intensity;
     /// <summary>
-    /// The effective range of the point light.
+    /// Effective range of the point light (used for optional smooth cutoff and culling).
     /// </summary>
     public float Range;
-    private float _pad1;
-    private float _pad2;
-    private float _pad3;
+    /// <summary>
+    /// Attenuation constant term Kc (usually 1.0).
+    /// </summary>
+    public float Kc;
+    /// <summary>
+    /// Attenuation linear term Kl.
+    /// </summary>
+    public float Kl;
+    /// <summary>
+    /// Attenuation quadratic term Kq.
+    /// </summary>
+    public float Kq;
 }
 /// <summary>
 /// Represents a spot light source in the scene.
@@ -116,5 +125,18 @@ public struct GpuSpotLight
     ///  bytes: outerAngle, padding
     /// </summary>
     public float OuterAngle;
+    /// <summary>
+    /// Attenuation terms: constant (Kc), linear (Kl), quadratic (Kq)
+    /// </summary>
+    public float Kc;
+    /// <summary>
+    /// Linear attenuation coefficient Kl.
+    /// </summary>
+    public float Kl;
+    /// <summary>
+    /// Quadratic attenuation coefficient Kq.
+    /// </summary>
+    public float Kq;
     private float _pad2;
+    private float _pad3;
 }
