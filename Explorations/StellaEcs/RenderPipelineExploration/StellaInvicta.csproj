@@ -33,4 +33,8 @@
     <PackageReference Include="StbImageSharp" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Noise\" />
+  </ItemGroup>
+
 </Project>
