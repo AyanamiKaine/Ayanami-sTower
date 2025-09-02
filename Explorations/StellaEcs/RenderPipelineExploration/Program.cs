@@ -115,6 +115,14 @@ internal static class Program
         private float _minScreenPixelSize = 6.0f; // default minimum pixel radius to consider "visible"
                                                   // Minimum on-screen radius for selection indicators so tiny objects remain visible
         private float _minSelectionPixelSize = 6.0f;
+        // Selection indicator customization
+        private enum SelectionIndicatorShape { Circle = 0, Ring = 1, Square = 2, Crosshair = 3 }
+        private SelectionIndicatorShape _indicatorShape = SelectionIndicatorShape.Circle;
+        private Vector4 _indicatorBorderColor = new Vector4(0.1f, 0.9f, 0.9f, 0.95f);
+        private Vector4 _indicatorFillColor = new Vector4(0.1f, 0.9f, 0.9f, 0.20f);
+        private bool _indicatorUseFill = true;
+        private float _indicatorThickness = 2.0f;
+        private float _crosshairLengthScale = 1.0f; // Crosshair arm length as a multiple of radius
 
         // Interpolation toggle
         private bool _interpolationEnabled = true;
@@ -512,6 +520,24 @@ internal static class Program
                 var sel = _selectionInteraction.CurrentSelection;
                 ImGui.Text($"Selected Count: {sel.Count}");
                 ImGui.SliderFloat("Min Indicator Radius (px)", ref _minSelectionPixelSize, 0.0f, 32.0f);
+                // Indicator customization controls
+                int shapeIdx = (int)_indicatorShape;
+                string[] shapes = new[] { "Circle", "Ring", "Square", "Crosshair" };
+                if (ImGui.Combo("Indicator Shape", ref shapeIdx, shapes, shapes.Length))
+                {
+                    _indicatorShape = (SelectionIndicatorShape)shapeIdx;
+                }
+                ImGui.ColorEdit4("Border Color", ref _indicatorBorderColor);
+                ImGui.Checkbox("Use Fill", ref _indicatorUseFill);
+                if (_indicatorUseFill && _indicatorShape != SelectionIndicatorShape.Ring && _indicatorShape != SelectionIndicatorShape.Crosshair)
+                {
+                    ImGui.ColorEdit4("Fill Color", ref _indicatorFillColor);
+                }
+                ImGui.SliderFloat("Border Thickness", ref _indicatorThickness, 0.5f, 8.0f);
+                if (_indicatorShape == SelectionIndicatorShape.Crosshair)
+                {
+                    ImGui.SliderFloat("Crosshair Length (x radius)", ref _crosshairLengthScale, 0.25f, 2.0f);
+                }
                 if (sel.Count == 0)
                 {
                     ImGui.Text("None");
@@ -618,8 +644,8 @@ internal static class Program
             float tanHalfFov = MathF.Tan((float)_camera.Fov * 0.5f);
 
             var drawList = ImGui.GetForegroundDrawList();
-            uint borderCol = ImGui.ColorConvertFloat4ToU32(new Vector4(0.1f, 0.9f, 0.9f, 0.95f));
-            uint fillCol = ImGui.ColorConvertFloat4ToU32(new Vector4(0.1f, 0.9f, 0.9f, 0.20f));
+            uint borderCol = ImGui.ColorConvertFloat4ToU32(_indicatorBorderColor);
+            uint fillCol = ImGui.ColorConvertFloat4ToU32(_indicatorFillColor);
 
             foreach (var e in sel)
             {
@@ -679,9 +705,42 @@ internal static class Program
                     // Cull if far off-screen
                     if (sx < -50 || sx > screenW + 50 || sy < -50 || sy > screenH + 50) continue;
 
-                    // Draw filled circle with border
-                    drawList.AddCircleFilled(new Vector2(sx, sy), pixelRadius, fillCol);
-                    drawList.AddCircle(new Vector2(sx, sy), pixelRadius, borderCol, 0, 2.0f);
+                    var center = new Vector2(sx, sy);
+                    switch (_indicatorShape)
+                    {
+                        case SelectionIndicatorShape.Circle:
+                            if (_indicatorUseFill)
+                            {
+                                drawList.AddCircleFilled(center, pixelRadius, fillCol);
+                            }
+                            drawList.AddCircle(center, pixelRadius, borderCol, 0, _indicatorThickness);
+                            break;
+                        case SelectionIndicatorShape.Ring:
+                            drawList.AddCircle(center, pixelRadius, borderCol, 0, MathF.Max(1.0f, _indicatorThickness));
+                            break;
+                        case SelectionIndicatorShape.Square:
+                            {
+                                float half = pixelRadius;
+                                var pMin = new Vector2(center.X - half, center.Y - half);
+                                var pMax = new Vector2(center.X + half, center.Y + half);
+                                if (_indicatorUseFill)
+                                {
+                                    drawList.AddRectFilled(pMin, pMax, fillCol, 2f, ImDrawFlags.None);
+                                }
+                                drawList.AddRect(pMin, pMax, borderCol, 2f, ImDrawFlags.None, _indicatorThickness);
+                            }
+                            break;
+                        case SelectionIndicatorShape.Crosshair:
+                            {
+                                float len = pixelRadius * MathF.Max(0.1f, _crosshairLengthScale);
+                                float t = MathF.Max(1.0f, _indicatorThickness);
+                                // Horizontal
+                                drawList.AddLine(new Vector2(center.X - len, center.Y), new Vector2(center.X + len, center.Y), borderCol, t);
+                                // Vertical
+                                drawList.AddLine(new Vector2(center.X, center.Y - len), new Vector2(center.X, center.Y + len), borderCol, t);
+                            }
+                            break;
+                    }
                 }
                 catch { /* continue with next */ }
             }
