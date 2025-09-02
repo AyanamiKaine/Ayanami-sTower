@@ -179,6 +179,9 @@ internal static class Program
                 GraphicsDevice.SupportedDepthStencilFormat
             );
 
+            // Only allow selecting entities explicitly tagged as Selectable
+            _selectionInteraction.SelectionFilter = e => e != default && e.Has<Selectable>();
+
             InitializeScene();
             EnableImgui();
         }
@@ -1499,6 +1502,7 @@ internal static class Program
 
             // --- CELESTIAL BODY CREATION ---
             var sun = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1524,8 +1528,8 @@ internal static class Program
 
             sun.OnSelection(_selectionInteraction, (Entity e) =>
             {
-                Console.WriteLine("[Selection] Selected entity Sun, playing audio");
-                AudioManager.PlayOneShot(this, AssetManager.AssetFolderName + "/Sun.ogg");
+                Console.WriteLine("[Selection] Selected entity Sun");
+                //AudioManager.PlayOneShot(this, AssetManager.AssetFolderName + "/Sun.ogg");
             });
 
             sun.OnDeselection(_selectionInteraction, (Entity e) =>
@@ -1534,6 +1538,7 @@ internal static class Program
             });
 
             World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1547,6 +1552,7 @@ internal static class Program
                 .Set(new Components.Shader(this, "Light", true));
 
             World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
@@ -1556,24 +1562,28 @@ internal static class Program
                 .Set(new SpecularMapRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/specularMapExample.png") ?? _whiteTexture! });
 
             World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new Position3D(10 + origin.X, origin.Y, 5 + origin.Z))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new Position3D(origin.X, origin.Y, origin.Z + 30))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(3f))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new Position3D(origin.X, origin.Y, origin.Z + 20))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(1f))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1588,6 +1598,7 @@ internal static class Program
             });
 
             var asteroidA = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateAsteroid3D())
@@ -1601,6 +1612,7 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Moon.jpg", sRGB: true) ?? _checkerTexture! });
 
             var asteroidBDifferentPhysicsLayer = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateAsteroid3D())
@@ -1670,6 +1682,7 @@ internal static class Program
 
             // Mercury: 0.39 AU from the Sun.
             var mercury = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1685,6 +1698,7 @@ internal static class Program
 
             // Venus: 0.72 AU from the Sun.
             var venus = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1700,6 +1714,7 @@ internal static class Program
 
             // Earth: 1.0 AU from the Sun (our baseline).
             var earth = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1719,6 +1734,7 @@ internal static class Program
             var moonWorldPos = earthPos + moonLocalOffset;
 
             var moonEntity = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1736,6 +1752,7 @@ internal static class Program
             var spaceStationWorldPos = earthPos + spaceStationLocalOffset;
 
             World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1756,6 +1773,7 @@ internal static class Program
 
             // Mars: 1.52 AU from the Sun.
             var mars = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1771,6 +1789,7 @@ internal static class Program
 
             // Jupiter: 5.20 AU from the Sun.
             var jupiter = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1786,6 +1805,7 @@ internal static class Program
 
             // Saturn: 9.58 AU from the Sun.
             var saturn = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1801,6 +1821,7 @@ internal static class Program
 
             // Uranus: 19.22 AU from the Sun.
             var uranus = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1816,6 +1837,7 @@ internal static class Program
 
             // Neptune: 30.05 AU from the Sun. (Added for completeness)
             var neptune = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -1831,6 +1853,7 @@ internal static class Program
 
             // Pluto: 39.48 AU from the Sun (average).
             var pluto = World.CreateEntity()
+                .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
                 .Set(Mesh.CreateSphere3D())
@@ -2125,6 +2148,7 @@ internal static class Program
                 var asteroidMesh = CreateRandomizedAsteroid(rng, s);
 
                 var e = World.CreateEntity()
+                    .Set(new Selectable())
                     .Set(new CelestialBody())
                     .Set(asteroidMesh)
                     .Set(new Kinematic())

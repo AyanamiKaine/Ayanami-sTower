@@ -26,6 +26,11 @@ public sealed class SelectionInteractionService
     private readonly Dictionary<Entity, Action<Entity>> _onSelected = new();
     private readonly Dictionary<Entity, Action<Entity>> _onDeselected = new();
     private readonly HashSet<Entity> _selected = new();
+    /// <summary>
+    /// Optional predicate to decide whether an entity is eligible for selection.
+    /// If null, all entities are considered eligible.
+    /// </summary>
+    public Func<Entity, bool>? SelectionFilter { get; set; }
 
     /// <summary>
     /// Gets the current selection set.
@@ -120,6 +125,7 @@ public sealed class SelectionInteractionService
     /// </summary>
     public void ApplySelection(IEnumerable<Entity> candidates, SelectionMode mode)
     {
+        bool Allow(Entity e) => SelectionFilter == null || SelectionFilter(e);
         switch (mode)
         {
             case SelectionMode.Replace:
@@ -128,7 +134,7 @@ public sealed class SelectionInteractionService
                     var newSet = new HashSet<Entity>();
                     foreach (var e in candidates)
                     {
-                        newSet.Add(e);
+                        if (Allow(e)) { newSet.Add(e); }
                     }
 
                     // Compute removed (present before, absent now) and added (absent before, present now)
@@ -161,6 +167,7 @@ public sealed class SelectionInteractionService
                 {
                     foreach (var e in candidates)
                     {
+                        if (!Allow(e)) { continue; }
                         if (_selected.Add(e))
                         {
                             NotifySelected(e);
@@ -172,6 +179,7 @@ public sealed class SelectionInteractionService
                 {
                     foreach (var e in candidates)
                     {
+                        // Subtract should remove regardless of Allow(), but typically callers pass selected set.
                         if (_selected.Remove(e))
                         {
                             NotifyDeselected(e);
