@@ -2043,10 +2043,10 @@ internal static class Program
             // Earth: 1.0 AU from the Sun (our baseline).
             var earth = World.CreateEntity()
                 .Set(new SelectionRules
-                        {
-                            OverrideMaxDistance = true,
-                            MaxSelectionDistance = 5000f,
-                        })
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -2236,10 +2236,10 @@ internal static class Program
             // Neptune: 30.05 AU from the Sun. (Added for completeness)
             var neptune = World.CreateEntity()
                         .Set(new SelectionRules
-                {
-                    OverrideMaxDistance = true,
-                    MaxSelectionDistance = 5000f,
-                })
+                        {
+                            OverrideMaxDistance = true,
+                            MaxSelectionDistance = 5000f,
+                        })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -2568,6 +2568,8 @@ internal static class Program
                 var e = World.CreateEntity()
                     .Set(new Impostor()
                     {
+                        OverrideColor = true,
+                        Color = new(1f, 1f, 0.2f, 0.9f),
                         MaxDistance = 1000f,
                         OverrideMaxDistance = true,
                     }
