@@ -1627,10 +1627,10 @@ internal static class Program
                         radialSegments: radialSegments,
                         rings: rings,
                         seed: seedValue,
-                        frequency: 0.2f + (float)rng.NextDouble() * 0.3f, // 0.2-0.5
-                        perturbationStrength: 0.15f + (float)rng.NextDouble() * 0.15f, // 0.15-0.3
-                        roughness: 0.3f + (float)rng.NextDouble() * 0.4f, // 0.3-0.7
-                        craterDensity: 0.1f + (float)rng.NextDouble() * 0.2f // 0.1-0.3
+                        frequency: 0.2f + ((float)rng.NextDouble() * 0.3f), // 0.2-0.5
+                        perturbationStrength: 0.15f + ((float)rng.NextDouble() * 0.15f), // 0.15-0.3
+                        roughness: 0.3f + ((float)rng.NextDouble() * 0.4f), // 0.3-0.7
+                        craterDensity: 0.1f + ((float)rng.NextDouble() * 0.2f) // 0.1-0.3
                     );
 
                 case 1: // Heavily cratered, rough asteroid
@@ -1639,10 +1639,10 @@ internal static class Program
                         radialSegments: radialSegments,
                         rings: rings,
                         seed: seedValue,
-                        frequency: 0.4f + (float)rng.NextDouble() * 0.4f, // 0.4-0.8
-                        perturbationStrength: 0.3f + (float)rng.NextDouble() * 0.3f, // 0.3-0.6
-                        roughness: 0.7f + (float)rng.NextDouble() * 0.3f, // 0.7-1.0
-                        craterDensity: 0.4f + (float)rng.NextDouble() * 0.4f // 0.4-0.8
+                        frequency: 0.4f + ((float)rng.NextDouble() * 0.4f), // 0.4-0.8
+                        perturbationStrength: 0.3f + ((float)rng.NextDouble() * 0.3f), // 0.3-0.6
+                        roughness: 0.7f + ((float)rng.NextDouble() * 0.3f), // 0.7-1.0
+                        craterDensity: 0.4f + ((float)rng.NextDouble() * 0.4f) // 0.4-0.8
                     );
 
                 case 2: // Very irregular, jagged asteroid
@@ -1651,10 +1651,10 @@ internal static class Program
                         radialSegments: radialSegments,
                         rings: rings,
                         seed: seedValue,
-                        frequency: 0.6f + (float)rng.NextDouble() * 0.6f, // 0.6-1.2
-                        perturbationStrength: 0.4f + (float)rng.NextDouble() * 0.4f, // 0.4-0.8
-                        roughness: 0.8f + (float)rng.NextDouble() * 0.2f, // 0.8-1.0
-                        craterDensity: 0.2f + (float)rng.NextDouble() * 0.3f // 0.2-0.5
+                        frequency: 0.6f + ((float)rng.NextDouble() * 0.6f), // 0.6-1.2
+                        perturbationStrength: 0.4f + ((float)rng.NextDouble() * 0.4f), // 0.4-0.8
+                        roughness: 0.8f + ((float)rng.NextDouble() * 0.2f), // 0.8-1.0
+                        craterDensity: 0.2f + ((float)rng.NextDouble() * 0.3f) // 0.2-0.5
                     );
 
                 case 3: // Metallic-looking, less cratered asteroid
@@ -1663,10 +1663,10 @@ internal static class Program
                         radialSegments: radialSegments,
                         rings: rings,
                         seed: seedValue,
-                        frequency: 0.3f + (float)rng.NextDouble() * 0.3f, // 0.3-0.6
-                        perturbationStrength: 0.2f + (float)rng.NextDouble() * 0.2f, // 0.2-0.4
-                        roughness: 0.4f + (float)rng.NextDouble() * 0.3f, // 0.4-0.7
-                        craterDensity: 0.05f + (float)rng.NextDouble() * 0.15f // 0.05-0.2
+                        frequency: 0.3f + ((float)rng.NextDouble() * 0.3f), // 0.3-0.6
+                        perturbationStrength: 0.2f + ((float)rng.NextDouble() * 0.2f), // 0.2-0.4
+                        roughness: 0.4f + ((float)rng.NextDouble() * 0.3f), // 0.4-0.7
+                        craterDensity: 0.05f + ((float)rng.NextDouble() * 0.15f) // 0.05-0.2
                     );
 
                 case 4: // Medium complexity asteroid
@@ -1676,10 +1676,10 @@ internal static class Program
                         radialSegments: radialSegments,
                         rings: rings,
                         seed: seedValue,
-                        frequency: 0.25f + (float)rng.NextDouble() * 0.5f, // 0.25-0.75
-                        perturbationStrength: 0.25f + (float)rng.NextDouble() * 0.25f, // 0.25-0.5
-                        roughness: 0.5f + (float)rng.NextDouble() * 0.3f, // 0.5-0.8
-                        craterDensity: 0.2f + (float)rng.NextDouble() * 0.3f // 0.2-0.5
+                        frequency: 0.25f + ((float)rng.NextDouble() * 0.5f), // 0.25-0.75
+                        perturbationStrength: 0.25f + ((float)rng.NextDouble() * 0.25f), // 0.25-0.5
+                        roughness: 0.5f + ((float)rng.NextDouble() * 0.3f), // 0.5-0.8
+                        craterDensity: 0.2f + ((float)rng.NextDouble() * 0.3f) // 0.2-0.5
                     );
             }
         }
@@ -3068,7 +3068,7 @@ internal static class Program
                 float clampedY = MathF.Max(ry0, MathF.Min(cy, ry1));
                 float dx = cx - clampedX;
                 float dy = cy - clampedY;
-                return (dx * dx + dy * dy) <= (r * r);
+                return ((dx * dx) + (dy * dy)) <= (r * r);
             }
 
             var selected = new System.Collections.Generic.List<Entity>();
@@ -3092,24 +3092,14 @@ internal static class Program
                 else if (e.Has<CollisionShape>())
                 {
                     var cs = e.GetMut<CollisionShape>().Shape;
-                    switch (cs)
+                    radius = cs switch
                     {
-                        case Sphere s:
-                            radius = s.Radius;
-                            break;
-                        case Box b:
-                            radius = MathF.Sqrt(b.HalfWidth * b.HalfWidth + b.HalfHeight * b.HalfHeight + b.HalfLength * b.HalfLength);
-                            break;
-                        case Capsule c:
-                            radius = c.HalfLength + c.Radius; // conservative
-                            break;
-                        case Cylinder cy:
-                            radius = MathF.Sqrt(cy.HalfLength * cy.HalfLength + cy.Radius * cy.Radius);
-                            break;
-                        default:
-                            radius = 0.6f;
-                            break;
-                    }
+                        Sphere s => s.Radius,
+                        Box b => MathF.Sqrt((b.HalfWidth * b.HalfWidth) + (b.HalfHeight * b.HalfHeight) + (b.HalfLength * b.HalfLength)),
+                        Capsule c => c.HalfLength + c.Radius,// conservative
+                        Cylinder cy => MathF.Sqrt((cy.HalfLength * cy.HalfLength) + (cy.Radius * cy.Radius)),
+                        _ => 0.6f,
+                    };
                 }
 
                 // Convert to render space and project to screen
@@ -3126,8 +3116,8 @@ internal static class Program
 
                 var ndcX = clip.X / clip.W;
                 var ndcY = clip.Y / clip.W;
-                float sx = (ndcX * 0.5f + 0.5f) * screenW;
-                float sy = (1f - (ndcY * 0.5f + 0.5f)) * screenH;
+                float sx = ((ndcX * 0.5f) + 0.5f) * screenW;
+                float sy = (1f - ((ndcY * 0.5f) + 0.5f)) * screenH;
 
                 if (CircleIntersectsRect(sx, sy, pixelRadius, x0, y0, x1, y1))
                 {
