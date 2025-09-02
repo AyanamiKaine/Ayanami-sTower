@@ -113,6 +113,8 @@ internal static class Program
         // Size-based visibility: objects with projected screen size above this threshold will be forced visible
         private bool _enableSizeVisibility = true;
         private float _minScreenPixelSize = 6.0f; // default minimum pixel radius to consider "visible"
+                                                  // Minimum on-screen radius for selection indicators so tiny objects remain visible
+        private float _minSelectionPixelSize = 6.0f;
 
         // Interpolation toggle
         private bool _interpolationEnabled = true;
@@ -509,6 +511,7 @@ internal static class Program
             {
                 var sel = _selectionInteraction.CurrentSelection;
                 ImGui.Text($"Selected Count: {sel.Count}");
+                ImGui.SliderFloat("Min Indicator Radius (px)", ref _minSelectionPixelSize, 0.0f, 32.0f);
                 if (sel.Count == 0)
                 {
                     ImGui.Text("None");
@@ -660,6 +663,11 @@ internal static class Program
                     var toObj = renderPos;
                     float dist = MathF.Max(1e-4f, toObj.Length());
                     float pixelRadius = (radius / (dist * MathF.Max(1e-4f, tanHalfFov))) * (screenH * 0.5f);
+                    // Enforce a minimum pixel radius for visibility
+                    if (_minSelectionPixelSize > 0)
+                    {
+                        pixelRadius = MathF.Max(pixelRadius, _minSelectionPixelSize);
+                    }
                     // small halo padding
                     pixelRadius *= 1.15f;
 
