@@ -1741,7 +1741,7 @@ internal static class Program
                     .Set(new Parent(parent))
                     .Set(new Position3D(pos.X, pos.Y, pos.Z))
                     .Set(new Size3D(s))
-                    .Set(new CollisionShape(new Sphere(s)))
+                    .Set(new CollisionShape(new Sphere(s * 0.5f)))
                     .Set(Rotation3D.Identity)
                     .Set(new AngularVelocity3D(0, 0.0025f, 0))
                     .Set(new Texture2DRef { Texture = tex });
