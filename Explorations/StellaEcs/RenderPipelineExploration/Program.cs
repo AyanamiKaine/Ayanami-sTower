@@ -2572,11 +2572,11 @@ internal static class Program
                         OverrideMaxDistance = true,
                     }
                     )
-                                    .Set(new SelectionRules
-                                    {
-                                        OverrideMaxDistance = true,
-                                        MaxSelectionDistance = 1000f,
-                                    })
+                    .Set(new SelectionRules
+                    {
+                        OverrideMaxDistance = true,
+                        MaxSelectionDistance = 1000f,
+                    })
                     .Set(new Selectable())
                     .Set(new CelestialBody())
                     .Set(asteroidMesh)
