@@ -498,6 +498,46 @@ internal static class Program
             ImGui.Text($"Fixed dt: {_fixedSimulationStepSeconds:F4} s");
             ImGui.Checkbox("Frustum Culling", ref _enableFrustumCulling);
             ImGui.SliderFloat("Culling Radius Scale", ref _cullingRadiusScale, 0.1f, 10f);
+
+            // Selection debug info
+            ImGui.Separator();
+            if (ImGui.CollapsingHeader("Selection"))
+            {
+                var sel = _selectionInteraction.CurrentSelection;
+                ImGui.Text($"Selected Count: {sel.Count}");
+                if (sel.Count == 0)
+                {
+                    ImGui.Text("None");
+                }
+                else
+                {
+                    if (ImGui.Button("Clear Selection"))
+                    {
+                        _selectionInteraction.ClearSelection();
+                    }
+                    ImGui.BeginChild("sel_list", new Vector2(0, 150), ImGuiChildFlags.None);
+                    foreach (var e in sel)
+                    {
+                        string label = $"E{e.Id}";
+                        try
+                        {
+                            if (e.Has<Position3D>())
+                            {
+                                var p = e.GetCopy<Position3D>().Value;
+                                label += $"  pos=({p.X:F1},{p.Y:F1},{p.Z:F1})";
+                            }
+                        }
+                        catch { /* entity might be invalidated between frames */ }
+
+                        bool isFocused = _selectedEntity != default && e.Equals(_selectedEntity);
+                        if (ImGui.Selectable(label, isFocused))
+                        {
+                            _selectedEntity = e;
+                        }
+                    }
+                    ImGui.EndChild();
+                }
+            }
             ImGui.End();
         }
 
