@@ -25,6 +25,11 @@ using AyanamisTower.StellaEcs.StellaInvicta.Systems;
 using System.Runtime.InteropServices;
 using StellaInvicta.Graphics;
 using StellaInvicta.Components;
+using AyanamisTower.StellaEcs.StellaInvicta.UI.Builder;
+using AyanamisTower.StellaEcs.StellaInvicta.UI.Components;
+using AyanamisTower.StellaEcs.StellaInvicta.UI.Input;
+using AyanamisTower.StellaEcs.StellaInvicta.UI.Rendering;
+using AyanamisTower.StellaEcs.StellaInvicta.UI.Systems;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -175,6 +180,12 @@ internal static class Program
         private Entity _selectedEntity = default;
         // Accumulated time for animated shaders (e.g., Sun)
         private float _shaderTime = 0f;
+        // UI systems and renderer
+        private UILayoutSystem? _uiLayoutSystem;
+        private UIDrawSystem? _uiDrawSystem;
+        private UIInputSystem? _uiInputSystem;
+        private UIEventBus? _uiEvents;
+        private IUIRenderer? _uiRenderer;
         public StellaInvictaGame() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
@@ -1388,6 +1399,64 @@ internal static class Program
                     Console.WriteLine("PICK: Missed. No object was hit.");
                 }
             }, "MousePick");
+
+            // ---------- UI bootstrap ----------
+            _uiRenderer = new DebugImGuiUIRenderer();
+            _uiEvents = new UIEventBus();
+            _uiEvents.OnButtonClicked += e => Console.WriteLine($"[UI] Button clicked {e.Entity.Id} cmd='{e.Command}'");
+
+            _uiLayoutSystem = new UILayoutSystem(() => new System.Numerics.Vector2((float)MainWindow.Width, (float)MainWindow.Height));
+            _uiDrawSystem = new UIDrawSystem(_uiRenderer);
+            _uiInputSystem = new UIInputSystem(
+                getMouse: () => new System.Numerics.Vector2(Inputs.Mouse.X, Inputs.Mouse.Y),
+                getMousePressed: () => _inputManager.WasLeftMousePressed(),
+                getMouseReleased: () => _inputManager.WasLeftMouseReleased(),
+                events: _uiEvents
+            );
+
+            // Create a simple UI: root panel at top-left with a label and a button
+            var ui = new UIBuilder(World);
+            ui.Panel(out var panel,
+                rect: new RectTransform
+                {
+                    AnchorMin = new System.Numerics.Vector2(0, 0),
+                    AnchorMax = new System.Numerics.Vector2(0, 0),
+                    OffsetMin = new System.Numerics.Vector2(20, 20),
+                    OffsetMax = new System.Numerics.Vector2(320, 180),
+                    Pivot = new System.Numerics.Vector2(0, 0)
+                },
+                style: new UIStyle
+                {
+                    BackgroundColor = new System.Numerics.Vector4(0.08f, 0.10f, 0.14f, 0.92f),
+                    BorderColor = new System.Numerics.Vector4(0.06f, 0.65f, 0.85f, 1f),
+                    BorderThickness = 2f,
+                    CornerRadius = 8f
+                },
+                z: 100,
+                children: b =>
+                {
+                    b.Label("Custom ECS UI Panel", out _,
+                        rect: new RectTransform
+                        {
+                            AnchorMin = new System.Numerics.Vector2(0, 0),
+                            AnchorMax = new System.Numerics.Vector2(0, 0),
+                            OffsetMin = new System.Numerics.Vector2(12, 8),
+                            OffsetMax = new System.Numerics.Vector2(280, 32),
+                            Pivot = new System.Numerics.Vector2(0, 0)
+                        },
+                        color: new System.Numerics.Vector4(0.9f, 0.95f, 1f, 1f), fontSize: 18f, z: 101);
+
+                    b.Button("Click Me", out var button, command: "demo.click",
+                        rect: new RectTransform
+                        {
+                            AnchorMin = new System.Numerics.Vector2(0, 0),
+                            AnchorMax = new System.Numerics.Vector2(0, 0),
+                            OffsetMin = new System.Numerics.Vector2(12, 48),
+                            OffsetMax = new System.Numerics.Vector2(200, 84),
+                            Pivot = new System.Numerics.Vector2(0, 0)
+                        }, z: 101);
+                }
+            );
 
             // Culling toggles and adjustments
             _inputManager.RegisterKeyPressed(KeyCode.C, () =>
@@ -2801,6 +2870,14 @@ internal static class Program
             //     var camDist = new Vector3d(_camera.Position.X, _camera.Position.Y, _camera.Position.Z).Length();
             //     Console.WriteLine($"[FloatingOrigin] Current Origin: {origin}, Camera Distance from Origin: {camDist:F1}");
             // }
+
+            // UI: layout and input (uses current screen size and mouse snapshot)
+            try
+            {
+                _uiLayoutSystem?.Update(World, 0f);
+                _uiInputSystem?.Update(World, 0f);
+            }
+            catch { }
         }
 
 
@@ -3033,6 +3110,9 @@ internal static class Program
 
                 // Render all our ImGui windows (extracted helpers)
                 RenderImguiWindows();
+
+                // Draw our custom ECS UI via ImGui foreground list (debug renderer)
+                try { _uiDrawSystem?.Update(World, 0f); } catch { }
 
                 // Draw selection rectangle overlay on top of any windows
                 RenderSelectionRectangleImGui();

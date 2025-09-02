@@ -88,6 +88,7 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         public bool IsKeyHeld(KeyCode key) => _currKeys.Contains(key);
         public bool WasLeftMousePressed() => _currLeftMouse && !_prevLeftMouse;
         public bool IsLeftMouseHeld() => _currLeftMouse;
+        public bool WasLeftMouseReleased() => !_currLeftMouse && _prevLeftMouse;
 
         // Registration helpers
         public void RegisterKeyPressed(KeyCode key, Action action, string name = "", string context = "global")
