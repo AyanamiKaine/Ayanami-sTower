@@ -134,7 +134,8 @@ internal static class Program
         // Tiny-object impostors (drawn as small 2D icons when projected size is too small)
         private bool _impostorsEnabled = true;
         private float _impostorShowBelowPx = 6.0f; // if object's projected radius is below this, show an impostor
-        private float _impostorPixelRadius = 2.5f; // radius of the impostor icon in pixels
+        private float _impostorMinPixelRadius = 1.5f; // min icon radius (px) when object is extremely tiny on screen
+        private float _impostorMaxPixelRadius = 8.0f; // max icon radius (px) when object is just below the threshold
         private Vector4 _impostorColor = new Vector4(0.85f, 0.85f, 0.9f, 0.9f);
         private float _impostorBorderThickness = 1.5f;
         private enum ImpostorShape { Circle = 0, Square = 1 }
@@ -608,7 +609,12 @@ internal static class Program
             {
                 ImGui.Checkbox("Enable Impostors", ref _impostorsEnabled);
                 ImGui.SliderFloat("Show Below Radius (px)", ref _impostorShowBelowPx, 0.0f, 32.0f);
-                ImGui.SliderFloat("Impostor Pixel Radius", ref _impostorPixelRadius, 0.5f, 12.0f);
+                ImGui.SliderFloat("Icon Radius Min (px)", ref _impostorMinPixelRadius, 0.5f, 32.0f);
+                ImGui.SliderFloat("Icon Radius Max (px)", ref _impostorMaxPixelRadius, 0.5f, 64.0f);
+                if (_impostorMaxPixelRadius < _impostorMinPixelRadius)
+                {
+                    _impostorMaxPixelRadius = _impostorMinPixelRadius;
+                }
                 int ishape = (int)_impostorShape;
                 string[] opts = new[] { "Circle", "Square" };
                 if (ImGui.Combo("Impostor Shape", ref ishape, opts, opts.Length))
@@ -617,7 +623,7 @@ internal static class Program
                 }
                 ImGui.ColorEdit4("Impostor Color", ref _impostorColor);
                 ImGui.SliderFloat("Border Thickness", ref _impostorBorderThickness, 0.0f, 6.0f);
-                ImGui.Text("Shown for entities with Selectable tag when their projected size is tiny.");
+                ImGui.Text("Icon size scales with projected size so large bodies get larger icons.");
             }
             ImGui.End();
         }
@@ -973,7 +979,16 @@ internal static class Program
                 float pixelRadius = (worldRadius / (dist * MathF.Max(1e-4f, tanHalfFov))) * (0.5f * screenH);
                 if (pixelRadius >= _impostorShowBelowPx) { continue; }
 
-                float r = MathF.Max(0.1f, _impostorPixelRadius);
+                // Scale icon radius by how close the projected size is to the show threshold.
+                // pixelRadius in [0, _impostorShowBelowPx) maps to r in [min, max].
+                float t = 0f;
+                if (_impostorShowBelowPx > 1e-6f)
+                {
+                    t = pixelRadius / _impostorShowBelowPx;
+                    if (t < 0f) t = 0f;
+                    if (t > 0.999f) t = 0.999f;
+                }
+                float r = MathF.Max(0.1f, _impostorMinPixelRadius + (_impostorMaxPixelRadius - _impostorMinPixelRadius) * t);
                 switch (_impostorShape)
                 {
                     case ImpostorShape.Circle:
