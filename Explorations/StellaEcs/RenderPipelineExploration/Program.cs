@@ -955,6 +955,7 @@ internal static class Program
                 var colorLocal = _impostorColor;
                 var shapeLocal = _impostorShape;
                 float maxDistanceLocal = _impostorMaxDistance; // 0 = unlimited
+                float scaleFactorLocal = 1f;
 
                 if (e.Has<Impostor>())
                 {
@@ -979,6 +980,12 @@ internal static class Program
                     {
                         maxDistanceLocal = imp.MaxDistance;
                         if (maxDistanceLocal < 0f) maxDistanceLocal = 0f;
+                    }
+                    if (imp.OverrideScaleFactor)
+                    {
+                        scaleFactorLocal = imp.ScaleFactor;
+                        if (scaleFactorLocal < 0.01f) scaleFactorLocal = 0.01f;
+                        if (scaleFactorLocal > 100f) scaleFactorLocal = 100f;
                     }
                 }
 
@@ -1033,7 +1040,7 @@ internal static class Program
                     if (t < 0f) t = 0f;
                     if (t > 0.999f) t = 0.999f;
                 }
-                float r = MathF.Max(0.1f, minLocal + (maxLocal - minLocal) * t);
+                float r = MathF.Max(0.1f, (minLocal + (maxLocal - minLocal) * t) * scaleFactorLocal);
 
                 uint col = ImGui.ColorConvertFloat4ToU32(colorLocal);
                 switch (shapeLocal)
@@ -1677,6 +1684,8 @@ internal static class Program
             var sun = World.CreateEntity()
                 .Set(new Impostor()
                 {
+                    OverrideScaleFactor = true,
+                    ScaleFactor = 2,
                     OverrideColor = true,
                     Color = new(1f, 0.25f, 0.2f, 0.9f),
                 })
@@ -3641,6 +3650,8 @@ internal static class Program
             // Delegate to the centralized disable method which is idempotent.
             DisableImgui();
         }
+
+        //TODO: We want to add a selection limit, based on distance so we dont accidentially select an entity that is way to far way.
 
         /// <summary>
         /// Renders a semi-transparent blue selection rectangle using ImGui's foreground draw list.

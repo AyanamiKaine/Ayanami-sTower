@@ -76,6 +76,16 @@ public struct Impostor
     public float MaxDistance;
 
     /// <summary>
+    /// If true, use <see cref="ScaleFactor"/> to multiply the computed impostor icon radius.
+    /// This lets an entity's impostor appear larger or smaller than the size-based default.
+    /// </summary>
+    public bool OverrideScaleFactor;
+    /// <summary>
+    /// Scale multiplier for the computed icon radius. 1 = unchanged, 2 = twice as large, 0.5 = half size.
+    /// </summary>
+    public float ScaleFactor;
+
+    /// <summary>
     /// Creates a new Impostor override with sensible defaults. Enabled defaults to true so merely adding
     /// this component does not disable impostors unless explicitly set.
     /// </summary>
@@ -88,5 +98,6 @@ public struct Impostor
         OverrideBorder = false; BorderThickness = 0f;
         OverrideShowBelow = false; ShowBelowPx = 0f;
         OverrideMaxDistance = false; MaxDistance = 0f;
+    OverrideScaleFactor = false; ScaleFactor = 1f;
     }
 }
