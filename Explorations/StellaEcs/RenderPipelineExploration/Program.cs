@@ -666,6 +666,16 @@ internal static class Program
             uint borderCol = ImGui.ColorConvertFloat4ToU32(_indicatorBorderColor);
             uint fillCol = ImGui.ColorConvertFloat4ToU32(_indicatorFillColor);
 
+            // Optional: Alt + Left Click to zoom to a selected entity under the cursor (no physics pick needed)
+            // Only when mouse isn't captured by UI windows.
+            var ioLocal = ImGui.GetIO();
+            bool altLeftClick = ImGui.IsMouseClicked(ImGuiMouseButton.Left) && ioLocal.KeyAlt && !ioLocal.WantCaptureMouse;
+            Vector2 mousePos = altLeftClick ? ImGui.GetMousePos() : default;
+            Entity? zoomTarget = null;
+            Vector3Double zoomTargetWorld = default;
+            float zoomTargetRadius = 0f; // world-space radius estimate
+            float bestDistSq = float.MaxValue;
+
             foreach (var e in sel)
             {
                 try
@@ -725,6 +735,23 @@ internal static class Program
                     if (sx < -50 || sx > screenW + 50 || sy < -50 || sy > screenH + 50) continue;
 
                     var center = new Vector2(sx, sy);
+
+                    // Accumulate best zoom target if Alt+Left was clicked this frame
+                    if (altLeftClick)
+                    {
+                        float dx = mousePos.X - center.X;
+                        float dy = mousePos.Y - center.Y;
+                        float d2 = (dx * dx) + (dy * dy);
+                        // Consider a hit when inside indicator radius (simple, works for all shapes)
+                        if (d2 <= (pixelRadius * pixelRadius) && d2 < bestDistSq)
+                        {
+                            zoomTarget = e;
+                            zoomTargetWorld = posD;
+                            zoomTargetRadius = MathF.Max(0.01f, radius);
+                            bestDistSq = d2;
+                        }
+                    }
+
                     switch (_indicatorShape)
                     {
                         case SelectionIndicatorShape.Circle:
@@ -797,6 +824,60 @@ internal static class Program
                     }
                 }
                 catch { /* continue with next */ }
+            }
+
+            // If user Alt+Left-clicked within any selection indicator, zoom/focus to that entity.
+            if (altLeftClick && zoomTarget.HasValue && zoomTarget.Value != default)
+            {
+                // Compute a pleasant camera distance based on size and FOV (similar to double-click code).
+                const float targetScreenFraction = 0.35f;
+                double distance = _cameraController.MinDistance;
+                try
+                {
+                    if (zoomTarget.Value.Has<Size3D>())
+                    {
+                        var s = zoomTarget.Value.GetMut<Size3D>().Value;
+                        double maxAxis = Math.Max(s.X, Math.Max(s.Y, s.Z));
+                        double boundingRadius = Math.Max(0.01f, maxAxis * 0.6);
+                        double fovHalfTan = Math.Tan(_camera.Fov * 0.5f);
+                        if (fovHalfTan > 1e-6)
+                        {
+                            double fromSize = boundingRadius / (targetScreenFraction * fovHalfTan);
+                            distance = Math.Max(fromSize, _cameraController.MinDistance);
+                        }
+                    }
+                    else
+                    {
+                        // Fallback: derive from estimated collider/size radius if available
+                        double fovHalfTan = Math.Tan(_camera.Fov * 0.5f);
+                        if (fovHalfTan > 1e-6)
+                        {
+                            double fromSize = zoomTargetRadius / (targetScreenFraction * fovHalfTan);
+                            distance = Math.Max(fromSize, _cameraController.MinDistance);
+                        }
+                    }
+                }
+                catch { }
+                distance = Math.Clamp(distance, _cameraController.MinDistance, _cameraController.MaxDistance);
+
+                // If the entity is dynamic, follow its world position provider; else focus on fixed position.
+                try
+                {
+                    var ent = zoomTarget.Value;
+                    if (ent.Has<PhysicsBody>())
+                    {
+                        var followEntity = ent; // capture
+                        _cameraController.SetFocusProvider(() => GetEntityWorldPosition(followEntity), distance);
+                    }
+                    else
+                    {
+                        _cameraController.SetFocus(zoomTargetWorld, distance);
+                    }
+                }
+                catch
+                {
+                    _cameraController.SetFocus(zoomTargetWorld, distance);
+                }
             }
         }
 
