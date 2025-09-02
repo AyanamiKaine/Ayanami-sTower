@@ -1675,7 +1675,7 @@ internal static class Program
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-            SpawnGalaxies(25);
+            //SpawnGalaxies(25);
 
             // Example usage:
             // SetSkybox("AssetManager.AssetFolderName + "/skybox.jpg", 50f);
@@ -2342,6 +2342,28 @@ internal static class Program
                 seed: 8675309,
                 addStaticCollider: false);
 
+            SpawnAsteroidBelt(origin,
+                parent: mars,
+                count: 20,
+                innerRadius: 4,
+                outerRadius: 8,
+                minSize: 0.02f,
+                maxSize: 0.05f,
+                inclinationDegrees: 1.5f,
+                seed: 8675309,
+                addStaticCollider: false);
+
+            SpawnAsteroidBelt(origin,
+                parent: jupiter,
+                count: 20,
+                innerRadius: 4f,
+                outerRadius: 8f,
+                minSize: 0.02f,
+                maxSize: 0.05f,
+                inclinationDegrees: 1.5f,
+                seed: 8675309,
+                addStaticCollider: false);
+
             return sun;
         }
         /// <summary>
@@ -2560,7 +2582,7 @@ internal static class Program
         /// Spawns an annular asteroid belt around a given center. Distributes asteroids between innerRadius and outerRadius
         /// on the XZ plane with small random inclinations to give a torus-like appearance.
         /// </summary>
-        /// <param name="center">Center of the belt (usually the star position)</param>
+        /// <param name="center">Center of the belt (fallback). If the parent has a position, that will be used instead.</param>
         /// <param name="parent">Parent entity (usually the star entity)</param>
         /// <param name="count">Total asteroids to spawn</param>
         /// <param name="innerRadius">Inner radius of belt</param>
@@ -2570,7 +2592,7 @@ internal static class Program
         /// <param name="inclinationDegrees">Max inclination in degrees applied as small tilt from XZ plane</param>
         /// <param name="seed">Random seed</param>
         /// <param name="addStaticCollider">If true, adds static colliders for picking</param>
-        private void SpawnAsteroidBelt(Vector3 center, Entity parent, int count = 1000, float innerRadius = 200f, float outerRadius = 400f, float minSize = 0.2f, float maxSize = 1.5f, float inclinationDegrees = 2.0f, int seed = 424242, bool addStaticCollider = false)
+        private void SpawnAsteroidBelt(Vector3 center, Entity parent, int count = 50, float innerRadius = 200f, float outerRadius = 400f, float minSize = 0.2f, float maxSize = 1.5f, float inclinationDegrees = 2.0f, int seed = 424242, bool addStaticCollider = false)
         {
             if (count <= 0) return;
             if (innerRadius < 0f) innerRadius = 0f;
@@ -2583,6 +2605,19 @@ internal static class Program
 
             // convert inclination to radians
             float inclRad = MathF.Abs(inclinationDegrees) * (MathF.PI / 180f);
+
+            // Determine the belt center from the parent's current position if available; otherwise use provided center
+            Vector3 centerPos = center;
+            if (parent.Has<RenderPosition3D>())
+            {
+                var rp = parent.GetCopy<RenderPosition3D>().Value;
+                centerPos = new Vector3((float)rp.X, (float)rp.Y, (float)rp.Z);
+            }
+            else if (parent.Has<Position3D>())
+            {
+                var pp = parent.GetCopy<Position3D>().Value;
+                centerPos = new Vector3((float)pp.X, (float)pp.Y, (float)pp.Z);
+            }
 
             for (int i = 0; i < count; i++)
             {
@@ -2597,11 +2632,11 @@ internal static class Program
                 float node = (float)(rng.NextDouble() * Math.PI * 2.0);
 
                 // base position in XZ
-                float x = center.X + (MathF.Cos(angle) * r);
-                float z = center.Z + (MathF.Sin(angle) * r);
+                float x = centerPos.X + (MathF.Cos(angle) * r);
+                float z = centerPos.Z + (MathF.Sin(angle) * r);
                 // apply inclination by rotating point about node axis roughly (approx)
                 // We'll compute small Y displacement using sin(tilt) * r * sin(some offset)
-                float y = center.Y + (MathF.Sin(tilt) * r * MathF.Sin(angle - node));
+                float y = centerPos.Y + (MathF.Sin(tilt) * r * MathF.Sin(angle - node));
 
                 var pos = new Vector3(x, y, z);
 
@@ -3111,8 +3146,9 @@ internal static class Program
                 // Render all our ImGui windows (extracted helpers)
                 RenderImguiWindows();
 
+                // TODO: Work on the UI system
                 // Draw our custom ECS UI via ImGui foreground list (debug renderer)
-                try { _uiDrawSystem?.Update(World, 0f); } catch { }
+                // try { _uiDrawSystem?.Update(World, 0f); } catch { }
 
                 // Draw selection rectangle overlay on top of any windows
                 RenderSelectionRectangleImGui();
