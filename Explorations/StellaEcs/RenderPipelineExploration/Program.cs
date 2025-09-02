@@ -116,13 +116,15 @@ internal static class Program
                                                   // Minimum on-screen radius for selection indicators so tiny objects remain visible
         private float _minSelectionPixelSize = 6.0f;
         // Selection indicator customization
-        private enum SelectionIndicatorShape { Circle = 0, Ring = 1, Square = 2, Crosshair = 3 }
+        private enum SelectionIndicatorShape { Circle = 0, Ring = 1, Square = 2, Crosshair = 3, Homeworld = 4 }
         private SelectionIndicatorShape _indicatorShape = SelectionIndicatorShape.Circle;
         private Vector4 _indicatorBorderColor = new Vector4(0.1f, 0.9f, 0.9f, 0.95f);
         private Vector4 _indicatorFillColor = new Vector4(0.1f, 0.9f, 0.9f, 0.20f);
         private bool _indicatorUseFill = true;
         private float _indicatorThickness = 2.0f;
         private float _crosshairLengthScale = 1.0f; // Crosshair arm length as a multiple of radius
+        private float _hwCornerLengthScale = 0.4f; // Homeworld corner length (x radius)
+        private float _hwInsetScale = 1.0f; // Homeworld bracket inset/outset (x radius)
 
         // Interpolation toggle
         private bool _interpolationEnabled = true;
@@ -522,14 +524,14 @@ internal static class Program
                 ImGui.SliderFloat("Min Indicator Radius (px)", ref _minSelectionPixelSize, 0.0f, 32.0f);
                 // Indicator customization controls
                 int shapeIdx = (int)_indicatorShape;
-                string[] shapes = new[] { "Circle", "Ring", "Square", "Crosshair" };
+                string[] shapes = new[] { "Circle", "Ring", "Square", "Crosshair", "Homeworld" };
                 if (ImGui.Combo("Indicator Shape", ref shapeIdx, shapes, shapes.Length))
                 {
                     _indicatorShape = (SelectionIndicatorShape)shapeIdx;
                 }
                 ImGui.ColorEdit4("Border Color", ref _indicatorBorderColor);
                 ImGui.Checkbox("Use Fill", ref _indicatorUseFill);
-                if (_indicatorUseFill && _indicatorShape != SelectionIndicatorShape.Ring && _indicatorShape != SelectionIndicatorShape.Crosshair)
+                if (_indicatorUseFill && _indicatorShape != SelectionIndicatorShape.Ring && _indicatorShape != SelectionIndicatorShape.Crosshair && _indicatorShape != SelectionIndicatorShape.Homeworld)
                 {
                     ImGui.ColorEdit4("Fill Color", ref _indicatorFillColor);
                 }
@@ -537,6 +539,11 @@ internal static class Program
                 if (_indicatorShape == SelectionIndicatorShape.Crosshair)
                 {
                     ImGui.SliderFloat("Crosshair Length (x radius)", ref _crosshairLengthScale, 0.25f, 2.0f);
+                }
+                if (_indicatorShape == SelectionIndicatorShape.Homeworld)
+                {
+                    ImGui.SliderFloat("HW Corner Length (x radius)", ref _hwCornerLengthScale, 0.15f, 0.8f);
+                    ImGui.SliderFloat("HW Inset (x radius)", ref _hwInsetScale, 0.7f, 1.3f);
                 }
                 if (sel.Count == 0)
                 {
@@ -738,6 +745,30 @@ internal static class Program
                                 drawList.AddLine(new Vector2(center.X - len, center.Y), new Vector2(center.X + len, center.Y), borderCol, t);
                                 // Vertical
                                 drawList.AddLine(new Vector2(center.X, center.Y - len), new Vector2(center.X, center.Y + len), borderCol, t);
+                            }
+                            break;
+                        case SelectionIndicatorShape.Homeworld:
+                            {
+                                float r = pixelRadius * MathF.Max(0.1f, _hwInsetScale);
+                                float len = MathF.Max(1.0f, r * MathF.Max(0.1f, _hwCornerLengthScale));
+                                float t = MathF.Max(1.0f, _indicatorThickness);
+                                float left = center.X - r;
+                                float right = center.X + r;
+                                float top = center.Y - r;
+                                float bottom = center.Y + r;
+
+                                // Top-left corner
+                                drawList.AddLine(new Vector2(left, top), new Vector2(left + len, top), borderCol, t);
+                                drawList.AddLine(new Vector2(left, top), new Vector2(left, top + len), borderCol, t);
+                                // Top-right corner
+                                drawList.AddLine(new Vector2(right, top), new Vector2(right - len, top), borderCol, t);
+                                drawList.AddLine(new Vector2(right, top), new Vector2(right, top + len), borderCol, t);
+                                // Bottom-left corner
+                                drawList.AddLine(new Vector2(left, bottom), new Vector2(left + len, bottom), borderCol, t);
+                                drawList.AddLine(new Vector2(left, bottom), new Vector2(left, bottom - len), borderCol, t);
+                                // Bottom-right corner
+                                drawList.AddLine(new Vector2(right, bottom), new Vector2(right - len, bottom), borderCol, t);
+                                drawList.AddLine(new Vector2(right, bottom), new Vector2(right, bottom - len), borderCol, t);
                             }
                             break;
                     }
