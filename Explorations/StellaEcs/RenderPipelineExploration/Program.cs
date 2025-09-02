@@ -254,7 +254,7 @@ internal static class Program
             }
         }
 
-        protected override unsafe void OnSdlEvent(SDL.SDL_Event evt)
+        protected override unsafe void OnSdlEvent(SDL_Event evt)
         {
             // Only forward to ImGui when our program has enabled it.
             if (_imguiEnabled)
@@ -1128,7 +1128,7 @@ internal static class Program
             ImGui.Separator();
 
             // Left: list of entities
-            ImGui.BeginChild(ImGui.GetID("entity_list"), new System.Numerics.Vector2(320, 400), ImGuiChildFlags.None);
+            ImGui.BeginChild(ImGui.GetID("entity_list"), new Vector2(320, 400), ImGuiChildFlags.None);
             foreach (var e in World.GetAllEntities())
             {
                 string label = $"E{e.Id} (Gen {e.Generation})";
@@ -1405,10 +1405,10 @@ internal static class Program
             _uiEvents = new UIEventBus();
             _uiEvents.OnButtonClicked += e => Console.WriteLine($"[UI] Button clicked {e.Entity.Id} cmd='{e.Command}'");
 
-            _uiLayoutSystem = new UILayoutSystem(() => new System.Numerics.Vector2((float)MainWindow.Width, (float)MainWindow.Height));
+            _uiLayoutSystem = new UILayoutSystem(() => new Vector2((float)MainWindow.Width, (float)MainWindow.Height));
             _uiDrawSystem = new UIDrawSystem(_uiRenderer);
             _uiInputSystem = new UIInputSystem(
-                getMouse: () => new System.Numerics.Vector2(Inputs.Mouse.X, Inputs.Mouse.Y),
+                getMouse: () => new Vector2(Inputs.Mouse.X, Inputs.Mouse.Y),
                 getMousePressed: () => _inputManager.WasLeftMousePressed(),
                 getMouseReleased: () => _inputManager.WasLeftMouseReleased(),
                 events: _uiEvents
@@ -1416,47 +1416,47 @@ internal static class Program
 
             // Create a simple UI: root panel at top-left with a label and a button
             var ui = new UIBuilder(World);
-            ui.Panel(out var panel,
-                rect: new RectTransform
-                {
-                    AnchorMin = new System.Numerics.Vector2(0, 0),
-                    AnchorMax = new System.Numerics.Vector2(0, 0),
-                    OffsetMin = new System.Numerics.Vector2(20, 20),
-                    OffsetMax = new System.Numerics.Vector2(320, 180),
-                    Pivot = new System.Numerics.Vector2(0, 0)
-                },
-                style: new UIStyle
-                {
-                    BackgroundColor = new System.Numerics.Vector4(0.08f, 0.10f, 0.14f, 0.92f),
-                    BorderColor = new System.Numerics.Vector4(0.06f, 0.65f, 0.85f, 1f),
-                    BorderThickness = 2f,
-                    CornerRadius = 8f
-                },
-                z: 100,
+            _ = ui.Panel(out var panel,
                 children: b =>
                 {
                     b.Label("Custom ECS UI Panel", out _,
                         rect: new RectTransform
                         {
-                            AnchorMin = new System.Numerics.Vector2(0, 0),
-                            AnchorMax = new System.Numerics.Vector2(0, 0),
-                            OffsetMin = new System.Numerics.Vector2(12, 8),
-                            OffsetMax = new System.Numerics.Vector2(280, 32),
-                            Pivot = new System.Numerics.Vector2(0, 0)
+                            AnchorMin = new Vector2(0, 0),
+                            AnchorMax = new Vector2(0, 0),
+                            OffsetMin = new Vector2(12, 8),
+                            OffsetMax = new Vector2(280, 32),
+                            Pivot = new Vector2(0, 0)
                         },
-                        color: new System.Numerics.Vector4(0.9f, 0.95f, 1f, 1f), fontSize: 18f, z: 101);
+                        color: new Vector4(0.9f, 0.95f, 1f, 1f), fontSize: 18f, z: 101);
 
                     b.Button("Click Me", out var button, command: "demo.click",
                         rect: new RectTransform
                         {
-                            AnchorMin = new System.Numerics.Vector2(0, 0),
-                            AnchorMax = new System.Numerics.Vector2(0, 0),
-                            OffsetMin = new System.Numerics.Vector2(12, 48),
-                            OffsetMax = new System.Numerics.Vector2(200, 84),
-                            Pivot = new System.Numerics.Vector2(0, 0)
+                            AnchorMin = new Vector2(0, 0),
+                            AnchorMax = new Vector2(0, 0),
+                            OffsetMin = new Vector2(12, 48),
+                            OffsetMax = new Vector2(200, 84),
+                            Pivot = new Vector2(0, 0)
                         }, z: 101);
                 }
-            );
+,
+                rect: new RectTransform
+                {
+                    AnchorMin = new Vector2(0, 0),
+                    AnchorMax = new Vector2(0, 0),
+                    OffsetMin = new Vector2(20, 20),
+                    OffsetMax = new Vector2(320, 180),
+                    Pivot = new Vector2(0, 0)
+                },
+                style: new UIStyle
+                {
+                    BackgroundColor = new Vector4(0.08f, 0.10f, 0.14f, 0.92f),
+                    BorderColor = new Vector4(0.06f, 0.65f, 0.85f, 1f),
+                    BorderThickness = 2f,
+                    CornerRadius = 8f
+                },
+                z: 100);
 
             // Culling toggles and adjustments
             _inputManager.RegisterKeyPressed(KeyCode.C, () =>
@@ -2652,13 +2652,13 @@ internal static class Program
         /// radius <paramref name="maxRadius"/>. Ensures each spawned galaxy center is at least
         /// <paramref name="minSeparation"/> units from any other. Returns a list of the created star (sun) entities.
         /// </summary>
-        private System.Collections.Generic.List<Entity> SpawnGalaxies(int count, float minSeparation = 50000f, float maxRadius = 200000f, float auScale = 80.0f, int seed = 12345)
+        private List<Entity> SpawnGalaxies(int count, float minSeparation = 50000f, float maxRadius = 200000f, float auScale = 80.0f, int seed = 12345)
         {
-            var result = new System.Collections.Generic.List<Entity>();
+            var result = new List<Entity>();
             if (count <= 0) return result;
 
             var rng = new Random(seed);
-            var centers = new System.Collections.Generic.List<Vector3>();
+            var centers = new List<Vector3>();
             float minSepSq = minSeparation * minSeparation;
             const int maxAttemptsPerGalaxy = 1000;
 
@@ -3154,7 +3154,7 @@ internal static class Program
 
             // We'll bind global uniforms (like lights) lazily per-pipeline only if the active shader needs them.
             // Track which pipelines have received their global bindings for this frame.
-            var globalsBoundForPipeline = new System.Collections.Generic.HashSet<GraphicsPipeline>();
+            var globalsBoundForPipeline = new HashSet<GraphicsPipeline>();
 
             foreach (var entity in World.Query(typeof(GpuMesh)))
             {
@@ -3263,7 +3263,7 @@ internal static class Program
 
                 // Determine active pipeline and optional binding plan from the shader component.
                 GraphicsPipeline activePipeline = _pipeline!;
-                AyanamisTower.StellaEcs.StellaInvicta.Components.Shader.BindingPlan? plan = null;
+                Components.Shader.BindingPlan? plan = null;
                 if (entity.Has<Components.Shader>())
                 {
                     var s = entity.GetMut<Components.Shader>();
@@ -3441,9 +3441,9 @@ internal static class Program
                 // Push per-entity material into fragment slot 4 (MaterialProperties cbuffer b4, space3)
                 // Use the entity's Material component if present, otherwise fall back to a predefined default.
                 MaterialPropertiesUniform matUniform;
-                if (entity.Has<Components.Material>())
+                if (entity.Has<Material>())
                 {
-                    var matComp = entity.GetMut<Components.Material>();
+                    var matComp = entity.GetMut<Material>();
                     matUniform = new MaterialPropertiesUniform { material = matComp };
                 }
                 else
@@ -3770,7 +3770,7 @@ internal static class Program
             if (_camera != null)
             {
                 var camPosDouble = _camera.Position;
-                var posDouble = new AyanamisTower.StellaEcs.HighPrecisionMath.Vector3Double(position.X, position.Y, position.Z);
+                var posDouble = new Vector3Double(position.X, position.Y, position.Z);
                 if (Vector3Double.DistanceSquared(posDouble, camPosDouble) > (_maxDebugLineDistance * _maxDebugLineDistance))
                 {
                     return;
@@ -3970,7 +3970,7 @@ internal static class Program
                 return ((dx * dx) + (dy * dy)) <= (r * r);
             }
 
-            var selected = new System.Collections.Generic.List<Entity>();
+            var selected = new List<Entity>();
 
             foreach (var e in World.GetAllEntities())
             {
