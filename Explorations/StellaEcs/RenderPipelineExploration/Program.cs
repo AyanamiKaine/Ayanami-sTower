@@ -133,13 +133,15 @@ internal static class Program
 
         // Tiny-object impostors (drawn as small 2D icons when projected size is too small)
         private bool _impostorsEnabled = true;
-        private float _impostorShowBelowPx = 6.0f; // if object's projected radius is below this, show an impostor
+    private float _impostorShowBelowPx = 6.0f; // if object's projected radius is below this, show an impostor
         private float _impostorMinPixelRadius = 1.5f; // min icon radius (px) when object is extremely tiny on screen
         private float _impostorMaxPixelRadius = 8.0f; // max icon radius (px) when object is just below the threshold
         private Vector4 _impostorColor = new Vector4(0.85f, 0.85f, 0.9f, 0.9f);
         private float _impostorBorderThickness = 1.5f;
         private enum ImpostorShape { Circle = 0, Square = 1 }
         private ImpostorShape _impostorShape = ImpostorShape.Circle;
+    // Impostor distance: do not draw impostors beyond this camera distance. 0 = unlimited.
+    private float _impostorMaxDistance = 0f;
 
         // Interpolation toggle
         private bool _interpolationEnabled = true;
@@ -615,6 +617,7 @@ internal static class Program
                 {
                     _impostorMaxPixelRadius = _impostorMinPixelRadius;
                 }
+                ImGui.SliderFloat("Max Distance (world units, 0=unlimited)", ref _impostorMaxDistance, 0.0f, 1_000_000.0f);
                 int ishape = (int)_impostorShape;
                 string[] opts = new[] { "Circle", "Square" };
                 if (ImGui.Combo("Impostor Shape", ref ishape, opts, opts.Length))
@@ -937,12 +940,50 @@ internal static class Program
             if (tanHalfFov <= 1e-6f) return;
 
             var draw = ImGui.GetForegroundDrawList();
-            uint col = ImGui.ColorConvertFloat4ToU32(_impostorColor);
 
             foreach (var e in World.GetAllEntities())
             {
                 // Only for entities explicitly marked as Selectable
                 if (!e.Has<Selectable>()) { continue; }
+
+                // Start with global settings, then apply per-entity overrides if present
+                bool enabledLocal = true; // will AND with global shortly
+                float showBelowLocal = _impostorShowBelowPx;
+                float minLocal = _impostorMinPixelRadius;
+                float maxLocal = _impostorMaxPixelRadius;
+                float borderLocal = _impostorBorderThickness;
+                var colorLocal = _impostorColor;
+                var shapeLocal = _impostorShape;
+                float maxDistanceLocal = _impostorMaxDistance; // 0 = unlimited
+
+                if (e.Has<Impostor>())
+                {
+                    var imp = e.GetCopy<Impostor>();
+                    enabledLocal = imp.Enabled || imp.Enabled == default; // default(bool)=false, treat default as not explicitly disabling
+                    if (imp.OverrideShowBelow) showBelowLocal = imp.ShowBelowPx;
+                    if (imp.OverrideMinMax)
+                    {
+                        minLocal = imp.MinPixelRadius;
+                        maxLocal = imp.MaxPixelRadius;
+                        if (maxLocal < minLocal) maxLocal = minLocal;
+                    }
+                    if (imp.OverrideBorder) borderLocal = imp.BorderThickness;
+                    if (imp.OverrideColor) colorLocal = imp.Color;
+                    if (imp.OverrideShape)
+                    {
+                        int si = imp.ShapeIndex;
+                        if (si < 0) si = 0; if (si > 1) si = 1; // clamp to known shapes
+                        shapeLocal = (ImpostorShape)si;
+                    }
+                    if (imp.OverrideMaxDistance)
+                    {
+                        maxDistanceLocal = imp.MaxDistance;
+                        if (maxDistanceLocal < 0f) maxDistanceLocal = 0f;
+                    }
+                }
+
+                // Respect enabled flags (both global and per-entity)
+                if (!enabledLocal) { continue; }
 
                 // Find a world position (prefer render position when available)
                 var posD = GetEntityWorldPosition(e);
@@ -959,6 +1000,10 @@ internal static class Program
 
                 // Build camera-relative position consistent with selection indicators
                 var renderPos = _useCameraRelativeRendering ? (pos - camPos) : pos;
+
+                // Distance from camera in world units for distance-based suppression
+                float camDistance = (_useCameraRelativeRendering ? renderPos.Length() : (pos - camPos).Length());
+                if (maxDistanceLocal > 0f && camDistance > maxDistanceLocal) { continue; }
 
                 // Project to clip space
                 var clip = Vector4.Transform(new Vector4(renderPos, 1f), viewProj);
@@ -977,34 +1022,36 @@ internal static class Program
                 // Projected pixel radius using Euclidean distance like selection indicators
                 float dist = MathF.Max(1e-4f, renderPos.Length());
                 float pixelRadius = (worldRadius / (dist * MathF.Max(1e-4f, tanHalfFov))) * (0.5f * screenH);
-                if (pixelRadius >= _impostorShowBelowPx) { continue; }
+                if (pixelRadius >= showBelowLocal) { continue; }
 
                 // Scale icon radius by how close the projected size is to the show threshold.
                 // pixelRadius in [0, _impostorShowBelowPx) maps to r in [min, max].
                 float t = 0f;
-                if (_impostorShowBelowPx > 1e-6f)
+                if (showBelowLocal > 1e-6f)
                 {
-                    t = pixelRadius / _impostorShowBelowPx;
+                    t = pixelRadius / showBelowLocal;
                     if (t < 0f) t = 0f;
                     if (t > 0.999f) t = 0.999f;
                 }
-                float r = MathF.Max(0.1f, _impostorMinPixelRadius + (_impostorMaxPixelRadius - _impostorMinPixelRadius) * t);
-                switch (_impostorShape)
+                float r = MathF.Max(0.1f, minLocal + (maxLocal - minLocal) * t);
+
+                uint col = ImGui.ColorConvertFloat4ToU32(colorLocal);
+                switch (shapeLocal)
                 {
                     case ImpostorShape.Circle:
-                        if (_impostorBorderThickness > 0.01f)
+                        if (borderLocal > 0.01f)
                         {
-                            draw.AddCircle(screenPos, r, col, 16, _impostorBorderThickness);
+                            draw.AddCircle(screenPos, r, col, 16, borderLocal);
                         }
-                        draw.AddCircleFilled(screenPos, MathF.Max(0, r - _impostorBorderThickness * 0.5f), col);
+                        draw.AddCircleFilled(screenPos, MathF.Max(0, r - borderLocal * 0.5f), col);
                         break;
                     case ImpostorShape.Square:
                         Vector2 d = new Vector2(r, r);
-                        if (_impostorBorderThickness > 0.01f)
+                        if (borderLocal > 0.01f)
                         {
-                            draw.AddRect(screenPos - d, screenPos + d, col, 0f, ImDrawFlags.None, _impostorBorderThickness);
+                            draw.AddRect(screenPos - d, screenPos + d, col, 0f, ImDrawFlags.None, borderLocal);
                         }
-                        draw.AddRectFilled(screenPos - d + new Vector2(_impostorBorderThickness * 0.5f), screenPos + d - new Vector2(_impostorBorderThickness * 0.5f), col);
+                        draw.AddRectFilled(screenPos - d + new Vector2(borderLocal * 0.5f), screenPos + d - new Vector2(borderLocal * 0.5f), col);
                         break;
                 }
             }
@@ -1628,6 +1675,11 @@ internal static class Program
 
             // --- CELESTIAL BODY CREATION ---
             var sun = World.CreateEntity()
+                .Set(new Impostor()
+                {
+                    OverrideColor = true,
+                    Color = new (1f, 0.25f, 0.2f, 0.9f),
+                })
                 .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
