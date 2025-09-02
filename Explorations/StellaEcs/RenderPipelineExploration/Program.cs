@@ -117,7 +117,7 @@ internal static class Program
         private float _minSelectionPixelSize = 6.0f;
         // Selection indicator customization
         private enum SelectionIndicatorShape { Circle = 0, Ring = 1, Square = 2, Crosshair = 3, Homeworld = 4 }
-        private SelectionIndicatorShape _indicatorShape = SelectionIndicatorShape.Circle;
+        private SelectionIndicatorShape _indicatorShape = SelectionIndicatorShape.Homeworld;
         private Vector4 _indicatorBorderColor = new Vector4(0.1f, 0.9f, 0.9f, 0.95f);
         private Vector4 _indicatorFillColor = new Vector4(0.1f, 0.9f, 0.9f, 0.20f);
         private bool _indicatorUseFill = true;
