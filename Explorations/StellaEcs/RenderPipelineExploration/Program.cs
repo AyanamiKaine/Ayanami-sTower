@@ -131,6 +131,9 @@ internal static class Program
         private float _indicatorAnimInsetAmp = 0.08f; // +/- fraction of radius for inset pulsation
         private float _indicatorAnimCornerAmp = 0.15f; // +/- fraction for corner length pulsation
 
+        // Selection rules: prevent selecting entities beyond this distance unless overridden per-entity. 0 = unlimited.
+        private float _selectionMaxDistance = 0f;
+
         // Tiny-object impostors (drawn as small 2D icons when projected size is too small)
         private bool _impostorsEnabled = true;
         private float _impostorShowBelowPx = 6.0f; // if object's projected radius is below this, show an impostor
@@ -191,11 +194,53 @@ internal static class Program
                 GraphicsDevice.SupportedDepthStencilFormat
             );
 
-            // Only allow selecting entities explicitly tagged as Selectable
-            _selectionInteraction.SelectionFilter = e => e != default && e.Has<Selectable>();
+            // Only allow selecting entities explicitly tagged as Selectable and within distance rules
+            _selectionInteraction.SelectionFilter = e =>
+            {
+                if (e == default) return false;
+                if (!e.Has<Selectable>()) return false;
+                return IsSelectableByDistance(e);
+            };
 
             InitializeScene();
             EnableImgui();
+        }
+
+        /// <summary>
+        /// Returns true if the entity is within the allowed selection distance, considering
+        /// the global Max Selection Distance and the entity's SelectionRules override.
+        /// 0 (global or per-entity) means unlimited.
+        /// </summary>
+        private bool IsSelectableByDistance(Entity e)
+        {
+            try
+            {
+                // Effective max: per-entity override or global
+                float effectiveMax = _selectionMaxDistance;
+                if (e.Has<SelectionRules>())
+                {
+                    var rules = e.GetCopy<SelectionRules>();
+                    if (rules.OverrideMaxDistance)
+                    {
+                        effectiveMax = Math.Max(0f, rules.MaxSelectionDistance);
+                    }
+                }
+                if (effectiveMax <= 0f) return true; // unlimited
+
+                var pos = GetEntityWorldPosition(e);
+                // If no position info, allow selection to avoid false negatives
+                // (you can tighten this if all selectable entities must have a position)
+                if (pos.Equals(Vector3Double.Zero)) return true;
+
+                // Compute camera distance in world units
+                // Note: works regardless of camera-relative rendering choice
+                double dist = (pos - _camera.Position).Length();
+                return dist <= effectiveMax;
+            }
+            catch
+            {
+                return true;
+            }
         }
 
         protected override unsafe void OnSdlEvent(SDL.SDL_Event evt)
@@ -542,6 +587,7 @@ internal static class Program
                 var sel = _selectionInteraction.CurrentSelection;
                 ImGui.Text($"Selected Count: {sel.Count}");
                 ImGui.SliderFloat("Min Indicator Radius (px)", ref _minSelectionPixelSize, 0.0f, 32.0f);
+                ImGui.SliderFloat("Max Selection Distance (0=unlimited)", ref _selectionMaxDistance, 0.0f, 1_000_000.0f);
                 // Indicator customization controls
                 int shapeIdx = (int)_indicatorShape;
                 string[] shapes = new[] { "Circle", "Ring", "Square", "Crosshair", "Homeworld" };
@@ -1730,6 +1776,11 @@ internal static class Program
                     MaxDistance = 5000f,
                     OverrideMaxDistance = true,
                 })
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Selectable())
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
@@ -1744,11 +1795,16 @@ internal static class Program
                 .Set(new Components.Shader(this, "Light", true));
 
             World.CreateEntity()
-                            .Set(new Impostor()
-                            {
-                                MaxDistance = 5000f,
-                                OverrideMaxDistance = true,
-                            })
+                .Set(new Impostor()
+                {
+                    MaxDistance = 5000f,
+                    OverrideMaxDistance = true,
+                })
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Selectable())
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
                 .Set(Mesh.CreateBox3D())
@@ -1771,6 +1827,11 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -1788,6 +1849,11 @@ internal static class Program
                     MaxDistance = 5000f,
                     OverrideMaxDistance = true,
                 })
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Selectable())
                 .Set(new Position3D(origin.X, origin.Y, origin.Z + 20))
                 .Set(Mesh.CreateBox3D())
@@ -1795,6 +1861,11 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -1815,6 +1886,11 @@ internal static class Program
             });
 
             var asteroidA = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -1834,6 +1910,11 @@ internal static class Program
                 .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Moon.jpg", sRGB: true) ?? _checkerTexture! });
 
             var asteroidBDifferentPhysicsLayer = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -1909,6 +1990,11 @@ internal static class Program
 
             // Mercury: 0.39 AU from the Sun.
             var mercury = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -1930,6 +2016,11 @@ internal static class Program
 
             // Venus: 0.72 AU from the Sun.
             var venus = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -1951,6 +2042,11 @@ internal static class Program
 
             // Earth: 1.0 AU from the Sun (our baseline).
             var earth = World.CreateEntity()
+                .Set(new SelectionRules
+                        {
+                            OverrideMaxDistance = true,
+                            MaxSelectionDistance = 5000f,
+                        })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -1976,6 +2072,11 @@ internal static class Program
             var moonWorldPos = earthPos + moonLocalOffset;
 
             var moonEntity = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -1999,6 +2100,11 @@ internal static class Program
             var spaceStationWorldPos = earthPos + spaceStationLocalOffset;
 
             World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -2025,6 +2131,11 @@ internal static class Program
 
             // Mars: 1.52 AU from the Sun.
             var mars = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -2046,6 +2157,11 @@ internal static class Program
 
             // Jupiter: 5.20 AU from the Sun.
             var jupiter = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -2067,6 +2183,11 @@ internal static class Program
 
             // Saturn: 9.58 AU from the Sun.
             var saturn = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -2088,6 +2209,11 @@ internal static class Program
 
             // Uranus: 19.22 AU from the Sun.
             var uranus = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -2109,6 +2235,11 @@ internal static class Program
 
             // Neptune: 30.05 AU from the Sun. (Added for completeness)
             var neptune = World.CreateEntity()
+                        .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                 .Set(new Impostor()
                 {
                     MaxDistance = 5000f,
@@ -2130,6 +2261,11 @@ internal static class Program
 
             // Pluto: 39.48 AU from the Sun (average).
             var pluto = World.CreateEntity()
+                .Set(new SelectionRules
+                {
+                    OverrideMaxDistance = true,
+                    MaxSelectionDistance = 5000f,
+                })
                         .Set(new Impostor()
                         {
                             MaxDistance = 5000f,
@@ -2436,6 +2572,11 @@ internal static class Program
                         OverrideMaxDistance = true,
                     }
                     )
+                                    .Set(new SelectionRules
+                                    {
+                                        OverrideMaxDistance = true,
+                                        MaxSelectionDistance = 1000f,
+                                    })
                     .Set(new Selectable())
                     .Set(new CelestialBody())
                     .Set(asteroidMesh)
