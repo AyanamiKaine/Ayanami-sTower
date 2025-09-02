@@ -482,6 +482,8 @@ public partial class Shader
         public bool NeedsMaterial;
         /// <summary>Bind per-draw vertex uniforms (MVP/model etc.) if true.</summary>
         public bool NeedsVertexUniforms;
+        /// <summary>Bind custom fragment uniforms for this shader (e.g., Sun PSParams) if true.</summary>
+        public bool NeedsCustomPSParams;
 
         // Slot maps (string keys allow flexibility across different shader packings)
         private readonly Dictionary<string, int> fragmentSlots = new();
@@ -561,6 +563,22 @@ public partial class Shader
                     NeedsVertexUniforms = true
                 };
                 p.SetVertexSlot("VertexUniforms", 0);
+                return p;
+            }
+        }
+
+        /// <summary>
+        /// Preset plan for the Sun shader: unlit with a custom PSParams cbuffer at fragment slot 4 (reuses material slot).
+        /// </summary>
+        public static BindingPlan UnlitEmissiveSun
+        {
+            get
+            {
+                var p = UnlitEmissive;
+                p.NeedsCustomPSParams = true;
+                // Do not bind Material for sun, we reuse that slot for PSParams in HLSL
+                p.NeedsMaterial = false;
+                p.SetFragmentSlot("PSParams", 0);
                 return p;
             }
         }

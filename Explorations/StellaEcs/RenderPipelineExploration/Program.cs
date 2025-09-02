@@ -131,6 +131,8 @@ internal static class Program
         private DateTime _lastDrawTime = DateTime.UtcNow;
         // Currently selected entity in the ImGui entities window
         private Entity _selectedEntity = default;
+        // Accumulated time for animated shaders (e.g., Sun)
+        private float _shaderTime = 0f;
         public StellaInvictaGame() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
@@ -996,7 +998,7 @@ internal static class Program
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-            SpawnGalaxies(10);
+            //SpawnGalaxies(10);
 
             // Example usage:
             // SetSkybox("AssetManager.AssetFolderName + "/skybox.jpg", 50f);
@@ -1128,7 +1130,7 @@ internal static class Program
                                                             // Put sun on a different collision layer than asteroids so they won't collide.
                 .Set(new CollisionShape(new Sphere(10.0f * 0.5f)))
                 .Set(PredefinedMaterials.Silver)
-                .Set(new Components.Shader(this, "Sun", true))
+                .Set(new Components.Shader(this, "Sun", true) { Plan = Components.Shader.BindingPlan.UnlitEmissiveSun })
                 .Set(new PointLight(Color.LightYellow, 0.01f, 3250f, 1.0f, 0.0014f, 0.000007f))
                 /*
                 Category = what the object is. Here the entity is a Sun (its category bit = Sun).
@@ -1916,6 +1918,7 @@ internal static class Program
             }
             _fpsFrames++;
             _fpsTimer += (float)dt;
+            _shaderTime += (float)dt;
             if (_fpsTimer >= 0.5f)
             {
                 var avgFps = _fpsFrames / Math.Max(_fpsTimer, 1e-6f);
@@ -2277,6 +2280,11 @@ internal static class Program
                     var s = entity.GetMut<Components.Shader>();
                     if (s.Pipeline != null) { activePipeline = s.Pipeline; }
                     plan = s.Plan; // may be null if not configured; we'll fallback below
+                    if (plan == null && (s.Name?.IndexOf("sun", StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        plan = Components.Shader.BindingPlan.UnlitEmissiveSun;
+                        s.Plan = plan;
+                    }
                 }
                 // Fallback plan assumes legacy behavior (needs lights, material, vertex uniforms, diffuse+specular)
                 plan ??= AyanamisTower.StellaEcs.StellaInvicta.Components.Shader.BindingPlan.LegacyDefault;
@@ -2456,6 +2464,16 @@ internal static class Program
                 if (plan.NeedsMaterial)
                 {
                     cmdbuf.PushFragmentUniformData(in matUniform, slot: (uint)plan.FragmentSlotOrDefault("Material", 4));
+                }
+
+                // Custom PS params for unlit shaders like the Sun
+                if (plan.NeedsCustomPSParams)
+                {
+                    {
+
+                        //cmdbuf.PushFragmentUniformData(in sun, slot: (uint)plan.FragmentSlotOrDefault("PSParams", 0));
+
+                    }
                 }
 
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
