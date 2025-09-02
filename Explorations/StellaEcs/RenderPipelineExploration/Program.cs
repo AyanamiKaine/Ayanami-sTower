@@ -131,6 +131,15 @@ internal static class Program
         private float _indicatorAnimInsetAmp = 0.08f; // +/- fraction of radius for inset pulsation
         private float _indicatorAnimCornerAmp = 0.15f; // +/- fraction for corner length pulsation
 
+        // Tiny-object impostors (drawn as small 2D icons when projected size is too small)
+        private bool _impostorsEnabled = true;
+        private float _impostorShowBelowPx = 6.0f; // if object's projected radius is below this, show an impostor
+        private float _impostorPixelRadius = 2.5f; // radius of the impostor icon in pixels
+        private Vector4 _impostorColor = new Vector4(0.85f, 0.85f, 0.9f, 0.9f);
+        private float _impostorBorderThickness = 1.5f;
+        private enum ImpostorShape { Circle = 0, Square = 1 }
+        private ImpostorShape _impostorShape = ImpostorShape.Circle;
+
         // Interpolation toggle
         private bool _interpolationEnabled = true;
 
@@ -593,6 +602,23 @@ internal static class Program
                     ImGui.EndChild();
                 }
             }
+
+            // Tiny-object impostors controls
+            if (ImGui.CollapsingHeader("Tiny Object Impostors"))
+            {
+                ImGui.Checkbox("Enable Impostors", ref _impostorsEnabled);
+                ImGui.SliderFloat("Show Below Radius (px)", ref _impostorShowBelowPx, 0.0f, 32.0f);
+                ImGui.SliderFloat("Impostor Pixel Radius", ref _impostorPixelRadius, 0.5f, 12.0f);
+                int ishape = (int)_impostorShape;
+                string[] opts = new[] { "Circle", "Square" };
+                if (ImGui.Combo("Impostor Shape", ref ishape, opts, opts.Length))
+                {
+                    _impostorShape = (ImpostorShape)ishape;
+                }
+                ImGui.ColorEdit4("Impostor Color", ref _impostorColor);
+                ImGui.SliderFloat("Border Thickness", ref _impostorBorderThickness, 0.0f, 6.0f);
+                ImGui.Text("Shown for entities with Selectable tag when their projected size is tiny.");
+            }
             ImGui.End();
         }
 
@@ -603,6 +629,8 @@ internal static class Program
             RenderImguiEntitiesWindow();
             // Overlay selection indicators (drawn in foreground draw list)
             RenderSelectionIndicatorsImGui();
+            // Tiny-object impostors (2D icons for far/zoomed-out entities)
+            RenderDistantImpostorsImGui();
         }
 
         // Sync the Selected tag component on entities to match the SelectionInteractionService set
@@ -880,6 +908,89 @@ internal static class Program
                 catch
                 {
                     _cameraController.SetFocus(zoomTargetWorld, distance);
+                }
+            }
+        }
+
+        // Draw small 2D icons for Selectable entities when their projected on-screen radius is too small.
+        private void RenderDistantImpostorsImGui()
+        {
+            if (!_imguiEnabled || !_impostorsEnabled) return;
+
+            float screenW = (float)MainWindow.Width;
+            float screenH = (float)MainWindow.Height;
+            if (screenW <= 0 || screenH <= 0) return;
+
+            var view = HighPrecisionConversions.ToMatrix(_camera.GetViewMatrix());
+            var proj = HighPrecisionConversions.ToMatrix(_camera.GetProjectionMatrix());
+            if (_useCameraRelativeRendering) { view.Translation = Vector3.Zero; }
+            var viewProj = view * proj;
+
+            var camPos = HighPrecisionConversions.ToVector3(_camera.Position);
+            float tanHalfFov = MathF.Tan((float)_camera.Fov * 0.5f);
+            if (tanHalfFov <= 1e-6f) return;
+
+            var draw = ImGui.GetForegroundDrawList();
+            uint col = ImGui.ColorConvertFloat4ToU32(_impostorColor);
+
+            foreach (var e in World.GetAllEntities())
+            {
+                // Only for entities explicitly marked as Selectable
+                if (!e.Has<Selectable>()) { continue; }
+
+                // Find a world position (prefer render position when available)
+                var posD = GetEntityWorldPosition(e);
+                var pos = HighPrecisionConversions.ToVector3(posD);
+
+                // Estimate a world-space radius (prefer Size3D if present)
+                float worldRadius = 0.5f;
+                if (e.Has<Size3D>())
+                {
+                    var s = e.GetCopy<Size3D>().Value;
+                    float maxAxis = (float)Math.Max(s.X, Math.Max(s.Y, s.Z));
+                    worldRadius = Math.Max(0.01f, maxAxis * 0.5f);
+                }
+
+                // Build camera-relative position consistent with selection indicators
+                var renderPos = _useCameraRelativeRendering ? (pos - camPos) : pos;
+
+                // Project to clip space
+                var clip = Vector4.Transform(new Vector4(renderPos, 1f), viewProj);
+                if (clip.W <= 1e-6f) { continue; } // behind camera or invalid
+
+                // NDC -> screen
+                float ndcX = clip.X / clip.W;
+                float ndcY = clip.Y / clip.W;
+                float sx = ((ndcX * 0.5f) + 0.5f) * screenW;
+                float sy = (1f - ((ndcY * 0.5f) + 0.5f)) * screenH;
+
+                // Cull if far off-screen (small margin)
+                if (sx < -50 || sx > screenW + 50 || sy < -50 || sy > screenH + 50) { continue; }
+                var screenPos = new Vector2(sx, sy);
+
+                // Projected pixel radius using Euclidean distance like selection indicators
+                float dist = MathF.Max(1e-4f, renderPos.Length());
+                float pixelRadius = (worldRadius / (dist * MathF.Max(1e-4f, tanHalfFov))) * (0.5f * screenH);
+                if (pixelRadius >= _impostorShowBelowPx) { continue; }
+
+                float r = MathF.Max(0.1f, _impostorPixelRadius);
+                switch (_impostorShape)
+                {
+                    case ImpostorShape.Circle:
+                        if (_impostorBorderThickness > 0.01f)
+                        {
+                            draw.AddCircle(screenPos, r, col, 16, _impostorBorderThickness);
+                        }
+                        draw.AddCircleFilled(screenPos, MathF.Max(0, r - _impostorBorderThickness * 0.5f), col);
+                        break;
+                    case ImpostorShape.Square:
+                        Vector2 d = new Vector2(r, r);
+                        if (_impostorBorderThickness > 0.01f)
+                        {
+                            draw.AddRect(screenPos - d, screenPos + d, col, 0f, ImDrawFlags.None, _impostorBorderThickness);
+                        }
+                        draw.AddRectFilled(screenPos - d + new Vector2(_impostorBorderThickness * 0.5f), screenPos + d - new Vector2(_impostorBorderThickness * 0.5f), col);
+                        break;
                 }
             }
         }
