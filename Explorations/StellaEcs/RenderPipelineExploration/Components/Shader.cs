@@ -11,6 +11,11 @@ using StellaInvicta.Graphics;
 namespace AyanamisTower.StellaEcs.StellaInvicta.Components;
 
 
+/*
+TODO: We need to implement a way to cache compiled shaders and reuse them across entities. As well as
+the created pipelines. We should not create the same shader for each entity that uses them as well as creating a pipeline for each entity with the same shader.
+*/
+
 /// <summary>
 /// Represents a shader configuration for an entity.
 /// This component allows entities to specify which shaders to use for rendering.
