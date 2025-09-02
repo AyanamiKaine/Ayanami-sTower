@@ -122,6 +122,8 @@ internal static class Program
         private readonly MouseInteractionService _mouseInteraction = new();
         // Collision interaction service (initialized in ctor after physics manager)
         private CollisionInteractionService _collisionInteraction = null!;
+    // Selection interaction service
+    private readonly SelectionInteractionService _selectionInteraction = new();
         // Selection drag rectangle (screen-space via ImGui)
         private bool _isDragSelecting = false;
         private Vector2 _dragStartScreen;
@@ -3134,6 +3136,9 @@ internal static class Program
                     ids.Append('E'); ids.Append(selected[i].Id);
                 }
                 Console.WriteLine($"Selection rectangle hit {selected.Count} entities: {ids}");
+
+                // Fire selection callbacks
+                _selectionInteraction.NotifySelected(selected);
             }
             else
             {
