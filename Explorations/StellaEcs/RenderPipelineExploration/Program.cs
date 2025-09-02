@@ -125,6 +125,11 @@ internal static class Program
         private float _crosshairLengthScale = 1.0f; // Crosshair arm length as a multiple of radius
         private float _hwCornerLengthScale = 0.4f; // Homeworld corner length (x radius)
         private float _hwInsetScale = 1.0f; // Homeworld bracket inset/outset (x radius)
+                                            // Homeworld indicator animation
+        private bool _indicatorAnimate = false;
+        private float _indicatorAnimSpeed = 1.5f; // Hz
+        private float _indicatorAnimInsetAmp = 0.08f; // +/- fraction of radius for inset pulsation
+        private float _indicatorAnimCornerAmp = 0.15f; // +/- fraction for corner length pulsation
 
         // Interpolation toggle
         private bool _interpolationEnabled = true;
@@ -544,6 +549,13 @@ internal static class Program
                 {
                     ImGui.SliderFloat("HW Corner Length (x radius)", ref _hwCornerLengthScale, 0.15f, 0.8f);
                     ImGui.SliderFloat("HW Inset (x radius)", ref _hwInsetScale, 0.7f, 1.3f);
+                    ImGui.Checkbox("Animate HW Brackets", ref _indicatorAnimate);
+                    if (_indicatorAnimate)
+                    {
+                        ImGui.SliderFloat("HW Anim Speed (Hz)", ref _indicatorAnimSpeed, 0.1f, 5.0f);
+                        ImGui.SliderFloat("HW Inset Amplitude", ref _indicatorAnimInsetAmp, 0.0f, 0.3f);
+                        ImGui.SliderFloat("HW Corner Amp", ref _indicatorAnimCornerAmp, 0.0f, 0.5f);
+                    }
                 }
                 if (sel.Count == 0)
                 {
@@ -749,8 +761,19 @@ internal static class Program
                             break;
                         case SelectionIndicatorShape.Homeworld:
                             {
-                                float r = pixelRadius * MathF.Max(0.1f, _hwInsetScale);
-                                float len = MathF.Max(1.0f, r * MathF.Max(0.1f, _hwCornerLengthScale));
+                                // Base inset and corner length
+                                float insetScale = MathF.Max(0.1f, _hwInsetScale);
+                                float cornerScale = MathF.Max(0.1f, _hwCornerLengthScale);
+                                if (_indicatorAnimate)
+                                {
+                                    float phase = _shaderTime * (MathF.PI * 2f) * MathF.Max(0.0f, _indicatorAnimSpeed);
+                                    float sin = MathF.Sin(phase);
+                                    insetScale *= (1f + _indicatorAnimInsetAmp * sin);
+                                    cornerScale *= (1f + _indicatorAnimCornerAmp * sin);
+                                }
+                                float r = pixelRadius * insetScale;
+                                // Ensure length is not larger than r for aesthetics
+                                float len = Math.Max(1.0f, Math.Min(r, r * cornerScale));
                                 float t = MathF.Max(1.0f, _indicatorThickness);
                                 float left = center.X - r;
                                 float right = center.X + r;
