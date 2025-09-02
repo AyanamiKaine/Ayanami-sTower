@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using AyanamisTower.StellaEcs.StellaInvicta.Assets;
 using AyanamisTower.StellaEcs.StellaInvicta.Graphics;
 using MoonWorks;
@@ -28,7 +29,7 @@ the created pipelines. We should not create the same shader for each entity that
 /// Depth = DepthMode.DrawAlways;
 /// Wireframe = WireframeMode.None;
 /// </summary>
-public class Shader
+public partial class Shader
 {
     /// <summary>
     /// Gets the game instance associated with this shader.
@@ -60,6 +61,12 @@ public class Shader
     /// Call <see cref="BuildOrUpdatePipeline"/> to create or refresh this pipeline.
     /// </summary>
     public GraphicsPipeline? Pipeline { get; private set; }
+
+    /// <summary>
+    /// Optional per-shader binding plan describing what uniforms/samplers this shader expects and their slots.
+    /// If null, the renderer will use a legacy default that binds all standard data.
+    /// </summary>
+    public BindingPlan? Plan { get; set; }
 
     // Hot-reload support fields
     private FileSystemWatcher? fileWatcher;
@@ -450,5 +457,112 @@ public class Shader
             false,
             Name + "FS"
         );
+    }
+
+    // Describes which common bindings a shader needs and which slots to use.
+    /// <summary>
+    /// Describes which common GPU bindings a shader needs and which slots to use for them.
+    /// Use this to avoid pushing uniforms and samplers that a shader does not consume.
+    /// </summary>
+    public sealed class BindingPlan
+    {
+        /// <summary>Bind directional light array (cbuffer) if true.</summary>
+        public bool NeedsDirectionalLights;
+        /// <summary>Bind point light array (cbuffer) if true.</summary>
+        public bool NeedsPointLights;
+        /// <summary>Bind spot light array (cbuffer) if true.</summary>
+        public bool NeedsSpotLights;
+        /// <summary>Bind light counts (cbuffer) if true.</summary>
+        public bool NeedsLightCounts;
+        /// <summary>Bind main diffuse/albedo texture at the configured slot if true.</summary>
+        public bool NeedsDiffuseTexture;
+        /// <summary>Bind specular map texture at the configured slot if true.</summary>
+        public bool NeedsSpecularTexture;
+        /// <summary>Bind per-material properties (cbuffer) if true.</summary>
+        public bool NeedsMaterial;
+        /// <summary>Bind per-draw vertex uniforms (MVP/model etc.) if true.</summary>
+        public bool NeedsVertexUniforms;
+
+        // Slot maps (string keys allow flexibility across different shader packings)
+        private readonly Dictionary<string, int> fragmentSlots = new();
+        private readonly Dictionary<string, int> vertexSlots = new();
+
+        /// <summary>
+        /// Returns the configured fragment (pixel) uniform slot for the given logical key, or defaultSlot if not set.
+        /// </summary>
+        public int FragmentSlotOrDefault(string key, int defaultSlot)
+                => fragmentSlots.TryGetValue(key, out var s) ? s : defaultSlot;
+
+        /// <summary>
+        /// Returns the configured vertex uniform slot for the given logical key, or defaultSlot if not set.
+        /// </summary>
+        public int VertexSlotOrDefault(string key, int defaultSlot)
+                => vertexSlots.TryGetValue(key, out var s) ? s : defaultSlot;
+
+        /// <summary>
+        /// Sets the fragment (pixel) uniform slot for a logical key, and returns this plan for chaining.
+        /// </summary>
+        public BindingPlan SetFragmentSlot(string key, int slot)
+        {
+            fragmentSlots[key] = slot; return this;
+        }
+        /// <summary>
+        /// Sets the vertex uniform slot for a logical key, and returns this plan for chaining.
+        /// </summary>
+        public BindingPlan SetVertexSlot(string key, int slot)
+        {
+            vertexSlots[key] = slot; return this;
+        }
+
+        /// <summary>
+        /// Plan that mirrors the legacy/default renderer behavior: bind all standard data at standard slots.
+        /// </summary>
+        public static BindingPlan LegacyDefault
+        {
+            get
+            {
+                var p = new BindingPlan
+                {
+                    NeedsDirectionalLights = true,
+                    NeedsPointLights = true,
+                    NeedsSpotLights = true,
+                    NeedsLightCounts = true,
+                    NeedsDiffuseTexture = true,
+                    NeedsSpecularTexture = true,
+                    NeedsMaterial = true,
+                    NeedsVertexUniforms = true
+                };
+                p.SetFragmentSlot("DirectionalLights", 0)
+                 .SetFragmentSlot("PointLights", 1)
+                 .SetFragmentSlot("SpotLights", 2)
+                 .SetFragmentSlot("LightCounts", 3)
+                 .SetFragmentSlot("Material", 4)
+                 .SetVertexSlot("VertexUniforms", 0);
+                return p;
+            }
+        }
+
+        /// <summary>
+        /// Preset plan for unlit/emissive shaders: no lights/material, keep vertex uniforms and a base texture.
+        /// </summary>
+        public static BindingPlan UnlitEmissive
+        {
+            get
+            {
+                var p = new BindingPlan
+                {
+                    NeedsDirectionalLights = false,
+                    NeedsPointLights = false,
+                    NeedsSpotLights = false,
+                    NeedsLightCounts = false,
+                    NeedsDiffuseTexture = true,
+                    NeedsSpecularTexture = false,
+                    NeedsMaterial = false,
+                    NeedsVertexUniforms = true
+                };
+                p.SetVertexSlot("VertexUniforms", 0);
+                return p;
+            }
+        }
     }
 }

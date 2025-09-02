@@ -2160,92 +2160,9 @@ internal static class Program
 
             pass.BindGraphicsPipeline(_pipeline!);
 
-            // Push lighting data into fragment uniform slots so HLSL cbuffers see them.
-            // Reuse lightingSystem retrieved earlier when rendering the shadow map.
-            if (lightingSystem != null && lightingSystem.HasLights)
-            {
-                // Convert scene light data to GPU-packed structs that match HLSL packing, and push them.
-                var gpuDir = new GpuDirectionalLight[lightingSystem.DirectionalLightCount];
-                int usedDir = 0;
-                for (int i = 0; i < lightingSystem.DirectionalLightCount && usedDir < lightingSystem.DirectionalLightCount; i++)
-                {
-                    var s = lightingSystem.DirectionalLights[i];
-                    if (s.Intensity <= 0f) continue; // ignore non-contributing lights
-                    var gd = new GpuDirectionalLight();
-                    var dir = Vector3.Normalize(s.Direction);
-                    gd.Direction = dir;
-                    gd.Color = s.Color;
-                    gd.Intensity = s.Intensity;
-                    gpuDir[usedDir++] = gd;
-                }
-                // zero-fill rest
-                for (int i = usedDir; i < gpuDir.Length; i++) gpuDir[i] = new GpuDirectionalLight();
-                unsafe
-                {
-                    fixed (GpuDirectionalLight* p = gpuDir)
-                    {
-                        cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuDirectionalLight>() * gpuDir.Length), slot: 0);
-                    }
-                }
-
-                var gpuPoint = new GpuPointLight[60];
-                int usedPoint = 0;
-                for (int i = 0; i < lightingSystem.PointLightCount && usedPoint < gpuPoint.Length; i++)
-                {
-                    var s = lightingSystem.PointLights[i];
-                    if (s.Intensity <= 0f) continue;
-                    var gp = new GpuPointLight();
-                    gp.Position = lightingSystem.PointLightPositions[i];
-                    gp.Color = s.Color;
-                    gp.Intensity = s.Intensity;
-                    gp.Range = s.Range;
-                    gp.Kc = s.Constant;
-                    gp.Kl = s.Linear;
-                    gp.Kq = s.Quadratic;
-                    gpuPoint[usedPoint++] = gp;
-                }
-                for (int i = usedPoint; i < gpuPoint.Length; i++) gpuPoint[i] = new GpuPointLight();
-                unsafe
-                {
-                    fixed (GpuPointLight* p = gpuPoint)
-                    {
-                        cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuPointLight>() * gpuPoint.Length), slot: 1);
-                    }
-                }
-
-                var gpuSpot = new GpuSpotLight[16];
-                int usedSpot = 0;
-                for (int i = 0; i < lightingSystem.SpotLightCount && usedSpot < gpuSpot.Length; i++)
-                {
-                    var s = lightingSystem.SpotLights[i];
-                    if (s.Intensity <= 0f) continue;
-                    var gs = new GpuSpotLight();
-                    gs.Position = lightingSystem.SpotLightPositions[i];
-                    gs.Direction = Vector3.Normalize(s.Direction);
-                    gs.Color = s.Color;
-                    gs.Range = s.Range;
-                    gs.InnerAngle = s.InnerAngle;
-                    gs.OuterAngle = s.OuterAngle;
-                    gs.Kc = s.Constant;
-                    gs.Kl = s.Linear;
-                    gs.Kq = s.Quadratic;
-                    gpuSpot[usedSpot++] = gs;
-                }
-                for (int i = usedSpot; i < gpuSpot.Length; i++) gpuSpot[i] = new GpuSpotLight();
-                unsafe
-                {
-                    fixed (GpuSpotLight* p = gpuSpot)
-                    {
-                        cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuSpotLight>() * gpuSpot.Length), slot: 2);
-                    }
-                }
-
-                // Push counts into slot 3 (LightCounts cbuffer b3, space3)
-                var counts = new LightCountsUniform { directionalLightCount = (uint)lightingSystem.DirectionalLightCount, pointLightCount = (uint)lightingSystem.PointLightCount, spotLightCount = (uint)lightingSystem.SpotLightCount };
-                cmdbuf.PushFragmentUniformData(in counts, slot: 3);
-
-                // Note: per-entity material will be pushed before each draw. Keep no global default here.
-            }
+            // We'll bind global uniforms (like lights) lazily per-pipeline only if the active shader needs them.
+            // Track which pipelines have received their global bindings for this frame.
+            var globalsBoundForPipeline = new System.Collections.Generic.HashSet<GraphicsPipeline>();
 
             foreach (var entity in World.Query(typeof(GpuMesh)))
             {
@@ -2352,22 +2269,149 @@ internal static class Program
                     pass.BindGraphicsPipeline(_pipeline!);
                 }
 
-                // Bind entity textures (diffuse at slot 0, specular at slot 2). Fall back to defaults when missing.
-                var diffuseTex = _whiteTexture!;
-                if (entity.Has<Texture2DRef>())
+                // Determine active pipeline and optional binding plan from the shader component.
+                GraphicsPipeline activePipeline = _pipeline!;
+                AyanamisTower.StellaEcs.StellaInvicta.Components.Shader.BindingPlan? plan = null;
+                if (entity.Has<Components.Shader>())
                 {
-                    var texRef = entity.GetMut<Texture2DRef>();
-                    if (texRef.Texture != null) { diffuseTex = texRef.Texture; }
+                    var s = entity.GetMut<Components.Shader>();
+                    if (s.Pipeline != null) { activePipeline = s.Pipeline; }
+                    plan = s.Plan; // may be null if not configured; we'll fallback below
                 }
-                pass.BindFragmentSamplers(0, [new TextureSamplerBinding(diffuseTex, GraphicsDevice.LinearSampler)]);
+                // Fallback plan assumes legacy behavior (needs lights, material, vertex uniforms, diffuse+specular)
+                plan ??= AyanamisTower.StellaEcs.StellaInvicta.Components.Shader.BindingPlan.LegacyDefault;
 
-                var specularTex = _blackTexture!; // black -> no specular by default
-                if (entity.Has<SpecularMapRef>())
+                // Bind global lighting uniforms only if needed and not yet bound for this pipeline
+                if (!globalsBoundForPipeline.Contains(activePipeline) && lightingSystem != null && lightingSystem.HasLights)
                 {
-                    var specRef = entity.GetMut<SpecularMapRef>();
-                    if (specRef.Texture != null) { specularTex = specRef.Texture; }
+                    // Directional lights
+                    if (plan.NeedsDirectionalLights)
+                    {
+                        var gpuDir = new GpuDirectionalLight[lightingSystem.DirectionalLightCount];
+                        int usedDir = 0;
+                        for (int i = 0; i < lightingSystem.DirectionalLightCount && usedDir < lightingSystem.DirectionalLightCount; i++)
+                        {
+                            var sdir = lightingSystem.DirectionalLights[i];
+                            if (sdir.Intensity <= 0f) continue;
+                            var gd = new GpuDirectionalLight
+                            {
+                                Direction = Vector3.Normalize(sdir.Direction),
+                                Color = sdir.Color,
+                                Intensity = sdir.Intensity
+                            };
+                            gpuDir[usedDir++] = gd;
+                        }
+                        for (int i = usedDir; i < gpuDir.Length; i++) gpuDir[i] = new GpuDirectionalLight();
+                        unsafe
+                        {
+                            fixed (GpuDirectionalLight* p = gpuDir)
+                            {
+                                cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuDirectionalLight>() * gpuDir.Length), slot: (uint)plan.FragmentSlotOrDefault("DirectionalLights", 0));
+                            }
+                        }
+                    }
+
+                    // Point lights
+                    if (plan.NeedsPointLights)
+                    {
+                        var gpuPoint = new GpuPointLight[60];
+                        int usedPoint = 0;
+                        for (int i = 0; i < lightingSystem.PointLightCount && usedPoint < gpuPoint.Length; i++)
+                        {
+                            var spl = lightingSystem.PointLights[i];
+                            if (spl.Intensity <= 0f) continue;
+                            var gp = new GpuPointLight
+                            {
+                                Position = lightingSystem.PointLightPositions[i],
+                                Color = spl.Color,
+                                Intensity = spl.Intensity,
+                                Range = spl.Range,
+                                Kc = spl.Constant,
+                                Kl = spl.Linear,
+                                Kq = spl.Quadratic
+                            };
+                            gpuPoint[usedPoint++] = gp;
+                        }
+                        for (int i = usedPoint; i < gpuPoint.Length; i++) gpuPoint[i] = new GpuPointLight();
+                        unsafe
+                        {
+                            fixed (GpuPointLight* p = gpuPoint)
+                            {
+                                cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuPointLight>() * gpuPoint.Length), slot: (uint)plan.FragmentSlotOrDefault("PointLights", 1));
+                            }
+                        }
+                    }
+
+                    // Spot lights
+                    if (plan.NeedsSpotLights)
+                    {
+                        var gpuSpot = new GpuSpotLight[16];
+                        int usedSpot = 0;
+                        for (int i = 0; i < lightingSystem.SpotLightCount && usedSpot < gpuSpot.Length; i++)
+                        {
+                            var sspot = lightingSystem.SpotLights[i];
+                            if (sspot.Intensity <= 0f) continue;
+                            var gs = new GpuSpotLight
+                            {
+                                Position = lightingSystem.SpotLightPositions[i],
+                                Direction = Vector3.Normalize(sspot.Direction),
+                                Color = sspot.Color,
+                                Range = sspot.Range,
+                                InnerAngle = sspot.InnerAngle,
+                                OuterAngle = sspot.OuterAngle,
+                                Kc = sspot.Constant,
+                                Kl = sspot.Linear,
+                                Kq = sspot.Quadratic
+                            };
+                            gpuSpot[usedSpot++] = gs;
+                        }
+                        for (int i = usedSpot; i < gpuSpot.Length; i++) gpuSpot[i] = new GpuSpotLight();
+                        unsafe
+                        {
+                            fixed (GpuSpotLight* p = gpuSpot)
+                            {
+                                cmdbuf.PushFragmentUniformData(p, (uint)(Marshal.SizeOf<GpuSpotLight>() * gpuSpot.Length), slot: (uint)plan.FragmentSlotOrDefault("SpotLights", 2));
+                            }
+                        }
+                    }
+
+                    // Light counts
+                    if (plan.NeedsLightCounts)
+                    {
+                        var counts = new LightCountsUniform
+                        {
+                            directionalLightCount = (uint)lightingSystem.DirectionalLightCount,
+                            pointLightCount = (uint)lightingSystem.PointLightCount,
+                            spotLightCount = (uint)lightingSystem.SpotLightCount
+                        };
+                        cmdbuf.PushFragmentUniformData(in counts, slot: (uint)plan.FragmentSlotOrDefault("LightCounts", 3));
+                    }
+
+                    globalsBoundForPipeline.Add(activePipeline);
                 }
-                pass.BindFragmentSamplers(1, [new TextureSamplerBinding(specularTex, GraphicsDevice.LinearSampler)]);
+
+                // Bind entity textures only if the shader expects them
+                if (plan.NeedsDiffuseTexture)
+                {
+                    var diffuseTex = _whiteTexture!;
+                    if (entity.Has<Texture2DRef>())
+                    {
+                        var texRef = entity.GetMut<Texture2DRef>();
+                        if (texRef.Texture != null) { diffuseTex = texRef.Texture; }
+                    }
+                    pass.BindFragmentSamplers(0, [new TextureSamplerBinding(diffuseTex, GraphicsDevice.LinearSampler)]);
+                }
+
+                if (plan.NeedsSpecularTexture)
+                {
+                    var specularTex = _blackTexture!; // black -> no specular by default
+                    if (entity.Has<SpecularMapRef>())
+                    {
+                        var specRef = entity.GetMut<SpecularMapRef>();
+                        if (specRef.Texture != null) { specularTex = specRef.Texture; }
+                    }
+                    pass.BindFragmentSamplers(1, [new TextureSamplerBinding(specularTex, GraphicsDevice.LinearSampler)]);
+                }
 
                 // Build MVP and push to vertex uniforms at slot 0 (cbuffer b0, space1)
                 // If using camera-relative rendering, subtract camera position from the translation so
@@ -2392,7 +2436,10 @@ internal static class Program
                     CameraPosition = HighPrecisionConversions.ToVector3(_camera.Position)
                 };
 
-                cmdbuf.PushVertexUniformData(in vertexUniforms, slot: 0);
+                if (plan.NeedsVertexUniforms)
+                {
+                    cmdbuf.PushVertexUniformData(in vertexUniforms, slot: (uint)plan.VertexSlotOrDefault("VertexUniforms", 0));
+                }
 
                 // Push per-entity material into fragment slot 4 (MaterialProperties cbuffer b4, space3)
                 // Use the entity's Material component if present, otherwise fall back to a predefined default.
@@ -2406,7 +2453,10 @@ internal static class Program
                 {
                     matUniform = new MaterialPropertiesUniform { material = PredefinedMaterials.Default };
                 }
-                cmdbuf.PushFragmentUniformData(in matUniform, slot: 4);
+                if (plan.NeedsMaterial)
+                {
+                    cmdbuf.PushFragmentUniformData(in matUniform, slot: (uint)plan.FragmentSlotOrDefault("Material", 4));
+                }
 
                 pass.DrawIndexedPrimitives(gpuMesh.IndexCount, 1, 0, 0, 0);
             }
