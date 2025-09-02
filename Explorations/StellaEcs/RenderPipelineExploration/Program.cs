@@ -1200,7 +1200,7 @@ internal static class Program
             var asteroidA = World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
+                .Set(Mesh.CreateAsteroid3D())
                 .Set(new Position3D(origin.X + 10, origin.Y, origin.Z))
                 .Set(new Size3D(1.0f)) // Artistically scaled size
                 .Set(Rotation3D.Identity)
@@ -1208,12 +1208,12 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                 .Set(new CollisionShape(new Sphere(1.0f * 0.5f)))
                 .Set(CollisionCategory.Asteroid.ToLayer(CollisionCategory.Sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Moon.jpg", sRGB: true) ?? _checkerTexture! });
 
             var asteroidBDifferentPhysicsLayer = World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
+                .Set(Mesh.CreateAsteroid3D())
                 .Set(new Position3D(origin.X - 10, origin.Y, origin.Z))
                 .Set(new Size3D(1.0f)) // Artistically scaled size
                 .Set(Rotation3D.Identity)
@@ -1221,7 +1221,7 @@ internal static class Program
                 .Set(new AngularVelocity3D(0f, 0.001f, 0f)) // Slow rotation for effect
                 .Set(new CollisionShape(new Sphere(1.0f * 0.5f)))
                 .Set(CollisionCategory.Asteroid.ToLayer(CollisionCategory.None))
-                .Set(new Texture2DRef { Texture = _checkerTexture! });
+                .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Moon.jpg", sRGB: true) ?? _checkerTexture! });
 
 
             /*
@@ -1600,6 +1600,87 @@ internal static class Program
         }
 
         /// <summary>
+        /// Creates a randomized asteroid mesh with varying parameters for visual diversity.
+        /// </summary>
+        /// <param name="rng">Random number generator to use for consistency</param>
+        /// <param name="baseSize">Base size of the asteroid for scaling parameters</param>
+        /// <returns>A randomly generated asteroid mesh</returns>
+        private Mesh CreateRandomizedAsteroid(Random rng, float baseSize)
+        {
+            // Define different asteroid types with different characteristics
+            var asteroidType = rng.Next(5); // 5 different asteroid types
+
+            float radius = 0.5f; // Base radius before size scaling
+            int radialSegments = 32 + rng.Next(33); // 32-64 segments
+            int rings = 16 + rng.Next(17); // 16-32 rings
+            int seedValue = rng.Next(int.MaxValue);
+
+            switch (asteroidType)
+            {
+                case 0: // Smooth, lightly cratered asteroid
+                    return Mesh.CreateAsteroid3D(
+                        radius: radius,
+                        radialSegments: radialSegments,
+                        rings: rings,
+                        seed: seedValue,
+                        frequency: 0.2f + (float)rng.NextDouble() * 0.3f, // 0.2-0.5
+                        perturbationStrength: 0.15f + (float)rng.NextDouble() * 0.15f, // 0.15-0.3
+                        roughness: 0.3f + (float)rng.NextDouble() * 0.4f, // 0.3-0.7
+                        craterDensity: 0.1f + (float)rng.NextDouble() * 0.2f // 0.1-0.3
+                    );
+
+                case 1: // Heavily cratered, rough asteroid
+                    return Mesh.CreateAsteroid3D(
+                        radius: radius,
+                        radialSegments: radialSegments,
+                        rings: rings,
+                        seed: seedValue,
+                        frequency: 0.4f + (float)rng.NextDouble() * 0.4f, // 0.4-0.8
+                        perturbationStrength: 0.3f + (float)rng.NextDouble() * 0.3f, // 0.3-0.6
+                        roughness: 0.7f + (float)rng.NextDouble() * 0.3f, // 0.7-1.0
+                        craterDensity: 0.4f + (float)rng.NextDouble() * 0.4f // 0.4-0.8
+                    );
+
+                case 2: // Very irregular, jagged asteroid
+                    return Mesh.CreateAsteroid3D(
+                        radius: radius,
+                        radialSegments: radialSegments,
+                        rings: rings,
+                        seed: seedValue,
+                        frequency: 0.6f + (float)rng.NextDouble() * 0.6f, // 0.6-1.2
+                        perturbationStrength: 0.4f + (float)rng.NextDouble() * 0.4f, // 0.4-0.8
+                        roughness: 0.8f + (float)rng.NextDouble() * 0.2f, // 0.8-1.0
+                        craterDensity: 0.2f + (float)rng.NextDouble() * 0.3f // 0.2-0.5
+                    );
+
+                case 3: // Metallic-looking, less cratered asteroid
+                    return Mesh.CreateAsteroid3D(
+                        radius: radius,
+                        radialSegments: radialSegments,
+                        rings: rings,
+                        seed: seedValue,
+                        frequency: 0.3f + (float)rng.NextDouble() * 0.3f, // 0.3-0.6
+                        perturbationStrength: 0.2f + (float)rng.NextDouble() * 0.2f, // 0.2-0.4
+                        roughness: 0.4f + (float)rng.NextDouble() * 0.3f, // 0.4-0.7
+                        craterDensity: 0.05f + (float)rng.NextDouble() * 0.15f // 0.05-0.2
+                    );
+
+                case 4: // Medium complexity asteroid
+                default:
+                    return Mesh.CreateAsteroid3D(
+                        radius: radius,
+                        radialSegments: radialSegments,
+                        rings: rings,
+                        seed: seedValue,
+                        frequency: 0.25f + (float)rng.NextDouble() * 0.5f, // 0.25-0.75
+                        perturbationStrength: 0.25f + (float)rng.NextDouble() * 0.25f, // 0.25-0.5
+                        roughness: 0.5f + (float)rng.NextDouble() * 0.3f, // 0.5-0.8
+                        craterDensity: 0.2f + (float)rng.NextDouble() * 0.3f // 0.2-0.5
+                    );
+            }
+        }
+
+        /// <summary>
         /// Spawns an annular asteroid belt around a given center. Distributes asteroids between innerRadius and outerRadius
         /// on the XZ plane with small random inclinations to give a torus-like appearance.
         /// </summary>
@@ -1620,8 +1701,9 @@ internal static class Program
             if (outerRadius < innerRadius) outerRadius = innerRadius + 1f;
 
             var rng = new Random(seed);
-            var tex = _checkerTexture ?? _whiteTexture ?? AssetManager.CreateSolidTexture(this, 255, 255, 255, 255);
-            var sharedSphere = Mesh.CreateSphere3D();
+            var tex = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Moon.jpg", sRGB: true) ?? _checkerTexture!;
+
+            // We'll create different asteroid types per entity instead of using a shared mesh
 
             // convert inclination to radians
             float inclRad = MathF.Abs(inclinationDegrees) * (MathF.PI / 180f);
@@ -1649,9 +1731,12 @@ internal static class Program
 
                 float s = minSize + ((float)rng.NextDouble() * (maxSize - minSize));
 
+                // Create randomized asteroid mesh with varying parameters
+                var asteroidMesh = CreateRandomizedAsteroid(rng, s);
+
                 var e = World.CreateEntity()
                     .Set(new CelestialBody())
-                    .Set(sharedSphere)
+                    .Set(asteroidMesh)
                     .Set(new Kinematic())
                     .Set(new Parent(parent))
                     .Set(new Position3D(pos.X, pos.Y, pos.Z))

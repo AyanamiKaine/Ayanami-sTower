@@ -434,6 +434,228 @@ public struct Mesh
         return new Mesh { Vertices = vertices, Indices = indices };
     }
 
+    /// <summary>
+    /// Creates an asteroid-like mesh by perturbing a sphere with multiple layers of noise.
+    /// </summary>
+    /// <param name="radius">Base radius of the asteroid.</param>
+    /// <param name="radialSegments">Number of segments around the circumference.</param>
+    /// <param name="rings">Number of rings from top to bottom.</param>
+    /// <param name="seed">Seed for the noise generator.</param>
+    /// <param name="frequency">Frequency of the noise.</param>
+    /// <param name="perturbationStrength">Strength of the perturbation applied to the radius.</param>
+    /// <param name="roughness">How irregular the asteroid surface should be (0-1).</param>
+    /// <param name="craterDensity">Density of crater-like depressions (0-1).</param>
+    public static Mesh CreateAsteroid3D(float radius = 0.5f, int radialSegments = 64, int rings = 32, int seed = 1337, float frequency = 0.3f, float perturbationStrength = 0.3f, float roughness = 0.7f, float craterDensity = 0.3f)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(radius);
+        ArgumentOutOfRangeException.ThrowIfLessThan(radialSegments, 3);
+        ArgumentOutOfRangeException.ThrowIfLessThan(rings, 2);
+
+        // Clamp parameters to reasonable ranges to prevent extreme/broken meshes
+        frequency = Math.Clamp(frequency, 0.05f, 2.0f);                    // Prevent too fine or too coarse noise
+        perturbationStrength = Math.Clamp(perturbationStrength, 0.0f, 0.8f); // Prevent extreme deformation
+        roughness = Math.Clamp(roughness, 0.0f, 1.0f);                     // Keep roughness normalized
+        craterDensity = Math.Clamp(craterDensity, 0.0f, 1.0f);             // Keep crater density normalized
+
+        // Create multiple noise generators for layered effects
+        var baseNoise = new FastNoiseLite(seed);
+        baseNoise.SetFrequency(frequency);
+        baseNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+
+        var detailNoise = new FastNoiseLite(seed + 1);
+        detailNoise.SetFrequency(frequency * 3.5f);
+        detailNoise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+
+        var craterNoise = new FastNoiseLite(seed + 2);
+        craterNoise.SetFrequency(frequency * 0.8f);
+        craterNoise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+        craterNoise.SetCellularDistanceFunction(FastNoiseLite.CellularDistanceFunction.EuclideanSq);
+        craterNoise.SetCellularReturnType(FastNoiseLite.CellularReturnType.Distance);
+
+        var ridgeNoise = new FastNoiseLite(seed + 3);
+        ridgeNoise.SetFrequency(frequency * 1.2f);
+        ridgeNoise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+        ridgeNoise.SetFractalType(FastNoiseLite.FractalType.Ridged);
+        ridgeNoise.SetFractalOctaves(3);
+
+        int cols = radialSegments + 1; // duplicate seam
+        int rows = rings + 1;          // include poles
+
+        var vertices = new Vertex[cols * rows];
+        var indices = new uint[radialSegments * rings * 6];
+
+        int vi = 0;
+        for (int r = 0; r <= rings; r++)
+        {
+            float v = (float)r / rings;
+            float theta = v * MathF.PI;
+
+            float sinTheta = MathF.Sin(theta);
+            float cosTheta = MathF.Cos(theta);
+
+            for (int s = 0; s <= radialSegments; s++)
+            {
+                float u = (float)s / radialSegments;
+                float phi = u * MathF.Tau;
+
+                float sinPhi = MathF.Sin(phi);
+                float cosPhi = MathF.Cos(phi);
+
+                // Base position on unit sphere
+                float x = sinTheta * cosPhi;
+                float y = cosTheta;
+                float z = sinTheta * sinPhi;
+
+                // Layer multiple noise effects
+                float baseValue = baseNoise.GetNoise(x, y, z); // [-1,1] - Main shape
+                float detailValue = detailNoise.GetNoise(x, y, z); // [-1,1] - Surface detail
+                float craterValue = craterNoise.GetNoise(x, y, z); // [0,1] - Crater depressions
+                float ridgeValue = ridgeNoise.GetNoise(x, y, z); // [-1,1] - Ridge features
+
+                // Create non-uniform scaling for more irregular shape (clamped to prevent extreme distortion)
+                float xScale = 1.0f + Math.Clamp(0.1f * baseNoise.GetNoise(x * 0.3f, y * 0.3f, z * 0.3f), -0.3f, 0.3f);
+                float yScale = 1.0f + Math.Clamp(0.15f * baseNoise.GetNoise(x * 0.25f + 100, y * 0.25f + 100, z * 0.25f + 100), -0.3f, 0.3f);
+                float zScale = 1.0f + Math.Clamp(0.12f * baseNoise.GetNoise(x * 0.35f + 200, y * 0.35f + 200, z * 0.35f + 200), -0.3f, 0.3f);
+
+                // Apply non-uniform scaling to break sphere symmetry
+                x *= xScale;
+                y *= yScale;
+                z *= zScale;
+
+                // Combine noise layers with clamping to prevent extreme values
+                float combinedNoise = baseValue * perturbationStrength;
+                combinedNoise += detailValue * (perturbationStrength * 0.3f) * roughness;
+                combinedNoise += ridgeValue * (perturbationStrength * 0.2f);
+
+                // Add crater-like depressions
+                float craterEffect = MathF.Pow(1.0f - craterValue, 4.0f) * craterDensity;
+                combinedNoise -= craterEffect * perturbationStrength * 0.8f;
+
+                // Clamp combined noise to prevent extreme spikes or valleys
+                combinedNoise = Math.Clamp(combinedNoise, -0.7f, 0.7f);
+
+                // Calculate final radius with asymmetric perturbation
+                float finalRadius = radius * (1.0f + combinedNoise);
+
+                // Ensure minimum and maximum radius to avoid inside-out geometry or extreme spikes
+                finalRadius = Math.Clamp(finalRadius, radius * 0.4f, radius * 1.8f);
+
+                var pos = new Vector3(x * finalRadius, y * finalRadius, z * finalRadius);
+
+                // Calculate normal by sampling nearby points for better surface detail
+                float epsilon = 0.01f;
+                // Sample points in the original unit sphere space before scaling
+                float origX = sinTheta * cosPhi;
+                float origY = cosTheta;
+                float origZ = sinTheta * sinPhi;
+
+                var px = GetAsteroidPoint(origX + epsilon, origY, origZ, radius, baseNoise, detailNoise, craterNoise, ridgeNoise, perturbationStrength, roughness, craterDensity, xScale, yScale, zScale);
+                var py = GetAsteroidPoint(origX, origY + epsilon, origZ, radius, baseNoise, detailNoise, craterNoise, ridgeNoise, perturbationStrength, roughness, craterDensity, xScale, yScale, zScale);
+                var pz = GetAsteroidPoint(origX, origY, origZ + epsilon, radius, baseNoise, detailNoise, craterNoise, ridgeNoise, perturbationStrength, roughness, craterDensity, xScale, yScale, zScale);
+
+                var tangentX = px - pos;
+                var tangentY = py - pos;
+
+                var normal = Vector3.Cross(tangentX, tangentY);
+
+                // Handle zero-length normals by falling back to radial normal
+                if (normal.LengthSquared() < 1e-6f)
+                {
+                    normal = Vector3.Normalize(pos);
+                }
+                else
+                {
+                    normal = Vector3.Normalize(normal);
+                    // Ensure outward-facing normal
+                    if (Vector3.Dot(normal, pos) < 0) normal = -normal;
+                }
+
+                // Enhanced color variation based on surface features
+                float colorVariation = (baseValue + detailValue * 0.5f + ridgeValue * 0.3f) * 0.5f + 0.5f;
+                float craterShading = 1.0f - craterEffect * 0.7f;
+                var color = new Vector3(
+                    (0.3f + 0.4f * colorVariation) * craterShading,
+                    (0.25f + 0.3f * colorVariation) * craterShading,
+                    (0.2f + 0.25f * colorVariation) * craterShading
+                );
+
+                var uv = new Vector2(u, 1f - v);
+                vertices[vi++] = new Vertex(pos, normal, color, uv);
+            }
+        }
+
+        int ii = 0;
+        for (int r = 0; r < rings; r++)
+        {
+            for (int s = 0; s < radialSegments; s++)
+            {
+                int a0 = (r * cols) + s;
+                int a1 = a0 + 1;
+                int b0 = ((r + 1) * cols) + s;
+                int b1 = b0 + 1;
+
+                indices[ii++] = (uint)a0;
+                indices[ii++] = (uint)a1;
+                indices[ii++] = (uint)b0;
+
+                indices[ii++] = (uint)a1;
+                indices[ii++] = (uint)b1;
+                indices[ii++] = (uint)b0;
+            }
+        }
+
+        return new Mesh { Vertices = vertices, Indices = indices };
+    }
+
+    /// <summary>
+    /// Helper method to calculate a point on the asteroid surface for normal calculation.
+    /// </summary>
+    private static Vector3 GetAsteroidPoint(float x, float y, float z, float radius,
+        FastNoiseLite baseNoise, FastNoiseLite detailNoise, FastNoiseLite craterNoise, FastNoiseLite ridgeNoise,
+        float perturbationStrength, float roughness, float craterDensity,
+        float xScale, float yScale, float zScale)
+    {
+        // Normalize the input coordinates to ensure we're working with a unit sphere
+        var inputLength = MathF.Sqrt(x * x + y * y + z * z);
+        if (inputLength > 0)
+        {
+            x /= inputLength;
+            y /= inputLength;
+            z /= inputLength;
+        }
+
+        // Calculate scaling factors (clamped to prevent extreme distortion)
+        float currentXScale = 1.0f + Math.Clamp(0.1f * baseNoise.GetNoise(x * 0.3f, y * 0.3f, z * 0.3f), -0.3f, 0.3f);
+        float currentYScale = 1.0f + Math.Clamp(0.15f * baseNoise.GetNoise(x * 0.25f + 100, y * 0.25f + 100, z * 0.25f + 100), -0.3f, 0.3f);
+        float currentZScale = 1.0f + Math.Clamp(0.12f * baseNoise.GetNoise(x * 0.35f + 200, y * 0.35f + 200, z * 0.35f + 200), -0.3f, 0.3f);
+
+        // Apply non-uniform scaling
+        x *= currentXScale;
+        y *= currentYScale;
+        z *= currentZScale;
+
+        float baseValue = baseNoise.GetNoise(x, y, z);
+        float detailValue = detailNoise.GetNoise(x, y, z);
+        float craterValue = craterNoise.GetNoise(x, y, z);
+        float ridgeValue = ridgeNoise.GetNoise(x, y, z);
+
+        float combinedNoise = baseValue * perturbationStrength;
+        combinedNoise += detailValue * (perturbationStrength * 0.3f) * roughness;
+        combinedNoise += ridgeValue * (perturbationStrength * 0.2f);
+
+        float craterEffect = MathF.Pow(1.0f - craterValue, 4.0f) * craterDensity;
+        combinedNoise -= craterEffect * perturbationStrength * 0.8f;
+
+        // Clamp combined noise to prevent extreme spikes or valleys
+        combinedNoise = Math.Clamp(combinedNoise, -0.7f, 0.7f);
+
+        float finalRadius = radius * (1.0f + combinedNoise);
+        // Ensure minimum and maximum radius bounds
+        finalRadius = Math.Clamp(finalRadius, radius * 0.4f, radius * 1.8f);
+
+        return new Vector3(x * finalRadius, y * finalRadius, z * finalRadius);
+    }
+
     // -----------------------------
     // Mesh helpers (non-destructive)
     // -----------------------------
