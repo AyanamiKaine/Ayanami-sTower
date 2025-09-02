@@ -24,6 +24,7 @@ public sealed class SelectionInteractionService
     }
 
     private readonly Dictionary<Entity, Action<Entity>> _onSelected = new();
+    private readonly Dictionary<Entity, Action<Entity>> _onDeselected = new();
     private readonly HashSet<Entity> _selected = new();
 
     /// <summary>
@@ -52,6 +53,10 @@ public sealed class SelectionInteractionService
     /// Remove all selection handlers for an entity.
     /// </summary>
     public void UnregisterAll(Entity e) => _onSelected.Remove(e);
+    /// <summary>
+    /// Remove all deselection handlers for an entity.
+    /// </summary>
+    public void UnregisterDeselection(Entity e) => _onDeselected.Remove(e);
 
     /// <summary>
     /// Notify that an entity has been selected.
@@ -65,11 +70,48 @@ public sealed class SelectionInteractionService
     }
 
     /// <summary>
-    /// Clears the current selection set without notifying handlers.
-    /// Use when initiating a new selection in Replace mode that yields no candidates.
+    /// Register a callback invoked when the entity is deselected.
+    /// Multiple registrations append; handlers are invoked in registration order.
     /// </summary>
-    public void ClearSelection()
+    public void RegisterDeselection(Entity e, Action<Entity> handler)
     {
+        if (_onDeselected.TryGetValue(e, out var existing))
+        {
+            existing += handler;
+            _onDeselected[e] = existing;
+        }
+        else
+        {
+            _onDeselected[e] = handler;
+        }
+    }
+
+    /// <summary>
+    /// Notify that an entity has been deselected.
+    /// </summary>
+    public void NotifyDeselected(Entity e)
+    {
+        if (_onDeselected.TryGetValue(e, out var handlers))
+        {
+            try { handlers?.Invoke(e); } catch { /* swallow handler errors */ }
+        }
+    }
+
+    /// <summary>
+    /// Clears the current selection set.
+    /// If notify is true, invokes deselection handlers for entities that were selected.
+    /// </summary>
+    public void ClearSelection(bool notify = true)
+    {
+        if (notify && _selected.Count > 0)
+        {
+            // Create a snapshot to avoid modifying during enumeration.
+            var removed = new List<Entity>(_selected);
+            foreach (var e in removed)
+            {
+                NotifyDeselected(e);
+            }
+        }
         _selected.Clear();
     }
 
@@ -82,14 +124,34 @@ public sealed class SelectionInteractionService
         {
             case SelectionMode.Replace:
                 {
-                    // Compute newly added: candidates - current
-                    var added = new List<Entity>();
+                    // Build new set
                     var newSet = new HashSet<Entity>();
                     foreach (var e in candidates)
                     {
                         newSet.Add(e);
-                        if (!_selected.Contains(e)) added.Add(e);
                     }
+
+                    // Compute removed (present before, absent now) and added (absent before, present now)
+                    var removed = new List<Entity>();
+                    foreach (var prev in _selected)
+                    {
+                        if (!newSet.Contains(prev))
+                        {
+                            removed.Add(prev);
+                        }
+                    }
+
+                    var added = new List<Entity>();
+                    foreach (var now in newSet)
+                    {
+                        if (!_selected.Contains(now))
+                        {
+                            added.Add(now);
+                        }
+                    }
+
+                    // Notify deselections first, then apply new set, then notify selections
+                    foreach (var e in removed) NotifyDeselected(e);
                     _selected.Clear();
                     foreach (var e in newSet) _selected.Add(e);
                     foreach (var e in added) NotifySelected(e);
@@ -110,7 +172,10 @@ public sealed class SelectionInteractionService
                 {
                     foreach (var e in candidates)
                     {
-                        _selected.Remove(e);
+                        if (_selected.Remove(e))
+                        {
+                            NotifyDeselected(e);
+                        }
                     }
                     break;
                 }
@@ -140,4 +205,16 @@ public static class EntitySelectionExtensions
     /// </summary>
     public static bool IsSelected(this Entity e, SelectionInteractionService svc)
         => svc.CurrentSelection.Contains(e);
+
+    /// <summary>
+    /// Register a callback to be invoked when this entity is deselected.
+    /// </summary>
+    public static void OnDeselection(this Entity e, SelectionInteractionService svc, Action<Entity> handler)
+        => svc.RegisterDeselection(e, handler);
+
+    /// <summary>
+    /// Remove all deselection handlers that were registered for this entity.
+    /// </summary>
+    public static void RemoveDeselectionHandlers(this Entity e, SelectionInteractionService svc)
+        => svc.UnregisterDeselection(e);
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Collections.Generic;
 using AyanamisTower.StellaEcs.Api;
 using AyanamisTower.StellaEcs.Components;
 using MoonWorks;
@@ -23,6 +24,7 @@ using StellaInvicta.Physics;
 using AyanamisTower.StellaEcs.StellaInvicta.Systems;
 using System.Runtime.InteropServices;
 using StellaInvicta.Graphics;
+using StellaInvicta.Components;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -128,6 +130,8 @@ internal static class Program
         private bool _isDragSelecting = false;
         private Vector2 _dragStartScreen;
         private Vector2 _dragEndScreen;
+        // Track previous selection set for component syncing
+        private HashSet<Entity> _prevSelection = new();
         // FPS counter for window title
         private readonly string _baseTitle = "Stella Invicta";
         private float _fpsTimer = 0f;
@@ -546,6 +550,133 @@ internal static class Program
         {
             RenderImguiDebugWindow();
             RenderImguiEntitiesWindow();
+            // Overlay selection indicators (drawn in foreground draw list)
+            RenderSelectionIndicatorsImGui();
+        }
+
+        // Sync the Selected tag component on entities to match the SelectionInteractionService set
+        private void SyncSelectedComponents()
+        {
+            // Snapshot current selection
+            var current = _selectionInteraction.CurrentSelection;
+
+            // Remove tag from entities no longer selected
+            foreach (var e in _prevSelection)
+            {
+                if (!current.Contains(e))
+                {
+                    try
+                    {
+                        if (World.IsEntityValid(e) && e.Has<Selected>())
+                        {
+                            e.Remove<Selected>();
+                        }
+                    }
+                    catch { /* entity may be destroyed */ }
+                }
+            }
+
+            // Add tag to newly selected entities
+            foreach (var e in current)
+            {
+                if (!_prevSelection.Contains(e))
+                {
+                    try
+                    {
+                        if (World.IsEntityValid(e) && !e.Has<Selected>())
+                        {
+                            e.Set(new Selected());
+                        }
+                    }
+                    catch { /* entity may be destroyed */ }
+                }
+            }
+
+            // Update previous snapshot
+            _prevSelection = new HashSet<Entity>(current);
+        }
+
+        // Draw a screen-space overlay ring for each selected entity using ImGui
+        private void RenderSelectionIndicatorsImGui()
+        {
+            if (!_imguiEnabled) return;
+
+            var sel = _selectionInteraction.CurrentSelection;
+            if (sel.Count == 0) return;
+
+            float screenW = (float)MainWindow.Width;
+            float screenH = (float)MainWindow.Height;
+
+            var view = HighPrecisionConversions.ToMatrix(_camera.GetViewMatrix());
+            var proj = HighPrecisionConversions.ToMatrix(_camera.GetProjectionMatrix());
+            if (_useCameraRelativeRendering) { view.Translation = Vector3.Zero; }
+            var viewProj = view * proj;
+            var camPos = HighPrecisionConversions.ToVector3(_camera.Position);
+            float tanHalfFov = MathF.Tan((float)_camera.Fov * 0.5f);
+
+            var drawList = ImGui.GetForegroundDrawList();
+            uint borderCol = ImGui.ColorConvertFloat4ToU32(new Vector4(0.1f, 0.9f, 0.9f, 0.95f));
+            uint fillCol = ImGui.ColorConvertFloat4ToU32(new Vector4(0.1f, 0.9f, 0.9f, 0.20f));
+
+            foreach (var e in sel)
+            {
+                try
+                {
+                    if (!World.IsEntityValid(e)) continue;
+
+                    // Position
+                    Vector3Double posD;
+                    if (e.Has<RenderPosition3D>()) posD = e.GetCopy<RenderPosition3D>().Value;
+                    else if (e.Has<Position3D>()) posD = e.GetCopy<Position3D>().Value;
+                    else if (e.Has<PhysicsBody>() && TryGetBodyRef(e.GetCopy<PhysicsBody>().Handle, out var bodyRef)) posD = bodyRef.Pose.Position;
+                    else continue;
+
+                    // Radius estimate
+                    float radius = 0.6f;
+                    if (e.Has<Size3D>())
+                    {
+                        var s = e.GetCopy<Size3D>().Value;
+                        radius = MathF.Max((float)s.X, MathF.Max((float)s.Y, (float)s.Z)) * 0.6f;
+                    }
+                    else if (e.Has<CollisionShape>())
+                    {
+                        var cs = e.GetCopy<CollisionShape>().Shape;
+                        radius = cs switch
+                        {
+                            Sphere s => s.Radius,
+                            Box b => MathF.Sqrt((b.HalfWidth * b.HalfWidth) + (b.HalfHeight * b.HalfHeight) + (b.HalfLength * b.HalfLength)),
+                            Capsule c => c.HalfLength + c.Radius,
+                            Cylinder cy => MathF.Sqrt((cy.HalfLength * cy.HalfLength) + (cy.Radius * cy.Radius)),
+                            _ => radius
+                        };
+                    }
+
+                    // Project to screen
+                    var pos = HighPrecisionConversions.ToVector3(posD);
+                    var renderPos = _useCameraRelativeRendering ? (pos - camPos) : pos;
+                    var clip = Vector4.Transform(new Vector4(renderPos, 1f), viewProj);
+                    if (clip.W <= 0f) continue;
+
+                    var toObj = renderPos;
+                    float dist = MathF.Max(1e-4f, toObj.Length());
+                    float pixelRadius = (radius / (dist * MathF.Max(1e-4f, tanHalfFov))) * (screenH * 0.5f);
+                    // small halo padding
+                    pixelRadius *= 1.15f;
+
+                    var ndcX = clip.X / clip.W;
+                    var ndcY = clip.Y / clip.W;
+                    float sx = ((ndcX * 0.5f) + 0.5f) * screenW;
+                    float sy = (1f - ((ndcY * 0.5f) + 0.5f)) * screenH;
+
+                    // Cull if far off-screen
+                    if (sx < -50 || sx > screenW + 50 || sy < -50 || sy > screenH + 50) continue;
+
+                    // Draw filled circle with border
+                    drawList.AddCircleFilled(new Vector2(sx, sy), pixelRadius, fillCol);
+                    drawList.AddCircle(new Vector2(sx, sy), pixelRadius, borderCol, 0, 2.0f);
+                }
+                catch { /* continue with next */ }
+            }
         }
 
         private void RenderImguiEntitiesWindow()
@@ -1193,6 +1324,11 @@ internal static class Program
             {
                 Console.WriteLine("[Selection] Selected entity Sun, playing audio");
                 AudioManager.PlayOneShot(this, AssetManager.AssetFolderName + "/Sun.ogg");
+            });
+
+            sun.OnDeselection(_selectionInteraction, (Entity e) =>
+            {
+                Console.WriteLine("[Selection] Deselected entity Sun");
             });
 
             World.CreateEntity()
@@ -3190,6 +3326,8 @@ internal static class Program
                 else if (ioLocal.KeyCtrl) mode = SelectionInteractionService.SelectionMode.Subtract;
 
                 _selectionInteraction.ApplySelection(selected, mode);
+                // Keep Selected tag components in sync
+                SyncSelectedComponents();
             }
             else
             {
@@ -3200,6 +3338,7 @@ internal static class Program
                 if (replaceMode)
                 {
                     _selectionInteraction.ClearSelection();
+                    SyncSelectedComponents();
                 }
             }
         }
