@@ -1149,6 +1149,12 @@ internal static class Program
                 .Set(CollisionCategory.Sun.ToLayer(CollisionCategory.None))
                 .Set(new Texture2DRef { Texture = AssetManager.LoadTextureFromFile(this, AssetManager.AssetFolderName + "/Sun.jpg", sRGB: true) ?? _checkerTexture! });
 
+            sun.OnSelection(_selectionInteraction, (Entity e) =>
+            {
+                Console.WriteLine("[Selection] Selected entity Sun, playing audio");
+                AudioManager.PlayOneShot(this, AssetManager.AssetFolderName + "/Sun.ogg");
+            });
+
             World.CreateEntity()
                 .Set(new CelestialBody())
                 .Set(new Kinematic())
@@ -3148,6 +3154,13 @@ internal static class Program
             else
             {
                 Console.WriteLine("Selection rectangle hit 0 entities.");
+                // If no modifiers are held (Replace mode), clear the current selection set.
+                var ioLocal = ImGui.GetIO();
+                bool replaceMode = !ioLocal.KeyShift && !ioLocal.KeyCtrl;
+                if (replaceMode)
+                {
+                    _selectionInteraction.ClearSelection();
+                }
             }
         }
 

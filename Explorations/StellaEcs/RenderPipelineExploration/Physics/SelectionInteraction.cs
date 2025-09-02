@@ -65,6 +65,15 @@ public sealed class SelectionInteractionService
     }
 
     /// <summary>
+    /// Clears the current selection set without notifying handlers.
+    /// Use when initiating a new selection in Replace mode that yields no candidates.
+    /// </summary>
+    public void ClearSelection()
+    {
+        _selected.Clear();
+    }
+
+    /// <summary>
     /// Apply a selection operation over the current selection using the specified mode.
     /// </summary>
     public void ApplySelection(IEnumerable<Entity> candidates, SelectionMode mode)
