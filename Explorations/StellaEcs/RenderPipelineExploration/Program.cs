@@ -1782,30 +1782,6 @@ internal static class Program
                     MaxSelectionDistance = 5000f,
                 })
                 .Set(new Selectable())
-                .Set(new CelestialBody())
-                .Set(new Kinematic())
-                .Set(Mesh.CreateSphere3D())
-                .Set(new Position3D(AuToWorld(0.2f, 0, 0).X, AuToWorld(0.2f, 0, 0).Y, AuToWorld(0.2f, 0, 0).Z)) // distance = 0.39 AU
-                .Set(new Size3D(0.38f)) // size = 0.38x Earth
-                .Set(Rotation3D.Identity)
-                .Set(new CollisionShape(new Sphere(0.38f * 0.6f)))
-                .Set(new AngularVelocity3D(0f, 0.1f, 0f)) // speed relative to Earth (fastest)
-                .Set(new Parent(sun))
-                .Set(new Texture2DRef { Texture = _checkerTexture! })
-                .Set(new Components.Shader(this, "Light", true));
-
-            World.CreateEntity()
-                .Set(new Impostor()
-                {
-                    MaxDistance = 5000f,
-                    OverrideMaxDistance = true,
-                })
-                .Set(new SelectionRules
-                {
-                    OverrideMaxDistance = true,
-                    MaxSelectionDistance = 5000f,
-                })
-                .Set(new Selectable())
                 .Set(new Position3D(origin.X + 2, origin.Y + 8, origin.Z + 2))
                 .Set(Mesh.CreateBox3D())
                 .Set(new Size3D(2f))
@@ -2570,14 +2546,14 @@ internal static class Program
                     {
                         OverrideColor = true,
                         Color = new(1f, 1f, 0.2f, 0.9f),
-                        MaxDistance = 1000f,
+                        MaxDistance = 3500f,
                         OverrideMaxDistance = true,
                     }
                     )
                     .Set(new SelectionRules
                     {
                         OverrideMaxDistance = true,
-                        MaxSelectionDistance = 1000f,
+                        MaxSelectionDistance = 3500f,
                     })
                     .Set(new Selectable())
                     .Set(new CelestialBody())
