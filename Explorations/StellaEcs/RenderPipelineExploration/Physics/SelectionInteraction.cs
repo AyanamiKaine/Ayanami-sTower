@@ -5,12 +5,31 @@ using AyanamisTower.StellaEcs.Api;
 namespace AyanamisTower.StellaEcs.StellaInvicta.Physics;
 
 /// <summary>
-/// Service that lets entities register callbacks for when they are selected
-/// (e.g., via a selection rectangle). Program code calls NotifySelected to trigger them.
+/// Service that tracks a selection set and lets entities register callbacks for when they are selected.
+/// Supports replace/add/subtract semantics when applying a selection operation.
 /// </summary>
 public sealed class SelectionInteractionService
 {
+    /// <summary>
+    /// How a new selection should be applied to the current selection set.
+    /// </summary>
+    public enum SelectionMode
+    {
+        /// <summary>Replace current selection with new candidates.</summary>
+        Replace,
+        /// <summary>Add new candidates to the current selection.</summary>
+        Add,
+        /// <summary>Remove candidates from the current selection.</summary>
+        Subtract
+    }
+
     private readonly Dictionary<Entity, Action<Entity>> _onSelected = new();
+    private readonly HashSet<Entity> _selected = new();
+
+    /// <summary>
+    /// Gets the current selection set.
+    /// </summary>
+    public IReadOnlyCollection<Entity> CurrentSelection => _selected;
 
     /// <summary>
     /// Register a callback invoked when the entity is selected.
@@ -46,13 +65,46 @@ public sealed class SelectionInteractionService
     }
 
     /// <summary>
-    /// Notify a list of entities have been selected.
+    /// Apply a selection operation over the current selection using the specified mode.
     /// </summary>
-    public void NotifySelected(IEnumerable<Entity> entities)
+    public void ApplySelection(IEnumerable<Entity> candidates, SelectionMode mode)
     {
-        foreach (var e in entities)
+        switch (mode)
         {
-            NotifySelected(e);
+            case SelectionMode.Replace:
+                {
+                    // Compute newly added: candidates - current
+                    var added = new List<Entity>();
+                    var newSet = new HashSet<Entity>();
+                    foreach (var e in candidates)
+                    {
+                        newSet.Add(e);
+                        if (!_selected.Contains(e)) added.Add(e);
+                    }
+                    _selected.Clear();
+                    foreach (var e in newSet) _selected.Add(e);
+                    foreach (var e in added) NotifySelected(e);
+                    break;
+                }
+            case SelectionMode.Add:
+                {
+                    foreach (var e in candidates)
+                    {
+                        if (_selected.Add(e))
+                        {
+                            NotifySelected(e);
+                        }
+                    }
+                    break;
+                }
+            case SelectionMode.Subtract:
+                {
+                    foreach (var e in candidates)
+                    {
+                        _selected.Remove(e);
+                    }
+                    break;
+                }
         }
     }
 }
@@ -73,4 +125,10 @@ public static class EntitySelectionExtensions
     /// </summary>
     public static void RemoveSelectionHandlers(this Entity e, SelectionInteractionService svc)
         => svc.UnregisterAll(e);
+
+    /// <summary>
+    /// Returns true if this entity is currently selected.
+    /// </summary>
+    public static bool IsSelected(this Entity e, SelectionInteractionService svc)
+        => svc.CurrentSelection.Contains(e);
 }
