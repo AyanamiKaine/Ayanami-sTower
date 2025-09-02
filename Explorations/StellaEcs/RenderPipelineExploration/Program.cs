@@ -122,6 +122,10 @@ internal static class Program
         private readonly MouseInteractionService _mouseInteraction = new();
         // Collision interaction service (initialized in ctor after physics manager)
         private CollisionInteractionService _collisionInteraction = null!;
+        // Selection drag rectangle (screen-space via ImGui)
+        private bool _isDragSelecting = false;
+        private Vector2 _dragStartScreen;
+        private Vector2 _dragEndScreen;
         // FPS counter for window title
         private readonly string _baseTitle = "Stella Invicta";
         private float _fpsTimer = 0f;
@@ -2213,6 +2217,9 @@ internal static class Program
                 // Render all our ImGui windows (extracted helpers)
                 RenderImguiWindows();
 
+                // Draw selection rectangle overlay on top of any windows
+                RenderSelectionRectangleImGui();
+
                 ImGui.Render();
                 drawData = ImGui.GetDrawData();
                 ImGuiImplSDL3.SDLGPU3PrepareDrawData(drawData, (SDLGPUCommandBuffer*)cmdbuf.Handle);
@@ -2944,6 +2951,81 @@ internal static class Program
         {
             // Delegate to the centralized disable method which is idempotent.
             DisableImgui();
+        }
+
+        /// <summary>
+        /// Renders a semi-transparent blue selection rectangle using ImGui's foreground draw list.
+        /// Captures mouse drag in screen space and only draws while the left button is held.
+        /// </summary>
+        private void RenderSelectionRectangleImGui()
+        {
+            // Ensure ImGui is active
+            if (!_imguiEnabled) return;
+
+            var ioLocal = ImGui.GetIO();
+
+            // If UI wants the mouse, don't start or continue a world selection drag
+            // (still allow drawing if already dragging and not over UI, tweak as desired)
+            bool wantCapture = ioLocal.WantCaptureMouse;
+
+            bool leftClicked = ImGui.IsMouseClicked(ImGuiMouseButton.Left);
+            bool leftDown = ImGui.IsMouseDown(ImGuiMouseButton.Left);
+            bool leftReleased = ImGui.IsMouseReleased(ImGuiMouseButton.Left);
+
+            // Begin drag
+            if (!_isDragSelecting && leftClicked && !wantCapture)
+            {
+                _isDragSelecting = true;
+                _dragStartScreen = ImGui.GetMousePos();
+                _dragEndScreen = _dragStartScreen;
+            }
+
+            // Update drag
+            if (_isDragSelecting)
+            {
+                _dragEndScreen = ImGui.GetMousePos();
+
+                // End drag
+                if (!leftDown || leftReleased)
+                {
+                    _isDragSelecting = false;
+                    // Selection evaluation of entities can be done here (world-space picking)
+                    // using _dragStartScreen and _dragEndScreen if needed.
+                }
+            }
+
+            // Draw rectangle only while dragging and when it has a visible area
+            if (_isDragSelecting)
+            {
+                float x0 = MathF.Min(_dragStartScreen.X, _dragEndScreen.X);
+                float y0 = MathF.Min(_dragStartScreen.Y, _dragEndScreen.Y);
+                float x1 = MathF.Max(_dragStartScreen.X, _dragEndScreen.X);
+                float y1 = MathF.Max(_dragStartScreen.Y, _dragEndScreen.Y);
+
+                // Clamp to window bounds
+                float w = MainWindow != null ? MainWindow.Width : 0;
+                float h = MainWindow != null ? MainWindow.Height : 0;
+                x0 = MathF.Max(0, MathF.Min(x0, w));
+                y0 = MathF.Max(0, MathF.Min(y0, h));
+                x1 = MathF.Max(0, MathF.Min(x1, w));
+                y1 = MathF.Max(0, MathF.Min(y1, h));
+
+                // Skip if tiny
+                if (MathF.Abs(x1 - x0) > 1f && MathF.Abs(y1 - y0) > 1f)
+                {
+                    var pMin = new Vector2(x0, y0);
+                    var pMax = new Vector2(x1, y1);
+
+                    var drawList = ImGui.GetForegroundDrawList();
+
+                    // Colors: translucent fill and solid-ish border
+                    uint fillCol = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2f, 0.55f, 1.0f, 0.20f));
+                    uint borderCol = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2f, 0.55f, 1.0f, 0.85f));
+
+                    drawList.AddRectFilled(pMin, pMax, fillCol, 2f, ImDrawFlags.None);
+                    drawList.AddRect(pMin, pMax, borderCol, 2f, ImDrawFlags.None, 2.0f);
+                }
+            }
         }
 
         protected override void Destroy()
