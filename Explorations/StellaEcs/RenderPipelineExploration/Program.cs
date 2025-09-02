@@ -2989,8 +2989,8 @@ internal static class Program
                 if (!leftDown || leftReleased)
                 {
                     _isDragSelecting = false;
-                    // Selection evaluation of entities can be done here (world-space picking)
-                    // using _dragStartScreen and _dragEndScreen if needed.
+                    // Evaluate selection when drag ends
+                    TryEvaluateSelectionRectangle(_dragStartScreen, _dragEndScreen);
                 }
             }
 
@@ -3025,6 +3025,129 @@ internal static class Program
                     drawList.AddRectFilled(pMin, pMax, fillCol, 2f, ImDrawFlags.None);
                     drawList.AddRect(pMin, pMax, borderCol, 2f, ImDrawFlags.None, 2.0f);
                 }
+            }
+        }
+
+        /// <summary>
+        /// On selection release, compute which entities intersect the screen rectangle and print them.
+        /// </summary>
+        private void TryEvaluateSelectionRectangle(Vector2 start, Vector2 end)
+        {
+            float x0 = MathF.Min(start.X, end.X);
+            float y0 = MathF.Min(start.Y, end.Y);
+            float x1 = MathF.Max(start.X, end.X);
+            float y1 = MathF.Max(start.Y, end.Y);
+
+            // Ignore tiny drags (treat as click)
+            if (MathF.Abs(x1 - x0) < 3f || MathF.Abs(y1 - y0) < 3f)
+            {
+                return;
+            }
+
+            float screenW = (float)MainWindow.Width;
+            float screenH = (float)MainWindow.Height;
+            x0 = MathF.Max(0, MathF.Min(x0, screenW));
+            y0 = MathF.Max(0, MathF.Min(y0, screenH));
+            x1 = MathF.Max(0, MathF.Min(x1, screenW));
+            y1 = MathF.Max(0, MathF.Min(y1, screenH));
+
+            // Rebuild view-projection consistent with camera-relative rendering mode
+            var viewD = _camera.GetViewMatrix();
+            var projD = _camera.GetProjectionMatrix();
+            var view = HighPrecisionConversions.ToMatrix(viewD);
+            var proj = HighPrecisionConversions.ToMatrix(projD);
+            if (_useCameraRelativeRendering) { view.Translation = Vector3.Zero; }
+            var viewProj = view * proj;
+            var camPos = HighPrecisionConversions.ToVector3(_camera.Position);
+            float tanHalfFov = MathF.Tan((float)_camera.Fov * 0.5f);
+
+            // Helper local functions
+            static bool CircleIntersectsRect(float cx, float cy, float r, float rx0, float ry0, float rx1, float ry1)
+            {
+                float clampedX = MathF.Max(rx0, MathF.Min(cx, rx1));
+                float clampedY = MathF.Max(ry0, MathF.Min(cy, ry1));
+                float dx = cx - clampedX;
+                float dy = cy - clampedY;
+                return (dx * dx + dy * dy) <= (r * r);
+            }
+
+            var selected = new System.Collections.Generic.List<Entity>();
+
+            foreach (var e in World.GetAllEntities())
+            {
+                // Find a position
+                Vector3Double posD;
+                if (e.Has<RenderPosition3D>()) posD = e.GetMut<RenderPosition3D>().Value;
+                else if (e.Has<Position3D>()) posD = e.GetMut<Position3D>().Value;
+                else if (e.Has<PhysicsBody>() && TryGetBodyRef(e.GetMut<PhysicsBody>().Handle, out var bodyRef)) posD = bodyRef.Pose.Position;
+                else continue;
+
+                // Estimate a radius
+                float radius = 0.6f; // default small radius
+                if (e.Has<Size3D>())
+                {
+                    var s = e.GetMut<Size3D>().Value;
+                    radius = MathF.Max((float)s.X, MathF.Max((float)s.Y, (float)s.Z)) * 0.6f;
+                }
+                else if (e.Has<CollisionShape>())
+                {
+                    var cs = e.GetMut<CollisionShape>().Shape;
+                    switch (cs)
+                    {
+                        case Sphere s:
+                            radius = s.Radius;
+                            break;
+                        case Box b:
+                            radius = MathF.Sqrt(b.HalfWidth * b.HalfWidth + b.HalfHeight * b.HalfHeight + b.HalfLength * b.HalfLength);
+                            break;
+                        case Capsule c:
+                            radius = c.HalfLength + c.Radius; // conservative
+                            break;
+                        case Cylinder cy:
+                            radius = MathF.Sqrt(cy.HalfLength * cy.HalfLength + cy.Radius * cy.Radius);
+                            break;
+                        default:
+                            radius = 0.6f;
+                            break;
+                    }
+                }
+
+                // Convert to render space and project to screen
+                var pos = HighPrecisionConversions.ToVector3(posD);
+                var renderPos = _useCameraRelativeRendering ? (pos - camPos) : pos;
+                var center4 = new Vector4(renderPos, 1f);
+                var clip = Vector4.Transform(center4, viewProj);
+                if (clip.W <= 0f) continue; // behind camera
+
+                var toObj = renderPos;
+                float dist = toObj.Length();
+                if (dist <= 1e-4f) dist = 1e-4f;
+                float pixelRadius = (radius / (dist * MathF.Max(1e-4f, tanHalfFov))) * (screenH * 0.5f);
+
+                var ndcX = clip.X / clip.W;
+                var ndcY = clip.Y / clip.W;
+                float sx = (ndcX * 0.5f + 0.5f) * screenW;
+                float sy = (1f - (ndcY * 0.5f + 0.5f)) * screenH;
+
+                if (CircleIntersectsRect(sx, sy, pixelRadius, x0, y0, x1, y1))
+                {
+                    selected.Add(e);
+                }
+            }
+
+            if (selected.Count > 0)
+            {
+                var ids = new System.Text.StringBuilder();
+                for (int i = 0; i < selected.Count; i++)
+                {
+                    if (i > 0) ids.Append(", ");
+                    ids.Append('E'); ids.Append(selected[i].Id);
+                }
+                Console.WriteLine($"Selection rectangle hit {selected.Count} entities: {ids}");
+            }
+            else
+            {
+                Console.WriteLine("Selection rectangle hit 0 entities.");
             }
         }
 
