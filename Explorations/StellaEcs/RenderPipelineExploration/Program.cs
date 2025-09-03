@@ -1119,6 +1119,40 @@ internal static class Program
                         if (Vector2.Distance(mouse, screenPos) <= r + hoverPad)
                         {
                             RenderSelectionIndicatorAtScreenPosition(screenPos, MathF.Max(r, _minSelectionPixelSize));
+
+                            // Click selection for impostors: respect UI capture and modifier keys (Shift=Add, Ctrl=Subtract)
+                            try
+                            {
+                                if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ioLocal.WantCaptureMouse)
+                                {
+                                    var ioSel = ImGui.GetIO();
+                                    var mode = SelectionInteractionService.SelectionMode.Replace;
+                                    if (ioSel.KeyShift) mode = SelectionInteractionService.SelectionMode.Add;
+                                    else if (ioSel.KeyCtrl) mode = SelectionInteractionService.SelectionMode.Subtract;
+
+                                    _selectionInteraction.ApplySelection(new[] { e }, mode);
+                                    // Keep Selected tag components in sync
+                                    SyncSelectedComponents();
+
+                                    // Update the single-entity inspector selection when replacing
+                                    if (mode == SelectionInteractionService.SelectionMode.Replace)
+                                    {
+                                        _selectedEntity = e;
+                                    }
+                                    else if (mode == SelectionInteractionService.SelectionMode.Subtract)
+                                    {
+                                        // If we removed the currently inspected entity, clear it
+                                        if (_selectedEntity != default && _selectedEntity.Equals(e))
+                                        {
+                                            _selectedEntity = default;
+                                        }
+                                    }
+
+                                    // Notify any mouse click handlers registered for this entity
+                                    _mouseInteraction.NotifyClick(e);
+                                }
+                            }
+                            catch { }
                         }
                     }
                 }
