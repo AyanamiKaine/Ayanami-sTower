@@ -31,6 +31,7 @@ using AyanamisTower.StellaEcs.StellaInvicta.UI.Input;
 using AyanamisTower.StellaEcs.StellaInvicta.UI.Rendering;
 using AyanamisTower.StellaEcs.StellaInvicta.UI.Systems;
 using StellaInvicta.Extensions;
+using StellaInvicta.Utils;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -2013,11 +2014,14 @@ internal static class Program
             World.CreateEntity()
                 .Set(new SelectionRules
                 {
+
                     OverrideMaxDistance = true,
                     MaxSelectionDistance = 5000f,
                 })
                 .Set(new Impostor()
                 {
+                    OverrideColor = true,
+                    Color = ColorExtensions.ToImgui(Color.Orange),
                     MaxDistance = 5000f,
                     OverrideMaxDistance = true,
                 })
@@ -2026,7 +2030,7 @@ internal static class Program
                 .Set(new Selectable())
                 .Set(new Position3D(origin.X, origin.Y, origin.Z + 30))
                 .Set(Mesh.CreateBox3D())
-                .Set(new Size3D(3f))
+                .Set(new Size3D(0.01f))
                 .Set(new Texture2DRef { Texture = _checkerTexture! });
 
             World.CreateEntity()
