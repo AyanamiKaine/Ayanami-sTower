@@ -30,6 +30,7 @@ using AyanamisTower.StellaEcs.StellaInvicta.UI.Components;
 using AyanamisTower.StellaEcs.StellaInvicta.UI.Input;
 using AyanamisTower.StellaEcs.StellaInvicta.UI.Rendering;
 using AyanamisTower.StellaEcs.StellaInvicta.UI.Systems;
+using StellaInvicta.Extensions;
 
 namespace AyanamisTower.StellaEcs.StellaInvicta;
 
@@ -1225,7 +1226,11 @@ internal static class Program
 
             World.EnableRestApi();
 
+            // Register local/exploration-only tag components
+            World.RegisterComponent<Movable>();
+
             World.RegisterSystem(new LightingSystem());
+            World.RegisterSystem(new MovingToSystem());
 
             //EnableVSync();
 
@@ -1399,6 +1404,77 @@ internal static class Program
                     Console.WriteLine("PICK: Missed. No object was hit.");
                 }
             }, "MousePick");
+
+            // Right-click move command: issue MoveTo for selected Movable entities on XZ-plane
+            _inputManager.RegisterRightMousePressed(() =>
+            {
+                // Avoid if UI wants the mouse
+                var ioLocal = ImGui.GetIO();
+                if (ioLocal.WantCaptureMouse) return;
+
+                // Try physics pick first to get a ground hit position
+                Vector3Double targetXZ;
+                if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var pick))
+                {
+                    // Convert absolute/world hit to relative space if floating origin is enabled
+                    if (_floatingOriginManager != null)
+                    {
+                        var rel = _floatingOriginManager.ToRelativePosition(new Vector3Double(pick.HitLocation.X, pick.HitLocation.Y, pick.HitLocation.Z));
+                        targetXZ = new Vector3Double(rel.X, 0.0, rel.Z);
+                    }
+                    else
+                    {
+                        targetXZ = new Vector3Double(pick.HitLocation.X, 0.0, pick.HitLocation.Z);
+                    }
+                }
+                else
+                {
+                    // If no hit, project the camera forward onto Y=0 plane at some distance
+                    // Compute a ray from camera: origin = camera pos, dir = forward from view matrix
+                    var camPos = _camera.Position;
+                    var view = _camera.GetViewMatrix();
+                    var viewMat = HighPrecisionConversions.ToMatrix(view);
+                    if (_useCameraRelativeRendering) viewMat.Translation = Vector3.Zero;
+                    // Camera forward in world space is -Z of view inverse; simpler: take camera look vector from controller
+                    // Fallback: use camera's target dir approximately from controller API
+                    Vector3Double camForward = _camera.Forward;
+                    if (camForward.LengthSquared() < 1e-12) camForward = new Vector3Double(0, 0, -1);
+
+                    // Intersect ray (camPos, camForward) with plane Y=0 in relative space: camPos + t*dir, solve camPos.Y + t*dir.Y = 0
+                    if (Math.Abs(camForward.Y) > 1e-9)
+                    {
+                        double t = -camPos.Y / camForward.Y;
+                        if (t < 1.0) t = 1.0; // ensure in front of camera
+                        var p = camPos + camForward * t;
+                        targetXZ = new Vector3Double(p.X, 0.0, p.Z);
+                    }
+                    else
+                    {
+                        // Parallel: just drop to plane using current mouse unproject near
+                        targetXZ = new Vector3Double(camPos.X, 0.0, camPos.Z) + new Vector3Double(0, 0, -5.0);
+                    }
+                }
+
+                // Issue MoveTo for selected Movable entities
+                var selection = _selectionInteraction.CurrentSelection;
+                const double defaultSpeed = 5.0; // units/sec
+                const double arriveRadius = 0.5;
+                foreach (var e in selection)
+                {
+                    try
+                    {
+                        if (!World.IsEntityValid(e)) continue;
+                        if (!e.Has<Movable>()) continue;
+                        if (!e.Has<Position3D>()) continue; // must have position to move
+
+                        // Keep current entity Y so motion is constrained to XZ relative to current height
+                        var posY = e.GetCopy<Position3D>().Value.Y;
+                        var target = new Vector3Double(targetXZ.X, posY, targetXZ.Z);
+                        e.MoveTo(target, defaultSpeed, arriveRadius);
+                    }
+                    catch { /* continue */ }
+                }
+            }, "RightClickMove");
 
             // ---------- UI bootstrap ----------
             _uiRenderer = new DebugImGuiUIRenderer();
@@ -1882,6 +1958,8 @@ internal static class Program
                     MaxDistance = 5000f,
                     OverrideMaxDistance = true,
                 })
+                .Set(new Movable())
+                .Set(new Velocity3D(0, 0, 0))
                 .Set(new Selectable())
                 .Set(new Position3D(origin.X, origin.Y, origin.Z + 30))
                 .Set(Mesh.CreateBox3D())

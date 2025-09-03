@@ -72,7 +72,7 @@ public class CorePlugin : IPlugin
     /// <inheritdoc/>
     public IEnumerable<Type> ProvidedServices => [typeof(SearchService)];
     /// <inheritdoc/>
-    public IEnumerable<Type> ProvidedComponents => [typeof(Name), typeof(Position2D), typeof(Velocity2D), typeof(Position3D), typeof(LocalPosition3D), typeof(Velocity3D), typeof(ColorRGBA), typeof(Rotation3D), typeof(AngularVelocity3D), typeof(Size3D), typeof(LocalPosition3D)];
+    public IEnumerable<Type> ProvidedComponents => [typeof(Name), typeof(Position2D), typeof(Velocity2D), typeof(Position3D), typeof(LocalPosition3D), typeof(Velocity3D), typeof(ColorRGBA), typeof(Rotation3D), typeof(AngularVelocity3D), typeof(Size3D), typeof(LocalPosition3D), typeof(MovingTo)];
 
     /// <inheritdoc/>
     public void Initialize(World world)
@@ -90,6 +90,7 @@ public class CorePlugin : IPlugin
         world.RegisterComponent<AngularVelocity3D>();
         world.RegisterComponent<Size3D>();
         world.RegisterComponent<LocalPosition3D>();
+    world.RegisterComponent<MovingTo>();
 
 
         world.RegisterSystem(new MovementSystem2D { Name = $"{Prefix}.{nameof(MovementSystem2D)}" }, this);
