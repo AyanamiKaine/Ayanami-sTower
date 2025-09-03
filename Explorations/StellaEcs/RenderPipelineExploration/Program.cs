@@ -1420,7 +1420,7 @@ internal static class Program
                 // Double-click detection (right mouse)
                 double now = DateTime.UtcNow.TimeOfDay.TotalSeconds;
                 bool isDoubleClick = false;
-                const double DOUBLE_CLICK_TIME = 0.35; // seconds (matches left-click)
+                const double DOUBLE_CLICK_TIME = 0.55; // seconds (matches left-click)
                 const int DOUBLE_CLICK_PIXEL_RADIUS = 6;
                 if (now - _lastRightClickTime <= DOUBLE_CLICK_TIME)
                 {
@@ -1776,7 +1776,7 @@ internal static class Program
             // Create the default star system at world origin (extracted to a helper to allow multiple spawns)
             CreateStarSystem(new Vector3(0f, 0f, 0f), 80.0f);
 
-            //SpawnGalaxies(25);
+            SpawnGalaxies(2);
 
             // Example usage:
             // SetSkybox("AssetManager.AssetFolderName + "/skybox.jpg", 50f);
