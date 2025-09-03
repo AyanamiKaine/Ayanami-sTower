@@ -183,8 +183,8 @@ internal static class Program
         private DateTime _lastDrawTime = DateTime.UtcNow;
         // Currently selected entity in the ImGui entities window
         private Entity _selectedEntity = default;
-    // UI: index of target entity to track (used in Entities window)
-    private int _trackTargetIndex = 0;
+        // UI: index of target entity to track (used in Entities window)
+        private int _trackTargetIndex = 0;
         // Accumulated time for animated shaders (e.g., Sun)
         private float _shaderTime = 0f;
         // UI systems and renderer
