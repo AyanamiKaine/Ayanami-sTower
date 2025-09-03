@@ -1107,6 +1107,23 @@ internal static class Program
                 }
                 float r = MathF.Max(0.1f, (minLocal + (maxLocal - minLocal) * t) * scaleFactorLocal);
 
+                // Hover detection: if the mouse is over the impostor icon, render the selection indicator
+                try
+                {
+                    var ioLocal = ImGui.GetIO();
+                    var mouse = ImGui.GetMousePos();
+                    // only show hover when UI isn't capturing the mouse
+                    if (!ioLocal.WantCaptureMouse)
+                    {
+                        float hoverPad = 4.0f; // tolerance in pixels
+                        if (Vector2.Distance(mouse, screenPos) <= r + hoverPad)
+                        {
+                            RenderSelectionIndicatorAtScreenPosition(screenPos, MathF.Max(r, _minSelectionPixelSize));
+                        }
+                    }
+                }
+                catch { }
+
                 uint col = ImGui.ColorConvertFloat4ToU32(colorLocal);
                 switch (shapeLocal)
                 {
@@ -1127,6 +1144,30 @@ internal static class Program
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Draws a simple selection indicator at a given screen position to mirror the in-world indicator.
+        /// Used for impostor hover feedback.
+        /// </summary>
+        private void RenderSelectionIndicatorAtScreenPosition(Vector2 screenPos, float pixelRadius)
+        {
+            if (!_imguiEnabled) return;
+
+            var draw = ImGui.GetForegroundDrawList();
+            uint borderCol = ImGui.ColorConvertFloat4ToU32(_indicatorBorderColor);
+            uint fillCol = ImGui.ColorConvertFloat4ToU32(_indicatorFillColor);
+
+            float r = MathF.Max(pixelRadius, _minSelectionPixelSize);
+
+            // Fill when enabled and when the indicator shape supports it
+            if (_indicatorUseFill && _indicatorShape != SelectionIndicatorShape.Ring && _indicatorShape != SelectionIndicatorShape.Crosshair && _indicatorShape != SelectionIndicatorShape.Homeworld)
+            {
+                draw.AddCircleFilled(screenPos, r, fillCol, 32);
+            }
+
+            // Border
+            draw.AddCircle(screenPos, r, borderCol, 32, _indicatorThickness);
         }
 
         private void RenderImguiEntitiesWindow()
