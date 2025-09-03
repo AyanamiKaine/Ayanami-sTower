@@ -183,6 +183,8 @@ internal static class Program
         private DateTime _lastDrawTime = DateTime.UtcNow;
         // Currently selected entity in the ImGui entities window
         private Entity _selectedEntity = default;
+    // UI: index of target entity to track (used in Entities window)
+    private int _trackTargetIndex = 0;
         // Accumulated time for animated shaders (e.g., Sun)
         private float _shaderTime = 0f;
         // UI systems and renderer
@@ -1158,6 +1160,41 @@ internal static class Program
                     var pos = _selectedEntity.GetCopy<Position3D>().Value;
                     ImGui.Text($"Position: {pos.X:F2}, {pos.Y:F2}, {pos.Z:F2}");
                 }
+                // Tracking UI: allow choosing another entity as a target and start/stop tracking
+                // Build a simple list of entity labels for selection
+                var all = World.GetAllEntities().ToList();
+                var labels = new List<string>(all.Count + 1);
+                labels.Add("(None)");
+                for (int i = 0; i < all.Count; i++) labels.Add($"E{all[i].Id} (Gen {all[i].Generation})");
+
+                // Clamp index
+                if (_trackTargetIndex < 0) _trackTargetIndex = 0;
+                if (_trackTargetIndex >= labels.Count) _trackTargetIndex = labels.Count - 1;
+
+                if (ImGui.Combo("Track Target", ref _trackTargetIndex, labels.ToArray(), labels.Count))
+                {
+                    // selection changed, no immediate action
+                }
+
+                ImGui.SameLine();
+                if (ImGui.Button("Track"))
+                {
+                    if (_trackTargetIndex > 0 && _selectedEntity != default && _selectedEntity != Entity.Null)
+                    {
+                        var target = all[_trackTargetIndex - 1];
+                        // default speed/sample arrive radius
+                        _selectedEntity.TrackTo(target, 5.0, 0.5);
+                    }
+                }
+
+                ImGui.SameLine();
+                if (ImGui.Button("Stop Tracking"))
+                {
+                    if (_selectedEntity != default && _selectedEntity != Entity.Null)
+                    {
+                        _selectedEntity.StopTracking();
+                    }
+                }
                 else
                 {
                     ImGui.Text("Position: (no Position3D)");
@@ -1235,6 +1272,7 @@ internal static class Program
 
             World.RegisterSystem(new LightingSystem());
             World.RegisterSystem(new MovingToSystem());
+            World.RegisterSystem(new TrackingSystem());
 
             //EnableVSync();
 
@@ -1458,23 +1496,23 @@ internal static class Program
 
                         // Get entity's current position in ECS-relative coordinates
                         var entityPos = e.GetCopy<Position3D>().Value;
-                        
+
                         // Convert the ray to use double precision for accuracy
                         var rayOriginDouble = new Vector3Double(rayOriginSim.X, rayOriginSim.Y, rayOriginSim.Z);
                         var rayDirDouble = new Vector3Double(rayDirSim.X, rayDirSim.Y, rayDirSim.Z);
-                        
+
                         // Use the entity's current Y coordinate for the plane intersection
                         // This keeps the entity at the same altitude
                         double planeY = entityPos.Y;
                         double denom = rayDirDouble.Y;
                         Vector3Double targetPos;
-                        
+
                         if (Math.Abs(denom) < 1e-6)
                         {
                             // Ray parallel to plane: project forward and use plane Y
                             targetPos = new Vector3Double(
-                                rayOriginDouble.X + rayDirDouble.X * 10.0, 
-                                planeY, 
+                                rayOriginDouble.X + rayDirDouble.X * 10.0,
+                                planeY,
                                 rayOriginDouble.Z + rayDirDouble.Z * 10.0);
                         }
                         else
@@ -1494,8 +1532,8 @@ internal static class Program
                         e.MoveTo(targetPos, defaultSpeed, arriveRadius);
                         Console.WriteLine($"Moving entity {e.Id} to: {targetPos}");
                     }
-                    catch (Exception ex) 
-                    { 
+                    catch (Exception ex)
+                    {
                         Console.WriteLine($"Error moving entity: {ex.Message}");
                     }
                 }
