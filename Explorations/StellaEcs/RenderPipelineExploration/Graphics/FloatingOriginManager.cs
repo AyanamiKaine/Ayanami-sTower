@@ -95,6 +95,14 @@ public class FloatingOriginManager
             }
         }
 
+        // Shift any active movement targets so entities keep heading to the same world place.
+        foreach (var entity in _world.Query(typeof(MovingTo)))
+        {
+            var movingTo = entity.GetMut<MovingTo>();
+            movingTo.Target -= offset;
+            entity.Set(movingTo);
+        }
+
         // Rebase physics objects to sync them with the new ECS positions.
         //RebasePhysicsObjects();
 

@@ -56,6 +56,10 @@ internal static class Program
         private double _lastClickTime = 0.0;
         private int _lastClickX = -9999;
         private int _lastClickY = -9999;
+    // Separate tracking for right-click double-click detection
+    private double _lastRightClickTime = 0.0;
+    private int _lastRightClickX = -9999;
+    private int _lastRightClickY = -9999;
 
         // Deterministic fixed-step simulation accumulator
         // The simulation will always step in discrete, fixed-sized steps so
@@ -1406,52 +1410,96 @@ internal static class Program
             }, "MousePick");
 
             // Right-click move command: issue MoveTo for selected Movable entities on XZ-plane
+            // Requires a double right-click to trigger (mirrors left-click double-click behavior)
             _inputManager.RegisterRightMousePressed(() =>
             {
                 // Avoid if UI wants the mouse
                 var ioLocal = ImGui.GetIO();
                 if (ioLocal.WantCaptureMouse) return;
 
-                // Try physics pick first to get a ground hit position
-                Vector3Double targetXZ;
-                if (_mousePicker.Pick(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var pick))
+                // Double-click detection (right mouse)
+                double now = DateTime.UtcNow.TimeOfDay.TotalSeconds;
+                bool isDoubleClick = false;
+                const double DOUBLE_CLICK_TIME = 0.35; // seconds (matches left-click)
+                const int DOUBLE_CLICK_PIXEL_RADIUS = 6;
+                if (now - _lastRightClickTime <= DOUBLE_CLICK_TIME)
                 {
-                    // Convert absolute/world hit to relative space if floating origin is enabled
-                    if (_floatingOriginManager != null)
+                    int dx = Inputs.Mouse.X - _lastRightClickX;
+                    int dy = Inputs.Mouse.Y - _lastRightClickY;
+                    if ((dx * dx) + (dy * dy) <= DOUBLE_CLICK_PIXEL_RADIUS * DOUBLE_CLICK_PIXEL_RADIUS)
                     {
-                        var rel = _floatingOriginManager.ToRelativePosition(new Vector3Double(pick.HitLocation.X, pick.HitLocation.Y, pick.HitLocation.Z));
-                        targetXZ = new Vector3Double(rel.X, 0.0, rel.Z);
-                    }
-                    else
-                    {
-                        targetXZ = new Vector3Double(pick.HitLocation.X, 0.0, pick.HitLocation.Z);
+                        isDoubleClick = true;
                     }
                 }
-                else
-                {
-                    // If no hit, project the camera forward onto Y=0 plane at some distance
-                    // Compute a ray from camera: origin = camera pos, dir = forward from view matrix
-                    var camPos = _camera.Position;
-                    var view = _camera.GetViewMatrix();
-                    var viewMat = HighPrecisionConversions.ToMatrix(view);
-                    if (_useCameraRelativeRendering) viewMat.Translation = Vector3.Zero;
-                    // Camera forward in world space is -Z of view inverse; simpler: take camera look vector from controller
-                    // Fallback: use camera's target dir approximately from controller API
-                    Vector3Double camForward = _camera.Forward;
-                    if (camForward.LengthSquared() < 1e-12) camForward = new Vector3Double(0, 0, -1);
+                // update last-right-click regardless so timing works for next click
+                _lastRightClickTime = now;
+                _lastRightClickX = Inputs.Mouse.X;
+                _lastRightClickY = Inputs.Mouse.Y;
 
-                    // Intersect ray (camPos, camForward) with plane Y=0 in relative space: camPos + t*dir, solve camPos.Y + t*dir.Y = 0
-                    if (Math.Abs(camForward.Y) > 1e-9)
+                if (!isDoubleClick) return;
+
+                // Compute the mouse ray and intersect with the ground plane (Y=0) in RELATIVE space.
+                // This is consistent regardless of what object was under the cursor.
+                Vector3Double targetXZ;
+                {
+                    // Mouse to NDC
+                    float ndcX = ((Inputs.Mouse.X / (float)MainWindow.Width) * 2f) - 1f;
+                    float ndcY = 1f - ((Inputs.Mouse.Y / (float)MainWindow.Height) * 2f);
+                    var nearNDC = new Vector4(ndcX, ndcY, 0f, 1f);
+                    var farNDC = new Vector4(ndcX, ndcY, 1f, 1f);
+
+                    // Build view/proj; remove translation if camera-relative rendering
+                    var projMat = HighPrecisionConversions.ToMatrix(_camera.GetProjectionMatrix());
+                    var viewMat = HighPrecisionConversions.ToMatrix(_camera.GetViewMatrix());
+                    if (_useCameraRelativeRendering) viewMat.Translation = Vector3.Zero;
+                    var viewProj = viewMat * projMat;
+                    if (!Matrix4x4.Invert(viewProj, out var invViewProj))
                     {
-                        double t = -camPos.Y / camForward.Y;
-                        if (t < 1.0) t = 1.0; // ensure in front of camera
-                        var p = camPos + camForward * t;
-                        targetXZ = new Vector3Double(p.X, 0.0, p.Z);
+                        return; // cannot compute a ray, abort command
+                    }
+
+                    // Unproject to space matching view/proj: when camera-relative rendering is ON,
+                    // points are in camera-relative coords; otherwise they are in world-relative coords.
+                    Vector4 near4 = Vector4.Transform(nearNDC, invViewProj);
+                    Vector4 far4 = Vector4.Transform(farNDC, invViewProj);
+                    if (near4.W == 0 || far4.W == 0) return;
+                    Vector3 nearP = new Vector3(near4.X, near4.Y, near4.Z) / near4.W;
+                    Vector3 farP = new Vector3(far4.X, far4.Y, far4.Z) / far4.W;
+
+                    // Build ray origin and direction in RELATIVE scene space
+                    var dirRel = Vector3.Normalize(farP - nearP);
+                    const float EPS = 1e-3f;
+                    Vector3Double rayOriginRel;
+                    if (_useCameraRelativeRendering)
+                    {
+                        var camPosRel = _camera.Position;
+                        rayOriginRel = new Vector3Double(camPosRel.X + nearP.X + dirRel.X * EPS,
+                                                         camPosRel.Y + nearP.Y + dirRel.Y * EPS,
+                                                         camPosRel.Z + nearP.Z + dirRel.Z * EPS);
                     }
                     else
                     {
-                        // Parallel: just drop to plane using current mouse unproject near
-                        targetXZ = new Vector3Double(camPos.X, 0.0, camPos.Z) + new Vector3Double(0, 0, -5.0);
+                        rayOriginRel = new Vector3Double(nearP.X + dirRel.X * EPS,
+                                                         nearP.Y + dirRel.Y * EPS,
+                                                         nearP.Z + dirRel.Z * EPS);
+                    }
+
+                    // Intersect with plane Y=0: origin.Y + t*dir.Y = 0
+                    double denom = dirRel.Y;
+                    if (Math.Abs(denom) < 1e-6)
+                    {
+                        // Parallel: fallback a bit ahead
+                        targetXZ = new Vector3Double(rayOriginRel.X + dirRel.X * 10.0, 0.0, rayOriginRel.Z + dirRel.Z * 10.0);
+                    }
+                    else
+                    {
+                        double t = -rayOriginRel.Y / denom;
+                        if (t < 0) t = 0; // clamp behind camera
+                        var p = new Vector3Double(
+                            rayOriginRel.X + dirRel.X * t,
+                            0.0,
+                            rayOriginRel.Z + dirRel.Z * t);
+                        targetXZ = p;
                     }
                 }
 
