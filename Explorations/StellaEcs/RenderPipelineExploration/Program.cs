@@ -58,7 +58,6 @@ internal static class Program
         private int _lastClickX = -9999;
         private int _lastClickY = -9999;
         // Separate tracking for right-click double-click detection
-        private double _lastRightClickTime = 0.0;
         private int _lastRightClickX = -9999;
         private int _lastRightClickY = -9999;
 
@@ -1523,97 +1522,7 @@ internal static class Program
                 }
             }, "MousePick");
 
-            // Right-click move command: issue MoveTo for selected Movable entities on XZ-plane
-            // Requires a double right-click to trigger (mirrors left-click double-click behavior)
-            _inputManager.RegisterRightMousePressed(() =>
-            {
-                // Avoid if UI wants the mouse
-                var ioLocal = ImGui.GetIO();
-                if (ioLocal.WantCaptureMouse) return;
 
-                // Double-click detection (right mouse)
-                double now = DateTime.UtcNow.TimeOfDay.TotalSeconds;
-                bool isDoubleClick = false;
-                const double DOUBLE_CLICK_TIME = 0.55; // seconds (matches left-click)
-                const int DOUBLE_CLICK_PIXEL_RADIUS = 6;
-                if (now - _lastRightClickTime <= DOUBLE_CLICK_TIME)
-                {
-                    int dx = Inputs.Mouse.X - _lastRightClickX;
-                    int dy = Inputs.Mouse.Y - _lastRightClickY;
-                    if ((dx * dx) + (dy * dy) <= DOUBLE_CLICK_PIXEL_RADIUS * DOUBLE_CLICK_PIXEL_RADIUS)
-                    {
-                        isDoubleClick = true;
-                    }
-                }
-                // update last-right-click regardless so timing works for next click
-                _lastRightClickTime = now;
-                _lastRightClickX = Inputs.Mouse.X;
-                _lastRightClickY = Inputs.Mouse.Y;
-
-                if (!isDoubleClick) return;
-
-                // Compute a mouse ray in simulation-relative space once.
-                if (!_mousePicker.TryGetRayRelative(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var rayOriginSim, out var rayDirSim))
-                {
-                    return;
-                }
-
-                // Issue MoveTo for selected Movable entities
-                var selection = _selectionInteraction.CurrentSelection;
-                const double defaultSpeed = 5.0; // units/sec
-                const double arriveRadius = 0.5;
-                foreach (var e in selection)
-                {
-                    try
-                    {
-                        if (!World.IsEntityValid(e)) continue;
-                        if (!e.Has<Movable>()) continue;
-                        if (!e.Has<Position3D>()) continue; // must have position to move
-
-                        // Get entity's current position in ECS-relative coordinates
-                        var entityPos = e.GetCopy<Position3D>().Value;
-
-                        // Convert the ray to use double precision for accuracy
-                        var rayOriginDouble = new Vector3Double(rayOriginSim.X, rayOriginSim.Y, rayOriginSim.Z);
-                        var rayDirDouble = new Vector3Double(rayDirSim.X, rayDirSim.Y, rayDirSim.Z);
-
-                        // Use the entity's current Y coordinate for the plane intersection
-                        // This keeps the entity at the same altitude
-                        double planeY = entityPos.Y;
-                        double denom = rayDirDouble.Y;
-                        Vector3Double targetPos;
-
-                        if (Math.Abs(denom) < 1e-6)
-                        {
-                            // Ray parallel to plane: project forward and use plane Y
-                            targetPos = new Vector3Double(
-                                rayOriginDouble.X + rayDirDouble.X * 10.0,
-                                planeY,
-                                rayOriginDouble.Z + rayDirDouble.Z * 10.0);
-                        }
-                        else
-                        {
-                            double tPlane = (planeY - rayOriginDouble.Y) / denom;
-                            if (tPlane < 0) tPlane = 0; // don't go behind camera
-                            targetPos = new Vector3Double(
-                                rayOriginDouble.X + rayDirDouble.X * tPlane,
-                                planeY,
-                                rayOriginDouble.Z + rayDirDouble.Z * tPlane);
-                        }
-
-                        // targetPos is already in ECS-relative coordinates since:
-                        // 1. rayOriginSim comes from TryGetRayRelative which handles floating origin conversion
-                        // 2. planeY comes from Position3D which is ECS-relative
-                        // So no additional coordinate conversion is needed
-                        e.MoveTo(targetPos, defaultSpeed, arriveRadius);
-                        Console.WriteLine($"Moving entity {e.Id} to: {targetPos}");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error moving entity: {ex.Message}");
-                    }
-                }
-            }, "RightClickMove");
 
             // ---------- UI bootstrap ----------
             _uiRenderer = new DebugImGuiUIRenderer();
@@ -3133,6 +3042,82 @@ internal static class Program
                 _uiInputSystem?.Update(World, 0f);
             }
             catch { }
+
+            // Process right-click movement commands
+            ProcessRightClickMove();
+        }
+
+        // Processes right-click double-click move commands each frame.
+        // This avoids relying on InputManager's event registration which was unreliable.
+        private void ProcessRightClickMove()
+        {
+            // Avoid if UI wants the mouse (check this first to prevent conflicts)
+            var ioLocal = ImGui.GetIO();
+            if (ioLocal.WantCaptureMouse) return;
+
+            // Use InputManager for reliable edge-based right-click detection
+            if (!_inputManager.WasRightMousePressed()) return;
+
+            _lastRightClickX = Inputs.Mouse.X;
+            _lastRightClickY = Inputs.Mouse.Y;
+
+            // Compute a mouse ray in simulation-relative space once.
+            if (!_mousePicker.TryGetRayRelative(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var rayOriginSim, out var rayDirSim))
+            {
+                return;
+            }
+
+            // Issue MoveTo for selected Movable entities
+            var selection = _selectionInteraction.CurrentSelection;
+            const double defaultSpeed = 5.0; // units/sec
+            const double arriveRadius = 0.5;
+            foreach (var e in selection)
+            {
+                try
+                {
+                    if (!World.IsEntityValid(e)) continue;
+                    if (!e.Has<Movable>()) continue;
+                    if (!e.Has<Position3D>()) continue; // must have position to move
+
+                    // Get entity's current position in ECS-relative coordinates
+                    var entityPos = e.GetCopy<Position3D>().Value;
+
+                    // Convert the ray to use double precision for accuracy
+                    var rayOriginDouble = new Vector3Double(rayOriginSim.X, rayOriginSim.Y, rayOriginSim.Z);
+                    var rayDirDouble = new Vector3Double(rayDirSim.X, rayDirSim.Y, rayDirSim.Z);
+
+                    // Use the entity's current Y coordinate for the plane intersection
+                    // This keeps the entity at the same altitude
+                    double planeY = entityPos.Y;
+                    double denom = rayDirDouble.Y;
+                    Vector3Double targetPos;
+
+                    if (Math.Abs(denom) < 1e-6)
+                    {
+                        // Ray parallel to plane: project forward and use plane Y
+                        targetPos = new Vector3Double(
+                            rayOriginDouble.X + rayDirDouble.X * 10.0,
+                            planeY,
+                            rayOriginDouble.Z + rayDirDouble.Z * 10.0);
+                    }
+                    else
+                    {
+                        double tPlane = (planeY - rayOriginDouble.Y) / denom;
+                        if (tPlane < 0) tPlane = 0; // don't go behind camera
+                        targetPos = new Vector3Double(
+                            rayOriginDouble.X + rayDirDouble.X * tPlane,
+                            planeY,
+                            rayOriginDouble.Z + rayDirDouble.Z * tPlane);
+                    }
+
+                    e.MoveTo(targetPos, defaultSpeed, arriveRadius);
+                    Console.WriteLine($"Moving entity {e.Id} to: {targetPos}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error moving entity: {ex.Message}");
+                }
+            }
         }
 
 
