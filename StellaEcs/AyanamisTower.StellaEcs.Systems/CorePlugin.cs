@@ -90,7 +90,7 @@ public class CorePlugin : IPlugin
         world.RegisterComponent<AngularVelocity3D>();
         world.RegisterComponent<Size3D>();
         world.RegisterComponent<LocalPosition3D>();
-    world.RegisterComponent<MovingTo>();
+        world.RegisterComponent<MovingTo>();
 
 
         world.RegisterSystem(new MovementSystem2D { Name = $"{Prefix}.{nameof(MovementSystem2D)}" }, this);

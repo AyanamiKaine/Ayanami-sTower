@@ -39,6 +39,71 @@ public class MousePicker
     }
 
     /// <summary>
+    /// Computes a ray origin and direction in simulation-relative coordinates from the mouse position.
+    /// This uses the same unprojection path as Pick and is robust to floating-origin rebases.
+    /// </summary>
+    public bool TryGetRayRelative(Mouse mouse, int windowWidth, int windowHeight, out Vector3Double origin, out Vector3 direction)
+    {
+        // 1) Mouse position to NDC
+        float ndcX = ((mouse.X / (float)windowWidth) * 2f) - 1f;
+        float ndcY = 1f - ((mouse.Y / (float)windowHeight) * 2f);
+        var nearNDC = new Vector4(ndcX, ndcY, 0f, 1f);
+        var farNDC = new Vector4(ndcX, ndcY, 1f, 1f);
+
+        // 2) Build matrices and invert
+        var proj = _camera.GetProjectionMatrix();
+        var view = _camera.GetViewMatrix();
+        var viewMat = HighPrecisionConversions.ToMatrix(view);
+        var projMat = HighPrecisionConversions.ToMatrix(proj);
+        if (UseCameraRelativeRendering)
+        {
+            viewMat.Translation = Vector3.Zero;
+        }
+        var viewProj = viewMat * projMat;
+        if (!Matrix4x4.Invert(viewProj, out var invViewProj))
+        {
+            origin = default;
+            direction = default;
+            return false;
+        }
+
+        // 3) Unproject to camera-relative points
+        Vector4 nearWorld4 = Vector4.Transform(nearNDC, invViewProj);
+        Vector4 farWorld4 = Vector4.Transform(farNDC, invViewProj);
+        if (nearWorld4.W == 0 || farWorld4.W == 0)
+        {
+            origin = default;
+            direction = default;
+            return false;
+        }
+        Vector3 nearCamRelative = new Vector3(nearWorld4.X, nearWorld4.Y, nearWorld4.Z) / nearWorld4.W;
+        Vector3 farCamRelative = new Vector3(farWorld4.X, farWorld4.Y, farWorld4.Z) / farWorld4.W;
+
+        // 4) Convert to simulation-relative using camera's position
+        var camPosSim = _camera.Position;
+        var nearSimD = camPosSim + new Vector3Double(nearCamRelative.X, nearCamRelative.Y, nearCamRelative.Z);
+        var farSimD = camPosSim + new Vector3Double(farCamRelative.X, farCamRelative.Y, farCamRelative.Z);
+
+        // 5) Build ray in simulation space
+        Vector3 simNear = new Vector3((float)nearSimD.X, (float)nearSimD.Y, (float)nearSimD.Z);
+        Vector3 simFar = new Vector3((float)farSimD.X, (float)farSimD.Y, (float)farSimD.Z);
+        var simDir = simFar - simNear;
+        if (simDir.LengthSquared() <= 0f)
+        {
+            origin = default;
+            direction = default;
+            return false;
+        }
+        var simRayDirection = Vector3.Normalize(simDir);
+        const float EPS = 1e-3f;
+        var simRayOrigin = simNear + (simRayDirection * EPS);
+
+        origin = new Vector3Double(simRayOrigin.X, simRayOrigin.Y, simRayOrigin.Z);
+        direction = simRayDirection;
+        return true;
+    }
+
+    /// <summary>
     /// Performs a raycast from the camera through the mouse cursor to find the closest physics object.
     /// </summary>
     /// <param name="mouse">The current mouse input state.</param>

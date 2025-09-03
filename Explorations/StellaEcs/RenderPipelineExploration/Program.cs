@@ -56,10 +56,10 @@ internal static class Program
         private double _lastClickTime = 0.0;
         private int _lastClickX = -9999;
         private int _lastClickY = -9999;
-    // Separate tracking for right-click double-click detection
-    private double _lastRightClickTime = 0.0;
-    private int _lastRightClickX = -9999;
-    private int _lastRightClickY = -9999;
+        // Separate tracking for right-click double-click detection
+        private double _lastRightClickTime = 0.0;
+        private int _lastRightClickX = -9999;
+        private int _lastRightClickY = -9999;
 
         // Deterministic fixed-step simulation accumulator
         // The simulation will always step in discrete, fixed-sized steps so
@@ -1438,69 +1438,10 @@ internal static class Program
 
                 if (!isDoubleClick) return;
 
-                // Compute the mouse ray and intersect with the ground plane (Y=0) in RELATIVE space.
-                // This is consistent regardless of what object was under the cursor.
-                Vector3Double targetXZ;
+                // Compute a mouse ray in simulation-relative space once.
+                if (!_mousePicker.TryGetRayRelative(Inputs.Mouse, (int)MainWindow.Width, (int)MainWindow.Height, out var rayOriginSim, out var rayDirSim))
                 {
-                    // Mouse to NDC
-                    float ndcX = ((Inputs.Mouse.X / (float)MainWindow.Width) * 2f) - 1f;
-                    float ndcY = 1f - ((Inputs.Mouse.Y / (float)MainWindow.Height) * 2f);
-                    var nearNDC = new Vector4(ndcX, ndcY, 0f, 1f);
-                    var farNDC = new Vector4(ndcX, ndcY, 1f, 1f);
-
-                    // Build view/proj; remove translation if camera-relative rendering
-                    var projMat = HighPrecisionConversions.ToMatrix(_camera.GetProjectionMatrix());
-                    var viewMat = HighPrecisionConversions.ToMatrix(_camera.GetViewMatrix());
-                    if (_useCameraRelativeRendering) viewMat.Translation = Vector3.Zero;
-                    var viewProj = viewMat * projMat;
-                    if (!Matrix4x4.Invert(viewProj, out var invViewProj))
-                    {
-                        return; // cannot compute a ray, abort command
-                    }
-
-                    // Unproject to space matching view/proj: when camera-relative rendering is ON,
-                    // points are in camera-relative coords; otherwise they are in world-relative coords.
-                    Vector4 near4 = Vector4.Transform(nearNDC, invViewProj);
-                    Vector4 far4 = Vector4.Transform(farNDC, invViewProj);
-                    if (near4.W == 0 || far4.W == 0) return;
-                    Vector3 nearP = new Vector3(near4.X, near4.Y, near4.Z) / near4.W;
-                    Vector3 farP = new Vector3(far4.X, far4.Y, far4.Z) / far4.W;
-
-                    // Build ray origin and direction in RELATIVE scene space
-                    var dirRel = Vector3.Normalize(farP - nearP);
-                    const float EPS = 1e-3f;
-                    Vector3Double rayOriginRel;
-                    if (_useCameraRelativeRendering)
-                    {
-                        var camPosRel = _camera.Position;
-                        rayOriginRel = new Vector3Double(camPosRel.X + nearP.X + dirRel.X * EPS,
-                                                         camPosRel.Y + nearP.Y + dirRel.Y * EPS,
-                                                         camPosRel.Z + nearP.Z + dirRel.Z * EPS);
-                    }
-                    else
-                    {
-                        rayOriginRel = new Vector3Double(nearP.X + dirRel.X * EPS,
-                                                         nearP.Y + dirRel.Y * EPS,
-                                                         nearP.Z + dirRel.Z * EPS);
-                    }
-
-                    // Intersect with plane Y=0: origin.Y + t*dir.Y = 0
-                    double denom = dirRel.Y;
-                    if (Math.Abs(denom) < 1e-6)
-                    {
-                        // Parallel: fallback a bit ahead
-                        targetXZ = new Vector3Double(rayOriginRel.X + dirRel.X * 10.0, 0.0, rayOriginRel.Z + dirRel.Z * 10.0);
-                    }
-                    else
-                    {
-                        double t = -rayOriginRel.Y / denom;
-                        if (t < 0) t = 0; // clamp behind camera
-                        var p = new Vector3Double(
-                            rayOriginRel.X + dirRel.X * t,
-                            0.0,
-                            rayOriginRel.Z + dirRel.Z * t);
-                        targetXZ = p;
-                    }
+                    return;
                 }
 
                 // Issue MoveTo for selected Movable entities
@@ -1515,12 +1456,48 @@ internal static class Program
                         if (!e.Has<Movable>()) continue;
                         if (!e.Has<Position3D>()) continue; // must have position to move
 
-                        // Keep current entity Y so motion is constrained to XZ relative to current height
-                        var posY = e.GetCopy<Position3D>().Value.Y;
-                        var target = new Vector3Double(targetXZ.X, posY, targetXZ.Z);
-                        e.MoveTo(target, defaultSpeed, arriveRadius);
+                        // Get entity's current position in ECS-relative coordinates
+                        var entityPos = e.GetCopy<Position3D>().Value;
+                        
+                        // Convert the ray to use double precision for accuracy
+                        var rayOriginDouble = new Vector3Double(rayOriginSim.X, rayOriginSim.Y, rayOriginSim.Z);
+                        var rayDirDouble = new Vector3Double(rayDirSim.X, rayDirSim.Y, rayDirSim.Z);
+                        
+                        // Use the entity's current Y coordinate for the plane intersection
+                        // This keeps the entity at the same altitude
+                        double planeY = entityPos.Y;
+                        double denom = rayDirDouble.Y;
+                        Vector3Double targetPos;
+                        
+                        if (Math.Abs(denom) < 1e-6)
+                        {
+                            // Ray parallel to plane: project forward and use plane Y
+                            targetPos = new Vector3Double(
+                                rayOriginDouble.X + rayDirDouble.X * 10.0, 
+                                planeY, 
+                                rayOriginDouble.Z + rayDirDouble.Z * 10.0);
+                        }
+                        else
+                        {
+                            double tPlane = (planeY - rayOriginDouble.Y) / denom;
+                            if (tPlane < 0) tPlane = 0; // don't go behind camera
+                            targetPos = new Vector3Double(
+                                rayOriginDouble.X + rayDirDouble.X * tPlane,
+                                planeY,
+                                rayOriginDouble.Z + rayDirDouble.Z * tPlane);
+                        }
+
+                        // targetPos is already in ECS-relative coordinates since:
+                        // 1. rayOriginSim comes from TryGetRayRelative which handles floating origin conversion
+                        // 2. planeY comes from Position3D which is ECS-relative
+                        // So no additional coordinate conversion is needed
+                        e.MoveTo(targetPos, defaultSpeed, arriveRadius);
+                        Console.WriteLine($"Moving entity {e.Id} to: {targetPos}");
                     }
-                    catch { /* continue */ }
+                    catch (Exception ex) 
+                    { 
+                        Console.WriteLine($"Error moving entity: {ex.Message}");
+                    }
                 }
             }, "RightClickMove");
 

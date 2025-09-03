@@ -11,12 +11,12 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
         // Only poll these keys (populated from registrations) to avoid iterating full enum
         private readonly HashSet<KeyCode> _registeredKeys = new();
 
-    private bool _prevLeftMouse = false;
-    private bool _currLeftMouse = false;
-    private bool _prevRightMouse = false;
-    private bool _currRightMouse = false;
+        private bool _prevLeftMouse = false;
+        private bool _currLeftMouse = false;
+        private bool _prevRightMouse = false;
+        private bool _currRightMouse = false;
 
-    private enum TriggerType { Pressed, Held, LeftMousePressed, RightMousePressed, Custom }
+        private enum TriggerType { Pressed, Held, LeftMousePressed, RightMousePressed, Custom }
 
         private sealed class Check
         {
@@ -93,8 +93,8 @@ namespace AyanamisTower.StellaEcs.StellaInvicta
 
         public bool WasKeyPressed(KeyCode key) => _currKeys.Contains(key) && !_prevKeys.Contains(key);
         public bool IsKeyHeld(KeyCode key) => _currKeys.Contains(key);
-    public bool WasLeftMousePressed() => _currLeftMouse && !_prevLeftMouse;
-    public bool WasRightMousePressed() => _currRightMouse && !_prevRightMouse;
+        public bool WasLeftMousePressed() => _currLeftMouse && !_prevLeftMouse;
+        public bool WasRightMousePressed() => _currRightMouse && !_prevRightMouse;
         public bool IsLeftMouseHeld() => _currLeftMouse;
         public bool WasLeftMouseReleased() => !_currLeftMouse && _prevLeftMouse;
 
