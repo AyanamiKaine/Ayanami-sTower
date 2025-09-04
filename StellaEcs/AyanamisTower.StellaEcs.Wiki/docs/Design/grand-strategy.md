@@ -14,13 +14,15 @@ Now imagine for a moment the industry aspect would also as detail as the warfare
 
 A player is now confronted with two complex system but is mostly interested in one the warfare. Now do engage with it, he also needs to learn the industry system because without it no armies will be produced, and no war can be won.
 
-In reality what will happen is you now have two player types that are unhappy that they have to engage with the other system they don't want to engage with. *"I want to go to war, not learn economics!"*. 
+In reality what will happen is you now have two player types that are unhappy that they have to engage with the other system they don't want to engage with. _"I want to go to war, not learn economics!"_.
 
 Most people would:
-- A: Dumb one of the system down. (Makes one player unhappy)
-- B: Make it possible to automate one of the systems. (I.e. let the AI handle it) (See [here](/docs/Design/automation) why automation is often bad)
+
+-   A: Dumb one of the system down. (Makes one player unhappy)
+-   B: Make it possible to automate one of the systems. (I.e. let the AI handle it) (See [here](/docs/Design/automation) why automation is often bad)
 
 I would argue for the hidden C approach:
-- Give the player the option to choose between a detailed system or an abstracted representation he still needs to interact with.
+
+-   Give the player the option to choose between a detailed system or an abstracted representation he still needs to interact with.
 
 Imagine in Hearts of Iron 4 you can seamlessly switch between a complex industry and a simplification of it. In the heart of it you would still have the complex system, but the player can choose between a simplified view of it. It's all about perspective.
