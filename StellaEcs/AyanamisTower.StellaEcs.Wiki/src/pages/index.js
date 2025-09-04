@@ -17,8 +17,7 @@ function HomepageHeader() {
                 </Heading>
                 <p className="hero__subtitle">{siteConfig.tagline}</p>
                 <p className="hero__subtitle">
-                    A compact, developer-focused wiki for Astra Aeterna: game
-                    design notes, engine internals, and the project's lore.
+                    I like grand strategy games and game design.
                 </p>
 
                 <div className={styles.buttons}>

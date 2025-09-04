@@ -2,17 +2,17 @@
 sidebar_position: 8
 ---
 
-# Micro Managment and Its Problems
+# Micromanagement and Its Problems
 
 *"Micro Management is the bane of my existence."* - Me and probably you
 
-We all know the problems of micro management, in the beginning we easily manage 2 armies, 10 provinces, one nation. But after some time our empire grows. Now we manage 16 armies, 100 provinces, 3 vassales, 5 rebel problems, a big crisis, and some more new mechanics that unlock overtime. 
+We all know the problems of micromanagement, in the beginning we easily manage 2 armies, 10 provinces, one nation. But after some time our empire grows. Now we manage 16 armies, 100 provinces, 3 vassals, 5 rebel problems, a big crisis, and some more new mechanics that unlock overtime. 
 
-The time we have in our life is limited. Before we spent some time organizing our small nation, now we need to spend big time ensuring it does not fall apart. Often this results in the player taking shortcuts, he consults many armies in larg blobs (Even though he knows it would be strategily better to have more armies, he cannot manage more and does not want to give them to the AI to control (They would die)). 
+The time we have in our life is limited. Before we spent some time organizing our small nation, now we need to spend big time ensuring it does not fall apart. Often this results in the player taking shortcuts, he consults many armies in large blobs (Even though he knows it would be strategily better to have more armies, he cannot manage more and does not want to give them to the AI to control (They would die)). 
 
-The problem with too many armies is also that the player needs to pane over the game world often and go to many theaters of war and in a realtime strategy game multiple armies could be engaged at the same time in different regions.
+The problem with too many armies is also that the player needs to pane over the game world often and go to many theaters of war and in a real-time strategy game multiple armies could be engaged at the same time in different regions.
 
-Other times the player simply does not engage with our new cool mechanic because he thinks he already has so much on his hands, he doesnt have the time for it. Micro management is bad if its too much and you think you have to engage with it otherwise you are missing something out. Like its simply a bad strategy not to micro management.
+Other times the player simply does not engage with our new cool mechanic because he thinks he already has so much on his hands, he doesn't have the time for it. Micromanagement is bad if its too much and you think you have to engage with it otherwise you are missing something out. Like its simply a bad strategy not to micro management.
 
 :::info Development Time
 Think about that more. Whats the point of developing a feature that is quite cool and interesting but the player does not use it? Was the time well spent?
