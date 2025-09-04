@@ -6,7 +6,7 @@ import styles from "./styles.module.css";
 const FeatureList = [
     {
         title: "Design",
-        Svg: require("@site/static/img/icon-design.svg").default,
+        Svg: require("@site/static/img/undraw_docusaurus_mountain.svg").default,
         to: "/docs/Design/overview",
         description: (
             <>
@@ -18,7 +18,7 @@ const FeatureList = [
     },
     {
         title: "Engine",
-        Svg: require("@site/static/img/icon-engine.svg").default,
+        Svg: require("@site/static/img/undraw_docusaurus_tree.svg").default,
         to: "/docs/engine",
         description: (
             <>
@@ -29,7 +29,7 @@ const FeatureList = [
     },
     {
         title: "Lore",
-        Svg: require("@site/static/img/icon-lore.svg").default,
+        Svg: require("@site/static/img/undraw_docusaurus_react.svg").default,
         to: "/docs/lore",
         description: (
             <>

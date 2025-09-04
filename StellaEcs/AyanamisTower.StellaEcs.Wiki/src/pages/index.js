@@ -1,69 +1,30 @@
-import clsx from "clsx";
-import Link from "@docusaurus/Link";
+import React, { useEffect } from "react";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
-import HomepageFeatures from "@site/src/components/HomepageFeatures";
-
-import Heading from "@theme/Heading";
-import styles from "./index.module.css";
-
-function HomepageHeader() {
-    const { siteConfig } = useDocusaurusContext();
-    return (
-        <header className={clsx("hero hero--primary", styles.heroBanner)}>
-            <div className="container">
-                <Heading as="h1" className="hero__title">
-                    {siteConfig.title}
-                </Heading>
-                <p className="hero__subtitle">{siteConfig.tagline}</p>
-                <p className="hero__subtitle">
-                    I like grand strategy games and game design.
-                </p>
-
-                <div className={styles.buttons}>
-                    <Link
-                        className="button button--secondary button--lg"
-                        to="/docs/intro"
-                    >
-                        Read the Intro
-                    </Link>
-                </div>
-
-                <div className={styles.buttons}>
-                    <Link
-                        className="button button--outline button--lg"
-                        to="/docs/Design/overview"
-                    >
-                        Design
-                    </Link>
-                    <Link
-                        className="button button--outline button--lg"
-                        to="/docs/engine"
-                    >
-                        Engine
-                    </Link>
-                    <Link
-                        className="button button--outline button--lg"
-                        to="/docs/lore"
-                    >
-                        Lore
-                    </Link>
-                </div>
-            </div>
-        </header>
-    );
-}
 
 export default function Home() {
     const { siteConfig } = useDocusaurusContext();
+
+    useEffect(() => {
+        // Client-side redirect to the docs intro page
+        const target = `${siteConfig.baseUrl || "/"}docs/intro`;
+        // Use replace so the redirect doesn't create a new history entry
+        window.location.replace(target);
+    }, [siteConfig.baseUrl]);
+
+    // Fallback content for non-JS clients and crawlers
     return (
         <Layout
             title={`${siteConfig.title} — Stella Wiki`}
             description="A developer wiki for Astra Aeterna: design notes, engine documentation, and lore."
         >
-            <HomepageHeader />
-            <main>
-                <HomepageFeatures />
+            <main style={{ padding: "4rem 0", textAlign: "center" }}>
+                <h1>{siteConfig.title}</h1>
+                <p>Redirecting to the docs…</p>
+                <p>
+                    If you are not redirected automatically,{" "}
+                    <a href="/docs/intro">click here</a>.
+                </p>
             </main>
         </Layout>
     );
