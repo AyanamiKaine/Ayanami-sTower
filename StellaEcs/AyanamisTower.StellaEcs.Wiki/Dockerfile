@@ -6,18 +6,17 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Copy package.json and package-lock.json to leverage Docker layer caching
-COPY package.json ./
-COPY package-lock.json ./
+COPY package.json bun.lockb* tsconfig.json ./
 
 # Install project dependencies
-RUN npm install
+RUN bun install
 
 # Copy the rest of your Docusaurus source code
 COPY . .
 
 # Build the Docusaurus application for production
 # The output will be in the /app/build directory
-RUN npm run build
+RUN bun run build
 
 # Stage 2: Create the final, lightweight image with an Nginx web server
 FROM nginx:1.25-alpine
