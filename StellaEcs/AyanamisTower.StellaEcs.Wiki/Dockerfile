@@ -1,6 +1,6 @@
 # Stage 1: Build the Docusaurus application
 # Your package.json requires Node.js 18 or newer. This stage uses a matching version.
-FROM node:18-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
