@@ -6,7 +6,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Copy package.json and package-lock.json to leverage Docker layer caching
-COPY package.json bun.lockb* tsconfig.json ./
+COPY package.json bun.lockb* ./
 
 # Install project dependencies
 RUN bun install
