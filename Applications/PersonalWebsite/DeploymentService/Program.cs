@@ -1,46 +1,88 @@
 ﻿// Refactored DeploymentService.cs
+// Now capable of managing multiple applications (Astro site and Docusaurus wiki)
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
-using AyanamisTower.Email; // --- CHANGE: Added using statement for the email library
+using AyanamisTower.Email;
 
-namespace AyanamisTower.PersonalWebsite;
+namespace AyanamisTower.MultiDeployer;
+
+// Represents the configuration for a single deployable application
+public class AppConfig
+{
+    public required string Name { get; init; } // A unique identifier, e.g., "AstroSite"
+    public required string ProjectPath { get; init; } // Absolute path to the project's root directory
+    public required string ImageName { get; init; } // Docker image name, e.g., "personal-website"
+    public required string StateFile { get; init; } // Path to the file storing the current color (blue/green)
+    public required string NginxUpstreamConfig { get; init; } // Path to the Nginx upstream .conf file
+    public int BluePort { get; init; }
+    public int GreenPort { get; init; }
+}
 
 static class DeploymentService
 {
-    // --- CHANGE: The StatusLevel enum is no longer needed here.
-    // It will use the one defined in the AyanamisTower.Email namespace.
-
-    // --- Configuration ---
+    // --- Global Configuration ---
     private const string RepoPath = "/home/ayanami/Ayanami-sTower/";
-    private const string ImageName = "my-personal-website";
-    private const string StateFile = "/home/ayanami/deployment.state";
-    private const string ProjectPath = "/home/ayanami/Ayanami-sTower/PersonalWebsite/";
-    private const string NginxUpstreamConfig = "/etc/nginx/astro_upstream.conf";
-    private const int BluePort = 8080;
-    private const int GreenPort = 8081;
+    private static readonly EmailStatusService _emailService = new();
 
-    // --- CHANGE: The path to the email CLI is no longer needed.
-    // private const string EmailCliPath = "/home/ayanami/Ayanami-sTower/Build/bin/AyanamisTower.EmailSenderCLI/Release/net9.0/AyanamisTower.EmailSenderCLI";
-
-    // --- CHANGE: Added a static instance of the EmailStatusService.
-    // This service will be used to send all email notifications.
-    // It will automatically pick up its configuration from environment variables.
-    private static readonly EmailStatusService _emailService = new EmailStatusService();
-
+    // --- Application Definitions ---
+    // A list of all applications to be managed by this script.
+    // Adding a new application in the future is as simple as adding a new entry here.
+    private static readonly List<AppConfig> AppsToDeploy = new()
+    {
+        new AppConfig
+        {
+            Name = "PersonalWebsite",
+            ProjectPath = "/home/ayanami/Ayanami-sTower/PersonalWebsite/",
+            ImageName = "my-personal-website",
+            StateFile = "/home/ayanami/deployment.state",
+            NginxUpstreamConfig = "/etc/nginx/astro_upstream.conf",
+            BluePort = 8080,
+            GreenPort = 8081
+        },
+        new AppConfig
+        {
+            Name = "StellaWiki",
+            // Assuming the project is in a subfolder named 'StellaWiki' based on your provided files.
+            // Please adjust this path if your Docusaurus project is located elsewhere in the repository.
+            ProjectPath = "/home/ayanami/Ayanami-sTower/StellaWiki/",
+            ImageName = "stella-wiki",
+            StateFile = "/home/ayanami/wiki_deployment.state",
+            NginxUpstreamConfig = "/etc/nginx/wiki_upstream.conf",
+            BluePort = 9080,
+            GreenPort = 9081
+        }
+    };
 
     public static async Task Main(string[] _)
     {
-        Console.WriteLine($"\n--- {DateTime.Now}: C# Deployer started by systemd timer. ---");
-        await TriggerDeployment();
+        Console.WriteLine($"\n--- {DateTime.Now}: C# Multi-Deployer started. ---");
+
+        // Check for new commits in the entire repo first.
+        bool hasAnyNewCommits = await HasNewCommitsInRepo();
+        if (hasAnyNewCommits)
+        {
+            Console.WriteLine("New commits detected in the repository. Pulling latest changes...");
+            await RunProcessAsync("git", "pull", RepoPath);
+        }
+
+        // Iterate through each defined application and trigger its deployment logic.
+        foreach (var app in AppsToDeploy)
+        {
+            Console.WriteLine($"\n>>>>>> Processing Application: {app.Name} <<<<<<");
+            await TriggerDeploymentForApp(app, hasAnyNewCommits);
+        }
+
+        Console.WriteLine("\n--- Multi-Deployer run complete. ---\n");
     }
 
-    private static async Task<bool> HasNewCommits()
+    private static async Task<bool> HasNewCommitsInRepo()
     {
         await RunProcessAsync("git", "fetch", RepoPath);
         var local = await RunProcessAsync("git", "rev-parse @", RepoPath);
@@ -48,122 +90,125 @@ static class DeploymentService
         return local.Trim() != remote.Trim();
     }
 
-    private static async Task<bool> IsLiveContainerRunning()
+    // Checks if a specific path within the repo has new commits.
+    private static async Task<bool> HasNewCommitsForPath(string projectPath)
     {
-        if (!File.Exists(StateFile)) return false;
+        string relativePath = Path.GetRelativePath(RepoPath, projectPath);
+        string result = await RunProcessAsync("git", $"log HEAD..@{u} --oneline -- \"{relativePath}\"", RepoPath);
+        return !string.IsNullOrWhiteSpace(result.Trim());
+    }
 
-        string liveColor = await File.ReadAllTextAsync(StateFile);
-        string containerName = $"astro-site-{liveColor}";
+    private static async Task<bool> IsLiveContainerRunning(AppConfig app)
+    {
+        if (!File.Exists(app.StateFile)) return false;
+
+        string liveColor = await File.ReadAllTextAsync(app.StateFile);
+        string containerName = $"{app.ImageName}-{liveColor}";
 
         string result = await RunProcessAsync("podman", $"ps --filter name={containerName} --filter status=running --format \"{{{{.ID}}}}\"", RepoPath, ignoreErrors: true);
-
         return !string.IsNullOrWhiteSpace(result);
     }
 
-    /// <summary>
-    /// --- REFACTORED METHOD ---
-    /// Sends an email notification by directly using the EmailStatusService library.
-    /// This is cleaner, more efficient, and safer than invoking an external CLI tool.
-    /// </summary>
     private static async Task SendNotificationAsync(StatusLevel level, string subject, string message)
     {
         try
         {
-            Console.WriteLine($"Sending {level} email notification...");
-            // Directly call the library method. It handles formatting and sending.
+            Console.WriteLine($"Sending {level} email: {subject}");
             await _emailService.SendStatusUpdateAsync(subject, message, level);
-            Console.WriteLine("Email notification sent successfully via library.");
         }
         catch (Exception ex)
         {
-            // Log the error to the console, but don't let a notification failure
-            // interrupt the core deployment process.
-            Console.WriteLine($"!!! CRITICAL: Failed to send email notification via library. Error: {ex.Message}");
+            Console.WriteLine($"!!! CRITICAL: Failed to send email notification. Error: {ex.Message}");
         }
     }
 
-
-    private static async Task TriggerDeployment(CancellationToken cancellationToken = default)
+    private static async Task TriggerDeploymentForApp(AppConfig app, bool repoHasChanges, CancellationToken cancellationToken = default)
     {
         try
         {
-            bool isLive = await IsLiveContainerRunning();
-            bool hasNewCommits = await HasNewCommits();
+            bool isLive = await IsLiveContainerRunning(app);
+            // We deploy if the container isn't running, OR if the repo was updated AND the specific project has changes.
+            bool hasNewCommitsForApp = repoHasChanges && await HasNewCommitsForPath(app.ProjectPath);
 
-            if (isLive && !hasNewCommits)
+            if (isLive && !hasNewCommitsForApp)
             {
-                Console.WriteLine("Site is running and no new commits found. Exiting.");
+                Console.WriteLine($"[{app.Name}] Site is running and no new commits found for this project. Skipping.");
                 return;
             }
 
             string startReason = !isLive
-                ? "Live container is not running. Forcing deployment to recover."
-                : "New commits detected. Starting deployment.";
+                ? $"[{app.Name}] Live container is not running. Forcing deployment to recover."
+                : $"[{app.Name}] New commits detected for this project. Starting deployment.";
 
             Console.WriteLine(startReason);
-            await SendNotificationAsync(StatusLevel.Info, "Deployment Started", startReason);
+            await SendNotificationAsync(StatusLevel.Info, $"[{app.Name}] Deployment Started", startReason);
 
             if (cancellationToken.IsCancellationRequested) return;
 
-            string liveColor = File.Exists(StateFile) ? await File.ReadAllTextAsync(StateFile, cancellationToken) : "blue";
+            string liveColor = File.Exists(app.StateFile) ? await File.ReadAllTextAsync(app.StateFile, cancellationToken) : "blue";
             string standbyColor = liveColor == "blue" ? "green" : "blue";
-            int livePort = liveColor == "blue" ? BluePort : GreenPort;
-            int standbyPort = liveColor == "blue" ? GreenPort : BluePort;
+            int livePort = liveColor == "blue" ? app.BluePort : app.GreenPort;
+            int standbyPort = liveColor == "blue" ? app.GreenPort : app.BluePort;
+            string standbyContainerName = $"{app.ImageName}-{standbyColor}";
+            string liveContainerName = $"{app.ImageName}-{liveColor}";
 
-            Console.WriteLine($"Current LIVE: {liveColor} ({livePort}). Deploying to STANDBY: {standbyColor} ({standbyPort}).");
+            Console.WriteLine($"[{app.Name}] Current LIVE: {liveColor} ({livePort}). Deploying to STANDBY: {standbyColor} ({standbyPort}).");
 
-            await RunProcessAsync("git", "pull", RepoPath, cancellationToken: cancellationToken);
-            await RunProcessAsync("podman", $"build -t {ImageName}:latest .", ProjectPath, cancellationToken: cancellationToken);
+            // The git pull is now done once at the start.
+            // We now build the specific Docker image for the application.
+            // Note: Dockerfile should be present in the app.ProjectPath directory.
+            await RunProcessAsync("podman", $"build -t {app.ImageName}:latest .", app.ProjectPath, cancellationToken: cancellationToken);
 
-            await RunProcessAsync("podman", $"rm -f astro-site-{standbyColor}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            await RunProcessAsync("podman", $"rm -f {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
             await RunProcessAsync(
                 "systemd-run",
-                $"--user --service-type=exec --unit=astro-site-{standbyColor} podman run --rm --name astro-site-{standbyColor} -p {standbyPort}:80 {ImageName}:latest",
+                $"--user --service-type=exec --unit={standbyContainerName} podman run --rm --name {standbyContainerName} -p {standbyPort}:80 {app.ImageName}:latest",
                 RepoPath,
                 cancellationToken: cancellationToken);
 
-            Console.WriteLine("Performing health check... first waiting 5 seconds");
+            Console.WriteLine($"[{app.Name}] Performing health check... waiting 5 seconds.");
             await Task.Delay(5000, cancellationToken);
             if (!await IsHealthy(standbyPort, cancellationToken))
             {
-                var failureMsg = $"Health check FAILED for container astro-site-{standbyColor} on port {standbyPort}. Aborting deployment.";
-                Console.WriteLine("!!! Health check FAILED. Aborting deployment.");
-                await SendNotificationAsync(StatusLevel.Error, "Deployment FAILED", failureMsg);
+                var failureMsg = $"Health check FAILED for container {standbyContainerName} on port {standbyPort}. Aborting deployment.";
+                Console.WriteLine($"!!! [{app.Name}] {failureMsg}");
+                await SendNotificationAsync(StatusLevel.Error, $"[{app.Name}] Deployment FAILED", failureMsg);
                 return;
             }
-            Console.WriteLine("Health check PASSED.");
+            Console.WriteLine($"[{app.Name}] Health check PASSED.");
 
-            Console.WriteLine("Switching Nginx traffic...");
-            await RunProcessAsync("sudo", $"tee {NginxUpstreamConfig}", workingDirectory: RepoPath, input: $"server 127.0.0.1:{standbyPort};", cancellationToken: cancellationToken);
+            Console.WriteLine($"[{app.Name}] Switching Nginx traffic...");
+            await RunProcessAsync("sudo", $"tee {app.NginxUpstreamConfig}", workingDirectory: RepoPath, input: $"server 127.0.0.1:{standbyPort};", cancellationToken: cancellationToken);
             await RunProcessAsync("sudo", "systemctl reload nginx", RepoPath, cancellationToken: cancellationToken);
 
-            await File.WriteAllTextAsync(StateFile, standbyColor, cancellationToken);
+            await File.WriteAllTextAsync(app.StateFile, standbyColor, cancellationToken);
 
             var successMsg = $"Deployment successful! {standbyColor} is now LIVE.";
-            Console.WriteLine($"SUCCESS! {successMsg}");
-            await SendNotificationAsync(StatusLevel.Success, "Deployment Successful", successMsg);
+            Console.WriteLine($"SUCCESS! [{app.Name}] {successMsg}");
+            await SendNotificationAsync(StatusLevel.Success, $"[{app.Name}] Deployment Successful", successMsg);
 
-            await RunProcessAsync("podman", $"stop astro-site-{liveColor}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            await RunProcessAsync("podman", $"stop {liveContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
 
-            Console.WriteLine("Pruning old container images...");
+            Console.WriteLine($"[{app.Name}] Pruning old container images...");
             await RunProcessAsync("podman", "image prune -f", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
-            Console.WriteLine("Image cleanup complete.");
 
-            Console.WriteLine("--- Deployment Complete ---\n");
+            Console.WriteLine($"--- [{app.Name}] Deployment Complete ---");
         }
         catch (OperationCanceledException)
         {
-            Console.WriteLine("Deployment cancelled.");
-            await SendNotificationAsync(StatusLevel.Warning, "Deployment Cancelled", "The deployment process was cancelled.");
+            Console.WriteLine($"[{app.Name}] Deployment cancelled.");
+            await SendNotificationAsync(StatusLevel.Warning, $"[{app.Name}] Deployment Cancelled", "The deployment process was cancelled.");
         }
         catch (Exception ex)
         {
-            var errorMsg = $"An unexpected error occurred during deployment: {ex.Message}\n\nStack Trace:\n{ex.StackTrace}";
+            var errorMsg = $"An unexpected error occurred during [{app.Name}] deployment: {ex.Message}\n\nStack Trace:\n{ex.StackTrace}";
             Console.WriteLine($"!!! {errorMsg}");
-            await SendNotificationAsync(StatusLevel.Error, "Deployment FAILED", errorMsg);
+            await SendNotificationAsync(StatusLevel.Error, $"[{app.Name}] Deployment FAILED", errorMsg);
         }
     }
 
+    // (IsHealthy and RunProcessAsync methods remain unchanged from your original script)
+    // ... Please include the full IsHealthy and RunProcessAsync methods from your script here ...
     private static async Task<bool> IsHealthy(int port, CancellationToken cancellationToken = default)
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
