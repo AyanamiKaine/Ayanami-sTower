@@ -2,7 +2,7 @@
 sidebar_position: 6
 ---
 
-# Aggressive Expansion and its problem
+# Aggressive Expansion and Its Problem
 
 Aggressive expansion has only one purpose, to slow down the game. The problem here is that it is just a stop sign that gets smacked into the face of the player. It boils down to: ohhh your war was too easy? Now slow down pale you took already a huge chunk of land, at that speed you conquer the world in 100 years! But if you really want to conquer the world in 100 years even the small city state in India will fight you so you don't take Warsaw.
 
