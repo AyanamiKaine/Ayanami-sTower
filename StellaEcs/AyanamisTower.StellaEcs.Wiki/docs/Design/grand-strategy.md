@@ -18,7 +18,6 @@ In reality what will happen is you now have two player types that are unhappy th
 
 Most people would:
 - A: Dumb one of the system down. (Makes one player unhappy)
-- B: Make it possible to automate one of the systems. (I.e. let the AI handle it) (See [here](/docs/design/automation) why automation is often bad)
 - B: Make it possible to automate one of the systems. (I.e. let the AI handle it) (See [here](/docs/Design/automation) why automation is often bad)
 
 I would argue for the hidden C approach:
