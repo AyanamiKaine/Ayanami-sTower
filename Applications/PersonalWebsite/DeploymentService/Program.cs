@@ -13,15 +13,38 @@ using AyanamisTower.Email;
 
 namespace AyanamisTower.MultiDeployer;
 
-// Represents the configuration for a single deployable application
+/// <summary>
+/// Represents the configuration for a single deployable application
+/// </summary>
 public class AppConfig
 {
+    /// <summary>
+    /// A unique name for the application being deployed.
+    /// </summary>
     public required string Name { get; init; } // A unique identifier, e.g., "AstroSite"
+    /// <summary>
+    /// The absolute path to the root directory of the project within the repository.
+    /// </summary>
     public required string ProjectPath { get; init; } // Absolute path to the project's root directory
+    /// <summary>
+    /// The Docker image name used for this application.
+    /// </summary>
     public required string ImageName { get; init; } // Docker image name, e.g., "personal-website"
+    /// <summary>
+    /// The path to the file that stores the current live color (blue/green).
+    /// </summary>
     public required string StateFile { get; init; } // Path to the file storing the current color (blue/green)
+    /// <summary>
+    ///     The path to the Nginx upstream configuration file that needs to be updated during deployment.
+    /// </summary>
     public required string NginxUpstreamConfig { get; init; } // Path to the Nginx upstream .conf file
+    /// <summary>
+    /// The port number for the blue deployment.
+    /// </summary>
     public int BluePort { get; init; }
+    /// <summary>
+    /// The port number for the green deployment.
+    /// </summary>
     public int GreenPort { get; init; }
 }
 
@@ -94,7 +117,7 @@ static class DeploymentService
     private static async Task<bool> HasNewCommitsForPath(string projectPath)
     {
         string relativePath = Path.GetRelativePath(RepoPath, projectPath);
-        string result = await RunProcessAsync("git", $"log HEAD..@{u} --oneline -- \"{relativePath}\"", RepoPath);
+        string result = await RunProcessAsync("git", $"log HEAD..@{{u}} --oneline -- \"{relativePath}\"", RepoPath);
         return !string.IsNullOrWhiteSpace(result.Trim());
     }
 
