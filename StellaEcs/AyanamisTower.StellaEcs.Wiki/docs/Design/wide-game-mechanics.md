@@ -18,3 +18,7 @@ For me a wide game mechanic is a mechanic that has little connection to other me
 This common trend of adding new resources and buttons to interact with them for a bonus or malus (trade-off) is a common occurs in modern paradox DLC design.
 
 We may redefine a wide game mechanic as a shallow one. But why I am not doing it? Because the reality is that most implemented wide game mechanics are quite large in "content" they add. 
+
+# Another Example Victoria 3 Cultures
+
+In Victoria 3 there exist many different cultures (302!) and each culture has their own two culture traits (over 60 different traits!). They have a citizen system where depending on accepted culture the people living in the nations have different priviliges. Cultures even effect what goods they prefer to consum. But in reality while playing the game you wont really feel the differences. The [wiki entry](https://vic3.paradoxwikis.com/Culture) gives the feeling of *"ohh so cultures are quite deeply implemented"*. But in reality its nothing more than a wide game mechanic. Cultures touch many aspects of the game but have little impact on it. This is the prime example of it.
