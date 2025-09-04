@@ -14,6 +14,10 @@ The problem with too many armies is also that the player needs to pane over the 
 
 Other times the player simply does not engage with our new cool mechanic because he thinks he already has so much on his hands, he doesnt have the time for it. Micro management is bad if its too much and you think you have to engage with it otherwise you are missing something out. Like its simply a bad strategy not to micro management.
 
+:::info Development Time
+Think about that more. Whats the point of developing a feature that is quite cool and interesting but the player does not use it? Was the time well spent?
+:::
+
 # Possible Solution
 
 A layered abstraction approach. What do I mean with that? Imagine you control planets in the beginning you micro managed each planet they where few. Now after you control many of them a new feature unlocks called sector management, now you manage the sector but not the planets directly anymore. But if wished the player can still control them if he wants to. This is not automation but instead we move the interaction an abstraction layer up. The player now interactes with sectors not planets. Now instead of having to micromanage 17 planets he only has to manage 3 sectors.
