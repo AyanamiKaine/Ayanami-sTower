@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package.json bun.lockb* ./
 
 # Install project dependencies
-RUN bun install
+RUN bun install --frozen-lockfile
 
 # Copy the rest of your Docusaurus source code
 COPY . .
