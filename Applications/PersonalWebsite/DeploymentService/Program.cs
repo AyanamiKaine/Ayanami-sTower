@@ -74,7 +74,7 @@ static class DeploymentService
             Name = "StellaWiki",
             // Assuming the project is in a subfolder named 'StellaWiki' based on your provided files.
             // Please adjust this path if your Docusaurus project is located elsewhere in the repository.
-            ProjectPath = "/home/ayanami/Ayanami-sTower/StellaWiki/",
+            ProjectPath = "/home/ayanami/Ayanami-sTower/StellaEcs/AyanamisTower.StellaEcs.Wiki/",
             ImageName = "stella-wiki",
             StateFile = "/home/ayanami/wiki_deployment.state",
             NginxUpstreamConfig = "/etc/nginx/wiki_upstream.conf",
