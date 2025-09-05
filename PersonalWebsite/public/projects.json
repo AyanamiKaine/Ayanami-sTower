@@ -172,10 +172,15 @@
     ]
   },
   {
-    "title": "Stella Invicta",
-    "status": "On Hold",
-    "description": "As a fan of all grand strategy. It's my personal dream to some day create my own grand strategy game.",
-    "technologies": [],
-    "links": []
+    "title": "Project Astra Aeterna",
+    "status": "In Progress",
+    "description": "As a fan of all grand strategy. It's my personal dream to some day create my own grand strategy game. Currently I'm working on a small prototype using C#, SDL3 and Vulkan. I also created a small wiki to document my progress and ideas on game design.",
+    "technologies": ["C#", "SDL3", "Vulkan"],
+    "links": [
+      {
+        "name": "wiki",
+        "url": "https://stellawiki.com/docs/intro/"
+      }
+    ]
   }
 ]
