@@ -193,6 +193,12 @@ internal static class Program
         private UIInputSystem? _uiInputSystem;
         private UIEventBus? _uiEvents;
         private IUIRenderer? _uiRenderer;
+        // UI menu entities for ESC menu
+        private Entity _escMenuRoot = default;
+        private Entity _escResumeButton = default;
+        private Entity _escOptionsButton = default;
+        private Entity _escQuitButton = default;
+        private bool _escMenuOpen = false;
         public StellaInvictaGame() : base(
             new AppInfo("Ayanami", "Stella Invicta Demo"),
             new WindowCreateInfo("Stella Invicta", 1280, 720, ScreenMode.Windowed, true, false, false),
@@ -222,6 +228,111 @@ internal static class Program
 
             InitializeScene();
             EnableImgui();
+            // ---------- ESC menu (centered modal) ----------
+            // Build but keep hidden initially. It will be shown when pressing Escape.
+            var menuBuilder = new UIBuilder(World);
+            _ = menuBuilder.Panel(out _escMenuRoot,
+                children: b =>
+                {
+                    b.Label("Paused", out _, rect: new RectTransform
+                    {
+                        AnchorMin = new Vector2(0.5f, 0.5f),
+                        AnchorMax = new Vector2(0.5f, 0.5f),
+                        OffsetMin = new Vector2(-140, -120),
+                        OffsetMax = new Vector2(140, -80),
+                        Pivot = new Vector2(0.5f, 0.5f)
+                    }, fontSize: 24f, color: new Vector4(1f, 1f, 1f, 1f), z: 1000);
+
+                    b.Button("Resume", out _escResumeButton, command: "esc.resume", rect: new RectTransform
+                    {
+                        AnchorMin = new Vector2(0.5f, 0.5f),
+                        AnchorMax = new Vector2(0.5f, 0.5f),
+                        OffsetMin = new Vector2(-120, -60),
+                        OffsetMax = new Vector2(120, -20),
+                        Pivot = new Vector2(0.5f, 0.5f)
+                    }, style: UIStyle.DefaultButton, z: 1001);
+
+                    b.Button("Options", out _escOptionsButton, command: "esc.options", rect: new RectTransform
+                    {
+                        AnchorMin = new Vector2(0.5f, 0.5f),
+                        AnchorMax = new Vector2(0.5f, 0.5f),
+                        OffsetMin = new Vector2(-120, -10),
+                        OffsetMax = new Vector2(120, 30),
+                        Pivot = new Vector2(0.5f, 0.5f)
+                    }, style: UIStyle.DefaultButton, z: 1001);
+
+                    b.Button("Quit", out _escQuitButton, command: "esc.quit", rect: new RectTransform
+                    {
+                        AnchorMin = new Vector2(0.5f, 0.5f),
+                        AnchorMax = new Vector2(0.5f, 0.5f),
+                        OffsetMin = new Vector2(-120, 40),
+                        OffsetMax = new Vector2(120, 80),
+                        Pivot = new Vector2(0.5f, 0.5f)
+                    }, style: UIStyle.DefaultButton, z: 1001);
+                },
+                rect: new RectTransform
+                {
+                    AnchorMin = new Vector2(0.5f, 0.5f),
+                    AnchorMax = new Vector2(0.5f, 0.5f),
+                    OffsetMin = new Vector2(-160, -140),
+                    OffsetMax = new Vector2(160, 140),
+                    Pivot = new Vector2(0.5f, 0.5f)
+                },
+                style: new UIStyle
+                {
+                    BackgroundColor = new Vector4(0f, 0f, 0f, 0.7f),
+                    BorderColor = new Vector4(1f, 1f, 1f, 0.8f),
+                    BorderThickness = 2f,
+                    CornerRadius = 8f
+                },
+                z: 1000);
+
+            // Hide menu initially (hide root and all children)
+            if (_escMenuRoot != default) { SetUIVisibleRecursive(_escMenuRoot, false); }
+
+            // ESC toggles the menu. When menu open, push a UI context so only UI input checks run.
+            _inputManager.RegisterKeyPressed(KeyCode.Escape, () =>
+            {
+                _escMenuOpen = !_escMenuOpen;
+                if (_escMenuRoot != default)
+                {
+                    SetUIVisibleRecursive(_escMenuRoot, _escMenuOpen);
+                }
+
+                if (_escMenuOpen)
+                {
+                    _inputManager.PushContext("ui_modal");
+                    Console.WriteLine("[UI] ESC menu opened");
+                }
+                else
+                {
+                    _inputManager.PopContext();
+                    Console.WriteLine("[UI] ESC menu closed");
+                }
+            }, "ToggleEscMenu");
+
+            // Register UI button commands
+            _uiEvents!.OnButtonClicked += evt =>
+            {
+                if (evt.Command == "esc.resume")
+                {
+                    _escMenuOpen = false;
+                    if (_escMenuRoot != default)
+                    {
+                        SetUIVisibleRecursive(_escMenuRoot, false);
+                    }
+                    _inputManager.PopContext();
+                }
+                else if (evt.Command == "esc.options")
+                {
+                    Console.WriteLine("[UI] Options button pressed (not implemented)");
+                }
+                else if (evt.Command == "esc.quit")
+                {
+                    Console.WriteLine("[UI] Quit button pressed - exiting");
+                    Environment.Exit(0);
+                }
+            };
         }
 
         /// <summary>
@@ -1340,6 +1451,28 @@ internal static class Program
             ImGui.End();
         }
 
+        // Helper: set Visible on a UI root and all its descendant UIElement children
+        private void SetUIVisibleRecursive(Entity root, bool visible)
+        {
+            if (root == default) return;
+            if (root.Has<UIElement>())
+            {
+                ref var u = ref root.GetMut<UIElement>();
+                u.Visible = visible;
+            }
+
+            // find children whose UIElement.Parent == root
+            foreach (var e in World.GetAllEntities())
+            {
+                if (!e.Has<UIElement>()) continue;
+                var ue = e.GetCopy<UIElement>();
+                if (ue.Parent.Equals(root))
+                {
+                    SetUIVisibleRecursive(e, visible);
+                }
+            }
+        }
+
         public void EnableMSAA(SampleCount sampleCount)
         {
 
@@ -1573,49 +1706,50 @@ internal static class Program
             );
 
             // Create a simple UI: root panel at top-left with a label and a button
-            var ui = new UIBuilder(World);
-            _ = ui.Panel(out var panel,
-                children: b =>
-                {
-                    b.Label("Custom ECS UI Panel", out _,
-                        rect: new RectTransform
-                        {
-                            AnchorMin = new Vector2(0, 0),
-                            AnchorMax = new Vector2(0, 0),
-                            OffsetMin = new Vector2(12, 8),
-                            OffsetMax = new Vector2(280, 32),
-                            Pivot = new Vector2(0, 0)
-                        },
-                        color: new Vector4(0.9f, 0.95f, 1f, 1f), fontSize: 18f, z: 101);
+            /*
+                        var ui = new UIBuilder(World);
+                        _ = ui.Panel(out var panel,
+                            children: b =>
+                            {
+                                b.Label("Custom ECS UI Panel", out _,
+                                    rect: new RectTransform
+                                    {
+                                        AnchorMin = new Vector2(0, 0),
+                                        AnchorMax = new Vector2(0, 0),
+                                        OffsetMin = new Vector2(12, 8),
+                                        OffsetMax = new Vector2(280, 32),
+                                        Pivot = new Vector2(0, 0)
+                                    },
+                                    color: new Vector4(0.9f, 0.95f, 1f, 1f), fontSize: 18f, z: 101);
 
-                    b.Button("Click Me", out var button, command: "demo.click",
-                        rect: new RectTransform
-                        {
-                            AnchorMin = new Vector2(0, 0),
-                            AnchorMax = new Vector2(0, 0),
-                            OffsetMin = new Vector2(12, 48),
-                            OffsetMax = new Vector2(200, 84),
-                            Pivot = new Vector2(0, 0)
-                        }, z: 101);
-                }
-,
-                rect: new RectTransform
-                {
-                    AnchorMin = new Vector2(0, 0),
-                    AnchorMax = new Vector2(0, 0),
-                    OffsetMin = new Vector2(20, 20),
-                    OffsetMax = new Vector2(320, 180),
-                    Pivot = new Vector2(0, 0)
-                },
-                style: new UIStyle
-                {
-                    BackgroundColor = new Vector4(0.08f, 0.10f, 0.14f, 0.92f),
-                    BorderColor = new Vector4(0.06f, 0.65f, 0.85f, 1f),
-                    BorderThickness = 2f,
-                    CornerRadius = 8f
-                },
-                z: 100);
-
+                                b.Button("Click Me", out var button, command: "demo.click",
+                                    rect: new RectTransform
+                                    {
+                                        AnchorMin = new Vector2(0, 0),
+                                        AnchorMax = new Vector2(0, 0),
+                                        OffsetMin = new Vector2(12, 48),
+                                        OffsetMax = new Vector2(200, 84),
+                                        Pivot = new Vector2(0, 0)
+                                    }, z: 101);
+                            }
+            ,
+                            rect: new RectTransform
+                            {
+                                AnchorMin = new Vector2(0, 0),
+                                AnchorMax = new Vector2(0, 0),
+                                OffsetMin = new Vector2(20, 20),
+                                OffsetMax = new Vector2(320, 180),
+                                Pivot = new Vector2(0, 0)
+                            },
+                            style: new UIStyle
+                            {
+                                BackgroundColor = new Vector4(0.08f, 0.10f, 0.14f, 0.92f),
+                                BorderColor = new Vector4(0.06f, 0.65f, 0.85f, 1f),
+                                BorderThickness = 2f,
+                                CornerRadius = 8f
+                            },
+                            z: 100);
+            */
             // Culling toggles and adjustments
             _inputManager.RegisterKeyPressed(KeyCode.C, () =>
             {
@@ -3387,7 +3521,7 @@ internal static class Program
 
                 // TODO: Work on the UI system
                 // Draw our custom ECS UI via ImGui foreground list (debug renderer)
-                // try { _uiDrawSystem?.Update(World, 0f); } catch { }
+                try { _uiDrawSystem?.Update(World, 0f); } catch { }
 
                 // Draw selection rectangle overlay on top of any windows
                 RenderSelectionRectangleImGui();
