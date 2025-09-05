@@ -1393,7 +1393,7 @@ internal static class Program
             _camera = new Camera(new Vector3(0, 2, 6), Vector3.Zero, Vector3.UnitY)
             {
                 Aspect = aspect,
-                Near = 1f,
+                Near = 0.1f,
                 Far = 1000f,
                 Fov = MathF.PI / 3f
             };
