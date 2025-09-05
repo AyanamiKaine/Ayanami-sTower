@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
+using System.Linq;
 using AyanamisTower.Email;
 
 namespace AyanamisTower.MultiDeployer;
@@ -53,6 +54,10 @@ static class DeploymentService
     // --- Global Configuration ---
     private const string RepoPath = "/home/ayanami/Ayanami-sTower/";
     private static readonly EmailStatusService _emailService = new();
+    // Cached refs & changed files between local and remote (populated after fetch)
+    private static string? _latestLocalRef;
+    private static string? _latestRemoteRef;
+    private static List<string> _changedFilesBetweenRefs = new();
 
     // --- Application Definitions ---
     // A list of all applications to be managed by this script.
@@ -92,6 +97,7 @@ static class DeploymentService
         if (hasAnyNewCommits)
         {
             Console.WriteLine("New commits detected in the repository. Pulling latest changes...");
+            // _changedFilesBetweenRefs was populated by HasNewCommitsInRepo (it runs after fetch)
             await RunProcessAsync("git", "pull", RepoPath);
         }
 
@@ -107,10 +113,60 @@ static class DeploymentService
 
     private static async Task<bool> HasNewCommitsInRepo()
     {
+        // Fetch remote refs first, then compare local vs remote and capture changed files
         await RunProcessAsync("git", "fetch", RepoPath);
-        var local = await RunProcessAsync("git", "rev-parse @", RepoPath);
-        var remote = await RunProcessAsync("git", "rev-parse @{u}", RepoPath);
-        return local.Trim() != remote.Trim();
+        try
+        {
+            _latestLocalRef = (await RunProcessAsync("git", "rev-parse @", RepoPath)).Trim();
+            _latestRemoteRef = (await RunProcessAsync("git", "rev-parse @{u}", RepoPath)).Trim();
+
+            if (string.Equals(_latestLocalRef, _latestRemoteRef, StringComparison.Ordinal))
+            {
+                _changedFilesBetweenRefs = new List<string>();
+                return false;
+            }
+
+            var nameOnly = await RunProcessAsync("git", $"diff --name-only {_latestLocalRef} {_latestRemoteRef}", RepoPath);
+            _changedFilesBetweenRefs = nameOnly
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToList();
+
+            if (_changedFilesBetweenRefs.Count > 0)
+            {
+                Console.WriteLine($"Changed files detected: {string.Join(", ", _changedFilesBetweenRefs)}");
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Warning: failed to determine changed files between refs: {ex.Message}");
+            // Fallback to conservative behavior: indicate there are changes so we pull, but per-path checks will be less precise.
+            _changedFilesBetweenRefs = new List<string>();
+            return true;
+        }
+    }
+
+    // Check whether any of the changed files affect the given project path
+    private static bool ChangedFilesAffectPath(string projectPath)
+    {
+        if (_changedFilesBetweenRefs == null || _changedFilesBetweenRefs.Count == 0)
+            return false;
+
+        // Convert projectPath into repo-relative path (unix-style) and trim trailing slashes
+        var relProject = Path.GetRelativePath(RepoPath, projectPath).Replace('\\', '/').Trim('/');
+        if (string.IsNullOrEmpty(relProject)) return true; // defensive: root changes affect everything
+
+        foreach (var changed in _changedFilesBetweenRefs)
+        {
+            var norm = changed.Replace('\\', '/').Trim('/');
+            if (string.Equals(norm, relProject, StringComparison.Ordinal) || norm.StartsWith(relProject + "/", StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     // Checks if a specific path within the repo has new commits.
@@ -151,7 +207,7 @@ static class DeploymentService
         {
             bool isLive = await IsLiveContainerRunning(app);
             // We deploy if the container isn't running, OR if the repo was updated AND the specific project has changes.
-            bool hasNewCommitsForApp = repoHasChanges && await HasNewCommitsForPath(app.ProjectPath);
+            bool hasNewCommitsForApp = repoHasChanges && ChangedFilesAffectPath(app.ProjectPath);
 
             if (isLive && !hasNewCommitsForApp)
             {
