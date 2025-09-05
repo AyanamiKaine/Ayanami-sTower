@@ -35,7 +35,7 @@ public sealed class UIInputSystem : ISystem
     public bool Enabled { get; set; } = true;
 
     /// <inheritdoc/>
-    public void Update(World world, float delta)
+        public void Update(World world, float delta)
     {
         var mouse = _getMouse();
         bool pressed = _getMousePressed();
@@ -47,7 +47,8 @@ public sealed class UIInputSystem : ISystem
         {
             if (!e.Has<UIElement>() || !e.Has<RectTransform>()) continue;
             var u = e.GetCopy<UIElement>();
-            if (!u.Visible) continue;
+            // Skip invisible elements (Invisible tag means hidden)
+            if (e.Has<Invisible>()) continue;
             var r = e.GetCopy<RectTransform>().Computed;
             stack.Add((u.ZIndex, e, r));
         }

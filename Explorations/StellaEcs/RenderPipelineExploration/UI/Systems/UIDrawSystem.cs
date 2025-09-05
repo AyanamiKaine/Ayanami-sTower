@@ -33,7 +33,7 @@ public sealed class UIDrawSystem : ISystem
     /// <summary>
     /// Updates the UIDrawSystem.
     /// </summary>
-    public void Update(World world, float delta)
+        public void Update(World world, float delta)
     {
         // Gather drawables
         var items = new List<(int z, Entity e)>();
@@ -41,7 +41,8 @@ public sealed class UIDrawSystem : ISystem
         {
             if (!e.Has<UIElement>() || !e.Has<RectTransform>()) continue;
             var u = e.GetCopy<UIElement>();
-            if (!u.Visible) continue;
+            // Visibility is controlled via the Invisible tag: presence = hidden
+            if (e.Has<Invisible>()) continue;
             items.Add((u.ZIndex, e));
         }
         items.Sort((a, b) => a.z.CompareTo(b.z));

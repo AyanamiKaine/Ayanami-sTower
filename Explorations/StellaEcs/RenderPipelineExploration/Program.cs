@@ -1457,8 +1457,14 @@ internal static class Program
             if (root == default) return;
             if (root.Has<UIElement>())
             {
-                ref var u = ref root.GetMut<UIElement>();
-                u.Visible = visible;
+                if (!visible)
+                {
+                    if (!root.Has<Invisible>()) root.Set(new Invisible());
+                }
+                else
+                {
+                    if (root.Has<Invisible>()) root.Remove<Invisible>();
+                }
             }
 
             // find children whose UIElement.Parent == root
