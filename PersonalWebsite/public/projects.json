@@ -178,7 +178,7 @@
     "technologies": ["C#", "SDL3", "Vulkan"],
     "links": [
       {
-        "name": "wiki",
+        "name": "Wiki",
         "url": "https://stellawiki.com/docs/intro/"
       }
     ]
