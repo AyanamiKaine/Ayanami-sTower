@@ -98,7 +98,7 @@ public class Camera
     /// <summary>
     /// Near clipping plane distance.
     /// </summary>
-    public double Near { get; set; } = 0.1f;
+    public double Near { get; set; } = 1f;
     /// <summary>
     /// Far clipping plane distance.
     /// </summary>
