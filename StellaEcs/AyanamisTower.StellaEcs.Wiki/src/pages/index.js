@@ -15,7 +15,7 @@ export default function Home() {
     // Fallback content for non-JS clients and crawlers
     return (
         <Layout
-            title={`${siteConfig.title} — Stella Wiki`}
+            title={`${siteConfig.title} — Stella Wiki Test`}
             description="A developer wiki for Astra Aeterna: design notes, engine documentation, and lore."
         >
             <main style={{ padding: "4rem 0", textAlign: "center" }}>
