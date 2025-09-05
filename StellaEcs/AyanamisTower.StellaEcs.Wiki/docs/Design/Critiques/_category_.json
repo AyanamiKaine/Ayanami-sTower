@@ -1,0 +1,8 @@
+{
+  "label": "Critiques",
+  "position": 200,
+  "link": {
+    "type": "generated-index",
+    "description": "My personal critiques of various games and game design aspects"
+  }
+}
