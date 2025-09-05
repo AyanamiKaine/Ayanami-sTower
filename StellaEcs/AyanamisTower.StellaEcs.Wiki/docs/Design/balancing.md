@@ -32,3 +32,13 @@ If you weaken something, something else will get stronger or weaker. This relati
 
 Take your favorite game PVP and think of some changes you would do to balance it better. Now think of the change in percentage that would occur up or down in win rate. It will most certainly be wrong.
 :::
+
+## Player versus Environment
+
+Here we again face a difficult problem. I personally believe that in a PvE game we want to maximize fun not balance. This becomes a big problem when our PvE mode can also be played against players. Like in paradox or total war games. Here there is now difference between the game mode besides that an AI faction is now played by a player.
+
+I don't think this really matters. When a game is not balanced for multiplayer but can be played as a multiplayer game. **The players should create their own rule sets and standards to how to play the game.** Banning certain tactics that are too overpowered.
+
+To make this **easy for players to create their own rule set the game** should allow for specifying one. So the game engine itself can enforce the rules. It should be easy to tweak values and disable, enable features. With these options players will not complain about unbalanced features to you but instead to the maker of the rule set.
+
+This allows the designer of the game to **maximize fun for the player**, while players that wish to play competitive can maximize their fun my creating a good rule set.
