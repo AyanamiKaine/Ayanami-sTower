@@ -15,7 +15,7 @@ How much value is gained on buying a TV? A better PC? A book? A video game? A su
 
 I once played a Crusader Kings 3 campaign that was plagued with bugs and even resulted in a corrupted iron mode save game (you only have one save game). Was this time well spent? 
 
-Most people choose time spent with thing I spent money on. Because for them there is no other quantified number. I now how much time I spent with something. But I never know what true value I gained or not gained.
+Most people choose time spent with thing I spent money on. Because for them there is no other quantified number. I know how much time I spent with something. But I never know what true value I gained or not gained.
 
 # The Meaning for Game Design
 
