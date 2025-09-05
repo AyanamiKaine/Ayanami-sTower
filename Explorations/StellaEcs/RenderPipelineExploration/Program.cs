@@ -570,6 +570,32 @@ internal static class Program
                 float followTrack = _cameraController.FollowTrackingSmoothingRate;
                 if (ImGui.SliderFloat("Follow Tracking Rate", ref followTrack, 0f, 240f)) _cameraController.FollowTrackingSmoothingRate = followTrack;
 
+                // Projection plane tuning: allow changing near/far at runtime to debug depth precision
+                if (_camera != null)
+                {
+                    try
+                    {
+                        float camNear = (float)_camera.Near;
+                        float camFar = (float)_camera.Far;
+                        if (ImGui.InputFloat("Near Plane", ref camNear, 0f, 0f, "F6"))
+                        {
+                            // enforce positive near and keep far > near
+                            camNear = MathF.Max(1e-6f, camNear);
+                            if (camNear >= camFar) camFar = camNear * 1.0001f;
+                            _camera.Near = camNear;
+                            _camera.Far = camFar;
+                        }
+                        if (ImGui.InputFloat("Far Plane", ref camFar, 0f, 0f, "F2"))
+                        {
+                            // ensure far is greater than near
+                            camFar = MathF.Max(camNear + 1e-6f, camFar);
+                            _camera.Far = camFar;
+                        }
+                        ImGui.Text($"Projection: Near={_camera.Near:F6}, Far={_camera.Far:F2}");
+                    }
+                    catch { }
+                }
+
                 if (ImGui.Button("Snap Rotation To Target")) _cameraController.SnapRotationToTarget(); ImGui.SameLine();
                 if (ImGui.Button("Snap Rotation To Camera")) _cameraController.SnapRotationToCamera();
             }
@@ -1005,13 +1031,14 @@ internal static class Program
 
             var draw = ImGui.GetForegroundDrawList();
 
+            // Collect visible impostor candidates first so we can sort by distance and occlude farther ones with nearer ones.
+            var candidates = new List<(Entity e, Vector2 screenPos, float r, float camDistance, uint col, ImpostorShape shape, float border)>();
+
             foreach (var e in World.GetAllEntities())
             {
-                // Only for entities explicitly marked as Selectable
                 if (!e.Has<Selectable>()) { continue; }
 
-                // Start with global settings, then apply per-entity overrides if present
-                bool enabledLocal = true; // will AND with global shortly
+                bool enabledLocal = true;
                 float showBelowLocal = _impostorShowBelowPx;
                 float minLocal = _impostorMinPixelRadius;
                 float maxLocal = _impostorMaxPixelRadius;
@@ -1024,7 +1051,7 @@ internal static class Program
                 if (e.Has<Impostor>())
                 {
                     var imp = e.GetCopy<Impostor>();
-                    enabledLocal = imp.Enabled || imp.Enabled == default; // default(bool)=false, treat default as not explicitly disabling
+                    enabledLocal = imp.Enabled || imp.Enabled == default;
                     if (imp.OverrideShowBelow) showBelowLocal = imp.ShowBelowPx;
                     if (imp.OverrideMinMax)
                     {
@@ -1037,7 +1064,7 @@ internal static class Program
                     if (imp.OverrideShape)
                     {
                         int si = imp.ShapeIndex;
-                        if (si < 0) si = 0; if (si > 1) si = 1; // clamp to known shapes
+                        if (si < 0) si = 0; if (si > 1) si = 1;
                         shapeLocal = (ImpostorShape)si;
                     }
                     if (imp.OverrideMaxDistance)
@@ -1053,14 +1080,11 @@ internal static class Program
                     }
                 }
 
-                // Respect enabled flags (both global and per-entity)
                 if (!enabledLocal) { continue; }
 
-                // Find a world position (prefer render position when available)
                 var posD = GetEntityWorldPosition(e);
                 var pos = HighPrecisionConversions.ToVector3(posD);
 
-                // Estimate a world-space radius (prefer Size3D if present)
                 float worldRadius = 0.5f;
                 if (e.Has<Size3D>())
                 {
@@ -1069,34 +1093,25 @@ internal static class Program
                     worldRadius = Math.Max(0.01f, maxAxis * 0.5f);
                 }
 
-                // Build camera-relative position consistent with selection indicators
                 var renderPos = _useCameraRelativeRendering ? (pos - camPos) : pos;
-
-                // Distance from camera in world units for distance-based suppression
                 float camDistance = (_useCameraRelativeRendering ? renderPos.Length() : (pos - camPos).Length());
                 if (maxDistanceLocal > 0f && camDistance > maxDistanceLocal) { continue; }
 
-                // Project to clip space
                 var clip = Vector4.Transform(new Vector4(renderPos, 1f), viewProj);
-                if (clip.W <= 1e-6f) { continue; } // behind camera or invalid
+                if (clip.W <= 1e-6f) { continue; }
 
-                // NDC -> screen
                 float ndcX = clip.X / clip.W;
                 float ndcY = clip.Y / clip.W;
                 float sx = ((ndcX * 0.5f) + 0.5f) * screenW;
                 float sy = (1f - ((ndcY * 0.5f) + 0.5f)) * screenH;
 
-                // Cull if far off-screen (small margin)
                 if (sx < -50 || sx > screenW + 50 || sy < -50 || sy > screenH + 50) { continue; }
                 var screenPos = new Vector2(sx, sy);
 
-                // Projected pixel radius using Euclidean distance like selection indicators
                 float dist = MathF.Max(1e-4f, renderPos.Length());
                 float pixelRadius = (worldRadius / (dist * MathF.Max(1e-4f, tanHalfFov))) * (0.5f * screenH);
                 if (pixelRadius >= showBelowLocal) { continue; }
 
-                // Scale icon radius by how close the projected size is to the show threshold.
-                // pixelRadius in [0, _impostorShowBelowPx) maps to r in [min, max].
                 float t = 0f;
                 if (showBelowLocal > 1e-6f)
                 {
@@ -1106,20 +1121,44 @@ internal static class Program
                 }
                 float r = MathF.Max(0.1f, (minLocal + (maxLocal - minLocal) * t) * scaleFactorLocal);
 
-                // Hover detection: if the mouse is over the impostor icon, render the selection indicator
+                uint col = ImGui.ColorConvertFloat4ToU32(colorLocal);
+
+                candidates.Add((e, screenPos, r, camDistance, col, shapeLocal, borderLocal));
+            }
+
+            // Sort by distance: nearest first so nearer impostors occlude farther ones.
+            candidates.Sort((a, b) => a.camDistance.CompareTo(b.camDistance));
+
+            var drawn = new List<(Vector2 pos, float r)>();
+            const float occlusionFactor = 0.9f; // how aggressively nearer icons occlude farther ones (0..1.0)
+
+            // Iterate and draw only if not occluded by a previously drawn nearer impostor
+            foreach (var item in candidates)
+            {
+                bool occluded = false;
+                foreach (var d in drawn)
+                {
+                    var dd = Vector2.Distance(item.screenPos, d.pos);
+                    if (dd <= d.r * occlusionFactor)
+                    {
+                        occluded = true;
+                        break;
+                    }
+                }
+                if (occluded) { continue; }
+
+                // Hover and click handling only for visible impostors
                 try
                 {
                     var ioLocal = ImGui.GetIO();
                     var mouse = ImGui.GetMousePos();
-                    // only show hover when UI isn't capturing the mouse
                     if (!ioLocal.WantCaptureMouse)
                     {
-                        float hoverPad = 4.0f; // tolerance in pixels
-                        if (Vector2.Distance(mouse, screenPos) <= r + hoverPad)
+                        float hoverPad = 4.0f;
+                        if (Vector2.Distance(mouse, item.screenPos) <= item.r + hoverPad)
                         {
-                            RenderSelectionIndicatorAtScreenPosition(screenPos, MathF.Max(r, _minSelectionPixelSize));
+                            RenderSelectionIndicatorAtScreenPosition(item.screenPos, MathF.Max(item.r, _minSelectionPixelSize));
 
-                            // Click selection for impostors: respect UI capture and modifier keys (Shift=Add, Ctrl=Subtract)
                             try
                             {
                                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ioLocal.WantCaptureMouse)
@@ -1129,26 +1168,19 @@ internal static class Program
                                     if (ioSel.KeyShift) mode = SelectionInteractionService.SelectionMode.Add;
                                     else if (ioSel.KeyCtrl) mode = SelectionInteractionService.SelectionMode.Subtract;
 
-                                    _selectionInteraction.ApplySelection(new[] { e }, mode);
-                                    // Keep Selected tag components in sync
+                                    _selectionInteraction.ApplySelection(new[] { item.e }, mode);
                                     SyncSelectedComponents();
 
-                                    // Update the single-entity inspector selection when replacing
                                     if (mode == SelectionInteractionService.SelectionMode.Replace)
                                     {
-                                        _selectedEntity = e;
+                                        _selectedEntity = item.e;
                                     }
                                     else if (mode == SelectionInteractionService.SelectionMode.Subtract)
                                     {
-                                        // If we removed the currently inspected entity, clear it
-                                        if (_selectedEntity != default && _selectedEntity.Equals(e))
-                                        {
-                                            _selectedEntity = default;
-                                        }
+                                        if (_selectedEntity != default && _selectedEntity.Equals(item.e)) _selectedEntity = default;
                                     }
 
-                                    // Notify any mouse click handlers registered for this entity
-                                    _mouseInteraction.NotifyClick(e);
+                                    _mouseInteraction.NotifyClick(item.e);
                                 }
                             }
                             catch { }
@@ -1157,25 +1189,27 @@ internal static class Program
                 }
                 catch { }
 
-                uint col = ImGui.ColorConvertFloat4ToU32(colorLocal);
-                switch (shapeLocal)
+                // Draw the impostor
+                switch (item.shape)
                 {
                     case ImpostorShape.Circle:
-                        if (borderLocal > 0.01f)
+                        if (item.border > 0.01f)
                         {
-                            draw.AddCircle(screenPos, r, col, 16, borderLocal);
+                            draw.AddCircle(item.screenPos, item.r, item.col, 16, item.border);
                         }
-                        draw.AddCircleFilled(screenPos, MathF.Max(0, r - borderLocal * 0.5f), col);
+                        draw.AddCircleFilled(item.screenPos, MathF.Max(0, item.r - item.border * 0.5f), item.col);
                         break;
                     case ImpostorShape.Square:
-                        Vector2 d = new Vector2(r, r);
-                        if (borderLocal > 0.01f)
+                        Vector2 dvec = new Vector2(item.r, item.r);
+                        if (item.border > 0.01f)
                         {
-                            draw.AddRect(screenPos - d, screenPos + d, col, 0f, ImDrawFlags.None, borderLocal);
+                            draw.AddRect(item.screenPos - dvec, item.screenPos + dvec, item.col, 0f, ImDrawFlags.None, item.border);
                         }
-                        draw.AddRectFilled(screenPos - d + new Vector2(borderLocal * 0.5f), screenPos + d - new Vector2(borderLocal * 0.5f), col);
+                        draw.AddRectFilled(item.screenPos - dvec + new Vector2(item.border * 0.5f), item.screenPos + dvec - new Vector2(item.border * 0.5f), item.col);
                         break;
                 }
+
+                drawn.Add((item.screenPos, item.r));
             }
         }
 
@@ -1359,8 +1393,8 @@ internal static class Program
             _camera = new Camera(new Vector3(0, 2, 6), Vector3.Zero, Vector3.UnitY)
             {
                 Aspect = aspect,
-                Near = 0.1f,
-                Far = 100f,
+                Near = 1f,
+                Far = 1000f,
                 Fov = MathF.PI / 3f
             };
             _cameraController = new SpaceStrategyCameraController(_camera);
