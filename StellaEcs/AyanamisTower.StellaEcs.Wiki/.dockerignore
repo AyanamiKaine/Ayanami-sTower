@@ -25,6 +25,5 @@ tmp
 *.DS_Store
 Thumbs.db
 
-# Ignore the static directory's contents except for .keep
-static/*
-!static/.keep
+# Include the static directory so Docker build has access to your static assets
+# (previously static/* was ignored which prevented static files from being sent to the build context)
