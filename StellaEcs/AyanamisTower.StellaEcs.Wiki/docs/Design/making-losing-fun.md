@@ -24,6 +24,9 @@ Losing is not fun. If the player believes he is losing he should be able to lose
 
 # Being Able to Recover
 
-The big takeaway is: ***Give the player ways to recover, or he will see losing as absolute surrender at some point. He needs to have a desire for a rematch and the belief that he has a new fair chance to win.***
+The big takeaway is: **_Give the player ways to recover, or he will see losing as absolute surrender at some point. He needs to have a desire for a rematch and the belief that he has a new fair chance to win._**
 
 A good example of being able to recover are the Dark Souls games. While losing against a boss fight sometimes consumes some resources they are easy to get or to simply buy. You can come back later stronger and try again with a better chance of winning. You clearly see how far you got. Often the player believes that not much is missing, he just needs to hit the last attack to win...
+
+Strategy games need to learn more from other games that actually innovate. Most strategy games are quite stale. Tempest Rising
+is Command & Conquer but modern. Age of Empires IV is Age of Empires but modern. Total War: WARHAMMER III is Total War: WARHAMMER II but with bad sieges. Company of Heroes 3 is just bad. So is Dawn of War 3. And let's not talk about the "innovations" of paradox interactive games or patches.
