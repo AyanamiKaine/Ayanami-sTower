@@ -67,6 +67,7 @@ struct SpotLight
     float kc;
     float kl;
     float kq;
+    float2 _pad_spotlight;
 };
 
 // Light data buffers
