@@ -14,4 +14,4 @@ There will always be a pull between how the developers wishes the game to be and
 
 A developer should always play his own game religiously, he should be the one with the most interest in making the game fun. He can only really know if its fun when he plays it. There is no other way around it. [It comes down to eating your own dog food](https://en.wikipedia.org/wiki/Eating_your_own_dog_food).
 
-And never forget don't 
+And never forget [don't blame the player](/docs/Design/dont-blame-the-player)
