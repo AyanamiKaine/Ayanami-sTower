@@ -88,9 +88,14 @@ static class DeploymentService
         }
     };
 
-    public static async Task Main(string[] _)
+    public static async Task Main(string[] args)
     {
         Console.WriteLine($"\n--- {DateTime.Now}: C# Multi-Deployer started. ---");
+        bool isForced = args.Contains("-f") || args.Contains("--force");
+        if (isForced)
+        {
+            Console.WriteLine("Force flag detected. All applications will be redeployed regardless of git changes.");
+        }
 
         // Check for new commits in the entire repo first.
         bool hasAnyNewCommits = await HasNewCommitsInRepo();
@@ -105,7 +110,7 @@ static class DeploymentService
         foreach (var app in AppsToDeploy)
         {
             Console.WriteLine($"\n>>>>>> Processing Application: {app.Name} <<<<<<");
-            await TriggerDeploymentForApp(app, hasAnyNewCommits);
+            await TriggerDeploymentForApp(app, hasAnyNewCommits, isForced);
         }
 
         Console.WriteLine("\n--- Multi-Deployer run complete. ---\n");
@@ -201,7 +206,7 @@ static class DeploymentService
         }
     }
 
-    private static async Task TriggerDeploymentForApp(AppConfig app, bool repoHasChanges, CancellationToken cancellationToken = default)
+    private static async Task TriggerDeploymentForApp(AppConfig app, bool repoHasChanges, bool isForced, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -209,15 +214,26 @@ static class DeploymentService
             // We deploy if the container isn't running, OR if the repo was updated AND the specific project has changes.
             bool hasNewCommitsForApp = repoHasChanges && ChangedFilesAffectPath(app.ProjectPath);
 
-            if (isLive && !hasNewCommitsForApp)
+            if (isLive && !hasNewCommitsForApp && !isForced)
             {
                 Console.WriteLine($"[{app.Name}] Site is running and no new commits found for this project. Skipping.");
                 return;
             }
 
-            string startReason = !isLive
-                ? $"[{app.Name}] Live container is not running. Forcing deployment to recover."
-                : $"[{app.Name}] New commits detected for this project. Starting deployment.";
+            string startReason;
+            if (isForced)
+            {
+                startReason = $"[{app.Name}] Deployment is being forced by the '--force' flag.";
+            }
+            else if (!isLive)
+            {
+                startReason = $"[{app.Name}] Live container is not running. Forcing deployment to recover.";
+            }
+            else
+            {
+                startReason = $"[{app.Name}] New commits detected for this project. Starting deployment.";
+            }
+
 
             Console.WriteLine(startReason);
             await SendNotificationAsync(StatusLevel.Info, $"[{app.Name}] Deployment Started", startReason);
@@ -399,3 +415,4 @@ static class DeploymentService
         return tcs.Task;
     }
 }
+
