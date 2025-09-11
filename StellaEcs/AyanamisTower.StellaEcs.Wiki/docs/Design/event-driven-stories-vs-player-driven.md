@@ -11,7 +11,10 @@ Thinking I want to be at war with nation X can break many things when the mod ex
 
 This is the major difference between a player driven story and an event based story.
 
-In Europa Universalis IV a similar problem exists with mission trees. If a mission expects a certain nation to exist and the devloper did'nt account for a scenario where they dont, the tree gets softlocked.
+When I played such mods, I always worried that my actions would break a certain story line I wanted to play. Always searching for a guide. Because I knew that if I didn't do that valuable time could be wasted. After hours I learned that my path was now blocked.
+
+
+In Europa Universalis IV a similar problem exists with mission trees. If a mission expects a certain nation to exist and the devloper didn't account for a scenario where they dont, the tree gets softlocked.
 
 And again its a story created by others not the player. Taking account for so many variables that could break the story is hard.
 
