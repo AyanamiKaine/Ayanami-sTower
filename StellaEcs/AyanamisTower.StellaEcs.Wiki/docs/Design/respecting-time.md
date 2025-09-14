@@ -2,16 +2,16 @@
 sidebar_position: 24
 ---
 
-# Respecting Players Time
+# Respecting Players' Time
 
-There is one thing that needs to be respected at all time. Its the time a player invests. He wants to see progression that is meaningful in any way. Resetting the progession of a player insits long term hate.
+One thing must always be respected: the time a player invests. Players want to see meaningful progression. Resetting a player's progress breeds long-term resentment.
 
-Roguelites do it right because here each run results in progession that carries over to each new run. 
+Roguelites get this right because each run contributes progression that carries over to subsequent runs.
 
-The best new game + modes are those where you not only carry stuff over but can unlock totally new things. In Dark Souls 2 there were better version of old items and completly spells to unlock. In Starfield (I know its not that good of a game) you can solve (I believe just one quest can be solved that way and the beginning of the main quest can be skipped) in a different way because you did the quest in the first run and your character cannonically carries that over.
+The best New Game+ modes not only carry things over but also unlock entirely new content. In Dark Souls 2 there were improved versions of old items and completely new spells to unlock. In Starfield (which I know has mixed reception) you can skip parts of the main quest on a subsequent playthrough because your character canonically carries over certain choices or outcomes from a previous run.
 
-Another good example of these meta progession is horizontal progression often found in MMOs like Guild Wars 2 and Runescape.
+Another good example of meta-progression is horizontal progression, often found in MMOs like Guild Wars 2 and RuneScape.
 
-A bad example would be vertical progression like its done in WoW. Here each new expansion somewhat sunsets the old one. A player starting on the new expansion will not experience the old content. In a certain way something that is still available becomes so obsolete that taking it away is no different from how it is now.
+A poor example is vertical progression as implemented in some expansions of World of Warcraft: each new expansion can effectively supplant older content. A player starting with a new expansion may never experience the old content, and mechanics or items can become so obsolete that their continued presence is largely meaningless.
 
-A form of *meta progession* is always a fantastic way to honor time invested. But that does not give an excuse the take something away from the player. **As a developer always give, never take away.**
+Meta-progression is a powerful way to honor a player's time. But it is not an excuse to take things away. As a developer, always give—never take away.
