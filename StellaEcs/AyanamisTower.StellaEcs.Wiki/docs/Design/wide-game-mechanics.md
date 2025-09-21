@@ -22,3 +22,7 @@ We may redefine a wide game mechanic as a shallow one. But why I am not doing it
 # Another Example Victoria 3 Cultures
 
 In Victoria 3 there exist many different cultures (302!) and each culture has their own two culture traits (over 60 different traits!). They have a citizen system where depending on accepted culture the people living in the nations have different privileges. Cultures even effect what goods they prefer to consume. But in reality while playing the game you won't really feel the differences. The [wiki entry](https://vic3.paradoxwikis.com/Culture) gives the feeling of *"ohh, so cultures are quite deeply implemented"*. But in reality its nothing more than a wide game mechanic. Cultures touch many aspects of the game but have little impact on it. This is the prime example of it.
+
+# Another Example Crusader Kings III: Coronations
+
+In the new DLC for CK3, you get the ability to make an oath. basically if you fullfill mission X get Y amounts of bonuses. Around 8 can be choosen. They are all a mix out of boring, uninspired or simply broken options. Instead of 3 really interesting options we get padded out content to sell something. Paradox needs to learn how to market and sell quality. As of today paradox only has the ability to market and sell quantity.

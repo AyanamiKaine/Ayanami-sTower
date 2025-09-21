@@ -8,12 +8,14 @@ _A bad AI is worse than no AI_ - Me
 
 # What Makes an AI Good?
 
-An AI is transparent in why it does something. This does not necessary mean we say that the enemy AI has an elo rating of grand master and a personality of aggressive attacker. Shows such things in context of your game world. A passant character that says not so smart things. Shows an AI with low elo. A general with decorated medals and an aggressive tone, show a high elo with an aggressive personality.
+An AI is transparent in why it does something. This does not necessary mean we say that the enemy AI has an elo rating of grand master and a personality of aggressive attacker. Shows such things in context of your game world. A passant character that says not so smart things. Shows an AI with low elo. A general with decorated medals and an aggressive tone, show a high elo with an aggressive personality. 
 
 An AI should have two categories attached to it.
 
 -   First an elo rating.
 -   Second a personality.
+
+A good AI interacts with the game world like the player does. This improves immersion and give a sense of fairness. If the AI has less ressource "I expect them to react on that fact". Often times the AI just cheats and is seldom really bothered by such things. The AI does not care about constraints and limits. Sometimes this gives the player the feeling the he plays a different game than the AI does. It shows disconnection.
 
 ## Elo Rating
 

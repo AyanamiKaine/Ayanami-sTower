@@ -88,9 +88,14 @@ static class DeploymentService
         }
     };
 
-    public static async Task Main(string[] _)
+    public static async Task Main(string[] args)
     {
         Console.WriteLine($"\n--- {DateTime.Now}: C# Multi-Deployer started. ---");
+        bool isForced = args.Contains("-f") || args.Contains("--force");
+        if (isForced)
+        {
+            Console.WriteLine("Force flag detected. All applications will be redeployed regardless of git changes.");
+        }
 
         // Check for new commits in the entire repo first.
         bool hasAnyNewCommits = await HasNewCommitsInRepo();
@@ -105,7 +110,7 @@ static class DeploymentService
         foreach (var app in AppsToDeploy)
         {
             Console.WriteLine($"\n>>>>>> Processing Application: {app.Name} <<<<<<");
-            await TriggerDeploymentForApp(app, hasAnyNewCommits);
+            await TriggerDeploymentForApp(app, hasAnyNewCommits, isForced);
         }
 
         Console.WriteLine("\n--- Multi-Deployer run complete. ---\n");
@@ -201,7 +206,7 @@ static class DeploymentService
         }
     }
 
-    private static async Task TriggerDeploymentForApp(AppConfig app, bool repoHasChanges, CancellationToken cancellationToken = default)
+    private static async Task TriggerDeploymentForApp(AppConfig app, bool repoHasChanges, bool isForced, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -209,15 +214,26 @@ static class DeploymentService
             // We deploy if the container isn't running, OR if the repo was updated AND the specific project has changes.
             bool hasNewCommitsForApp = repoHasChanges && ChangedFilesAffectPath(app.ProjectPath);
 
-            if (isLive && !hasNewCommitsForApp)
+            if (isLive && !hasNewCommitsForApp && !isForced)
             {
                 Console.WriteLine($"[{app.Name}] Site is running and no new commits found for this project. Skipping.");
                 return;
             }
 
-            string startReason = !isLive
-                ? $"[{app.Name}] Live container is not running. Forcing deployment to recover."
-                : $"[{app.Name}] New commits detected for this project. Starting deployment.";
+            string startReason;
+            if (isForced)
+            {
+                startReason = $"[{app.Name}] Deployment is being forced by the '--force' flag.";
+            }
+            else if (!isLive)
+            {
+                startReason = $"[{app.Name}] Live container is not running. Forcing deployment to recover.";
+            }
+            else
+            {
+                startReason = $"[{app.Name}] New commits detected for this project. Starting deployment.";
+            }
+
 
             Console.WriteLine(startReason);
             await SendNotificationAsync(StatusLevel.Info, $"[{app.Name}] Deployment Started", startReason);
@@ -238,7 +254,23 @@ static class DeploymentService
             // Note: Dockerfile should be present in the app.ProjectPath directory.
             await RunProcessAsync("podman", $"build -t {app.ImageName}:latest .", app.ProjectPath, cancellationToken: cancellationToken);
 
+            // --- FIX STARTS HERE ---
+            // Proactively clean up any leftover resources from a previously failed deployment.
+            // This prevents the 'Unit was already loaded' error from systemd.
+            
+            Console.WriteLine($"[{app.Name}] Cleaning up old standby resources for '{standbyContainerName}' before starting...");
+
+            // 1. Stop any running systemd service with the standby name.
+            await RunProcessAsync("systemctl", $"--user stop {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            
+            // 2. Reset the failed state of the service, in case it failed previously.
+            await RunProcessAsync("systemctl", $"--user reset-failed {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            
+            // 3. Force-remove any existing podman container with the standby name. (This was already here and is correct)
             await RunProcessAsync("podman", $"rm -f {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            // --- FIX ENDS HERE ---
+
+            // Now we can safely create the new service.
             await RunProcessAsync(
                 "systemd-run",
                 $"--user --service-type=exec --unit={standbyContainerName} podman run --rm --name {standbyContainerName} -p {standbyPort}:80 {app.ImageName}:latest",
@@ -252,6 +284,9 @@ static class DeploymentService
                 var failureMsg = $"Health check FAILED for container {standbyContainerName} on port {standbyPort}. Aborting deployment.";
                 Console.WriteLine($"!!! [{app.Name}] {failureMsg}");
                 await SendNotificationAsync(StatusLevel.Error, $"[{app.Name}] Deployment FAILED", failureMsg);
+                // Also attempt to clean up the failed container and service
+                await RunProcessAsync("systemctl", $"--user stop {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+                await RunProcessAsync("systemctl", $"--user reset-failed {standbyContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
                 return;
             }
             Console.WriteLine($"[{app.Name}] Health check PASSED.");
@@ -266,7 +301,8 @@ static class DeploymentService
             Console.WriteLine($"SUCCESS! [{app.Name}] {successMsg}");
             await SendNotificationAsync(StatusLevel.Success, $"[{app.Name}] Deployment Successful", successMsg);
 
-            await RunProcessAsync("podman", $"stop {liveContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
+            // Stop the old live service via systemd, which will in turn stop the container.
+            await RunProcessAsync("systemctl", $"--user stop {liveContainerName}", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
 
             Console.WriteLine($"[{app.Name}] Pruning old container images...");
             await RunProcessAsync("podman", "image prune -f", workingDirectory: RepoPath, ignoreErrors: true, cancellationToken: cancellationToken);
@@ -286,8 +322,6 @@ static class DeploymentService
         }
     }
 
-    // (IsHealthy and RunProcessAsync methods remain unchanged from your original script)
-    // ... Please include the full IsHealthy and RunProcessAsync methods from your script here ...
     private static async Task<bool> IsHealthy(int port, CancellationToken cancellationToken = default)
     {
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
@@ -381,3 +415,4 @@ static class DeploymentService
         return tcs.Task;
     }
 }
+
