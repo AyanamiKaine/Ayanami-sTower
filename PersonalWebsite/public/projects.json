@@ -190,7 +190,7 @@
   {
     "title": "TODO APP",
     "status": "Completed",
-    "description": "Everyone loves to write their own TODO app, I wrote the TODO app using Avalonia Flecs (My own builder abstraction for Avalonia) to show how bad MVVC is and how much better a declarative approach is.",
+    "description": "Everyone loves to write their own TODO app, I wrote the TODO app using Avalonia Flecs (My own builder abstraction for Avalonia) to show how bad MVVM is and how much better a declarative approach is.",
     "technologies": [
       "C#",
       "Avalonia Flecs",
@@ -198,8 +198,12 @@
     ],
     "links": [
       {
-        "name": "GitHub",
+        "name": "GitHub (My Implementation)",
         "url": "https://github.com/AyanamiKaine/Ayanami-sTower/blob/main/Avalonia/Avalonia.Flecs/Avalonia.Flecs.ToDoApp/App.axaml.cs"
+      },
+      {
+        "name": "GitHub (Avalonia MVVM Sample)",
+        "url": "https://github.com/AvaloniaUI/Avalonia.Samples/tree/main/src/Avalonia.Samples/CompleteApps/SimpleToDoList"
       }
     ]
   }
