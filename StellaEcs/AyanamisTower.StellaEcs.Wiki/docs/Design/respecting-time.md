@@ -12,6 +12,6 @@ The best New Game+ modes not only carry things over but also unlock entirely new
 
 Another good example of meta-progression is horizontal progression, often found in MMOs like Guild Wars 2 and RuneScape.
 
-A poor example is vertical progression as implemented in some expansions of World of Warcraft: each new expansion can effectively supplant older content. A player starting with a new expansion may never experience the old content, and mechanics or items can become so obsolete that their continued presence is largely meaningless.
+A poor example is vertical progression as implemented in some expansions of World of Warcraft: each new expansion can effectively replace older content. A player starting with a new expansion may never experience the old content, and mechanics or items can become so obsolete that their continued presence is largely meaningless.
 
 Meta-progression is a powerful way to honor a player's time. But it is not an excuse to take things away. As a developer, always give—never take away.
