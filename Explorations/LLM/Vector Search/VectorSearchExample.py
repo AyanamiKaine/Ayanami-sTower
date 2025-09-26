@@ -1,7 +1,8 @@
 import os
 import sqlite3
+import argparse
 from dataclasses import dataclass
-from typing import Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Sequence, Tuple, Optional
 
 import numpy as np
 
@@ -203,32 +204,135 @@ def pretty_print_results(question: str, docs: Sequence[RetrievedDocument]) -> No
         print(f"  - (ID: {doc.doc_id}, Distance: {doc.distance:.4f}): '{doc.text}'")
 
 
-def run_demo(
-    documents: Sequence[str] = DEFAULT_DOCUMENTS,
-    question: str = "What is the energy source for a cell?",
-    top_k: int = 3,
+def ensure_index(
+    conn: sqlite3.Connection,
+    embedding_model,
+    documents: Sequence[str],
+    rebuild: bool,
 ) -> None:
-    reset_database()
-    conn = connect_sqlite()
-    ensure_schema(conn)
-
-    embedding_model = load_embedding_model()
+    """(Re)build the vector index if requested or if empty."""
+    need_rebuild = rebuild
+    if not need_rebuild:
+        row = conn.execute("SELECT COUNT(*) as c FROM docs").fetchone()
+        if row["c"] == 0:
+            need_rebuild = True
+    if not need_rebuild:
+        print("Reusing existing vector index (use --rebuild to force regeneration).")
+        return
+    print("Building (or rebuilding) vector index...")
     doc_embeddings = embed_documents(embedding_model, documents)
     store_documents(conn, documents, doc_embeddings)
 
+
+def answer_question(
+    question: str,
+    conn: sqlite3.Connection,
+    embedding_model,
+    top_k: int,
+) -> str:
     query_embedding = embedding_model.encode(question)
     retrieved_docs = search_similar_documents(conn, query_embedding, top_k=top_k)
     pretty_print_results(question, retrieved_docs)
-
     prompt = build_rag_prompt(question, retrieved_docs)
-    gemini_model = ensure_gemini_model()
-    answer = call_gemini(gemini_model, prompt)
-
+    gemini_client = ensure_gemini_model()
+    answer = call_gemini(gemini_client, prompt)
     print("\n--- Gemini Response ---")
     print(answer)
+    return answer
+
+
+def interactive_loop(conn: sqlite3.Connection, embedding_model, top_k: int) -> None:
+    print("Entering interactive mode. Type 'exit', 'quit', or ':q' to leave.")
+    while True:
+        try:
+            question = input("\nYour question> ").strip()
+        except (KeyboardInterrupt, EOFError):  # graceful exit
+            print("\nExiting interactive mode.")
+            break
+        if question.lower() in {"exit", "quit", ":q"}:
+            print("Goodbye.")
+            break
+        if not question:
+            continue
+        answer_question(question, conn, embedding_model, top_k)
+
+
+def run_demo(
+    documents: Sequence[str] = DEFAULT_DOCUMENTS,
+    question: Optional[str] = None,
+    top_k: int = 3,
+    rebuild: bool = True,
+    interactive: bool = False,
+) -> None:
+    if rebuild:
+        reset_database()
+    conn = connect_sqlite()
+    ensure_schema(conn)
+    embedding_model = load_embedding_model()
+    ensure_index(conn, embedding_model, documents, rebuild=rebuild)
+
+    if interactive:
+        interactive_loop(conn, embedding_model, top_k)
+    else:
+        # Use default demo question if none supplied.
+        q = question or "What is the energy source for a cell?"
+        answer_question(q, conn, embedding_model, top_k)
 
     conn.close()
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Vector Search + Gemini RAG Demo")
+    parser.add_argument(
+        "--question",
+        "-q",
+        type=str,
+        help="Single question to ask (skips interactive mode unless --interactive provided).",
+    )
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=3,
+        help="Number of most similar documents to retrieve (default: 3)",
+    )
+    parser.add_argument(
+        "--no-rebuild",
+        action="store_true",
+        help="Reuse existing database & vectors if present (do not regenerate embeddings).",
+    )
+    parser.add_argument(
+        "--interactive",
+        "-i",
+        action="store_true",
+        help="Enter an interactive Q&A loop after (re)building index.",
+    )
+    parser.add_argument(
+        "--docs-file",
+        type=str,
+        help="Optional path to a text file (one document per line) to replace DEFAULT_DOCUMENTS.",
+    )
+    return parser.parse_args()
+
+
+def load_documents_from_file(path: str) -> Sequence[str]:
+    with open(path, "r", encoding="utf-8") as f:
+        docs = [line.strip() for line in f.readlines() if line.strip()]
+    if not docs:
+        raise ValueError("No non-empty lines found in docs file.")
+    print(f"Loaded {len(docs)} documents from {path}.")
+    return docs
+
+
 if __name__ == "__main__":
-    run_demo()
+    args = parse_args()
+    if args.docs_file:
+        documents = load_documents_from_file(args.docs_file)
+    else:
+        documents = DEFAULT_DOCUMENTS
+    run_demo(
+        documents=documents,
+        question=args.question,
+        top_k=args.top_k,
+        rebuild=not args.no_rebuild,
+        interactive=args.interactive,
+    )

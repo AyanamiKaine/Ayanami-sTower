@@ -23,19 +23,41 @@ You can optionally override the embedding or Gemini model by setting `EMBEDDING_
 
 ## Run the demo
 
+Basic run:
+
 ```pwsh
-python VectorSearchExample.py
+python VectorSearchExample.py --question "What powers a cell?"
 ```
 
-What happens:
+Interactive mode (ask multiple questions):
 
-1. The script resets the `vector_memory_vec.db` file and loads `sqlite-vec`.
-2. Documents are embedded with Sentence Transformers and stored as float32 vectors in SQLite.
-3. A query is embedded, the nearest neighbours are retrieved, and a Gemini prompt is assembled from the results.
-4. If `GOOGLE_API_KEY` is set and `google-generativeai` is installed, the Gemini model answers the question using the retrieved context. If not, the script prints the context-only fallback message.
+```pwsh
+python VectorSearchExample.py -i
+```
+
+Reuse existing vector DB (skip re-embedding):
+
+```pwsh
+python VectorSearchExample.py --no-rebuild -q "Where is the Louvre?"
+```
+
+Load your own documents from a file (one line = one document):
+
+```pwsh
+python VectorSearchExample.py --docs-file my_corpus.txt -i
+```
+
+What happens on each run:
+
+1. Optionally (re)builds the `vector_memory_vec.db` file (unless `--no-rebuild`).
+2. Embeds documents with Sentence Transformers and stores float32 vectors in SQLite.
+3. Embeds your query, retrieves nearest neighbours via `vec_distance_l2`.
+4. Builds a RAG prompt and calls Gemini using the modern `google-genai` SDK (if API key present).
+5. Falls back gracefully if Gemini isn't configured, still showing retrieved context.
 
 ## Customising
 
--   Replace `DEFAULT_DOCUMENTS` in `VectorSearchExample.py` with your own corpus.
--   Persist the database and skip `reset_database()` when you want updates instead of rebuilds.
--   Wrap the `run_demo` function or copy the helper functions into your own application to build an API or chat workflow on top of the same components.
+-   Replace `DEFAULT_DOCUMENTS` or provide `--docs-file`.
+-   Use `--no-rebuild` to append new docs logic later (currently full rebuild deletes docs).
+-   Extend `answer_question` for streaming (`client.models.generate_content_stream`).
+-   Add function calling or JSON schema outputs by passing a `config` dict to the `generate_content` call.
