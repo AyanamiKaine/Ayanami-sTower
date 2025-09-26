@@ -3,6 +3,7 @@ import sqlite3
 import argparse
 from dataclasses import dataclass
 from typing import Iterable, List, Sequence, Tuple, Optional
+import math
 
 import numpy as np
 
@@ -241,6 +242,150 @@ def answer_question(
     return answer
 
 
+def _load_all_embeddings(conn: sqlite3.Connection) -> List[Tuple[int, str, np.ndarray]]:
+    rows = conn.execute("SELECT id, text, embedding FROM docs ORDER BY id").fetchall()
+    out: List[Tuple[int, str, np.ndarray]] = []
+    for r in rows:
+        vec = np.frombuffer(r["embedding"], dtype=np.float32)
+        out.append((int(r["id"]), r["text"], vec))
+    return out
+
+
+def reduce_embeddings_to_3d(vectors: List[np.ndarray]) -> np.ndarray:
+    """Reduce high-dim vectors to 3D using PCA (fallback: first 3 dims)."""
+    if not vectors:
+        return np.zeros((0, 3), dtype=np.float32)
+    mat = np.vstack(vectors)
+    if mat.shape[1] <= 3:
+        # Already 3D or fewer; pad if needed
+        if mat.shape[1] < 3:
+            pad = np.zeros((mat.shape[0], 3 - mat.shape[1]), dtype=mat.dtype)
+            mat = np.hstack([mat, pad])
+        return mat.astype(np.float32)
+    try:
+        from sklearn.decomposition import PCA  # type: ignore
+        pca = PCA(n_components=3, random_state=42)
+        reduced = pca.fit_transform(mat)
+        return reduced.astype(np.float32)
+    except Exception:
+        # Fallback: just take first 3 dimensions
+        return mat[:, :3].astype(np.float32)
+
+
+def visualize_embeddings(
+    conn: sqlite3.Connection,
+    embedding_model,
+    question: str,
+    top_k: int,
+    outfile: Optional[str] = None,
+    animate: bool = False,
+) -> None:
+    """Create a 3D scatter plot of document embeddings centered on the query.
+
+    The query will be at (0,0,0). Distances are color-coded; top_k retrieved docs
+    are highlighted. If animate=True, attempt a simple rotation animation.
+    """
+    print("\nPreparing visualization ...")
+    query_vec = embedding_model.encode(question).astype(np.float32)
+    all_items = _load_all_embeddings(conn)
+    if not all_items:
+        print("No embeddings present to visualize.")
+        return
+
+    # Center by subtracting query so it becomes origin.
+    centered_vectors = [vec - query_vec for (_id, _text, vec) in all_items]
+    coords3d = reduce_embeddings_to_3d(centered_vectors)
+    distances = np.linalg.norm(coords3d, axis=1)
+
+    # Identify top_k nearest docs relative to query in original space via distances.
+    nearest_indices = np.argsort(distances)[:top_k]
+    nearest_set = set(int(i) for i in nearest_indices.tolist())
+
+    try:
+        import matplotlib.pyplot as plt  # type: ignore
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  # needed for 3D projection
+    except ImportError:
+        print("matplotlib not installed. Install with `pip install matplotlib` to enable visualization.")
+        return
+
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection="3d")
+    xs, ys, zs = coords3d[:, 0], coords3d[:, 1], coords3d[:, 2]
+    sc = ax.scatter(xs, ys, zs, c=distances, cmap="viridis", s=40, alpha=0.85)
+
+    # Highlight top_k
+    for idx_in_array in nearest_set:
+        ax.scatter(
+            xs[idx_in_array],
+            ys[idx_in_array],
+            zs[idx_in_array],
+            c="red",
+            s=120,
+            marker="o",
+            edgecolors="black",
+            linewidths=1.0,
+        )
+
+    # Query at origin (guaranteed after centering)
+    ax.scatter([0], [0], [0], c="black", marker="*", s=250, label="Query")
+
+    # Annotate top_k docs with their ID (optional; avoid clutter for large sets)
+    for rank, idx_in_array in enumerate(nearest_indices, start=1):
+        doc_id, text, _ = all_items[idx_in_array]
+        ax.text(
+            xs[idx_in_array],
+            ys[idx_in_array],
+            zs[idx_in_array],
+            f"#{rank} (id={doc_id})",
+            fontsize=8,
+            color="red",
+        )
+
+    ax.set_title("Document Embeddings (Query at Origin)")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    fig.colorbar(sc, ax=ax, shrink=0.6, label="Distance from Query (in reduced space)")
+    ax.legend(loc="upper right")
+    plt.tight_layout()
+
+    saved = False
+    if outfile:
+        base, ext = os.path.splitext(outfile)
+        try:
+            plt.savefig(outfile, dpi=140)
+            saved = True
+            print(f"Saved static 3D plot to {outfile}")
+        except Exception as exc:  # pragma: no cover
+            print(f"Failed to save static plot: {exc}")
+
+    if animate:
+        try:
+            from matplotlib import animation  # type: ignore
+
+            def _rotate(angle):
+                ax.view_init(elev=30, azim=angle)
+                return (ax,)
+
+            anim = animation.FuncAnimation(fig, _rotate, frames=range(0, 360, 4), interval=60, blit=False)
+            if outfile:
+                gif_path = base + ".gif" if base else "embeddings_rotation.gif"
+            else:
+                gif_path = "embeddings_rotation.gif"
+            try:
+                anim.save(gif_path, writer="pillow")
+                print(f"Saved rotation animation to {gif_path}")
+            except Exception as exc:  # pragma: no cover
+                print(f"Animation save failed (install pillow or imagemagick for GIF support): {exc}")
+        except Exception as exc:
+            print(f"Animation unavailable: {exc}")
+
+    if not saved and not animate:
+        print("Showing interactive window (close it to continue)...")
+        plt.show()
+
+
+
 def interactive_loop(conn: sqlite3.Connection, embedding_model, top_k: int) -> None:
     print("Entering interactive mode. Type 'exit', 'quit', or ':q' to leave.")
     while True:
@@ -263,6 +408,9 @@ def run_demo(
     top_k: int = 3,
     rebuild: bool = True,
     interactive: bool = False,
+    visualize: bool = False,
+    visualize_file: Optional[str] = None,
+    animate: bool = False,
 ) -> None:
     if rebuild:
         reset_database()
@@ -277,6 +425,15 @@ def run_demo(
         # Use default demo question if none supplied.
         q = question or "What is the energy source for a cell?"
         answer_question(q, conn, embedding_model, top_k)
+        if visualize:
+            visualize_embeddings(
+                conn,
+                embedding_model,
+                q,
+                top_k=top_k,
+                outfile=visualize_file,
+                animate=animate,
+            )
 
     conn.close()
 
@@ -311,6 +468,22 @@ def parse_args() -> argparse.Namespace:
         type=str,
         help="Optional path to a text file (one document per line) to replace DEFAULT_DOCUMENTS.",
     )
+    parser.add_argument(
+        "--visualize",
+        "-v",
+        action="store_true",
+        help="After answering the question, display or save a 3D embedding visualization.",
+    )
+    parser.add_argument(
+        "--viz-file",
+        type=str,
+        help="Optional path to save the static visualization image (e.g. embeddings.png).",
+    )
+    parser.add_argument(
+        "--animate",
+        action="store_true",
+        help="Attempt to also create a rotating GIF (requires pillow). Implies --visualize.",
+    )
     return parser.parse_args()
 
 
@@ -335,4 +508,7 @@ if __name__ == "__main__":
         top_k=args.top_k,
         rebuild=not args.no_rebuild,
         interactive=args.interactive,
+        visualize=args.visualize or args.animate,
+        visualize_file=args.viz_file,
+        animate=args.animate,
     )

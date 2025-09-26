@@ -61,3 +61,33 @@ What happens on each run:
 -   Use `--no-rebuild` to append new docs logic later (currently full rebuild deletes docs).
 -   Extend `answer_question` for streaming (`client.models.generate_content_stream`).
 -   Add function calling or JSON schema outputs by passing a `config` dict to the `generate_content` call.
+
+## Visualization
+
+You can visualize embeddings (reduced to 3D with PCA) relative to the query at the origin.
+
+Examples:
+
+```pwsh
+python VectorSearchExample.py -q "What is photosynthesis?" --visualize
+```
+
+Save to a file:
+
+```pwsh
+python VectorSearchExample.py -q "What is photosynthesis?" --visualize --viz-file embeddings.png
+```
+
+Generate a rotating GIF (needs `pillow`):
+
+```pwsh
+python VectorSearchExample.py -q "What is photosynthesis?" --animate --viz-file embeddings.png
+```
+
+Install extra deps if you don't have them:
+
+```pwsh
+pip install matplotlib scikit-learn pillow
+```
+
+Top-k nearest documents are highlighted in red; the query appears as a black star at (0,0,0). Color encodes distance in the reduced space.
