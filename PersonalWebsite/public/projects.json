@@ -175,11 +175,35 @@
     "title": "Project Astra Aeterna",
     "status": "In Progress",
     "description": "As a fan of all grand strategy. It's my personal dream to some day create my own grand strategy game. Currently I'm working on a small prototype using C#, SDL3 and Vulkan. I also created a small wiki to document my progress and ideas on game design.",
-    "technologies": ["C#", "SDL3", "Vulkan"],
+    "technologies": [
+      "C#",
+      "SDL3",
+      "Vulkan"
+    ],
     "links": [
       {
         "name": "Wiki",
         "url": "https://stellawiki.com/docs/intro/"
+      }
+    ]
+  },
+  {
+    "title": "TODO APP",
+    "status": "Completed",
+    "description": "Everyone loves to write their own TODO app, I wrote the TODO app using Avalonia Flecs (My own builder abstraction for Avalonia) to show how bad MVVM is and how much better a declarative approach is.",
+    "technologies": [
+      "C#",
+      "Avalonia Flecs",
+      "Avalonia"
+    ],
+    "links": [
+      {
+        "name": "GitHub (My Implementation)",
+        "url": "https://github.com/AyanamiKaine/Ayanami-sTower/blob/main/Avalonia/Avalonia.Flecs/Avalonia.Flecs.ToDoApp/App.axaml.cs"
+      },
+      {
+        "name": "GitHub (Avalonia MVVM Sample)",
+        "url": "https://github.com/AvaloniaUI/Avalonia.Samples/tree/main/src/Avalonia.Samples/CompleteApps/SimpleToDoList"
       }
     ]
   }
