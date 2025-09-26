@@ -4,6 +4,7 @@ import argparse
 from dataclasses import dataclass
 from typing import Iterable, List, Sequence, Tuple, Optional
 import math
+import json
 
 import numpy as np
 
@@ -22,6 +23,7 @@ DEFAULT_DOCUMENTS: Sequence[str] = (
     "Photosynthesis is the process used by plants to convert light energy into chemical energy.",
     "The Louvre Museum, located in Paris, is the world's largest art museum.",
     "Cellular respiration releases energy from glucose.",
+    "Embeddings are numerical representations that capture the relationships between different inputs. Text embeddings achieve this by converting text into arrays of floating-point numbers known as vectors. The primary purpose of these vectors is to encapsulate the semantic meaning of the text. The dimensionality of the vector, which is the length of the embedding array, can be quite large, with a passage of text sometimes being represented by a vector with hundreds of dimensions."
 )
 
 
@@ -279,6 +281,9 @@ def visualize_embeddings(
     top_k: int,
     outfile: Optional[str] = None,
     animate: bool = False,
+    label_mode: str = "none",  # none|id|short|full
+    export_coords: Optional[str] = None,
+    plotly_html: Optional[str] = None,
 ) -> None:
     """Create a 3D scatter plot of document embeddings centered on the query.
 
@@ -293,63 +298,180 @@ def visualize_embeddings(
         return
 
     # Center by subtracting query so it becomes origin.
-    centered_vectors = [vec - query_vec for (_id, _text, vec) in all_items]
-    coords3d = reduce_embeddings_to_3d(centered_vectors)
-    distances = np.linalg.norm(coords3d, axis=1)
+    # Compute original embedding-space L2 distances (full dimensional space)
+    diffs = [vec - query_vec for (_id, _text, vec) in all_items]
+    original_distances = np.array([float(np.linalg.norm(d)) for d in diffs], dtype=np.float32)
 
-    # Identify top_k nearest docs relative to query in original space via distances.
-    nearest_indices = np.argsort(distances)[:top_k]
-    nearest_set = set(int(i) for i in nearest_indices.tolist())
+    # Re-run similarity search via DB to get authoritative top_k (sqlite-vec distance)
+    # This ensures ranking matches the earlier textual output.
+    query_blob = query_vec.astype(np.float32)
+    retrieved_again = search_similar_documents(conn, query_blob, top_k=top_k)
+    rank_by_id = {doc.doc_id: r + 1 for r, doc in enumerate(retrieved_again)}
+    retrieved_id_set = set(rank_by_id.keys())
 
+    # Reduce to 3D (PCA) AFTER computing original distances.
+    coords3d = reduce_embeddings_to_3d(diffs)
+    reduced_distances = np.linalg.norm(coords3d, axis=1)
+
+    # For convenience keep a list of indices corresponding to retrieved docs in ranking order.
+    nearest_indices = [next(i for i,(doc_id, _text, _vec) in enumerate(all_items) if doc_id==doc.doc_id) for doc in retrieved_again]
+    nearest_set = set(nearest_indices)
+
+    # Prepare optional coordinate export (before any dimensionality changes)
+    if export_coords:
+        export_payload = []
+        for idx, ((doc_id, text, _vec), coord) in enumerate(zip(all_items, coords3d)):
+            export_payload.append({
+                "doc_id": doc_id,
+                "text": text,
+                "x": float(coord[0]),
+                "y": float(coord[1]),
+                "z": float(coord[2]),
+                "original_distance": float(original_distances[idx]),
+                "reduced_distance": float(reduced_distances[idx]),
+                "retrieved_rank": rank_by_id.get(doc_id),
+            })
+        try:
+            with open(export_coords, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "question": question,
+                        "top_k": top_k,
+                        "query_at_origin": True,
+                        "distance_definition": {
+                            "original_distance": "L2 distance in original embedding space (vector - query)",
+                            "reduced_distance": "Euclidean distance after PCA reduction to 3D (not distance preserving)",
+                        },
+                        "items": export_payload,
+                    },
+                    f,
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            print(f"Exported coordinates JSON to {export_coords}")
+        except Exception as exc:
+            print(f"Failed to export coords JSON: {exc}")
+
+    # Optional Plotly interactive HTML
+    if plotly_html:
+        try:
+            import plotly.graph_objects as go  # type: ignore
+        except ImportError:
+            print("Plotly not installed. Install with `pip install plotly` for interactive HTML.")
+        else:
+            hover_texts = []
+            for idx, (doc_id, text, _vec) in enumerate(all_items):
+                snippet = text if label_mode == "full" else (text[:80] + ("…" if len(text) > 80 else ""))
+                hover_texts.append(
+                    "ID {id}<br>{snip}<br>orig={od:.4f}<br>red={rd:.4f}{rank}".format(
+                        id=doc_id,
+                        snip=snippet,
+                        od=original_distances[idx],
+                        rd=reduced_distances[idx],
+                        rank=f"<br>rank=#{rank_by_id[doc_id]}" if doc_id in rank_by_id else "",
+                    )
+                )
+
+            colors = ["red" if i in nearest_set else "#1f77b4" for i in range(len(all_items))]
+            sizes = [14 if i in nearest_set else 7 for i in range(len(all_items))]
+
+            fig_html = go.Figure(
+                data=[
+                    go.Scatter3d(
+                        x=coords3d[:, 0],
+                        y=coords3d[:, 1],
+                        z=coords3d[:, 2],
+                        mode="markers",
+                        marker=dict(size=sizes, color=colors, opacity=0.85),
+                        text=hover_texts,
+                        hoverinfo="text",
+                        name="Docs",
+                    ),
+                    go.Scatter3d(
+                        x=[0],
+                        y=[0],
+                        z=[0],
+                        mode="markers",
+                        # Plotly scatter3d supports only a limited set of marker symbols;
+                        # 'star' is invalid. Use a larger black diamond-open to distinguish the query.
+                        marker=dict(size=14, color="black", symbol="diamond-open"),
+                        name="Query",
+                        text=["Query (origin)" + "\n" + question],
+                        hoverinfo="text",
+                    ),
+                ]
+            )
+            fig_html.update_layout(
+                title="Document Embeddings (interactive)",
+                scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"),
+            )
+            try:
+                fig_html.write_html(plotly_html, include_plotlyjs="cdn")
+                print(f"Saved interactive Plotly HTML to {plotly_html}")
+            except Exception as exc:
+                print(f"Failed to save Plotly HTML: {exc}")
+
+    # Matplotlib static plot
     try:
         import matplotlib.pyplot as plt  # type: ignore
-        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401  # needed for 3D projection
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
     except ImportError:
-        print("matplotlib not installed. Install with `pip install matplotlib` to enable visualization.")
+        print("matplotlib not installed. Install with `pip install matplotlib` to enable static visualization.")
         return
 
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection="3d")
     xs, ys, zs = coords3d[:, 0], coords3d[:, 1], coords3d[:, 2]
-    sc = ax.scatter(xs, ys, zs, c=distances, cmap="viridis", s=40, alpha=0.85)
+    sc = ax.scatter(
+        xs,
+        ys,
+        zs,
+        c=original_distances,  # color based on original embedding distance for interpretability
+        cmap="viridis",
+        s=40,
+        alpha=0.85,
+    )
 
     # Highlight top_k
     for idx_in_array in nearest_set:
         ax.scatter(
-            xs[idx_in_array],
-            ys[idx_in_array],
-            zs[idx_in_array],
-            c="red",
-            s=120,
-            marker="o",
-            edgecolors="black",
-            linewidths=1.0,
+            xs[idx_in_array], ys[idx_in_array], zs[idx_in_array], c="red", s=120, marker="o", edgecolors="black", linewidths=1.0
         )
 
-    # Query at origin (guaranteed after centering)
+    # Query at origin
     ax.scatter([0], [0], [0], c="black", marker="*", s=250, label="Query")
 
-    # Annotate top_k docs with their ID (optional; avoid clutter for large sets)
-    for rank, idx_in_array in enumerate(nearest_indices, start=1):
+    # Label strategy
+    def _snippet(text: str, limit: int = 32) -> str:
+        return text if len(text) <= limit else text[:limit - 1] + "…"
+
+    max_points_for_auto = 40
+    do_label = label_mode != "none" and (len(all_items) <= max_points_for_auto or label_mode in {"id", "short"})
+    if do_label:
+        for idx, (doc_id, text, _vec) in enumerate(all_items):
+            if label_mode == "id":
+                lab = str(doc_id)
+            elif label_mode == "short":
+                lab = f"{doc_id}:" + _snippet(text, 28)
+            else:  # full
+                lab = f"{doc_id}: {text}"
+            ax.text(xs[idx], ys[idx], zs[idx], lab, fontsize=7 if label_mode != "full" else 8, color="dimgray")
+
+    # Always annotate the ranked top_k clearly
+    for rank_pos, idx_in_array in enumerate(nearest_indices, start=1):
         doc_id, text, _ = all_items[idx_in_array]
-        ax.text(
-            xs[idx_in_array],
-            ys[idx_in_array],
-            zs[idx_in_array],
-            f"#{rank} (id={doc_id})",
-            fontsize=8,
-            color="red",
-        )
+        ax.text(xs[idx_in_array], ys[idx_in_array], zs[idx_in_array], f"#{rank_pos} (id={doc_id})", fontsize=9, color="red")
 
     ax.set_title("Document Embeddings (Query at Origin)")
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
-    fig.colorbar(sc, ax=ax, shrink=0.6, label="Distance from Query (in reduced space)")
+    fig.colorbar(sc, ax=ax, shrink=0.6, label="Original L2 distance")
     ax.legend(loc="upper right")
     plt.tight_layout()
 
     saved = False
+    base = None
     if outfile:
         base, ext = os.path.splitext(outfile)
         try:
@@ -411,6 +533,9 @@ def run_demo(
     visualize: bool = False,
     visualize_file: Optional[str] = None,
     animate: bool = False,
+    label_mode: str = "none",
+    export_coords: Optional[str] = None,
+    plotly_html: Optional[str] = None,
 ) -> None:
     if rebuild:
         reset_database()
@@ -433,6 +558,9 @@ def run_demo(
                 top_k=top_k,
                 outfile=visualize_file,
                 animate=animate,
+                label_mode=label_mode,
+                export_coords=export_coords,
+                plotly_html=plotly_html,
             )
 
     conn.close()
@@ -484,6 +612,22 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Attempt to also create a rotating GIF (requires pillow). Implies --visualize.",
     )
+    parser.add_argument(
+        "--label-mode",
+        choices=["none", "id", "short", "full"],
+        default="none",
+        help="How to label points in static plot: none, id, short (id+snippet), full (entire text).",
+    )
+    parser.add_argument(
+        "--export-coords",
+        type=str,
+        help="Path to write a JSON file containing reduced coordinates & metadata.",
+    )
+    parser.add_argument(
+        "--plotly-html",
+        type=str,
+        help="Generate an interactive Plotly HTML scatter with hover tooltips.",
+    )
     return parser.parse_args()
 
 
@@ -511,4 +655,7 @@ if __name__ == "__main__":
         visualize=args.visualize or args.animate,
         visualize_file=args.viz_file,
         animate=args.animate,
+        label_mode=args.label_mode,
+        export_coords=args.export_coords,
+        plotly_html=args.plotly_html,
     )
