@@ -23,7 +23,10 @@ DEFAULT_DOCUMENTS: Sequence[str] = (
     "Photosynthesis is the process used by plants to convert light energy into chemical energy.",
     "The Louvre Museum, located in Paris, is the world's largest art museum.",
     "Cellular respiration releases energy from glucose.",
-    "Embeddings are numerical representations that capture the relationships between different inputs. Text embeddings achieve this by converting text into arrays of floating-point numbers known as vectors. The primary purpose of these vectors is to encapsulate the semantic meaning of the text. The dimensionality of the vector, which is the length of the embedding array, can be quite large, with a passage of text sometimes being represented by a vector with hundreds of dimensions."
+    "Embeddings are numerical representations that capture the relationships between different inputs. Text embeddings achieve this by converting text into arrays of floating-point numbers known as vectors. The primary purpose of these vectors is to encapsulate the semantic meaning of the text. The dimensionality of the vector, which is the length of the embedding array, can be quite large, with a passage of text sometimes being represented by a vector with hundreds of dimensions.",
+    'Using the LLM to mutate the user query is the way to go. A common practice for example to take the chat history of a chat, and rephrase a follow up question that might not have a lot of information density (e.g. follow up question is "and then what?" which is useless for search, but the LLM turns it into "after a contract cancellation, what steps have to be taken afterwards" or something similar, which provides a lot more meat to search with. Using the LLM to mutate the input so it can be used better for search is a path that works very well (ignoring added latency and cost).',
+    "Ask the LLM to summarize the question, then take an embedding of that. I think you can do the same with data you store… summarize it to same number of tokens, then get an embedding for that to save with the original text.",
+    "This really captures something I've been experiencing with Gemini lately. The models are genuinely capable when they work properly, but there's this persistent truncation issue that makes them unreliable in practice."
 )
 
 
@@ -106,6 +109,35 @@ def store_documents(
     print("Database created and indexed successfully!")
 
 
+def add_text_documents(
+    conn: sqlite3.Connection,
+    embedding_model,
+    new_texts: Sequence[str],
+) -> List[int]:
+    """Append new raw text documents to the existing vector table without deleting prior data.
+
+    Returns list of inserted row IDs.
+    """
+    if not new_texts:
+        return []
+    # Determine next starting id
+    row = conn.execute("SELECT COALESCE(MAX(id), 0) FROM docs").fetchone()
+    start_id = int(row[0]) if row else 0
+    embeddings = embedding_model.encode(new_texts)
+    inserted_ids: List[int] = []
+    for offset, (text, emb) in enumerate(zip(new_texts, embeddings)):
+        emb32 = np.asarray(emb, dtype=np.float32)
+        doc_id = start_id + offset + 1
+        conn.execute(
+            "INSERT INTO docs(id, text, embedding) VALUES (?, ?, ?)",
+            (doc_id, text, emb32.tobytes()),
+        )
+        inserted_ids.append(doc_id)
+    conn.commit()
+    print(f"Added {len(inserted_ids)} new document(s) to vector store (ids: {inserted_ids}).")
+    return inserted_ids
+
+
 def search_similar_documents(
     conn: sqlite3.Connection,
     query_embedding: np.ndarray,
@@ -158,23 +190,42 @@ def ensure_gemini_model():
     return client
 
 
-def build_rag_prompt(question: str, context_docs: Sequence[RetrievedDocument]) -> str:
+def build_rag_prompt(
+    original_question: str,
+    context_docs: Sequence[RetrievedDocument],
+    search_query: Optional[str] = None,
+) -> str:
+    """Construct the RAG prompt.
+
+    If a rewritten search_query is provided (different from the original), we include
+    both so the model answers the original user wording while having visibility into
+    the semantic expansion used for retrieval.
+    """
     if not context_docs:
         return (
             "You are a knowledgeable assistant. The user asked: "
-            f"{question}. No additional context is available; answer as best you can."
+            f"{original_question}. No additional context is available; answer as best you can."
         )
 
     context = "\n\n".join(
         f"Document {doc.doc_id} (distance {doc.distance:.4f}):\n{doc.text}" for doc in context_docs
     )
 
+    if search_query and search_query.strip() and search_query.strip() != original_question.strip():
+        search_note = (
+            "The following 'Search Expansion' is a clarified / rewritten variant of the user's question "
+            "that was used to retrieve context passages: '\n" + search_query + "'\n\n"
+        )
+    else:
+        search_note = ""
+
     return (
-        "You are a knowledgeable assistant. Use ONLY the context that follows to answer the question.\n"
+        "You are a knowledgeable assistant. Use ONLY the context that follows to answer the ORIGINAL question.\n"
         "If the context is insufficient, say you don't know.\n\n"
-        f"Context:\n{context}\n\n"
-        f"Question: {question}\n"
-        "Answer in a concise paragraph."
+        f"Original Question: {original_question}\n"
+        f"{search_note}"
+        f"Context Passages (each with distance):\n{context}\n\n"
+        "Provide a concise, factual answer. If multiple documents disagree, note the discrepancy."
     )
 
 
@@ -227,21 +278,94 @@ def ensure_index(
     store_documents(conn, documents, doc_embeddings)
 
 
+def _should_auto_expand(q: str) -> bool:
+    short = len(q.strip()) < 20
+    pronouns = {"it", "they", "them", "this", "that", "those"}
+    tokens = {t.lower().strip(".,!?") for t in q.split()}
+    pronouny = any(t in pronouns for t in tokens)
+    vague_starters = any(q.lower().startswith(s) for s in ["and then", "then what", "what next", "how about"])
+    return short or pronouny or vague_starters
+
+
+def rewrite_query(
+    original: str,
+    history: Sequence[dict],
+    mode: str,
+    gemini_client,
+) -> str:
+    if gemini_client is None or mode == "none":
+        return original
+    applied_mode = mode
+    if mode == "auto" and not _should_auto_expand(original):
+        return original
+    if mode == "auto":
+        applied_mode = "expand"
+
+    mode_instructions = {
+        "summarize": "Produce a compressed but information-rich paraphrase suitable for semantic vector search.",
+        "expand": "Rewrite the question with explicit entities, context, and missing nouns so it is fully self-contained for semantic vector search.",
+        "disambiguate": "Rewrite the question to remove pronouns and ambiguous references; specify concrete entities inferred from the conversation.",
+        "auto": "Rewrite the question to be self-contained and explicit for semantic vector search.",
+    }
+    instruction = mode_instructions.get(applied_mode, mode_instructions["expand"])  # default to expand
+
+    # Use a trimmed history window; each history item: {'question':..., 'answer':..., 'rewritten':...}
+    history_lines: List[str] = []
+    for turn in history[-5:]:
+        q = turn.get("question")
+        rw = turn.get("rewritten") or q
+        history_lines.append(f"Q: {q}\nR: {rw}")
+    history_block = "\n".join(history_lines) if history_lines else "(no prior turns)"
+
+    prompt = (
+        "You are a system that rewrites user questions before vector similarity search.\n"
+        "Rewrite ONLY the user question; output a single line with no explanations.\n"
+        f"Rewrite style: {instruction}\n"
+        "Do not hallucinate facts not implied.\n"
+        "Conversation snippet (recent turns):\n" + history_block + "\n\n"
+        f"User question to rewrite: {original}\n"
+        "Rewritten:"
+    )
+    try:
+        response = gemini_client.models.generate_content(model=GEMINI_MODEL_NAME, contents=prompt)
+        text = getattr(response, "text", "").strip()
+        # Keep to one line
+        first_line = text.splitlines()[0].strip()
+        # Strip wrapping quotes if any
+        if (first_line.startswith("\"") and first_line.endswith("\"")) or (
+            first_line.startswith("'") and first_line.endswith("'")
+        ):
+            first_line = first_line[1:-1].strip()
+        return first_line if first_line else original
+    except Exception:
+        return original
+
+
 def answer_question(
     question: str,
     conn: sqlite3.Connection,
     embedding_model,
     top_k: int,
-) -> str:
-    query_embedding = embedding_model.encode(question)
+    rewrite_mode: str = "none",
+    show_rewrite: bool = False,
+    history: Optional[List[dict]] = None,
+) -> Tuple[str, str]:
+    gemini_client = ensure_gemini_model()  # one client for both rewrite and answer phases
+    history = history or []
+    rewritten = rewrite_query(question, history, rewrite_mode, gemini_client)
+    if show_rewrite and rewritten != question:
+        print(f"[Rewritten for search] {rewritten}")
+
+    # Embed using rewritten (if changed) for better recall
+    query_embedding = embedding_model.encode(rewritten)
     retrieved_docs = search_similar_documents(conn, query_embedding, top_k=top_k)
-    pretty_print_results(question, retrieved_docs)
-    prompt = build_rag_prompt(question, retrieved_docs)
-    gemini_client = ensure_gemini_model()
+    pretty_print_results(rewritten, retrieved_docs)
+
+    prompt = build_rag_prompt(original_question=question, context_docs=retrieved_docs, search_query=rewritten)
     answer = call_gemini(gemini_client, prompt)
     print("\n--- Gemini Response ---")
     print(answer)
-    return answer
+    return answer, rewritten
 
 
 def _load_all_embeddings(conn: sqlite3.Connection) -> List[Tuple[int, str, np.ndarray]]:
@@ -508,12 +632,19 @@ def visualize_embeddings(
 
 
 
-def interactive_loop(conn: sqlite3.Connection, embedding_model, top_k: int) -> None:
+def interactive_loop(
+    conn: sqlite3.Connection,
+    embedding_model,
+    top_k: int,
+    rewrite_mode: str,
+    show_rewrite: bool,
+) -> None:
     print("Entering interactive mode. Type 'exit', 'quit', or ':q' to leave.")
+    history: List[dict] = []
     while True:
         try:
             question = input("\nYour question> ").strip()
-        except (KeyboardInterrupt, EOFError):  # graceful exit
+        except (KeyboardInterrupt, EOFError):
             print("\nExiting interactive mode.")
             break
         if question.lower() in {"exit", "quit", ":q"}:
@@ -521,7 +652,16 @@ def interactive_loop(conn: sqlite3.Connection, embedding_model, top_k: int) -> N
             break
         if not question:
             continue
-        answer_question(question, conn, embedding_model, top_k)
+        answer, rewritten = answer_question(
+            question,
+            conn,
+            embedding_model,
+            top_k,
+            rewrite_mode=rewrite_mode,
+            show_rewrite=show_rewrite,
+            history=history,
+        )
+        history.append({"question": question, "rewritten": rewritten, "answer": answer})
 
 
 def run_demo(
@@ -536,6 +676,9 @@ def run_demo(
     label_mode: str = "none",
     export_coords: Optional[str] = None,
     plotly_html: Optional[str] = None,
+    rewrite_mode: str = "none",
+    show_rewrite: bool = False,
+    add_texts: Optional[List[str]] = None,
 ) -> None:
     if rebuild:
         reset_database()
@@ -544,12 +687,24 @@ def run_demo(
     embedding_model = load_embedding_model()
     ensure_index(conn, embedding_model, documents, rebuild=rebuild)
 
+    # Append user-provided texts (must happen before answering / visualization)
+    if add_texts:
+        add_text_documents(conn, embedding_model, add_texts)
+
     if interactive:
-        interactive_loop(conn, embedding_model, top_k)
+        interactive_loop(conn, embedding_model, top_k, rewrite_mode, show_rewrite)
     else:
         # Use default demo question if none supplied.
         q = question or "What is the energy source for a cell?"
-        answer_question(q, conn, embedding_model, top_k)
+        answer_question(
+            q,
+            conn,
+            embedding_model,
+            top_k,
+            rewrite_mode=rewrite_mode,
+            show_rewrite=show_rewrite,
+            history=[],
+        )
         if visualize:
             visualize_embeddings(
                 conn,
@@ -628,6 +783,23 @@ def parse_args() -> argparse.Namespace:
         type=str,
         help="Generate an interactive Plotly HTML scatter with hover tooltips.",
     )
+    parser.add_argument(
+        "--rewrite-mode",
+        choices=["none", "summarize", "expand", "disambiguate", "auto"],
+        default="none",
+        help="LLM-assisted query rewriting mode before embedding search.",
+    )
+    parser.add_argument(
+        "--show-rewrite",
+        action="store_true",
+        help="Print the rewritten query used for retrieval when rewriting is enabled.",
+    )
+    parser.add_argument(
+        "--add-text",
+        action="append",
+        metavar="TEXT",
+        help="Append a raw text snippet as a new document (can be specified multiple times).",
+    )
     return parser.parse_args()
 
 
@@ -658,4 +830,7 @@ if __name__ == "__main__":
         label_mode=args.label_mode,
         export_coords=args.export_coords,
         plotly_html=args.plotly_html,
+        rewrite_mode=args.rewrite_mode,
+        show_rewrite=args.show_rewrite,
+        add_texts=args.add_text,
     )
