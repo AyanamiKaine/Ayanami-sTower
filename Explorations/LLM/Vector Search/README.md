@@ -91,3 +91,37 @@ pip install matplotlib scikit-learn pillow
 ```
 
 Top-k nearest documents are highlighted in red; the query appears as a black star at (0,0,0). Color encodes distance in the reduced space.
+
+Advanced options:
+
+```pwsh
+# Label points with IDs and short text snippets
+python VectorSearchExample.py -q "What is photosynthesis?" -v --label-mode short
+
+# Export reduced coordinates + metadata to JSON
+python VectorSearchExample.py -q "What is photosynthesis?" -v --export-coords coords.json
+
+# Produce interactive Plotly HTML (hover to inspect)
+python VectorSearchExample.py -q "What is photosynthesis?" -v --plotly-html embeddings.html
+
+# All together (static PNG, GIF, Plotly, JSON, labels)
+python VectorSearchExample.py -q "What is photosynthesis?" --visualize \
+	--viz-file embeddings.png --animate --label-mode short \
+	--export-coords coords.json --plotly-html embeddings.html
+```
+
+Label modes:
+
+-   none: no labels (default, least clutter)
+-   id: only the numeric doc id
+-   short: doc id + truncated snippet
+-   full: full text (useful for small corpora only)
+
+Files produced:
+
+-   embeddings.png (static plot)
+-   embeddings_rotation.gif (if --animate)
+-   embeddings.html (if --plotly-html)
+-   coords.json (if --export-coords)
+
+The JSON export contains each point's reduced coords, distance, and original text so you can build custom dashboards.
