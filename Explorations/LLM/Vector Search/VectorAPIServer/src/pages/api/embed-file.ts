@@ -48,6 +48,6 @@ export const POST: APIRoute = async ({ request }) => {
   if (autoTag) {
     try { tags = await generateTags(text, { maxTags }); } catch {}
   }
-  const id = insertDoc(text, embedding, undefined, summary, summaryEmbedding, tags);
-  return new Response(JSON.stringify({ id, summary, tags, task_type: taskType }), { status: 201 });
+  const id = insertDoc(text, embedding, undefined, summary, summaryEmbedding, tags, taskType);
+  return new Response(JSON.stringify({ id, summary, tags, embedding_task: taskType }), { status: 201 });
 };

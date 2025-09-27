@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  type Result = { id:number; text:string; summary?:string; tags?:string[]; distance:number; created_at?:number; updated_at?:number };
+  type Result = { id:number; text:string; summary?:string; tags?:string[]; embedding_task?: string | null; distance:number; created_at?:number; updated_at?:number };
   let query = '';
   let results: Result[] = [];
   let loading = false;
@@ -77,12 +77,15 @@
   // File upload state
   let uploadFile: File | null = null;
   let uploadLoading = false;
-  let uploadResult: { id:number; summary?:string; tags?:string[]; } | null = null;
+  let uploadResult: { id:number; summary?:string; tags?:string[]; embedding_task?: string | null } | null = null;
+  // Separate task selection for file upload (can differ from text add)
+  let uploadTaskType: TaskType = 'RETRIEVAL_DOCUMENT';
+  $: if (!uploadTaskType) uploadTaskType = taskType; // safeguard
   let retagLoading: Record<number, boolean> = {};
   let resummarizeLoading: Record<number, boolean> = {};
   let stats: any = null;
   // Listing state
-  interface ListedDoc { id:number; text:string; summary?:string|null; tags?:string[]|null; created_at:number; updated_at:number }
+  interface ListedDoc { id:number; text:string; summary?:string|null; tags?:string[]|null; embedding_task?: string | null; created_at:number; updated_at:number }
   let allDocs: ListedDoc[] = [];
   let listLoading = false;
   let listOrder: 'id' | 'recent' = 'recent';
@@ -187,7 +190,7 @@
     try {
       const form = new FormData();
       form.append('file', uploadFile);
-      form.append('task_type', taskType);
+  form.append('task_type', uploadTaskType || taskType);
       form.append('auto_summarize', String(autoSummarize));
       form.append('summary_tokens', String(summaryTokens));
       form.append('auto_tag', String(autoTag));
@@ -259,10 +262,11 @@
           <thead>
             <tr>
               <th class="px-3 py-2">ID</th>
+              <th class="px-3 py-2">Task</th>
               <th class="px-3 py-2">Dist</th>
               <th class="px-3 py-2">Updated</th>
-              <th class="px-3 py-2 w-[30%]">Text</th>
-              <th class="px-3 py-2 w-[28%]">Summary</th>
+              <th class="px-3 py-2 w-[28%]">Text</th>
+              <th class="px-3 py-2 w-[24%]">Summary</th>
               <th class="px-3 py-2 w-[14%]">Tags</th>
               <th class="px-3 py-2"></th>
             </tr>
@@ -271,6 +275,7 @@
             {#each results as r}
               <tr class="hover:bg-slate-50 transition">
                 <td class="px-3 py-2"><span class="badge">{r.id}</span></td>
+                <td class="px-3 py-2 text-[10px] font-mono max-w-[90px] truncate" title={r.embedding_task || ''}>{r.embedding_task || '—'}</td>
                 <td class="px-3 py-2 text-[11px] tabular-nums">{r.distance.toFixed(4)}</td>
                 <td class="px-3 py-2 text-[11px]">{formatTs(r.updated_at) || formatTs(r.created_at)}</td>
                 <td class="px-3 py-2 text-xs whitespace-pre-wrap">{r.text}</td>
@@ -339,13 +344,34 @@
       </div>
       <div class="mt-6 border-t border-slate-200 pt-4 flex flex-col gap-3">
         <h3 class="text-sm font-semibold tracking-wide text-slate-700 uppercase">Upload File</h3>
+        <div class="flex flex-wrap gap-3 items-end">
+          <div class="min-w-[160px]">
+            <label for="uploadTask" class="text-[10px] font-medium text-slate-600 uppercase tracking-wide">Task (file)</label>
+            <select id="uploadTask" class="input w-full mt-1" bind:value={uploadTaskType}>
+              {#each taskTypes as t}
+                <option value={t}>{t}</option>
+              {/each}
+            </select>
+          </div>
+          <div class="flex-1 text-[10px] text-slate-500 leading-snug max-w-[420px]">
+            Ingest file with its own embedding intent. This does not change the Add Document selector above.
+          </div>
+        </div>
         <input class="input w-full" type="file" on:change={(e:any)=> { const f=e.target.files?.[0]; uploadFile = f || null; uploadResult=null; }} />
         <div class="flex gap-2">
           <button class="btn" disabled={uploadLoading || !uploadFile} on:click={uploadDocFile}>{uploadLoading ? 'Uploading...' : 'Upload & Embed'}</button>
           {#if uploadFile}<span class="text-[11px] text-slate-500">{uploadFile.name} ({Math.round(uploadFile.size/1024)} KB)</span>{/if}
         </div>
         {#if uploadResult}
-          <div class="text-[11px] text-green-600">Stored id {uploadResult.id}{uploadResult.summary ? ' • summary' : ''}{uploadResult.tags && uploadResult.tags.length ? ` • ${uploadResult.tags.length} tags` : ''}</div>
+          <div class="text-[11px] text-green-600 flex flex-wrap items-center gap-1">
+            <span>Stored id {uploadResult.id}</span>
+            {#if uploadResult.embedding_task || uploadTaskType}
+              <span class="text-slate-400">•</span>
+              <span class="font-mono text-[10px] px-1 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700">{uploadResult.embedding_task || uploadTaskType}</span>
+            {/if}
+            {#if uploadResult.summary}<span class="text-slate-400">•</span><span>summary</span>{/if}
+            {#if uploadResult.tags && uploadResult.tags.length}<span class="text-slate-400">•</span><span>{uploadResult.tags.length} tags</span>{/if}
+          </div>
         {/if}
       </div>
       {#if stats}
@@ -383,10 +409,11 @@
       <div class="text-slate-400 text-sm mt-3">No documents.</div>
     {:else}
       <div class="overflow-auto max-h-[420px] mt-4 border border-slate-200 rounded-lg">
-        <table class="data min-w-[1100px]">
+        <table class="data min-w-[1180px]">
           <thead>
             <tr>
               <th class="px-3 py-2">ID</th>
+              <th class="px-3 py-2">Task</th>
               <th class="px-3 py-2">Updated</th>
               <th class="px-3 py-2 w-[22%]">Text</th>
               <th class="px-3 py-2 w-[18%]">Summary</th>
@@ -399,6 +426,7 @@
             {#each allDocs as d}
               <tr class="hover:bg-slate-50 transition">
                 <td class="px-3 py-2"><span class="badge">{d.id}</span></td>
+                <td class="px-3 py-2 text-[10px] font-mono max-w-[90px] truncate" title={d.embedding_task || ''}>{d.embedding_task || '—'}</td>
                 <td class="px-3 py-2 text-[11px]">{formatTs(d.updated_at) || formatTs(d.created_at)}</td>
                 <td class="px-3 py-2 text-[11px] whitespace-pre-wrap">{d.text.slice(0,240)}{d.text.length>240?'…':''}</td>
                 <td class="px-3 py-2 text-[11px] whitespace-pre-wrap">{d.summary || '—'}</td>

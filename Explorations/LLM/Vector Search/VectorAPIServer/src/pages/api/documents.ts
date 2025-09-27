@@ -13,7 +13,7 @@ export const GET: APIRoute = async ({ request }) => {
   const id = parseInt(idParam, 10);
   const doc = getDoc(id);
   if (!doc) return new Response(JSON.stringify({ error: 'not found'}), { status: 404 });
-  return new Response(JSON.stringify({ id: doc.id, text: doc.text, created_at: doc.created_at, updated_at: doc.updated_at }), { status: 200 });
+  return new Response(JSON.stringify({ id: doc.id, text: doc.text, embedding_task: doc.embedding_task, created_at: doc.created_at, updated_at: doc.updated_at }), { status: 200 });
 };
 
 export const POST: APIRoute = async ({ request }) => {
@@ -32,8 +32,8 @@ export const POST: APIRoute = async ({ request }) => {
   if (body.auto_tag) {
     try { tags = await generateTags(body.text, { maxTags: body.max_tags }); } catch {}
   }
-  const id = insertDoc(body.text, embedding, body.id, summary, summaryEmbedding, tags);
-  return new Response(JSON.stringify({ id, text: body.text, summary, tags }), { status: 201 });
+  const id = insertDoc(body.text, embedding, body.id, summary, summaryEmbedding, tags, body.task_type);
+  return new Response(JSON.stringify({ id, text: body.text, summary, tags, embedding_task: body.task_type }), { status: 201 });
 };
 
 export const PUT: APIRoute = async ({ request }) => {
@@ -41,7 +41,7 @@ export const PUT: APIRoute = async ({ request }) => {
   if (body?.id == null || !body?.text) return new Response(JSON.stringify({ error: 'id and text required' }), { status: 400 });
   const embedding = await embedText(body.text, { isQuery: false, taskType: body.task_type });
   try {
-    updateDoc(body.id, body.text, embedding);
+  updateDoc(body.id, body.text, embedding, body.task_type);
     if (body.resummarize) {
       try {
         const summary = await generateSummary(body.text, { targetTokens: body.summary_tokens });
@@ -53,7 +53,7 @@ export const PUT: APIRoute = async ({ request }) => {
     if (body.retag) {
       try { const tags = await generateTags(body.text, { maxTags: body.max_tags }); updateDocTags(body.id, tags); } catch {}
     }
-    return new Response(JSON.stringify({ id: body.id, text: body.text }), { status: 200 });
+  return new Response(JSON.stringify({ id: body.id, text: body.text, embedding_task: body.task_type }), { status: 200 });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 404 });
   }
