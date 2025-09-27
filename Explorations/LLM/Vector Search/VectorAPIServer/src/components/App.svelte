@@ -83,6 +83,7 @@
   $: if (!uploadTaskType) uploadTaskType = taskType; // safeguard
   let retagLoading: Record<number, boolean> = {};
   let resummarizeLoading: Record<number, boolean> = {};
+  let refetchLoading: Record<number, boolean> = {};
   let stats: any = null;
   // Listing state
   interface ListedDoc { id:number; text:string; summary?:string|null; tags?:string[]|null; embedding_task?: string | null; url?: string | null; created_at:number; updated_at:number }
@@ -172,6 +173,22 @@
       }
     } catch {} finally {
       retagLoading[id] = false;
+    }
+  }
+
+  async function triggerRefetch(id: number, hasUrl: boolean) {
+    if (!hasUrl) return;
+    refetchLoading[id] = true;
+    try {
+      const body: any = { id, resummarize: autoSummarize, retag: autoTag, summary_tokens: summaryTokens, max_tags: maxTags };
+      const r = await fetch('/api/refetch', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const data = await r.json();
+      if (r.ok) {
+        results = results.map(x => x.id === id ? { ...x, text: data.text ?? x.text, summary: data.summary ?? x.summary, tags: data.tags ?? x.tags } : x);
+        allDocs = allDocs.map(x => x.id === id ? { ...x, text: data.text ?? x.text, summary: data.summary ?? x.summary, tags: data.tags ?? x.tags } : x);
+      }
+    } catch {} finally {
+      refetchLoading[id] = false;
     }
   }
 
@@ -308,6 +325,9 @@
                   <div class="flex flex-col gap-1">
                     <button class="btn-secondary btn !text-xs" disabled={resummarizeLoading[r.id]} on:click={()=> triggerResummarize(r.id)}>{resummarizeLoading[r.id] ? '...' : 'Resummarize'}</button>
                     <button class="btn-secondary btn !text-xs" disabled={retagLoading[r.id]} on:click={()=> triggerRetag(r.id)}>{retagLoading[r.id] ? '...' : 'Retag'}</button>
+                    {#if r.url}
+                      <button class="btn-secondary btn !text-xs" disabled={refetchLoading[r.id]} on:click={()=> triggerRefetch(r.id, !!r.url)}>{refetchLoading[r.id] ? '...' : 'Re-fetch'}</button>
+                    {/if}
                   </div>
                 </td>
               </tr>
@@ -475,7 +495,12 @@
                 </td>
                 <td class="px-3 py-2 text-[11px] tabular-nums">{d.text.length}</td>
                 <td class="px-3 py-2">
-                  <button class="btn-danger btn !text-xs" disabled={deleting[d.id]} on:click={() => deleteDoc(d.id)}>{deleting[d.id] ? '...' : 'Delete'}</button>
+                  <div class="flex flex-col gap-1">
+                    {#if d.url}
+                      <button class="btn-secondary btn !text-xs" disabled={refetchLoading[d.id]} on:click={()=> triggerRefetch(d.id, !!d.url)}>{refetchLoading[d.id] ? '...' : 'Re-fetch'}</button>
+                    {/if}
+                    <button class="btn-danger btn !text-xs" disabled={deleting[d.id]} on:click={() => deleteDoc(d.id)}>{deleting[d.id] ? '...' : 'Delete'}</button>
+                  </div>
                 </td>
               </tr>
             {/each}
