@@ -4,6 +4,7 @@ import { fetchPageText } from '../../lib/web';
 import { embedText } from '../../lib/embeddings';
 import { generateSummary } from '../../lib/summarize';
 import { generateTags } from '../../lib/tags';
+import { countTokens } from '../../lib/tokens';
 
 export const prerender = false;
 
@@ -24,8 +25,9 @@ export const POST: APIRoute = async ({ request }) => {
     const MAX_CHARS = 120_000;
     if (text.length > MAX_CHARS) text = text.slice(0, MAX_CHARS) + `\n[truncated length=${text.length}]`;
 
-    const embedding = await embedText(text, { isQuery: false, taskType });
-    updateDoc(doc.id, text, embedding, taskType);
+  const embedding = await embedText(text, { isQuery: false, taskType });
+  const tokenCount = await countTokens(text);
+  updateDoc(doc.id, text, embedding, taskType, tokenCount ?? undefined);
 
     let summary: string | undefined;
     if (body.resummarize) {
@@ -42,7 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
       try { tags = await generateTags(text, { maxTags: body.max_tags ?? 6 }); updateDocTags(doc.id, tags); } catch {}
     }
 
-  return new Response(JSON.stringify({ id: doc.id, url: doc.url, text, summary, tags, embedding_task: taskType }), { status: 200 });
+  return new Response(JSON.stringify({ id: doc.id, url: doc.url, text, summary, tags, embedding_task: taskType, token_count: tokenCount }), { status: 200 });
   } catch (e:any) {
     return new Response(JSON.stringify({ error: e.message || 'failed'}), { status: 500 });
   }

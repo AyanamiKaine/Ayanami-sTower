@@ -3,6 +3,7 @@ import { embedText } from '../../lib/embeddings';
 import { insertDoc } from '../../lib/db';
 import { generateSummary } from '../../lib/summarize';
 import { generateTags } from '../../lib/tags';
+import { countTokens } from '../../lib/tokens';
 
 export const prerender = false;
 
@@ -44,7 +45,8 @@ export const POST: APIRoute = async ({ request }) => {
       text = text.slice(0, MAX_CHARS) + `\n[truncated length=${text.length}]`;
     }
 
-    const embedding = await embedText(text, { isQuery: false, taskType: taskType });
+  const embedding = await embedText(text, { isQuery: false, taskType: taskType });
+  const tokenCount = await countTokens(text);
     let summary: string | undefined; let summaryEmbedding: Float32Array | null = null; let tags: string[] | undefined;
     if (autoSummarize) {
       try { summary = await generateSummary(text, { targetTokens: summaryTokens }); summaryEmbedding = await embedText(summary, { taskType, isQuery: false }); } catch {}
@@ -52,8 +54,8 @@ export const POST: APIRoute = async ({ request }) => {
     if (autoTag) {
       try { tags = await generateTags(text, { maxTags }); } catch {}
     }
-    const id = insertDoc(text, embedding, undefined, summary, summaryEmbedding, tags, taskType, url);
-    return new Response(JSON.stringify({ id, url, summary, tags, embedding_task: taskType }), { status: 201 });
+  const id = insertDoc(text, embedding, undefined, summary, summaryEmbedding, tags, taskType, url, tokenCount ?? undefined);
+  return new Response(JSON.stringify({ id, url, summary, tags, embedding_task: taskType, token_count: tokenCount }), { status: 201 });
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message || 'failed'}), { status: 500 });
   }

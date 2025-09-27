@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  type Result = { id:number; text:string; summary?:string; tags?:string[]; embedding_task?: string | null; url?: string | null; distance:number; created_at?:number; updated_at?:number };
+  type Result = { id:number; text:string; summary?:string; tags?:string[]; embedding_task?: string | null; url?: string | null; token_count?: number | null; distance:number; created_at?:number; updated_at?:number };
   let query = '';
   let results: Result[] = [];
   let loading = false;
@@ -86,7 +86,7 @@
   let refetchLoading: Record<number, boolean> = {};
   let stats: any = null;
   // Listing state
-  interface ListedDoc { id:number; text:string; summary?:string|null; tags?:string[]|null; embedding_task?: string | null; url?: string | null; created_at:number; updated_at:number }
+  interface ListedDoc { id:number; text:string; summary?:string|null; tags?:string[]|null; embedding_task?: string | null; url?: string | null; token_count?: number | null; created_at:number; updated_at:number }
   let allDocs: ListedDoc[] = [];
   let listLoading = false;
   let listOrder: 'id' | 'recent' = 'recent';
@@ -303,6 +303,7 @@
               <th class="px-3 py-2 w-[24%]">Text</th>
               <th class="px-3 py-2 w-[22%]">Summary</th>
               <th class="px-3 py-2 w-[12%]">Tags</th>
+              <th class="px-3 py-2">Len / Tok</th>
               <th class="px-3 py-2"></th>
             </tr>
           </thead>
@@ -320,6 +321,9 @@
                   {#if r.tags}
                     <div class="flex flex-wrap">{#each r.tags as tg}<span class="tag-badge">{tg}</span>{/each}</div>
                   {:else} <span class="text-slate-400 text-[11px]">—</span>{/if}
+                </td>
+                <td class="px-3 py-2 text-[10px] tabular-nums">
+                  {r.text.length}{#if r.token_count} / {r.token_count}{/if}
                 </td>
                 <td class="px-3 py-2">
                   <div class="flex flex-col gap-1">
@@ -476,6 +480,7 @@
               <th class="px-3 py-2 w-[16%]">Summary</th>
               <th class="px-3 py-2 w-[12%]">Tags</th>
               <th class="px-3 py-2 w-[6%]">Len</th>
+              <th class="px-3 py-2 w-[6%]">Tokens</th>
               <th class="px-3 py-2"></th>
             </tr>
           </thead>
@@ -494,6 +499,7 @@
                   {:else}<span class="text-slate-400 text-[11px]">—</span>{/if}
                 </td>
                 <td class="px-3 py-2 text-[11px] tabular-nums">{d.text.length}</td>
+                <td class="px-3 py-2 text-[11px] tabular-nums">{d.token_count ?? '—'}</td>
                 <td class="px-3 py-2">
                   <div class="flex flex-col gap-1">
                     {#if d.url}
