@@ -108,8 +108,15 @@
   let loginPassword = '';
   let registerEmail = '';
   let registerPassword = '';
+  let registerPassword2 = '';
   let authError: string | null = null;
   let showRegister = false;
+  let hasAdminFlag: boolean | null = null;
+  let pwCurrent = '';
+  let pwNew = '';
+  let pwNew2 = '';
+  let pwChanging = false;
+  let pwMessage: string | null = null;
   // Admin user management state
   interface AdminUserRow { id:number; email:string; is_admin:boolean; is_approved:boolean; created_at:number; updated_at:number; last_login?:number|null }
   let adminUsers: AdminUserRow[] = [];
@@ -166,6 +173,10 @@
     authLoading = false;
   }
 
+  async function fetchStatus() {
+    try { const r = await fetch('/api/auth/status'); const d = await r.json(); hasAdminFlag = !!d.has_admin; } catch { hasAdminFlag = null; }
+  }
+
   async function login() {
     authError = null;
     try {
@@ -181,6 +192,7 @@
   async function register() {
     authError = null;
     try {
+      if (registerPassword !== registerPassword2) { authError = 'Passwords do not match'; return; }
       const r = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: registerEmail, password: registerPassword })});
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'register failed');
@@ -301,6 +313,7 @@
   }
 
   onMount(async () => { await fetchMe(); if (authUser) { afterAuth(); if (authUser.isAdmin) loadUsers(); } });
+  onMount(fetchStatus);
 
   async function loadDocs() {
     listLoading = true; error = null;
@@ -371,13 +384,22 @@
   {#if !authUser}
     <div class="panel">
       <h2 class="text-lg font-semibold tracking-tight mb-2">{showRegister ? 'Register' : 'Login'}</h2>
+      {#if hasAdminFlag === false}
+        <div class="mb-3 text-[11px] rounded border border-amber-300 bg-amber-50 text-amber-800 p-2 leading-snug">
+          No admin exists yet. The first account you register will automatically become the admin and be immediately active.
+        </div>
+      {/if}
       {#if authError}<div class="text-rose-600 text-sm mb-2">{authError}</div>{/if}
       {#if showRegister}
         <div class="flex flex-col gap-3 max-w-sm">
           <input class="input" placeholder="email" bind:value={registerEmail} />
           <input class="input" type="password" placeholder="password" bind:value={registerPassword} />
+          <input class="input" type="password" placeholder="confirm password" bind:value={registerPassword2} />
+          {#if registerPassword2 && registerPassword !== registerPassword2}
+            <div class="text-[11px] text-rose-600">Passwords do not match</div>
+          {/if}
           <div class="flex gap-2">
-            <button class="btn" on:click={register} disabled={!registerEmail || !registerPassword}>Register</button>
+            <button class="btn" on:click={register} disabled={!registerEmail || !registerPassword || registerPassword !== registerPassword2}>Register</button>
             <button class="btn-secondary btn" on:click={() => { showRegister=false; authError=null; }}>Have account?</button>
           </div>
           <p class="text-[11px] text-slate-500">After registering an admin must approve your account before you can login.</p>
@@ -394,6 +416,26 @@
       {/if}
     </div>
   {:else}
+
+  <!-- Password Change Panel -->
+  <div class="panel">
+    <h2 class="text-lg font-semibold tracking-tight mb-3">Account Security</h2>
+    <div class="flex flex-col gap-2 max-w-sm">
+      {#if pwMessage}<div class="text-[11px] {pwMessage.startsWith('Error') ? 'text-rose-600':'text-emerald-600'}">{pwMessage}</div>{/if}
+      <input class="input" type="password" placeholder="Current password" bind:value={pwCurrent} />
+      <input class="input" type="password" placeholder="New password (min 6)" bind:value={pwNew} />
+      <input class="input" type="password" placeholder="Confirm new password" bind:value={pwNew2} />
+      {#if pwNew2 && pwNew !== pwNew2}
+        <div class="text-[11px] text-rose-600">Passwords do not match</div>
+      {/if}
+      <div class="flex gap-2">
+        <button class="btn" disabled={pwChanging || pwNew.length<6 || !pwCurrent || pwNew !== pwNew2} on:click={async ()=>{ pwMessage=null; if (pwNew !== pwNew2) { pwMessage='Error: passwords do not match'; return;} pwChanging=true; try { const r= await fetch('/api/auth/change-password',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ current_password: pwCurrent, new_password: pwNew })}); const d= await r.json(); if(!r.ok) throw new Error(d.error||'failed'); pwMessage='Password updated'; pwCurrent=''; pwNew=''; pwNew2=''; } catch(e:any){ pwMessage='Error: '+e.message;} finally { pwChanging=false;} }}>
+          {pwChanging ? 'Updating...' : 'Change Password'}
+        </button>
+      </div>
+      <p class="text-[10px] text-slate-500 leading-snug">Change your password regularly. Sessions remain valid until expiry.</p>
+    </div>
+  </div>
 
   {#if authUser.isAdmin}
     <div class="panel">

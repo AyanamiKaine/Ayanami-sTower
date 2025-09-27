@@ -1,4 +1,4 @@
-import { getSession, getUserById, createUser, getUserByEmail, createSession, deleteSession, approveUser, listUsers, deleteUser, hasAdmin } from './db';
+import { getSession, getUserById, createUser, getUserByEmail, createSession, deleteSession, approveUser, listUsers, deleteUser, hasAdmin, updateUserPasswordHash } from './db';
 import type { APIRoute } from 'astro';
 import bcrypt from 'bcryptjs';
 
@@ -73,3 +73,8 @@ export function adminApproveUser(id: number) { approveUser(id); }
 export function adminListUsers() { return listUsers().map(u => ({ id: u.id, email: u.email, is_admin: !!u.is_admin, is_approved: !!u.is_approved, created_at: u.created_at, updated_at: u.updated_at, last_login: u.last_login })); }
 
 export function adminDeleteUser(id: number) { deleteUser(id); }
+
+export async function changePassword(userId: number, newPassword: string) {
+  const hash = await hashPassword(newPassword);
+  updateUserPasswordHash(userId, hash);
+}
