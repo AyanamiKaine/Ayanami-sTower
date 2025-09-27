@@ -481,7 +481,9 @@
                       {#if !u.is_approved}
                         <button class="btn-secondary btn !text-[10px]" on:click={()=> approveUser(u.id)}>Approve</button>
                       {:else}
-                        <button class="btn-secondary btn !text-[10px]" on:click={()=> disapproveUser(u.id)}>Disapprove</button>
+                        {#if !u.is_admin}
+                          <button class="btn-secondary btn !text-[10px]" on:click={()=> disapproveUser(u.id)}>Disapprove</button>
+                        {/if}
                       {/if}
                       {#if !u.is_admin}
                         <button class="btn-danger btn !text-[10px]" on:click={()=> deleteUserAccount(u.id)}>Delete</button>

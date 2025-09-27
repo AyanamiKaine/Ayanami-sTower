@@ -23,13 +23,13 @@ export const POST: APIRoute = async ({ request }) => {
       adminDeleteUser(body.id);
       return new Response(JSON.stringify({ ok: true, action: 'delete' }), { status: 200 });
     } else if (body.action === 'disapprove' && body.id) {
-      // simple disapprove = set is_approved=0
-      const dbMod = await (async () => {
-        // inline small update to avoid adding another helper
-        const { getDB } = await import('../../../lib/db');
-        const db = getDB();
-        db.prepare('UPDATE users SET is_approved=0 WHERE id=?').run(body.id);
-      })();
+      // Prevent disapproving admin accounts to avoid accidental lock-out
+      const { getDB } = await import('../../../lib/db');
+      const db = getDB();
+      const user = db.prepare('SELECT id,is_admin FROM users WHERE id=?').get(body.id) as any;
+      if (!user) return new Response(JSON.stringify({ error: 'user not found'}), { status: 404 });
+      if (user.is_admin) return new Response(JSON.stringify({ error: 'cannot disapprove admin'}), { status: 400 });
+      db.prepare('UPDATE users SET is_approved=0 WHERE id=?').run(body.id);
       return new Response(JSON.stringify({ ok: true, action: 'disapprove' }), { status: 200 });
     }
     return new Response(JSON.stringify({ error: 'unknown action' }), { status: 400 });

@@ -61,7 +61,15 @@ export async function loginUser(email: string, password: string) {
   if (!user) throw new Error('invalid credentials');
   const ok = await verifyPassword(password, user.password_hash);
   if (!ok) throw new Error('invalid credentials');
-  if (!user.is_approved) throw new Error('not approved');
+  // Auto-heal: if user is admin but not approved (inconsistent state), approve on login
+  if (!user.is_approved) {
+    if (user.is_admin) {
+      approveUser(user.id);
+      user.is_approved = 1;
+    } else {
+      throw new Error('not approved');
+    }
+  }
   const token = createSession(user.id);
   return { token, user };
 }

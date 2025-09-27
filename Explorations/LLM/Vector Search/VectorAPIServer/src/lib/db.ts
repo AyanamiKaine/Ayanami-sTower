@@ -257,6 +257,14 @@ export function hasAdmin(): boolean {
   return (row?.c || 0) > 0;
 }
 
+// Ensure any admin accounts are approved (healing function if state got inconsistent)
+export function ensureAdminsApproved(): number {
+  const db = getDB();
+  const ts = Math.floor(Date.now()/1000);
+  const info = db.prepare('UPDATE users SET is_approved=1, updated_at=? WHERE is_admin=1 AND is_approved=0').run(ts);
+  return info.changes as number;
+}
+
 export function updateUserPasswordHash(id: number, hash: string) {
   const db = getDB();
   const ts = Math.floor(Date.now()/1000);
