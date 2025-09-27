@@ -122,6 +122,17 @@
   let emailCurrentPw = '';
   let emailChanging = false;
   let emailMessage: string | null = null;
+  // Search JSON export
+  let lastSearchJSON: string = '';
+  let copiedJSON = false;
+  let showJSONModal = false;
+  async function copySearchJSON() {
+    try {
+      await navigator.clipboard.writeText(lastSearchJSON || '');
+      copiedJSON = true;
+      setTimeout(()=> copiedJSON = false, 1800);
+    } catch {}
+  }
   // Admin user management state
   interface AdminUserRow { id:number; email:string; is_admin:boolean; is_approved:boolean; created_at:number; updated_at:number; last_login?:number|null }
   let adminUsers: AdminUserRow[] = [];
@@ -255,6 +266,8 @@
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'search failed');
       results = data.results; rewritten_query = data.rewritten_query;
+      // Store raw JSON for export
+      lastSearchJSON = JSON.stringify({ query, rewritten_query, results: data.results }, null, 2);
     } catch (e:any) {
       error = e.message;
     } finally { loading = false; }
@@ -561,8 +574,14 @@
         <div class="mt-3 text-xs text-slate-600">Rewritten: <code class="px-1 py-0.5 rounded bg-slate-100 text-slate-700">{rewritten_query}</code></div>
       {/if}
       {#if error}<div class="mt-3 text-rose-600 text-sm">{error}</div>{/if}
-      <div class="mt-6 flex items-center justify-between">
-        <h3 class="text-sm font-semibold tracking-wide text-slate-700 uppercase">Results</h3>
+      <div class="mt-6 flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-3 mb-2">
+          <h3 class="text-sm font-semibold tracking-wide text-slate-700 uppercase">Results</h3>
+          {#if results.length>0}
+            <button class="btn-secondary btn !text-[11px]" on:click={() => { copySearchJSON(); }}>{copiedJSON ? 'Copied!' : 'Copy JSON'}</button>
+            <button class="btn-secondary btn !text-[11px]" on:click={() => showJSONModal = true}>View JSON</button>
+          {/if}
+        </div>
         <div class="text-xs text-slate-500">{results.length} shown</div>
       </div>
       {#if results.length === 0}
@@ -795,3 +814,23 @@
   </div>
   {/if}
 </div>
+{#if showJSONModal}
+  <div class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" on:click={() => showJSONModal=false}>
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[80vh] flex flex-col" on:click|stopPropagation>
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+        <h4 class="font-semibold text-sm tracking-wide">Search JSON</h4>
+        <div class="flex gap-2 items-center">
+          <button class="btn-secondary btn !text-[11px]" on:click={() => { copySearchJSON(); }}>{copiedJSON ? 'Copied!' : 'Copy'}</button>
+          <button class="btn-secondary btn !text-[11px]" on:click={() => showJSONModal=false}>Close</button>
+        </div>
+      </div>
+      <div class="p-4 overflow-auto text-[11px] font-mono leading-relaxed bg-slate-50 border-b border-slate-200">
+        <pre class="whitespace-pre-wrap">{lastSearchJSON}</pre>
+      </div>
+      <div class="px-4 py-2 text-[10px] text-slate-500 flex justify-between items-center">
+        <span>Generated {results.length} result{results.length===1?'':'s'}. Distances are lower-is-better (L2).</span>
+        <span class="text-slate-400">Copy & use in downstream pipelines.</span>
+      </div>
+    </div>
+  </div>
+{/if}
