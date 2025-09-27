@@ -1,0 +1,24 @@
+/* Tailwind base import (ensure Tailwind plugin processes this file) */
+@import 'tailwindcss';
+
+html { font-family: system-ui, sans-serif; -webkit-font-smoothing: antialiased; background:#f8fafc; color:#0f172a; }
+::selection { background:#1d7ff0; color:#fff; }
+
+/* Utility approximations (fallback if @apply not processed) */
+.panel { background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:1.25rem; box-shadow:0 1px 2px rgba(0,0,0,0.06),0 2px 4px rgba(0,0,0,0.04); }
+.btn { background:#1d7ff0; color:#fff; font-size:0.875rem; font-weight:500; padding:0.4rem 0.85rem; border-radius:0.5rem; border:1px solid transparent; display:inline-flex; align-items:center; gap:0.25rem; cursor:pointer; transition:background .15s; }
+.btn:hover { background:#0c62ce; }
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+.btn-secondary { background:#fff; color:#334155; border-color:#cbd5e1; }
+.btn-secondary:hover { background:#f1f5f9; }
+.btn-danger { background:#dc2626; }
+.btn-danger:hover { background:#b91c1c; }
+.input { border:1px solid #cbd5e1; background:#fff; padding:0.45rem 0.6rem; font-size:0.85rem; border-radius:0.45rem; }
+.input:focus { outline:2px solid #58a3f6; border-color:#58a3f6; }
+.badge { background:#e6f0fe; color:#0c4da2; padding:2px 6px; border-radius:6px; font-size:11px; font-weight:500; display:inline-flex; }
+.tag-badge { background:#e2e8f0; color:#334155; padding:2px 5px; border-radius:4px; font-size:10px; display:inline-flex; margin:0 4px 4px 0; }
+table.data { width:100%; font-size:0.8rem; }
+table.data thead th { background:#f1f5f9; font-size:10px; letter-spacing:.05em; text-transform:uppercase; font-weight:600; color:#475569; }
+table.data tbody td { border-bottom:1px solid #f1f5f9; padding:0.5rem; }
+.truncate-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-clamp:2; }
+.scroll-shadow { box-shadow: inset 0 10px 8px -10px rgba(0,0,0,0.08); }

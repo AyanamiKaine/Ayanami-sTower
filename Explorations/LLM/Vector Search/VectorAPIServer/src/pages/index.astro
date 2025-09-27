@@ -1,0 +1,13 @@
+---
+import Layout from "../layouts/Layout.astro";
+import App from "../components/App.svelte";
+---
+
+<Layout>
+    <h1 style="margin:1rem 0;font-family:system-ui;">
+        Gemini Vector Search (Bun + Astro + Svelte)
+    </h1>
+    <div id="app" data-hydrate>
+        <App client:load />
+    </div>
+</Layout>
