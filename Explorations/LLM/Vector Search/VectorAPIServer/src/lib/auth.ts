@@ -1,4 +1,4 @@
-import { getSession, getUserById, createUser, getUserByEmail, createSession, deleteSession, approveUser, listUsers, deleteUser, hasAdmin, updateUserPasswordHash } from './db';
+import { getSession, getUserById, createUser, getUserByEmail, createSession, deleteSession, approveUser, listUsers, deleteUser, hasAdmin, updateUserPasswordHash, updateUserEmail } from './db';
 import type { APIRoute } from 'astro';
 import bcrypt from 'bcryptjs';
 
@@ -85,4 +85,15 @@ export function adminDeleteUser(id: number) { deleteUser(id); }
 export async function changePassword(userId: number, newPassword: string) {
   const hash = await hashPassword(newPassword);
   updateUserPasswordHash(userId, hash);
+}
+
+export async function changeEmail(userId: number, currentPassword: string, newEmail: string) {
+  const user = getUserById(userId);
+  if (!user) throw new Error('user not found');
+  const ok = await verifyPassword(currentPassword, user.password_hash);
+  if (!ok) throw new Error('invalid password');
+  const normalized = newEmail.toLowerCase().trim();
+  const existing = getUserByEmail(normalized);
+  if (existing && existing.id !== userId) throw new Error('email already in use');
+  updateUserEmail(userId, normalized);
 }

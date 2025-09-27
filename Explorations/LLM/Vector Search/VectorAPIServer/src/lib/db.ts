@@ -271,6 +271,12 @@ export function updateUserPasswordHash(id: number, hash: string) {
   db.prepare('UPDATE users SET password_hash=?, updated_at=? WHERE id=?').run(hash, ts, id);
 }
 
+export function updateUserEmail(id: number, email: string) {
+  const db = getDB();
+  const ts = Math.floor(Date.now()/1000);
+  db.prepare('UPDATE users SET email=?, updated_at=? WHERE id=?').run(email, ts, id);
+}
+
 export interface Session { token:string; user_id:number; created_at:number; expires_at:number }
 
 export function createSession(userId: number, ttlSeconds = 7*24*3600): string {

@@ -117,6 +117,11 @@
   let pwNew2 = '';
   let pwChanging = false;
   let pwMessage: string | null = null;
+  // Email change
+  let emailNew = '';
+  let emailCurrentPw = '';
+  let emailChanging = false;
+  let emailMessage: string | null = null;
   // Admin user management state
   interface AdminUserRow { id:number; email:string; is_admin:boolean; is_approved:boolean; created_at:number; updated_at:number; last_login?:number|null }
   let adminUsers: AdminUserRow[] = [];
@@ -434,6 +439,27 @@
         </button>
       </div>
       <p class="text-[10px] text-slate-500 leading-snug">Change your password regularly. Sessions remain valid until expiry.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 class="text-lg font-semibold mb-2">Account – Change Email</h2>
+    {#if emailMessage}<div class="text-xs mb-2 {emailMessage.startsWith('Error') ? 'text-rose-600' : 'text-emerald-600'}">{emailMessage}</div>{/if}
+    <div class="grid gap-3 max-w-sm">
+      <div>
+        <label class="label">New Email</label>
+        <input class="input w-full" bind:value={emailNew} placeholder="new-email@example.com" />
+      </div>
+      <div>
+        <label class="label">Current Password</label>
+        <input type="password" class="input w-full" bind:value={emailCurrentPw} />
+      </div>
+      <div class="flex gap-2">
+        <button class="btn" disabled={emailChanging || !emailNew || !emailCurrentPw || emailNew.toLowerCase().trim()===authUser?.email} on:click={async ()=>{ emailMessage=null; emailChanging=true; try { const r= await fetch('/api/auth/change-email',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ current_password: emailCurrentPw, new_email: emailNew })}); const d = await r.json(); if(!r.ok) throw new Error(d.error||'failed'); emailMessage='Email updated'; if (authUser) authUser.email = d.new_email; emailNew=''; emailCurrentPw=''; } catch(e:any){ emailMessage='Error: '+e.message;} finally { emailChanging=false; } }}>
+          {emailChanging ? 'Updating...' : 'Change Email'}
+        </button>
+      </div>
+      <p class="text-[10px] text-slate-500 leading-snug">Email must be unique. You need your current password to change it.</p>
     </div>
   </div>
 
