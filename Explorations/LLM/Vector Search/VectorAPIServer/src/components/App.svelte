@@ -11,6 +11,7 @@
   let recency_half_life = 7*24*3600;
   let recency_alpha = 0.3;
   let use_summary = false;
+  let maxDistance: number | null = null; // threshold filter (L2 distance)
   let newDocText = '';
   let addLoading = false;
   let autoSummarize = true;
@@ -125,7 +126,8 @@
     if (!query.trim()) return;
     loading = true; error = null;
     try {
-  const body = { query, top_k, rewrite_mode, use_recency, recency_half_life, recency_alpha, use_summary };
+  const body: any = { query, top_k, rewrite_mode, use_recency, recency_half_life, recency_alpha, use_summary };
+      if (maxDistance != null && maxDistance >= 0) body.max_distance = maxDistance;
       const r = await fetch('/api/search', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'search failed');
@@ -264,6 +266,7 @@
       </div>
       <div class="flex flex-wrap gap-4 text-xs mt-4 items-end">
         <label class="flex items-center gap-2">Top K <input class="input w-20" type="number" min="1" max="50" bind:value={top_k}/></label>
+        <label class="flex items-center gap-2" title="Filter out results with distance greater than this (L2)">Max Dist <input class="input w-24" type="number" min="0" step="0.01" bind:value={maxDistance} placeholder="none" /></label>
         <label class="flex items-center gap-2">Rewrite
           <select class="input" bind:value={rewrite_mode}>
             <option value="none">none</option>

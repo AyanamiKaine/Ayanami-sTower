@@ -17,8 +17,9 @@ export const POST: APIRoute = async ({ request }) => {
   const alpha = body.recency_alpha ?? RECENCY_DEFAULT_ALPHA;
   const use_summary = !!body.use_summary;
   const rewritten = await rewriteQuery(query, rewrite_mode);
+  const max_distance = body.max_distance != null ? Number(body.max_distance) : null;
   const embedding = await embedText(rewritten !== query ? rewritten : query, { isQuery: true });
-  const results = search(embedding, top_k, use_recency, half_life, alpha, { useSummary: use_summary, fallbackFull: true }).map(r => ({
+  let results = search(embedding, top_k, use_recency, half_life, alpha, { useSummary: use_summary, fallbackFull: true }).map(r => ({
     id: r.id,
     text: r.text,
     summary: r.summary,
@@ -30,5 +31,8 @@ export const POST: APIRoute = async ({ request }) => {
     created_at: r.created_at,
     updated_at: r.updated_at,
   }));
-  return new Response(JSON.stringify({ query, rewritten_query: rewritten, top_k, using_summary: use_summary, results }), { status: 200 });
+  if (max_distance != null && !Number.isNaN(max_distance)) {
+    results = results.filter(r => r.distance <= max_distance);
+  }
+  return new Response(JSON.stringify({ query, rewritten_query: rewritten, top_k, using_summary: use_summary, max_distance, results }), { status: 200 });
 };
