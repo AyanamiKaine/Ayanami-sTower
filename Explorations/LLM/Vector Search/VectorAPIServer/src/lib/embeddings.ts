@@ -17,11 +17,11 @@ function normalize(vec: number[]): number[] {
   return vec.map(v => v / norm);
 }
 
-export interface EmbedOptions { isQuery?: boolean }
+export interface EmbedOptions { isQuery?: boolean; taskType?: string }
 
 export async function embedTexts(texts: string[], opts: EmbedOptions = {}): Promise<Float32Array[]> {
   if (!texts.length) return [];
-  const taskType = opts.isQuery ? GEMINI_TASK_QUERY : GEMINI_TASK_DOC;
+  const taskType = opts.taskType || (opts.isQuery ? GEMINI_TASK_QUERY : GEMINI_TASK_DOC);
   const client = getClient();
   const params: any = {
     model: GEMINI_EMBEDDING_MODEL,
