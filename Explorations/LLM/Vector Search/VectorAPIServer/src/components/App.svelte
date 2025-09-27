@@ -17,6 +17,22 @@
   let summaryTokens = 80;
   let autoTag = true;
   let maxTags = 6;
+  // Embedding task type selection
+  const taskTypes = [
+    'RETRIEVAL_DOCUMENT',
+    'RETRIEVAL_QUERY',
+    'SEMANTIC_SIMILARITY',
+    'CLASSIFICATION',
+    'CLUSTERING',
+    'CODE_RETRIEVAL_QUERY',
+    'QUESTION_ANSWERING',
+    'FACT_VERIFICATION'
+  ];
+  let taskType = 'RETRIEVAL_DOCUMENT';
+  // File upload state
+  let uploadFile: File | null = null;
+  let uploadLoading = false;
+  let uploadResult: { id:number; summary?:string; tags?:string[]; } | null = null;
   let retagLoading: Record<number, boolean> = {};
   let resummarizeLoading: Record<number, boolean> = {};
   let stats: any = null;
@@ -57,11 +73,13 @@
     if (!newDocText.trim()) return;
     addLoading = true; error = null;
     try {
-  const r = await fetch('/api/documents', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text: newDocText, auto_summarize: autoSummarize, summary_tokens: summaryTokens, auto_tag: autoTag, max_tags: maxTags })});
+      const r = await fetch('/api/documents', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text: newDocText, task_type: taskType, auto_summarize: autoSummarize, summary_tokens: summaryTokens, auto_tag: autoTag, max_tags: maxTags })});
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'add failed');
       newDocText='';
       fetchStats();
+      // Refresh explorer list if visible
+      loadDocs();
     } catch(e:any) { error = e.message; } finally { addLoading=false; }
   }
 
@@ -116,6 +134,27 @@
         fetchStats();
       }
     } catch {} finally { deleting[id] = false; }
+  }
+
+  async function uploadDocFile() {
+    if (!uploadFile) return;
+    uploadLoading = true; error = null; uploadResult = null;
+    try {
+      const form = new FormData();
+      form.append('file', uploadFile);
+      form.append('task_type', taskType);
+      form.append('auto_summarize', String(autoSummarize));
+      form.append('summary_tokens', String(summaryTokens));
+      form.append('auto_tag', String(autoTag));
+      form.append('max_tags', String(maxTags));
+      const r = await fetch('/api/embed-file', { method:'POST', body: form });
+      const data = await r.json().catch(()=>({}));
+      if (!r.ok) throw new Error(data.error || 'upload failed');
+      uploadResult = data;
+      fetchStats();
+      loadDocs();
+      uploadFile = null;
+    } catch(e:any) { error = e.message; } finally { uploadLoading = false; }
   }
 </script>
 
@@ -213,6 +252,16 @@
     <!-- Add Document Panel -->
     <div class="panel">
       <h2 class="text-lg font-semibold tracking-tight">Add Document</h2>
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-wrap gap-4 items-end">
+          <div class="flex-1 min-w-[180px]">
+            <label for="taskType" class="text-[11px] font-medium text-slate-600 uppercase tracking-wide">Embedding Task</label>
+            <select id="taskType" class="input w-full mt-1" bind:value={taskType}>
+              {#each taskTypes as t}<option value={t}>{t}</option>{/each}
+            </select>
+          </div>
+        </div>
+      </div>
       <textarea class="input w-full min-h-[170px] font-mono text-[12px] resize-y" rows="8" placeholder="Paste document text..." bind:value={newDocText}></textarea>
       <div class="flex flex-wrap gap-4 text-xs items-center">
         <label class="flex items-center gap-2"><input class="checkbox" type="checkbox" bind:checked={autoSummarize}/> <span>auto summarize</span></label>
@@ -227,6 +276,17 @@
       <div class="flex gap-2">
         <button class="btn" disabled={addLoading} on:click={addDoc}>{addLoading ? 'Embedding...' : 'Add'}</button>
         <button class="btn-secondary btn" type="button" on:click={()=> newDocText=''}>Clear</button>
+      </div>
+      <div class="mt-6 border-t border-slate-200 pt-4 flex flex-col gap-3">
+        <h3 class="text-sm font-semibold tracking-wide text-slate-700 uppercase">Upload File</h3>
+        <input class="input w-full" type="file" on:change={(e:any)=> { const f=e.target.files?.[0]; uploadFile = f || null; uploadResult=null; }} />
+        <div class="flex gap-2">
+          <button class="btn" disabled={uploadLoading || !uploadFile} on:click={uploadDocFile}>{uploadLoading ? 'Uploading...' : 'Upload & Embed'}</button>
+          {#if uploadFile}<span class="text-[11px] text-slate-500">{uploadFile.name} ({Math.round(uploadFile.size/1024)} KB)</span>{/if}
+        </div>
+        {#if uploadResult}
+          <div class="text-[11px] text-green-600">Stored id {uploadResult.id}{uploadResult.summary ? ' • summary' : ''}{uploadResult.tags && uploadResult.tags.length ? ` • ${uploadResult.tags.length} tags` : ''}</div>
+        {/if}
       </div>
       {#if stats}
         <div class="grid grid-cols-3 gap-2 text-[11px] mt-2 text-slate-600">
