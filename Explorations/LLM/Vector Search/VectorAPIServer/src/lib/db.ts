@@ -4,6 +4,7 @@
 // @ts-ignore
 import BetterSqlite3 from 'better-sqlite3';
 import * as sqliteVec from 'sqlite-vec';
+import bcrypt from 'bcryptjs';
 import { DB_FILE } from './config';
 
 let _db: any | null = null;
@@ -31,6 +32,25 @@ function initSchema() {
     tags TEXT,
     created_at INTEGER,
     updated_at INTEGER
+  )`);
+  // Users table (authentication)
+  db.exec(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    is_admin INTEGER DEFAULT 0,
+    is_approved INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    last_login INTEGER
+  )`);
+  // Sessions table
+  db.exec(`CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
   // Add summary column if migrating older schema
   const columns: { name: string }[] = db.prepare("PRAGMA table_info(docs)").all().map((r:any)=>({name:r.name}));
@@ -191,3 +211,93 @@ export function search(embedding: Float32Array, topK: number, useRecency: boolea
   }).sort((a,b)=> a.adjusted - b.adjusted).slice(0, topK).map(x => ({ id: x.r.id, text: x.r.text, summary: x.r.summary, tags: x.r.tags, embedding_task: x.r.embedding_task, url: x.r.url, token_count: x.r.token_count, distance: x.original, created_at: x.r.created_at, updated_at: x.r.updated_at }));
   return rescored;
 }
+
+// ================= AUTH HELPERS =================
+export interface User { id:number; email:string; password_hash:string; is_admin:number; is_approved:number; created_at:number; updated_at:number; last_login?:number|null }
+
+export function getUserByEmail(email: string): User | null {
+  const db = getDB();
+  const row = db.prepare('SELECT * FROM users WHERE email=?').get(email) as any;
+  return row || null;
+}
+
+export function getUserById(id: number): User | null {
+  const db = getDB();
+  const row = db.prepare('SELECT * FROM users WHERE id=?').get(id) as any;
+  return row || null;
+}
+
+export function createUser(email: string, passwordHash: string, { approved = false, admin = false } = {}): number {
+  const db = getDB();
+  const ts = Math.floor(Date.now()/1000);
+  const stmt = db.prepare('INSERT INTO users(email,password_hash,is_admin,is_approved,created_at,updated_at) VALUES(?,?,?,?,?,?)');
+  const info = stmt.run(email, passwordHash, admin ? 1 : 0, approved ? 1 : 0, ts, ts);
+  return info.lastInsertRowid as number;
+}
+
+export function approveUser(id: number) {
+  const db = getDB();
+  const ts = Math.floor(Date.now()/1000);
+  db.prepare('UPDATE users SET is_approved=1, updated_at=? WHERE id=?').run(ts, id);
+}
+
+export function listUsers(): User[] {
+  const db = getDB();
+  return db.prepare('SELECT id,email,is_admin,is_approved,created_at,updated_at,last_login,password_hash FROM users ORDER BY id ASC').all() as any[];
+}
+
+export function deleteUser(id: number) {
+  const db = getDB();
+  db.prepare('DELETE FROM users WHERE id=?').run(id);
+}
+
+export function hasAdmin(): boolean {
+  const db = getDB();
+  const row = db.prepare('SELECT COUNT(*) as c FROM users WHERE is_admin=1').get() as any;
+  return (row?.c || 0) > 0;
+}
+
+export interface Session { token:string; user_id:number; created_at:number; expires_at:number }
+
+export function createSession(userId: number, ttlSeconds = 7*24*3600): string {
+  const db = getDB();
+  const ts = Math.floor(Date.now()/1000);
+  const token = crypto.randomUUID();
+  const expires = ts + ttlSeconds;
+  db.prepare('INSERT INTO sessions(token,user_id,created_at,expires_at) VALUES(?,?,?,?)').run(token, userId, ts, expires);
+  db.prepare('UPDATE users SET last_login=?, updated_at=? WHERE id=?').run(ts, ts, userId);
+  return token;
+}
+
+export function getSession(token: string): Session | null {
+  const db = getDB();
+  const row = db.prepare('SELECT token,user_id,created_at,expires_at FROM sessions WHERE token=?').get(token) as any;
+  if (!row) return null;
+  const now = Math.floor(Date.now()/1000);
+  if (row.expires_at < now) {
+    try { db.prepare('DELETE FROM sessions WHERE token=?').run(token); } catch {}
+    return null;
+  }
+  return row as Session;
+}
+
+export function deleteSession(token: string) {
+  const db = getDB();
+  db.prepare('DELETE FROM sessions WHERE token=?').run(token);
+}
+
+export function ensureAdminUser() {
+  // Create default admin if none exists
+  const db = getDB();
+  const admin = db.prepare('SELECT id FROM users WHERE is_admin=1').get() as any;
+  if (!admin) {
+    // Generate random password and hash
+    const pw = (Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,6));
+    const hash = bcrypt.hashSync(pw, 10);
+    const ts = Math.floor(Date.now()/1000);
+    db.prepare('INSERT INTO users(email,password_hash,is_admin,is_approved,created_at,updated_at) VALUES(?,?,?,?,?,?)')
+      .run('admin@example.com', hash, 1, 1, ts, ts);
+    console.log('\n[auth] Created default admin user: admin@example.com  password:', pw, '\nStore this securely and change after first login.');
+  }
+}
+

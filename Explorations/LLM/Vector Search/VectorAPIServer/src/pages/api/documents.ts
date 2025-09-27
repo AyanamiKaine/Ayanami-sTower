@@ -4,10 +4,12 @@ import { insertDoc, getDoc, updateDoc, deleteDoc, updateDocSummary, updateDocTag
 import { generateSummary } from '../../lib/summarize';
 import { generateTags } from '../../lib/tags';
 import { countTokens } from '../../lib/tokens';
+import { requireAuth } from '../../lib/auth';
 
 export const prerender = false; // dynamic API (DB + embeddings)
 
 export const GET: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   const url = new URL(request.url);
   const idParam = url.searchParams.get('id');
   if (!idParam) return new Response(JSON.stringify({ error: 'id required'}), { status: 400 });
@@ -18,6 +20,7 @@ export const GET: APIRoute = async ({ request }) => {
 };
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   const body = await request.json();
   if (!body?.text) return new Response(JSON.stringify({ error: 'text required' }), { status: 400 });
   const embedding = await embedText(body.text, { isQuery: false, taskType: body.task_type });
@@ -39,6 +42,7 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 export const PUT: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   const body = await request.json();
   if (body?.id == null || !body?.text) return new Response(JSON.stringify({ error: 'id and text required' }), { status: 400 });
   const embedding = await embedText(body.text, { isQuery: false, taskType: body.task_type });
@@ -66,6 +70,7 @@ export const PUT: APIRoute = async ({ request }) => {
 //  - if body.action == 'summarize' -> regenerate summary
 //  - if body.action == 'tag'       -> regenerate tags
 export const PATCH: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   const url = new URL(request.url);
   const idParam = url.searchParams.get('id');
   if (!idParam) return new Response(JSON.stringify({ error: 'id required'}), { status: 400 });
@@ -95,6 +100,7 @@ export const PATCH: APIRoute = async ({ request }) => {
 };
 
 export const DELETE: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   const url = new URL(request.url);
   const idParam = url.searchParams.get('id');
   if (!idParam) return new Response(JSON.stringify({ error: 'id required'}), { status: 400 });

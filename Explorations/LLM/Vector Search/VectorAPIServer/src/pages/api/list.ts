@@ -1,9 +1,11 @@
 import type { APIRoute } from 'astro';
 import { listDocs } from '../..//lib/db';
+import { requireAuth } from '../../lib/auth';
 
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   const url = new URL(request.url);
   const limit = url.searchParams.get('limit');
   const offset = url.searchParams.get('offset');

@@ -3,10 +3,12 @@ import { embedText } from '../../lib/embeddings';
 import { search } from '../../lib/db';
 import { rewriteQuery } from '../../lib/rewrite';
 import { RECENCY_DEFAULT_ALPHA, RECENCY_DEFAULT_HALF_LIFE } from '../../lib/config';
+import { requireAuth } from '../../lib/auth';
 
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   const body = await request.json();
   const query = body.query as string;
   if (!query) return new Response(JSON.stringify({ error: 'query required'}), { status: 400 });

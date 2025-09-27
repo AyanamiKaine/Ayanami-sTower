@@ -100,6 +100,112 @@
   let webLoading = false;
   let webResult: { id:number; url:string; summary?:string; tags?:string[]; embedding_task?: string|null } | null = null;
 
+  // Auth state
+  interface AuthUser { id:number; email:string; isAdmin:boolean }
+  let authUser: AuthUser | null = null;
+  let authLoading = true;
+  let loginEmail = '';
+  let loginPassword = '';
+  let registerEmail = '';
+  let registerPassword = '';
+  let authError: string | null = null;
+  let showRegister = false;
+  // Admin user management state
+  interface AdminUserRow { id:number; email:string; is_admin:boolean; is_approved:boolean; created_at:number; updated_at:number; last_login?:number|null }
+  let adminUsers: AdminUserRow[] = [];
+  let adminLoading = false;
+  let adminError: string | null = null;
+  let refreshingUsers = false;
+
+  async function loadUsers() {
+    if (!authUser?.isAdmin) return;
+    adminLoading = true; adminError = null;
+    try {
+      const r = await fetch('/api/auth/users');
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'failed to load users');
+      adminUsers = data.users;
+    } catch(e:any) { adminError = e.message; } finally { adminLoading = false; }
+  }
+
+  async function approveUser(id: number) {
+    try {
+      const r = await fetch('/api/auth/users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'approve', id }) });
+      if (r.ok) {
+        adminUsers = adminUsers.map(u => u.id===id ? { ...u, is_approved:true } : u);
+      }
+    } catch {}
+  }
+
+  async function disapproveUser(id: number) {
+    try {
+      const r = await fetch('/api/auth/users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'disapprove', id }) });
+      if (r.ok) {
+        adminUsers = adminUsers.map(u => u.id===id ? { ...u, is_approved:false } : u);
+      }
+    } catch {}
+  }
+
+  async function deleteUserAccount(id: number) {
+    if (!confirm('Delete user '+id+'?')) return;
+    try {
+      const r = await fetch('/api/auth/users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'delete', id }) });
+      if (r.ok) {
+        adminUsers = adminUsers.filter(u => u.id !== id);
+      }
+    } catch {}
+  }
+
+  async function fetchMe() {
+    authLoading = true;
+    try {
+      const r = await fetch('/api/auth/me');
+      const data = await r.json();
+      if (data.user) authUser = data.user; else authUser = null;
+    } catch { authUser = null; }
+    authLoading = false;
+  }
+
+  async function login() {
+    authError = null;
+    try {
+      const r = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: loginEmail, password: loginPassword })});
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'login failed');
+      authUser = { id: data.user.id, email: data.user.email, isAdmin: data.user.is_admin };
+      loginPassword='';
+      await afterAuth();
+    } catch(e:any) { authError = e.message; }
+  }
+
+  async function register() {
+    authError = null;
+    try {
+      const r = await fetch('/api/auth/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: registerEmail, password: registerPassword })});
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'register failed');
+      if (data.is_admin && data.is_approved) {
+        // First user scenario: auto-admin
+        loginEmail = registerEmail;
+        loginPassword = registerPassword;
+        showRegister = false;
+        await login();
+        return;
+      }
+      showRegister = false; authError = 'Registered. Await admin approval.';
+    } catch(e:any) { authError = e.message; }
+  }
+
+  async function logout() {
+    await fetch('/api/auth/logout', { method:'POST' });
+    authUser = null;
+  }
+
+  async function afterAuth() {
+    fetchStats();
+    loadDocs();
+  }
+
   async function addWebPage() {
     if (!webUrl.trim()) return;
     webLoading = true; error = null; webResult = null;
@@ -194,7 +300,7 @@
     }
   }
 
-  onMount(fetchStats);
+  onMount(async () => { await fetchMe(); if (authUser) { afterAuth(); if (authUser.isAdmin) loadUsers(); } });
 
   async function loadDocs() {
     listLoading = true; error = null;
@@ -250,7 +356,105 @@
   <header class="flex flex-col gap-2">
     <h1 class="text-2xl font-bold tracking-tight flex items-center gap-2">Vector Memory Console <span class="text-xs font-medium bg-brand-100 text-brand-700 px-2 py-0.5 rounded">Gemini</span></h1>
     <p class="text-sm text-slate-600">Search, summarize, tag and manage your local embedding store.</p>
+    <div class="mt-2 flex items-center gap-3 text-xs">
+      {#if authLoading}
+        <span class="text-slate-500">Checking session...</span>
+      {:else if authUser}
+        <span class="text-slate-600">Signed in as <span class="font-semibold">{authUser.email}</span>{authUser.isAdmin ? ' (admin)':''}</span>
+        <button class="btn-secondary btn !text-xs" on:click={logout}>Logout</button>
+      {:else}
+        <span class="text-slate-500">Not signed in</span>
+      {/if}
+    </div>
   </header>
+
+  {#if !authUser}
+    <div class="panel">
+      <h2 class="text-lg font-semibold tracking-tight mb-2">{showRegister ? 'Register' : 'Login'}</h2>
+      {#if authError}<div class="text-rose-600 text-sm mb-2">{authError}</div>{/if}
+      {#if showRegister}
+        <div class="flex flex-col gap-3 max-w-sm">
+          <input class="input" placeholder="email" bind:value={registerEmail} />
+          <input class="input" type="password" placeholder="password" bind:value={registerPassword} />
+          <div class="flex gap-2">
+            <button class="btn" on:click={register} disabled={!registerEmail || !registerPassword}>Register</button>
+            <button class="btn-secondary btn" on:click={() => { showRegister=false; authError=null; }}>Have account?</button>
+          </div>
+          <p class="text-[11px] text-slate-500">After registering an admin must approve your account before you can login.</p>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-3 max-w-sm">
+          <input class="input" placeholder="email" bind:value={loginEmail} on:keydown={(e)=> e.key==='Enter' && login()} />
+          <input class="input" type="password" placeholder="password" bind:value={loginPassword} on:keydown={(e)=> e.key==='Enter' && login()} />
+          <div class="flex gap-2">
+            <button class="btn" on:click={login} disabled={!loginEmail || !loginPassword}>Login</button>
+            <button class="btn-secondary btn" on:click={() => { showRegister=true; authError=null; }}>Register</button>
+          </div>
+        </div>
+      {/if}
+    </div>
+  {:else}
+
+  {#if authUser.isAdmin}
+    <div class="panel">
+      <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h2 class="text-lg font-semibold tracking-tight">Admin – Users</h2>
+        <div class="flex gap-2 items-center text-xs">
+          <button class="btn-secondary btn !text-xs" on:click={loadUsers} disabled={adminLoading}>{adminLoading ? 'Refreshing...' : 'Refresh'}</button>
+          <span class="text-slate-500">{adminUsers.length} users</span>
+        </div>
+      </div>
+      {#if adminError}<div class="text-rose-600 text-xs mb-2">{adminError}</div>{/if}
+      {#if adminLoading && adminUsers.length===0}
+        <div class="text-slate-400 text-sm">Loading users...</div>
+      {:else if adminUsers.length===0}
+        <div class="text-slate-400 text-sm">No users found.</div>
+      {:else}
+        <div class="overflow-auto max-h-[260px] border border-slate-200 rounded-lg">
+          <table class="data min-w-[900px]">
+            <thead>
+              <tr>
+                <th class="px-3 py-2">ID</th>
+                <th class="px-3 py-2">Email</th>
+                <th class="px-3 py-2">Approved</th>
+                <th class="px-3 py-2">Admin</th>
+                <th class="px-3 py-2">Created</th>
+                <th class="px-3 py-2">Updated</th>
+                <th class="px-3 py-2">Last Login</th>
+                <th class="px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each adminUsers as u}
+                <tr class="hover:bg-slate-50 transition">
+                  <td class="px-3 py-2 text-[11px] tabular-nums">{u.id}</td>
+                  <td class="px-3 py-2 text-[11px] font-mono max-w-[220px] truncate" title={u.email}>{u.email}</td>
+                  <td class="px-3 py-2 text-[11px]">{u.is_approved ? 'yes' : 'no'}</td>
+                  <td class="px-3 py-2 text-[11px]">{u.is_admin ? 'yes' : 'no'}</td>
+                  <td class="px-3 py-2 text-[10px]">{formatTs(u.created_at)}</td>
+                  <td class="px-3 py-2 text-[10px]">{formatTs(u.updated_at)}</td>
+                  <td class="px-3 py-2 text-[10px]">{u.last_login ? formatTs(u.last_login) : '—'}</td>
+                  <td class="px-3 py-2">
+                    <div class="flex flex-wrap gap-1">
+                      {#if !u.is_approved}
+                        <button class="btn-secondary btn !text-[10px]" on:click={()=> approveUser(u.id)}>Approve</button>
+                      {:else}
+                        <button class="btn-secondary btn !text-[10px]" on:click={()=> disapproveUser(u.id)}>Disapprove</button>
+                      {/if}
+                      {#if !u.is_admin}
+                        <button class="btn-danger btn !text-[10px]" on:click={()=> deleteUserAccount(u.id)}>Delete</button>
+                      {/if}
+                    </div>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-2 text-[10px] text-slate-500">Approve users to grant access. Deleting removes their sessions implicitly.</div>
+      {/if}
+    </div>
+  {/if}
 
   <div class="grid gap-6 xl:grid-cols-3">
     <!-- Search Panel -->
@@ -519,4 +723,5 @@
     {/if}
     <div class="mt-2 text-[11px] text-slate-500">Offset {listOffset}</div>
   </div>
+  {/if}
 </div>

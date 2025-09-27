@@ -4,6 +4,7 @@ import { insertDoc } from '../../lib/db';
 import { generateSummary } from '../../lib/summarize';
 import { generateTags } from '../../lib/tags';
 import { countTokens } from '../../lib/tokens';
+import { requireAuth } from '../../lib/auth';
 
 export const prerender = false;
 
@@ -27,6 +28,7 @@ async function fetchPage(url: string): Promise<string> {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   try {
     const body = await request.json();
     const url = body.url as string;

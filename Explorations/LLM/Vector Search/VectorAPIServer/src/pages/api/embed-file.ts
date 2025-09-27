@@ -4,6 +4,7 @@ import { insertDoc } from '../../lib/db';
 import { generateSummary } from '../../lib/summarize';
 import { generateTags } from '../../lib/tags';
 import { countTokens } from '../../lib/tokens';
+import { requireAuth } from '../../lib/auth';
 
 export const prerender = false;
 
@@ -15,6 +16,7 @@ export const prerender = false;
 // NOTE: For PDF we currently do a naive text extraction if it's plain text; real PDF parsing would need an additional library.
 
 export const POST: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   const contentType = request.headers.get('content-type') || '';
   if (!contentType.includes('multipart/form-data')) {
     return new Response(JSON.stringify({ error: 'multipart/form-data required'}), { status: 400 });

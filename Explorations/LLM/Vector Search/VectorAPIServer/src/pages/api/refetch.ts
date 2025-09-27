@@ -5,12 +5,14 @@ import { embedText } from '../../lib/embeddings';
 import { generateSummary } from '../../lib/summarize';
 import { generateTags } from '../../lib/tags';
 import { countTokens } from '../../lib/tokens';
+import { requireAuth } from '../../lib/auth';
 
 export const prerender = false;
 
 // POST /api/refetch { id, resummarize?, retag?, summary_tokens?, task_type? }
 // Re-downloads URL content for doc id (must have url) and re-embeds text.
 export const POST: APIRoute = async ({ request }) => {
+  const auth = requireAuth(request); if (auth instanceof Response) return auth;
   try {
     const body = await request.json();
     const id = body.id;
