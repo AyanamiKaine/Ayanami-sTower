@@ -17,7 +17,7 @@
   let summaryTokens = 80;
   let autoTag = true;
   let maxTags = 6;
-  // Embedding task type selection
+  // Embedding task type selection (with descriptions & examples)
   const taskTypes = [
     'RETRIEVAL_DOCUMENT',
     'RETRIEVAL_QUERY',
@@ -27,8 +27,53 @@
     'CODE_RETRIEVAL_QUERY',
     'QUESTION_ANSWERING',
     'FACT_VERIFICATION'
-  ];
-  let taskType = 'RETRIEVAL_DOCUMENT';
+  ] as const;
+  type TaskType = typeof taskTypes[number];
+  interface TaskInfo { description: string; examples: string; guidance?: string }
+  const taskTypeDetails: Record<TaskType, TaskInfo> = {
+    RETRIEVAL_DOCUMENT: {
+      description: 'Embeddings optimized for representing documents that will be retrieved.',
+      examples: 'Indexing articles, books, web pages',
+      guidance: 'Pair with RETRIEVAL_QUERY (or QUESTION_ANSWERING / CODE_RETRIEVAL_QUERY / FACT_VERIFICATION) for the query side.'
+    },
+    RETRIEVAL_QUERY: {
+      description: 'Embeddings optimized for general natural language search queries.',
+      examples: 'Custom semantic search boxes',
+      guidance: 'Use this for user queries; ingest documents with RETRIEVAL_DOCUMENT.'
+    },
+    SEMANTIC_SIMILARITY: {
+      description: 'Embeddings tuned to measure overall semantic similarity between texts.',
+      examples: 'Recommendation systems, near-duplicate detection',
+      guidance: 'Use when you mainly need to score similarity between arbitrary pairs of texts.'
+    },
+    CLASSIFICATION: {
+      description: 'Embeddings shaped for downstream classification against labeled sets.',
+      examples: 'Sentiment analysis, spam detection',
+      guidance: 'Not ideal for retrieval ranking; better for feeding a classifier.'
+    },
+    CLUSTERING: {
+      description: 'Embeddings optimized to group related texts via clustering algorithms.',
+      examples: 'Document organization, market research, anomaly detection',
+      guidance: 'Choose when you plan to cluster or visualize structure rather than direct search.'
+    },
+    CODE_RETRIEVAL_QUERY: {
+      description: 'Embeddings for natural language queries over code/documentation corpora.',
+      examples: 'Developer code search, code suggestion assistants',
+      guidance: 'Use for user queries; still embed code blocks with RETRIEVAL_DOCUMENT.'
+    },
+    QUESTION_ANSWERING: {
+      description: 'Embeddings for questions in a QA system optimized to retrieve answers.',
+      examples: 'Chatbot questions, helpdesk queries',
+      guidance: 'Use for the question side; embed answerable passages with RETRIEVAL_DOCUMENT.'
+    },
+    FACT_VERIFICATION: {
+      description: 'Embeddings for claims/statements to retrieve supporting or refuting evidence.',
+      examples: 'Automated fact checking pipelines',
+      guidance: 'Embed claims with this; evidence passages with RETRIEVAL_DOCUMENT.'
+    }
+  };
+  let taskType: TaskType = 'RETRIEVAL_DOCUMENT';
+  $: currentTaskInfo = taskTypeDetails[taskType];
   // File upload state
   let uploadFile: File | null = null;
   let uploadLoading = false;
@@ -255,10 +300,25 @@
       <div class="flex flex-col gap-3">
         <div class="flex flex-wrap gap-4 items-end">
           <div class="flex-1 min-w-[180px]">
-            <label for="taskType" class="text-[11px] font-medium text-slate-600 uppercase tracking-wide">Embedding Task</label>
-            <select id="taskType" class="input w-full mt-1" bind:value={taskType}>
-              {#each taskTypes as t}<option value={t}>{t}</option>{/each}
+            <label for="taskType" class="text-[11px] font-medium text-slate-600 uppercase tracking-wide flex items-center gap-1">Embedding Task
+              <span class="inline-block text-[10px] font-normal text-slate-400 normal-case">(choose intent)</span>
+            </label>
+            <select id="taskType" class="input w-full mt-2" bind:value={taskType}>
+              {#each taskTypes as t}
+                <option value={t} title={`${taskTypeDetails[t].description} Examples: ${taskTypeDetails[t].examples}`}>{t}</option>
+              {/each}
             </select>
+            <div class="mt-2 mb-2 rounded border border-slate-200 bg-slate-50 p-2 flex flex-col gap-1">
+              <div class="text-[11px] font-semibold text-slate-700 flex items-center gap-2">
+                {taskType}
+                <span class="text-[10px] font-normal px-1 py-0.5 rounded bg-slate-200 text-slate-600">info</span>
+              </div>
+              <div class="text-[11px] text-slate-600 leading-snug">{currentTaskInfo.description}</div>
+              <div class="text-[10px] text-slate-500"><span class="font-medium">Examples:</span> {currentTaskInfo.examples}</div>
+              {#if currentTaskInfo.guidance}
+                <div class="text-[10px] text-slate-500 italic">{currentTaskInfo.guidance}</div>
+              {/if}
+            </div>
           </div>
         </div>
       </div>
