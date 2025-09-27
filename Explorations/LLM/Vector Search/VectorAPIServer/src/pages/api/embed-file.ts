@@ -33,8 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
   let raw = await file.text();
   const filename = file.name.toLowerCase();
   if (filename.endsWith('.pdf')) {
-    // Placeholder: PDF binary extraction not implemented
-    return new Response(JSON.stringify({ error: 'PDF parsing not implemented yet' }), { status: 415 });
+    return new Response(JSON.stringify({ error: 'Use /api/upload-pdf for PDF files (stored in Gemini File API)' }), { status: 415 });
   }
   // Simple normalization for markdown: strip code fences optionally
   if (filename.endsWith('.md')) {

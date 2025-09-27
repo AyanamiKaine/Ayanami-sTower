@@ -78,7 +78,7 @@
   // File upload state
   let uploadFile: File | null = null;
   let uploadLoading = false;
-  let uploadResult: { id:number; summary?:string; tags?:string[]; embedding_task?: string | null } | null = null;
+  let uploadResult: { id?:number; summary?:string; tags?:string[]; embedding_task?: string | null } | null = null;
   // Separate task selection for file upload (can differ from text add)
   let uploadTaskType: TaskType = 'RETRIEVAL_DOCUMENT';
   $: if (!uploadTaskType) uploadTaskType = taskType; // safeguard
@@ -368,6 +368,10 @@
       form.append('summary_tokens', String(summaryTokens));
       form.append('auto_tag', String(autoTag));
       form.append('max_tags', String(maxTags));
+      const lower = uploadFile.name.toLowerCase();
+      if (lower.endsWith('.pdf')) {
+        throw new Error('PDF upload disabled in UI. Use API /api/upload-pdf manually if needed.');
+      }
       const r = await fetch('/api/embed-file', { method:'POST', body: form });
       const data = await r.json().catch(()=>({}));
       if (!r.ok) throw new Error(data.error || 'upload failed');
